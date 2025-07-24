@@ -1045,7 +1045,7 @@ void TypeString::AppendMethodDebug(SString& ss, MethodDesc *pMD)
 
         // Should we set ss to Empty
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif
 }
 
@@ -1073,7 +1073,7 @@ void TypeString::AppendTypeDebug(SString& ss, TypeHandle t)
             // If we run out of memory or hit some other problem,
             // tough luck for the debugger.
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 #endif
 }
@@ -1102,7 +1102,7 @@ void TypeString::AppendTypeKeyDebug(SString& ss, const TypeKey *pTypeKey)
             // If we run out of memory or hit some other problem,
             // tough luck for the debugger.
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 #endif
 }

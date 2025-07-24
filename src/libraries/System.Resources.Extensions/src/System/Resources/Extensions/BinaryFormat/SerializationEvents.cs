@@ -100,7 +100,7 @@ internal sealed class SerializationEvents
             foreach (MethodInfo method in methods)
             {
                 Action<StreamingContext> onDeserialized =
-#if NETCOREAPP
+#if NET
                     method.CreateDelegate<Action<StreamingContext>>(obj);
 #else
                     (Action<StreamingContext>)method.CreateDelegate(typeof(Action<StreamingContext>), obj);

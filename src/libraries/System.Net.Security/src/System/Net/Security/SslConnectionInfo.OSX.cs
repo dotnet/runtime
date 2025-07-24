@@ -4,12 +4,62 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Authentication;
+using SafeNwHandle = Interop.SafeNwHandle;
 
 namespace System.Net.Security
 {
     internal partial struct SslConnectionInfo
     {
-        public void UpdateSslConnectionInfo(SafeDeleteSslContext context)
+        public void UpdateSslConnectionInfo(SafeDeleteContext context)
+        {
+            switch (context)
+            {
+                case SafeDeleteNwContext nwContext:
+                    UpdateSslConnectionInfoNetworkFramework(nwContext);
+                    break;
+                case SafeDeleteSslContext sslContext:
+                    UpdateSslConnectionInfoAppleCrypto(sslContext);
+                    break;
+                default:
+                    throw new NotSupportedException("Unsupported context type.");
+            }
+        }
+
+        private void UpdateSslConnectionInfoNetworkFramework(SafeDeleteNwContext context)
+        {
+            SafeNwHandle nwContext = context.ConnectionHandle;
+            SslProtocols protocol;
+            TlsCipherSuite cipherSuite;
+
+            Span<byte> alpn = stackalloc byte[256]; // Ensure the stack is initialized for alpnPtr
+            int alpnLength = alpn.Length;
+
+            int osStatus;
+            unsafe
+            {
+                fixed (byte* alpnPtr = alpn)
+                {
+                    // Call the native method to get connection info
+                    osStatus = Interop.NetworkFramework.Tls.GetConnectionInfo(nwContext, context.StateHandle, out protocol, out cipherSuite, alpnPtr, ref alpnLength);
+                }
+            }
+
+            if (osStatus != 0)
+            {
+                throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+            }
+
+            if (alpnLength > 0)
+            {
+                ApplicationProtocol = alpn.Slice(0, alpnLength).ToArray();
+            }
+
+            Protocol = (int)protocol;
+            TlsCipherSuite = cipherSuite;
+            MapCipherSuite(cipherSuite);
+        }
+
+        private void UpdateSslConnectionInfoAppleCrypto(SafeDeleteSslContext context)
         {
             SafeSslHandle sslContext = context.SslContext;
             SslProtocols protocol;

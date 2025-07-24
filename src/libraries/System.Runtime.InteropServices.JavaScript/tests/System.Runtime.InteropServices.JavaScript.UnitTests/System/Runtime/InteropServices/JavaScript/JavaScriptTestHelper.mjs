@@ -466,3 +466,28 @@ export function delay(ms) {
 export function reject(what) {
     return new Promise((_, reject) => globalThis.setTimeout(() => reject(what), 0));
 }
+
+let setTimeoutHit = false;
+let promiseThenHit = false;
+export function beforeYield() {
+    setTimeoutHit = false;
+    promiseThenHit = false;
+    setTimeout(() => {
+        setTimeoutHit = true;
+    }, 0);
+    let res;
+    new Promise((resolve) => {
+        res = resolve;
+    }).then(() => {
+        promiseThenHit = true;
+    });
+    res();
+}
+
+export function isSetTimeoutHit() {
+    return setTimeoutHit;
+}
+
+export function isPromiseThenHit() {
+    return promiseThenHit;
+}

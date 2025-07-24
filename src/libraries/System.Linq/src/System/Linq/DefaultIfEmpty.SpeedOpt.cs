@@ -81,6 +81,40 @@ namespace System.Linq
 
                 return _default;
             }
+
+            public override bool Contains(TSource value)
+            {
+                if (_source.TryGetNonEnumeratedCount(out int count))
+                {
+                    return count > 0 ?
+                        _source.Contains(value) :
+                        EqualityComparer<TSource>.Default.Equals(value, _default);
+                }
+
+                IEnumerator<TSource> enumerator = _source.GetEnumerator();
+                try
+                {
+                    if (!enumerator.MoveNext())
+                    {
+                        return EqualityComparer<TSource>.Default.Equals(value, _default);
+                    }
+
+                    do
+                    {
+                        if (EqualityComparer<TSource>.Default.Equals(enumerator.Current, value))
+                        {
+                            return true;
+                        }
+                    }
+                    while (enumerator.MoveNext());
+
+                    return false;
+                }
+                finally
+                {
+                    enumerator.Dispose();
+                }
+            }
         }
     }
 }

@@ -24,8 +24,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static T MaxMagnitude<T>(ReadOnlySpan<T> x)
-            where T : INumberBase<T> =>
-            MinMaxCore<T, MaxMagnitudeOperator<T>>(x);
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsInt16<T, MaxMagnitudeOperator<float>>(x, out T result))
+            {
+                return result;
+            }
+
+            return MinMaxCore<T, MaxMagnitudeOperator<T>>(x);
+        }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -43,8 +50,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MaxMagnitude<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MaxMagnitudeOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, MaxMagnitudeOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -60,8 +74,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MaxMagnitude<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MaxMagnitudeOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, MaxMagnitudeOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Operator to get x or y based on which has the larger MathF.Abs</summary>
         internal readonly struct MaxMagnitudeOperator<T> : IAggregationOperator<T>

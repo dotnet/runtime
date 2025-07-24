@@ -11,10 +11,10 @@ namespace System.Linq.Tests
         [Fact]
         public void Empty()
         {
-            Assert.All(IdentityTransforms<int>(), transform =>
+            Assert.All(CreateSources<int>([]), source =>
             {
-                Assert.Equal([], transform([]).AggregateBy(i => i, i => i, (a, i) => a + i));
-                Assert.Equal([], transform([]).AggregateBy(i => i, 0, (a, i) => a + i));
+                Assert.Equal([], source.AggregateBy(i => i, i => i, (a, i) => a + i));
+                Assert.Equal([], source.AggregateBy(i => i, 0, (a, i) => a + i));
             });
         }
 

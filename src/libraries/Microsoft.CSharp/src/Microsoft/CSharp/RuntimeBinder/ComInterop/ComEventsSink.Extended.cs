@@ -9,6 +9,7 @@ using Microsoft.CSharp.RuntimeBinder.ComInterop;
 
 namespace System.Runtime.InteropServices
 {
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed partial class ComEventsSink
     {
         private void Initialize(object rcw, Guid iid)

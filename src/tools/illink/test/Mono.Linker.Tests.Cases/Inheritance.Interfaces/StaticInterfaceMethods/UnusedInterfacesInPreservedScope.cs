@@ -7,33 +7,33 @@ using Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.Depe
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/Library.cs" })]
-	[SetupLinkerAction ("skip", "library")]
-	class UnusedInterfacesInPreservedScope
-	{
-		[Kept]
-		public static void Main ()
-		{
-			Test ();
-		}
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/Library.cs" })]
+    [SetupLinkerAction("skip", "library")]
+    class UnusedInterfacesInPreservedScope
+    {
+        [Kept]
+        public static void Main()
+        {
+            Test();
+        }
 
-		[Kept]
-		class MyType : IStaticInterfaceWithDefaultImpls
-		{
-			public static int Property { get => 0; set => _ = value; }
-			public static int Method () => 0;
-			public int InstanceMethod () => 0;
-		}
+        [Kept]
+        class MyType : IStaticInterfaceWithDefaultImpls
+        {
+            public static int Property { get => 0; set => _ = value; }
+            public static int Method() => 0;
+            public int InstanceMethod() => 0;
+        }
 
-		// Keep MyType without marking it relevant to variant casting
-		[Kept]
-		static void KeepMyType (MyType x)
-		{ }
+        // Keep MyType without marking it relevant to variant casting
+        [Kept]
+        static void KeepMyType(MyType x)
+        { }
 
-		[Kept]
-		static void Test ()
-		{
-			KeepMyType (null);
-		}
-	}
+        [Kept]
+        static void Test()
+        {
+            KeepMyType(null);
+        }
+    }
 }

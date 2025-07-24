@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="CLR-x86-*/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="CLR-x86-JIT/V1-M09.5-PDC/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="CLR-x86-JIT/V1-M10/**/*.??proj" />
     <MergedWrapperProjectReference Remove="CLR-x86-JIT/V1-M11-Beta1/**/*.??proj" />
     <MergedWrapperProjectReference Remove="CLR-x86-JIT/V1-M12-Beta2/**/*.??proj" />
   </ItemGroup>

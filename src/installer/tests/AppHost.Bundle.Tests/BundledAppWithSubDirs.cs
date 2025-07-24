@@ -20,147 +20,121 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        private void RunTheApp(string path, bool selfContained)
+        private FluentAssertions.AndConstraint<CommandResultAssertions> RunTheApp(string path, bool selfContained, bool deleteExtracted = true)
         {
-            RunTheApp(path, selfContained ? null : TestContext.BuiltDotNet.BinPath)
-                .Should().Pass()
+            CommandResult result = Command.Create(path)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
+                .MultilevelLookup(false)
+                .Execute();
+            if (deleteExtracted)
+            {
+                DeleteExtractionDirectory(result);
+            }
+
+            return result.Should().Pass()
                 .And.HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        private CommandResult RunTheApp(string path, string dotnetRoot)
+        private static void DeleteExtractionDirectory(CommandResult result)
         {
-            return Command.Create(path)
-                .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(dotnetRoot)
-                .MultilevelLookup(false)
-                .Execute();
+            Assert.False(string.IsNullOrEmpty(result.StdErr), "Attempted to get extraction directory from empty stderr. Ensure tracing was enabled and stderr captured.");
+
+            string pattern = @"Files embedded within the bundle will be extracted to \[(.*?)\]";
+            var match = System.Text.RegularExpressions.Regex.Match(result.StdErr, pattern);
+            if (!match.Success)
+                return;
+
+            string extractionDir = match.Groups[1].Value;
+            try
+            {
+                Directory.Delete(extractionDir, true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to delete extraction directory '{extractionDir}': {ex}");
+            }
         }
 
+        [Theory]
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleAllContent)]
-        [Theory]
         public void FrameworkDependent(BundleOptions options)
         {
             var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options);
 
             // Run the bundled app
-            RunTheApp(singleFile, selfContained: false);
+            bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
+            RunTheApp(singleFile, selfContained: false, deleteExtracted: !shouldExtract)
+                .And.CreateExtraction(shouldExtract);
 
-            if (options.HasFlag(BundleOptions.BundleAllContent))
+            if (shouldExtract)
             {
                 // Run the bundled app again (reuse extracted files)
-                RunTheApp(singleFile, selfContained: false);
+                RunTheApp(singleFile, selfContained: false)
+                    .And.ReuseExtraction();
             }
         }
 
-        [Fact]
-        public void FrameworkDependent_NoBundleEntryPoint()
-        {
-            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(BundleOptions.None);
-
-            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrFrameworkMissingFailure"))
-            {
-                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
-                    .RemoveHostFxr()
-                    .AddMockHostFxr(new Version(2, 2, 0))
-                    .Build();
-
-                // Run the bundled app (extract files)
-                RunTheApp(singleFile, dotnet.BinPath)
-                    .Should()
-                    .Fail()
-                    .And.HaveStdErrContaining("You must install or update .NET to run this application.")
-                    .And.HaveStdErrContaining("App host version:")
-                    .And.HaveStdErrContaining("apphost_version=");
-            }
-        }
-
-        [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
-        public void FrameworkDependent_GUI_DownlevelHostFxr_ErrorDialog(BundleOptions options)
-        {
-            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options);
-            PEUtils.SetWindowsGraphicalUserInterfaceBit(singleFile);
-
-            // The mockhostfxrBundleVersionFailure folder name is used by mock hostfxr to return the appropriate error code
-            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrBundleVersionFailure"))
-            {
-                string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
-
-                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
-                    .RemoveHostFxr()
-                    .AddMockHostFxr(new Version(5, 0, 0))
-                    .Build();
-
-                Command command = Command.Create(singleFile)
-                    .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
-                    .MultilevelLookup(false)
-                    .Start();
-
-                WindowsUtils.WaitForPopupFromProcess(command.Process);
-                command.Process.Kill();
-
-                command
-                    .WaitForExit(true)
-                    .Should().Fail()
-                    .And.HaveStdErrContaining("Bundle header version compatibility check failed.")
-                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")
-                    .And.HaveStdErrContaining("apphost_version=");
-            }
-        }
-
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleAllContent)]
         [InlineData(BundleOptions.EnableCompression)]
         [InlineData(BundleOptions.BundleAllContent | BundleOptions.EnableCompression)]
-        [Theory]
         public void SelfContained(BundleOptions options)
         {
             var singleFile = sharedTestState.SelfContainedApp.Bundle(options);
 
             // Run the bundled app
-            RunTheApp(singleFile, selfContained: true);
+            bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
+            RunTheApp(singleFile, selfContained: true, deleteExtracted: !shouldExtract)
+                .And.CreateExtraction(shouldExtract);
 
-            if (options.HasFlag(BundleOptions.BundleAllContent))
+            if (shouldExtract)
             {
                 // Run the bundled app again (reuse extracted files)
-                RunTheApp(singleFile, selfContained: true);
+                RunTheApp(singleFile, selfContained: true)
+                    .And.ReuseExtraction();
             }
         }
 
+        [Theory]
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleAllContent)]
-        [Theory]
         public void SelfContained_Targeting50(BundleOptions options)
         {
             var singleFile = sharedTestState.SelfContainedApp.Bundle(options, new Version(5, 0));
 
             // Run the bundled app
-            RunTheApp(singleFile, selfContained: true);
+            bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
+            RunTheApp(singleFile, selfContained: true, deleteExtracted: !shouldExtract)
+                .And.CreateExtraction(shouldExtract);
 
-            if (options.HasFlag(BundleOptions.BundleAllContent))
+            if (shouldExtract)
             {
                 // Run the bundled app again (reuse extracted files)
-                RunTheApp(singleFile, selfContained: true);
+                RunTheApp(singleFile, selfContained: true)
+                    .And.ReuseExtraction();
             }
         }
 
-        [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleAllContent)]
         public void FrameworkDependent_Targeting50(BundleOptions options)
         {
             var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options, new Version(5, 0));
 
             // Run the bundled app
-            RunTheApp(singleFile, selfContained: false);
+            bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
+            RunTheApp(singleFile, selfContained: false, deleteExtracted: !shouldExtract)
+                .And.CreateExtraction(shouldExtract);
 
-            if (options.HasFlag(BundleOptions.BundleAllContent))
+            if (shouldExtract)
             {
                 // Run the bundled app again (reuse extracted files)
-                RunTheApp(singleFile, selfContained: false);
+                RunTheApp(singleFile, selfContained: false)
+                    .And.ReuseExtraction();
             }
         }
 
@@ -215,6 +189,22 @@ namespace AppHost.Bundle.Tests
                     writer.Write(".");
                 }
             }
+        }
+    }
+
+    public static class BundledAppResultExtensions
+    {
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> CreateExtraction(this CommandResultAssertions assertion, bool shouldExtract)
+        {
+            string message = "Starting new extraction of application bundle";
+            return shouldExtract
+                ? assertion.HaveStdErrContaining(message)
+                : assertion.NotHaveStdErrContaining(message);
+        }
+
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ReuseExtraction(this CommandResultAssertions assertion)
+        {
+            return assertion.HaveStdErrContaining("Reusing existing extraction of application bundle");
         }
     }
 }

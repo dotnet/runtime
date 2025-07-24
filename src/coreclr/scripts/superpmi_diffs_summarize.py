@@ -28,8 +28,6 @@ parser.add_argument("-platform", required=True, help="OS platform")
 parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, all)")
 parser.add_argument("-source_directory", required=True, help="Path to the root directory of the dotnet/runtime source tree")
 
-target_windows = True
-
 def setup_args(args):
     """ Setup the args.
 
@@ -67,22 +65,6 @@ def setup_args(args):
                         "source_directory",
                         os.path.isdir,
                         "source_directory doesn't exist")
-
-    do_asmdiffs = False
-    do_tpdiff = False
-    if coreclr_args.type == 'asmdiffs':
-        do_asmdiffs = True
-    if coreclr_args.type == 'tpdiff':
-        do_tpdiff = True
-    if coreclr_args.type == 'all':
-        do_asmdiffs = True
-        do_tpdiff = True
-
-    if coreclr_args.platform.lower() != "windows" and do_asmdiffs:
-        print("asmdiffs currently only implemented for windows")
-        sys.exit(1)
-
-    target_windows = coreclr_args.platform.lower() == "windows"
 
     return coreclr_args
 

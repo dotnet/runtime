@@ -3,21 +3,12 @@
 
 #include <assert.h>
 #include "pal_evp_pkey.h"
+#include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
-#include "pal_atomic.h"
 
 #ifdef NEED_OPENSSL_3_0
 c_static_assert(OSSL_STORE_INFO_PKEY == 4);
 c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
-
-struct EvpPKeyExtraHandle_st
-{
-    atomic_int refCount;
-    OSSL_LIB_CTX* libCtx;
-    OSSL_PROVIDER* prov;
-};
-
-typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 #pragma clang diagnostic push
 // There's no way to specify explicit memory ordering for increment/decrement with C atomics.
@@ -117,6 +108,47 @@ int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
         default:
             return 0;
     }
+}
+
+int32_t CryptoNative_EvpPKeyFamily(const EVP_PKEY* key)
+{
+    int32_t base_id = EVP_PKEY_get_base_id(key);
+    switch (base_id)
+    {
+        case EVP_PKEY_RSA_PSS:
+        case EVP_PKEY_RSA:
+            return PalPKeyFamilyId_RSA;
+        case EVP_PKEY_EC:
+            return PalPKeyFamilyId_ECC;
+        case EVP_PKEY_DSA:
+            return PalPKeyFamilyId_DSA;
+        default:
+            break;
+    }
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_is_a))
+    {
+        ERR_clear_error();
+
+        if (EVP_PKEY_is_a(key, "ML-KEM-512") || EVP_PKEY_is_a(key, "ML-KEM-768") || EVP_PKEY_is_a(key, "ML-KEM-1024"))
+        {
+            return PalPKeyFamilyId_MLKem;
+        }
+
+        if (EVP_PKEY_is_a(key, "ML-DSA-44") || EVP_PKEY_is_a(key, "ML-DSA-65") || EVP_PKEY_is_a(key, "ML-DSA-87"))
+        {
+            return PalPKeyFamilyId_MLDsa;
+        }
+    }
+#endif
+
+    if (IsSlhDsaFamily(key))
+    {
+        return PalPKeyFamilyId_SlhDsa;
+    }
+
+    return PalPKeyFamilyId_Unknown;
 }
 
 static bool Lcm(const BIGNUM* num1, const BIGNUM* num2, BN_CTX* ctx, BIGNUM* result)
@@ -774,4 +806,143 @@ EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
 #endif
         return EVP_PKEY_CTX_new(pkey, NULL);
     }
+}
+
+EVP_PKEY* CryptoNative_EvpPKeyFromData(const char* algorithmName, uint8_t* key, int32_t keyLength, int32_t privateKey)
+{
+    assert(algorithmName);
+    assert(key);
+    assert(keyLength > 0);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_CTX_new_from_name))
+    {
+        ERR_clear_error();
+        EVP_PKEY_CTX* ctx = NULL;
+        EVP_PKEY* pkey = NULL;
+        ctx = EVP_PKEY_CTX_new_from_name(NULL, algorithmName, NULL);
+
+        if (ctx == NULL)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_fromdata_init(ctx) != 1)
+        {
+            goto done;
+        }
+
+        const char* paramName = privateKey == 0 ? OSSL_PKEY_PARAM_PUB_KEY : OSSL_PKEY_PARAM_PRIV_KEY;
+        int selection = privateKey == 0 ? EVP_PKEY_PUBLIC_KEY : EVP_PKEY_KEYPAIR;
+        size_t keyLengthT = Int32ToSizeT(keyLength);
+
+        OSSL_PARAM params[] =
+        {
+            OSSL_PARAM_construct_octet_string(paramName, (void*)key, keyLengthT),
+            OSSL_PARAM_construct_end(),
+        };
+
+        if (EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1)
+        {
+            if (pkey != NULL)
+            {
+                EVP_PKEY_free(pkey);
+                pkey = NULL;
+            }
+
+            goto done;
+        }
+
+done:
+        if (ctx)
+        {
+            EVP_PKEY_CTX_free(ctx);
+        }
+
+        return pkey;
+    }
+#endif
+
+    (void)algorithmName;
+    (void)key;
+    (void)keyLength;
+    (void)privateKey;
+    return NULL;
+}
+
+int32_t EvpPKeyHasKeyOctetStringParam(const EVP_PKEY* pKey, const char* name)
+{
+    assert(pKey);
+    assert(name);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_get_octet_string_param))
+    {
+        ERR_clear_error();
+        size_t outLength = 0;
+
+        int ret = EVP_PKEY_get_octet_string_param(pKey, name, NULL, 0, &outLength);
+
+        if (ret == 1)
+        {
+            return outLength > 0 ? 1 : 0;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+#endif
+
+    (void)pKey;
+    (void)name;
+    return 0;
+}
+
+int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
+                                      const char* name,
+                                      uint8_t* destination,
+                                      int32_t destinationLength)
+{
+    assert(pKey);
+    assert(destination);
+    assert(name);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_get_octet_string_param))
+    {
+        ERR_clear_error();
+
+        size_t destinationLengthT = Int32ToSizeT(destinationLength);
+        size_t outLength = 0;
+
+        int ret = EVP_PKEY_get_octet_string_param(pKey, name, NULL, 0, &outLength);
+
+        if (ret != 1)
+        {
+            return -1;
+        }
+
+        ret = EVP_PKEY_get_octet_string_param(pKey, name, (unsigned char*)destination, destinationLengthT, &outLength);
+
+        if (ret != 1)
+        {
+            return 0;
+        }
+
+        if (outLength != destinationLengthT)
+        {
+            return -2;
+        }
+
+        return 1;
+    }
+#else
+    (void)pKey;
+    (void)name;
+    (void)destination;
+    (void)destinationLength;
+#endif
+
+    return 0;
 }

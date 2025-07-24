@@ -32,9 +32,6 @@ namespace System.Collections.Generic
     // Data size is smaller because there will be minimal virtual function table.
     // Code size is smaller because only functions called will be in the binary.
     [DebuggerDisplay("Count = {Count}")]
-#if TYPE_LOADER_IMPLEMENTATION
-    [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
     internal class LowLevelList<T>
     {
         private const int _defaultCapacity = 4;

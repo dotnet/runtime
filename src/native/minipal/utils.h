@@ -9,6 +9,12 @@
 // Number of characters in a string literal. Excludes terminating NULL.
 #define STRING_LENGTH(str) (ARRAY_SIZE(str) - 1)
 
+#ifdef __clang_analyzer__
+#define ANALYZER_NORETURN __attribute((analyzer_noreturn))
+#else
+#define ANALYZER_NORETURN
+#endif
+
 #ifndef __has_builtin
 #define __has_builtin(x) 0
 #endif
@@ -36,6 +42,17 @@
 #define LIBC_CALLBACK __cdecl
 #else
 #define LIBC_CALLBACK
+#endif
+
+// Define a macro to declare TLS variables. There are cases
+// where we want to use the platform specific thread-local
+// storage mechanism:
+//  * Better performance characteristics compared to C++'s thread_local keyword.
+//  * Makes consuming TLS variables from assembly code easier.
+#if defined(_MSC_VER)
+#define PLATFORM_THREAD_LOCAL __declspec(thread)
+#else
+#define PLATFORM_THREAD_LOCAL __thread
 #endif
 
 #if defined(_MSC_VER)

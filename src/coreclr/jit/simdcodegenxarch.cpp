@@ -88,7 +88,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
         // Store upper 4 bytes
         emit->emitInsStoreInd(INS_movss, EA_4BYTE, treeNode);
     }
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Extract and store upper 4 bytes
         GenTreeStoreInd storeInd = storeIndirForm(TYP_SIMD16, addr, data);
@@ -135,9 +135,9 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
 
     emitter*  emit     = GetEmitter();
     regNumber tgtReg   = treeNode->GetRegNum();
-    bool      useSse41 = compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41);
+    bool      useSse42 = compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42);
 
-    if (useSse41)
+    if (useSse42)
     {
         // Load lower 8 bytes
         emit->emitInsLoadInd(INS_movsd_simd, EA_8BYTE, tgtReg, treeNode);
@@ -164,7 +164,7 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
 
     treeNode->Addr() = addr;
 
-    if (useSse41)
+    if (useSse42)
     {
         // Load and insert upper 4 bytes, 0x20 inserts to index 2 and 0x8 zeros index 3
         GenTreeIndir indir = indirForm(TYP_SIMD16, addr);
@@ -288,7 +288,7 @@ void CodeGen::genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigne
         // Store upper 4 bytes
         emit->emitIns_S_R(INS_movss, EA_4BYTE, dataReg, lclNum, offset + 8);
     }
-    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Extract and store upper 4 bytes
         emit->emitIns_S_R_I(INS_extractps, EA_16BYTE, lclNum, offset + 8, dataReg, 2);
@@ -317,7 +317,7 @@ void CodeGen::genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsign
 {
     emitter* emit = GetEmitter();
 
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // Load lower 8 bytes into tgtReg, preserving upper 4 bytes
         emit->emitIns_R_S(INS_movsd_simd, EA_8BYTE, tgtReg, lclNum, offset);
@@ -430,8 +430,8 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
     if (tgtReg != REG_NA)
     {
         // We should never save to register for zmm.
-        assert(op1->TypeGet() == TYP_SIMD32);
-        GetEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tgtReg, op1Reg, 0x01);
+        assert(op1->TypeIs(TYP_SIMD32));
+        GetEmitter()->emitIns_R_R_I(INS_vextractf32x4, EA_32BYTE, tgtReg, op1Reg, 0x01);
         genProduceReg(node);
     }
     else
@@ -442,16 +442,16 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
 
-        if (op1->TypeGet() == TYP_SIMD32)
+        if (op1->TypeIs(TYP_SIMD32))
         {
             // We want to store this to the upper 16 bytes of this localVar's home.
             int offs = 16;
 
-            GetEmitter()->emitIns_S_R_I(INS_vextractf128, EA_32BYTE, varNum, offs, op1Reg, 0x01);
+            GetEmitter()->emitIns_S_R_I(INS_vextractf32x4, EA_32BYTE, varNum, offs, op1Reg, 0x01);
         }
         else
         {
-            assert(op1->TypeGet() == TYP_SIMD64);
+            assert(op1->TypeIs(TYP_SIMD64));
             // We will save the whole 64 bytes for zmm.
             GetEmitter()->emitIns_S_R(INS_movups, EA_64BYTE, op1Reg, varNum, 0);
         }
@@ -487,8 +487,8 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     if (srcReg != REG_NA)
     {
         // We should never save to register for zmm.
-        assert(op1->TypeGet() == TYP_SIMD32);
-        GetEmitter()->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, lclVarReg, lclVarReg, srcReg, 0x01);
+        assert(op1->TypeIs(TYP_SIMD32));
+        GetEmitter()->emitIns_R_R_R_I(INS_vinsertf32x4, EA_32BYTE, lclVarReg, lclVarReg, srcReg, 0x01);
     }
     else
     {
@@ -496,15 +496,15 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
         unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
-        if (op1->TypeGet() == TYP_SIMD32)
+        if (op1->TypeIs(TYP_SIMD32))
         {
             // We will load this from the upper 16 bytes of this localVar's home.
             int offs = 16;
-            GetEmitter()->emitIns_R_R_S_I(INS_vinsertf128, EA_32BYTE, lclVarReg, lclVarReg, varNum, offs, 0x01);
+            GetEmitter()->emitIns_R_R_S_I(INS_vinsertf32x4, EA_32BYTE, lclVarReg, lclVarReg, varNum, offs, 0x01);
         }
         else
         {
-            assert(op1->TypeGet() == TYP_SIMD64);
+            assert(op1->TypeIs(TYP_SIMD64));
             // We will restore the whole 64 bytes for zmm.
             GetEmitter()->emitIns_R_S(INS_movups, EA_64BYTE, lclVarReg, varNum, 0);
         }
@@ -524,7 +524,7 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
 {
     assert(genIsValidFloatReg(tgtReg));
 
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
     {
         // ZMASK:   0b1000 - Preserve element 0, 1, and 2; Zero element 3
         // COUNT_D: 0b11   - Insert into element 3

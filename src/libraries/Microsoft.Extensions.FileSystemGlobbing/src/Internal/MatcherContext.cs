@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments;
+using Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts;
 using Microsoft.Extensions.FileSystemGlobbing.Util;
 
 namespace Microsoft.Extensions.FileSystemGlobbing.Internal
@@ -17,8 +18,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
     public class MatcherContext
     {
         private readonly DirectoryInfoBase _root;
-        private readonly IPatternContext[] _includePatternContexts;
-        private readonly IPatternContext[] _excludePatternContexts;
+        private readonly IPatternContext _patternContext;
         private readonly List<FilePatternMatch> _files;
 
         private readonly HashSet<string> _declaredLiteralFolderSegmentInString;
@@ -27,22 +27,33 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
         private bool _declaredParentPathSegment;
         private bool _declaredWildcardPathSegment;
 
-        private readonly StringComparison _comparisonType;
-
-        public MatcherContext(
-            IEnumerable<IPattern> includePatterns,
-            IEnumerable<IPattern> excludePatterns,
-            DirectoryInfoBase directoryInfo,
-            StringComparison comparison)
+        public MatcherContext(IEnumerable<IPattern> includePatterns, IEnumerable<IPattern> excludePatterns, DirectoryInfoBase directoryInfo, StringComparison comparison)
         {
             _root = directoryInfo;
-            _files = new List<FilePatternMatch>();
-            _comparisonType = comparison;
-
-            _includePatternContexts = includePatterns.Select(pattern => pattern.CreatePatternContextForInclude()).ToArray();
-            _excludePatternContexts = excludePatterns.Select(pattern => pattern.CreatePatternContextForExclude()).ToArray();
-
+            _files = [];
             _declaredLiteralFolderSegmentInString = new HashSet<string>(StringComparisonHelper.GetStringComparer(comparison));
+
+            IPatternContext[] includePatternContexts = includePatterns.Select(pattern => pattern.CreatePatternContextForInclude()).ToArray();
+            IPatternContext[] excludePatternContexts = excludePatterns.Select(pattern => pattern.CreatePatternContextForExclude()).ToArray();
+
+            _patternContext = new IncludesFirstCompositePatternContext(includePatternContexts, excludePatternContexts);
+        }
+
+        internal MatcherContext(List<IncludeOrExcludeValue<IPattern>> orderedPatterns, DirectoryInfoBase directoryInfo, StringComparison comparison)
+        {
+            _root = directoryInfo;
+            _files = [];
+            _declaredLiteralFolderSegmentInString = new HashSet<string>(StringComparisonHelper.GetStringComparer(comparison));
+
+            IncludeOrExcludeValue<IPatternContext>[] includeOrExcludePatternContexts = orderedPatterns
+                .Select(item => new IncludeOrExcludeValue<IPatternContext>
+                {
+                    Value = item.IsInclude ? item.Value.CreatePatternContextForInclude() : item.Value.CreatePatternContextForExclude(),
+                    IsInclude = item.IsInclude
+                })
+                .ToArray();
+
+            _patternContext = new PreserveOrderCompositePatternContext(includeOrExcludePatternContexts);
         }
 
         public PatternMatchingResult Execute()
@@ -57,7 +68,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
         private void Match(DirectoryInfoBase directory, string? parentRelativePath)
         {
             // Request all the including and excluding patterns to push current directory onto their status stack.
-            PushDirectory(directory);
+            _patternContext.PushDirectory(directory);
             Declare();
 
             var entities = new List<FileSystemInfoBase?>();
@@ -89,7 +100,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             {
                 if (entity is FileInfoBase fileInfo)
                 {
-                    PatternTestResult result = MatchPatternContexts(fileInfo, (pattern, file) => pattern.Test(file));
+                    PatternTestResult result = _patternContext.Test(fileInfo);
                     if (result.IsSuccessful)
                     {
                         _files.Add(new FilePatternMatch(
@@ -102,7 +113,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
                 if (entity is DirectoryInfoBase directoryInfo)
                 {
-                    if (MatchPatternContexts(directoryInfo, (pattern, dir) => pattern.Test(dir)))
+                    if (_patternContext.Test(directoryInfo))
                     {
                         subDirectories.Add(directoryInfo);
                     }
@@ -120,7 +131,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             }
 
             // Request all the including and excluding patterns to pop their status stack.
-            PopDirectory();
+            _patternContext.PopDirectory();
         }
 
         private void Declare()
@@ -129,10 +140,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             _declaredParentPathSegment = false;
             _declaredWildcardPathSegment = false;
 
-            foreach (IPatternContext include in _includePatternContexts)
-            {
-                include.Declare(DeclareInclude);
-            }
+            _patternContext.Declare(DeclareInclude);
         }
 
         private void DeclareInclude(IPathSegment patternSegment, bool isLastSegment)
@@ -167,83 +175,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             else
             {
                 return $"{left}/{right}";
-            }
-        }
-
-        // Used to adapt Test(DirectoryInfoBase) for the below overload
-        private bool MatchPatternContexts<TFileInfoBase>(TFileInfoBase fileinfo, Func<IPatternContext, TFileInfoBase, bool> test)
-        {
-            return MatchPatternContexts(
-                fileinfo,
-                (ctx, file) =>
-                {
-                    if (test(ctx, file))
-                    {
-                        return PatternTestResult.Success(stem: string.Empty);
-                    }
-                    else
-                    {
-                        return PatternTestResult.Failed;
-                    }
-                }).IsSuccessful;
-        }
-
-        private PatternTestResult MatchPatternContexts<TFileInfoBase>(TFileInfoBase fileinfo, Func<IPatternContext, TFileInfoBase, PatternTestResult> test)
-        {
-            PatternTestResult result = PatternTestResult.Failed;
-
-            // If the given file/directory matches any including pattern, continues to next step.
-            foreach (IPatternContext context in _includePatternContexts)
-            {
-                PatternTestResult localResult = test(context, fileinfo);
-                if (localResult.IsSuccessful)
-                {
-                    result = localResult;
-                    break;
-                }
-            }
-
-            // If the given file/directory doesn't match any of the including pattern, returns false.
-            if (!result.IsSuccessful)
-            {
-                return PatternTestResult.Failed;
-            }
-
-            // If the given file/directory matches any excluding pattern, returns false.
-            foreach (IPatternContext context in _excludePatternContexts)
-            {
-                if (test(context, fileinfo).IsSuccessful)
-                {
-                    return PatternTestResult.Failed;
-                }
-            }
-
-            return result;
-        }
-
-        private void PopDirectory()
-        {
-            foreach (IPatternContext context in _excludePatternContexts)
-            {
-                context.PopDirectory();
-            }
-
-            foreach (IPatternContext context in _includePatternContexts)
-            {
-                context.PopDirectory();
-            }
-        }
-
-        private void PushDirectory(DirectoryInfoBase directory)
-        {
-            foreach (IPatternContext context in _includePatternContexts)
-            {
-                context.PushDirectory(directory);
-            }
-
-            foreach (IPatternContext context in _excludePatternContexts)
-            {
-                context.PushDirectory(directory);
             }
         }
     }

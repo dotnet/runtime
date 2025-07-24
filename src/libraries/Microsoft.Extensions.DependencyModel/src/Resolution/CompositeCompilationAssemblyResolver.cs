@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public CompositeCompilationAssemblyResolver(ICompilationAssemblyResolver[] resolvers)
         {
-            ThrowHelper.ThrowIfNull(resolvers);
+            ArgumentNullException.ThrowIfNull(resolvers);
 
             _resolvers = resolvers;
         }

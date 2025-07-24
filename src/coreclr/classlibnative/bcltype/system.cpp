@@ -32,24 +32,6 @@
 
 #include <minipal/cpuid.h>
 
-
-FCIMPL0(UINT32, SystemNative::GetTickCount)
-{
-    FCALL_CONTRACT;
-
-    return ::GetTickCount();
-}
-FCIMPLEND;
-
-FCIMPL0(UINT64, SystemNative::GetTickCount64)
-{
-    FCALL_CONTRACT;
-
-    return ::GetTickCount64();
-}
-FCIMPLEND;
-
-
 extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
 {
     QCALL_CONTRACT;

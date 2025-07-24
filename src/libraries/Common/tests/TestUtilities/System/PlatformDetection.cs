@@ -66,7 +66,6 @@ namespace System
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsS390xProcess => (int)RuntimeInformation.ProcessArchitecture == 5; // Architecture.S390x
         public static bool IsLoongArch64Process => (int)RuntimeInformation.ProcessArchitecture == 6; // Architecture.LoongArch64;
-        public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
         public static bool IsPpc64leProcess => (int)RuntimeInformation.ProcessArchitecture == 8; // Architecture.Ppc64le
         public static bool IsRiscV64Process => (int)RuntimeInformation.ProcessArchitecture == 9; // Architecture.RiscV64;
         public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
@@ -117,9 +116,9 @@ namespace System
                 if (IsReleaseRuntime)
                     return 1;
                 if (IsRiscV64Process)
-                    return IsDebugRuntime? 10 : 2;
+                    return IsDebugRuntime ? 10 : 2;
                 else
-                    return IsDebugRuntime? 5 : 1;
+                    return IsDebugRuntime ? 5 : 1;
             }
         }
 
@@ -142,8 +141,17 @@ namespace System
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
-        public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsWasi || IsAndroid || IsAppleMobile;
+        public static bool IsLinqSpeedOptimized => !IsLinqSizeOptimized;
+        public static bool IsLinqSizeOptimized => s_linqIsSizeOptimized.Value;
+        private static readonly Lazy<bool> s_linqIsSizeOptimized = new Lazy<bool>(ComputeIsLinqSizeOptimized);
+        private static bool ComputeIsLinqSizeOptimized()
+        {
+#if NET
+            return (bool)typeof(Enumerable).GetMethod("get_IsSizeOptimized", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object>());
+#else
+            return false;
+#endif
+        }
 
         public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
@@ -154,6 +162,7 @@ namespace System
         public static bool IsFirefox => IsEnvironmentVariableTrue("IsFirefox");
         public static bool IsChromium => IsEnvironmentVariableTrue("IsChromium");
         public static bool IsNotNodeJS => !IsNodeJS;
+        public static bool IsNotNodeJSOrFirefox => !IsNodeJS && !IsFirefox;
         public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
@@ -538,7 +547,7 @@ namespace System
 
             }
 
-            return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+            return ((IsOSX && !IsNetworkFrameworkEnabled()) || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
         }
 
         private static bool OpenSslGetTlsSupport(SslProtocols protocol)
@@ -560,7 +569,7 @@ namespace System
         private static bool GetTls10Support()
         {
             // on macOS and Android TLS 1.0 is supported.
-            if (IsApplePlatform || IsAndroid)
+            if ((IsApplePlatform && !IsNetworkFrameworkEnabled()) || IsAndroid)
             {
                 return true;
             }
@@ -571,7 +580,7 @@ namespace System
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
 
-            return OpenSslGetTlsSupport(SslProtocols.Tls);
+            return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls);
         }
 
         private static bool GetTls11Support()
@@ -588,12 +597,12 @@ namespace System
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
             // on macOS and Android TLS 1.1 is supported.
-            else if (IsApplePlatform || IsAndroid)
+            else if ((IsApplePlatform && !IsNetworkFrameworkEnabled()) || IsAndroid)
             {
                 return true;
             }
 
-            return OpenSslGetTlsSupport(SslProtocols.Tls11);
+            return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls11);
         }
 #pragma warning restore SYSLIB0039
 
@@ -655,6 +664,31 @@ namespace System
 
             return false;
         }
+
+        /// <summary>
+        /// Determines if Network.framework is enabled for SSL/TLS operations on Apple platforms.
+        /// This can be controlled via AppContext switch or environment variable.
+        /// </summary>
+        /// <returns>True if Network.framework is enabled, false otherwise.</returns>
+        public static bool IsNetworkFrameworkEnabled()
+        {
+            // Check AppContext switch first (highest priority)
+            if (AppContext.TryGetSwitch("System.Net.Security.UseNetworkFramework", out bool isEnabled))
+            {
+                return isEnabled;
+            }
+
+            // Fall back to environment variable
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK");
+            if (!string.IsNullOrEmpty(envVar))
+            {
+                return envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // Default is disabled
+            return false;
+        }
+
 
         private static bool GetSendsCAListByDefault()
         {

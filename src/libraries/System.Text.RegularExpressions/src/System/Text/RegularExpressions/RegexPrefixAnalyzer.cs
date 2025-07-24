@@ -1228,6 +1228,80 @@ namespace System.Text.RegularExpressions
             return null;
         }
 
+        /// <summary>Finds a positive lookahead node that can be considered to start the pattern.</summary>
+        public static RegexNode? FindLeadingPositiveLookahead(RegexNode node)
+        {
+            RegexNode? positiveLookahead = null;
+            FindLeadingPositiveLookahead(node, ref positiveLookahead);
+            return positiveLookahead;
+
+            // Returns whether to keep examining subsequent nodes in a concatenation.
+            static bool FindLeadingPositiveLookahead(RegexNode node, ref RegexNode? positiveLookahead)
+            {
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    return false;
+                }
+
+                while (true)
+                {
+                    if ((node.Options & RegexOptions.RightToLeft) != 0)
+                    {
+                        return false;
+                    }
+
+                    switch (node.Kind)
+                    {
+                        case RegexNodeKind.PositiveLookaround:
+                            // Got one.
+                            positiveLookahead = node;
+                            return false;
+
+                        case RegexNodeKind.Bol:
+                        case RegexNodeKind.Eol:
+                        case RegexNodeKind.Beginning:
+                        case RegexNodeKind.Start:
+                        case RegexNodeKind.EndZ:
+                        case RegexNodeKind.End:
+                        case RegexNodeKind.Boundary:
+                        case RegexNodeKind.ECMABoundary:
+                        case RegexNodeKind.NegativeLookaround:
+                        case RegexNodeKind.Empty:
+                            // Skip past zero-width nodes.
+                            return true;
+
+                        case RegexNodeKind.Atomic:
+                        case RegexNodeKind.Capture:
+                            // Process the child instead of the group, which adds no semantics for this purpose.
+                            node = node.Child(0);
+                            continue;
+
+                        case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M >= 1:
+                            // Process the child and then stop. We don't know how many times the
+                            // loop will actually repeat, only that it must execute at least once.
+                            FindLeadingPositiveLookahead(node.Child(0), ref positiveLookahead);
+                            return false;
+
+                        case RegexNodeKind.Concatenate:
+                            // Check each child, stopping the search if processing it says we can't process further.
+                            int childCount = node.ChildCount();
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                if (!FindLeadingPositiveLookahead(node.Child(i), ref positiveLookahead))
+                                {
+                                    return false;
+                                }
+                            }
+
+                            return true;
+
+                        default:
+                            return false;
+                    }
+                }
+            }
+        }
+
         /// <summary>Computes the leading anchor of a node.</summary>
         public static RegexNodeKind FindLeadingAnchor(RegexNode node) =>
             FindLeadingOrTrailingAnchor(node, leading: true);
@@ -1263,7 +1337,14 @@ namespace System.Text.RegularExpressions
 
                     case RegexNodeKind.Atomic:
                     case RegexNodeKind.Capture:
-                        // For groups, continue exploring the sole child.
+                    case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when leading && node.M >= 1:
+                    case RegexNodeKind.PositiveLookaround when leading && (node.Options & RegexOptions.RightToLeft) == 0:
+                        // For atomic and capture groups, for the purposes of finding anchors they add no semantics around the child.
+                        // Loops are like atomic and captures for the purposes of finding leading anchors, as long as the loop has
+                        // at least one guaranteed iteration (if its min is 0, any anchors inside might not apply).
+                        // Positive lookaheads are also relevant as long as we're looking for leading anchors, as an anchor
+                        // at the beginning of a starting positive lookahead has the same semantics as the same anchor at the
+                        // beginning of the pattern.
                         node = node.Child(0);
                         continue;
 
@@ -1274,15 +1355,35 @@ namespace System.Text.RegularExpressions
                         {
                             int childCount = node.ChildCount();
                             RegexNode? child = null;
+                            RegexNodeKind bestAnchorFound = RegexNodeKind.Unknown;
                             if (leading)
                             {
                                 for (int i = 0; i < childCount; i++)
                                 {
-                                    if (node.Child(i).Kind is not (RegexNodeKind.Empty or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround))
+                                    RegexNode tmpChild = node.Child(i);
+                                    switch (tmpChild.Kind)
                                     {
-                                        child = node.Child(i);
-                                        break;
+                                        case RegexNodeKind.Empty or RegexNodeKind.NegativeLookaround:
+                                        case RegexNodeKind.PositiveLookaround when ((node.Options | tmpChild.Options) & RegexOptions.RightToLeft) != 0:
+                                            // Skip over zero-width assertions.
+                                            continue;
+
+                                        case RegexNodeKind.PositiveLookaround:
+                                            // Except for positive lookaheads at the beginning of the pattern, as any anchor it has at
+                                            // its beginning can also be used.
+                                            bestAnchorFound = ChooseBetterAnchor(bestAnchorFound, FindLeadingOrTrailingAnchor(tmpChild, leading));
+                                            if (IsBestAnchor(bestAnchorFound))
+                                            {
+                                                return bestAnchorFound;
+                                            }
+
+                                            // Now that we know what anchor might be in the lookahead, skip the zero-width assertion
+                                            // and continue examining subsequent nodes of the concatenation.
+                                            continue;
                                     }
+
+                                    child = tmpChild;
+                                    break;
                                 }
                             }
                             else
@@ -1297,13 +1398,57 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (child is not null)
+                            if (bestAnchorFound is not RegexNodeKind.Unknown)
                             {
+                                // We found a leading anchor in a positive lookahead. If we don't have a child node, then
+                                // just return the anchor we got. If we do have a child node, recur into it to find any anchor
+                                // it has, and then choose the best between that and the lookahead.
+                                Debug.Assert(leading);
+                                return child is not null ?
+                                    ChooseBetterAnchor(bestAnchorFound, FindLeadingAnchor(child)) :
+                                    bestAnchorFound;
+                            }
+                            else if (child is not null)
+                            {
+                                // Loop around to process the child node.
                                 node = child;
                                 continue;
                             }
 
                             goto default;
+
+                            // Decide which of two anchors we'd rather search for, based on which yields the fastest
+                            // search, e.g. Beginning means we only have one place to search, whereas worse Bol could be at the
+                            // start of any line, and even worse Boundary could be at the start or end of any word.
+                            static RegexNodeKind ChooseBetterAnchor(RegexNodeKind anchor1, RegexNodeKind anchor2)
+                            {
+                                return
+                                    anchor1 == RegexNodeKind.Unknown ? anchor2 :
+                                    anchor2 == RegexNodeKind.Unknown ? anchor1 :
+                                    RankAnchorQuality(anchor1) >= RankAnchorQuality(anchor2) ? anchor1 :
+                                    anchor2;
+
+                                static int RankAnchorQuality(RegexNodeKind node) =>
+                                    node switch
+                                    {
+                                        RegexNodeKind.Beginning => 3,
+                                        RegexNodeKind.Start => 3,
+                                        RegexNodeKind.End => 3,
+                                        RegexNodeKind.EndZ => 3,
+
+                                        RegexNodeKind.Bol => 2,
+                                        RegexNodeKind.Eol => 2,
+
+                                        RegexNodeKind.Boundary => 1,
+                                        RegexNodeKind.ECMABoundary => 1,
+
+                                        _ => 0
+                                    };
+                            }
+
+                            static bool IsBestAnchor(RegexNodeKind anchor) =>
+                                // Keep in sync with ChooseBetterAnchor
+                                anchor is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.End or RegexNodeKind.EndZ;
                         }
 
                     case RegexNodeKind.Alternate:

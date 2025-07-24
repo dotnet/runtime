@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
 
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[]? encodedParameters, ICertificatePal? certificatePal)
         {
             int algId = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid.Value!, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
             switch (algId)
@@ -211,8 +211,13 @@ namespace System.Security.Cryptography.X509Certificates
             return keyBlob;
         }
 
-        private static byte[] ConstructDSSPublicKeyCspBlob(byte[] encodedKeyValue, byte[] encodedParameters)
+        private static byte[] ConstructDSSPublicKeyCspBlob(byte[] encodedKeyValue, byte[]? encodedParameters)
         {
+            if (encodedParameters is null)
+            {
+                throw ErrorCode.NTE_BAD_PUBLIC_KEY.ToCryptographicException();
+            }
+
             byte[] decodedKeyValue = DecodeDssKeyValue(encodedKeyValue)!;
 
             byte[] p, q, g;

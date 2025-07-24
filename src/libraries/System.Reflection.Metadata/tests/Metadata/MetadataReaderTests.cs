@@ -2723,6 +2723,7 @@ namespace System.Reflection.Metadata.Tests
                     "add_ED1",
                     "remove_ED1",
                     ".ctor",
+                    ".ctor",
                     "get_PE1",
                     "set_PE1",
                     "get_PE2",

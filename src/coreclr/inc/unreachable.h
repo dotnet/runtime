@@ -8,7 +8,7 @@
 #ifndef __UNREACHABLE_H__
 #define __UNREACHABLE_H__
 
-#if defined(_MSC_VER) || defined(_PREFIX_)
+#if defined(_MSC_VER)
 #define __UNREACHABLE() __assume(0)
 #else
 #define __UNREACHABLE() __builtin_unreachable()

@@ -6,16 +6,16 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Interop
 {
-	[ExpectedNoWarnings]
-	[SkipKeptItemsValidation]
-	class ByteArrayCom
-	{
-		public static void Main ()
-		{
-			TakesByteArray (new byte[] { });
-		}
+    [ExpectedNoWarnings]
+    [SkipKeptItemsValidation]
+    class ByteArrayCom
+    {
+        public static void Main()
+        {
+            TakesByteArray(new byte[] { });
+        }
 
-		[DllImport ("SampleText.dll")]
-		static extern void TakesByteArray (byte[] x);
-	}
+        [DllImport("SampleText.dll")]
+        static extern void TakesByteArray(byte[] x);
+    }
 }

@@ -340,6 +340,7 @@ namespace System.Net.Mime
             public const string Xml = "application/xml";
             public const string XmlDtd = "application/xml-dtd";
             public const string XmlPatch = "application/xml-patch+xml";
+            public const string Yaml = "application/yaml";
             public const string Zip = "application/zip";
         }
         public static partial class Font

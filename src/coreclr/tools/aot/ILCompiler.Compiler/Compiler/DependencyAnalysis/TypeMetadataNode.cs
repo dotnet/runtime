@@ -172,7 +172,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable type: " + _type.ToString();
+            return "Type metadata: " + _type.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)

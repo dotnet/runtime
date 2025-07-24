@@ -10,35 +10,35 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace Mono.Linker.Dataflow
 {
-	public readonly struct GenericArgumentDataFlow
-	{
-		readonly LinkContext _context;
-		readonly MarkStep _markStep;
-		readonly MessageOrigin _origin;
+    public readonly struct GenericArgumentDataFlow
+    {
+        readonly LinkContext _context;
+        readonly MarkStep _markStep;
+        readonly MessageOrigin _origin;
 
-		public GenericArgumentDataFlow (LinkContext context, MarkStep markStep, in MessageOrigin origin)
-		{
-			_context = context;
-			_markStep = markStep;
-			_origin = origin;
-		}
+        public GenericArgumentDataFlow(LinkContext context, MarkStep markStep, in MessageOrigin origin)
+        {
+            _context = context;
+            _markStep = markStep;
+            _origin = origin;
+        }
 
-		public void ProcessGenericArgumentDataFlow (GenericParameter genericParameter, TypeReference genericArgument)
-		{
-			var genericParameterValue = _context.Annotations.FlowAnnotations.GetGenericParameterValue (genericParameter);
-			Debug.Assert (genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
+        public void ProcessGenericArgumentDataFlow(GenericParameter genericParameter, TypeReference genericArgument)
+        {
+            var genericParameterValue = _context.Annotations.FlowAnnotations.GetGenericParameterValue(genericParameter);
+            Debug.Assert(genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
 
-			MultiValue genericArgumentValue = _context.Annotations.FlowAnnotations.GetTypeValueFromGenericArgument (genericArgument);
+            MultiValue genericArgumentValue = _context.Annotations.FlowAnnotations.GetTypeValueFromGenericArgument(genericArgument);
 
-			var diagnosticContext = new DiagnosticContext (_origin, !_context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (_origin.Provider, out _), _context);
-			RequireDynamicallyAccessedMembers (diagnosticContext, genericArgumentValue, genericParameterValue);
-		}
+            var diagnosticContext = new DiagnosticContext(_origin, !_context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(_origin.Provider, out _), _context);
+            RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue);
+        }
 
-		void RequireDynamicallyAccessedMembers (in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
-		{
-			var reflectionMarker = new ReflectionMarker (_context, _markStep, enabled: true);
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (_context, reflectionMarker, diagnosticContext);
-			requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
-		}
-	}
+        void RequireDynamicallyAccessedMembers(in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
+        {
+            var reflectionMarker = new ReflectionMarker(_context, _markStep, enabled: true);
+            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(_context, reflectionMarker, diagnosticContext);
+            requireDynamicallyAccessedMembersAction.Invoke(value, targetValue);
+        }
+    }
 }

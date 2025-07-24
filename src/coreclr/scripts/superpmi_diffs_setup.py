@@ -38,6 +38,7 @@ parser.add_argument("-checked_directory", help="Path to the directory containing
 parser.add_argument("-release_directory", help="Path to the directory containing built release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
 
 is_windows = platform.system() == "Windows"
+is_macos = platform.system() == "Darwin"
 target_windows = True
 
 
@@ -111,10 +112,6 @@ def setup_args(args):
             print("release_directory doesn't exist")
             sys.exit(1)
 
-    if coreclr_args.platform.lower() != "windows" and do_asmdiffs:
-        print("asmdiffs currently only implemented for windows")
-        sys.exit(1)
-
     global target_windows
     target_windows = coreclr_args.platform.lower() == "windows"
 
@@ -132,10 +129,10 @@ def match_jit_files(full_path):
     file_name = os.path.basename(full_path)
 
     if target_windows:
-        if file_name.startswith("clrjit_") and file_name.endswith(".dll") and file_name.find("osx") == -1:
+        if file_name.startswith("clrjit_") and file_name.endswith(".dll"):
             return True
     else:
-        if file_name.startswith("libclrjit_") and file_name.endswith(".so") and file_name.find("_win_") == -1 and file_name.find("_arm_") == -1:
+        if file_name.startswith("libclrjit_") and (file_name.endswith(".so") or file_name.endswith(".dylib")):
             return True
 
     return False
@@ -182,10 +179,12 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
 
             # NOTE: we currently only support running on Windows x86/x64 (we don't pass the target OS)
             RID = None
-            if coreclr_args.arch == "x86":
-                RID = "win-x86"
-            if coreclr_args.arch == "x64":
-                RID = "win-x64"
+            rid_platform = coreclr_args.platform.lower()
+            if rid_platform == "windows":
+                rid_platform = "win"
+
+            rid_arch = coreclr_args.arch
+            RID = f"{rid_platform}-{rid_arch}"
 
             # Set dotnet path to run build
             os.environ["PATH"] = os.path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
@@ -203,13 +202,17 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
         # Details: https://bugs.python.org/issue26660
         print('Ignoring PermissionError: {0}'.format(pe_error))
 
-    jit_analyze_tool = os.path.join(jit_analyze_build_directory, "jit-analyze.exe")
+    jit_analyze_tool = os.path.join(jit_analyze_build_directory, "jit-analyze.exe" if is_windows else "jit-analyze")
     if not os.path.isfile(jit_analyze_tool):
         print('Error: {} not found'.format(jit_analyze_tool))
         return 1
 
-def build_partitions(partitions_dir, bin_path, host_bitness):
+def build_partitions(partitions_dir, do_asmdiffs, bin_path, host_bitness):
     mcs_path = os.path.join(bin_path, "mcs.exe" if is_windows else "mcs")
+    if is_macos:
+        # Hack: the target is arm64, but the build machine is x64. We build SPMI for x64 because of that,
+        # but it exists at a different path.
+        mcs_path = os.path.join(bin_path, "..", "osx.x64.Checked", "mcs")
     assert(os.path.exists(mcs_path))
 
     command = [mcs_path, "-printJITEEVersion"]
@@ -240,7 +243,7 @@ def build_partitions(partitions_dir, bin_path, host_bitness):
 
     elem = ET.fromstring(contents)
 
-    if not target_windows:
+    if not target_windows and not do_asmdiffs:
         targets = [("linux", "x64")]
     elif host_bitness == 64:
         targets = [("windows", "x64"), ("windows", "arm64"), ("linux", "x64"), ("linux", "arm64"), ("osx", "arm64")]
@@ -275,20 +278,20 @@ def main(main_args):
 
     The Helix correlation payload directory is created and populated as follows:
 
-    <source_directory>\payload -- the correlation payload directory
-        -- contains the *.py scripts from <source_directory>\src\coreclr\scripts
+    <source_directory>/payload -- the correlation payload directory
+        -- contains the *.py scripts from <source_directory>/src/coreclr/scripts
         -- contains superpmi.exe, mcs.exe from the target-specific build
-    <source_directory>\payload\base
+    <source_directory>/payload/base
         -- contains the baseline JITs (under checked and release folders)
-    <source_directory>\payload\diff
+    <source_directory>/payload/diff
         -- contains the diff JITs (under checked and release folders)
     For `type == asmdiffs`:
-        <source_directory>\payload\jit-analyze
+        <source_directory>/payload/jit-analyze
             -- contains the self-contained jit-analyze build (from dotnet/jitutils)
-        <source_directory>\payload\git
+        <source_directory>/payload/git
             -- contains a Portable ("xcopy installable") `git` tool, downloaded from:
             https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/git/Git-2.32.0-64-bit.zip
-            This is needed by jit-analyze to do `git diff` on the generated asm. The `<source_directory>\payload\git\cmd`
+            This is needed by jit-analyze to do `git diff` on the generated asm. The `<source_directory>/payload/git/cmd`
             directory is added to the PATH.
             NOTE: this only runs on Windows.
 
@@ -453,7 +456,7 @@ def main(main_args):
     ######## Generate partition information
 
     partitions_dir = os.path.join(correlation_payload_directory, "partitions")
-    build_partitions(partitions_dir, checked_directory if use_checked else release_directory, 64 if coreclr_args.arch == "x64" else 32)
+    build_partitions(partitions_dir, do_asmdiffs, checked_directory if use_checked else release_directory, 64 if coreclr_args.arch in ["x64", "arm64"] else 32)
 
     ######## Set pipeline variables
 

@@ -54,11 +54,11 @@ static MonoComponentMarshalILgen component_func_table = {
 	&ilgen_init_internal,
 	&emit_marshal_ilgen,
 	&ilgen_install_callbacks_mono,
-}; 
+};
 
 
 MonoComponentMarshalILgen*
-mono_component_marshal_ilgen_init (void) 
+mono_component_marshal_ilgen_init (void)
 {
 	return &component_func_table;
 }
@@ -842,7 +842,7 @@ emit_marshal_ptr_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_CONV_IN:
 		/* MS seems to allow this in some cases, ie. bxc #158 */
 		/*
-		if (MONO_TYPE_ISSTRUCT (t->data.type) && !mono_class_from_mono_type_internal (t->data.type)->blittable) {
+		if (MONO_TYPE_ISSTRUCT (m_type_data_get_type (t)) && !mono_class_from_mono_type_internal (m_type_data_get_type (t))->blittable) {
 			char *msg = g_strdup_printf ("Can not marshal 'parameter #%d': Pointers can not reference marshaled structures. Use byref instead.", argnum + 1);
 			cb_to_mono->methodBuilder.emit_exception_marshal_directive (m->mb, msg);
 		}
@@ -1965,7 +1965,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				 * leak the handle. We should move the allocation of the SafeHandle to the
 				 * input marshalling code to prevent that.
 				 */
-				ctor = mono_class_get_method_from_name_checked (t->data.klass, ".ctor", 0, 0, local_error);
+				ctor = mono_class_get_method_from_name_checked (m_type_data_get_klass (t), ".ctor", 0, 0, local_error);
 				if (ctor == NULL || !is_ok (local_error)){
 					cb_to_mono->methodBuilder.emit_exception (mb, "MissingMethodException", "parameterless constructor required");
 					mono_error_cleanup (local_error);
@@ -2003,13 +2003,15 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMethod *ctor = NULL;
 		int intptr_handle_slot;
 
-		if (mono_class_is_abstract (t->data.klass)) {
+		MonoClass *klass_of_t = m_type_data_get_klass (t);
+
+		if (mono_class_is_abstract (klass_of_t)) {
 			cb_to_mono->methodBuilder.emit_byte (mb, CEE_POP);
 			cb_to_mono->methodBuilder.emit_exception_marshal_directive (mb, g_strdup ("Returned SafeHandles should not be abstract"));
 			break;
 		}
 
-		ctor = mono_class_get_method_from_name_checked (t->data.klass, ".ctor", 0, 0, error);
+		ctor = mono_class_get_method_from_name_checked (klass_of_t, ".ctor", 0, 0, error);
 		if (ctor == NULL || !is_ok (error)){
 			mono_error_cleanup (error);
 			cb_to_mono->methodBuilder.emit_byte (mb, CEE_POP);
@@ -2628,7 +2630,7 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (t->type) {
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass == cb_to_mono->class_try_get_handleref_class ())
+		if (m_type_data_get_klass_unchecked (t) == cb_to_mono->class_try_get_handleref_class ())
 			return emit_marshal_handleref_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 		return emit_marshal_vtype_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
@@ -2636,8 +2638,8 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		return emit_marshal_string_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
-		if (cb_to_mono->try_get_safehandle_class () != NULL && t->data.klass &&
-		    cb_to_mono->is_subclass_of_internal (t->data.klass,  cb_to_mono->try_get_safehandle_class (), FALSE))
+		if (cb_to_mono->try_get_safehandle_class () != NULL && m_type_data_get_klass_unchecked (t) &&
+		    cb_to_mono->is_subclass_of_internal (m_type_data_get_klass_unchecked (t),  cb_to_mono->try_get_safehandle_class (), FALSE))
 			return emit_marshal_safehandle_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 		return emit_marshal_object_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);

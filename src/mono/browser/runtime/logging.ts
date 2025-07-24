@@ -105,11 +105,11 @@ export function mono_wasm_stringify_as_error_with_stack (reason: any): string {
 }
 
 export function mono_wasm_trace_logger (log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
-    const origMessage = utf8ToString(message_ptr);
+    const origMessage = message_ptr ? utf8ToString(message_ptr) : "<no message>";
     const isFatal = !!fatal;
-    const domain = utf8ToString(log_domain_ptr);
+    const domain = log_domain_ptr ? utf8ToString(log_domain_ptr) : "";
     const dataPtr = user_data;
-    const log_level = utf8ToString(log_level_ptr);
+    const log_level = log_level_ptr ? utf8ToString(log_level_ptr) : "";
 
     const message = `[MONO] ${origMessage}`;
 

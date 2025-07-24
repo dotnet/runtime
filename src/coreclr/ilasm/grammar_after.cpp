@@ -839,10 +839,6 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 int yylex()
 {
     char* curPos = PENV->curPos;
@@ -1286,9 +1282,6 @@ Just_A_Character:
     PENV->curTok = curTok;
     return(tok);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 /**************************************************************************/
 static char* newString(_In_ __nullterminated const char* str1)

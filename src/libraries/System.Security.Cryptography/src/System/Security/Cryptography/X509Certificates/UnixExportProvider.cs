@@ -13,9 +13,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal abstract class UnixExportProvider : IExportPal
     {
-        internal static readonly PbeParameters s_windowsPbe =
-            new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2000);
-
         private static readonly Oid s_Pkcs12X509CertBagTypeOid = new Oid(Oids.Pkcs12X509CertBagType, null);
 
         protected ICertificatePalCore? _singleCertPal;
@@ -40,7 +37,10 @@ namespace System.Security.Cryptography.X509Certificates
 
         protected abstract byte[] ExportPkcs7();
 
-        protected abstract byte[] ExportPkcs8(ICertificatePalCore certificatePal, ReadOnlySpan<char> password);
+        protected abstract byte[] ExportPkcs8(
+            ICertificatePalCore certificatePal,
+            PbeParameters pbeParameters,
+            ReadOnlySpan<char> password);
 
         public byte[]? Export(X509ContentType contentType, SafePasswordHandle password)
         {
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case X509ContentType.Cert:
                     return ExportX509Der();
                 case X509ContentType.Pfx:
-                    return ExportPfx(password);
+                    return ExportPkcs12(Helpers.Windows3desPbe, password);
                 case X509ContentType.Pkcs7:
                     return ExportPkcs7();
                 case X509ContentType.SerializedCert:
@@ -59,6 +59,12 @@ namespace System.Security.Cryptography.X509Certificates
                 default:
                     throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);
             }
+        }
+
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            PbeParameters pbeParameters = Helpers.MapExportParametersToPbeParameters(exportParameters);
+            return ExportPkcs12(pbeParameters, password);
         }
 
         private byte[]? ExportX509Der()
@@ -80,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates
             return _certs[0].RawData;
         }
 
-        private byte[] ExportPfx(SafePasswordHandle password)
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
         {
             bool gotRef = false;
 
@@ -120,9 +126,9 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
 
-                builder.AddSafeContentsEncrypted(certContainer, passwordSpan, s_windowsPbe);
+                builder.AddSafeContentsEncrypted(certContainer, passwordSpan, exportParameters);
                 builder.AddSafeContentsUnencrypted(keyContainer);
-                builder.SealWithMac(passwordSpan, s_windowsPbe.HashAlgorithm, s_windowsPbe.IterationCount);
+                builder.SealWithMac(passwordSpan, exportParameters.HashAlgorithm, exportParameters.IterationCount);
                 return builder.Encode();
             }
             finally
@@ -147,7 +153,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Span<byte> localKeyIdAttributeValue = stackalloc byte[sizeof(int)];
                     BinaryPrimitives.WriteInt32LittleEndian(localKeyIdAttributeValue, localKeyIdCounter);
                     Pkcs9LocalKeyId keyId = new(localKeyIdAttributeValue);
-                    Pkcs12ShroudedKeyBag keyBag = new(ExportPkcs8(certificatePal, password), skipCopy: true);
+                    Pkcs12ShroudedKeyBag keyBag = new(ExportPkcs8(certificatePal, exportParameters, password), skipCopy: true);
 
                     certBag.Attributes.Add(keyId);
                     keyBag.Attributes.Add(keyId);

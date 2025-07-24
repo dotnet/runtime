@@ -190,6 +190,7 @@
 
     <ItemGroup>
       <ManifestPackages Include="$(PackageSource)/Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.nupkg"
+                        Exclude="$(PackageSource)/Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.symbols.nupkg"
                         MsiVersion="$(MsiVersion)"
                         SupportsMachineArch="%(SupportsMachineArch)" />
     </ItemGroup>

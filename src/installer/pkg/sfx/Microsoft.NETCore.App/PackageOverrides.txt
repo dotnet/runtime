@@ -200,6 +200,7 @@ System.Net.Ping|4.3.0
 System.Net.Primitives|4.3.1
 System.Net.Requests|4.3.0
 System.Net.Security|4.3.2
+System.Net.ServerSentEvents|${ProductVersion}
 System.Net.Sockets|4.3.0
 System.Net.WebHeaderCollection|4.3.0
 System.Net.WebSockets|4.3.0

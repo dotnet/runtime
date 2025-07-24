@@ -36,9 +36,6 @@ class Frame;
 // between the EE and the Debugger.
 //
 //
-typedef BOOL (*HashMapEnumCallback)(HashMap* h,
-                                    void* pData,
-                                    ULONG value);
 
 typedef enum AttachAppDomainEventsEnum
 {

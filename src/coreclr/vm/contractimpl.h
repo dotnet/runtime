@@ -159,31 +159,58 @@ private:
     // token is really a DispatchTokenFat*, and to recover the pointer
     // we just shift left by 1; correspondingly, when storing a
     // DispatchTokenFat* in a DispatchToken, we shift right by 1.
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    static const UINT_PTR MASK_TYPE_ID       = 0x00003FFF;
+#else // FEATURE_CACHED_INTERFACE_DISPATCH
     static const UINT_PTR MASK_TYPE_ID       = 0x00007FFF;
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
     static const UINT_PTR MASK_SLOT_NUMBER   = 0x0000FFFF;
 
     static const UINT_PTR SHIFT_TYPE_ID      = 0x10;
     static const UINT_PTR SHIFT_SLOT_NUMBER  = 0x0;
 
 #ifdef FAT_DISPATCH_TOKENS
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    static const UINT_PTR FAT_TOKEN_FLAG     = 0x40000000;
+#else
     static const UINT_PTR FAT_TOKEN_FLAG     = 0x80000000;
+#endif //FEATURE_CACHED_INTERFACE_DISPATCH
 #endif // FAT_DISPATCH_TOKENS
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    static const UINT_PTR INVALID_TOKEN      = 0x3FFFFFFF;
+#else // FEATURE_CACHED_INTERFACE_DISPATCH
     static const UINT_PTR INVALID_TOKEN      = 0x7FFFFFFF;
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #else //TARGET_64BIT
     static const UINT_PTR MASK_SLOT_NUMBER   = UI64(0x000000000000FFFF);
 
     static const UINT_PTR SHIFT_TYPE_ID      = 0x20;
     static const UINT_PTR SHIFT_SLOT_NUMBER  = 0x0;
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+#ifdef FAT_DISPATCH_TOKENS
+    static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000003FFFFFFF);
+    static const UINT_PTR FAT_TOKEN_FLAG     = UI64(0x4000000000000000);
+    static const UINT_PTR DISPATCH_TOKEN_FLAG= UI64(0x8000000000000000);
+#else
+    static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000007FFFFFFF);
+    static const UINT_PTR DISPATCH_TOKEN_FLAG= UI64(0x8000000000000000);
+#endif // FAT_DISPATCH_TOKENS
+#else // FEATURE_CACHED_INTERFACE_DISPATCH
 #ifdef FAT_DISPATCH_TOKENS
     static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000007FFFFFFF);
     static const UINT_PTR FAT_TOKEN_FLAG     = UI64(0x8000000000000000);
 #else
     static const UINT_PTR MASK_TYPE_ID       = UI64(0x00000000FFFFFFFF);
 #endif // FAT_DISPATCH_TOKENS
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    static const UINT_PTR INVALID_TOKEN      = 0x3FFFFFFFFFFFFFFF;
+#else // FEATURE_CACHED_INTERFACE_DISPATCH
     static const UINT_PTR INVALID_TOKEN      = 0x7FFFFFFFFFFFFFFF;
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #endif //TARGET_64BIT
 
 #ifdef FAT_DISPATCH_TOKENS
@@ -242,12 +269,26 @@ private:
 public:
 
 #ifdef FAT_DISPATCH_TOKENS
-#if !defined(TARGET_64BIT)
-    static const UINT32   MAX_TYPE_ID_SMALL  = 0x00007FFF;
-#else
-    static const UINT32   MAX_TYPE_ID_SMALL  = 0x7FFFFFFF;
-#endif
+    static const UINT32   MAX_TYPE_ID_SMALL  = MASK_TYPE_ID;
 #endif // FAT_DISPATCH_TOKENS
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    //------------------------------------------------------------------------
+    // A Cached Interface DispatchToken uses the low bit to indicate that it is a dispatch token, and not a cache entry
+    static inline BOOL IsCachedInterfaceDispatchToken(UINT_PTR maybeToken)
+    {
+        return maybeToken & 0x1;
+    }
+    static inline DispatchToken FromCachedInterfaceDispatchToken(UINT_PTR token)
+    {
+        return DispatchToken(token >> 1);
+    }
+    static inline UINT_PTR ToCachedInterfaceDispatchToken(DispatchToken token)
+    {
+        return (token.m_token << 1) | 0x1;
+    }
+#endif
+
 
     //------------------------------------------------------------------------
     DispatchToken()

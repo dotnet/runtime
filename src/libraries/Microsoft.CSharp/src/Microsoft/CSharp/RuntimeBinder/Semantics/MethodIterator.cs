@@ -10,6 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed partial class CMemberLookupResults
     {
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public sealed class CMethodIterator
         {
             // Inputs.

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -38,16 +38,14 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
-        [InlineData("JustTypeName", "JustTypeName")]
-        [InlineData("Namespace.TypeName", "TypeName")]
-        [InlineData("Namespace1.Namespace2.TypeName", "TypeName")]
-        [InlineData("Namespace.NotNamespace\\.TypeName", "NotNamespace\\.TypeName")]
-        [InlineData("Namespace1.Namespace2.Containing+Nested", "Nested")]
-        [InlineData("Namespace1.Namespace2.Not\\+Nested", "Not\\+Nested")]
-        [InlineData("NotNamespace1\\.NotNamespace2\\.TypeName", "NotNamespace1\\.NotNamespace2\\.TypeName")]
-        [InlineData("NotNamespace1\\.NotNamespace2\\.Not\\+Nested", "NotNamespace1\\.NotNamespace2\\.Not\\+Nested")]
-        public void GetNameReturnsJustName(string fullName, string expected)
-            => Assert.Equal(expected, TypeNameParserHelpers.GetName(fullName.AsSpan()).ToString());
+        [InlineData("JustTypeName", -1)]
+        [InlineData("Namespace.TypeName", 9)]
+        [InlineData("Namespace1.Namespace2.TypeName", 21)]
+        [InlineData("Namespace..Name", 9)]
+        [InlineData("Namespace...Name", 10)]
+        [InlineData("Namespace..Name.", 15)]
+        public void IndexOfNamespaceDelimiter(string fullName, int expected)
+            => Assert.Equal(expected, TypeNameParserHelpers.IndexOfNamespaceDelimiter(fullName.AsSpan()));
 
         [Theory]
         [InlineData("simple", "simple")]
@@ -68,22 +66,8 @@ namespace System.Reflection.Metadata.Tests
         public void AppendRankOrModifierStringRepresentationAppendsExpectedString(int input, string expected)
         {
             ValueStringBuilder builder = new ValueStringBuilder(initialCapacity: 10);
-            Assert.Equal(expected, TypeNameParserHelpers.GetRankOrModifierStringRepresentation(input, ref builder));
-        }
-
-        [Theory]
-        [InlineData(typeof(List<int>))]
-        [InlineData(typeof(int?))]
-        [InlineData(typeof(List<string>))]
-        [InlineData(typeof(Dictionary<string, DateTime>))]
-        [InlineData(typeof(ValueTuple<bool, short, int, DateTime>))]
-        [InlineData(typeof(ValueTuple<bool, short, int, DateTime, char, ushort, long, sbyte>))]
-        public void GetGenericTypeFullNameReturnsSameStringAsTypeAPI(Type genericType)
-        {
-            TypeName openGenericTypeName = TypeName.Parse(genericType.GetGenericTypeDefinition().FullName.AsSpan());
-            ReadOnlySpan<TypeName> genericArgNames = genericType.GetGenericArguments().Select(arg => TypeName.Parse(arg.AssemblyQualifiedName.AsSpan())).ToArray();
-
-            Assert.Equal(genericType.FullName, TypeNameParserHelpers.GetGenericTypeFullName(openGenericTypeName.FullName.AsSpan(), genericArgNames));
+            TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(input, ref builder);
+            Assert.Equal(expected, builder.ToString());
         }
 
         [Theory]

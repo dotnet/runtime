@@ -7,15 +7,15 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	internal interface ITryResolveMetadata
-	{
-		MethodDefinition? TryResolve (MethodReference methodReference);
-		TypeDefinition? TryResolve (TypeReference typeReference);
-		TypeDefinition? TryResolve (ExportedType exportedType);
-	}
+    internal interface ITryResolveMetadata
+    {
+        MethodDefinition? TryResolve(MethodReference methodReference);
+        TypeDefinition? TryResolve(TypeReference typeReference);
+        TypeDefinition? TryResolve(ExportedType exportedType);
+    }
 
-	internal interface ITryResolveAssemblyName
-	{
-		AssemblyDefinition? TryResolve (string assemblyName);
-	}
+    internal interface ITryResolveAssemblyName
+    {
+        AssemblyDefinition? TryResolve(string assemblyName);
+    }
 }

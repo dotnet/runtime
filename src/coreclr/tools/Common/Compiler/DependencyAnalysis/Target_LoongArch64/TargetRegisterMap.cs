@@ -29,8 +29,8 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
             Arg3 = Register.R7;
             Arg4 = Register.R8;
             Arg5 = Register.R9;
-            Arg6 = Register.R11;
-            Arg7 = Register.R12;
+            Arg6 = Register.R10;
+            Arg7 = Register.R11;
             IntraProcedureCallScratch1 = Register.R21;
             Result = Register.R4;
         }

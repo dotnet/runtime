@@ -4,6 +4,7 @@
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -59,6 +60,7 @@ namespace System.Net.Security.Tests
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
 
+
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams(leaveInnerStreamOpen: true);
             using (client)
             using (server)
@@ -90,8 +92,8 @@ namespace System.Net.Security.Tests
                 {
                     // This will read everything into internal buffer. Following ReadAsync will not need IO.
                     task = client.ReadAsync(readBuffer, 0, 4, cts.Token);
-                    client.Dispose();
                     int readLength = await task.ConfigureAwait(false);
+                    client.Dispose();
                     Assert.Equal(4, readLength);
                 }
                 else
@@ -100,6 +102,66 @@ namespace System.Net.Security.Tests
                 }
 
                 await Assert.ThrowsAnyAsync<ObjectDisposedException>(() => client.ReadAsync(readBuffer, cts.Token).AsTask());
+            }
+        }
+
+        [Fact]
+        [OuterLoop("Computationally expensive")]
+        public async Task Dispose_ParallelWithHandshake_ThrowsODE()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            await Parallel.ForEachAsync(System.Linq.Enumerable.Range(0, 10000), cts.Token, async (i, token) =>
+            {
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+
+                using SslStream client = new SslStream(clientStream);
+                using SslStream server = new SslStream(serverStream);
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCertificate,
+                };
+
+                var clientTask = Task.Run(() => client.AuthenticateAsClientAsync(clientOptions, cts.Token));
+                var serverTask = Task.Run(() => server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                // Dispose the instances while the handshake is in progress.
+                client.Dispose();
+                server.Dispose();
+
+                await ValidateExceptionAsync(clientTask);
+                await ValidateExceptionAsync(serverTask);
+            });
+
+            static async Task ValidateExceptionAsync(Task task)
+            {
+                try
+                {
+                    await task;
+                }
+                catch (InvalidOperationException ex) when (ex.StackTrace?.Contains("System.IO.StreamBuffer.WriteAsync") ?? true)
+                {
+                    // Writing to a disposed ConnectedStream (test only, does not happen with NetworkStream)
+                    return;
+                }
+                catch (Exception ex) when (ex
+                    is ObjectDisposedException // disposed locally
+                    or IOException // disposed remotely (received unexpected EOF)
+                    or AuthenticationException) // disposed wrapped in AuthenticationException or error from platform library
+                {
+                    // expected
+                    return;
+                }
             }
         }
     }

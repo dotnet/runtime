@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -309,9 +310,36 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Bundler bundler = CreateBundlerInstance();
             bundler.GenerateBundle(fileSpecs);
 
-            var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : 16;
+            var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : (OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.LoongArch64 ? 16384 : 16);
             bundler.BundleManifest.Files.ForEach(file =>
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
+        }
+
+        [Fact]
+        public void LongFileNames()
+        {
+            var app = sharedTestState.App;
+            List<FileSpec> fileSpecs = new List<FileSpec>
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.Join(
+                    Path.GetDirectoryName(Path.GetRelativePath(app.Location, app.AppDll)),
+                    Path.GetFileNameWithoutExtension(app.AppDll) + new string('a', 260) + Path.GetExtension(app.AppDll))),
+            };
+
+            fileSpecs.AddRange(SingleFileTestApp.GetRuntimeFilesToBundle());
+            Bundler bundler = CreateBundlerInstance();
+            // Debug asserts in the Manifest and Bundler should catch size calculation issues related to long file names
+            var bundledPath = bundler.GenerateBundle(fileSpecs);
+
+            fileSpecs.Add(new FileSpec(app.AppDll, Path.Join(
+                Path.GetDirectoryName(Path.GetRelativePath(app.Location, app.AppDll)),
+                Path.GetFileNameWithoutExtension(app.AppDll) + new string('a', 16385) + Path.GetExtension(app.AppDll))));
+            Assert.Throws<ArgumentException>(() =>
+            {
+                // This should throw an exception due to the long file name exceeding the maximum allowed length
+                bundler.GenerateBundle(fileSpecs);
+            });
         }
 
         [Theory]
@@ -331,25 +359,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Bundler bundler = CreateBundlerInstance(targetOS: OSPlatform.OSX, macosCodesign: shouldCodesign);
             string bundledApp = bundler.GenerateBundle(fileSpecs);
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                // SingleFile is still only signed on MacOS with codesign
-                SigningTests.IsSigned(bundledApp).Should().BeFalse();
-                return;
-            }
-
-            // Check if the file is signed
-            var result = Codesign.Run("-v", bundledApp);
-            if (shouldCodesign)
-            {
-                result.ExitCode.Should().Be(0);
-            }
-            else
-            {
-                result.ExitCode.Should().NotBe(0);
-                // Ensure we can sign it again
-                Codesign.Run("-s -", bundledApp).ExitCode.Should().Be(0);
-            }
+            Assert.Equal(shouldCodesign, SigningTests.IsSigned(bundledApp));
         }
 
         public class SharedTestState : IDisposable

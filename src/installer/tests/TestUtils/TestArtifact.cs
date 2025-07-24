@@ -143,7 +143,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         protected static void CopyRecursive(string sourceDirectory, string destinationDirectory, bool overwrite = false)
         {
-            FileUtils.EnsureDirectoryExists(destinationDirectory);
+            Directory.CreateDirectory(destinationDirectory);
 
             foreach (var dir in Directory.EnumerateDirectories(sourceDirectory))
             {

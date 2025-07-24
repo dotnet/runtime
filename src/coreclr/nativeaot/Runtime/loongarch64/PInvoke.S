@@ -26,11 +26,7 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
 
         // get TLS global variable address
 
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
-#else
         INLINE_GETTHREAD  $a1
-#endif
 
         st.d  $a1, $a0, OFFSETOF__PInvokeTransitionFrame__m_pThread
         st.d  $a0, $a1, OFFSETOF__Thread__m_pTransitionFrame
@@ -42,9 +38,9 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         ld.d  $t0, $a0, OFFSETOF__PInvokeTransitionFrame__m_pThread
         st.d  $zero, $t0, OFFSETOF__Thread__m_pTransitionFrame
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a5
+        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $t0
 
-        bne  $t0, $zero, 0f  // TrapThreadsFlags_None = 0
+        bnez  $t0, 0f  // TrapThreadsFlags_None = 0
         jirl  $r0, $ra, 0
 0:
         // passing transition frame pointer in x0

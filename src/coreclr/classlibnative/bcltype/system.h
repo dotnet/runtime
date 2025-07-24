@@ -37,9 +37,6 @@ private:
 
 public:
     // Functions on the System.Environment class
-    static FCDECL0(UINT32, GetTickCount);
-    static FCDECL0(UINT64, GetTickCount64);
-
     static FCDECL1(VOID,SetExitCode,INT32 exitcode);
     static FCDECL0(INT32, GetExitCode);
 

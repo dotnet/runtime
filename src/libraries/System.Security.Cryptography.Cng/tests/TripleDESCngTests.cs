@@ -52,6 +52,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 192,
                 plainBytesCount,
                 keyName => new TripleDESCng(keyName),
+                cngKeyFunc: null,
                 () => new TripleDESCng(),
                 cipherMode,
                 paddingMode,
@@ -64,7 +65,8 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             SymmetricCngTestHelpers.GetKey_NonExportable(
                 s_cngAlgorithm,
-                keyName => new TripleDESCng(keyName));
+                keyName => new TripleDESCng(keyName),
+                cngKeyFunc: null);
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
@@ -73,7 +75,8 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             SymmetricCngTestHelpers.SetKey_DetachesFromPersistedKey(
                 s_cngAlgorithm,
-                keyName => new TripleDESCng(keyName));
+                keyName => new TripleDESCng(keyName),
+                cngKeyFunc: null);
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
@@ -101,6 +104,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 s_cngAlgorithm,
                 8 * BlockSizeBytes,
                 keyName => new TripleDESCng(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey),
+                cngKeyFunc: null,
                 () => new TripleDESCng());
         }
 
@@ -110,7 +114,7 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             SymmetricCngTestHelpers.VerifyCfbPersistedUnsupportedFeedbackSize(
                 s_cngAlgorithm,
-                keyName => new TripleDESCng(keyName),
+                cngKey => new TripleDESCng(cngKey.KeyName),
                 notSupportedFeedbackSizeInBits: 64);
         }
 
@@ -120,7 +124,11 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             SymmetricCngTestHelpers.VerifyMismatchAlgorithmFails(
                 s_cngAlgorithm,
-                keyName => new AesCng(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider));
+                cngKey => new AesCng(cngKey.KeyName, CngProvider.MicrosoftSoftwareKeyStorageProvider));
+
+            SymmetricCngTestHelpers.VerifyMismatchAlgorithmFails(
+                s_cngAlgorithm,
+                cngKey => new AesCng(cngKey));
         }
 
         public static bool SupportsPersistedSymmetricKeys

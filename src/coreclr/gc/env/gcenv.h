@@ -57,7 +57,7 @@
 
 #define STRESS_LOG_WRITE(facility, level, msg, ...) do {                            \
             if (StressLog::LogOn(facility, level))                                  \
-                StressLog::LogMsg(facility, level, StressLogMsg(msg, __VA_ARGS__)); \
+                StressLog::LogMsg(level, facility, StressLogMsg(msg, __VA_ARGS__)); \
             LOG((facility, level, msg, __VA_ARGS__));                               \
             } while(0)
 

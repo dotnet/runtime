@@ -97,6 +97,8 @@ void Z_INTERNAL x86_check_features(struct x86_cpu_features *features) {
             features->has_avx2 = ebx & 0x20;
         }
 
+        features->has_bmi2 = ebx & 0x8;
+
         // check AVX512 bits if the OS supports saving ZMM registers
         if (features->has_os_save_zmm) {
             features->has_avx512f = ebx & 0x00010000;
@@ -108,7 +110,7 @@ void Z_INTERNAL x86_check_features(struct x86_cpu_features *features) {
                 features->has_avx512vl = ebx & 0x80000000;
             }
             features->has_avx512_common = features->has_avx512f && features->has_avx512dq && features->has_avx512bw \
-              && features->has_avx512vl;
+              && features->has_avx512vl && features->has_bmi2;
             features->has_avx512vnni = ecx & 0x800;
         }
     }

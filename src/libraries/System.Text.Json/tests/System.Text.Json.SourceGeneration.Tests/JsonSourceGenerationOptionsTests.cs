@@ -38,6 +38,20 @@ namespace System.Text.Json.SourceGeneration.Tests
         { }
 
         [Fact]
+        public static void ContextWithStrictSerializerDefaults_GeneratesExpectedOptions()
+        {
+            JsonSerializerOptions expected = new(JsonSerializerDefaults.Strict) { TypeInfoResolver = ContextWithStrictSerializerDefaults.Default };
+            JsonSerializerOptions options = ContextWithStrictSerializerDefaults.Default.Options;
+
+            JsonTestHelper.AssertOptionsEqual(expected, options);
+        }
+
+        [JsonSourceGenerationOptions(JsonSerializerDefaults.Strict)]
+        [JsonSerializable(typeof(PersonStruct))]
+        public partial class ContextWithStrictSerializerDefaults : JsonSerializerContext
+        { }
+
+        [Fact]
         public static void ContextWithWebDefaultsAndOverriddenPropertyNamingPolicy_GeneratesExpectedOptions()
         {
             JsonSerializerOptions expected = new(JsonSerializerDefaults.Web)
@@ -85,6 +99,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 WriteIndented = true,
                 IndentCharacter = '\t',
                 IndentSize = 1,
+                AllowDuplicateProperties = false,
 
                 TypeInfoResolver = ContextWithAllOptionsSet.Default,
             };
@@ -118,7 +133,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
             WriteIndented = true,
             IndentCharacter = '\t',
-            IndentSize = 1)]
+            IndentSize = 1,
+            AllowDuplicateProperties = false)]
         [JsonSerializable(typeof(PersonStruct))]
         public partial class ContextWithAllOptionsSet : JsonSerializerContext
         { }

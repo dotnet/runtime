@@ -1207,5 +1207,91 @@ namespace System.Text.Json.Serialization.Tests
             [JsonStringEnumMemberName("Comma separators not allowed, in flags enums")]
             Value
         }
+
+        [Theory]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.KebabCaseUpper)]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.KebabCaseLower)]
+        [InlineData("\"pAsCaLcAsE\"", EnumWithVaryingNamingPolicies.PascalCase, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"pAsCaLcAsE\"", EnumWithVaryingNamingPolicies.PascalCase, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"pAsCaLcAsE\"", EnumWithVaryingNamingPolicies.PascalCase, JsonKnownNamingPolicy.KebabCaseUpper)]
+        [InlineData("\"pAsCaLcAsE\"", EnumWithVaryingNamingPolicies.PascalCase, JsonKnownNamingPolicy.KebabCaseLower)]
+        [InlineData("\"sNaKe_CaSe_UpPeR\"", EnumWithVaryingNamingPolicies.SNAKE_CASE_UPPER, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"sNaKe_CaSe_LoWeR\"", EnumWithVaryingNamingPolicies.snake_case_lower, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"cAmElCaSe\"", EnumWithVaryingNamingPolicies.camelCase, JsonKnownNamingPolicy.CamelCase)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.CamelCase)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.KebabCaseUpper)]
+        [InlineData("\"a\"", EnumWithVaryingNamingPolicies.A, JsonKnownNamingPolicy.KebabCaseLower)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.CamelCase)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.SnakeCaseUpper)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.SnakeCaseLower)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.KebabCaseUpper)]
+        [InlineData("\"B\"", EnumWithVaryingNamingPolicies.b, JsonKnownNamingPolicy.KebabCaseLower)]
+        public static void StringConverterWithNamingPolicyIsCaseInsensitive(string json, EnumWithVaryingNamingPolicies expectedValue, JsonKnownNamingPolicy namingPolicy)
+        {
+            JsonNamingPolicy policy = namingPolicy switch
+            {
+                JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
+                JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,
+                JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
+                JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
+                JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                _ => throw new ArgumentOutOfRangeException(nameof(namingPolicy)),
+            };
+
+            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter(policy) } };
+
+            EnumWithVaryingNamingPolicies value = JsonSerializer.Deserialize<EnumWithVaryingNamingPolicies>(json, options);
+            Assert.Equal(expectedValue, value);
+        }
+
+        public enum EnumWithVaryingNamingPolicies
+        {
+            SNAKE_CASE_UPPER,
+            snake_case_lower,
+            camelCase,
+            PascalCase,
+            A,
+            b,
+        }
+
+        [Fact]
+        public static void EnumWithOverlappingBitsTests()
+        {
+            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter() } };
+
+            EnumWithOverlappingBits e1 = EnumWithOverlappingBits.BITS01 | EnumWithOverlappingBits.BIT3;
+            string json1 = JsonSerializer.Serialize(e1, options);
+            Assert.Equal("\"BITS01, BIT3\"", json1);
+
+            EnumWithOverlappingBits2 e2 = EnumWithOverlappingBits2.BITS01 | EnumWithOverlappingBits2.BIT3;
+            string json2 = JsonSerializer.Serialize(e2, options);
+            Assert.Equal("\"BITS01, BIT3\"", json2);
+        }
+
+        [Flags]
+        public enum EnumWithOverlappingBits
+        {
+            UNKNOWN = 0,
+            BIT0 = 1,
+            BIT1 = 2,
+            BIT2 = 4,
+            BIT3 = 8,
+            BITS01 = 3,
+        }
+
+        [Flags]
+        public enum EnumWithOverlappingBits2
+        {
+            UNKNOWN = 0,
+            BIT0 = 1,
+            // direct option for bit 1 missing
+            BIT2 = 4,
+            BIT3 = 8,
+            BITS01 = 3,
+        }
     }
 }

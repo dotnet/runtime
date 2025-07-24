@@ -71,6 +71,7 @@ void SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
 int32_t SSL_is_init_finished(SSL* ssl);
 unsigned long SSL_set_options(SSL* ctx, unsigned long options);
 void SSL_set_post_handshake_auth(SSL *s, int val);
+int32_t SSL_set_post_handshake_auth(SSL *s, int val);
 int SSL_session_reused(SSL* ssl);
 int SSL_verify_client_post_handshake(SSL *s);
 const SSL_METHOD* TLS_method(void);

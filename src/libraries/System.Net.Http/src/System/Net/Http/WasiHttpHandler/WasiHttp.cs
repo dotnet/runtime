@@ -69,7 +69,7 @@ namespace WasiHttpWorld {
     }
 
     internal class Option<T> {
-        private static Option<T> none = new ();
+        private static Option<T> none = new();
 
         private Option()
         {

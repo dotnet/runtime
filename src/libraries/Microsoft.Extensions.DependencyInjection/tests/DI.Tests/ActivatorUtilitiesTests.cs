@@ -433,7 +433,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NETCOREAPP
+#if NET
         [InlineData(false)]
 #endif
         public void CreateFactory_CreatesFactoryMethod_KeyedParams_1Injected(bool useDynamicCode)

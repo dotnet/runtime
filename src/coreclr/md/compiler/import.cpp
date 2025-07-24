@@ -931,7 +931,7 @@ STDMETHODIMP RegMeta::FindMethod(
 
     if (szName == NULL)
         IfFailGo(E_INVALIDARG);
-    PREFIX_ASSUME(szName != NULL);
+    _ASSERTE(szName != NULL);
 
     // If this is a global method, then use the <Module> typedef as parent.
     IsGlobalMethodParent(&td);

@@ -265,7 +265,7 @@ namespace Internal.Cryptography.Pal.Windows
                     {
                         if (recipient.Certificate.GetKeyAlgorithm() == Oids.RsaOaep)
                         {
-                            byte[] parameters = recipient.Certificate.GetKeyAlgorithmParameters();
+                            byte[]? parameters = recipient.Certificate.GetKeyAlgorithmParameters();
 
                             if (parameters == null || parameters.Length == 0)
                             {

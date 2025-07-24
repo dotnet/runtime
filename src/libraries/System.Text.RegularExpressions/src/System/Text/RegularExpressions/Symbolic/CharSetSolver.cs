@@ -18,9 +18,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>BDD for each ASCII character that returns true for that one character.</summary>
         /// <remarks>This cache is shared amongst all CharSetSolver instances and is accessed in a thread-safe manner.</remarks>
         private static readonly BDD?[] s_asciiCache = new BDD[128];
-        /// <summary>BDD that returns true for every non-ASCII character.</summary>
-        /// <remarks>This instance is shared amongst all CharSetSolver instances and is accessed in a thread-safe manner.</remarks>
-        private static BDD? s_nonAscii;
 
         /// <summary>Cache of BDD instances created by this solver.</summary>
         /// <remarks>
@@ -37,12 +34,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// A well-crafted character class could otherwise cause execution time to be exponential.
         /// </remarks>
         private readonly Dictionary<(int op, BDD a, BDD? b), BDD> _operationCache = new(); // op is BooleanOperation; using int to reuse generic instantiation with _bddCache
-
-        /// <summary>Gets a BDD that contains every non-ASCII character.</summary>
-        public BDD NonAscii =>
-            s_nonAscii ??
-            Interlocked.CompareExchange(ref s_nonAscii, CreateBDDFromRange('\x80', '\uFFFF'), null) ??
-            s_nonAscii;
 
         /// <summary>Creates a BDD that contains only the specified character.</summary>
         public BDD CreateBDDFromChar(char c)

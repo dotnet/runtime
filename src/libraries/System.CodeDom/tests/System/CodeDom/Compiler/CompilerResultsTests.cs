@@ -28,7 +28,7 @@ namespace System.CodeDom.Compiler.Tests
             Assert.Same(tempFiles, results.TempFiles);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void CompiledAssembly_GetWithPathToAssemblySet_ReturnsExpectedAssembly()
         {
             var results = new CompilerResults(null) { PathToAssembly = AssemblyPathHelper.GetAssemblyLocation(typeof(CompilerResultsTests).Assembly) };

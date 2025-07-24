@@ -121,7 +121,7 @@ namespace System.Net.Mime.Tests
             string encodeStringResult = streamForEncodeString.GetEncodedString();
 
             byte[] bytes = Encoding.UTF8.GetBytes(value);
-            streamForEncodeBytes.EncodeBytes(bytes, 0, bytes.Length);
+            streamForEncodeBytes.EncodeBytes(bytes);
             string encodeBytesResult = streamForEncodeBytes.GetEncodedString();
 
             Assert.Equal(encodeBytesResult, encodeStringResult);

@@ -18,10 +18,10 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public async Task Empty_ProducesEmpty()
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
         {
-            await AssertEqual(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<object>().OfType<string>());
-            await AssertEqual(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<object>().OfType<int>());
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<object>().OfType<string>());
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<object>().OfType<int>());
         }
 
         [Fact]

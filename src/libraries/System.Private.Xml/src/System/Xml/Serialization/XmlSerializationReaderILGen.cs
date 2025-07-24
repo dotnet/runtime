@@ -23,10 +23,9 @@ namespace System.Xml.Serialization
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
         // Mapping name->id_XXXNN field
         private readonly Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
-        private Dictionary<string, EnumMapping>? _enums;
         private int _nextIdNumber;
 
-        internal Dictionary<string, EnumMapping> Enums => _enums ??= new Dictionary<string, EnumMapping>();
+        internal Dictionary<string, EnumMapping> Enums => field ??= new Dictionary<string, EnumMapping>();
 
         private static readonly string[] s_checkTypeString = new string[] { "checkType" };
         private static readonly Type[] s_boolType = new Type[] { typeof(bool) };
@@ -2949,14 +2948,14 @@ namespace System.Xml.Serialization
 
             if (isNullable)
             {
-                ilg.ExitScope();    // if(!ReadNull()) { ExitScope
+                ilg.ExitScope();    // if (!ReadNull()) { ExitScope
                 ilg.Else();         // } else { EnterScope
                 ilg.EnterScope();
                 member.IsNullable = true;
                 WriteMemberBegin(members);
                 WriteMemberEnd(members);
             }
-            ilg.ExitScope();    // if(!ReadNull())/else ExitScope
+            ilg.ExitScope();    // if (!ReadNull())/else ExitScope
             ilg.EndIf();
         }
 

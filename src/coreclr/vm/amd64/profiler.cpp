@@ -156,7 +156,7 @@ ProfileArgIterator::ProfileArgIterator(MetaSig * pSig, void * platformSpecificHa
             EECodeInfo codeInfo((PCODE)pData->ip);
 
             // We want to pass the caller SP here.
-            pData->hiddenArg = EECodeManager::GetExactGenericsToken((SIZE_T)(pData->profiledRsp), &codeInfo);
+            pData->hiddenArg = EECodeManager::GetExactGenericsToken((TADDR)(pData->probeRsp), (TADDR)(pData->rbp), &codeInfo);
         }
     }
 }

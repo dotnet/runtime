@@ -1,0 +1,18 @@
+parameters:
+  mono: false
+  coreclr: false
+  monoAot: false
+
+jobs:
+  # build mono + monoAot
+  - template: /eng/pipelines/performance/templates/perf-mono-build-jobs.yml
+    parameters:
+      mono_arm64: ${{ parameters.mono }}
+      monoAot_arm64: ${{ parameters.monoAot }}
+
+  - ${{ if eq(parameters.coreclr, true) }}:
+    # build coreclr and libraries
+    - template: /eng/pipelines/performance/templates/perf-coreclr-build-jobs.yml
+      parameters:
+        linux_arm64: true
+        windows_arm64: true

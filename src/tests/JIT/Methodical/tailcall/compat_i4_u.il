@@ -8,13 +8,15 @@
   .ver 4:0:0:0
 }
 .assembly ASSEMBLY_NAME { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern xunit.core {}
 .namespace JitTest_compat_i4_u
 {
   .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static 
+    .method private hidebysig static
             int32 Method1() il managed
     {
       // Code size       93 (0x5d)
@@ -41,7 +43,7 @@
       IL_005c:  ret
     } // end of method Test::Method1
 
-    .method private hidebysig static 
+    .method private hidebysig static
             native unsigned int Method2() il managed
     {
       // Code size       98 (0x62)
@@ -69,12 +71,15 @@
       IL_0061:  ret
     } // end of method Test::Method2
 
-    .method public hidebysig static 
+    .method public hidebysig static
             int32 Main() il managed
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+          string('https://github.com/dotnet/runtime/issues/91923')
+          type([TestLibrary]TestLibrary.PlatformDetection)
+          string[1] ('IsAppleMobile')
+      }
       .entrypoint
       // Code size       40 (0x28)
       .maxstack  2
@@ -99,7 +104,7 @@
       IL_0027:  ret
     } // end of method Test::Main
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() il managed
     {
       // Code size       7 (0x7)

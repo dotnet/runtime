@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace System.IO.Enumeration
 {
@@ -11,6 +12,9 @@ namespace System.IO.Enumeration
     /// </summary>
     public unsafe ref partial struct FileSystemEntry
     {
+        // A reasonable size for a decoding buffer. If it's not enough, we fall back to allocating a string.
+        // Some filesystem can have filenames larger than that.
+        private const int DecodedNameBufferLength = 256;
         private Interop.Sys.DirectoryEntry _directoryEntry;
         private bool _isDirectory;
         private FileStatus _status;
@@ -19,10 +23,10 @@ namespace System.IO.Enumeration
         private ReadOnlySpan<char> _fileName;
         private FileNameBuffer _fileNameBuffer;
 
-        // Wrap the fixed buffer to workaround visibility issues in api compat verification
+        [InlineArray(DecodedNameBufferLength)]
         private struct FileNameBuffer
         {
-            internal fixed char _buffer[Interop.Sys.DirectoryEntry.NameBufferSize];
+            internal char _char0;
         }
 
         internal static FileAttributes Initialize(
@@ -95,7 +99,9 @@ namespace System.IO.Enumeration
             {
                 if (_directoryEntry.NameLength != 0 && _fileName.Length == 0)
                 {
-                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer._buffer[0], Interop.Sys.DirectoryEntry.NameBufferSize);
+                    // Use unsafe API to create the Span to allow it to escape. It is safe as long as
+                    // the whole FileSystemEntry is never copied.
+                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer._char0, DecodedNameBufferLength);
                     _fileName = _directoryEntry.GetName(buffer);
                 }
 

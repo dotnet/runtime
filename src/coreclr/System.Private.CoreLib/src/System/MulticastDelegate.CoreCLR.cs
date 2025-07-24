@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System
 {
@@ -144,7 +145,7 @@ namespace System
 
         private static bool TrySetSlot(object?[] a, int index, object o)
         {
-            if (a[index] == null && Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
+            if (a[index] == null && Interlocked.CompareExchange(ref a[index], o, null) == null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.
@@ -164,10 +165,10 @@ namespace System
             return false;
         }
 
-        private MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
+        private unsafe MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks((RuntimeType)GetType()));
+            MulticastDelegate result = Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(RuntimeHelpers.GetMethodTable(this)));
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them

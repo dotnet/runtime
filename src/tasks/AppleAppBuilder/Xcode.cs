@@ -177,7 +177,7 @@ internal sealed class Xcode
         IEnumerable<string> excludes,
         string workspace,
         string binDir,
-        string monoInclude,
+        string[] monoInclude,
         bool preferDylibs,
         bool useConsoleUiTemplate,
         bool forceAOT,
@@ -250,7 +250,7 @@ internal sealed class Xcode
         IEnumerable<string> excludes,
         string workspace,
         string binDir,
-        string monoInclude,
+        string[] monoInclude,
         bool preferDylibs,
         bool useConsoleUiTemplate,
         bool forceAOT,
@@ -347,7 +347,8 @@ internal sealed class Xcode
             .Replace("%ProjectName%", projectName)
             .Replace("%AppResources%", appResources)
             .Replace("%MainSource%", nativeMainSource)
-            .Replace("%MonoInclude%", monoInclude)
+            .Replace("%HasMonoIncludes%", monoInclude.Length > 0 ? "TRUE" : "FALSE")
+            .Replace("%MonoInclude%", string.Join(" ", monoInclude.Select(h => $"\"{h}\"")))
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
 
         string toLink = "";

@@ -51,10 +51,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteNumber(string propertyName, decimal value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteNumber(propertyName.AsSpan(), value);
         }
 

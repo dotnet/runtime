@@ -14,4 +14,7 @@
     <Compile Include="TypeIntrinsics.IsAssignableTo.cs" />
     <Compile Include="TypeIntrinsics.GetEnumUnderlyingType.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
 </Project>

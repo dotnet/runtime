@@ -3,6 +3,7 @@
 //
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
@@ -43,6 +44,52 @@ namespace JIT.HardwareIntrinsics.X86
             value = Math.Max(value, short.MinValue);
             value = Math.Min(value, short.MaxValue);
             return value != z;
+        }
+
+        public static long MoveMask<T>(T[] x)
+            where T : IBinaryInteger<T>
+        {
+            long result = 0;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                if (T.LeadingZeroCount(x[i]) == T.Zero)
+                {
+                    result |= (1L << i);
+                }
+            }
+
+            return result;
+        }
+
+        public static long MoveMask(float[] x)
+        {
+            long result = 0;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                if (float.IsNegative(x[i]))
+                {
+                    result |= (1L << i);
+                }
+            }
+
+            return result;
+        }
+
+        public static long MoveMask(double[] x)
+        {
+            long result = 0;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                if (double.IsNegative(x[i]))
+                {
+                    result |= (1L << i);
+                }
+            }
+
+            return result;
         }
 
         public static ushort SumAbsoluteDifferences(byte[] left, byte[] right, int i)

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetFrameworkMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetFrameworkCurrent);$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -30,16 +30,15 @@
     <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\IndexTests.cs">
       <Link>System\IndexTests.cs</Link>
     </Compile>
-  </ItemGroup>
-
-  <!-- Targetting  NetFramework & Netstandard 2.0 -->
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
-    <Compile Include="..\..\Common\tests\System\Runtime\CompilerServices\RuntimeHelpers.cs">
-      <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\Text\Unicode\Utf8Tests.cs">
+      <Link>System\Text\Unicode\Utf8Tests.cs</Link>
     </Compile>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="..\..\Common\tests\System\Runtime\CompilerServices\RuntimeHelpers.cs" Link="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <ProjectReference Include="..\src\Microsoft.Bcl.Memory.csproj" />
   </ItemGroup>
 

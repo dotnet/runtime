@@ -2159,7 +2159,7 @@ namespace System.Tests
             }
         }
 
-        private static byte[] timeZoneFileContents = new byte[]
+        private static byte[] s_timeZoneFileContents = new byte[]
         {
             //
             // Start of v1 Header
@@ -2274,7 +2274,7 @@ namespace System.Tests
             string zoneFilePath = Path.GetTempPath() + Path.GetRandomFileName();
             using (FileStream fs = new FileStream(zoneFilePath, FileMode.Create))
             {
-                fs.Write(timeZoneFileContents.AsSpan());
+                fs.Write(s_timeZoneFileContents.AsSpan());
 
                 // Append the POSIX rule
                 fs.WriteByte(0x0A);
@@ -2314,6 +2314,33 @@ namespace System.Tests
             {
                 try { File.Delete(zoneFilePath); } catch { } // don't fail the test if we couldn't delete the file.
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void ArbitraryTZ_UsedAsLocal()
+        {
+            const string tzId = "America/Monterrey";
+            const string tzPath = "/usr/share/zoneinfo/" + tzId;
+
+            if (!File.Exists(tzPath))
+            {
+                throw new SkipTestException($"The file {tzPath} does not exist.");
+            }
+
+            string tmp = Path.GetTempPath() + Path.GetRandomFileName();
+            File.WriteAllBytes(tmp, File.ReadAllBytes(tzPath));
+
+            ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
+            psi.Environment.Add("TZ", tzPath);
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TimeZoneInfo tzi = TimeZoneInfo.GetSystemTimeZones().FirstOrDefault(t => t.Id == tzId);
+
+                Assert.NotNull(tzi);
+                Assert.Equal(tzi.Id, TimeZoneInfo.Local.Id);
+            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

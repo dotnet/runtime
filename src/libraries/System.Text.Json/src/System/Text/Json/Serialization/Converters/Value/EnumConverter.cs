@@ -113,14 +113,14 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.Number when (_converterOptions & EnumConverterOptions.AllowNumbers) != 0:
                     switch (s_enumTypeCode)
                     {
-                        case TypeCode.Int32 when reader.TryGetInt32(out int int32): return Unsafe.As<int, T>(ref int32);
-                        case TypeCode.UInt32 when reader.TryGetUInt32(out uint uint32): return Unsafe.As<uint, T>(ref uint32);
-                        case TypeCode.Int64 when reader.TryGetInt64(out long int64): return Unsafe.As<long, T>(ref int64);
-                        case TypeCode.UInt64 when reader.TryGetUInt64(out ulong uint64): return Unsafe.As<ulong, T>(ref uint64);
-                        case TypeCode.Byte when reader.TryGetByte(out byte ubyte8): return Unsafe.As<byte, T>(ref ubyte8);
-                        case TypeCode.SByte when reader.TryGetSByte(out sbyte byte8): return Unsafe.As<sbyte, T>(ref byte8);
-                        case TypeCode.Int16 when reader.TryGetInt16(out short int16): return Unsafe.As<short, T>(ref int16);
-                        case TypeCode.UInt16 when reader.TryGetUInt16(out ushort uint16): return Unsafe.As<ushort, T>(ref uint16);
+                        case TypeCode.Int32 when reader.TryGetInt32(out int int32): return (T)(object)int32;
+                        case TypeCode.UInt32 when reader.TryGetUInt32(out uint uint32): return (T)(object)uint32;
+                        case TypeCode.Int64 when reader.TryGetInt64(out long int64): return (T)(object)int64;
+                        case TypeCode.UInt64 when reader.TryGetUInt64(out ulong uint64): return (T)(object)uint64;
+                        case TypeCode.Byte when reader.TryGetByte(out byte ubyte8): return (T)(object)ubyte8;
+                        case TypeCode.SByte when reader.TryGetSByte(out sbyte byte8): return (T)(object)byte8;
+                        case TypeCode.Int16 when reader.TryGetInt16(out short int16): return (T)(object)int16;
+                        case TypeCode.UInt16 when reader.TryGetUInt16(out ushort uint16): return (T)(object)uint16;
                     }
                     break;
             }
@@ -350,51 +350,43 @@ namespace System.Text.Json.Serialization.Converters
 
         private static ulong ConvertToUInt64(T value)
         {
-            switch (s_enumTypeCode)
+            return s_enumTypeCode switch
             {
-                case TypeCode.Int32 or TypeCode.UInt32: return Unsafe.As<T, uint>(ref value);
-                case TypeCode.Int64 or TypeCode.UInt64: return Unsafe.As<T, ulong>(ref value);
-                case TypeCode.Int16 or TypeCode.UInt16: return Unsafe.As<T, ushort>(ref value);
-                default:
-                    Debug.Assert(s_enumTypeCode is TypeCode.SByte or TypeCode.Byte);
-                    return Unsafe.As<T, byte>(ref value);
+                TypeCode.Int32 => (ulong)(int)(object)value,
+                TypeCode.UInt32 => (uint)(object)value,
+                TypeCode.Int64 => (ulong)(long)(object)value,
+                TypeCode.UInt64 => (ulong)(object)value,
+                TypeCode.Int16 => (ulong)(short)(object)value,
+                TypeCode.UInt16 => (ushort)(object)value,
+                TypeCode.SByte => (ulong)(sbyte)(object)value,
+                _ => (byte)(object)value
             };
         }
 
         private static long ConvertToInt64(T value)
         {
             Debug.Assert(s_isSignedEnum);
-            switch (s_enumTypeCode)
+            return s_enumTypeCode switch
             {
-                case TypeCode.Int32: return Unsafe.As<T, int>(ref value);
-                case TypeCode.Int64: return Unsafe.As<T, long>(ref value);
-                case TypeCode.Int16: return Unsafe.As<T, short>(ref value);
-                default:
-                    Debug.Assert(s_enumTypeCode is TypeCode.SByte);
-                    return Unsafe.As<T, sbyte>(ref value);
+                TypeCode.Int32 => (int)(object)value,
+                TypeCode.Int64 => (long)(object)value,
+                TypeCode.Int16 => (short)(object)value,
+                _ => (sbyte)(object)value,
             };
         }
 
         private static T ConvertFromUInt64(ulong value)
         {
-            switch (s_enumTypeCode)
+            return s_enumTypeCode switch
             {
-                case TypeCode.Int32 or TypeCode.UInt32:
-                    uint uintValue = (uint)value;
-                    return Unsafe.As<uint, T>(ref uintValue);
-
-                case TypeCode.Int64 or TypeCode.UInt64:
-                    ulong ulongValue = value;
-                    return Unsafe.As<ulong, T>(ref ulongValue);
-
-                case TypeCode.Int16 or TypeCode.UInt16:
-                    ushort ushortValue = (ushort)value;
-                    return Unsafe.As<ushort, T>(ref ushortValue);
-
-                default:
-                    Debug.Assert(s_enumTypeCode is TypeCode.SByte or TypeCode.Byte);
-                    byte byteValue = (byte)value;
-                    return Unsafe.As<byte, T>(ref byteValue);
+                TypeCode.Int32 => (T)(object)(int)value,
+                TypeCode.UInt32 => (T)(object)(uint)value,
+                TypeCode.Int64 => (T)(object)(long)value,
+                TypeCode.UInt64 => (T)(object)value,
+                TypeCode.Int16 => (T)(object)(short)value,
+                TypeCode.UInt16 => (T)(object)(ushort)value,
+                TypeCode.SByte => (T)(object)(sbyte)value,
+                _ => (T)(object)(byte)value
             };
         }
 
@@ -561,6 +553,13 @@ namespace System.Text.Json.Serialization.Converters
                 enumFields[i] = new EnumFieldInfo(key, kind, originalName, jsonName);
             }
 
+            if (s_isFlagsEnum)
+            {
+                // Perform topological sort for flags enums to ensure values that are supersets of other values come first.
+                // This is important for flags enums to ensure proper parsing and formatting.
+                enumFields = TopologicalSortEnumFields(enumFields);
+            }
+
             return enumFields;
         }
 
@@ -600,7 +599,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 Debug.Assert(JsonName.Equals(other.JsonName, StringComparison.OrdinalIgnoreCase), "The conflicting entry must be equal up to case insensitivity.");
 
-                if (Kind is EnumFieldNameKind.Default || JsonName.Equals(other.JsonName, StringComparison.Ordinal))
+                if (ConflictsWith(this, other))
                 {
                     // Silently discard if the preceding entry is the default or has identical name.
                     return;
@@ -611,13 +610,34 @@ namespace System.Text.Json.Serialization.Converters
                 // Walk the existing list to ensure we do not add duplicates.
                 foreach (EnumFieldInfo conflictingField in conflictingFields)
                 {
-                    if (conflictingField.Kind is EnumFieldNameKind.Default || conflictingField.JsonName.Equals(other.JsonName, StringComparison.Ordinal))
+                    if (ConflictsWith(conflictingField, other))
                     {
                         return;
                     }
                 }
 
                 conflictingFields.Add(other);
+
+                // Determines whether the first field info matches everything that the second field info matches,
+                // in which case the second field info is redundant and doesn't need to be added to the list.
+                static bool ConflictsWith(EnumFieldInfo current, EnumFieldInfo other)
+                {
+                    // The default name matches everything case-insensitively.
+                    if (current.Kind is EnumFieldNameKind.Default)
+                    {
+                        return true;
+                    }
+
+                    // current matches case-sensitively since it's not the default name.
+                    // other matches case-insensitively, so it matches more than current.
+                    if (other.Kind is EnumFieldNameKind.Default)
+                    {
+                        return false;
+                    }
+
+                    // Both are case-sensitive so they need to be identical.
+                    return current.JsonName.Equals(other.JsonName, StringComparison.Ordinal);
+                }
             }
 
             public EnumFieldInfo? GetMatchingField(ReadOnlySpan<char> input)
@@ -644,6 +664,52 @@ namespace System.Text.Json.Serialization.Converters
 
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Performs a topological sort on enum fields to ensure values that are supersets of other values come first.
+        /// </summary>
+        private static EnumFieldInfo[] TopologicalSortEnumFields(EnumFieldInfo[] enumFields)
+        {
+            if (enumFields.Length <= 1)
+            {
+                return enumFields;
+            }
+
+            var indices = new (int negativePopCount, int index)[enumFields.Length];
+            for (int i = 0; i < enumFields.Length; i++)
+            {
+                // We want values with more bits set to come first so negate the pop count.
+                // Keep the index as a second comparand so that sorting stability is preserved.
+                indices[i] = (-PopCount(enumFields[i].Key), i);
+            }
+
+            Array.Sort(indices);
+
+            var sortedFields = new EnumFieldInfo[enumFields.Length];
+            for (int i = 0; i < indices.Length; i++)
+            {
+                // extract the index from the sorted tuple
+                int index = indices[i].index;
+                sortedFields[i] = enumFields[index];
+            }
+
+            return sortedFields;
+        }
+
+        private static int PopCount(ulong value)
+        {
+#if NET
+            return (int)ulong.PopCount(value);
+#else
+            int count = 0;
+            while (value != 0)
+            {
+                value &= value - 1;
+                count++;
+            }
+            return count;
+#endif
         }
 
         private enum EnumFieldNameKind

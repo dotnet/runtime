@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace System.SpanTests
@@ -25,19 +27,101 @@ namespace System.SpanTests
         };
 
         [Fact]
+        public static void EnumerateLines_Default()
+        {
+            // Enumerations over default enumerator should return zero elements
+
+            SpanLineEnumerator enumerator = default;
+            TestGI(enumerator);
+            TestI(enumerator);
+            Assert.Equal("", enumerator.Current.ToString());
+            Assert.False(enumerator.MoveNext());
+            Assert.Equal("", enumerator.Current.ToString());
+
+            static void TestGI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator<ReadOnlySpan<char>>, allows ref struct
+            {
+                Assert.Equal("", enumerator.Current.ToString());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal("", enumerator.Current.ToString());
+
+                Assert.False(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal("", enumerator.Current.ToString());
+                Assert.False(enumerator.MoveNext());
+            }
+
+            static void TestI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator, allows ref struct
+            {
+                try { _ = enumerator.Current; } catch (NotSupportedException) { }
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                try { _ = enumerator.Current; } catch (NotSupportedException) { }
+
+                Assert.False(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                try { _ = enumerator.Current; } catch (NotSupportedException) { }
+                Assert.False(enumerator.MoveNext());
+            }
+        }
+
+        [Fact]
         public static void EnumerateLines_Empty()
         {
             // Enumerations over empty inputs should return a single empty element
 
             var enumerator = Span<char>.Empty.EnumerateLines().GetEnumerator();
+            TestGI(enumerator);
+            TestI(enumerator);
+            Assert.Equal("", enumerator.Current.ToString());
             Assert.True(enumerator.MoveNext());
             Assert.Equal("", enumerator.Current.ToString());
             Assert.False(enumerator.MoveNext());
+            Assert.Equal("", enumerator.Current.ToString());
 
             enumerator = ReadOnlySpan<char>.Empty.EnumerateLines().GetEnumerator();
+            TestGI(enumerator);
+            TestI(enumerator);
+            Assert.Equal("", enumerator.Current.ToString());
             Assert.True(enumerator.MoveNext());
             Assert.Equal("", enumerator.Current.ToString());
             Assert.False(enumerator.MoveNext());
+            Assert.Equal("", enumerator.Current.ToString());
+
+            static void TestGI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator<ReadOnlySpan<char>>, allows ref struct
+            {
+                Assert.Equal("", enumerator.Current.ToString());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal("", enumerator.Current.ToString());
+
+                Assert.True(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal("", enumerator.Current.ToString());
+
+                Assert.False(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal("", enumerator.Current.ToString());
+                Assert.False(enumerator.MoveNext());
+            }
+
+            static void TestI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator, allows ref struct
+            {
+                try { _ = enumerator.Current; } catch (NotSupportedException) { }
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                try { _ = enumerator.Current; } catch (NotSupportedException) { }
+
+                Assert.True(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                try { _ = enumerator.Current; } catch (NotSupportedException) { }
+
+                Assert.False(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                try { _ = enumerator.Current; } catch (NotSupportedException) { }
+                Assert.False(enumerator.MoveNext());
+            }
         }
 
         [Theory]
@@ -70,12 +154,48 @@ namespace System.SpanTests
             List<Range> actualRangesNormalized = new List<Range>();
             foreach (ReadOnlySpan<char> line in input.AsSpan().EnumerateLines())
             {
-                actualRangesNormalized.Add(GetNormalizedRangeFromSubspan(input, line));
+                actualRangesNormalized.Add(GetNormalizedRangeFromSubSpan(input, line));
             }
 
             Assert.Equal(expectedRangesNormalized, actualRangesNormalized);
+            Assert.Equal(expectedRangesNormalized, TestGI(input.AsSpan().EnumerateLines(), input));
 
-            static unsafe Range GetNormalizedRangeFromSubspan<T>(ReadOnlySpan<T> outer, ReadOnlySpan<T> inner)
+            static List<Range> TestGI<TEnumerator>(TEnumerator enumerator, string input)
+                where TEnumerator : IEnumerator<ReadOnlySpan<char>>, allows ref struct
+            {
+                List<Range> actualRangesNormalized = new List<Range>();
+
+                Assert.Equal("", enumerator.Current.ToString());
+                EnumerateLines_TestCurrentI(enumerator);
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal("", enumerator.Current.ToString());
+                EnumerateLines_TestCurrentI(enumerator);
+
+                while (enumerator.MoveNext())
+                {
+                    try { enumerator.Reset(); } catch (NotSupportedException) { }
+                    enumerator.Dispose();
+
+                    actualRangesNormalized.Add(GetNormalizedRangeFromSubSpan(input, enumerator.Current));
+                    EnumerateLines_TestCurrentI(enumerator);
+
+                    try { enumerator.Reset(); } catch (NotSupportedException) { }
+                    enumerator.Dispose();
+                }
+
+                Assert.Equal("", enumerator.Current.ToString());
+                EnumerateLines_TestCurrentI(enumerator);
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal("", enumerator.Current.ToString());
+                EnumerateLines_TestCurrentI(enumerator);
+                Assert.False(enumerator.MoveNext());
+
+                return actualRangesNormalized;
+            }
+
+            static unsafe Range GetNormalizedRangeFromSubSpan<T>(ReadOnlySpan<T> outer, ReadOnlySpan<T> inner)
             {
                 // We can't use MemoryExtensions.Overlaps because it doesn't handle empty spans in the way we need.
 
@@ -158,12 +278,41 @@ namespace System.SpanTests
             span = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(span), span.Length + 4096);
 
             var enumerator = span.EnumerateLines().GetEnumerator();
+            TestGI(enumerator);
+            Assert.Equal(0, enumerator.Current.Length);
             Assert.True(enumerator.MoveNext());
             Assert.Equal(512, enumerator.Current.Length);
 
             enumerator = ((ReadOnlySpan<char>)span).EnumerateLines().GetEnumerator();
+            TestGI(enumerator);
+            Assert.Equal(0, enumerator.Current.Length);
             Assert.True(enumerator.MoveNext());
             Assert.Equal(512, enumerator.Current.Length);
+
+            static void TestGI<TEnumerator>(TEnumerator enumerator)
+                where TEnumerator : IEnumerator<ReadOnlySpan<char>>, allows ref struct
+            {
+                Assert.Equal(0, enumerator.Current.Length);
+                EnumerateLines_TestCurrentI(enumerator);
+
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(512, enumerator.Current.Length);
+                EnumerateLines_TestCurrentI(enumerator);
+
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+
+                Assert.Equal(512, enumerator.Current.Length);
+                EnumerateLines_TestCurrentI(enumerator);
+            }
+        }
+
+        private static void EnumerateLines_TestCurrentI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator, allows ref struct
+        {
+            try { _ = enumerator.Current; } catch (NotSupportedException) { }
         }
     }
 }

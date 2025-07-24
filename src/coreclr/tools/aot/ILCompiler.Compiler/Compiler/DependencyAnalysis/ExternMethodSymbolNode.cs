@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a symbol that is defined externally but modelled as a method
     /// in the DependencyAnalysis infrastructure during compilation
     /// </summary>
-    public sealed class ExternMethodSymbolNode : ExternSymbolNode, IMethodNode
+    public sealed class ExternMethodSymbolNode : ExternFunctionSymbolNode, IMethodNode
     {
         private MethodDesc _method;
 

@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- XCode 11.3 or higher
+- Xcode 11.3 or higher
 - a certificate and provisioning profile if using a device
 - a simulator with a proper device type and OS version.
-Go `XCode > Window > Devices and Simulators` to revise the list of the available simulators and then `"+" button on bottom left > OS Version dropdown selection > Download more simulator runtimes` in case you need to download more simulators.
+Go `Xcode > Window > Devices and Simulators` to revise the list of the available simulators and then `"+" button on bottom left > OS Version dropdown selection > Download more simulator runtimes` in case you need to download more simulators.
 
 ## Building Libs and Tests
 

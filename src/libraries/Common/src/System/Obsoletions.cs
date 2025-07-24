@@ -183,7 +183,7 @@ namespace System
         internal const string X509CtorCertDataObsoleteMessage = "Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.";
         internal const string X509CtorCertDataObsoleteDiagId = "SYSLIB0057";
 
-        internal const string TlsCipherAlgorithmEnumsMessage = "KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.";
+        internal const string TlsCipherAlgorithmEnumsMessage = "KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.";
         internal const string TlsCipherAlgorithmEnumsDiagId = "SYSLIB0058";
 
         internal const string SystemEventsEventsThreadShutdownMessage = "SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead.";
@@ -191,6 +191,12 @@ namespace System
 
         internal const string Rfc2898DeriveBytesCtorMessage = "The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.";
         internal const string Rfc2898DeriveBytesCtorDiagId = "SYSLIB0060";
+
+        internal const string QueryableMinByMaxByTSourceObsoleteMessage = "The Queryable MinBy and MaxBy taking an IComparer<TSource> are obsolete. Use the new ones that take an IComparer<TKey>.";
+        internal const string QueryableMinByMaxByTSourceObsoleteDiagId = "SYSLIB0061";
+
+        internal const string XsltSettingsEnableScriptMessage = "XSLT Script blocks are not supported.";
+        internal const string XsltSettingsEnableScriptDiagId = "SYSLIB0062";
 
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.

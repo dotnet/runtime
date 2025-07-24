@@ -32,13 +32,8 @@
   <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="true" featuredefault="true">
     <type fullname="System.Threading.Tasks.Task">
       <property name="ParentForDebugger" />
-      <property name="StateFlagsForDebugger" />
-      <property name="StateFlags" />
       <method name="GetDelegateContinuationsForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
-    </type>
-    <type fullname="System.Threading.Timer">
-      <property name="AllTimers" />
     </type>
     <type fullname="System.Threading.Tasks.TaskScheduler">
       <method name="GetScheduledTasksForDebugger" />

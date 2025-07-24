@@ -366,7 +366,7 @@ ISpGrammarResourceLoader
                 // Note that even if there are no threading issues, baseUri is not supported with SAPI 5.1.
                 throw new NotSupportedException(SR.Get(SRID.NotSupportedWithThisVersionOfSAPI));
             }
-            Helpers.ThrowIfNull(wordUnits, nameof(wordUnits));
+            ArgumentNullException.ThrowIfNull(wordUnits);
 
             foreach (RecognizedWordUnit wordUnit in wordUnits)
             {
@@ -389,7 +389,7 @@ ISpGrammarResourceLoader
                 // Note that even if there are no threading issues, baseUri is not supported with SAPI 5.1.
                 throw new NotSupportedException(SR.Get(SRID.NotSupportedWithThisVersionOfSAPI));
             }
-            Helpers.ThrowIfNull(wordUnits, nameof(wordUnits));
+            ArgumentNullException.ThrowIfNull(wordUnits);
 
             foreach (RecognizedWordUnit wordUnit in wordUnits)
             {
@@ -1804,7 +1804,7 @@ ISpGrammarResourceLoader
         // Do some basic parameter validation on a passed in Grammar
         private void ValidateGrammar(Grammar grammar, params GrammarState[] validStates)
         {
-            Helpers.ThrowIfNull(grammar, nameof(grammar));
+            ArgumentNullException.ThrowIfNull(grammar);
 
             // Check if grammar is in a valid state for the caller.
             foreach (GrammarState state in validStates)
@@ -2101,7 +2101,7 @@ ISpGrammarResourceLoader
             lock (_thisObjectLock)
             {
                 SpeechEvent speechEvent = eventData as SpeechEvent;
-                if (!_disposed && eventData != null)
+                if (!_disposed && speechEvent != null)
                 {
                     switch (speechEvent.EventId)
                     {

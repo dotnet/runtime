@@ -20,7 +20,7 @@ add_executable(
 %Defines%
 
 if(NOT %UseNativeAOTRuntime%)
-    include_directories("%MonoInclude%")
+    include_directories(%MonoInclude%)
 endif()
 
 set_target_properties(%ProjectName% PROPERTIES
@@ -61,6 +61,7 @@ target_link_libraries(
     %ProjectName%
     PRIVATE
     "-framework Foundation"
+    "-framework Network"
     "-framework Security"
     "-framework CryptoKit"
     "-framework UIKit"

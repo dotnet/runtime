@@ -212,6 +212,20 @@ namespace ILCompiler.DependencyAnalysis
         {
             slot = Array.IndexOf(_layout, entry);
 
+            // If we're looking for a necessary type handle and it doesn't exist, check for a constructed type handle.
+            if (slot < 0 && entry is NecessaryTypeHandleGenericLookupResult necessaryLookup)
+            {
+                for (int i = 0; i < _layout.Length; i++)
+                {
+                    if (_layout[i] is TypeHandleGenericLookupResult other
+                        && other.Type == necessaryLookup.Type)
+                    {
+                        slot = i;
+                        return true;
+                    }
+                }
+            }
+
             // If this is a slot we should discard, respond false
             if (slot < 0 && Array.IndexOf(_discardedSlots, entry) >= 0)
                 return false;

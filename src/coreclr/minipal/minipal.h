@@ -75,4 +75,53 @@ public:
     // Return:
     //  true if it succeeded, false if it failed
     static bool ReleaseRWMapping(void* pStart, size_t size);
+
+    // Create a template for use by AllocateThunksFromTemplate
+    // Parameters:
+    //  pImageTemplate    - Address of start of template in the image for coreclr. (All addresses passed to the api in a process must be from the same module, if any call uses a pImageTemplate, all calls MUST)
+    //  templateSize      - Size of the template
+    //  codePageGenerator - If the system is unable to use pImageTemplate, use this parameter to generate the code page instead
+    //
+    // Return:
+    //  NULL if creating the template fails
+    //  Non-NULL, a pointer to the template
+    static void* CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
+
+    // Indicate if the AllocateThunksFromTemplate function respects the pStart address passed to AllocateThunksFromTemplate on this platform
+    // Return:
+    //  true if the parameter is respected, false if not
+    static bool AllocateThunksFromTemplateRespectsStartAddress();
+
+    // Allocate thunks from template
+    // Parameters:
+    //  pTemplate    - Value returned from CreateTemplate
+    //  templateSize - Size of the templates block in the image
+    //  pStart       - Where to allocate (Specify NULL if no particular address is required). If non-null, this must be an address returned by ReserveDoubleMappedMemory
+    //  dataPageGenerator - If non-null fill the data page of the template using this function. This function is called BEFORE the code page is mapped into memory.
+    //
+    // Return:
+    //  NULL if the allocation fails
+    //  Non-NULL, a pointer to the allocated region.
+    static void* AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
+
+    // Free thunks allocated from template
+    // Parameters:
+    //  pThunks      - Address previously returned by AllocateThunksFromTemplate
+    //  templateSize - Size of the templates block in the image
+    // Return:
+    //  true if it succeeded, false if it failed
+    static bool FreeThunksFromTemplate(void* thunks, size_t templateSize);
 };
+
+#if defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+EXTERN_C uint8_t _InterlockedCompareExchange128(int64_t volatile *, int64_t, int64_t, int64_t *);
+
+#if defined(HOST_WINDOWS)
+#pragma intrinsic(_InterlockedCompareExchange128)
+#endif
+
+FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
+{
+    return _InterlockedCompareExchange128(pDst, iValueHigh, iValueLow, pComparandAndResult);
+}
+#endif // defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)

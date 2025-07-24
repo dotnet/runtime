@@ -14,22 +14,22 @@ using Microsoft.CodeAnalysis.Editing;
 
 namespace ILLink.CodeFix
 {
-	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (RequiresUnreferencedCodeCodeFixProvider)), Shared]
-	public class RequiresDynamicCodeCodeFixProvider : BaseAttributeCodeFixProvider
-	{
-		public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresDynamicCode));
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RequiresUnreferencedCodeCodeFixProvider)), Shared]
+    public class RequiresDynamicCodeCodeFixProvider : BaseAttributeCodeFixProvider
+    {
+        public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresDynamicCode));
 
-		public sealed override ImmutableArray<string> FixableDiagnosticIds => SupportedDiagnostics.Select (dd => dd.Id).ToImmutableArray ();
+        public sealed override ImmutableArray<string> FixableDiagnosticIds => SupportedDiagnostics.Select(dd => dd.Id).ToImmutableArray();
 
-		private protected override LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.RequiresDynamicCodeCodeFixTitle), Resources.ResourceManager, typeof (Resources));
+        private protected override LocalizableString CodeFixTitle => new LocalizableResourceString(nameof(Resources.RequiresDynamicCodeCodeFixTitle), Resources.ResourceManager, typeof(Resources));
 
-		private protected override string FullyQualifiedAttributeName => RequiresDynamicCodeAnalyzer.FullyQualifiedRequiresDynamicCodeAttribute;
+        private protected override string FullyQualifiedAttributeName => RequiresDynamicCodeAnalyzer.FullyQualifiedRequiresDynamicCodeAttribute;
 
-		private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor | AttributeableParentTargets.Class;
+        private protected override AttributeableParentTargets AttributableParentTargets => AttributeableParentTargets.MethodOrConstructor | AttributeableParentTargets.Class;
 
-		public sealed override Task RegisterCodeFixesAsync (CodeFixContext context) => BaseRegisterCodeFixesAsync (context);
+        public sealed override Task RegisterCodeFixesAsync(CodeFixContext context) => BaseRegisterCodeFixesAsync(context);
 
-		protected override SyntaxNode[] GetAttributeArguments (ISymbol? attributableSymbol, ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, Diagnostic diagnostic) =>
-			RequiresHelpers.GetAttributeArgumentsForRequires (targetSymbol, syntaxGenerator, HasPublicAccessibility (attributableSymbol));
-	}
+        protected override SyntaxNode[] GetAttributeArguments(ISymbol? attributableSymbol, ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, Diagnostic diagnostic) =>
+            RequiresHelpers.GetAttributeArgumentsForRequires(targetSymbol, syntaxGenerator, HasPublicAccessibility(attributableSymbol));
+    }
 }

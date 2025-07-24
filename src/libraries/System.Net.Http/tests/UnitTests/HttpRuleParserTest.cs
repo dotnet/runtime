@@ -164,6 +164,10 @@ namespace System.Net.Http.Tests
             // only ASCII chars allowed in quoted-pair
             AssertGetQuotedPairLength("\\\u00FC", 0, 0, HttpParseResult.InvalidFormat);
 
+            // New lines are not allowed
+            AssertGetQuotedPairLength("\\\r", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetQuotedPairLength("\\\n", 0, 0, HttpParseResult.InvalidFormat);
+
             // a quoted-pair needs 1 char after '\'
             AssertGetQuotedPairLength("\\", 0, 0, HttpParseResult.InvalidFormat);
         }

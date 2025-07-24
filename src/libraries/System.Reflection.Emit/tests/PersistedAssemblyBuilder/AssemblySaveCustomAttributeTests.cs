@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveCustomAttributeTests
     {
         private List<CustomAttributeBuilder> _attributes = new List<CustomAttributeBuilder>
@@ -208,7 +208,7 @@ namespace System.Reflection.Emit.Tests
                     Type testType = moduleFromDisk.GetTypes()[0];
                     IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
 
-                    Assert.Equal(typeAttributes.Count - 3, attributesFromDisk.Count); // 3 pseudo attributes 
+                    Assert.Equal(typeAttributes.Count - 3, attributesFromDisk.Count); // 3 pseudo attributes
                     Assert.True((testType.Attributes & TypeAttributes.Serializable) != 0); // SerializableAttribute
                     Assert.True((testType.Attributes & TypeAttributes.SpecialName) != 0); // SpecialNameAttribute
                     Assert.True((testType.Attributes & TypeAttributes.ExplicitLayout) != 0); // StructLayoutAttribute

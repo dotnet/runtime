@@ -28,6 +28,11 @@ struct DispatchCellInfo
     uint8_t HasCache = 0;
     uint32_t MetadataToken = 0;
     uint32_t VTableOffset = 0;
+
+    uint32_t GetVTableOffset() const
+    {
+        return VTableOffset;
+    }
 };
 
 struct InterfaceDispatchCacheHeader
@@ -336,8 +341,6 @@ enum PInvokeTransitionFrameFlags : uint64_t
 #elif defined(TARGET_LOONGARCH64)
 enum PInvokeTransitionFrameFlags : uint64_t
 {
-    // NOTE: Keep in sync with src\coreclr\nativeaot\Runtime\loongarch64\AsmMacros.h
-
     // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has
     //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
 

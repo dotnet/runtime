@@ -26,4 +26,4 @@ set (VXSORT_SOURCES
   do_vxsort.h
 )
 
-add_library(gc_vxsort STATIC ${VXSORT_SOURCES})
+add_library(gc_vxsort OBJECT ${VXSORT_SOURCES})

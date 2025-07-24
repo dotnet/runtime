@@ -1052,7 +1052,8 @@ namespace System.Globalization
 
             lock (nameTable)
             {
-                nameTable[name] = result;
+                // add only if it wasn't already added
+                nameTable.TryAdd(name, result);
             }
 
             return result;

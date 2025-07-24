@@ -9,20 +9,20 @@ using System.Threading.Tasks;
 
 namespace Mono.Linker.Tests.Cases.Libraries.Dependencies
 {
-	public abstract class UserAssemblyActionWorks_ChildLib
-	{
-		public abstract void MustOverride ();
+    public abstract class UserAssemblyActionWorks_ChildLib
+    {
+        public abstract void MustOverride();
 
-		public static void ChildUnusedMethod (InputType input) { }
+        public static void ChildUnusedMethod(InputType input) { }
 
-		private static void ChildUnusedPrivateMethod () { }
+        private static void ChildUnusedPrivateMethod() { }
 
-		public void ChildUnusedInstanceMethod () { }
+        public void ChildUnusedInstanceMethod() { }
 
-		public int UnusedProperty { get; set; }
+        public int UnusedProperty { get; set; }
 
-		public static int UnusedField;
-	}
+        public static int UnusedField;
+    }
 
-	public class InputType { }
+    public class InputType { }
 }

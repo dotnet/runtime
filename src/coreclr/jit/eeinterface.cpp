@@ -81,16 +81,30 @@ void StringPrinter::Append(char chr)
 }
 
 //------------------------------------------------------------------------
-// eePrintJitType:
+// eePrintCorInfoType:
 //   Print a JIT type.
 //
 // Arguments:
 //    printer - the printer
-//    jitType - the JIT type
+//    corInfoType - the CorInfoType type
 //
-void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
+void Compiler::eePrintCorInfoType(StringPrinter* printer, CorInfoType corInfoType)
 {
-    printer->Append(varTypeName(jitType));
+    static const char* preciseVarTypeMap[CORINFO_TYPE_COUNT] = {// see the definition of enum CorInfoType in file
+                                                                // inc/corinfo.h
+                                                                "<UNDEF>", "void",       "bool",   "char",  "sbyte",
+                                                                "byte",    "short",      "ushort", "int",   "uint",
+                                                                "long",    "ulong",      "nint",   "nuint", "float",
+                                                                "double",  "string",     "ptr",    "byref", "struct",
+                                                                "class",   "typedbyref", "var"};
+
+    const char* corInfoTypeName = "CORINFO_TYPE_INVALID";
+    if (corInfoType >= 0 && corInfoType < CORINFO_TYPE_COUNT)
+    {
+        corInfoTypeName = preciseVarTypeMap[corInfoType];
+    }
+
+    printer->Append(corInfoTypeName);
 }
 
 //------------------------------------------------------------------------
@@ -144,7 +158,7 @@ void Compiler::eePrintType(StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, 
         }
         else
         {
-            eePrintJitType(printer, JitType2PreciseVarType(childType));
+            eePrintCorInfoType(printer, childType);
         }
 
         printer->Append('[');
@@ -205,7 +219,7 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDL
     }
     else
     {
-        eePrintJitType(printer, JitType2PreciseVarType(typ));
+        eePrintCorInfoType(printer, typ);
     }
 }
 
@@ -215,6 +229,18 @@ static const char* s_jitHelperNames[CORINFO_HELP_COUNT] = {
 #include "jithelpers.h"
 };
 
+void AppendCorInfoTypeWithModModifiers(StringPrinter* printer, CorInfoTypeWithMod corInfoTypeWithMod)
+{
+    if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) == CORINFO_TYPE_MOD_PINNED)
+    {
+        printer->Append("PINNED__");
+    }
+    if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_COPY_WITH_HELPER) == CORINFO_TYPE_MOD_COPY_WITH_HELPER)
+    {
+        printer->Append("COPY_WITH_HELPER__");
+    }
+}
+
 //------------------------------------------------------------------------
 // eePrintMethod:
 //   Print a method given by a method handle, its owning class handle and its
@@ -222,9 +248,11 @@ static const char* s_jitHelperNames[CORINFO_HELP_COUNT] = {
 //
 // Arguments:
 //    printer                    - the printer
-//    clsHnd                     - Handle for the owning class, or NO_CLASS_HANDLE to not print the class.
+//    clsHnd                     - Handle for the owning class.
 //    sig                        - The signature of the method.
-//    includeClassInstantiation  - Whether to print the class instantiation. Only valid when clsHnd is passed.
+//    includeAssembly            - Whether to print the assembly name.
+//    includeClass               - Whether to print the class name.
+//    includeClassInstantiation  - Whether to print the class instantiation. Only valid when includeClass is passed.
 //    includeMethodInstantiation - Whether to print the method instantiation. Requires the signature to be passed.
 //    includeSignature           - Whether to print the signature.
 //    includeReturnType          - Whether to include the return type at the end.
@@ -235,6 +263,8 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                              CORINFO_CLASS_HANDLE  clsHnd,
                              CORINFO_METHOD_HANDLE methHnd,
                              CORINFO_SIG_INFO*     sig,
+                             bool                  includeAssembly,
+                             bool                  includeClass,
                              bool                  includeClassInstantiation,
                              bool                  includeMethodInstantiation,
                              bool                  includeSignature,
@@ -249,7 +279,14 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
         return;
     }
 
-    if (clsHnd != NO_CLASS_HANDLE)
+    if (includeAssembly)
+    {
+        const char* pAssemblyName = info.compCompHnd->getClassAssemblyName(clsHnd);
+        printer->Append(pAssemblyName);
+        printer->Append('!');
+    }
+
+    if (includeClass)
     {
         eePrintType(printer, clsHnd, includeClassInstantiation);
         printer->Append(':');
@@ -285,7 +322,10 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                 printer->Append(',');
 
             CORINFO_CLASS_HANDLE vcClsHnd;
-            var_types type = JitType2PreciseVarType(strip(info.compCompHnd->getArgType(sig, argLst, &vcClsHnd)));
+            CorInfoTypeWithMod   argTypeWithMod = info.compCompHnd->getArgType(sig, argLst, &vcClsHnd);
+            AppendCorInfoTypeWithModModifiers(printer, argTypeWithMod);
+
+            var_types type = JitType2PreciseVarType(strip(argTypeWithMod));
             switch (type)
             {
                 case TYP_REF:
@@ -302,7 +342,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 
                     FALLTHROUGH;
                 default:
-                    eePrintJitType(printer, type);
+                    eePrintCorInfoType(printer, strip(argTypeWithMod));
                     break;
             }
 
@@ -331,7 +371,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                     }
                         FALLTHROUGH;
                     default:
-                        eePrintJitType(printer, retType);
+                        eePrintCorInfoType(printer, sig->retType);
                         break;
                 }
             }
@@ -403,6 +443,8 @@ const char* Compiler::eeGetMethodFullName(
         CORINFO_SIG_INFO sig;
         eeGetMethodSig(hnd, &sig);
         eePrintMethod(&p, clsHnd, hnd, &sig,
+                                      /* includeAssembly */ false,
+                                      /* includeClass */ true,
                                       /* includeClassInstantiation */ true,
                                       /* includeMethodInstantiation */ true,
                                       /* includeSignature */ true, includeReturnType, includeThisSpecifier);
@@ -419,6 +461,8 @@ const char* Compiler::eeGetMethodFullName(
     success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, clsHnd, hnd,
                       /* sig */ nullptr,
+                      /* includeAssembly */ false,
+                      /* includeClass */ true,
                       /* includeClassInstantiation */ false,
                       /* includeMethodInstantiation */ false,
                       /* includeSignature */ false,
@@ -435,8 +479,10 @@ const char* Compiler::eeGetMethodFullName(
     p.Truncate(0);
 
     success = eeRunFunctorWithSPMIErrorTrap([&]() {
-        eePrintMethod(&p, nullptr, hnd,
+        eePrintMethod(&p, NO_CLASS_HANDLE, hnd,
                       /* sig */ nullptr,
+                      /* includeAssembly */ false,
+                      /* includeClass */ false,
                       /* includeClassInstantiation */ false,
                       /* includeMethodInstantiation */ false,
                       /* includeSignature */ false,
@@ -475,6 +521,8 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffe
     bool          success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, NO_CLASS_HANDLE, methHnd,
                                /* sig */ nullptr,
+                               /* includeAssembly */ false,
+                               /* includeClass */ false,
                                /* includeClassInstantiation */ false,
                                /* includeMethodInstantiation */ false,
                                /* includeSignature */ false,

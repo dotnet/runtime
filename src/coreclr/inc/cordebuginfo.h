@@ -27,7 +27,7 @@ public:
         NO_BOUNDARIES           = 0x00,     // No implicit boundaries
         STACK_EMPTY_BOUNDARIES  = 0x01,     // Boundary whenever the IL evaluation stack is empty
         NOP_BOUNDARIES          = 0x02,     // Before every CEE_NOP instruction
-        CALL_SITE_BOUNDARIES    = 0x04,     // Before every CEE_CALL, CEE_CALLVIRT, etc instruction
+        CALL_SITE_BOUNDARIES    = 0x04,     // After every CEE_CALL, CEE_CALLVIRT, etc instruction
 
         // Set of boundaries that debugger should always reasonably ask the JIT for.
         DEFAULT_BOUNDARIES      = STACK_EMPTY_BOUNDARIES | NOP_BOUNDARIES | CALL_SITE_BOUNDARIES
@@ -213,6 +213,8 @@ public:
         REGNUM_T5,
         REGNUM_T6,
         REGNUM_PC,
+#elif TARGET_WASM
+        REGNUM_PC, // wasm doesn't have registers
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")
 #endif
@@ -224,6 +226,7 @@ public:
         REGNUM_FP = REGNUM_EBP,
         REGNUM_SP = REGNUM_ESP,
 #elif TARGET_AMD64
+        REGNUM_FP = REGNUM_RBP,
         REGNUM_SP = REGNUM_RSP,
 #elif TARGET_ARM
         REGNUM_FP = REGNUM_R11,

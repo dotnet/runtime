@@ -1633,6 +1633,11 @@ namespace System.Xml.Serialization
                     {
                         if (member.Source == null && mapping.TypeDesc.IsArrayLike && !(mapping.Elements!.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping))
                         {
+                            // Always create a collection for (non-array) collection-like types, even if the XML data says the collection should be null.
+                            if (!mapping.TypeDesc.IsArray)
+                            {
+                                member.Collection ??= new CollectionMember();
+                            }
                             member.Source = (item) =>
                             {
                                 member.Collection ??= new CollectionMember();
@@ -1645,26 +1650,51 @@ namespace System.Xml.Serialization
 
                     if (member.Source == null)
                     {
+                        var isList = mapping.TypeDesc.IsArrayLike && !mapping.TypeDesc.IsArray;
                         var pi = member.Mapping.MemberInfo as PropertyInfo;
-                        if (pi != null && typeof(IList).IsAssignableFrom(pi.PropertyType)
-                            && (pi.SetMethod == null || !pi.SetMethod.IsPublic))
+
+                        // Here we have to deal with some special cases for property members. The old serializers would trip over
+                        // private property setters generally - except in the case of list-like properties. Because lists get special
+                        // treatment, a private setter for a list property would only be a problem if the default constructor didn't
+                        // already create a list instance for the property. If it does create a list, then the serializer can still
+                        // populate it. Try to emulate the old serializer behavior here.
+
+                        // First, for non-list properties, private setters are always a problem.
+                        if (!isList && pi != null && pi.SetMethod != null && !pi.SetMethod.IsPublic)
                         {
-                            member.Source = (value) =>
-                            {
-                                var getOnlyList = (IList)pi.GetValue(o)!;
-                                if (value is IList valueList)
-                                {
-                                    foreach (var v in valueList)
-                                    {
-                                        getOnlyList.Add(v);
-                                    }
-                                }
-                                else
-                                {
-                                    getOnlyList.Add(value);
-                                }
-                            };
+                            member.Source = (value) => throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyPropertyError, pi.Name, pi.DeclaringType!.FullName));
                         }
+
+                        // Next, for list properties, we need to handle not only the private setter case, but also the case where
+                        // there is no setter at all. Because we need to give the default constructor a chance to create the list
+                        // first before we make noise about not being able to set a list property.
+                        else if (isList && pi != null && (pi.SetMethod == null || !pi.SetMethod.IsPublic))
+                        {
+                            var addMethod = mapping.TypeDesc.Type!.GetMethod("Add");
+
+                            if (addMethod != null)
+                            {
+                                member.Source = (value) =>
+                                {
+                                    var getOnlyList = pi.GetValue(o)!;
+                                    if (getOnlyList == null)
+                                    {
+                                        // No-setter lists should just be ignored if they weren't created by constructor. Private-setter lists are the noisy exception.
+                                        if (pi.SetMethod != null && !pi.SetMethod.IsPublic)
+                                            throw new InvalidOperationException(SR.Format(SR.XmlReadOnlyPropertyError, pi.Name, pi.DeclaringType!.FullName));
+                                    }
+                                    else if (value is IEnumerable valueList)
+                                    {
+                                        foreach (var v in valueList)
+                                        {
+                                            addMethod.Invoke(getOnlyList, new object[] { v });
+                                        }
+                                    }
+                                };
+                            }
+                        }
+
+                        // For all other members (fields, public setter properties, etc), just carry on as normal
                         else
                         {
                             if (member.Mapping.Xmlns != null)
@@ -1679,6 +1709,21 @@ namespace System.Xml.Serialization
                                 var setterDelegate = GetSetMemberValueDelegate(o!, member.Mapping.Name);
                                 member.Source = (value) => setterDelegate(o, value);
                             }
+                        }
+
+                        // Finally, special list handling again. ANY list that we can assign/populate should be initialized with
+                        // an empty list if it hasn't been initialized already. Even if the XML data says the list should be null.
+                        // This is an odd legacy behavior, but it's what the old serializers did.
+                        if (isList && member.Source != null)
+                        {
+                            member.EnsureCollection = (obj) =>
+                            {
+                                if (GetMemberValue(obj, mapping.MemberInfo!) == null)
+                                {
+                                    var empty = ReflectionCreateObject(mapping.TypeDesc.Type!);
+                                    member.Source(empty);
+                                }
+                            };
                         }
                     }
 
@@ -1729,23 +1774,29 @@ namespace System.Xml.Serialization
                 WriteAttributes(allMembers, anyAttribute, unknownNodeAction, ref o);
 
                 Reader.MoveToElement();
+
                 if (Reader.IsEmptyElement)
                 {
                     Reader.Skip();
-                    return o;
                 }
-
-                Reader.ReadStartElement();
-                bool IsSequenceAllMembers = IsSequence();
-                if (IsSequenceAllMembers)
+                else
                 {
-                    // https://github.com/dotnet/runtime/issues/1402:
-                    // Currently the reflection based method treat this kind of type as normal types.
-                    // But potentially we can do some optimization for types that have ordered properties.
+                    Reader.ReadStartElement();
+                    bool IsSequenceAllMembers = IsSequence();
+                    if (IsSequenceAllMembers)
+                    {
+                        // https://github.com/dotnet/runtime/issues/1402:
+                        // Currently the reflection based method treat this kind of type as normal types.
+                        // But potentially we can do some optimization for types that have ordered properties.
+                    }
+
+                    WriteMembers(allMembers, unknownNodeAction, unknownNodeAction, anyElementMember, anyTextMember);
+
+                    ReadEndElement();
                 }
 
-                WriteMembers(allMembers, unknownNodeAction, unknownNodeAction, anyElementMember, anyTextMember);
-
+                // Empty element or not, we need to ensure all our array-like members have been initialized in the same
+                // way as the IL / CodeGen - based serializers.
                 foreach (Member member in allMembers)
                 {
                     if (member.Collection != null)
@@ -1757,9 +1808,10 @@ namespace System.Xml.Serialization
                         var setMemberValue = GetSetMemberValueDelegate(o, memberInfo.Name);
                         setMemberValue(o, collection);
                     }
+
+                    member.EnsureCollection?.Invoke(o!);
                 }
 
-                ReadEndElement();
                 return o;
             }
         }
@@ -2031,6 +2083,7 @@ namespace System.Xml.Serialization
             public Action<object?>? CheckSpecifiedSource;
             public Action<object>? ChoiceSource;
             public Action<string, string>? XmlnsSource;
+            public Action<object>? EnsureCollection;
 
             public Member(MemberMapping mapping)
             {

@@ -6,7 +6,7 @@
 #ifdef POWER9
 #include <altivec.h>
 #include "zbuild.h"
-#include "zutil_p.h"
+#include "zmemory.h"
 #include "deflate.h"
 #include "zendian.h"
 

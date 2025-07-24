@@ -343,6 +343,7 @@ void command_line::print_muxer_usage(bool is_sdk_present)
     {
         trace::println();
         trace::println(_X("Usage: dotnet [host-options] [path-to-application]"));
+        trace::println(_X("Usage: dotnet [host-commands]"));
         trace::println();
         trace::println(_X("path-to-application:"));
         trace::println(_X("  The path to an application .dll file to execute."));
@@ -353,16 +354,17 @@ void command_line::print_muxer_usage(bool is_sdk_present)
     for (const auto& opt : known_opts)
     {
         const host_option &arg = get_host_option(opt);
-        trace::println(_X("  %s %-*s  %s"), arg.option, 29 - (int)pal::strlen(arg.option), arg.argument, arg.description);
+        trace::println(_X("  %s %-*s  %s"), arg.option, 30 - (int)pal::strlen(arg.option), arg.argument, arg.description);
     }
-    trace::println(_X("  --list-runtimes                 Display the installed runtimes"));
-    trace::println(_X("  --list-sdks                     Display the installed SDKs"));
 
+    trace::println();
+    trace::println(_X("host-commands:"));
     if (!is_sdk_present)
     {
-        trace::println();
-        trace::println(_X("Common Options:"));
-        trace::println(_X("  -h|--help                       Displays this help."));
-        trace::println(_X("  --info                          Display .NET information."));
+        trace::println(_X("  -h|--help                        Displays this help."));
+        trace::println(_X("  --info                           Display .NET information."));
     }
+
+    trace::println(_X("  --list-runtimes [--arch <arch>]  Display the installed runtimes matching the host or specified architecture. Example architectures: arm64, x64, x86."));
+    trace::println(_X("  --list-sdks [--arch <arch>]      Display the installed SDKs matching the host or specified architecture. Example architectures: arm64, x64, x86."));
 }

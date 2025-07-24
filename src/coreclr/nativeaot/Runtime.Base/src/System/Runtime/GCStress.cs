@@ -32,7 +32,7 @@ namespace System.Runtime
             // drop the first element
             Head = Head.Next;
 
-            // notify redhawku.dll
+            // notify the runtime
             InternalCalls.RhpInitializeGcStress();
 #endif // FEATURE_GC_STRESS
         }

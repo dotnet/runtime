@@ -273,7 +273,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static unsafe Task BindAssemblyExports(string? assemblyName)
+        public static Task BindAssemblyExports(string? assemblyName)
         {
             Interop.Runtime.BindAssemblyExports(Marshal.StringToCoTaskMemUTF8(assemblyName));
             return Task.CompletedTask;

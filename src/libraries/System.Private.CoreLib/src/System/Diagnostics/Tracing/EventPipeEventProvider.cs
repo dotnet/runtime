@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tracing
     {
         private readonly WeakReference<EventProvider> _eventProvider;
         private IntPtr _provHandle;
-        private GCHandle _gcHandle;
+        private GCHandle<EventPipeEventProvider> _gcHandle;
 
         internal EventPipeEventProvider(EventProvider eventProvider)
         {
@@ -62,7 +62,7 @@ namespace System.Diagnostics.Tracing
         private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
-            EventPipeEventProvider _this = (EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
+            EventPipeEventProvider _this = GCHandle<EventPipeEventProvider>.FromIntPtr((IntPtr)callbackContext).Target;
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
             {
                 _this.ProviderCallback(target, sourceId, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
@@ -73,13 +73,13 @@ namespace System.Diagnostics.Tracing
         internal override unsafe void Register(Guid id, string name)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
-            _gcHandle = GCHandle.Alloc(this);
+            _gcHandle = new GCHandle<EventPipeEventProvider>(this);
 
-            _provHandle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle.ToIntPtr(_gcHandle));
+            _provHandle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle<EventPipeEventProvider>.ToIntPtr(_gcHandle));
             if (_provHandle == 0)
             {
                 // Unable to create the provider.
-                _gcHandle.Free();
+                _gcHandle.Dispose();
                 throw new OutOfMemoryException();
             }
         }
@@ -95,10 +95,7 @@ namespace System.Diagnostics.Tracing
                 EventPipeInternal.DeleteProvider(_provHandle);
                 _provHandle = 0;
             }
-            if (_gcHandle.IsAllocated)
-            {
-                _gcHandle.Free();
-            }
+            _gcHandle.Dispose();
         }
 
         // Write an event.

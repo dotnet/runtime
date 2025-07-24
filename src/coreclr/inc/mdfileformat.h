@@ -36,13 +36,6 @@
 #define FILE_VER_MAJOR  1
 #define FILE_VER_MINOR  1
 
-// These are the last legitimate 0.x version macros.  The file format has
-// sinced move up to 1.x (see macros above).  After CLR 1.0/NT 5 RTM's, these
-// macros should no longer be required or ever seen.
-#define FILE_VER_MAJOR_v0   0
-
-#define FILE_VER_MINOR_v0   19
-
 
 #define MAXSTREAMNAME   32
 

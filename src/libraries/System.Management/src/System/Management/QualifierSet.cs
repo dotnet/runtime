@@ -268,7 +268,7 @@ namespace System.Management
         ///         QualifierDataCollection diskQualifier = diskClass.Qualifiers;
         ///         QualifierDataCollection.QualifierDataEnumerator
         ///             qualifierEnumerator = diskQualifier.GetEnumerator();
-        ///         while(qualifierEnumerator.MoveNext()) {
+        ///         while (qualifierEnumerator.MoveNext()) {
         ///             Console.WriteLine(qualifierEnumerator.Current.Name + " = " +
         ///                 qualifierEnumerator.Current.Value);
         ///         }

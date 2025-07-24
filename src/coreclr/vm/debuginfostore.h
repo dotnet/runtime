@@ -54,6 +54,11 @@ protected:
 // Eg, perhaps we have multiple heaps (eg, loader-heaps per appdomain).
 typedef BYTE* (*FP_IDS_NEW)(void * pData, size_t cBytes);
 
+enum class BoundsType
+{
+    Instrumented, // Get the instrumented bounds (or the uninstrumented bounds if no instrumented bounds are available)
+    Uninstrumented, // Get the uninstrumented bounds
+};
 
 //-----------------------------------------------------------------------------
 // Utility routines used for compression
@@ -87,6 +92,7 @@ public:
     static PTR_BYTE CompressBoundariesAndVars(
         IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
         IN ULONG            iOffsetMapping,
+        const InstrumentedILOffsetMapping *  pInstrumentedILBounds,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,
         IN PatchpointInfo * patchpointInfo,
@@ -100,13 +106,24 @@ public:
 
     // Uncompress data supplied by Compress functions.
     static void RestoreBoundariesAndVars(
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         IN PTR_BYTE                         pDebugInfo,
         OUT ULONG32                       * pcMap, // number of entries in ppMap
         OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
         OUT ULONG32                         *pcVars,
         OUT ICorDebugInfo::NativeVarInfo    **ppVars,
         BOOL hasFlagByte
+    );
+
+    // Walk the ILOffsets without needing to allocate a buffer
+    static size_t WalkILOffsets(
+        IN PTR_BYTE                         pDebugInfo,
+        BoundsType boundsType,
+        BOOL hasFlagByte,
+        void* pContext,
+        size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
     );
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
@@ -139,7 +156,9 @@ class DebugInfoManager
 public:
     static BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        IN FP_IDS_NEW fpNew,
+        IN void * pNewData,
+        BoundsType boundsType,
         OUT ULONG32 * pcMap,
         OUT ICorDebugInfo::OffsetMapping ** ppMap,
         OUT ULONG32 * pcVars,
@@ -154,10 +173,10 @@ public:
         OUT ULONG32*                           pNumRichMappings);
 
 #ifdef DACCESS_COMPILE
-    static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif
 };
 
-
+#define DebugInfoBoundsHasInstrumentedBounds 0xFFFFFFFF
 
 #endif // __DebugInfoStore_H_

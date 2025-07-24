@@ -10,6 +10,7 @@ namespace Microsoft.VisualBasic.Tests
     public class ErrObjectTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14854", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", TestRuntimes.Mono)]
         public void Clear()
         {

@@ -8,8 +8,8 @@
 
 import gitHash from "consts:gitHash";
 
-import { RuntimeAPI } from "./types/index";
-import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions, GCHandle } from "./types/internal";
+import type { RuntimeAPI } from "./types/index";
+import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions, GCHandle, DiagnosticHelpers } from "./types/internal";
 import { mono_log_error } from "./logging";
 
 // these are our public API (except internal)
@@ -29,6 +29,8 @@ export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
+export let diagnosticHelpers: DiagnosticHelpers = null as any;
+export let globalObjectsRoot: GlobalObjects = null as any;
 
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
@@ -49,10 +51,12 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects) {
         throw new Error("Runtime module already loaded");
     }
     _runtimeModuleLoaded = true;
+    globalObjectsRoot = globalObjects;
     Module = globalObjects.module;
     INTERNAL = globalObjects.internal;
     runtimeHelpers = globalObjects.runtimeHelpers;
     loaderHelpers = globalObjects.loaderHelpers;
+    diagnosticHelpers = globalObjects.diagnosticHelpers;
     exportedRuntimeAPI = globalObjects.api;
 
     const rh: Partial<RuntimeHelpers> = {

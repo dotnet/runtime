@@ -486,6 +486,18 @@ namespace System.IO.Compression
             throw new NotSupportedException(SR.ReadingNotSupported);
         }
 
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.ReadingNotSupported);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.ReadingNotSupported);
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             ThrowIfDisposed();
@@ -603,6 +615,21 @@ namespace System.IO.Compression
                 _isDisposed = true;
             }
             base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_isDisposed)
+            {
+                // if we never wrote through here, save the position
+                if (!_everWritten)
+                    _initialPosition = _baseBaseStream.Position;
+                if (!_leaveOpenOnClose)
+                    await _baseStream.DisposeAsync().ConfigureAwait(false); // Close my super-stream (flushes the last data)
+                _saveCrcAndSizes?.Invoke(_initialPosition, Position, _checksum, _baseBaseStream, _zipArchiveEntry, _onClose);
+                _isDisposed = true;
+            }
+            await base.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -65,6 +67,26 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
 
             return options;
+        }
+
+        public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, GetOptions(options), cancellationToken);
+        }
+
+        public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+        {
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, jsonTypeInfo, cancellationToken);
+        }
+
+        public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default)
+        {
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, jsonTypeInfo, topLevelValues, cancellationToken);
+        }
+
+        public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, topLevelValues, GetOptions(options), cancellationToken);
         }
     }
 
@@ -135,6 +157,26 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
 
             return options;
+        }
+
+        public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, GetOptions(options), cancellationToken);
+        }
+
+        public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+        {
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, jsonTypeInfo, cancellationToken);
+        }
+
+        public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default)
+        {
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, jsonTypeInfo, topLevelValues, cancellationToken);
+        }
+
+        public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, topLevelValues, GetOptions(options), cancellationToken);
         }
     }
 }

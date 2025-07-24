@@ -25,10 +25,7 @@ namespace System.Security.Cryptography.Xml
 
         public DSAKeyValue(DSA key)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             _key = key;
         }
@@ -42,10 +39,7 @@ namespace System.Security.Cryptography.Xml
             get => _key;
             set
             {
-                if (value is null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _key = value;
             }
@@ -153,10 +147,7 @@ namespace System.Security.Cryptography.Xml
         /// </exception>
         public override void LoadXml(XmlElement value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (value.Name != KeyValueElementName
                 || value.NamespaceURI != SignedXml.XmlDsigNamespaceUrl)

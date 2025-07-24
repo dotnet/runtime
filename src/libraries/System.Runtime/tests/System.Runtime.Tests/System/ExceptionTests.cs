@@ -107,7 +107,7 @@ namespace System.Tests
             Assert.Equal(nameof(ThrowException), ex.TargetSite.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/mono/mono/issues/15140", TestRuntimes.Mono)]
         public static void ThrowStatementDoesNotResetExceptionStackLineSameMethod()
         {
@@ -136,7 +136,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.HasAssemblyFiles))]
         // [ActiveIssue(https://github.com/dotnet/runtime/issues/1871)] can't use ActiveIssue for archs
         [ActiveIssue("https://github.com/mono/mono/issues/15141", TestRuntimes.Mono)]
         public static void ThrowStatementDoesNotResetExceptionStackLineOtherMethod()

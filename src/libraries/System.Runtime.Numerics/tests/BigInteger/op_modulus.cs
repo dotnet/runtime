@@ -33,6 +33,15 @@ namespace System.Numerics.Tests
                 VerifyRemainderString(Print(tempByteArray1) + Print(tempByteArray2) + "b%");
             }
 
+            // Divide Method - One large and one half BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    tempByteArray1 = GetRandomByteArray(s_random, 512 + i);
+                    tempByteArray2 = GetRandomByteArray(s_random, 256 + j);
+                    VerifyRemainderString(Print(tempByteArray1) + Print(tempByteArray2) + "b%");
+                }
+
             // Remainder Method - One large and one small BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
@@ -166,6 +175,21 @@ namespace System.Numerics.Tests
                 string randBigInt = Print(GetRandomByteArray(s_random));
                 VerifyIdentityString(randBigInt + BigInteger.Zero + " b%", BigInteger.Zero.ToString());
             }
+        }
+
+        [Fact]
+        public void D3n2nBound()
+        {
+            var right = (BigInteger.One << (BigIntegerCalculator.DivideBurnikelZieglerThreshold * 4 * 32 - 1))
+                + (BigInteger.One << (BigIntegerCalculator.DivideBurnikelZieglerThreshold * 2 * 32)) - 1;
+            var rem = right - 1;
+
+            var qi = BigIntegerCalculator.DivideBurnikelZieglerThreshold * 8 * 32 * 4 - 1;
+            var q = (BigInteger.One << qi) - 1;
+            var left = q * right + rem;
+
+            var r2 = left % right;
+            Assert.Equal(rem, r2);
         }
 
         private static void VerifyRemainderString(string opstring)

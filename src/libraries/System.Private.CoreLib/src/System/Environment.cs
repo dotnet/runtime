@@ -40,8 +40,11 @@ namespace System
         /// <summary>
         /// Gets whether the current machine has only a single processor.
         /// </summary>
+#if !FEATURE_SINGLE_THREADED
         internal static bool IsSingleProcessor => ProcessorCount == 1;
-
+#else
+        internal const bool IsSingleProcessor = true;
+#endif
         private static volatile sbyte s_privilegedProcess;
 
         /// <summary>
@@ -245,6 +248,10 @@ namespace System
                 return systemPageSize;
             }
         }
+
+        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
+        /// <value>A 32-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
+        public static int TickCount => (int)TickCount64;
 
         private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)
         {

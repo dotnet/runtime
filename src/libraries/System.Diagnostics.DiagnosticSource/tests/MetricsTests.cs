@@ -13,6 +13,10 @@ namespace System.Diagnostics.Metrics.Tests
 {
     public class MetricsTests
     {
+        // We increase the timeout for remote execution to allow for longer-running tests.
+        // Ensure RemoteExecutor.IsSupported, otherwise the execution can throw PlatformNotSupportedException.
+        private static readonly RemoteInvokeOptions? s_remoteExecutionOptions = RemoteExecutor.IsSupported ? new RemoteInvokeOptions { TimeOut = 600_000 } : null;
+
         [Fact]
         public void MeasurementConstructionTest()
         {
@@ -23,6 +27,10 @@ namespace System.Diagnostics.Metrics.Tests
                 KeyValuePair<string, object>[] tagsArray = tags.ToArray();
 
                 var measurement = new Measurement<int>(i, tags);
+                Assert.Equal(i, measurement.Value);
+                TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
+
+                measurement = new Measurement<int>(i, tagsArray.AsEnumerable());
                 Assert.Equal(i, measurement.Value);
                 TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
 
@@ -49,7 +57,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal("v1.0", meter.Version);
 
                 Assert.Throws<ArgumentNullException>(() => new Meter(name: null));
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -78,7 +86,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 ObservableGauge<double> observableGauge = meter.CreateObservableGauge<double>("ObservableGauge", () => 10, "Fahrenheit", "Fahrenheit ObservableGauge");
                 ValidateInstrumentInfo(observableGauge, "ObservableGauge", "Fahrenheit", "Fahrenheit ObservableGauge", false, true);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -95,7 +103,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Throws<ArgumentNullException>(() => meter.CreateObservableUpDownCounter<Decimal>(null, () => 0, "items", "Items ObservableUpDownCounter"));
                 Assert.Throws<ArgumentNullException>(() => meter.CreateObservableGauge<double>(null, () => 0, "seconds", "Seconds ObservableGauge"));
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -165,7 +173,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Throws<InvalidOperationException>(() => meter.CreateHistogram<ulong>("histogram1", "seconds", "Seconds histogram"));
                 Assert.Throws<InvalidOperationException>(() => meter.CreateObservableCounter<sbyte>("observableCounter3", () => 0, "seconds", "Seconds ObservableCounter"));
                 Assert.Throws<InvalidOperationException>(() => meter.CreateObservableGauge<ushort>("observableGauge7", () => 0, "seconds", "Seconds ObservableGauge"));
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -224,7 +232,7 @@ namespace System.Diagnostics.Metrics.Tests
                     // MeasurementsCompleted should be called 4 times for every instrument.
                     Assert.Equal(0, instrumentsEncountered);
                 }
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -276,7 +284,7 @@ namespace System.Diagnostics.Metrics.Tests
                     Assert.Equal(11, accumulated);
                 }
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -372,7 +380,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Histogram<decimal> histogram6 = meter.CreateHistogram<decimal>("decimalHistogram");
                 InstrumentMeasurementAggregationValidation(histogram6, (value, tags) => { Record(histogram6, value, tags, useSpan); } );
 
-            }, useSpan.ToString()).Dispose();
+            }, useSpan.ToString(), s_remoteExecutionOptions).Dispose();
 
             void AddToCounter<T>(Counter<T> counter, T delta, KeyValuePair<string, object?>[] tags, bool useSpan) where T : struct
             {
@@ -719,7 +727,7 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableGauge<decimal> observableGauge20 = meter.CreateObservableGauge<decimal>("decimalObservableGauge", () => decimalGaugeMeasurementList);
                 ObservableInstrumentMeasurementAggregationValidation(observableGauge20, decimalGaugeMeasurementList);
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -871,7 +879,7 @@ namespace System.Diagnostics.Metrics.Tests
                                                             PublishHistogramMeasurement(instrument as Histogram<decimal>, value, tags);
                                                             return (decimal)(value * 2);
                                                         });
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -959,7 +967,7 @@ namespace System.Diagnostics.Metrics.Tests
                 listener.RecordObservableInstruments();
                 Assert.Equal(13, count);
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1030,7 +1038,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 listener.RecordObservableInstruments();
                 Assert.Equal(7, count);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1098,7 +1106,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 listener.RecordObservableInstruments();
                 Assert.Equal(7, count);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1143,7 +1151,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 gauge.Record(1);
                 Assert.Equal(15, count);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1180,7 +1188,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(2, count);
 
                 Assert.Throws<InvalidOperationException>(() => listener.SetMeasurementEventCallback<ulong>(null));
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1221,7 +1229,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 listener.Dispose();
                 Assert.Equal(4, completedCount);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1264,7 +1272,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Task.WaitAll(taskList);
 
                 Assert.Equal(loopLength * 17, totalCount);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1333,7 +1341,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Task.WaitAll(jobs);
                 listener.Dispose();
                 Assert.Equal(0, instruments.Count);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1437,7 +1445,7 @@ namespace System.Diagnostics.Metrics.Tests
                                                      expectedTags[8], expectedTags[9], expectedTags[10], expectedTags[11], expectedTags[12] });
                 }
 
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1450,18 +1458,21 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Null(meter1.Version);
                 Assert.Null(meter1.Tags);
                 Assert.Null(meter1.Scope);
+                Assert.Null(meter1.TelemetrySchemaUrl);
 
                 using Meter meter2 = new Meter("TestMeterCreationWithOptions2", "2.0", new TagList() { { "Key1", "Value1" } });
                 Assert.Equal("TestMeterCreationWithOptions2", meter2.Name);
                 Assert.Equal("2.0", meter2.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key1", "Value1") }, meter2.Tags);
                 Assert.Null(meter2.Scope);
+                Assert.Null(meter2.TelemetrySchemaUrl);
 
                 using Meter meter3 = new Meter("TestMeterCreationWithOptions3", "3.0", new TagList() { { "Key3", "Value3" } }, "Scope");
                 Assert.Equal("TestMeterCreationWithOptions3", meter3.Name);
                 Assert.Equal("3.0", meter3.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key3", "Value3") }, meter3.Tags);
                 Assert.Equal("Scope", meter3.Scope);
+                Assert.Null(meter3.TelemetrySchemaUrl);
 
                 Assert.Throws<ArgumentNullException>(() => new MeterOptions(null!));
                 Assert.Throws<ArgumentNullException>(() => new MeterOptions("Something").Name = null!);
@@ -1471,30 +1482,35 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Null(meter4.Version);
                 Assert.Null(meter4.Tags);
                 Assert.Null(meter4.Scope);
+                Assert.Null(meter4.TelemetrySchemaUrl);
 
                 using Meter meter5 = new Meter(new MeterOptions("TestMeterCreationWithOptions5") { Version = "5.0" });
                 Assert.Equal("TestMeterCreationWithOptions5", meter5.Name);
                 Assert.Equal("5.0", meter5.Version);
                 Assert.Null(meter5.Tags);
                 Assert.Null(meter5.Scope);
+                Assert.Null(meter5.TelemetrySchemaUrl);
 
                 using Meter meter6 = new Meter(new MeterOptions("TestMeterCreationWithOptions6") { Tags = new TagList() { { "Key6", "Value6"} } });
                 Assert.Equal("TestMeterCreationWithOptions6", meter6.Name);
                 Assert.Null(meter6.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key6", "Value6") }, meter6.Tags);
                 Assert.Null(meter5.Scope);
+                Assert.Null(meter6.TelemetrySchemaUrl);
 
                 using Meter meter7 = new Meter(new MeterOptions("TestMeterCreationWithOptions7") { Scope = "Scope7" });
                 Assert.Equal("TestMeterCreationWithOptions7", meter7.Name);
                 Assert.Null(meter7.Version);
                 Assert.Null(meter7.Tags);
                 Assert.Equal("Scope7", meter7.Scope);
+                Assert.Null(meter7.TelemetrySchemaUrl);
 
                 using Meter meter8 = new Meter(new MeterOptions("TestMeterCreationWithOptions8") { Version = "8.0", Tags = new TagList() { { "Key8", "Value8" } }, Scope = "Scope8" });
                 Assert.Equal("TestMeterCreationWithOptions8", meter8.Name);
                 Assert.Equal("8.0", meter8.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key8", "Value8") }, meter8.Tags);
                 Assert.Equal("Scope8", meter8.Scope);
+                Assert.Null(meter8.TelemetrySchemaUrl);
 
                 // Test tags sorting order
                 TagList l = new TagList() { { "f", "a" }, { "d", "b" }, { "w", "b" }, { "h", new object() }, { "N", null }, { "a", "b" }, { "a", null } };
@@ -1505,7 +1521,19 @@ namespace System.Diagnostics.Metrics.Tests
                 {
                     Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
                 }
-            }).Dispose();
+
+                using Meter meter10 = new Meter(new MeterOptions("TestMeterCreationWithOptions10") { Version = "10.0", Tags = l, Scope = "Scope10", TelemetrySchemaUrl = "https://example.com" });
+                insArray = meter10.Tags.ToArray();
+                Assert.Equal(l.Count, insArray.Length);
+                for (int i = 0; i < insArray.Length - 1; i++)
+                {
+                    Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
+                }
+                Assert.Equal("https://example.com", meter10.TelemetrySchemaUrl);
+                Assert.Equal("10.0", meter10.Version);
+                Assert.Equal("Scope10", meter10.Scope);
+                Assert.Equal("TestMeterCreationWithOptions10", meter10.Name);
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1638,7 +1666,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 Gauge<int> gauge12 = meter.CreateGauge<int>("name9", null, null, t1);
                 Assert.NotSame(gauge9, gauge12);
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1704,7 +1732,7 @@ namespace System.Diagnostics.Metrics.Tests
                 {
                     Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
                 }
-            }).Dispose();
+            }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1724,7 +1752,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                Assert.NotNull(histogramWithAdvice.Advice?.HistogramBucketBoundaries);
                Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.HistogramBucketBoundaries);
-           }).Dispose();
+           }, s_remoteExecutionOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1747,7 +1775,7 @@ namespace System.Diagnostics.Metrics.Tests
                 counter.Add(1, new TagList(Array.Empty<KeyValuePair<string, object>>()));
 
                 Assert.Equal(4, count);
-           }).Dispose();
+           }, s_remoteExecutionOptions).Dispose();
         }
 
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct

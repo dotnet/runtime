@@ -6,22 +6,22 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[SetupLinkAttributesFile ("AddSuppressionsBeforeAttributeRemoval.xml")]
+    [SetupLinkAttributesFile("AddSuppressionsBeforeAttributeRemoval.xml")]
 
-	[ExpectedNoWarnings]
-	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
-	public class AddSuppressionsBeforeAttributeRemoval
-	{
-		[Kept]
-		public static Type TriggerUnrecognizedPattern ()
-		{
-			return typeof (AddedPseudoAttributeAttribute);
-		}
+    [ExpectedNoWarnings]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
+    public class AddSuppressionsBeforeAttributeRemoval
+    {
+        [Kept]
+        public static Type TriggerUnrecognizedPattern()
+        {
+            return typeof(AddedPseudoAttributeAttribute);
+        }
 
-		[UnconditionalSuppressMessage ("ILLinker", "IL2072")]
-		public static void Main ()
-		{
-			Expression.Call (TriggerUnrecognizedPattern (), "", Type.EmptyTypes);
-		}
-	}
+        [UnconditionalSuppressMessage("ILLinker", "IL2072")]
+        public static void Main()
+        {
+            Expression.Call(TriggerUnrecognizedPattern(), "", Type.EmptyTypes);
+        }
+    }
 }

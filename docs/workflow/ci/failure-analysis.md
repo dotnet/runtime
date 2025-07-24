@@ -57,7 +57,7 @@ Validation may fail for several reasons, and for each one we have a different re
 
 ### Additional information:
   * If the license/cla check fails to register a response, the check can be rerun by submitting a `@dotnet-policy-service rerun` comment to the PR.
-  * Reach out to the infrastructure team for assistance on [Teams channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) (for corpnet users) or on [Gitter](https://gitter.im/dotnet/community) in other cases.
+  * Reach out to the infrastructure team for assistance on [Teams channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) (for corpnet users) or on [Discord](https://aka.ms/dotnet-discord) #runtime channel in other cases.
 
 ## What to do if you determine the failure is unrelated
 

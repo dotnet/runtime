@@ -25,4 +25,10 @@
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.String.TrimStart(System.ReadOnlySpan{System.Char})</Target>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0008</DiagnosticId>
+    <Target>T:System.Collections.BitArray</Target>
+    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
 </Suppressions>

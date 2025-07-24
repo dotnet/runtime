@@ -514,7 +514,10 @@ void MDInfo::DisplayScopeInfo()
     VWriteLine("ScopeName : %s",ConvertToUtf8(scopeName, scopeNameUtf8, ARRAY_SIZE(scopeNameUtf8)));
 
     if (!(m_DumpFilter & MDInfo::dumpNoLogo))
-        VWriteLine("MVID      : %s",GUIDAsString(mvid, guidString, STRING_BUFFER_LEN));
+    {
+        minipal_guid_as_string(mvid, guidString, STRING_BUFFER_LEN);
+        VWriteLine("MVID      : %s", guidString);
+    }
 
     hr = m_pImport->GetModuleFromScope(&mdm);
     if (FAILED(hr)) Error("GetModuleFromScope failed.", hr);
@@ -2188,15 +2191,6 @@ void MDInfo::DisplayPermissionInfo(mdPermission inPermission, const char *preFix
     sprintf_s (newPreFix, STRING_BUFFER_LEN, "\t\t%s", preFix);
     DisplayCustomAttributes(inPermission, newPreFix);
 } // void MDInfo::DisplayPermissionInfo()
-
-
-// simply prints out the given GUID in standard form
-
-LPCSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPSTR guidString, ULONG bufLen)
-{
-    GuidToLPSTR(inGuid, guidString, bufLen);
-    return guidString;
-} // LPCSTR MDInfo::GUIDAsString()
 
 #ifdef FEATURE_COMINTEROP
 LPCSTR MDInfo::VariantAsString(VARIANT *pVariant, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen)

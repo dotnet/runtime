@@ -9,6 +9,8 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     internal static partial class LazyGenericsSupport
@@ -201,6 +203,30 @@ namespace ILCompiler
 
                                 if (ecmaMethod.IsVirtual)
                                     LookForVirtualOverrides(ecmaMethod);
+                            }
+                            catch (TypeSystemException)
+                            {
+                            }
+                        }
+                    }
+
+                    if (isGenericType)
+                    {
+                        Instantiation typeContext = default;
+
+                        foreach (FieldDefinitionHandle fieldHandle in typeDefinition.GetFields())
+                        {
+                            try
+                            {
+                                var ecmaField = (EcmaField)assembly.GetObject(fieldHandle);
+
+                                if (typeContext.IsNull)
+                                {
+                                    typeContext = ecmaField.OwningType.Instantiation;
+                                    Debug.Assert(!typeContext.IsNull);
+                                }
+
+                                ProcessTypeReference(ecmaField.FieldType, typeContext, default);
                             }
                             catch (TypeSystemException)
                             {

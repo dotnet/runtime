@@ -208,8 +208,8 @@ def process_git_hash_arg(coreclr_args, return_first_hash=False):
         baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
         logging.info("Baseline hash: %s", baseline_hash)
 
-        # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-        command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
+        # Enumerate the last 20 changes, starting with the baseline, that included JIT and JIT-EE GUID changes.
+        command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
         logging.debug("Invoking: {}".format(" ".join(command)))
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         stdout_change_list, _ = proc.communicate()
@@ -435,8 +435,8 @@ def upload_command(coreclr_args):
         # from the root of the runtime repo.
 
         with ChangeDir(coreclr_args.runtime_repo_location):
-            # Enumerate the last change, starting with the jit_git_hash, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", jit_git_hash, "-1", "--", "src/coreclr/jit/*" ]
+            # Enumerate the last change, starting with the jit_git_hash, that included JIT and JIT-EE GUID changes.
+            command = [ "git", "log", "--pretty=format:%H", jit_git_hash, "-1", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
             logging.info("Invoking: {}".format(" ".join(command)))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
@@ -457,7 +457,7 @@ def upload_command(coreclr_args):
 
     try:
         from azure.storage.blob import BlobServiceClient
-        from azure.identity import DefaultAzureCredential
+        from azure.identity import AzureCliCredential
 
     except:
         logging.warning("Please install:")
@@ -466,7 +466,7 @@ def upload_command(coreclr_args):
         logging.warning("See also https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-python")
         raise RuntimeError("Missing azure storage or identity packages.")
 
-    default_credential = DefaultAzureCredential()
+    default_credential = AzureCliCredential()
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}/{}".format(az_builds_root_folder, jit_git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type)

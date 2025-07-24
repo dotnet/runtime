@@ -103,6 +103,7 @@ namespace System.IO.Hashing.Tests
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash64(Seed);
+        protected override NonCryptographicHashAlgorithm Clone(NonCryptographicHashAlgorithm instance) => ((XxHash64)instance).Clone();
 
         protected override byte[] StaticOneShot(byte[] source) => XxHash64.Hash(source, Seed);
 

@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public DependencyContext Read(Stream stream)
         {
-            ThrowHelper.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(stream);
 
             ArraySegment<byte> buffer = ReadToEnd(stream);
             try

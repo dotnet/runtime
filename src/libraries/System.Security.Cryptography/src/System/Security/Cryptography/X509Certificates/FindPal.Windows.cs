@@ -470,7 +470,7 @@ namespace System.Security.Cryptography.X509Certificates
             return true;
         }
 
-        private static unsafe string GetCertNameInfo(SafeCertContextHandle pCertContext, Interop.Crypt32.CertNameType dwNameType, Interop.Crypt32.CertNameFlags dwNameFlags)
+        private static string GetCertNameInfo(SafeCertContextHandle pCertContext, Interop.Crypt32.CertNameType dwNameType, Interop.Crypt32.CertNameFlags dwNameFlags)
         {
             Debug.Assert(dwNameType != Interop.Crypt32.CertNameType.CERT_NAME_ATTR_TYPE);
             return Interop.crypt32.CertGetNameString(

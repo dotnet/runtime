@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             if (!result &&
-                (providingType.IsArray || providingType.GetTypeDefinition() == factory.ArrayOfTEnumeratorType) &&
+                (providingType.IsArray || providingType.GetTypeDefinition() == factory.TypeSystemContext.ArrayOfTEnumeratorType) &&
                 implementedInterface.HasInstantiation)
             {
                 // We need to also do this for generic interfaces on arrays because they have a weird casting rule

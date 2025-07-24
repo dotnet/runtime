@@ -62,10 +62,7 @@ namespace System.Reflection.Metadata
 
         public bool Equals(StringHandle handle, string value, bool ignoreCase)
         {
-            if (value == null)
-            {
-                Throw.ValueArgumentNull();
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             return _reader.StringHeap.Equals(handle, value, _reader.UTF8Decoder, ignoreCase);
         }
@@ -77,10 +74,7 @@ namespace System.Reflection.Metadata
 
         public bool Equals(NamespaceDefinitionHandle handle, string value, bool ignoreCase)
         {
-            if (value == null)
-            {
-                Throw.ValueArgumentNull();
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (handle.HasFullName)
             {
@@ -97,10 +91,7 @@ namespace System.Reflection.Metadata
 
         public bool Equals(DocumentNameBlobHandle handle, string value, bool ignoreCase)
         {
-            if (value == null)
-            {
-                Throw.ValueArgumentNull();
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             return _reader.BlobHeap.DocumentNameEquals(handle, value, ignoreCase);
         }
@@ -112,10 +103,7 @@ namespace System.Reflection.Metadata
 
         public bool StartsWith(StringHandle handle, string value, bool ignoreCase)
         {
-            if (value == null)
-            {
-                Throw.ValueArgumentNull();
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             return _reader.StringHeap.StartsWith(handle, value, _reader.UTF8Decoder, ignoreCase);
         }

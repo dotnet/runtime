@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveILGeneratorTests
     {
         [Fact]
@@ -20,6 +20,27 @@ namespace System.Reflection.Emit.Tests
             {
                 PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder methodBuilder = type.DefineMethod("EmptyMethod", MethodAttributes.Public, typeof(void), [typeof(Version)]);
+                type.CreateType();
+                ab.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodInfo method = typeFromDisk.GetMethod("EmptyMethod");
+                    MethodBody? body = method.GetMethodBody();
+                    Assert.Null(body);
+                }
+            }
+        }
+
+        [Fact]
+        public void MethodWithMinimalBody()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder methodBuilder = type.DefineMethod("MinimalMethod", MethodAttributes.Public, typeof(void), [typeof(Version)]);
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ret);
                 type.CreateType();
@@ -29,7 +50,7 @@ namespace System.Reflection.Emit.Tests
                 {
                     Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
                     Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                    MethodInfo method = typeFromDisk.GetMethod("EmptyMethod");
+                    MethodInfo method = typeFromDisk.GetMethod("MinimalMethod");
                     MethodBody body = method.GetMethodBody();
                     Assert.Empty(body.LocalVariables);
                     Assert.Empty(body.ExceptionHandlingClauses);
@@ -219,7 +240,7 @@ namespace System.Reflection.Emit.Tests
                 il1.Emit(OpCodes.Ldarg_2);     // push 1 MaxStack 7
                 il1.Emit(OpCodes.Ldc_I4_5);    // push 1 MaxStack 8
                 il1.Emit(OpCodes.Ldarg_1);     // push 1 MaxStack 9
-                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 8 
+                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 8
                 il1.Emit(OpCodes.Sub);         // pop 2 push 1 stack size 7
                 il1.Emit(OpCodes.Mul);         // pop 2 push 1 stack size 6
                 il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 5
@@ -630,7 +651,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder methodMultiply = tb.DefineMethod("Multiply", MethodAttributes.Public, typeof(int), [typeof(int)]);
                 /*
                 class MyType
-                { 
+                {
                     private int _field;
                     int Multiply(int value) => _field * value;
                     void Main(int a)
@@ -643,7 +664,7 @@ namespace System.Reflection.Emit.Tests
                 ILGenerator il = methodMultiply.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldfld, field);
-                il.Emit(OpCodes.Ldarg_1);  
+                il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Mul);
                 il.Emit(OpCodes.Ret);
 
@@ -888,7 +909,7 @@ internal class Dummy
                 FieldBuilder field = anotherType.DefineField("StaticField", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
                 MethodBuilder staticMethod = anotherType.DefineMethod("StaticMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
                 /*class MyType
-                  { 
+                  {
                       int Main(int a)
                       {
                           AnotherType.StaticField = a;
@@ -2327,7 +2348,7 @@ public class MyType
                 // Unreachable.
                 ilg.Emit(OpCodes.Ldarg_0);
 
-                // Depth 
+                // Depth
                 ilg.MarkLabel(lab);
                 ilg.Emit(OpCodes.Add);
                 ilg.Emit(OpCodes.Ret);

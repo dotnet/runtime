@@ -294,8 +294,7 @@ namespace System.Tests
             foreach (object[] objs in Int128Tests.Parse_Invalid_TestData())
             {
                 if ((Type)objs[3] == typeof(OverflowException) &&
-                    (((NumberStyles)objs[1] & NumberStyles.AllowBinarySpecifier) != 0 || // TODO https://github.com/dotnet/runtime/issues/83619: Remove once BigInteger supports binary parsing
-                     !BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
+                    (!BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
                      bi <= UInt128.MaxValue))
                 {
                     continue;
@@ -496,6 +495,27 @@ namespace System.Tests
 
             UInt128 b = (UInt128Tests_GenericMath.Int128MaxValue - 10u) * (UInt128)(Int128)(-100);
             Assert.Equal(b, 1100u);
+        }
+
+        public static IEnumerable<object[]> BigMul_TestData()
+        {
+            yield return new object[] { (UInt128)0, (UInt128)0, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (UInt128)0, (UInt128)1, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (UInt128)1, (UInt128)0, "0000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (UInt128)2, (UInt128)3, "0000000000000000000000000000000000000000000000000000000000000006" };
+            yield return new object[] { UInt128.MaxValue, (UInt128)2, "00000000000000000000000000000001FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE" };
+            yield return new object[] { UInt128.MaxValue, (UInt128)1, "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" };
+            yield return new object[] { UInt128.MaxValue, UInt128.MaxValue, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000000000000000000000000000001" };
+            yield return new object[] { UInt128.MaxValue, (UInt128)3, "00000000000000000000000000000002FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD" };
+            yield return new object[] { new UInt128(0xE8FAF08929B46BB5, 0x26B442D59782BA17), new UInt128(0x26B442D59782BA17, 0xE8FAF08929B46BB5), "23394CF891529663F897F2180AA9D1F6EA183EE8D7CCD26D1EB6255F4A612F43" };
+        }
+
+        [Theory]
+        [MemberData(nameof(BigMul_TestData))]
+        public static void BigMul(UInt128 a, UInt128 b, string result)
+        {
+            UInt128 upper = UInt128.BigMul(a, b, out UInt128 lower);
+            Assert.Equal(result, $"{upper:X32}{lower:X32}");
         }
     }
 }

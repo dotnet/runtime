@@ -21,6 +21,10 @@ public class D
     public int PE1 { get { return 1; } set { } }
 
     event System.Action ED1;
+
+    public class N
+    {
+    }
 }
 
 public class E

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -481,9 +482,11 @@ namespace System.Net.Http
 
             try
             {
+#pragma warning disable CA2025
                 Task task = SerializeToStreamAsync(tempBuffer, null, cancellationToken);
                 CheckTaskNotNull(task);
                 return LoadIntoBufferAsyncCore(task, tempBuffer);
+#pragma warning restore
             }
             catch (Exception e)
             {
@@ -693,7 +696,7 @@ namespace System.Net.Http
         {
             Debug.Assert(StreamCopyExceptionNeedsWrapping(e));
             HttpRequestError error = e is HttpIOException ioEx ? ioEx.HttpRequestError : HttpRequestError.Unknown;
-            return new HttpRequestException(error, SR.net_http_content_stream_copy_error, e);
+            return ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(error, SR.net_http_content_stream_copy_error, e));
         }
 
         private static int GetPreambleLength(ReadOnlySpan<byte> data, Encoding encoding)
@@ -765,7 +768,7 @@ namespace System.Net.Http
 
         private static HttpRequestException CreateOverCapacityException(long maxBufferSize)
         {
-            return new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize));
+            return (HttpRequestException)ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize)));
         }
 
         /// <summary>

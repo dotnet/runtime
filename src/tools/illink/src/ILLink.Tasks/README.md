@@ -9,11 +9,11 @@ More details about how to use the task is in [docs/](/docs/tools/illink/illink-t
 To build ILLink.Tasks:
 
 ```sh
-$ dotnet restore illink.sln
-$ dotnet pack illink.sln
+$ dotnet restore illink.slnx
+$ dotnet pack illink.slnx
 ```
 
 To produce a package:
 ```sh
-$ ./eng/dotnet.{sh/ps1} pack illink.sln
+$ ./eng/dotnet.{sh/ps1} pack illink.slnx
 ```

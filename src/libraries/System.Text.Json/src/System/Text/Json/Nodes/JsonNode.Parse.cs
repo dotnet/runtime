@@ -72,12 +72,9 @@ namespace System.Text.Json.Nodes
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default(JsonDocumentOptions))
         {
-            if (json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(json));
-            }
+            ArgumentNullException.ThrowIfNull(json);
 
-            JsonElement element = JsonElement.ParseValue(json, documentOptions);
+            JsonElement element = JsonElement.Parse(json, documentOptions);
             return JsonNodeConverter.Create(element, nodeOptions);
         }
 
@@ -98,7 +95,7 @@ namespace System.Text.Json.Nodes
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default(JsonDocumentOptions))
         {
-            JsonElement element = JsonElement.ParseValue(utf8Json, documentOptions);
+            JsonElement element = JsonElement.Parse(utf8Json, documentOptions);
             return JsonNodeConverter.Create(element, nodeOptions);
         }
 
@@ -120,10 +117,7 @@ namespace System.Text.Json.Nodes
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
 
             JsonElement element = JsonElement.ParseValue(utf8Json, documentOptions);
             return JsonNodeConverter.Create(element, nodeOptions);
@@ -149,10 +143,7 @@ namespace System.Text.Json.Nodes
             JsonDocumentOptions documentOptions = default,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
 
             JsonDocument document = await JsonDocument.ParseAsyncCoreUnrented(utf8Json, documentOptions, cancellationToken).ConfigureAwait(false);
             return JsonNodeConverter.Create(document.RootElement, nodeOptions);

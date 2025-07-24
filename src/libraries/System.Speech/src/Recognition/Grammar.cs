@@ -28,7 +28,7 @@ namespace System.Speech.Recognition
 #pragma warning disable 6507
         internal Grammar(Uri uri, string ruleName, object[] parameters)
         {
-            Helpers.ThrowIfNull(uri, nameof(uri));
+            ArgumentNullException.ThrowIfNull(uri);
 
             _uri = uri;
             InitialGrammarLoad(ruleName, parameters, false);
@@ -74,7 +74,7 @@ namespace System.Speech.Recognition
         [EditorBrowsable(EditorBrowsableState.Never)]
         public Grammar(SrgsDocument srgsDocument, string ruleName, Uri baseUri, object[] parameters)
         {
-            Helpers.ThrowIfNull(srgsDocument, nameof(srgsDocument));
+            ArgumentNullException.ThrowIfNull(srgsDocument);
 
             _srgsDocument = srgsDocument;
             _isSrgsDocument = srgsDocument != null;
@@ -101,7 +101,7 @@ namespace System.Speech.Recognition
         [EditorBrowsable(EditorBrowsableState.Never)]
         public Grammar(Stream stream, string ruleName, Uri baseUri, object[] parameters)
         {
-            Helpers.ThrowIfNull(stream, nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
 
             if (!stream.CanRead)
             {
@@ -114,7 +114,7 @@ namespace System.Speech.Recognition
 
         public Grammar(GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull(builder, nameof(builder));
+            ArgumentNullException.ThrowIfNull(builder);
 
             _grammarBuilder = builder;
             InitialGrammarLoad(null, null, false);
@@ -143,7 +143,7 @@ namespace System.Speech.Recognition
         #region Public Methods
         public static Grammar LoadLocalizedGrammarFromType(Type type, params object[] onInitParameters)
         {
-            Helpers.ThrowIfNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (type == typeof(Grammar) || !type.IsSubclassOf(typeof(Grammar)))
             {

@@ -13,9 +13,10 @@
 
     <!--
       - For regular library tests, it will use the symbols file from the runtime pack.
-      - for AOT library tests, we use WasmNativeStrip=false, so we already have symbols
+      - for AOT library tests, we avoid WasmNativeDebugSymbols so that we don't run OOM on helix during wasm-opt
     -->
-    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(RunAOTCompilation)' == 'true'">false</WasmNativeStrip>
+    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</WasmNativeStrip>
+    <WasmNativeDebugSymbols Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">false</WasmNativeDebugSymbols>
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
 
     <_WasmMainJSFileName Condition="'$(WasmMainJSPath)' != ''">$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>

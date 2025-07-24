@@ -17,7 +17,7 @@ namespace Microsoft.Android.Build.Ndk
             string? ver = version?.Trim();
             if (string.IsNullOrEmpty(ver))
             {
-                throw new ArgumentException ("must be a non-empty string", nameof (version));
+                throw new ArgumentException ("must be a non-empty string", nameof(version));
             }
 
             int tagIdx = ver!.IndexOf('-');

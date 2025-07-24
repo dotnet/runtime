@@ -8,7 +8,8 @@
 }
 .assembly extern xunit.core {}
 
-
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
 
 // Metadata version: v4.0.amd64ret
@@ -19,7 +20,7 @@
 }
 .assembly 'test_il'
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
   .hash algorithm 0x00008004
@@ -44,6 +45,11 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('Allocates large contiguous array that is not consistently available')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsAppleMobile')
+    }
     .entrypoint
     // Code size       40 (0x28)
     .maxstack  2
@@ -114,7 +120,7 @@
       IL_0028:  br.s       IL_0015
 
     }  // end .try
-    catch [mscorlib]System.IndexOutOfRangeException 
+    catch [mscorlib]System.IndexOutOfRangeException
     {
       IL_002a:  pop
       IL_002b:  nop
@@ -123,7 +129,7 @@
       IL_002e:  leave.s    IL_0056
 
     }  // end handler
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0030:  stloc.2
       IL_0031:  nop
@@ -186,7 +192,7 @@
       IL_0023:  br.s       IL_0011
 
     }  // end .try
-    catch [mscorlib]System.IndexOutOfRangeException 
+    catch [mscorlib]System.IndexOutOfRangeException
     {
       IL_0025:  pop
       IL_0026:  nop
@@ -195,7 +201,7 @@
       IL_0029:  leave.s    IL_0051
 
     }  // end handler
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_002b:  stloc.2
       IL_002c:  nop
@@ -267,7 +273,7 @@
       IL_003a:  leave.s    IL_005e
 
     }  // end .try
-    catch [mscorlib]System.IndexOutOfRangeException 
+    catch [mscorlib]System.IndexOutOfRangeException
     {
       IL_003c:  pop
       IL_003d:  nop
@@ -276,7 +282,7 @@
       IL_0040:  leave.s    IL_006e
 
     }  // end handler
-    catch [mscorlib]System.OverflowException 
+    catch [mscorlib]System.OverflowException
     {
       IL_0042:  pop
       IL_0043:  nop
@@ -285,7 +291,7 @@
       IL_0046:  leave.s    IL_006e
 
     }  // end handler
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0048:  stloc.2
       IL_0049:  nop
@@ -347,7 +353,7 @@
       IL_002e:  br.s       IL_0019
 
     }  // end .try
-    catch [mscorlib]System.IndexOutOfRangeException 
+    catch [mscorlib]System.IndexOutOfRangeException
     {
       IL_0030:  pop
       IL_0031:  nop
@@ -356,7 +362,7 @@
       IL_0034:  leave.s    IL_004b
 
     }  // end handler
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0036:  pop
       IL_0037:  nop
@@ -436,7 +442,7 @@
       IL_0048:  br.s       IL_0019
 
     }  // end .try
-    catch [mscorlib]System.IndexOutOfRangeException 
+    catch [mscorlib]System.IndexOutOfRangeException
     {
       IL_004a:  pop
       IL_004b:  nop
@@ -445,7 +451,7 @@
       IL_004e:  leave.s    IL_0065
 
     }  // end handler
-    catch [mscorlib]System.Exception 
+    catch [mscorlib]System.Exception
     {
       IL_0050:  pop
       IL_0051:  nop
@@ -466,7 +472,7 @@
     IL_0067:  ret
   } // end of method StrideTest::Test5
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

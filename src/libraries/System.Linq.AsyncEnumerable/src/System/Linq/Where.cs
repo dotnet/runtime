@@ -21,10 +21,12 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -52,10 +54,12 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -64,7 +68,7 @@ namespace System.Linq
             {
                 await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (await predicate(element, cancellationToken).ConfigureAwait(false))
+                    if (await predicate(element, cancellationToken))
                     {
                         yield return element;
                     }
@@ -89,10 +93,12 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, bool> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -127,10 +133,12 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, CancellationToken, ValueTask<bool>> predicate)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source, predicate, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, predicate, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
@@ -140,7 +148,7 @@ namespace System.Linq
                 int index = -1;
                 await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (await predicate(element, checked(++index), cancellationToken).ConfigureAwait(false))
+                    if (await predicate(element, checked(++index), cancellationToken))
                     {
                         yield return element;
                     }

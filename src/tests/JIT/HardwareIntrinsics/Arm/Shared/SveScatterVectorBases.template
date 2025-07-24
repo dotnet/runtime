@@ -10,6 +10,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -114,7 +115,17 @@ namespace JIT.HardwareIntrinsics.Arm._Sve
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(outArrayPtr), ref Unsafe.As<{Op1BaseType}, byte>(ref outArray[0]), (uint)sizeOfOutArray);
 
                 // Add the base pointer to the offsets within outArray to create complete pointers.
-                for (var i = 0; i < inAddress.Length; i++) { inAddress[i] += ({Op2BaseType})outArrayPtr; }
+                for (var i = 0; i < inAddress.Length; i++)
+                {
+                    {Op2BaseType} baseAddrToValidate = (({Op2BaseType})outArrayPtr + (sizeof({Op2BaseType}) * inAddress[i]));
+
+                    // Make sure we got the correct base pointers.
+                    Debug.Assert((int)inAddress[i] < (int)outArray.Length, $"Index {inAddress[i]} exceeds array length {outArray.Length}");
+                    Debug.Assert(*(({Op1BaseType}*)baseAddrToValidate) == outArray[inAddress[i]]);
+
+                    inAddress[i] = baseAddrToValidate;
+                }
+
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inAddressArrayPtr), ref Unsafe.As<{Op2BaseType}, byte>(ref inAddress[0]), (uint)sizeOfInOffset);
             }
 
@@ -175,11 +186,19 @@ namespace JIT.HardwareIntrinsics.Arm._Sve
                 _dataTable.ResetOutArray();
 
                 // Fill full of offsets into the data buffer.
-                for (var i = 0; i < AddressElementCount; i++) { _addressArr[i] = ({NextValueOp2} % ({Op2BaseType})OutElementCount ) * sizeof({Op2BaseType}); }
+                for (var i = 0; i < AddressElementCount; i++) { _addressArr[i] = ({NextValueOp2} % ({Op2BaseType})OutElementCount ); }
                 MakeDistinct(_addressArr);
 
-                // Add the base pointer to the offsets within outArray to create complete pointers.
-                for (var i = 0; i < AddressElementCount; i++) { _addressArr[i] += ({Op2BaseType})_dataTable.outArrayPtr; }
+                // Add the base pointer to the offsets within inArray2 to create complete pointers.
+                for (var i = 0; i < AddressElementCount; i++)
+                {
+                    {Op2BaseType} baseAddrToValidate = (({Op2BaseType})_dataTable.outArrayPtr + (sizeof({Op2BaseType}) * _addressArr[i]));
+
+                    // Make sure we got the correct base pointers.                   
+                    Debug.Assert(*(({Op1BaseType}*)baseAddrToValidate) == (({Op1BaseType}*)_dataTable.outArrayPtr)[_addressArr[i]]);
+
+                    _addressArr[i] = baseAddrToValidate;
+                }
 
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._data), ref Unsafe.As<{Op1BaseType}, byte>(ref _dataArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
@@ -224,7 +243,7 @@ namespace JIT.HardwareIntrinsics.Arm._Sve
             for (var i = 0; i < DataElementCount; i++) { _dataArr[i] = {NextValueOp3}; }
 
             // Fill full of offsets into the data buffer. They wil be expanded to full pointers inside the DataTable constructor.
-            for (var i = 0; i < AddressElementCount; i++) { _addressArr[i] = ({NextValueOp2} % ({Op2BaseType})OutElementCount) * sizeof({Op2BaseType}); }
+            for (var i = 0; i < AddressElementCount; i++) { _addressArr[i] = ({NextValueOp2} % ({Op2BaseType})OutElementCount); }
             MakeDistinct(_addressArr);
 
             for (var i = 0; i < DataElementCount; i++) { _falseData[i] = {NextValueOp3}; }

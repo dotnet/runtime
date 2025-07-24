@@ -75,6 +75,26 @@ namespace TestBitwiseClearShift
                 fail = true;
             }
 
+            if (!BicsSingleLine(0x22446688, 0x22446688))
+            {
+                fail = true;
+            }
+
+            if (!BicsSingleLineLSL(0xABC, 0xFFFEA87F))
+            {
+                fail = true;
+            }
+
+            if (BicsBinOp(0xFF012FFF, 0xFED, 0xFFDDBB99, 0xFF002244) != 1)
+            {
+                fail = true;
+            }
+
+            if (!BicsBinOpSingleLine(0x66665555, 0x9999AAAA, 0xFFFFFFFD, 0x2))
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -212,6 +232,39 @@ namespace TestBitwiseClearShift
                 return -1;
             }
             return 1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsSingleLine(uint a, uint b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a & ~b) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsSingleLineLSL(uint a, uint b)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #5
+            return (~(a<<5) & b) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int BicsBinOp(uint a, uint b, uint c, uint d)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #8
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #12
+            if (((a & ~(b<<12)) == 0) == ((~(c>>8) & d) == 0)) {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool BicsBinOpSingleLine(uint a, uint b, uint c, uint d)
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return ((~a & b) != 0) & ((c & ~d) != 0);
         }
     }
 }

@@ -28,7 +28,9 @@ internal static class Program
 
 The main types provided by this library are:
 
+* `System.Security.Cryptography.AesGcm`
 * `System.Security.Cryptography.SP800108HmacCounterKdf`
+* `System.Security.Cryptography.X509Certificates.X509CertificateLoader`
 
 ## Additional Documentation
 

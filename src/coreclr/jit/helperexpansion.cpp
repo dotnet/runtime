@@ -386,7 +386,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     if (needsSizeCheck)
     {
         // sizeCheckBb is the first block after prevBb
-        fgRedirectTargetEdge(prevBb, sizeCheckBb);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), sizeCheckBb);
 
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
         {
@@ -404,7 +404,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     else
     {
         // nullcheckBb is the first block after prevBb
-        fgRedirectTargetEdge(prevBb, nullcheckBb);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), nullcheckBb);
 
         // No size check, nullcheckBb jumps to fast path
         // fallbackBb is only reachable from nullcheckBb (jump destination)
@@ -744,9 +744,9 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     fastPathBb->inheritWeight(prevBb);
 
     // fallback will just execute first time
-    fallbackBb->bbSetRunRarely();
+    fallbackBb->inheritWeightPercentage(tlsRootNullCondBB, 0);
 
-    fgRedirectTargetEdge(prevBb, tlsRootNullCondBB);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), tlsRootNullCondBB);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -789,7 +789,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 //
 bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    assert(!opts.IsReadyToRun());
+    assert(!IsAot());
 
     BasicBlock* block = *pBlock;
 
@@ -801,7 +801,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         return false;
     }
-    assert(!opts.IsReadyToRun());
 
     if (TargetOS::IsUnix)
     {
@@ -1034,7 +1033,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         tlsBaseComputeBB->SetTargetEdge(newEdge);
 
         assert(prevBb->KindIs(BBJ_ALWAYS));
-        fgRedirectTargetEdge(prevBb, tlsBaseComputeBB);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), tlsBaseComputeBB);
 
         // Inherit the weights
         block->inheritWeight(prevBb);
@@ -1143,7 +1142,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Update preds in all new blocks
         //
         assert(prevBb->KindIs(BBJ_ALWAYS));
-        fgRedirectTargetEdge(prevBb, maxThreadStaticBlocksCondBB);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), maxThreadStaticBlocksCondBB);
 
         {
             FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
@@ -1180,7 +1179,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fastPathBb->inheritWeight(prevBb);
 
         // fallback will just execute first time
-        fallbackBb->bbSetRunRarely();
+        fallbackBb->inheritWeightPercentage(prevBb, 0);
 
         // All blocks are expected to be in the same EH region
         assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1519,7 +1518,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     //
 
     // Redirect prevBb from block to isInitedBb
-    fgRedirectTargetEdge(prevBb, isInitedBb);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), isInitedBb);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1545,7 +1544,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
-    helperCallBb->bbSetRunRarely();
+    helperCallBb->inheritWeightPercentage(isInitedBb, 0);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1605,7 +1604,7 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
 //
 bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
+    if (!call->IsSpecialIntrinsic())
     {
         return false;
     }
@@ -1846,7 +1845,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Update preds in all new blocks
     //
     // Redirect prevBb to lengthCheckBb
-    fgRedirectTargetEdge(prevBb, lengthCheckBb);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), lengthCheckBb);
+    lengthCheckBb->inheritWeight(prevBb);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1859,6 +1859,11 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         // review: we assume length check always succeeds??
         trueEdge->setLikelihood(1.0);
         falseEdge->setLikelihood(0.0);
+
+        if (lengthCheckBb->hasProfileWeight())
+        {
+            fastpathBb->setBBProfileWeight(falseEdge->getLikelyWeight());
+        }
     }
 
     {
@@ -1869,10 +1874,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     }
 
     //
-    // Re-distribute weights
+    // Ensure all flow out of prevBb converges into block
     //
-    lengthCheckBb->inheritWeight(prevBb);
-    fastpathBb->inheritWeight(lengthCheckBb);
     block->inheritWeight(prevBb);
 
     // All blocks are expected to be in the same EH region
@@ -1939,10 +1942,6 @@ enum class TypeCheckPassedAction
     CallHelper_AlwaysThrows,
 };
 
-// Some arbitrary limit on the number of guesses we can make
-// The actual number of guesses is usually much smaller
-#define MAX_CAST_GUESSES 8
-
 //------------------------------------------------------------------------------
 // PickCandidatesForTypeCheck: picks classes to use as fast type checks against
 //    the object being casted. The function also defines the strategy to follow
@@ -1951,7 +1950,7 @@ enum class TypeCheckPassedAction
 // Arguments:
 //    comp               - Compiler instance
 //    castHelper         - Cast helper call to expand
-//    candidates         - [out] Classes (guesses) to use in the fast path (up to MAX_CAST_GUESSES)
+//    candidates         - [out] Classes (guesses) to use in the fast path (up to MAX_GDV_TYPE_CHECKS)
 //    commonCls          - [out] Common denominator class for the fast and the fallback paths.
 //    likelihoods        - [out] Likelihoods of successful type checks [0..100]
 //    typeCheckFailed    - [out] Action to perform if the type check fails
@@ -2157,9 +2156,9 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
-    const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_CAST_GUESSES);
+    const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
 
-    CORINFO_CLASS_HANDLE exactClasses[MAX_CAST_GUESSES] = {};
+    CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS] = {};
     const int numExactClasses = comp->info.compCompHnd->getExactClasses(castToCls, maxTypeChecks, exactClasses);
     bool      allTrulyExact   = true;
     for (int i = 0; i < numExactClasses; i++)
@@ -2231,9 +2230,9 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     // 3) Consult with PGO data
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    CORINFO_CLASS_HANDLE likelyClasses[MAX_CAST_GUESSES]     = {};
-    unsigned             likelyLikelihoods[MAX_CAST_GUESSES] = {};
-    int                  likelyClassCount                    = 0;
+    CORINFO_CLASS_HANDLE likelyClasses[MAX_GDV_TYPE_CHECKS]     = {};
+    unsigned             likelyLikelihoods[MAX_GDV_TYPE_CHECKS] = {};
+    int                  likelyClassCount                       = 0;
     comp->pickGDV(castHelper, castHelper->gtCastHelperILOffset, false, likelyClasses, nullptr, &likelyClassCount,
                   likelyLikelihoods);
 
@@ -2361,8 +2360,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     TypeCheckFailedAction typeCheckFailedAction;
     TypeCheckPassedAction typeCheckPassedAction;
     CORINFO_CLASS_HANDLE  commonCls;
-    CORINFO_CLASS_HANDLE  expectedExactClasses[MAX_CAST_GUESSES] = {};
-    unsigned              likelihoods[MAX_CAST_GUESSES]          = {};
+    CORINFO_CLASS_HANDLE  expectedExactClasses[MAX_GDV_TYPE_CHECKS] = {};
+    unsigned              likelihoods[MAX_GDV_TYPE_CHECKS]          = {};
 
     const int numOfCandidates = PickCandidatesForTypeCheck(this, call, expectedExactClasses, &commonCls, likelihoods,
                                                            &typeCheckFailedAction, &typeCheckPassedAction);
@@ -2447,8 +2446,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // Block 2: typeCheckBb(s)
     // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
 
-    BasicBlock* typeChecksBbs[MAX_CAST_GUESSES] = {};
-    BasicBlock* lastTypeCheckBb                 = nullcheckBb;
+    BasicBlock* typeChecksBbs[MAX_GDV_TYPE_CHECKS] = {};
+    BasicBlock* lastTypeCheckBb                    = nullcheckBb;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
         const CORINFO_CLASS_HANDLE expectedCls = expectedExactClasses[candidateId];
@@ -2551,11 +2550,18 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         trueEdge->setLikelihood(nullcheckTrueLikelihood);
     }
 
+    // Set nullcheckBb's weight here, so we can propagate it to its successors below
+    nullcheckBb->inheritWeight(firstBb);
+
     if (typeCheckNotNeeded)
     {
         FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
         nullcheckBb->SetFalseEdge(falseEdge);
         falseEdge->setLikelihood(nullcheckFalseLikelihood);
+        fallbackBb->inheritWeight(nullcheckBb);
+        fallbackBb->scaleBBWeight(nullcheckFalseLikelihood);
+        lastBb->inheritWeight(nullcheckBb);
+        lastBb->scaleBBWeight(nullcheckTrueLikelihood);
 
         typeCheckSucceedBb = nullptr;
     }
@@ -2594,7 +2600,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         }
     }
 
-    fgRedirectTargetEdge(firstBb, nullcheckBb);
+    fgRedirectEdge(firstBb->TargetEdgeRef(), nullcheckBb);
 
     //
     // Re-distribute weights and set edge likelihoods.
@@ -2631,7 +2637,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // The same goes for inherited weights -- the block where we test for B will have
     // the weight of A times the likelihood that A's test fails, etc.
     //
-    nullcheckBb->inheritWeight(firstBb);
     weight_t sumOfPreviousLikelihood = 0;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
@@ -2666,27 +2671,21 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         sumOfPreviousLikelihood += likelihood;
     }
 
-    if (fallbackBb->KindIs(BBJ_THROW))
+    fallbackBb->inheritWeight(lastTypeCheckBb);
+    fallbackBb->scaleBBWeight(lastTypeCheckBb->GetFalseEdge()->getLikelihood());
+
+    if (fallbackBb->KindIs(BBJ_ALWAYS))
     {
-        fallbackBb->bbSetRunRarely();
-    }
-    else
-    {
-        assert(fallbackBb->KindIs(BBJ_ALWAYS));
         FlowEdge* const newEdge = fgAddRefPred(lastBb, fallbackBb);
         fallbackBb->SetTargetEdge(newEdge);
-        fallbackBb->inheritWeight(lastTypeCheckBb);
-        weight_t lastTypeCheckFailedLikelihood = lastTypeCheckBb->GetFalseEdge()->getLikelihood();
-        fallbackBb->scaleBBWeight(lastTypeCheckFailedLikelihood);
     }
 
     if (!typeCheckNotNeeded)
     {
         typeCheckSucceedBb->inheritWeight(typeChecksBbs[0]);
         typeCheckSucceedBb->scaleBBWeight(sumOfPreviousLikelihood);
+        lastBb->inheritWeight(firstBb);
     }
-
-    lastBb->inheritWeight(firstBb);
 
     //
     // Validate EH regions
@@ -2723,6 +2722,14 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
                 block->setBBProfileWeight(block->computeIncomingWeight());
             }
         }
+    }
+
+    if (fallbackBb->KindIs(BBJ_THROW) && (fallbackBb->bbWeight != BB_ZERO_WEIGHT))
+    {
+        // This flow is disappearing.
+        JITDUMP("fgLateCastExpansionForCall: fallback " FMT_BB " throws and has flow into it. Data %s inconsistent.\n",
+                fallbackBb->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
@@ -2810,18 +2817,16 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     const CorInfoHelpFunc helper         = eeGetHelperNum(call->gtCallMethHnd);
     int                   lengthArgIndex = -1;
+    int                   typeArgIndex   = -1;
 
     switch (helper)
     {
         case CORINFO_HELP_NEWARR_1_DIRECT:
         case CORINFO_HELP_NEWARR_1_VC:
-        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_ALIGN8:
             lengthArgIndex = 1;
-            break;
-
-        case CORINFO_HELP_READYTORUN_NEWARR_1:
-            lengthArgIndex = 0;
+            typeArgIndex   = 0;
             break;
 
         default:
@@ -2859,9 +2864,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Initialize the array method table pointer.
     //
-    CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
-
-    GenTree* const   mt      = gtNewIconEmbClsHndNode(arrayHnd);
+    GenTree* const   mt      = call->gtArgs.GetArgByIndex(typeArgIndex)->GetNode();
     GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
     Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
 

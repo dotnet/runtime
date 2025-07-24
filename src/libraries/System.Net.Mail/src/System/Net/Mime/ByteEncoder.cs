@@ -14,15 +14,15 @@ namespace System.Net.Mime
 
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
 
-        public int EncodeBytes(byte[] buffer, int offset, int count, bool dontDeferFinalBytes, bool shouldAppendSpaceToCRLF)
+        public int EncodeBytes(ReadOnlySpan<byte> buffer, bool dontDeferFinalBytes, bool shouldAppendSpaceToCRLF)
         {
             // Add Encoding header, if any. e.g. =?encoding?b?
             WriteState.AppendHeader();
 
             bool _hasSpecialEncodingForCRLF = HasSpecialEncodingForCRLF;
 
-            int cur = offset;
-            for (; cur < count + offset; cur++)
+            int cur = 0;
+            for (; cur < buffer.Length; cur++)
             {
                 if (LineBreakNeeded(buffer[cur]))
                 {
@@ -30,14 +30,14 @@ namespace System.Net.Mime
                     WriteState.AppendCRLF(shouldAppendSpaceToCRLF);
                 }
 
-                if (_hasSpecialEncodingForCRLF && IsCRLF(buffer, cur, count + offset))
+                if (_hasSpecialEncodingForCRLF && buffer.Slice(cur).StartsWith("\r\n"u8))
                 {
                     AppendEncodedCRLF();
                     cur++;  // Transformed two chars, so shift the index to account for that
                 }
                 else
                 {
-                    ApppendEncodedByte(buffer[cur]);
+                    AppendEncodedByte(buffer[cur]);
                 }
             }
 
@@ -48,7 +48,7 @@ namespace System.Net.Mime
 
             // Write out the last footer, if any.  e.g. ?=
             WriteState.AppendFooter();
-            return cur - offset;
+            return cur;
         }
 
         public int EncodeString(string value, Encoding encoding)
@@ -57,10 +57,11 @@ namespace System.Net.Mime
             Debug.Assert(WriteState != null, "writestate was null");
             Debug.Assert(WriteState.Buffer != null, "writestate.buffer was null");
 
+            byte[] buffer;
             if (encoding == Encoding.Latin1) // we don't need to check for codepoints
             {
-                byte[] buffer = encoding.GetBytes(value);
-                return EncodeBytes(buffer, 0, buffer.Length, true, true);
+                buffer = encoding.GetBytes(value);
+                return EncodeBytes(buffer, true, true);
             }
 
             // Add Encoding header, if any. e.g. =?encoding?b?
@@ -69,31 +70,33 @@ namespace System.Net.Mime
             bool _hasSpecialEncodingForCRLF = HasSpecialEncodingForCRLF;
 
             int totalBytesCount = 0;
-            byte[] bytes = new byte[encoding.GetMaxByteCount(2)];
+            buffer = new byte[encoding.GetMaxByteCount(2)];
             for (int i = 0; i < value.Length; ++i)
             {
                 int codepointSize = GetCodepointSize(value, i);
                 Debug.Assert(codepointSize == 1 || codepointSize == 2, "codepointSize was not 1 or 2");
 
-                int bytesCount = encoding.GetBytes(value, i, codepointSize, bytes, 0);
+                int bytesCount = encoding.GetBytes(value, i, codepointSize, buffer, 0);
+                Span<byte> bytes = buffer.AsSpan(0, bytesCount);
+
                 if (codepointSize == 2)
                 {
                     ++i; // Transformed two chars, so shift the index to account for that
                 }
 
-                if (LineBreakNeeded(bytes, bytesCount))
+                if (LineBreakNeeded(bytes))
                 {
                     AppendPadding();
                     WriteState.AppendCRLF(true);
                 }
 
-                if (_hasSpecialEncodingForCRLF && IsCRLF(bytes, bytesCount))
+                if (_hasSpecialEncodingForCRLF && IsCRLF(bytes))
                 {
                     AppendEncodedCRLF();
                 }
                 else
                 {
-                    AppendEncodedCodepoint(bytes, bytesCount);
+                    AppendEncodedCodepoint(bytes);
                 }
                 totalBytesCount += bytesCount;
             }
@@ -109,19 +112,19 @@ namespace System.Net.Mime
         protected abstract void AppendEncodedCRLF();
 
         protected abstract bool LineBreakNeeded(byte b);
-        protected abstract bool LineBreakNeeded(byte[] bytes, int count);
+        protected abstract bool LineBreakNeeded(ReadOnlySpan<byte> bytes);
 
         protected abstract int GetCodepointSize(string value, int i);
 
         public abstract void AppendPadding();
 
-        protected abstract void ApppendEncodedByte(byte b);
+        protected abstract void AppendEncodedByte(byte b);
 
-        private void AppendEncodedCodepoint(byte[] bytes, int count)
+        private void AppendEncodedCodepoint(ReadOnlySpan<byte> bytes)
         {
-            for (int i = 0; i < count; ++i)
+            foreach (byte b in bytes)
             {
-                ApppendEncodedByte(bytes[i]);
+                AppendEncodedByte(b);
             }
         }
 
@@ -130,14 +133,9 @@ namespace System.Net.Mime
             return char.IsSurrogate(value[i]) && i + 1 < value.Length && char.IsSurrogatePair(value[i], value[i + 1]);
         }
 
-        protected static bool IsCRLF(byte[] bytes, int count)
+        protected static bool IsCRLF(ReadOnlySpan<byte> buffer)
         {
-            return count == 2 && IsCRLF(bytes, 0, count);
-        }
-
-        private static bool IsCRLF(byte[] buffer, int i, int bufferSize)
-        {
-            return buffer[i] == '\r' && i + 1 < bufferSize && buffer[i + 1] == '\n';
+            return buffer.SequenceEqual("\r\n"u8);
         }
     }
 }

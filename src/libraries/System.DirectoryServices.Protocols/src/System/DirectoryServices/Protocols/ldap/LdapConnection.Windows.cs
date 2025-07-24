@@ -62,6 +62,6 @@ namespace System.DirectoryServices.Protocols
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
-            => tempCredential == null && AuthType == AuthType.External ? Interop.Ldap.ldap_bind_s(_ldapHandle, null, Unsafe.NullRef<SEC_WINNT_AUTH_IDENTITY_EX>(), method) : Interop.Ldap.ldap_bind_s(_ldapHandle, null, cred, method);
+            => tempCredential == null && AuthType == AuthType.External ? Interop.Ldap.ldap_bind_s(_ldapHandle, null, IntPtr.Zero, method) : Interop.Ldap.ldap_bind_s(_ldapHandle, null, cred, method);
     }
 }

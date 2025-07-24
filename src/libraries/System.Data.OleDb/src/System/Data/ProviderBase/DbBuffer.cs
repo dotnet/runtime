@@ -607,7 +607,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        internal unsafe void WriteSingle(int offset, float value)
+        internal void WriteSingle(int offset, float value)
         {
             WriteInt32(offset, BitConverter.SingleToInt32Bits(value));
         }

@@ -9,12 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Text.Unicode
 {
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-    internal
-#endif
-        static class Utf8
+    /// <summary>
+    /// Provides static methods that convert chunked data between UTF-8 and UTF-16 encodings.
+    /// </summary>
+    public static class Utf8
     {
         /*
          * OperationStatus-based APIs for transcoding of chunked data.
@@ -216,6 +214,7 @@ namespace System.Text.Unicode
             }
         }
 
+#if NET
         internal static unsafe OperationStatus ToUtf16PreservingReplacement(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
             // NOTE: Changes to this method should be kept in sync with ToUtf16 above.
@@ -433,6 +432,11 @@ namespace System.Text.Unicode
                     return AppendCustomFormatter(value, format: null);
                 }
 
+                if (value is null)
+                {
+                    return true;
+                }
+
                 // Special-case enums to avoid boxing them.
                 if (typeof(T).IsEnum)
                 {
@@ -468,7 +472,7 @@ namespace System.Text.Unicode
                 else
                 {
                     // Fall back to a normal ToString and append that.
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return AppendFormatted(s.AsSpan());
@@ -484,6 +488,11 @@ namespace System.Text.Unicode
                 if (_hasCustomFormatter)
                 {
                     return AppendCustomFormatter(value, format);
+                }
+
+                if (value is null)
+                {
+                    return true;
                 }
 
                 // Special-case enums to avoid boxing them.
@@ -521,7 +530,7 @@ namespace System.Text.Unicode
                 else
                 {
                     // Fall back to a normal ToString and append that.
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return AppendFormatted(s.AsSpan());
@@ -807,6 +816,7 @@ namespace System.Text.Unicode
                 return false;
             }
         }
+#endif
 
         /// <summary>
         /// Validates that the value is well-formed UTF-8.

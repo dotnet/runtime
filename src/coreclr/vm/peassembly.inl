@@ -150,7 +150,7 @@ inline const SString& PEAssembly::GetPath()
     }
     CONTRACTL_END;
 
-    if (IsReflectionEmit() || m_PEImage->IsInBundle ())
+    if (IsReflectionEmit() || m_PEImage->IsInBundle() || m_PEImage->IsExternalData())
     {
         return SString::Empty();
     }
@@ -329,7 +329,7 @@ inline BOOL PEAssembly::IsReadyToRun()
     }
     CONTRACTL_END;
 
-    if (HasPEImage())
+    if (HasPEImage() && HasLoadedPEImage())
     {
         return GetLoadedLayout()->HasReadyToRunHeader();
     }

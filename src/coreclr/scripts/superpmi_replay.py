@@ -19,24 +19,35 @@ from jitutil import run_command
 
 parser = argparse.ArgumentParser(description="description")
 
+parser.add_argument("-type", required=True, help="Type of replay (standard, apx)")
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-platform", help="OS platform")
 parser.add_argument("-jit_directory", help="path to the directory containing clrjit binaries")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
 parser.add_argument("-partition", help="Partition number specifying which set of flags to use: between 1 and the `-partition_count` value")
-parser.add_argument("-partition_count", help="Count of the total number of partitions we are using: should be <= 9 (number of jit_flags_all elements)")
+parser.add_argument("-partition_count", help="Count of the total number of partitions we are using: should be <= the total number of flags combinations for the type")
 
-jit_flags_all = [
-    "JitStressRegs=0",
-    "JitStressRegs=1",
-    "JitStressRegs=2",
-    "JitStressRegs=3",
-    "JitStressRegs=4",
-    "JitStressRegs=8",
-    "JitStressRegs=0x10",
-    "JitStressRegs=0x80",
-    "JitStressRegs=0x1000",
+configuration_standard = [
+    [ "JitStressRegs=0" ],
+    [ "JitStressRegs=1" ],
+    [ "JitStressRegs=2" ],
+    [ "JitStressRegs=3" ],
+    [ "JitStressRegs=4" ],
+    [ "JitStressRegs=8" ],
+    [ "JitStressRegs=0x10" ],
+    [ "JitStressRegs=0x80" ],
+    [ "JitStressRegs=0x1000" ]
 ]
+
+configuration_apx = [
+    [ "RunAltJitCode=0", "EnableAPX=1" ],
+    [ "RunAltJitCode=0", "EnableAPX=1", "EnableApxNDD=1" ],
+    [ "RunAltJitCode=0", "EnableAPX=1", "JitStressRex2Encoding=1" ],
+    [ "RunAltJitCode=0", "EnableAPX=1", "JitStressPromotedEvexEncoding=1" ],
+    [ "RunAltJitCode=0", "EnableAPX=1", "JitStressRegs=4000" ],
+    [ "RunAltJitCode=0", "EnableAPX=1", "EnableApxNDD=1", "JitStressRex2Encoding=1", "JitStressPromotedEvexEncoding=1", "JitStressRegs=4000" ]
+]
+
 
 def split(a, n):
     """ Splits array `a` in `n` partitions.
@@ -65,6 +76,11 @@ def setup_args(args):
     """
     coreclr_args = CoreclrArguments(args, require_built_core_root=False, require_built_product_dir=False,
                                     require_built_test_dir=False, default_build_type="Checked")
+
+    coreclr_args.verify(args,
+                        "type",
+                        lambda type: type in ["standard", "apx"],
+                        "Invalid type \"{}\"".format)
 
     coreclr_args.verify(args,
                         "arch",
@@ -137,8 +153,14 @@ def main(main_args):
     os_name = "universal" if arch_name.startswith("arm") else os_name
     jit_path = os.path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
-    jit_flags_partitioned = split(jit_flags_all, coreclr_args.partition_count)
-    jit_flags = jit_flags_partitioned[coreclr_args.partition - 1] # partition number is 1-based
+    type_configuration_settings = None
+    if coreclr_args.type == 'standard':
+        type_configuration_settings = configuration_standard
+    elif coreclr_args.type == 'apx':
+        type_configuration_settings = configuration_apx
+
+    configuration_settings_partitioned = split(type_configuration_settings, coreclr_args.partition_count)
+    partition_configuration_settings = configuration_settings_partitioned[coreclr_args.partition - 1] # partition number is 1-based
 
     print("Running superpmi.py download")
     run_command([python_path,
@@ -152,33 +174,47 @@ def main(main_args):
             "-log_level", "debug"], _exit_on_fail=True)
 
     failed_runs = []
-    for jit_flag in jit_flags:
-        log_file = os.path.join(log_directory, 'superpmi_{}.log'.format(jit_flag.replace("=", "_")))
-        print("Running superpmi.py replay for {}".format(jit_flag))
+    for configuration_settings in partition_configuration_settings:
+        # Construct the command-line options and log file based on the configuration settings
+        log_file_tag = "_".join(configuration_settings).replace("=", "_")
+        log_file = os.path.join(log_directory, 'superpmi_config_{}.log'.format(log_file_tag))
 
-        _, _, return_code = run_command([
+        config_arguments = []
+        config_display = ""
+        for flag in configuration_settings:
+            config_arguments += "-jitoption", flag
+            config_display += " " + flag
+
+        # Special case: setting altjit requires passing `--altjit` to superpmi.py.
+        if coreclr_args.type == 'apx':
+            config_arguments += [ "--altjit" ]
+            config_display += " --altjit"
+
+        print("Running superpmi.py replay for{}".format(config_display))
+
+        command_line = [
             python_path,
             os.path.join(cwd, "superpmi.py"),
             "replay",
             "-core_root", cwd,
-            "-jitoption", jit_flag,
             "-target_os", platform_name,
             "-target_arch", arch_name,
             "-arch", host_arch_name,
             "-jit_path", jit_path,
             "-spmi_location", spmi_location,
             "-log_level", "debug",
-            "-log_file", log_file])
+            "-log_file", log_file] + config_arguments
 
+        _, _, return_code = run_command(command_line)
         if return_code != 0:
             failed_runs.append("Failure in {}".format(log_file))
 
     # Consolidate all superpmi_*.logs in superpmi_platform_architecture.log
-    final_log_name = os.path.join(log_directory, "superpmi_{}_{}_{}.log".format(platform_name, arch_name, coreclr_args.partition))
+    final_log_name = os.path.join(log_directory, "superpmi_final_{}_{}_{}.log".format(platform_name, arch_name, coreclr_args.partition))
     print("Consolidating final {}".format(final_log_name))
     with open(final_log_name, "a") as final_superpmi_log:
         for superpmi_log in os.listdir(log_directory):
-            if not superpmi_log.startswith("superpmi_Jit") or not superpmi_log.endswith(".log"):
+            if not superpmi_log.startswith("superpmi_config_") or not superpmi_log.endswith(".log"):
                 continue
 
             print("Appending {}".format(superpmi_log))
@@ -193,7 +229,7 @@ def main(main_args):
         if len(failed_runs) > 0:
             final_superpmi_log.write(os.linesep)
             final_superpmi_log.write(os.linesep)
-            final_superpmi_log.write("========Failed runs summary========".format(os.linesep))
+            final_superpmi_log.write("========Failed runs summary========{}".format(os.linesep))
             final_superpmi_log.write(os.linesep.join(failed_runs))
 
     return 0 if len(failed_runs) == 0 else 1

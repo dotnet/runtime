@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Versioning;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using Test.Cryptography;
@@ -659,6 +663,79 @@ namespace System.Security.Cryptography.Pkcs.Tests
             byte[] sig2 = cms.SignerInfos[0].GetSignature();
             Assert.Equal(signature, sig2);
 #endif
+
+            if (detached)
+            {
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+                cms = new SignedCms(contentInfo, detached);
+                cms.Decode(encoded);
+            }
+
+            cms.CheckSignature(true);
+        }
+
+        public static IEnumerable<object[]> AddFirstSignerSlhDsaTestData =>
+            from sit in new[] { SubjectIdentifierType.IssuerAndSerialNumber, SubjectIdentifierType.SubjectKeyIdentifier }
+            from detached in new[] { false, true }
+            from algorithms in new (SlhDsaAlgorithm signAlgorithm, string hashAlgorithm)[]
+            {
+                (SlhDsaAlgorithm.SlhDsaSha2_128s, Oids.Sha256),
+                (SlhDsaAlgorithm.SlhDsaShake128f, Oids.Shake128),
+                (SlhDsaAlgorithm.SlhDsaSha2_256f, Oids.Sha512),
+                (SlhDsaAlgorithm.SlhDsaShake256f, Oids.Shake256),
+            }
+            from SlhDsaTestData.SlhDsaGeneratedKeyInfo info in SlhDsaTestData.GeneratedKeyInfosRaw
+            where info.Algorithm == algorithms.signAlgorithm // Find the matching test data for the algorithm
+            select new object[] { sit, detached, algorithms.hashAlgorithm, info };
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(AddFirstSignerSlhDsaTestData))]
+        public static void AddFirstSigner_SlhDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            CertLoader loader = Certificates.SlhDsaGeneratedCerts.Single(cert => cert.CerData.SequenceEqual(info.Certificate));
+            using (X509Certificate2 signerCert = loader.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                signer.DigestAlgorithm = new Oid(digestOid, digestOid);
+                cms.ComputeSignature(signer);
+            }
+
+            Assert.Single(cms.SignerInfos);
+            Assert.Single(cms.Certificates);
+
+            int expectedVersion = identifierType == SubjectIdentifierType.SubjectKeyIdentifier ? 3 : 1;
+            Assert.Equal(expectedVersion, cms.Version);
+
+            SignerInfo firstSigner = cms.SignerInfos[0];
+            Assert.Equal(identifierType, firstSigner.SignerIdentifier.Type);
+            Assert.NotNull(firstSigner.Certificate);
+            Assert.NotSame(cms.Certificates[0], firstSigner.Certificate);
+            Assert.Equal(cms.Certificates[0], firstSigner.Certificate);
+
+            byte[] signature = firstSigner.GetSignature();
+            Assert.NotEmpty(signature);
+
+            // SLH-DSA Oids are all under 2.16.840.1.101.3.4.3.
+            Assert.StartsWith("2.16.840.1.101.3.4.3.", firstSigner.SignatureAlgorithm.Value);
+
+            cms.CheckSignature(true);
+            byte[] encoded = cms.Encode();
+
+            cms = new SignedCms();
+            cms.Decode(encoded);
+
+            Assert.Single(cms.SignerInfos);
+            Assert.Single(cms.Certificates);
+            Assert.Equal(expectedVersion, cms.Version);
+            Assert.Equal(identifierType, cms.SignerInfos[0].SignerIdentifier.Type);
+            Assert.Equal(firstSigner.Certificate, cms.SignerInfos[0].Certificate);
+
+            byte[] sig2 = cms.SignerInfos[0].GetSignature();
+            Assert.Equal(signature, sig2);
 
             if (detached)
             {
@@ -1609,6 +1686,90 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.Decode(SignedDocuments.TstWithAttributeCertificate);
             Assert.Equal(2, cms.Certificates.Count);
             cms.CheckSignature(verifySignatureOnly: true);
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void ComputeSignature_SlhDsa_NoSignature()
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, false);
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
+            {
+                CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.NoSignature, cert);
+
+                AssertExtensions.ThrowsContains<CryptographicException>(
+                    () => cms.ComputeSignature(cmsSigner),
+                    "SignatureIdentifierType.NoSignature is not valid with the provided certificate.");
+            }
+        }
+
+        // Ed25519 certificate from https://datatracker.ietf.org/doc/html/rfc8410#section-10.2
+        private const string UnknownAlgorithmCert =
+            """
+            MIIBLDCB36ADAgECAghWAUdKKo3DMDAFBgMrZXAwGTEXMBUGA1UEAwwOSUVURiBUZX
+            N0IERlbW8wHhcNMTYwODAxMTIxOTI0WhcNNDAxMjMxMjM1OTU5WjAZMRcwFQYDVQQD
+            DA5JRVRGIFRlc3QgRGVtbzAqMAUGAytlbgMhAIUg8AmJMKdUdIt93LQ+91oNvzoNJj
+            ga9OukqY6qm05qo0UwQzAPBgNVHRMBAf8EBTADAQEAMA4GA1UdDwEBAAQEAwIDCDAg
+            BgNVHQ4BAQAEFgQUmx9e7e0EM4Xk97xiPFl1uQvIuzswBQYDK2VwA0EAryMB/t3J5v
+            /BzKc9dNZIpDmAgs3babFOTQbs+BolzlDUwsPrdGxO3YNGhW7Ibz3OGhhlxXrCe1Cg
+            w1AH9efZBw==
+            """;
+
+        [Fact]
+        public static void ComputeSignature_UnknownAlgorithm_NoSignature()
+        {
+            using X509Certificate2 cert = X509CertificateLoader.LoadCertificate(Convert.FromBase64String(UnknownAlgorithmCert));
+
+            byte[] message = "Hello World!"u8.ToArray();
+            SignedCms cms = new SignedCms(new ContentInfo(message));
+            CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.NoSignature, cert)
+            {
+                DigestAlgorithm = new Oid(Oids.Sha256, Oids.Sha256)
+            };
+
+            cms.ComputeSignature(cmsSigner);
+
+            // "NoSignature" OID
+            Assert.Equal("1.3.6.1.5.5.7.6.2", cms.SignerInfos[0].SignatureAlgorithm.Value);
+
+            byte[] messageHash = Convert.FromBase64String("f4OxZX/x/FO5LcGBSKHWXfwtSx+j1ncoSt3SABJtkGk=");
+            byte[] signature = cms.SignerInfos[0].GetSignature();
+
+            Assert.Equal(messageHash, signature);
+
+            SignedCms cmsNoCert = new SignedCms(new ContentInfo(message));
+            cmsNoCert.Decode(cms.Encode());
+
+            // Assert.NoThrow
+            cmsNoCert.SignerInfos[0].CheckHash();
+
+            // Assert.NoThrow
+            cmsNoCert.CheckHash();
+        }
+
+        [Fact]
+        public static void ComputeSignature_NoSignature_DefaultDigest()
+        {
+            // A certificate shouldn't really be required here, but on .NET Framework
+            // it will encounter throw a NullReferenceException.
+            using X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate();
+
+            byte[] message = "Hello World!"u8.ToArray();
+            SignedCms cms = new SignedCms(new ContentInfo(message));
+
+            // Use default value for DigestAlgorithm
+            CmsSigner signer = new CmsSigner(SubjectIdentifierType.NoSignature, cert);
+
+            cms.ComputeSignature(signer);
+
+            FrameworkName fwkName = new FrameworkName(AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName);
+            bool defaultHashIsSha1 = PlatformDetection.IsNetFramework && fwkName.Version <= new Version(4, 7, 0);
+            byte[] expectedMessageHash = Convert.FromBase64String(
+                defaultHashIsSha1
+                    ? "Lve95gjOVATpfV8EL5X4nxwjKHE="                    // Sha1
+                    : "f4OxZX/x/FO5LcGBSKHWXfwtSx+j1ncoSt3SABJtkGk=");  // Sha256
+
+            Assert.Equal(expectedMessageHash, cms.SignerInfos[0].GetSignature());
         }
 
         private static void CheckNoSignature(byte[] encoded, bool badOid=false)

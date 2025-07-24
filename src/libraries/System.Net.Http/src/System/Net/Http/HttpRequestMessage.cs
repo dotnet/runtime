@@ -17,8 +17,9 @@ namespace System.Net.Http
 
         private const int MessageNotYetSent = 0;
         private const int MessageAlreadySent = 1;
-        private const int MessageIsRedirect = 2;
+        private const int PropagatorStateInjectedByDiagnosticsHandler = 2;
         private const int MessageDisposed = 4;
+        private const int AuthDisabled = 8;
 
         // Track whether the message has been sent.
         // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
@@ -141,10 +142,10 @@ namespace System.Net.Http
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[512]);
 
             sb.Append("Method: ");
-            sb.Append(_method);
+            sb.Append(_method.ToString());
 
             sb.Append(", RequestUri: '");
             if (_requestUri is null)
@@ -153,17 +154,18 @@ namespace System.Net.Http
             }
             else
             {
-                sb.Append($"{_requestUri}");
+                sb.AppendSpanFormattable(_requestUri);
             }
 
             sb.Append("', Version: ");
-            sb.Append(_version);
+            sb.AppendSpanFormattable(_version);
 
             sb.Append(", Content: ");
             sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
 
-            sb.AppendLine(", Headers:");
-            HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
+            sb.Append(", Headers:");
+            sb.Append(Environment.NewLine);
+            HeaderUtilities.DumpHeaders(ref sb, _headers, _content?.Headers);
 
             return sb.ToString();
         }
@@ -172,9 +174,13 @@ namespace System.Net.Http
 
         internal bool WasSentByHttpClient() => (_sendStatus & MessageAlreadySent) != 0;
 
-        internal void MarkAsRedirected() => _sendStatus |= MessageIsRedirect;
+        internal void MarkPropagatorStateInjectedByDiagnosticsHandler() => _sendStatus |= PropagatorStateInjectedByDiagnosticsHandler;
 
-        internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
+        internal bool WasPropagatorStateInjectedByDiagnosticsHandler() => (_sendStatus & PropagatorStateInjectedByDiagnosticsHandler) != 0;
+
+        internal void DisableAuth() => _sendStatus |= AuthDisabled;
+
+        internal bool IsAuthDisabled() => (_sendStatus & AuthDisabled) != 0;
 
         private bool Disposed
         {

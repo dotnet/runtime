@@ -136,12 +136,12 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
         INDEBUG(reason = "Method has Loops");
         result = true;
     }
-    if (!result && (optCallCount >= 2))
+    if (!result && (optCallCount >= optFastTailCallCount + 2))
     {
         INDEBUG(reason = "Call Count");
         result = true;
     }
-    if (!result && (optIndirectCallCount >= 1))
+    if (!result && (optIndirectCallCount >= optIndirectFastTailCallCount + 1))
     {
         INDEBUG(reason = "Indirect Call");
         result = true;
@@ -256,9 +256,9 @@ void Compiler::raMarkStkVars()
 
         noway_assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
 #if FEATURE_FIXED_OUT_ARGS
-        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || lvaLclSize(lclNum) != 0);
+        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || (lvaLclStackHomeSize(lclNum) != 0));
 #else  // FEATURE_FIXED_OUT_ARGS
-        noway_assert(lvaLclSize(lclNum) != 0);
+        noway_assert(lvaLclStackHomeSize(lclNum) != 0);
 #endif // FEATURE_FIXED_OUT_ARGS
 
         varDsc->lvOnFrame = true; // Our prediction is that the final home for this local variable will be in the

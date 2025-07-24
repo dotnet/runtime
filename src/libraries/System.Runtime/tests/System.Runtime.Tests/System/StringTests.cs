@@ -210,6 +210,7 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.CurrentCulture, true)]
         [InlineData("Hello", 'E', StringComparison.CurrentCulture, false)]
         [InlineData("", 'H', StringComparison.CurrentCulture, false)]
+        [InlineData("", '\u0301', StringComparison.CurrentCulture, false)] // Using non-ASCII character to test ICU path
         // CurrentCultureIgnoreCase
         [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false)]
@@ -992,6 +993,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(NonRandomizedGetHashCode_EquivalentForStringAndSpan_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116815", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void NonRandomizedGetHashCode_EquivalentForStringAndSpan(int charValueLimit, bool ignoreCase)
         {
             // This is testing internal API. If that API changes, this test will need to be updated.
@@ -1042,7 +1044,7 @@ namespace System.Tests
             try
             {
                 // Unsafe.AsPointer is safe since it's pinned by the gc handle
-                Assert.Equal((IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in rChar)), gcHandle.AddrOfPinnedObject());
+                Assert.Equal((IntPtr)Unsafe.AsPointer(in rChar), gcHandle.AddrOfPinnedObject());
             }
             finally
             {

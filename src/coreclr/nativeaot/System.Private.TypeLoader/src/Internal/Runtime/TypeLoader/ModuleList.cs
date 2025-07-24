@@ -395,22 +395,4 @@ namespace Internal.Runtime.TypeLoader
             return new NativeFormatModuleInfoEnumerable(Instance._loadedModuleMap, preferredModule);
         }
     }
-
-    public static partial class RuntimeSignatureHelper
-    {
-        public static ModuleInfo GetModuleInfo(this Internal.Runtime.CompilerServices.RuntimeSignature methodSignature)
-        {
-            if (methodSignature.IsNativeLayoutSignature)
-            {
-                return ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(methodSignature.ModuleHandle));
-            }
-            else
-            {
-                ModuleInfo moduleInfo;
-                bool success = ModuleList.Instance.TryGetModuleInfoByHandle(new TypeManagerHandle(methodSignature.ModuleHandle), out moduleInfo);
-                Debug.Assert(success);
-                return moduleInfo;
-            }
-        }
-    }
 }

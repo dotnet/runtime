@@ -126,7 +126,11 @@ namespace System
                 if (wh == 0)
                     return false;
 
+#if FEATURE_JAVAMARSHAL
+                bool result = GCHandle.InternalGetBridgeWait(wh) != null;
+#else
                 bool result = GCHandle.InternalGet(wh) != null;
+#endif
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -171,8 +175,12 @@ namespace System
                 }
 #endif
 
+#if FEATURE_JAVAMARSHAL
+                target = GCHandle.InternalGetBridgeWait(th);
+#else
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
                 target = GCHandle.InternalGet(th);
+#endif
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);

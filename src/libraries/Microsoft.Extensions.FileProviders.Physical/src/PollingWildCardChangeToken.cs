@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
@@ -20,13 +21,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// </summary>
     public class PollingWildCardChangeToken : IPollingChangeToken
     {
-        private static readonly byte[] Separator = Encoding.Unicode.GetBytes("|");
         private readonly object _enumerationLock = new();
         private readonly DirectoryInfoBase _directoryInfo;
         private readonly Matcher _matcher;
         private bool _changed;
-        private DateTime? _lastScanTimeUtc;
+        private DateTime _lastScanTimeUtc;
+#if !NET
         private byte[]? _byteBuffer;
+#endif
         private byte[]? _previousHash;
         private CancellationTokenSource? _tokenSource;
         private CancellationChangeToken? _changeToken;
@@ -90,7 +92,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 if (_changed)
                 {
-                    return _changed;
+                    return true;
                 }
 
                 if (ShouldRefresh())
@@ -120,7 +122,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 foreach (FilePatternMatch file in files)
                 {
                     DateTime lastWriteTimeUtc = GetLastWriteUtc(file.Path);
-                    if (_lastScanTimeUtc != null && _lastScanTimeUtc < lastWriteTimeUtc)
+                    if (_lastScanTimeUtc.Ticks != 0 && _lastScanTimeUtc < lastWriteTimeUtc)
                     {
                         // _lastScanTimeUtc is the greatest timestamp that any last writes could have been.
                         // If a file has a newer timestamp than this value, it must've changed.
@@ -130,13 +132,29 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     ComputeHash(sha256, file.Path, lastWriteTimeUtc);
                 }
 
-                byte[] currentHash = sha256.GetHashAndReset();
-                if (!ArrayEquals(_previousHash, currentHash))
+#if NET
+                Span<byte> currentHash = stackalloc byte[256 / 8];
+                sha256.GetHashAndReset(currentHash);
+                if (_previousHash is null)
+                {
+                    _previousHash = currentHash.ToArray(); // First run
+                }
+                else if (!_previousHash.AsSpan().SequenceEqual(currentHash))
                 {
                     return true;
                 }
+#else
+                byte[] currentHash = sha256.GetHashAndReset();
+                if (_previousHash is null)
+                {
+                    _previousHash = currentHash; // First run
+                }
+                else if (!_previousHash.AsSpan().SequenceEqual(currentHash.AsSpan()))
+                {
+                    return true;
+                }
+#endif
 
-                _previousHash = currentHash;
                 _lastScanTimeUtc = Clock.UtcNow;
             }
 
@@ -154,41 +172,28 @@ namespace Microsoft.Extensions.FileProviders.Physical
             return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(filePath) ?? File.GetLastWriteTimeUtc(filePath);
         }
 
-        private static bool ArrayEquals(byte[]? previousHash, byte[] currentHash)
+#if NET
+        private static void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
         {
-            if (previousHash == null)
-            {
-                // First run
-                return true;
-            }
-
-            Debug.Assert(previousHash.Length == currentHash.Length);
-            return previousHash.AsSpan().SequenceEqual(currentHash.AsSpan());
+            sha256.AppendData(MemoryMarshal.AsBytes(path.AsSpan()));
+            sha256.AppendData(MemoryMarshal.AsBytes([lastChangedUtc]));
         }
-
+#else
         private void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
         {
-            int byteCount = Encoding.Unicode.GetByteCount(path);
+            int byteCount = path.Length * 2;
             if (_byteBuffer == null || byteCount > _byteBuffer.Length)
             {
                 _byteBuffer = new byte[Math.Max(byteCount, 256)];
             }
 
-            int length = Encoding.Unicode.GetBytes(path, 0, path.Length, _byteBuffer, 0);
-            sha256.AppendData(_byteBuffer, 0, length);
-            sha256.AppendData(Separator, 0, Separator.Length);
+            MemoryMarshal.AsBytes(path.AsSpan()).CopyTo(_byteBuffer.AsSpan());
+            sha256.AppendData(_byteBuffer, 0, byteCount);
 
-            Debug.Assert(_byteBuffer.Length > sizeof(long));
-            unsafe
-            {
-                fixed (byte* b = _byteBuffer)
-                {
-                    *((long*)b) = lastChangedUtc.Ticks;
-                }
-            }
+            BinaryPrimitives.WriteInt64LittleEndian(_byteBuffer, lastChangedUtc.Ticks);
             sha256.AppendData(_byteBuffer, 0, sizeof(long));
-            sha256.AppendData(Separator, 0, Separator.Length);
         }
+#endif
 
         IDisposable IChangeToken.RegisterChangeCallback(Action<object?> callback, object? state)
         {

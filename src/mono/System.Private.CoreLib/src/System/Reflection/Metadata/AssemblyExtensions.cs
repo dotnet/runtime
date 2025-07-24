@@ -12,6 +12,11 @@ namespace System.Reflection.Metadata
         {
             ArgumentNullException.ThrowIfNull(assembly);
 
+            if (assembly is RuntimeAssembly runtimeAssembly)
+            {
+                return runtimeAssembly.TryGetRawMetadata(out blob, out length);
+            }
+
             blob = null;
             length = 0;
             return false;

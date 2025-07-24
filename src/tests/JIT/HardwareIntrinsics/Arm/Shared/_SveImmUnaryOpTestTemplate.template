@@ -154,12 +154,13 @@ namespace JIT.HardwareIntrinsics.Arm
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
         private static readonly byte Imm = (byte)({Imm});
 
-        private static {Op1BaseType}[] _maskData = new {Op1BaseType}[Op1ElementCount];
+        private static {RetBaseType}[] _maskData = new {RetBaseType}[RetElementCount];
         private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
 
-        private {Op1VectorType}<{Op1BaseType}> _mask;
+        private {RetVectorType}<{RetBaseType}> _mask;
         private {Op1VectorType}<{Op1BaseType}> _fld;
-        private {Op1VectorType}<{Op1BaseType}> _falseFld;
+        private {RetVectorType}<{RetBaseType}> _falseFld;
+        private {RetVectorType}<{RetBaseType}> _trueFld;
 
         private DataTable _dataTable;
 
@@ -167,10 +168,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            for (var i = 0; i < RetElementCount; i++) { _maskData[i] = ({RetBaseType})(({RetBaseType}){NextValueOp1} % 2); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _mask), ref Unsafe.As<{RetBaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _trueFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
             _dataTable = new DataTable(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);
@@ -220,7 +223,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
 
             var result = {Isa}.{Method}(
                 {LoadIsa}.Load{Op1VectorType}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr)),
@@ -288,22 +291,22 @@ namespace JIT.HardwareIntrinsics.Arm
         public void ConditionalSelect_Op1()
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_mask - operation in TrueValue");
-            ConditionalSelectScenario_TrueValue(_mask, _fld, _fld);
+            ConditionalSelectScenario_TrueValue(_mask, _fld, _trueFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_zero - operation in TrueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld, _fld);
+            ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}>.Zero, _fld, _trueFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_all - operation in TrueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld, _fld);
+            ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}>.AllBitsSet, _fld, _trueFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_mask - operation in FalseValue");
-            ConditionalSelectScenario_FalseValue(_mask, _fld, _fld);
+            ConditionalSelectScenario_FalseValue(_mask, _fld, _trueFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_zero - operation in FalseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld, _fld);
+            ConditionalSelectScenario_FalseValue({RetVectorType}<{RetBaseType}>.Zero, _fld, _trueFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_Op1_all - operation in FalseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld, _fld);
+            ConditionalSelectScenario_FalseValue({RetVectorType}<{RetBaseType}>.AllBitsSet, _fld, _trueFld);
         }
 
         public void ConditionalSelect_FalseOp()
@@ -312,44 +315,44 @@ namespace JIT.HardwareIntrinsics.Arm
             ConditionalSelectScenario_TrueValue(_mask, _fld, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in TrueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld, _falseFld);
+            ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}>.Zero, _fld, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in TrueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld, _falseFld);
+            ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}>.AllBitsSet, _fld, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in FalseValue");
             ConditionalSelectScenario_FalseValue(_mask, _fld, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in FalseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld, _falseFld);
+            ConditionalSelectScenario_FalseValue({RetVectorType}<{RetBaseType}>.Zero, _fld, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in FalseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld, _falseFld);
+            ConditionalSelectScenario_FalseValue({RetVectorType}<{RetBaseType}>.AllBitsSet, _fld, _falseFld);
         }
 
         public void ConditionalSelect_ZeroOp()
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in TrueValue");
-            ConditionalSelectScenario_TrueValue(_mask, _fld, {Op1VectorType}<{Op1BaseType}>.Zero);
+            ConditionalSelectScenario_TrueValue(_mask, _fld, {RetVectorType}<{RetBaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in TrueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld, {Op1VectorType}<{Op1BaseType}>.Zero);
+            ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}>.Zero, _fld, {RetVectorType}<{RetBaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in TrueValue");
-            ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld, {Op1VectorType}<{Op1BaseType}>.Zero);
+            ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}>.AllBitsSet, _fld, {RetVectorType}<{RetBaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in FalseValue");
-            ConditionalSelectScenario_FalseValue(_mask, _fld, {Op1VectorType}<{Op1BaseType}>.Zero);
+            ConditionalSelectScenario_FalseValue(_mask, _fld, {RetVectorType}<{RetBaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in FalseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld, {Op1VectorType}<{Op1BaseType}>.Zero);
+            ConditionalSelectScenario_FalseValue({RetVectorType}<{RetBaseType}>.Zero, _fld, {RetVectorType}<{RetBaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in FalseValue");
-            ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld, {Op1VectorType}<{Op1BaseType}>.Zero);
+            ConditionalSelectScenario_FalseValue({RetVectorType}<{RetBaseType}>.AllBitsSet, _fld, {RetVectorType}<{RetBaseType}>.Zero);
         }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op, {Op1VectorType}<{Op1BaseType}> falseOp)
+        private void ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}> mask, {Op1VectorType}<{Op1BaseType}> op, {RetVectorType}<{RetBaseType}> falseOp)
         {
             var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op, Imm), falseOp);
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -357,7 +360,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op, {Op1VectorType}<{Op1BaseType}> trueOp)
+        private void ConditionalSelectScenario_FalseValue({RetVectorType}<{RetBaseType}> mask, {Op1VectorType}<{Op1BaseType}> op, {RetVectorType}<{RetBaseType}> trueOp)
         {
             var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op, Imm));
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -385,15 +388,15 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateConditionalSelectResult_TrueValue({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> firstOp, {Op1VectorType}<{Op1BaseType}> falseOp, byte imm, void* output, [CallerMemberName] string method = "")
+        private void ValidateConditionalSelectResult_TrueValue({RetVectorType}<{RetBaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> firstOp, {RetVectorType}<{RetBaseType}> falseOp, byte imm, void* output, [CallerMemberName] string method = "")
         {
-            {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] mask = new {RetBaseType}[RetElementCount];
             {Op1BaseType}[] first = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] falseVal = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] falseVal = new {RetBaseType}[RetElementCount];
             {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref mask[0]), maskOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref mask[0]), maskOp);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref first[0]), firstOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref falseVal[0]), falseOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref falseVal[0]), falseOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref result[0]), ref Unsafe.AsRef<byte>(output), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
             bool succeeded = true;
 
@@ -411,15 +414,15 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateConditionalSelectResult_FalseValue({Op1VectorType}<{Op1BaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> firstOp, {Op1VectorType}<{Op1BaseType}> trueOp, byte imm, void* output, [CallerMemberName] string method = "")
+        private void ValidateConditionalSelectResult_FalseValue({RetVectorType}<{RetBaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> firstOp, {RetVectorType}<{RetBaseType}> trueOp, byte imm, void* output, [CallerMemberName] string method = "")
         {
-            {Op1BaseType}[] mask = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] mask = new {RetBaseType}[RetElementCount];
             {Op1BaseType}[] first = new {Op1BaseType}[Op1ElementCount];
-            {Op1BaseType}[] trueVal = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] trueVal = new {RetBaseType}[RetElementCount];
             {RetBaseType}[] result = new {RetBaseType}[RetElementCount];
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref mask[0]), maskOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref mask[0]), maskOp);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref first[0]), firstOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref trueVal[0]), trueOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref trueVal[0]), trueOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref result[0]), ref Unsafe.AsRef<byte>(output), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
             bool succeeded = true;
 

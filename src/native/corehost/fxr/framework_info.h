@@ -16,12 +16,12 @@ struct framework_info
         , hive_depth(hive_depth) { }
 
     static void get_all_framework_infos(
-        const pal::string_t& own_dir,
+        const pal::string_t& dotnet_dir,
         const pal::char_t* fx_name,
         bool disable_multilevel_lookup,
         std::vector<framework_info>* framework_infos);
 
-    static bool print_all_frameworks(const pal::string_t& own_dir, const pal::string_t& leading_whitespace);
+    static bool print_all_frameworks(const pal::string_t& dotnet_dir, const pal::char_t* leading_whitespace);
 
     pal::string_t name;
     pal::string_t path;

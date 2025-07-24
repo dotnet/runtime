@@ -17,7 +17,7 @@
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
-    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''" >false</StripDebugSymbols>
+    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
 
     <!-- TODO: We currently do not support bundling a static iOS-library with NativeAOT -->
     <_IsLibraryMode Condition="('$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != '') or ('$(UseNativeAOTRuntime)' == 'true' and '$(NativeLib)' == 'Shared')">true</_IsLibraryMode>

@@ -31,6 +31,8 @@
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
     <Compile Include="ReadOnlySpan\CastUp.cs" />
+    <Compile Include="ReadOnlySpan\CountAny.cs" />
+    <Compile Include="Span\ReplaceAny.cs" />
     <Compile Include="Span\StringSearchValues.cs" />
     <Compile Include="Span\Reflection.cs" />
     <Compile Include="SequenceReader\Advance.cs" />

@@ -27,6 +27,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            IAsyncEnumerable<string> empty = AsyncEnumerable.Empty<string>();
+            IAsyncEnumerable<string> nonEmpty = CreateSource("1", "2", "3");
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.Join(empty, s => s, s => s, (s1, s2) => s1));
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.Join(empty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), nonEmpty.Join(empty, s => s, s => s, (s1, s2) => s1));
+            Assert.Same(AsyncEnumerable.Empty<string>(), nonEmpty.Join(empty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.Join(nonEmpty, s => s, s => s, (s1, s2) => s1));
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.Join(nonEmpty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
+        }
+
+        [Fact]
         public async Task VariousValues_MatchesEnumerable_String()
         {
             Random rand = new(42);

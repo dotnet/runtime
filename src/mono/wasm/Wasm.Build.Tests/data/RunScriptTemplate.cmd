@@ -61,6 +61,11 @@ if [%WASM_FINGERPRINT_ASSETS%] == [false] (
 ) else (
    set USE_FINGERPRINTING_FOR_TESTS=true
 )
+if [%WASM_BUNDLER_FRIENDLY_BOOT_CONFIG%] == [true] (
+   set USE_JAVASCRIPT_BUNDLER_FOR_TESTS=true
+) else (
+   set USE_JAVASCRIPT_BUNDLER_FOR_TESTS=false
+)
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
     robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%SDK_DIR_NAME% %EXECUTION_DIR%\%SDK_DIR_NAME%

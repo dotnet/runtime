@@ -85,7 +85,7 @@ namespace System.Collections.Frozen.Tests
         }
 
         [Fact]
-        public void EmptySource_ProducedFrozenDictionaryEmpty()
+        public void EmptyEnumerableSource_ProducedFrozenDictionaryEmpty()
         {
             IEnumerable<KeyValuePair<TKey, TValue>>[] sources = new[]
             {
@@ -116,6 +116,23 @@ namespace System.Collections.Frozen.Tests
                 Assert.Equal(0, source.ToFrozenDictionary(s => s.Key, NonDefaultEqualityComparer<TKey>.Instance).Count);
                 Assert.Equal(0, source.ToFrozenDictionary(s => s.Key, s => s.Value, NonDefaultEqualityComparer<TKey>.Instance).Count);
             }
+        }
+
+        [Fact]
+        public void EmptySpanSource_ProducedFrozenDictionaryEmpty()
+        {
+            ReadOnlySpan<KeyValuePair<TKey, TValue>> source = default;
+
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary.Create(source));
+
+            foreach (IEqualityComparer<TKey> comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default })
+            {
+                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary.Create(comparer, source));
+            }
+
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary.Create(NonDefaultEqualityComparer<TKey>.Instance, source));
+
+            Assert.Equal(0, FrozenDictionary.Create(NonDefaultEqualityComparer<TKey>.Instance, source).Count);
         }
 
         [Fact]
@@ -202,23 +219,28 @@ namespace System.Collections.Frozen.Tests
         }
 
         public static IEnumerable<object[]> LookupItems_AllItemsFoundAsExpected_MemberData() =>
+            from useToFrozenDictionary in new[] { false, true }
             from size in new[] { 0, 1, 2, 10, 99 }
             from comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default, NonDefaultEqualityComparer<TKey>.Instance }
             from specifySameComparer in new[] { false, true }
-            select new object[] { size, comparer, specifySameComparer };
+            select new object[] { useToFrozenDictionary, size, comparer, specifySameComparer };
 
         [Theory]
         [MemberData(nameof(LookupItems_AllItemsFoundAsExpected_MemberData))]
-        public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
+        public void LookupItems_AllItemsFoundAsExpected(bool useToFrozenDictionary, int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
         {
             Dictionary<TKey, TValue> original =
                 GenerateUniqueKeyValuePairs(size)
                 .ToDictionary(p => p.Key, p => p.Value, comparer);
             KeyValuePair<TKey, TValue>[] originalPairs = original.ToArray();
 
-            FrozenDictionary<TKey, TValue> frozen = specifySameComparer ?
-                original.ToFrozenDictionary(comparer) :
-                original.ToFrozenDictionary();
+            FrozenDictionary<TKey, TValue> frozen = (useToFrozenDictionary, specifySameComparer) switch
+            {
+                (true, true) => original.ToFrozenDictionary(comparer),
+                (true, false) => original.ToFrozenDictionary(),
+                (false, true) => FrozenDictionary.Create(comparer, originalPairs),
+                (false, false) => FrozenDictionary.Create(originalPairs),
+            };
 
             // Make sure creating the frozen dictionary didn't alter the original
             Assert.Equal(originalPairs.Length, original.Count);
@@ -283,8 +305,10 @@ namespace System.Collections.Frozen.Tests
             }
         }
 
-        [Fact]
-        public void MultipleValuesSameKey_LastInSourceWins()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void MultipleValuesSameKey_LastInSourceWins(bool useToFrozenDictionary)
         {
             TKey[] keys = GenerateUniqueKeyValuePairs(2).Select(pair => pair.Key).ToArray();
             TValue[] values = Enumerable.Range(0, 10).Select(CreateTValue).ToArray();
@@ -301,7 +325,9 @@ namespace System.Collections.Frozen.Tests
                     source = source.Reverse();
                 }
 
-                FrozenDictionary<TKey, TValue> frozen = source.ToFrozenDictionary(GetKeyIEqualityComparer());
+                FrozenDictionary<TKey, TValue> frozen = useToFrozenDictionary ?
+                    source.ToFrozenDictionary(GetKeyIEqualityComparer()) :
+                    FrozenDictionary.Create(GetKeyIEqualityComparer(), source.ToArray());
 
                 Assert.Equal(values[reverse ? 0 : values.Length - 1], frozen[keys[0]]);
                 Assert.Equal(values[reverse ? 0 : values.Length - 1], frozen[keys[1]]);
@@ -387,7 +413,9 @@ namespace System.Collections.Frozen.Tests
                 expected.Add(value, value);
             }
 
-            FrozenDictionary<string, string> actual = expected.ToFrozenDictionary(GetKeyIEqualityComparer());
+            FrozenDictionary<string, string> actual = percentageWithNonAscii % 2 == 0 ?
+                expected.ToFrozenDictionary(GetKeyIEqualityComparer()) :
+                FrozenDictionary.Create(GetKeyIEqualityComparer(), expected.ToArray());
 
             Assert.All(expected, kvp => actual.ContainsKey(kvp.Key));
         }

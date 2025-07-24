@@ -389,14 +389,8 @@ namespace System.IO.Packaging
         /// from a relationship part, or we are adding a new relationship</param>
         private PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string? id, bool parsing)
         {
-            if (targetUri is null)
-            {
-                throw new ArgumentNullException(nameof(targetUri));
-            }
-            if (relationshipType is null)
-            {
-                throw new ArgumentNullException(nameof(relationshipType));
-            }
+            ArgumentNullException.ThrowIfNull(targetUri);
+            ArgumentNullException.ThrowIfNull(relationshipType);
 
             ThrowIfInvalidRelationshipType(relationshipType);
 

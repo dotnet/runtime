@@ -155,6 +155,12 @@ namespace Microsoft.Extensions.Logging
         Critical = 5,
         None = 6,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public partial class ProviderAliasAttribute : System.Attribute
+    {
+        public ProviderAliasAttribute(string alias) { }
+        public string Alias { get { throw null; } }
+    }
 }
 namespace Microsoft.Extensions.Logging.Abstractions
 {
@@ -171,7 +177,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public Microsoft.Extensions.Logging.LogLevel LogLevel { get { throw null; } }
         public TState State { get { throw null; } }
     }
-    public partial class NullLogger : Microsoft.Extensions.Logging.ILogger
+    public sealed partial class NullLogger : Microsoft.Extensions.Logging.ILogger
     {
         internal NullLogger() { }
         public static Microsoft.Extensions.Logging.Abstractions.NullLogger Instance { get { throw null; } }
@@ -187,7 +193,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
     }
-    public partial class NullLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
+    public sealed partial class NullLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
     {
         internal NullLoggerProvider() { }
         public static Microsoft.Extensions.Logging.Abstractions.NullLoggerProvider Instance { get { throw null; } }

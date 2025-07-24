@@ -41,6 +41,7 @@ namespace System.Security.Claims
         public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims, string? authenticationType) { }
         public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims, string? authenticationType, string? nameType, string? roleType) { }
         public ClaimsIdentity(System.IO.BinaryReader reader) { }
+        public ClaimsIdentity(System.IO.BinaryReader reader, System.StringComparison stringComparison) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info) { }
@@ -48,9 +49,11 @@ namespace System.Security.Claims
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected ClaimsIdentity(System.Security.Claims.ClaimsIdentity other) { }
+        protected ClaimsIdentity(System.Security.Claims.ClaimsIdentity other, System.StringComparison stringComparison) { }
         public ClaimsIdentity(System.Security.Principal.IIdentity? identity) { }
         public ClaimsIdentity(System.Security.Principal.IIdentity? identity, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims) { }
         public ClaimsIdentity(System.Security.Principal.IIdentity? identity, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims, string? authenticationType, string? nameType, string? roleType) { }
+        public ClaimsIdentity(System.Security.Principal.IIdentity? identity = null, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims = null, string? authenticationType = null, string? nameType = null, string? roleType = null, System.StringComparison stringComparison = System.StringComparison.OrdinalIgnoreCase) { }
         public ClaimsIdentity(string? authenticationType) { }
         public ClaimsIdentity(string? authenticationType, string? nameType, string? roleType) { }
         public System.Security.Claims.ClaimsIdentity? Actor { get { throw null; } set { } }
@@ -90,7 +93,7 @@ namespace System.Security.Claims
         public ClaimsPrincipal(System.Security.Principal.IIdentity identity) { }
         public ClaimsPrincipal(System.Security.Principal.IPrincipal principal) { }
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.Claim> Claims { get { throw null; } }
-        public static System.Func<System.Security.Claims.ClaimsPrincipal> ClaimsPrincipalSelector { get { throw null; } set { } }
+        public static System.Func<System.Security.Claims.ClaimsPrincipal?>? ClaimsPrincipalSelector { get { throw null; } set { } }
         public static System.Security.Claims.ClaimsPrincipal? Current { get { throw null; } }
         protected virtual byte[]? CustomSerializationData { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> Identities { get { throw null; } }

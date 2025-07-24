@@ -17,48 +17,16 @@ namespace InteropLib
 {
     using OBJECTHANDLE = void*;
 
+    namespace ABI
+    {
+        struct ManagedObjectWrapperLayout;
+    }
+
     namespace Com
     {
-        // See CreateComInterfaceFlags in ComWrappers.cs
-        enum CreateComInterfaceFlags
-        {
-            CreateComInterfaceFlags_None = 0,
-            CreateComInterfaceFlags_CallerDefinedIUnknown = 1,
-            CreateComInterfaceFlags_TrackerSupport = 2,
-        };
-
-        // Create an IUnknown instance that represents the supplied managed object instance.
-        HRESULT CreateWrapperForObject(
-            _In_ OBJECTHANDLE instance,
-            _In_ INT32 vtableCount,
-            _In_ void* vtables,
-            _In_ enum CreateComInterfaceFlags flags,
-            _Outptr_ IUnknown** wrapper) noexcept;
-
-        // Destroy the supplied wrapper
-        void DestroyWrapperForObject(_In_ void* wrapper) noexcept;
-
-        // Check if a wrapper is considered a GC root.
-        HRESULT IsWrapperRooted(_In_ IUnknown* wrapper) noexcept;
-
-        // Get the object for the supplied wrapper
-        HRESULT GetObjectForWrapper(_In_ IUnknown* wrapper, _Outptr_result_maybenull_ OBJECTHANDLE* object) noexcept;
+        bool IsRooted(_In_ ABI::ManagedObjectWrapperLayout* wrapper) noexcept;
 
         HRESULT MarkComActivated(_In_ IUnknown* wrapper) noexcept;
-        HRESULT IsComActivated(_In_ IUnknown* wrapper) noexcept;
-
-        struct ExternalWrapperResult
-        {
-            // The returned context memory is guaranteed to be initialized to zero.
-            void* Context;
-
-            // See https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
-            // for details.
-            bool FromTrackerRuntime;
-
-            // The supplied external object is wrapping a managed object.
-            bool ManagedObjectWrapper;
-        };
 
         // See CreateObjectFlags in ComWrappers.cs
         enum CreateObjectFlags
@@ -70,38 +38,29 @@ namespace InteropLib
             CreateObjectFlags_Unwrap = 8,
         };
 
-        // Get the true identity and inner for the supplied IUnknown.
-        HRESULT DetermineIdentityAndInnerForExternal(
-            _In_ IUnknown* external,
-            _In_ enum CreateObjectFlags flags,
-            _Outptr_ IUnknown** identity,
-            _Inout_ IUnknown** innerMaybe) noexcept;
+        enum class CreateComInterfaceFlagsEx : int32_t
+        {
+            // Matches the managed definition of System.Runtime.InteropServices.CreateComInterfaceFlags
+            None = 0,
+            CallerDefinedIUnknown = 1,
+            TrackerSupport = 2,
 
-        // Allocate a wrapper context for an external object.
-        // The runtime supplies the external object, flags, and a memory
-        // request in order to bring the object into the runtime.
-        HRESULT CreateWrapperForExternal(
-            _In_ IUnknown* external,
-            _In_opt_ IUnknown* inner,
-            _In_ enum CreateObjectFlags flags,
-            _In_ size_t contextSize,
-            _Out_ ExternalWrapperResult* result) noexcept;
+            // Highest bits are reserved for internal usage
+            LacksICustomQueryInterface = 1 << 29,
+            IsComActivated = 1 << 30,
+            IsPegged = 1 << 31,
 
-        // Inform the wrapper it is being collected.
-        void NotifyWrapperForExternalIsBeingCollected(_In_ void* context) noexcept;
+            InternalMask = IsPegged | IsComActivated | LacksICustomQueryInterface,
+        };
 
-         // Destroy the supplied wrapper.
-        // Optionally notify the wrapper of collection at the same time.
-        void DestroyWrapperForExternal(_In_ void* context, _In_ bool notifyIsBeingCollected = false) noexcept;
-
-        // Separate the supplied wrapper from the tracker runtime.
-        void SeparateWrapperFromTrackerRuntime(_In_ void* context) noexcept;
 
         // Get internal interop IUnknown dispatch pointers.
         void GetIUnknownImpl(
             _Out_ void** fpQueryInterface,
             _Out_ void** fpAddRef,
             _Out_ void** fpRelease) noexcept;
+
+        void const* GetTaggedCurrentVersionImpl() noexcept;
 
         // Begin the reference tracking process on external COM objects.
         // This should only be called during a runtime's GC phase.
@@ -110,8 +69,35 @@ namespace InteropLib
         // End the reference tracking process.
         // This should only be called during a runtime's GC phase.
         HRESULT EndExternalObjectReferenceTracking() noexcept;
+
+        // Detach non-promoted objects from the reference tracker.
+        // This should only be called during a runtime's GC phase.
+        HRESULT DetachNonPromotedObjects(_In_ InteropLibImports::RuntimeCallContext* cxt) noexcept;
+
+        // Get the vtable for IReferenceTrackerTarget
+        void const* GetIReferenceTrackerTargetVftbl() noexcept;
+
+        // Check if a ReferenceTrackerManager has been registered.
+        bool HasReferenceTrackerManager() noexcept;
+
+        // Register a ReferenceTrackerManager if one has not already been registered.
+        bool TryRegisterReferenceTrackerManager(void* manager) noexcept;
     }
 }
 
-#endif // _INTEROP_INC_INTEROPLIB_H_
+#ifndef DEFINE_ENUM_FLAG_OPERATORS
+#define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
+extern "C++" { \
+    inline ENUMTYPE operator | (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)|((int)b)); } \
+    inline ENUMTYPE operator |= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) |= ((int)b)); } \
+    inline ENUMTYPE operator & (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)&((int)b)); } \
+    inline ENUMTYPE operator &= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) &= ((int)b)); } \
+    inline ENUMTYPE operator ~ (ENUMTYPE a) { return (ENUMTYPE)(~((int)a)); } \
+    inline ENUMTYPE operator ^ (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)^((int)b)); } \
+    inline ENUMTYPE operator ^= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) ^= ((int)b)); } \
+}
+#endif
 
+DEFINE_ENUM_FLAG_OPERATORS(InteropLib::Com::CreateComInterfaceFlagsEx);
+
+#endif // _INTEROP_INC_INTEROPLIB_H_

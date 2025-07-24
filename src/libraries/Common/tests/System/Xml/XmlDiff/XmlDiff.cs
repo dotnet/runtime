@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace System.Xml.XmlDiff
 {
@@ -37,6 +38,7 @@ namespace System.Xml.XmlDiff
         private XmlDiffOption _XmlDiffOption = XmlDiffOption.None;
         private bool _IgnoreEmptyElement = true;
         private bool _IgnoreWhitespace = true;
+        private bool _NormalizeSpaces = false;
         private bool _IgnoreComments = false;
         private bool _IgnoreAttributeOrder = true;
         private bool _IgnoreNS = true;
@@ -65,6 +67,7 @@ namespace System.Xml.XmlDiff
                 IgnorePrefix = (((int)_XmlDiffOption) & ((int)XmlDiffOption.IgnorePrefix)) > 0;
                 IgnoreDTD = (((int)_XmlDiffOption) & ((int)XmlDiffOption.IgnoreDTD)) > 0;
                 IgnoreChildOrder = (((int)_XmlDiffOption) & ((int)XmlDiffOption.IgnoreChildOrder)) > 0;
+                NormalizeSpaces = (((int)_XmlDiffOption) & ((int)XmlDiffOption.NormalizeSpaces)) > 0;
             }
         }
 
@@ -90,6 +93,12 @@ namespace System.Xml.XmlDiff
         {
             get { return _IgnoreWhitespace; }
             set { _IgnoreWhitespace = value; }
+        }
+
+        internal bool NormalizeSpaces
+        {
+            get { return _NormalizeSpaces; }
+            set { _NormalizeSpaces = value; }
         }
 
         internal bool IgnoreNS
@@ -404,16 +413,8 @@ namespace System.Xml.XmlDiff
                     XmlDiffCharacterData targetText = targetNode as XmlDiffCharacterData;
                     Debug.Assert(sourceText != null);
                     Debug.Assert(targetText != null);
-                    if (IgnoreWhitespace)
-                    {
-                        if (sourceText.Value.Trim() == targetText.Value.Trim())
-                            return DiffType.Success;
-                    }
-                    else
-                    {
-                        if (sourceText.Value == targetText.Value)
-                            return DiffType.Success;
-                    }
+                    if (Normalize(sourceText.Value) == Normalize(targetText.Value))
+                        return DiffType.Success;
                     if (sourceText.NodeType == XmlDiffNodeType.Text || sourceText.NodeType == XmlDiffNodeType.WS)//should ws nodes also as text nodes???
                         return DiffType.Text;
                     else if (sourceText.NodeType == XmlDiffNodeType.Comment)
@@ -435,6 +436,20 @@ namespace System.Xml.XmlDiff
             }
 
             return DiffType.Success;
+        }
+
+        private string Normalize(string value)
+        {
+            if (String.IsNullOrEmpty(value))
+                return value;
+
+            if (NormalizeSpaces)
+                value = Regex.Replace(value, XmlDiffAdvancedOptions.SpaceStripPattern, " ");
+
+            if (IgnoreWhitespace)
+                value = value.Trim();
+
+            return value;
         }
 
         // This function writes the result in XML format so that it can be used by other applications to display the diff

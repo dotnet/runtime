@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
         public sealed override bool Equals(object obj)
         {
             GenericLookupResult other = obj as GenericLookupResult;
-            if (obj == null)
+            if (other == null)
                 return false;
 
             return ClassCode == other.ClassCode && EqualsImpl(other);
@@ -215,6 +215,59 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    /// <summary>
+    /// Generic lookup result that points to an MethodTable.
+    /// </summary>
+    public sealed class NecessaryTypeHandleGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => -4882991;
+
+        public NecessaryTypeHandleGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedType);
+
+            return factory.NecessaryTypeSymbol(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("NecessaryTypeHandle_"u8);
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public TypeDesc Type => _type;
+        public override string ToString() => $"NecessaryTypeHandle: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TypeHandleDictionarySlot(_type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((NecessaryTypeHandleGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((NecessaryTypeHandleGenericLookupResult)obj)._type == _type;
+        }
+    }
 
     /// <summary>
     /// Generic lookup result that points to an MethodTable where if the type is Nullable&lt;X&gt; the MethodTable is X
@@ -467,18 +520,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            //
-            // For universal canonical methods, we don't need the unboxing stub really, because
-            // the calling convention translation thunk will handle the unboxing (and we can avoid having a double thunk here)
-            // We just need the flag in the native layout info signature indicating that we needed an unboxing stub
-            //
-            bool getUnboxingStubNode = _isUnboxingThunk && !canonMethod.IsCanonicalMethod(CanonicalFormKind.Universal);
-
             // TODO-SIZE: this is address taken only in the delegate target case
             return factory.NativeLayout.MethodEntrypointDictionarySlot(
                 _method,
                 _isUnboxingThunk,
-                factory.AddressTakenMethodEntrypoint(canonMethod, getUnboxingStubNode));
+                factory.AddressTakenMethodEntrypoint(canonMethod, _isUnboxingThunk));
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -735,7 +781,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
+            return factory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

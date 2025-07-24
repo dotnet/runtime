@@ -30,13 +30,14 @@ namespace System.Net.Http.Functional.Tests
 
         protected static bool IsWinHttpHandler => false;
 
-        public static bool IsQuicSupported
+        public static bool IsHttp3Supported
         {
             get
             {
                 try
                 {
-                    return QuicConnection.IsSupported;
+                    return QuicConnection.IsSupported
+                        && (bool)Type.GetType("System.Net.Http.GlobalHttpSettings+SocketsHttpHandler, System.Net.Http").GetProperty("AllowHttp3").GetValue(null);
                 }
                 catch (System.PlatformNotSupportedException)
                 {
@@ -63,7 +64,7 @@ namespace System.Net.Http.Functional.Tests
         protected static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates)
             => TestHelper.CreateSocketsHttpHandler(allowAllCertificates);
 
-        protected Http3LoopbackServer CreateHttp3LoopbackServer(Http3Options options = default)
+        protected static Http3LoopbackServer CreateHttp3LoopbackServer(Http3Options options = default)
         {
             return new Http3LoopbackServer(options);
         }

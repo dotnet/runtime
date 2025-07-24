@@ -51,6 +51,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 the predefined type. Returns true iff the predef type is found.
             ***************************************************************************************************/
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             public UnaOpFullSig(UnaOpSig uos)
             {
                 this.pt = uos.pt;

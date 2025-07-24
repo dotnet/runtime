@@ -113,7 +113,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             typ = Expression.GetType()
 #If TARGET_WINDOWS Then
-            If (typ.IsCOMObject AndAlso (System.String.CompareOrdinal(typ.Name, COMObjectName) = 0)) Then
+            If (typ.IsCOMObject AndAlso System.String.Equals(typ.Name, COMObjectName, System.StringComparison.Ordinal)) Then
                 Result = TypeNameOfCOMObject(Expression, True)
             Else
                 Result = VBFriendlyNameOfType(typ)

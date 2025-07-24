@@ -1,5 +1,0 @@
-brew "cmake"
-brew "icu4c"
-brew "openssl@3"
-brew "pkg-config"
-brew "python3"

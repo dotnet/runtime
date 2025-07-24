@@ -977,7 +977,7 @@ namespace System
         // "TimeZoneInfo"           := TimeZoneInfo Data;[AdjustmentRule Data 1];...;[AdjustmentRule Data N]
         //
         // "TimeZoneInfo Data"      := <_id>;<_baseUtcOffset>;<_displayName>;
-        //                          <_standardDisplayName>;<_daylightDispayName>;
+        //                          <_standardDisplayName>;<_daylightDisplayName>;
         //
         // "AdjustmentRule Data" := <DateStart>;<DateEnd>;<DaylightDelta>;
         //                          [TransitionTime Data DST Start]
@@ -1017,7 +1017,7 @@ namespace System
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 
-            HasIanaId = _id.Equals(UtcId, StringComparison.OrdinalIgnoreCase) ? true : hasIanaId;
+            HasIanaId = hasIanaId || _id.Equals(UtcId, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

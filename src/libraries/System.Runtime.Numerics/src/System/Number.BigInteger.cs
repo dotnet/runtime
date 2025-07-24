@@ -57,7 +57,7 @@ namespace System
             return true;
         }
 
-        internal static unsafe ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
             {

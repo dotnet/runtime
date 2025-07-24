@@ -322,7 +322,7 @@ namespace System.Transactions
 
         public static Transaction GetTransactionFromDtcTransaction(IDtcTransaction transactionNative)
         {
-            ArgumentNullException.ThrowIfNull(transactionNative, nameof(transactionNative));
+            ArgumentNullException.ThrowIfNull(transactionNative);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())

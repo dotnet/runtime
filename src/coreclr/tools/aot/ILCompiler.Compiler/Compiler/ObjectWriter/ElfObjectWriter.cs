@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Buffers.Binary;
 using System.Numerics;
+using System.Reflection;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
@@ -49,6 +50,7 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection ArmUnwindTableSection = new ObjectNodeSection(".ARM.extab", SectionType.ReadOnly);
         private static readonly ObjectNodeSection ArmAttributesSection = new ObjectNodeSection(".ARM.attributes", SectionType.ReadOnly);
         private static readonly ObjectNodeSection ArmTextThunkSection = new ObjectNodeSection(".text.thunks", SectionType.Executable);
+        private static readonly ObjectNodeSection CommentSection = new ObjectNodeSection(".comment", SectionType.ReadOnly);
 
         public ElfObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
@@ -93,6 +95,11 @@ namespace ILCompiler.ObjectWriter
             else if (section == ArmAttributesSection)
             {
                 type = SHT_ARM_ATTRIBUTES;
+            }
+            else if (section == CommentSection)
+            {
+                type = SHT_PROGBITS;
+                flags = SHF_MERGE | SHF_STRINGS;
             }
             else if (_machine == EM_ARM && section.Type == SectionType.UnwindData)
             {
@@ -552,8 +559,8 @@ namespace ILCompiler.ObjectWriter
                     {
                         IMAGE_REL_BASED_DIR64 => R_RISCV_64,
                         IMAGE_REL_BASED_HIGHLOW => R_RISCV_32,
-                        IMAGE_REL_BASED_RELPTR32 => R_RISCV_64_LO12,
-                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_64_HI20,
+                        IMAGE_REL_BASED_RELPTR32 => R_RISCV_32_PCREL,
+                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_CALL_PLT,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
@@ -561,20 +568,15 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
                     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
-
-                    if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PC)
-                    {
-                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
-                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type + 1);
-                        BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
-                        relocationStream.Write(relocationEntry);
-                    }
                 }
             }
         }
 
         private protected override void EmitSectionsAndLayout()
         {
+            SectionWriter commentSectionWriter = GetOrCreateSection(CommentSection);
+            commentSectionWriter.WriteUtf8String($".NET: ilc {Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion}");
+
             if (_machine == EM_ARM)
             {
                 // Emit EABI attributes section

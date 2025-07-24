@@ -301,7 +301,7 @@ namespace System.Speech.Internal.Synthesis
         {
             lock (_thisObjectLock)
             {
-                Helpers.ThrowIfNull(eventHandler, nameof(eventHandler));
+                ArgumentNullException.ThrowIfNull(eventHandler);
 
                 // could through if unsuccessful - delay the SetEventInterest
                 bool fSetSapiInterest = internalEventHandler == null;
@@ -320,7 +320,7 @@ namespace System.Speech.Internal.Synthesis
         {
             lock (_thisObjectLock)
             {
-                Helpers.ThrowIfNull(eventHandler, nameof(eventHandler));
+                ArgumentNullException.ThrowIfNull(eventHandler);
 
                 // could through if unsuccessful - delay the SetEventInterest
                 internalEventHandler -= eventHandler;
@@ -1670,7 +1670,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         private void Speak(string textToSpeak, Prompt prompt, bool fIsXml)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             if (_isDisposed)
             {

@@ -109,10 +109,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private MemberInfo[] GetAccessors(LazyMemberInfo originalLazyMember)
         {
             BuildTables();
-            if (_membersTable == null)
-            {
-                throw new ArgumentNullException(nameof(_membersTable));
-            }
+            ArgumentNullException.ThrowIfNull(_membersTable);
 
             return _membersTable[originalLazyMember];
         }
@@ -120,10 +117,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private ParameterInfo GetParameter(Lazy<ParameterInfo> originalParameter)
         {
             BuildTables();
-            if (_parametersTable == null)
-            {
-                throw new ArgumentNullException(nameof(_parametersTable));
-            }
+            ArgumentNullException.ThrowIfNull(_parametersTable);
 
             return _parametersTable[originalParameter];
         }

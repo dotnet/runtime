@@ -303,7 +303,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 success = true;
-                state.Current.MarkRequiredPropertyAsRead(this);
+                state.Current.MarkPropertyAsRead(this);
             }
             else if (EffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
@@ -325,7 +325,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 success = true;
-                state.Current.MarkRequiredPropertyAsRead(this);
+                state.Current.MarkPropertyAsRead(this);
             }
             else
             {
@@ -354,7 +354,7 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                         }
 
-                        state.Current.MarkRequiredPropertyAsRead(this);
+                        state.Current.MarkPropertyAsRead(this);
                     }
                 }
             }

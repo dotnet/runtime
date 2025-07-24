@@ -161,5 +161,21 @@ namespace System.Linq.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await CreateSource(2, 4, 8, 16).Yield().CountAsync(i =>
+                {
+                    Assert.Same(ctx, SynchronizationContext.Current);
+                    return true;
+                });
+            });
+        }
     }
 }

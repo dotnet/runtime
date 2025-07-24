@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct CERT_EXTENSION
+        internal struct CERT_EXTENSION
         {
             internal IntPtr pszObjId;
             internal int fCritical;

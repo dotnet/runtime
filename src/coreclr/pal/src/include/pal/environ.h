@@ -18,6 +18,8 @@ Abstract:
 #ifndef __ENVIRON_H_
 #define __ENVIRON_H_
 
+#include <minipal/mutex.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -32,7 +34,7 @@ Variables :
     gcsEnvironment: critical section to synchronize access to palEnvironment
 --*/
 extern char **palEnvironment;
-extern CRITICAL_SECTION gcsEnvironment;
+extern minipal_mutex gcsEnvironment;
 
 /*++
 

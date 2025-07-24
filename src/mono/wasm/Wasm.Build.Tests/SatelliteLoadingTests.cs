@@ -58,7 +58,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         );
     }
 
-    [Fact]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task LoadSatelliteAssemblyFromReference()
     {
         Configuration config = Configuration.Release;

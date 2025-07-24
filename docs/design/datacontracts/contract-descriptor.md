@@ -83,7 +83,8 @@ a JSON integer constant.
   "globals":
   {
     "FEATURE_COMINTEROP": 0,
-    "s_pThreadStore": [ 0 ] // indirect from pointer data offset 0
+    "s_pThreadStore": [ 0 ], // indirect from pointer data offset 0
+    "RuntimeID": "win-x64" // string value
   },
   "contracts": {"Thread": 1, "GCHandle": 1, "ThreadStore": 1}
 }

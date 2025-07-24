@@ -3,9 +3,9 @@
 
 using System.Buffers;
 using System.Buffers.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Text.Json
@@ -103,10 +103,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             RootElement.WriteTo(writer);
         }
@@ -669,28 +666,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (!JsonHelpers.IsValidDateTimeOffsetParseLength(segment.Length))
-            {
-                value = default;
-                return false;
-            }
-
-            // Segment needs to be unescaped
-            if (row.HasComplexChildren)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTime(segment, out value);
-            }
-
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (JsonHelpers.TryParseAsISO(segment, out DateTime tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(segment, row.HasComplexChildren, out value);
         }
 
         internal bool TryGetValue(int index, out DateTimeOffset value)
@@ -704,28 +680,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (!JsonHelpers.IsValidDateTimeOffsetParseLength(segment.Length))
-            {
-                value = default;
-                return false;
-            }
-
-            // Segment needs to be unescaped
-            if (row.HasComplexChildren)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTimeOffset(segment, out value);
-            }
-
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(segment, row.HasComplexChildren, out value);
         }
 
         internal bool TryGetValue(int index, out Guid value)
@@ -739,29 +694,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (segment.Length > JsonConstants.MaximumEscapedGuidLength)
-            {
-                value = default;
-                return false;
-            }
-
-            // Segment needs to be unescaped
-            if (row.HasComplexChildren)
-            {
-                return JsonReaderHelper.TryGetEscapedGuid(segment, out value);
-            }
-
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (segment.Length == JsonConstants.MaximumFormatGuidLength
-                && Utf8Parser.TryParse(segment, out Guid tmp, out _, 'D'))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(segment, row.HasComplexChildren, out value);
         }
 
         internal string GetRawValueAsString(int index)
@@ -1097,6 +1030,86 @@ namespace System.Text.Json
 
             Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
             database.CompleteAllocations();
+        }
+
+        private static void ValidateNoDuplicateProperties(JsonDocument document)
+        {
+            if (document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
+            {
+                ValidateDuplicatePropertiesCore(document);
+            }
+        }
+
+        private static void ValidateDuplicatePropertiesCore(JsonDocument document)
+        {
+            Debug.Assert(document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object);
+
+            using PropertyNameSet propertyNameSet = new PropertyNameSet();
+
+            Stack<int> traversalPath = new Stack<int>();
+            int? databaseIndexOflastProcessedChild = null;
+
+            traversalPath.Push(document.RootElement.MetadataDbIndex);
+
+            do
+            {
+                JsonElement curr = new JsonElement(document, traversalPath.Peek());
+
+                switch (curr.ValueKind)
+                {
+                    case JsonValueKind.Object:
+                    {
+                        JsonElement.ObjectEnumerator enumerator = new(curr, databaseIndexOflastProcessedChild ?? -1);
+
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.Current.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                            {
+                                traversalPath.Push(enumerator.Current.Value.MetadataDbIndex);
+                                databaseIndexOflastProcessedChild = null;
+                                goto continueOuter;
+                            }
+                        }
+
+                        // No more children, so process the current element.
+                        enumerator.Reset();
+                        propertyNameSet.SetCapacity(curr.GetPropertyCount());
+
+                        foreach (JsonProperty property in enumerator)
+                        {
+                            propertyNameSet.AddPropertyName(property, document);
+                        }
+
+                        propertyNameSet.Reset();
+                        databaseIndexOflastProcessedChild = traversalPath.Pop();
+                        break;
+                    }
+                    case JsonValueKind.Array:
+                    {
+                        JsonElement.ArrayEnumerator enumerator = new(curr, databaseIndexOflastProcessedChild ?? -1);
+
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.Current.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                            {
+                                traversalPath.Push(enumerator.Current.MetadataDbIndex);
+                                databaseIndexOflastProcessedChild = null;
+                                goto continueOuter;
+                            }
+                        }
+
+                        databaseIndexOflastProcessedChild = traversalPath.Pop();
+                        break;
+                    }
+                    default:
+                        Debug.Fail($"Expected only complex children but got {curr.ValueKind}");
+                        ThrowHelper.ThrowJsonException();
+                        break;
+                }
+
+            continueOuter:
+                ;
+            } while (traversalPath.Count is not 0);
         }
 
         private void CheckNotDisposed()

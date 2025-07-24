@@ -16,6 +16,10 @@
 
 #include "rtlfunctions.h"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 #define S_BYTEPTR(x)    S_SIZE_T((SIZE_T)(x))
 
 #ifndef DACCESS_COMPILE
@@ -558,7 +562,7 @@ static BOOL LabelCanReach(LabelRef *pLabelRef)
 //
 // Throws exception on failure.
 //---------------------------------------------------------------
-Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
+Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
 {
     STANDARD_VM_CONTRACT;
 
@@ -574,6 +578,10 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
     ASSERT(pStub != NULL);
 
     EmitStub(pStub, globalsize, size, pHeap);
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, stubType, pStub->GetEntryPoint(), pStub->GetNumCodeBytes(), PerfMapStubType::Individual);
+#endif
 
     return pStub.Extract();
 }

@@ -156,7 +156,7 @@ Assembly* TypeDesc::GetAssembly() {
     STATIC_CONTRACT_FORBID_FAULT;
 
     Module *pModule = GetModule();
-    PREFIX_ASSUME(pModule!=NULL);
+    _ASSERTE(pModule!=NULL);
     return pModule->GetAssembly();
 }
 

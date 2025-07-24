@@ -136,7 +136,6 @@ public class TestClass
 /*
 set DOTNET_TieredCompilation=0
 set DOTNET_JitDoCopyProp=1
-set DOTNET_EnableSSE41=1
 set DOTNET_JitStress=2
 set DOTNET_GCStress=0xC
 set DOTNET_AltJitName=clrjit_win_x86_x64.dll

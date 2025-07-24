@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,6 +12,12 @@ namespace System.Threading.Channels.Tests
 {
     public abstract class TestBase
     {
+        public static IEnumerable<object[]> ThreeBools =>
+            from b1 in new[] { false, true }
+            from b2 in new[] { false, true }
+            from b3 in new[] { false, true }
+            select new object[] { b1, b2, b3 };
+
         protected void AssertSynchronouslyCanceled(Task task, CancellationToken token)
         {
             Assert.Equal(TaskStatus.Canceled, task.Status);

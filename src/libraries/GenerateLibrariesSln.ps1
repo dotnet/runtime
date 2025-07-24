@@ -1,7 +1,7 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-# Creates a .sln that includes all of the library src, ref, or tests projects.
+# Creates a .slnx that includes all of the library src, ref, or tests projects.
 
 param (
     [string]$type = "src" # can also be "ref" or "tests"
@@ -15,7 +15,7 @@ if (($type -ne "src") -and
     exit
 }
 
-$SolutionName = "Libraries.$($type).Generated.sln"
+$SolutionName = "Libraries.$($type).Generated.slnx"
 
 # Delete the existing solution if it exists
 if (Test-Path $SolutionName)
@@ -24,7 +24,7 @@ if (Test-Path $SolutionName)
 }
 
 # Create the new solution
-dotnet new sln --name $([System.IO.Path]::GetFileNameWithoutExtension($SolutionName))
+dotnet new sln --format slnx --name $([System.IO.Path]::GetFileNameWithoutExtension($SolutionName))
 
 # Populate it with all *\$type\*.csproj projects
 foreach ($f in Get-ChildItem -Recurse -Path $([System.IO.Path]::Combine("*", $type)) -Filter *.csproj)

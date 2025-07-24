@@ -18,7 +18,6 @@
     </_WasmBuildAppCoreDependsOn>
 
     <WasmNestedPublishAppDependsOn>
-      _PrepareForNestedPublish;
       _WasmBuildAppCore;
     </WasmNestedPublishAppDependsOn>
   </PropertyGroup>

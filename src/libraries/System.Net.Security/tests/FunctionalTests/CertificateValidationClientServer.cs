@@ -185,7 +185,10 @@ namespace System.Net.Security.Tests
                         TargetHost = Guid.NewGuid().ToString("N"),
                         ClientCertificates = clientCerts,
                         EnabledSslProtocols = SslProtocolSupport.DefaultSslProtocols,
-                        CertificateChainPolicy = new X509ChainPolicy(),
+                        CertificateChainPolicy = new X509ChainPolicy()
+                        {
+                            RevocationMode = X509RevocationMode.NoCheck,
+                        }
                     };
 
                     if (clientCertSource == ClientCertSource.CertificateContext)

@@ -383,6 +383,11 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
+    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+}
+
+bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
+{
     //  ***Used only for testing***
     pal::string_t environmentOverride;
     if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
@@ -392,11 +397,6 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
-}
-
-bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
-{
     bool is_current_arch = arch == get_current_arch();
 
     // Bail out early for unsupported requests for different architectures
@@ -657,9 +657,31 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 
+namespace
+{
+    bool is_directory_separator(pal::char_t c)
+    {
+        return c == DIR_SEPARATOR || c == L'/';
+    }
+}
+
 bool pal::is_path_rooted(const string_t& path)
 {
-    return path.length() >= 2 && path[1] == L':';
+    return (path.length() >= 1 && is_directory_separator(path[0])) // UNC or device paths
+        || (path.length() >= 2 && path[1] == L':'); // Drive letter paths
+}
+
+bool pal::is_path_fully_qualified(const string_t& path)
+{
+    if (path.length() < 2)
+        return false;
+
+    // Check for UNC and DOS device paths
+    if (is_directory_separator(path[0]))
+        return path[1] == L'?' || is_directory_separator(path[1]);
+
+    // Check for drive absolute path - for example C:\.
+    return path.length() >= 3 && path[1] == L':' && is_directory_separator(path[2]);
 }
 
 // Returns true only if an env variable can be read successfully to be non-empty.
@@ -690,6 +712,28 @@ bool pal::getenv(const char_t* name, string_t* recv)
 
     recv->assign(buffer.data());
     return true;
+}
+
+void pal::enumerate_environment_variables(const std::function<void(const pal::char_t*, const pal::char_t*)> callback)
+{
+    LPWCH env_strings = ::GetEnvironmentStringsW();
+    if (env_strings == nullptr)
+        return;
+
+    LPWCH current = env_strings;
+    while (*current != L'\0')
+    {
+        LPWCH eq_ptr = ::wcschr(current, L'=');
+        if (eq_ptr != nullptr && eq_ptr != current)
+        {
+            pal::string_t name(current, eq_ptr - current);
+            callback(name.c_str(), eq_ptr + 1);
+        }
+
+        current += pal::strlen(current) + 1; // Move to next string
+    }
+
+    ::FreeEnvironmentStringsW(env_strings);
 }
 
 int pal::xtoi(const char_t* input)
@@ -994,6 +1038,12 @@ bool pal::file_exists(const string_t& path)
 {
     string_t tmp(path);
     return pal::fullpath(&tmp, true);
+}
+
+bool pal::is_directory(const pal::string_t& path)
+{
+    DWORD attributes = ::GetFileAttributesW(path.c_str());
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

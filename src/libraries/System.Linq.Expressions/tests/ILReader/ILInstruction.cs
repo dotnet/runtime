@@ -158,7 +158,6 @@ namespace System.Linq.Expressions.Tests
     public sealed class InlineFieldInstruction : ILInstruction
     {
         private readonly ITokenResolver _resolver;
-        private FieldInfo _field;
 
         internal InlineFieldInstruction(ITokenResolver resolver, int offset, OpCode opCode, int token)
             : base(offset, opCode)
@@ -167,7 +166,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public FieldInfo Field => _field ??= _resolver.AsField(Token);
+        public FieldInfo Field => field ??= _resolver.AsField(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineFieldInstruction(this);
@@ -176,7 +175,6 @@ namespace System.Linq.Expressions.Tests
     public sealed class InlineMethodInstruction : ILInstruction
     {
         private readonly ITokenResolver _resolver;
-        private MethodBase _method;
 
         internal InlineMethodInstruction(int offset, OpCode opCode, int token, ITokenResolver resolver)
             : base(offset, opCode)
@@ -185,7 +183,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public MethodBase Method => _method ??= _resolver.AsMethod(Token);
+        public MethodBase Method => field ??= _resolver.AsMethod(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineMethodInstruction(this);
@@ -194,7 +192,6 @@ namespace System.Linq.Expressions.Tests
     public sealed class InlineTypeInstruction : ILInstruction
     {
         private readonly ITokenResolver _resolver;
-        private Type _type;
 
         internal InlineTypeInstruction(int offset, OpCode opCode, int token, ITokenResolver resolver)
             : base(offset, opCode)
@@ -203,7 +200,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public Type Type => _type ??= _resolver.AsType(Token);
+        public Type Type => field ??= _resolver.AsType(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineTypeInstruction(this);
@@ -212,7 +209,6 @@ namespace System.Linq.Expressions.Tests
     public sealed class InlineSigInstruction : ILInstruction
     {
         private readonly ITokenResolver _resolver;
-        private byte[] _signature;
 
         internal InlineSigInstruction(int offset, OpCode opCode, int token, ITokenResolver resolver)
             : base(offset, opCode)
@@ -221,7 +217,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public byte[] Signature => _signature ??= _resolver.AsSignature(Token);
+        public byte[] Signature => field ??= _resolver.AsSignature(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineSigInstruction(this);
@@ -230,7 +226,6 @@ namespace System.Linq.Expressions.Tests
     public sealed class InlineTokInstruction : ILInstruction
     {
         private readonly ITokenResolver _resolver;
-        private MemberInfo _member;
 
         internal InlineTokInstruction(int offset, OpCode opCode, int token, ITokenResolver resolver)
             : base(offset, opCode)
@@ -239,7 +234,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public MemberInfo Member => _member ??= _resolver.AsMember(Token);
+        public MemberInfo Member => field ??= _resolver.AsMember(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineTokInstruction(this);
@@ -248,7 +243,6 @@ namespace System.Linq.Expressions.Tests
     public sealed class InlineStringInstruction : ILInstruction
     {
         private readonly ITokenResolver _resolver;
-        private string _string;
 
         internal InlineStringInstruction(int offset, OpCode opCode, int token, ITokenResolver resolver)
             : base(offset, opCode)
@@ -257,7 +251,7 @@ namespace System.Linq.Expressions.Tests
             Token = token;
         }
 
-        public string String => _string ??= _resolver.AsString(Token);
+        public string String => field ??= _resolver.AsString(Token);
         public int Token { get; }
 
         public override void Accept(ILInstructionVisitor visitor) => visitor.VisitInlineStringInstruction(this);

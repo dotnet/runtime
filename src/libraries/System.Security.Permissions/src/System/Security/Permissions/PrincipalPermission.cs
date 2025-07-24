@@ -269,10 +269,7 @@ namespace System.Security.Permissions
 
         public void FromXml(SecurityElement elem)
         {
-            if (elem is null)
-            {
-                throw new ArgumentNullException(nameof(elem));
-            }
+            ArgumentNullException.ThrowIfNull(elem);
 
             if (elem.Tag == null || !elem.Tag.Equals("Permission") && !elem.Tag.Equals("IPermission"))
                 throw new ArgumentException(SR.Argument_NotAPermissionElement);

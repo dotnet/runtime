@@ -71,7 +71,7 @@ namespace System.Runtime.InteropServices
         /// as <see cref="Memory{T}"/> but only used for reading to store a <see cref="ReadOnlyMemory{T}"/>.
         /// </remarks>
         public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> memory) =>
-            Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref memory);
+            new Memory<T>(memory._object, memory._index, memory._length);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element

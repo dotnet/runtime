@@ -1166,9 +1166,12 @@ namespace System.IO
                 EnsureBufferAllocated();
             }
 
-            // We should not be flushing here, but only writing to the underlying stream, but previous version flushed, so we keep this.
             if (_writePos >= _bufferSize - 1)
-                FlushWrite();
+            {
+                Debug.Assert(_stream != null);
+                _stream.Write(_buffer!, 0, _writePos);
+                _writePos = 0;
+            }
 
             _buffer![_writePos++] = value;
 

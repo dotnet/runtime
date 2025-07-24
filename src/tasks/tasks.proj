@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
+
   <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
     <ProjectReference Include="AndroidAppBuilder\AndroidAppBuilder.csproj" />
     <ProjectReference Include="AotCompilerTask\MonoAOTCompiler.csproj" />
@@ -58,4 +59,5 @@
       <TasksSrc Include="%(ProjectReferenceWithConfiguration.RelativeDir)%(ProjectReferenceWithConfiguration.RecursiveDir)**\*" />
     </ItemGroup>
   </Target>
+
 </Project>

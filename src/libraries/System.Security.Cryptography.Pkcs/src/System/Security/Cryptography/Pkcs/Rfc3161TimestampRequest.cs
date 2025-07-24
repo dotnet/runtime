@@ -169,10 +169,7 @@ namespace System.Security.Cryptography.Pkcs
             bool requestSignerCertificates = false,
             X509ExtensionCollection? extensions = null)
         {
-            if (signerInfo is null)
-            {
-                throw new ArgumentNullException(nameof(signerInfo));
-            }
+            ArgumentNullException.ThrowIfNull(signerInfo);
 
             // https://tools.ietf.org/html/rfc3161, Appendix A.
             //
@@ -180,7 +177,7 @@ namespace System.Security.Cryptography.Pkcs
             // hash of the value of signature field within SignerInfo for the
             // signedData being time-stamped.
             return CreateFromData(
-                signerInfo.GetSignature(),
+                signerInfo.GetSignatureMemory().Span,
                 hashAlgorithm,
                 requestedPolicyId,
                 nonce,

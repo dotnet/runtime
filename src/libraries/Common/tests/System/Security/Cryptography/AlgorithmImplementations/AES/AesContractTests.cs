@@ -94,6 +94,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 e = Record.Exception(() => aes.CreateDecryptor(key, iv));
                 Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
+
+                e = Record.Exception(() => aes.Key = key);
+                Assert.True(e is CryptographicException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
+
+                e = Record.Exception(() => aes.SetKey(key));
+                Assert.True(e is CryptographicException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
             }
         }
 
@@ -194,6 +200,68 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 e = Record.Exception(() => aes.CreateDecryptor(key, iv));
                 Assert.True(e is ArgumentException || e is OutOfMemoryException, $"Got {(e?.ToString() ?? "null")}");
+            }
+        }
+
+        [Fact]
+        public static void SetKey_SetsKey()
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                byte[] key = new byte[16];
+                RandomNumberGenerator.Fill(key);
+
+                aes.SetKey(key);
+                Assert.Equal(key, aes.Key);
+            }
+        }
+
+        [Fact]
+        public static void SetKey_SetsKeySize()
+        {
+            Span<byte> bigKey = stackalloc byte[32];
+            RandomNumberGenerator.Fill(bigKey);
+
+            using (Aes aes = AesFactory.Create())
+            {
+                foreach (KeySizes keySize in aes.LegalKeySizes)
+                {
+                    for (int i = keySize.MinSize; i <= keySize.MaxSize; i += keySize.SkipSize)
+                    {
+                        aes.SetKey(bigKey.Slice(0, i / 8));
+                        Assert.Equal(i, aes.KeySize);
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ReadKeyAfterDispose(bool setProperty)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                byte[] key = new byte[aes.KeySize / 8];
+                RandomNumberGenerator.Fill(key);
+
+                if (setProperty)
+                {
+                    aes.Key = key;
+                }
+                else
+                {
+                    aes.SetKey(key);
+                }
+
+                aes.Dispose();
+
+                // Asking for the key after dispose just makes a new key be generated.
+                byte[] key2 = aes.Key;
+                Assert.NotEqual(key, key2);
+
+                // The new key won't be all zero:
+                Assert.NotEqual(-1, key2.AsSpan().IndexOfAnyExcept((byte)0));
             }
         }
 
@@ -403,6 +471,66 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 using ICryptoTransform transform = aes.CreateDecryptor();
                 byte[] decrypted = transform.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
                 Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, decrypted);
+            }
+        }
+
+        [Theory]
+        [InlineData(128)]
+        [InlineData(192)]
+        [InlineData(256)]
+        public static void SetKeySize_MakesRandomKey(int keySize)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                bool createEncryptorFirst = i == 0;
+                byte[] one;
+                byte[] exported;
+                byte[] iv;
+
+                using (Aes aes = AesFactory.Create())
+                {
+                    aes.KeySize = keySize;
+
+                    if (createEncryptorFirst)
+                    {
+                        using (ICryptoTransform enc = aes.CreateEncryptor())
+                        {
+                            one = enc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                        }
+                       
+                        iv = aes.IV;
+                    }
+                    else
+                    {
+                        iv = aes.IV;
+                        one = aes.EncryptCbc(ReadOnlySpan<byte>.Empty, iv);
+                    }
+
+                    exported = aes.Key;
+                }
+
+                Assert.Equal(keySize / 8, exported.Length);
+                byte[] two;
+
+                using (Aes aes = AesFactory.Create())
+                {
+                    aes.IV = iv;
+                    aes.Key = exported;
+
+                    if (createEncryptorFirst)
+                    {
+                        two = aes.EncryptCbc(ReadOnlySpan<byte>.Empty, iv);
+                    }
+                    else
+                    {
+                        using (ICryptoTransform enc = aes.CreateEncryptor())
+                        {
+                            two = enc.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                        }
+                    }
+                }
+
+                Assert.Equal(one, two);
             }
         }
 

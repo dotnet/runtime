@@ -32,9 +32,20 @@
                                      !$(MSBuildProjectName.StartsWith('runtime.native'))">true</IsRIDSpecificProject>
     <GeneratePackageOnBuild Condition="'$(IsRIDSpecificProject)' == 'true' and '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
 
+    <AllowedOutputExtensionsInPackageBuildOutputFolder Condition="'$(IncludeSymbolsInPackage)' == 'true'">$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb;.mdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
+  
+  <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsPackable>true</IsPackable>
+      <PackageId>$(PackageId)</PackageId>
+      <PackageVersion>$(PackageVersion)</PackageVersion>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
 
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
     <!-- In servicing, the live package is compared against the GA version in strict mode. -->
@@ -122,7 +133,7 @@
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
                               PackagePath="runtimes\$(_packageTargetRuntime)\$(BuildOutputTargetFolder)\$(_targetFrameworkWithoutSuffix)\" />
       <!-- Create the item and use its metadata separately to avoid MSB4120. See https://aka.ms/msbuild/metadata-self-ref for more info. -->
-      <_RuntimeSymbolPath Include="$(RuntimeSymbolPath)" />
+      <_RuntimeSymbolPath Include="@(TfmRuntimeSpecificPackageFile->'%(RootDir)%(Directory)%(FileName).pdb')" Condition="'%(TfmRuntimeSpecificPackageFile.Extension)' == '.dll'" KeepMetadata="None" />
       <TfmSpecificDebugSymbolsFile Include="@(_RuntimeSymbolPath)"
                                    TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(_RuntimeSymbolPath.Filename)%(_RuntimeSymbolPath.Extension)"
                                    TargetFramework="$(_targetFrameworkWithoutSuffix)"
@@ -168,21 +179,6 @@
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\%(NETStandardCompatError.Supported)\$(PackageId).targets" Condition="'@(NETStandardCompatError)' != ''" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="WarnOnProjectReferenceToFrameworkAssemblies"
-          BeforeTargets="IncludeTransitiveProjectReferences"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and
-                     '@(ProjectReference)' != ''">
-    <!-- Find project references that overlap with NetCoreApp, are direct (NuGetPackageId is not set), actually referenced (ReferenceOutputAssembly), and not hidden with PrivateAssets
-         ProjectReferences can opt out of this checking by setting AllowFrameworkPackageReference, though they should not. -->
-    <Warning Text="Project reference '%(ProjectReference.Identity)' is a reference to a framework assembly and is not required in $(NetCoreAppCurrent) (NetCoreAppCurrent)."
-             Code="NETPKG0001"
-             Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) and
-                        '%(ProjectReference.ReferenceOutputAssembly)' != 'false' and
-                        '%(ProjectReference.NuGetPackageId)' == '' and
-                        '%(ProjectReference.PrivateAssets)' != 'all' and
-                        '%(ProjectReference.AllowFrameworkPackageReference)' != 'true'" />
   </Target>
 
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"
@@ -254,13 +250,13 @@
       <!-- Add ReferenceCopyLocalPaths for ProjectReferences which are flagged as Pack="true" into the package. -->
       <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Pack', 'true'))" />
       <TfmSpecificPackageFile Include="@(_projectReferenceCopyLocalPaths)"
-                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)\$(_referringTargetFramework)\'))" />
+                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)/$(_referringTargetFramework)/'))" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
-                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
+                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)%(Filename)%(Extension)"
                                    TargetFramework="$(_referringTargetFramework)"
                                    Condition="'$(IncludeSymbols)' == 'true'" />
       <!-- Remove symbol from the non symbol package. -->
-      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
+      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" Condition="'$(IncludeSymbolsInPackage)' != 'true'" />
       <!-- If the reference assembly is included, don't put the documentation file next to the lib assembly. -->
       <TfmSpecificPackageFile Remove="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.xml')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true'))" />
     </ItemGroup>

@@ -3,8 +3,14 @@
     <DebugType>PdbOnly</DebugType>
     <Optimize>False</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <!-- Needed for CrossGenTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

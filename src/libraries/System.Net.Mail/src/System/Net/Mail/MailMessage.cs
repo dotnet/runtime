@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Mime;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Mail
 {
@@ -429,22 +431,11 @@ namespace System.Net.Mail
             }
         }
 
-        internal void Send(BaseWriter writer, bool sendEnvelope, bool allowUnicode)
+        internal async Task SendAsync<TIOAdapter>(BaseWriter writer, bool sendEnvelope, bool allowUnicode, CancellationToken cancellationToken = default)
+            where TIOAdapter : IReadWriteAdapter
         {
             SetContent(allowUnicode);
-            _message.Send(writer, sendEnvelope, allowUnicode);
-        }
-
-        internal IAsyncResult BeginSend(BaseWriter writer, bool allowUnicode,
-            AsyncCallback? callback, object? state)
-        {
-            SetContent(allowUnicode);
-            return _message.BeginSend(writer, allowUnicode, callback, state);
-        }
-
-        internal void EndSend(IAsyncResult asyncResult)
-        {
-            _message.EndSend(asyncResult);
+            await _message.SendAsync<TIOAdapter>(writer, sendEnvelope, allowUnicode, cancellationToken).ConfigureAwait(false);
         }
 
         internal string BuildDeliveryStatusNotificationString()

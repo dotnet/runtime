@@ -8,46 +8,49 @@ using ILCompiler.Logging;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TrimmingTestLogger : ILogWriter
-	{
-		private readonly StringWriter _infoStringWriter;
-		private readonly TextWriter _infoWriter;
+    public class TrimmingTestLogger : ILogWriter
+    {
+        private readonly StringWriter _infoStringWriter;
+        private readonly TextWriter _infoWriter;
 
-		private readonly List<MessageContainer> _messageContainers;
+        private readonly List<MessageContainer> _messageContainers;
 
-		public TrimmingTestLogger ()
-		{
-			_infoStringWriter = new StringWriter ();
-			_infoWriter = TextWriter.Synchronized (_infoStringWriter);
-			_messageContainers = new List<MessageContainer> ();
-		}
+        public TrimmingTestLogger()
+        {
+            _infoStringWriter = new StringWriter();
+            _infoWriter = TextWriter.Synchronized(_infoStringWriter);
+            _messageContainers = new List<MessageContainer>();
+        }
 
-		public TextWriter Writer => _infoWriter;
+        public TextWriter Writer => _infoWriter;
 
-		public List<MessageContainer> GetLoggedMessages ()
-		{
-			return _messageContainers;
-		}
+        public List<MessageContainer> GetLoggedMessages()
+        {
+            return _messageContainers;
+        }
 
-		public void WriteError (MessageContainer error)
-		{
-			lock (_messageContainers) {
-				_messageContainers.Add (error);
-			}
-		}
+        public void WriteError(MessageContainer error)
+        {
+            lock (_messageContainers)
+            {
+                _messageContainers.Add(error);
+            }
+        }
 
-		public void WriteMessage (MessageContainer message)
-		{
-			lock (_messageContainers) {
-				_messageContainers.Add (message);
-			}
-		}
+        public void WriteMessage(MessageContainer message)
+        {
+            lock (_messageContainers)
+            {
+                _messageContainers.Add(message);
+            }
+        }
 
-		public void WriteWarning (MessageContainer warning)
-		{
-			lock (_messageContainers) {
-				_messageContainers.Add (warning);
-			}
-		}
-	}
+        public void WriteWarning(MessageContainer warning)
+        {
+            lock (_messageContainers)
+            {
+                _messageContainers.Add(warning);
+            }
+        }
+    }
 }

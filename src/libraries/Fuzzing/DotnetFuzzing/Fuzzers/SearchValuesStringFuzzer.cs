@@ -36,8 +36,8 @@ internal sealed class SearchValuesStringFuzzer : IFuzzer
         SearchValues<string> searchValues = SearchValues.Create(needles, comparisonType);
 
         int index = haystack.IndexOfAny(searchValues);
-        Assert.Equal(index, haystackCopy.IndexOfAny(searchValues));
-        Assert.Equal(index, IndexOfAnyReferenceImpl(haystack, needles, comparisonType));
+        AssertEqual(index, haystackCopy.IndexOfAny(searchValues), searchValues);
+        AssertEqual(index, IndexOfAnyReferenceImpl(haystack, needles, comparisonType), searchValues);
     }
 
     private static int IndexOfAnyReferenceImpl(ReadOnlySpan<char> haystack, string[] needles, StringComparison comparisonType)
@@ -54,5 +54,16 @@ internal sealed class SearchValuesStringFuzzer : IFuzzer
         }
 
         return minIndex == int.MaxValue ? -1 : minIndex;
+    }
+
+    private static void AssertEqual(int expected, int actual, SearchValues<string> searchValues)
+    {
+        if (expected != actual)
+        {
+            Type implType = searchValues.GetType();
+            string impl = $"{implType.Name} [{string.Join(", ", implType.GenericTypeArguments.Select(t => t.Name))}]";
+
+            throw new Exception($"Expected {expected}, got {actual} for impl='{impl}'");
+        }
     }
 }

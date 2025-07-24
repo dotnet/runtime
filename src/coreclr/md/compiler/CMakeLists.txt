@@ -1,7 +1,6 @@
 set(MDCOMPILER_SOURCES
   assemblymd.cpp
   assemblymd_emit.cpp
-  classfactory.cpp
   custattr_import.cpp
   custattr_emit.cpp
   disp.cpp
@@ -32,7 +31,6 @@ set(MDCOMPILER_HEADERS
   ../inc/metamodelrw.h
   ../inc/rwutil.h
   ../inc/stgio.h
-  classfactory.h
   custattr.h
   disp.h
   filtermanager.h

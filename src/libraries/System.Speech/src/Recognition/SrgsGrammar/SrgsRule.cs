@@ -31,7 +31,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public SrgsRule(string id, params SrgsElement[] elements)
             : this()
         {
-            Helpers.ThrowIfNull(elements, nameof(elements));
+            ArgumentNullException.ThrowIfNull(elements);
 
             XmlParser.ValidateRuleId(id);
             Id = id;
@@ -51,7 +51,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region public Method
         public void Add(SrgsElement element)
         {
-            Helpers.ThrowIfNull(element, nameof(element));
+            ArgumentNullException.ThrowIfNull(element);
 
             Elements.Add(element);
         }

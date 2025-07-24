@@ -587,8 +587,8 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
 
     private static IEnumerable<JsonElement> ParseJsonArray(string json)
     {
-        JsonDocument doc = JsonDocument.Parse(json);
-        foreach (JsonElement element in doc.RootElement.EnumerateArray())
+        JsonElement doc = JsonElement.Parse(json);
+        foreach (JsonElement element in doc.EnumerateArray())
         {
             yield return element;
         }

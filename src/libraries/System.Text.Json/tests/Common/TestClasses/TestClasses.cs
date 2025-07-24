@@ -2041,13 +2041,13 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize()
         {
-            Number = JsonDocument.Parse(@"1").RootElement.Clone();
-            True = JsonDocument.Parse(@"true").RootElement.Clone();
-            False = JsonDocument.Parse(@"false").RootElement.Clone();
-            String = JsonDocument.Parse(@"""Hello""").RootElement.Clone();
-            Array = JsonDocument.Parse(@"[2, false, true, ""Goodbye""]").RootElement.Clone();
-            Object = JsonDocument.Parse(@"{}").RootElement.Clone();
-            Null = JsonDocument.Parse(@"null").RootElement.Clone();
+            Number = JsonElement.Parse(@"1");
+            True = JsonElement.Parse(@"true");
+            False = JsonElement.Parse(@"false");
+            String = JsonElement.Parse(@"""Hello""");
+            Array = JsonElement.Parse(@"[2, false, true, ""Goodbye""]");
+            Object = JsonElement.Parse(@"{}");
+            Null = JsonElement.Parse(@"null");
         }
 
         public void Verify()
@@ -2099,10 +2099,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             Array = new JsonElement[]
             {
-                JsonDocument.Parse(@"1").RootElement.Clone(),
-                JsonDocument.Parse(@"true").RootElement.Clone(),
-                JsonDocument.Parse(@"false").RootElement.Clone(),
-                JsonDocument.Parse(@"""Hello""").RootElement.Clone()
+                JsonElement.Parse(@"1"),
+                JsonElement.Parse(@"true"),
+                JsonElement.Parse(@"false"),
+                JsonElement.Parse(@"""Hello""")
             };
         }
 
@@ -2152,8 +2152,8 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize()
         {
-            Array = JsonDocument.Parse(s_array).RootElement.Clone();
-            Object = JsonDocument.Parse(s_object).RootElement.Clone();
+            Array = JsonElement.Parse(s_array);
+            Object = JsonElement.Parse(s_object);
         }
 
         public void Verify()

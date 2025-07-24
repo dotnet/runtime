@@ -6,13 +6,15 @@
 .assembly extern mscorlib { auto }
 
 .assembly ASSEMBLY_NAME { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern xunit.core {}
 .namespace JitTest_tailcall_boxunbox
 {
   .class public auto ansi beforefieldinit App
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int64 
+    .method private hidebysig static int64
             Test(bool path) cil managed
     {
       .maxstack  4
@@ -176,12 +178,15 @@
       IL_RET:  ret
     } // end of method App::Test
 
-    .method public hidebysig static int32 
+    .method public hidebysig static int32
             Main() cil managed
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+          string('https://github.com/dotnet/runtime/issues/91923')
+          type([TestLibrary]TestLibrary.PlatformDetection)
+          string[1] ('IsAppleMobile')
+      }
       .entrypoint
       .maxstack  4
       .locals (int32 V_0)
@@ -201,7 +206,7 @@
       IL_001c:  ret
     } // end of method App::Main
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor() cil managed
     {
       .maxstack  8

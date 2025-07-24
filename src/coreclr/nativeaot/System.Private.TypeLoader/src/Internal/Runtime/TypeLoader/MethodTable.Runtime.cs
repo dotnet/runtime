@@ -18,9 +18,9 @@ namespace Internal.Runtime
             return MethodTable.Of<Array>();
         }
 
-        internal unsafe RuntimeTypeHandle ToRuntimeTypeHandle()
+        internal readonly unsafe RuntimeTypeHandle ToRuntimeTypeHandle()
         {
-            IntPtr result = (IntPtr)Unsafe.AsPointer(ref this);
+            IntPtr result = (IntPtr)Unsafe.AsPointer(in this);
             return *(RuntimeTypeHandle*)&result;
         }
     }

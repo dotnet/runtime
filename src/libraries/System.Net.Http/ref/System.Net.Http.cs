@@ -243,6 +243,7 @@ namespace System.Net.Http
         public static System.Net.Http.HttpMethod Patch { get { throw null; } }
         public static System.Net.Http.HttpMethod Post { get { throw null; } }
         public static System.Net.Http.HttpMethod Put { get { throw null; } }
+        public static System.Net.Http.HttpMethod Query { get { throw null; } }
         public static System.Net.Http.HttpMethod Trace { get { throw null; } }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Net.Http.HttpMethod? other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }

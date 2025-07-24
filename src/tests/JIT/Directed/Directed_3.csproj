@@ -11,6 +11,7 @@
     <MergedWrapperProjectReference Remove="perffix/**/*.??proj" />
     <MergedWrapperProjectReference Remove="PREFIX/**/*.??proj" />
     <MergedWrapperProjectReference Remove="shift/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="compare/**/*.??proj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

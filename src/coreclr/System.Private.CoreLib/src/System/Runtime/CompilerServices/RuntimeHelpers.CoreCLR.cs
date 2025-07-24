@@ -385,7 +385,8 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 #endif
-
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
@@ -414,7 +415,7 @@ namespace System.Runtime.CompilerServices
 
         // Returns pointer to the multi-dimensional array bounds.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref int GetMultiDimensionalArrayBounds(Array array)
+        internal static ref int GetMultiDimensionalArrayBounds(this Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
             // See comment on RawArrayData for details
@@ -422,7 +423,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int GetMultiDimensionalArrayRank(Array array)
+        internal static unsafe int GetMultiDimensionalArrayRank(this Array array)
         {
             int rank = GetMethodTable(array)->MultiDimensionalArrayRank;
             GC.KeepAlive(array); // Keep MethodTable alive
@@ -445,8 +446,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="data">A reference to the data to box.</param>
         /// <returns>A boxed instance of the value at <paramref name="data"/>.</returns>
         /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
+        internal static unsafe object? Box(MethodTable* methodTable, ref byte data) =>
+            methodTable->IsNullable ? CastHelpers.Box_Nullable(methodTable, ref data) : CastHelpers.Box(methodTable, ref data);
 
         // Given an object reference, returns its MethodTable*.
         //
@@ -625,6 +626,8 @@ namespace System.Runtime.CompilerServices
         public IntPtr CodeData;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         private MethodDescChunk* GetMethodDescChunk() => (MethodDescChunk*)(((byte*)Unsafe.AsPointer<MethodDesc>(ref this)) - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
 
         public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
@@ -819,6 +822,16 @@ namespace System.Runtime.CompilerServices
 
         public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
 
+        public bool IsSzArray
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(IsArray);
+                return BaseSize == (uint)(3 * sizeof(IntPtr));
+            }
+        }
+
         public bool IsMultiDimensionalArray
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -930,6 +943,9 @@ namespace System.Runtime.CompilerServices
             Debug.Assert((BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
             return BaseSize - (uint)(2 * sizeof(IntPtr));
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern IntPtr GetLoaderAllocatorHandle();
     }
 
     // Subset of src\vm\typedesc.h
@@ -959,11 +975,13 @@ namespace System.Runtime.CompilerServices
         /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
         /// If the class it initialized, this mask is not necessary
         /// </summary>
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static ref byte MaskStaticsPointer(ref byte staticsPtr)
         {
             fixed (byte* p = &staticsPtr)
             {
-                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
+                return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
             }
         }
 
@@ -1049,12 +1067,16 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public ref DynamicStaticsInfo GetDynamicStaticsInfo()
         {
             return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, DynamicStaticsInfo>(ref this), 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public ref ThreadStaticsInfo GetThreadStaticsInfo()
         {
             return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, ThreadStaticsInfo>(ref this), 1);
@@ -1150,8 +1172,8 @@ namespace System.Runtime.CompilerServices
                 CastResult.CanCast => true,
                 CastResult.CannotCast => false,
 
-                 // Reflection allows T to be cast to Nullable<T>.
-                 // See ObjIsInstanceOfCore()
+                // Reflection allows T to be cast to Nullable<T>.
+                // See ObjIsInstanceOfCore()
                 _ => CanCastToWorker(srcTH, destTH, nullableCast: true)
             };
         }

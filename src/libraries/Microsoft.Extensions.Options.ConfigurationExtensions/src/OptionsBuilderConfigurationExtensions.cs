@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
         [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(TrimmingRequiredUnreferencedCodeMessage)]
-        public static OptionsBuilder<TOptions> Bind<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config) where TOptions : class
+        public static OptionsBuilder<TOptions> Bind<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config) where TOptions : class
             => optionsBuilder.Bind(config, _ => { });
 
         /// <summary>
@@ -38,9 +38,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
         [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(TrimmingRequiredUnreferencedCodeMessage)]
-        public static OptionsBuilder<TOptions> Bind<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions>? configureBinder) where TOptions : class
+        public static OptionsBuilder<TOptions> Bind<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions>? configureBinder) where TOptions : class
         {
-            ThrowHelper.ThrowIfNull(optionsBuilder);
+            ArgumentNullException.ThrowIfNull(optionsBuilder);
 
             optionsBuilder.Services.Configure<TOptions>(optionsBuilder.Name, config, configureBinder);
             return optionsBuilder;
@@ -61,14 +61,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="Bind{TOptions}(OptionsBuilder{TOptions}, IConfiguration, Action{BinderOptions})"/>
         [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(TrimmingRequiredUnreferencedCodeMessage)]
-        public static OptionsBuilder<TOptions> BindConfiguration<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions>(
+        public static OptionsBuilder<TOptions> BindConfiguration<TOptions>(
             this OptionsBuilder<TOptions> optionsBuilder,
             string configSectionPath,
             Action<BinderOptions>? configureBinder = null)
             where TOptions : class
         {
-            ThrowHelper.ThrowIfNull(optionsBuilder);
-            ThrowHelper.ThrowIfNull(configSectionPath);
+            ArgumentNullException.ThrowIfNull(optionsBuilder);
+            ArgumentNullException.ThrowIfNull(configSectionPath);
 
             optionsBuilder.Configure<IConfiguration>((opts, config) =>
             {

@@ -4,6 +4,27 @@
 #include "pal_types.h"
 #include "pal_compiler.h"
 #include "opensslshim.h"
+#include "pal_atomic.h"
+
+struct EvpPKeyExtraHandle_st
+{
+    atomic_int refCount;
+    OSSL_LIB_CTX* libCtx;
+    OSSL_PROVIDER* prov;
+};
+
+typedef enum
+{
+    PalPKeyFamilyId_Unknown = 0,
+    PalPKeyFamilyId_RSA = 1,
+    PalPKeyFamilyId_DSA = 2,
+    PalPKeyFamilyId_ECC = 3,
+    PalPKeyFamilyId_MLKem = 4,
+    PalPKeyFamilyId_SlhDsa = 5,
+    PalPKeyFamilyId_MLDsa = 6,
+} PalPKeyFamilyId;
+
+typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 /*
 Shims the EVP_PKEY_new method.
@@ -45,6 +66,11 @@ Returns one of the following 4 values for the given EVP_PKEY:
     EVP_PKEY_DSA - DSA
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key);
+
+/*
+Returns the family identifier for the algorithm. See PalPKeyFamilyId for the return values.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyFamily(const EVP_PKEY* key);
 
 /*
 Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
@@ -120,7 +146,25 @@ until the EVP_PKEY is destroyed.
 PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider);
 
 /*
+Loads a key using EVP_PKEY_fromdata_init and EVP_PKEY_fromdata.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyFromData(const char* algorithmName, uint8_t* key, int32_t keyLength, int32_t privateKey);
+
+/*
 It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new
 which handles extraHandle.
 */
 EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);
+
+/*
+Internal function to get the octet string parameter from the given EVP_PKEY.
+*/
+int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
+                                      const char* name,
+                                      uint8_t* destination,
+                                      int32_t destinationLength);
+
+/*
+Internal function to determine if an EVP_PKEY has a given octet string property.
+*/
+int32_t EvpPKeyHasKeyOctetStringParam(const EVP_PKEY* pKey, const char* name);

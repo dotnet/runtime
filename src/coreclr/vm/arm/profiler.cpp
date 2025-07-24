@@ -163,7 +163,7 @@ Stack for the above call will look as follows (stack growing downwards):
             EECodeInfo codeInfo((PCODE)pData->Pc);
 
             // We want to pass the caller SP here.
-            pData->hiddenArg = EECodeManager::GetExactGenericsToken((SIZE_T)(pData->profiledSp), &codeInfo);
+            pData->hiddenArg = EECodeManager::GetExactGenericsToken((TADDR)(pData->probeSp), (TADDR)(pData->R11), &codeInfo);
         }
     }
 }

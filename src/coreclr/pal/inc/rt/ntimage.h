@@ -1016,17 +1016,6 @@ typedef IMAGE_RELOCATION UNALIGNED *PIMAGE_RELOCATION;
 #define IMAGE_REL_IA64_ADDEND           0x001F
 
 //
-// LOONGARCH64 relocation types
-//
-#define IMAGE_REL_LOONGARCH64_PC        0x0003
-#define IMAGE_REL_LOONGARCH64_JIR       0x0004
-
-//
-// RISCV64 relocation types
-//
-#define IMAGE_REL_RISCV64_PC            0x0003
-
-//
 // CEF relocation types.
 //
 #define IMAGE_REL_CEF_ABSOLUTE          0x0000  // Reference is absolute, no relocation is necessary

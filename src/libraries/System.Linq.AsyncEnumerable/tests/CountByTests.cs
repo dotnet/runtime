@@ -18,6 +18,13 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => AsyncEnumerable.CountBy(AsyncEnumerable.Empty<string>(), (Func<string, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<object, int>>(), AsyncEnumerable.Empty<object>().CountBy(i => i));
+            Assert.Same(AsyncEnumerable.Empty<KeyValuePair<object, int>>(), AsyncEnumerable.Empty<object>().CountBy(async (i, ct) => i));
+        }
+
 #if NET
         [Fact]
         public async Task VariousValues_MatchesEnumerable_Strings()
@@ -89,6 +96,22 @@ namespace System.Linq.Tests
             Assert.Equal(8, source.MoveNextAsyncCount);
             Assert.Equal(7, source.CurrentCount);
             Assert.Equal(1, source.DisposeAsyncCount);
+        }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().CountBy(i =>
+                {
+                    Assert.Same(ctx, SynchronizationContext.Current);
+                    return i;
+                }));
+            });
         }
     }
 }

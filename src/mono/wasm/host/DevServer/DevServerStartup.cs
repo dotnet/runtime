@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
@@ -115,6 +116,58 @@ internal sealed class DevServerStartup
                     }
                 }
             });
+
+            // Add general-purpose file upload endpoint when DEVSERVER_UPLOAD_PATH is set
+            string? fileUploadPath = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATH");
+            if (!string.IsNullOrEmpty(fileUploadPath))
+            {
+                // Ensure the upload directory exists
+                if (!Directory.Exists(fileUploadPath))
+                {
+                    Directory.CreateDirectory(fileUploadPath!);
+                }
+
+                // Route with filename parameter
+                endpoints.MapPost("/upload/{filename}", async context =>
+                {
+                    try
+                    {
+                        // Get the filename from the route
+                        var routeValues = context.Request.RouteValues;
+                        string? rawFileName = routeValues["filename"]?.ToString();
+
+                        // Generate a unique name if none provided
+                        if (string.IsNullOrEmpty(rawFileName))
+                        {
+                            rawFileName = $"upload_{Guid.NewGuid():N}";
+                        }
+
+                        // Sanitize filename - IMPORTANT: Only use GetFileName to strip any path components
+                        // This prevents directory traversal attacks like "../../../etc/passwd"
+                        string fileName = Path.GetFileName(rawFileName);
+
+                        if (string.IsNullOrEmpty(fileName))
+                        {
+                            fileName = $"upload_{Guid.NewGuid():N}";
+                        }
+
+                        string filePath = Path.Combine(fileUploadPath!, fileName);
+
+                        using (var outputStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await context.Request.Body.CopyToAsync(outputStream);
+                        }
+
+                        await context.Response.WriteAsync($"File saved to {filePath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsync($"Error processing upload: {ex.Message}");
+                    }
+                });
+            }
+
         });
 
         ServerURLsProvider.ResolveServerUrlsOnApplicationStarted(app, logger, applicationLifetime, realUrlsAvailableTcs, "/_framework/debug");

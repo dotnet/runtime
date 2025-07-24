@@ -31,7 +31,8 @@ The basic macros are, of course, EX_TRY / EX_CATCH / EX_END_CATCH, and in use th
     EX_CATCH
       // If we're here, something failed.
       m_finalDisposition = terminallyHopeless;
-    EX_END_CATCH(RethrowTransientExceptions)
+      RethrowTransientExceptions();
+    EX_END_CATCH
 
 The EX_TRY macro simply introduces the try block, and is much like the C++ "try", except that it also includes an opening brace, "{".
 
@@ -70,7 +71,8 @@ More information is often most conveniently available through the managed except
         // . . . do something that might throw
     EX_CATCH
         throwable = GET_THROWABLE();
-    EX_END_CATCH(RethrowTransientExceptions)
+        RethrowTransientExceptions();
+    EX_END_CATCH
     // . . . do something with throwable
     GCPROTECT_END()
 
@@ -81,12 +83,11 @@ Sometimes, there is no avoiding a need for the C++ exception object, though this
 
 would tell whether the exception is (or derives from) CLRException.
 
-EX_END_CATCH(RethrowTransientExceptions)
+RethrowTransientExceptions
 ----------------------------------------
 
-In the example above, "RethrowTransientExceptions" is an argument to the EX_END_CATCH macro; it is one of three pre-defined macros that can be thought of "exception disposition". Here are the macros, and their meanings:
+In the example above, "RethrowTransientExceptions" is a macro in the `EX_CATCH` block; it is one of three pre-defined macros that can be thought of "exception disposition". Here are the macros, and their meanings:
 
-- _SwallowAllExceptions_: This is aptly named, and very simple. As the name suggests, it swallows everything. While simple and appealing, this is often not the right thing to do.
 - _RethrowTerminalExceptions_. A better name would be "RethrowThreadAbort", which is what this macro does.
 - _RethrowTransientExceptions_. The best definition of a "transient" exception is one that might not occur if tried again, possibly in a different context. These are the transient exceptions:
   - COR_E_THREADABORTED
@@ -102,9 +103,7 @@ In the example above, "RethrowTransientExceptions" is an argument to the EX_END_
 
 The CLR developer with doubts about which macro to use should probably pick _RethrowTransientExceptions_.
 
-In every case, however, the developer writing an EX_END_CATCH needs to think hard about which exception should be caught, and should catch only those exceptions. And, because the macros catch everything anyway, the only way to not catch an exception is to rethrow it.
-
-If an EX_CATCH / EX_END_CATCH block has properly categorized its exceptions, and has rethrown wherever necessary, then SwallowAllExceptions is the way to tell the macros that no further rethrowing is necessary.
+In every case, however, the developer writing an EX_CATCH block needs to think hard about which exception should be caught, and should catch only those exceptions. And, because the macros catch everything anyway, the only way to not catch an exception is to rethrow it.
 
 ## EX_CATCH_HRESULT
 
@@ -255,9 +254,9 @@ This is the "fcall", "jit helper", and so forth. The typical way that the runtim
 
 On the other hand, if an fcall function can do anything that might throw a CLR internal exception (one of the C++ exceptions), that exception must not be allowed to leak back out to managed code. To handle this case, the CLR has the UnwindAndContinueHandler (UACH), which is a set of code to catch the C++ EH exceptions, and re-raise them as managed exceptions.
 
-Any runtime function that is called from managed code, and might throw a C++ EH exception, must wrap the throwing code in INSTALL_UNWIND_AND_CONTINUE_HANDLER / UNINSTALL_UNWIND_AND_CONTINUE_HANDLER.  Installing a HELPER_METHOD_FRAME will automatically install the UACH. There is a non-trivial amount of overhead to installing a UACH, so they shouldn't be used everywhere. One technique that is used in performance critical code is to run without a UACH, and install one just before throwing an exception.
+Any runtime function that is called from managed code, and might throw a C++ EH exception, must wrap the throwing code in INSTALL_UNWIND_AND_CONTINUE_HANDLER / UNINSTALL_UNWIND_AND_CONTINUE_HANDLER. There is a non-trivial amount of overhead to installing a UACH, so they shouldn't be used everywhere. One technique that is used in performance critical code is to run without a UACH, and install one just before throwing an exception.
 
-When a C++ exception is thrown, and there is a missing UACH, the typical failure will be a Contract Violation of "GC_TRIGGERS called in a GC_NOTRIGGER region" in CPFH_RealFirstPassHandler. To fix these, look for managed to runtime transitions, and check for INSTALL_UNWIND_AND_CONTINUE_HANDLER or HELPER_METHOD_FRAME_BEGIN_XXX.
+When a C++ exception is thrown, and there is a missing UACH, the typical failure will be a Contract Violation of "GC_TRIGGERS called in a GC_NOTRIGGER region" in CPFH_RealFirstPassHandler. To fix these, look for managed to runtime transitions, and check for INSTALL_UNWIND_AND_CONTINUE_HANDLER.
 
 Runtime code into managed code
 ------------------------------

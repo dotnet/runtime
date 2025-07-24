@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 throw new ArgumentException(null, nameof(version));
             }
-            ThrowHelper.ThrowIfNull(dependencies);
+            ArgumentNullException.ThrowIfNull(dependencies);
 
             Type = type;
             Name = name;

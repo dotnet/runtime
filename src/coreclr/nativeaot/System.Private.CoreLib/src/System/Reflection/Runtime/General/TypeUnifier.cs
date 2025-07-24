@@ -37,40 +37,14 @@ namespace System.Reflection.Runtime.General
 {
     internal static partial class TypeUnifier
     {
-        [FeatureSwitchDefinition("System.Reflection.IsTypeConstructionEagerlyValidated")]
-        // This can be replaced at native compile time using a feature switch.
-        internal static bool IsTypeConstructionEagerlyValidated => true;
-
         public static RuntimeTypeInfo GetArrayType(this RuntimeTypeInfo elementType)
         {
             return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: false, rank: 1);
         }
 
-        public static RuntimeTypeInfo GetArrayTypeWithTypeHandle(this RuntimeTypeInfo elementType)
-        {
-            return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: false, rank: 1).WithVerifiedTypeHandle(elementType);
-        }
-
         public static RuntimeTypeInfo GetMultiDimArrayType(this RuntimeTypeInfo elementType, int rank)
         {
             return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: true, rank: rank);
-        }
-
-        public static RuntimeTypeInfo GetMultiDimArrayTypeWithTypeHandle(this RuntimeTypeInfo elementType, int rank)
-        {
-            return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: true, rank: rank).WithVerifiedTypeHandle(elementType);
-        }
-
-        private static RuntimeArrayTypeInfo WithVerifiedTypeHandle(this RuntimeArrayTypeInfo arrayType, RuntimeTypeInfo elementType)
-        {
-            // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
-            // type would be an open type.
-            RuntimeTypeHandle typeHandle = arrayType.InternalTypeHandleIfAvailable;
-            if (IsTypeConstructionEagerlyValidated
-                && typeHandle.IsNull() && !elementType.ContainsGenericParameters)
-                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(arrayType.ToType());
-
-            return arrayType;
         }
 
         public static RuntimeTypeInfo GetByRefType(this RuntimeTypeInfo targetType)
@@ -88,29 +62,9 @@ namespace System.Reflection.Runtime.General
             return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfoNoConstraintCheck(genericTypeDefinition, genericTypeArguments);
         }
 
-        public static RuntimeTypeInfo GetConstructedGenericTypeWithTypeHandle(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
+        public static RuntimeTypeInfo GetConstructedGenericType(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
-            return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments).WithVerifiedTypeHandle(genericTypeArguments);
-        }
-
-        private static RuntimeConstructedGenericTypeInfo WithVerifiedTypeHandle(this RuntimeConstructedGenericTypeInfo genericType, RuntimeTypeInfo[] genericTypeArguments)
-        {
-            // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
-            // type would be an open type.
-            RuntimeTypeHandle typeHandle = genericType.InternalTypeHandleIfAvailable;
-            if (IsTypeConstructionEagerlyValidated && typeHandle.IsNull())
-            {
-                bool atLeastOneOpenType = false;
-                foreach (RuntimeTypeInfo genericTypeArgument in genericTypeArguments)
-                {
-                    if (genericTypeArgument.ContainsGenericParameters)
-                        atLeastOneOpenType = true;
-                }
-                if (!atLeastOneOpenType)
-                    throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(genericType.ToType());
-            }
-
-            return genericType;
+            return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments);
         }
 
         public static RuntimeTypeInfo GetRuntimeTypeInfoForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)

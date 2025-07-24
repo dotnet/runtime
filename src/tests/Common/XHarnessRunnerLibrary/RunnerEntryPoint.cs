@@ -28,7 +28,7 @@ public static class RunnerEntryPoint
         {
             entryPoint = new AndroidEntryPoint(new SimpleDevice(assemblyName), runTestsCallback, assemblyName, filter, testExclusionTable);
         }
-        if (OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
+        if (OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
         {
             entryPoint = new AppleEntryPoint(new SimpleDevice(assemblyName), runTestsCallback, assemblyName, filter, testExclusionTable);
         }
@@ -79,7 +79,7 @@ public static class RunnerEntryPoint
         protected override bool IsXunit => true;
         protected override TestRunner GetTestRunner(LogWriter logWriter)
         {
-            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionTable, writeBase64TestResults: true);
+            var runner = new GeneratedTestRunner(logWriter, _runTestsCallback, _assemblyName, _testExclusionTable, writeBase64TestResults: false);
             if (_methodNameToRun is not null)
             {
                 runner.SkipMethod(_methodNameToRun, isExcluded: false);

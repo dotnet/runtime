@@ -48,7 +48,7 @@ namespace System.Reflection
         /// </exception>
         public static ConstructorInvoker Create(ConstructorInfo constructor)
         {
-            ArgumentNullException.ThrowIfNull(constructor, nameof(constructor));
+            ArgumentNullException.ThrowIfNull(constructor);
 
             if (constructor is not RuntimeConstructorInfo runtimeConstructor)
             {

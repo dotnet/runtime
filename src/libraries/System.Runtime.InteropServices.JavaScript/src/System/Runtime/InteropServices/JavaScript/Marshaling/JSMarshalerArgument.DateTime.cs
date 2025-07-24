@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out DateTimeOffset value)
+        public void ToManaged(out DateTimeOffset value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out DateTimeOffset? value)
+        public void ToManaged(out DateTimeOffset? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out DateTime value)
+        public void ToManaged(out DateTime value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out DateTime? value)
+        public void ToManaged(out DateTime? value)
         {
             if (slot.Type == MarshalerType.None)
             {

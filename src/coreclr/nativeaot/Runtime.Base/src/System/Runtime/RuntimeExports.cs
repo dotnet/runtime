@@ -58,19 +58,43 @@ namespace System.Runtime
         [RuntimeExport("RhNewArray")]
         public static unsafe object RhNewArray(MethodTable* pEEType, int length)
         {
-            Debug.Assert(pEEType->IsArray || pEEType->IsString);
+            Debug.Assert(pEEType->IsSzArray);
 
 #if FEATURE_64BIT_ALIGNMENT
             MethodTable* pEEElementType = pEEType->RelatedParameterType;
             if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
             {
-                return InternalCalls.RhpNewArrayAlign8(pEEType, length);
+                return InternalCalls.RhpNewArrayFastAlign8(pEEType, length);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                return InternalCalls.RhpNewArray(pEEType, length);
+                return InternalCalls.RhpNewArrayFast(pEEType, length);
             }
+        }
+
+        [RuntimeExport("RhNewVariableSizeObject")]
+        public static unsafe object RhNewVariableSizeObject(MethodTable* pEEType, int length)
+        {
+            Debug.Assert(pEEType->IsArray || pEEType->IsString);
+
+            object array;
+#if FEATURE_64BIT_ALIGNMENT
+            MethodTable* pEEElementType = pEEType->RelatedParameterType;
+            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
+            {
+                RuntimeImports.RhAllocateNewArray(pEEType, (uint)length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_ALIGN8, &array);
+            }
+            else
+#endif // FEATURE_64BIT_ALIGNMENT
+            {
+                RuntimeImports.RhAllocateNewArray(pEEType, (uint)length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS, &array);
+            }
+
+            if (array == null)
+                throw new OutOfMemoryException();
+
+            return array;
         }
 
         public static unsafe object RhBox(MethodTable* pEEType, ref byte data)
@@ -293,7 +317,7 @@ namespace System.Runtime
         }
 
 #pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
-        [DllImport(Redhawk.BaseName)]
+        [DllImport("*")]
         private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 #pragma warning restore SYSLIB1054
 
@@ -380,10 +404,10 @@ namespace System.Runtime
 #if FEATURE_64BIT_ALIGNMENT
                     MethodTable* pEEElementType = pEEType->RelatedParameterType;
                     if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
-                        return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayAlign8;
+                        return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayFastAlign8;
 #endif // FEATURE_64BIT_ALIGNMENT
 
-                    return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArray;
+                    return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayFast;
 
                 default:
                     Debug.Fail("Unknown RuntimeHelperKind");

@@ -25,7 +25,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/palinternal.h"
 #include "pal/process.h"
 #include "pal/init.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/utils.h"
 #include "pal/environ.h"
@@ -64,7 +63,14 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <vector>
 
 #ifdef __linux__
-#include <sys/syscall.h> // __NR_membarrier
+#include <linux/membarrier.h>
+#include <sys/syscall.h>
+#define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
+#elif HAVE_SYS_MEMBARRIER_H
+#include <sys/membarrier.h>
+#ifdef TARGET_BROWSER
+#define membarrier(cmd, flags, cpu_id) 0 // browser/wasm is currently single threaded
+#endif
 #endif
 
 #ifdef __APPLE__
@@ -126,27 +132,6 @@ CObjectType CorUnix::otProcess(
                 );
 
 //
-// Helper membarrier function
-//
-#ifdef __NR_membarrier
-# define membarrier(...)  syscall(__NR_membarrier, __VA_ARGS__)
-#else
-# define membarrier(...)  -ENOSYS
-#endif
-
-enum membarrier_cmd
-{
-    MEMBARRIER_CMD_QUERY                                 = 0,
-    MEMBARRIER_CMD_GLOBAL                                = (1 << 0),
-    MEMBARRIER_CMD_GLOBAL_EXPEDITED                      = (1 << 1),
-    MEMBARRIER_CMD_REGISTER_GLOBAL_EXPEDITED             = (1 << 2),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED                     = (1 << 3),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED            = (1 << 4),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED_SYNC_CORE           = (1 << 5),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
-};
-
-//
 // Tracks if the OS supports FlushProcessWriteBuffers using membarrier
 //
 static int s_flushUsingMemBarrier = 0;
@@ -172,7 +157,7 @@ IPalObject* CorUnix::g_pobjProcess;
 // Critical section that protects process data (e.g., the
 // list of active threads)/
 //
-CRITICAL_SECTION g_csProcess;
+minipal_mutex g_csProcess;
 
 //
 // List and count of active threads
@@ -527,6 +512,9 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
+#ifdef TARGET_TVOS
+    return ERROR_NOT_SUPPORTED;
+#else
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjProcess = NULL;
     IPalObject *pobjProcessRegistered = NULL;
@@ -1063,6 +1051,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
+#endif // !TARGET_TVOS
 }
 
 
@@ -2194,7 +2183,7 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-#if defined(TARGET_IOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
     return FALSE;
 #else
     _ASSERTE(argv.size() > 0);
@@ -2250,6 +2239,7 @@ PROCCreateCrashDump(
     else if (childpid == 0)
     {
         // Close the read end of the pipe, the child doesn't need it
+        int callbackResult = 0;
         close(parent_pipe);
 
         // Only dup the child's stderr if there is error buffer
@@ -2263,7 +2253,12 @@ PROCCreateCrashDump(
             SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
-            g_createdumpCallback(argv.size(), argv.data());
+            callbackResult = g_createdumpCallback(argv.size(), argv.data());
+            // Set the shutdown callback to nullptr and exit
+            // If we don't exit, the child's execution will continue into the diagnostic server behavior
+            // which causes all sorts of problems.
+            g_shutdownCallback = nullptr;
+            exit(callbackResult);
         }
         else
         {
@@ -2324,7 +2319,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
-#endif // !TARGET_IOS
+#endif // !TARGET_IOS && !TARGET_TVOS
 }
 
 /*++
@@ -2466,6 +2461,16 @@ Parameters:
 
 (no return value)
 --*/
+#ifdef HOST_ANDROID
+#include <minipal/log.h>
+VOID
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+{
+    // TODO: Dump all managed threads callstacks into logcat and/or file?
+    // TODO: Dump stress log into logcat and/or file when enabled?
+    minipal_log_write_fatal("Aborting process.\n");
+}
+#else
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
 {
@@ -2534,6 +2539,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
         free(signalAddressArg);
     }
 }
+#endif
 
 /*++
 Function:
@@ -2581,21 +2587,23 @@ InitializeFlushProcessWriteBuffers()
     _ASSERTE(s_helperPage == 0);
     _ASSERTE(s_flushUsingMemBarrier == 0);
 
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     // Starting with Linux kernel 4.14, process memory barriers can be generated
     // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
     if (mask >= 0 &&
         mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED)
     {
         // Register intent to use the private expedited command.
-        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0, 0) == 0)
         {
             s_flushUsingMemBarrier = TRUE;
             return TRUE;
         }
     }
+#endif
 
-#ifdef TARGET_APPLE
+#if defined(TARGET_APPLE) || defined(TARGET_WASM)
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2625,7 +2633,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_APPLE
+#endif // TARGET_APPLE || TARGET_WASM
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2649,12 +2657,16 @@ VOID
 PALAPI
 FlushProcessWriteBuffers()
 {
+#ifndef TARGET_WASM
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
-        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
+        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0);
         FATAL_ASSERT(status == 0, "Failed to flush using membarrier");
     }
-    else if (s_helperPage != 0)
+    else
+#endif
+    if (s_helperPage != 0)
     {
         int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
@@ -2705,6 +2717,7 @@ FlushProcessWriteBuffers()
         CHECK_MACH("vm_deallocate()", machret);
     }
 #endif // TARGET_APPLE
+#endif // !TARGET_WASM
 }
 
 /*++
@@ -2781,14 +2794,14 @@ CorUnix::InitializeProcessData(
     pGThreadList = NULL;
     g_dwThreadCount = 0;
 
-    InternalInitializeCriticalSection(&g_csProcess);
+    minipal_mutex_init(&g_csProcess);
     fLockInitialized = TRUE;
 
     if (NO_ERROR != palError)
     {
         if (fLockInitialized)
         {
-            InternalDeleteCriticalSection(&g_csProcess);
+            minipal_mutex_destroy(&g_csProcess);
         }
     }
 
@@ -2834,7 +2847,7 @@ CorUnix::InitializeProcessCommandLine(
             ERROR("Invalid full path\n");
             palError = ERROR_INTERNAL_ERROR;
             goto exit;
-        }    
+        }
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 
@@ -3005,7 +3018,7 @@ PROCCleanupInitialProcess(VOID)
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     /* Free the application directory */
     free(g_lpwstrAppDir);
@@ -3013,7 +3026,7 @@ PROCCleanupInitialProcess(VOID)
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 
     //
     // Object manager shutdown will handle freeing the underlying
@@ -3041,7 +3054,7 @@ CorUnix::PROCAddThread(
 {
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     pTargetThread->SetNext(pGThreadList);
     pGThreadList = pTargetThread;
@@ -3050,7 +3063,7 @@ CorUnix::PROCAddThread(
     TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
           pTargetThread, pTargetThread->GetThreadId());
 
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3076,7 +3089,7 @@ CorUnix::PROCRemoveThread(
 
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     curThread = pGThreadList;
 
@@ -3117,7 +3130,7 @@ CorUnix::PROCRemoveThread(
     WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
 
 EXIT:
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3162,7 +3175,7 @@ PROCProcessLock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 }
 
 
@@ -3186,7 +3199,7 @@ PROCProcessUnlock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 #if USE_SYSV_SEMAPHORES

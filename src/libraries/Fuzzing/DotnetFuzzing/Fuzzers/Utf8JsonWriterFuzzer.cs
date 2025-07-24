@@ -119,7 +119,7 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
         }
 
         // Additional test for mixing UTF-8 and UTF-16 encoding. The alignment math is easier in UTF-16 mode so just run it for that.
-        if (encoding == Utf16EncodingFlag)
+        if (encoding == Utf16EncodingFlag && !options.SkipValidation)
         {
             Array.Clear(expectedBuffer);
 

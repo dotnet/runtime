@@ -99,12 +99,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public Pkcs12LoaderLimits(Pkcs12LoaderLimits copyFrom)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(copyFrom);
-#else
-            if (copyFrom is null)
-                throw new ArgumentNullException(nameof(copyFrom));
-#endif
 
             // Do not copy _isReadOnly.
 
@@ -377,7 +372,12 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <see langword="false" /> to fail loading when duplicate attributes are found.
         ///   The default is <see langword="false" />.
         /// </value>
-        internal bool AllowDuplicateAttributes
+#if NET10_0_OR_GREATER
+        public
+#else
+        internal
+#endif
+        bool AllowDuplicateAttributes
         {
             get => _allowDuplicateAttributes;
             set
