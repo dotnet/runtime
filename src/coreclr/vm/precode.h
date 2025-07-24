@@ -13,48 +13,37 @@
 
 #if defined(TARGET_AMD64)
 
-#define OFFSETOF_PRECODE_TYPE              0
-#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5
-#define OFFSETOF_PRECODE_TYPE_MOV_R10     10
-
 #define SIZEOF_PRECODE_BASE               16
 
 #elif defined(TARGET_X86)
 
 EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
-#define OFFSETOF_PRECODE_TYPE              0
-#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5
-#define OFFSETOF_PRECODE_TYPE_MOV_RM_R     6
-
 #define SIZEOF_PRECODE_BASE                8
 
 #elif defined(TARGET_ARM64)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
-#define OFFSETOF_PRECODE_TYPE       0
 
 #elif defined(TARGET_ARM)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN * 2
-#define OFFSETOF_PRECODE_TYPE       7
 
 #elif defined(TARGET_LOONGARCH64)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
-#define OFFSETOF_PRECODE_TYPE       0
 #define SHIFTOF_PRECODE_TYPE        5
 
 #elif defined(TARGET_RISCV64)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
-#define OFFSETOF_PRECODE_TYPE       0
 
 #elif defined(TARGET_WASM)
 
-#define SIZEOF_PRECODE_BASE         0
+// on wasm we have "fake" precode, with precode type and MethodDesc information stored
+#define SIZEOF_PRECODE_BASE         2*sizeof(void*)
 #define OFFSETOF_PRECODE_TYPE       0
-
+#define OFFSETOF_PRECODE_MD         4
 #endif // TARGET_AMD64
 
 #ifndef DACCESS_COMPILE
@@ -67,19 +56,7 @@ BOOL DoesSlotCallPrestub(PCODE pCode);
 // Invalid precode type
 struct InvalidPrecode
 {
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-    // int3
-    static const int Type = 0xCC;
-#elif defined(TARGET_ARM64) || defined(TARGET_ARM)
-    static const int Type = 0;
-#elif defined(TARGET_LOONGARCH64)
     static const int Type = 0xff;
-#elif defined(TARGET_RISCV64)
-    static const int Type = 0xff;
-#elif defined(TARGET_WASM)
-    // unreachable instruction
-    static const int Type = 0;
-#endif
 };
 
 struct StubPrecodeData
@@ -111,35 +88,24 @@ typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
 // Regular precode
 struct StubPrecode
 {
+    static const BYTE Type = 0x3;
 #if defined(TARGET_AMD64)
-    static const BYTE Type = 0x4C;
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_X86)
-    static const BYTE Type = 0xA1;
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_ARM64)
-    static const int Type = 0x4A;
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_ARM)
-    static const int Type = 0xFF;
     static const SIZE_T CodeSize = 12;
 #elif defined(TARGET_LOONGARCH64)
-    static const int Type = 0x4;
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_RISCV64)
-    static const int Type = 0x17;
     static const SIZE_T CodeSize = 24;
 #elif defined(TARGET_WASM)
-    static const int Type = 0;
-    static const SIZE_T CodeSize = 0;
+    static const SIZE_T CodeSize = 3*sizeof(void*);
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
-
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    static void (*StubPrecodeCode)();
-    static void (*StubPrecodeCode_End)();
-#endif
 
     void Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator = NULL, TADDR type = StubPrecode::Type, TADDR target = 0);
 
@@ -182,8 +148,9 @@ struct StubPrecode
 
     BYTE GetType();
 
-#ifndef DACCESS_COMPILE
     static BOOL IsStubPrecodeByASM(PCODE addr);
+    static BOOL IsStubPrecodeByASM_DAC(PCODE addr);
+#ifndef DACCESS_COMPILE
 
     void ResetTargetInterlocked()
     {
@@ -370,7 +337,12 @@ struct InterpreterPrecode
         LIMITED_METHOD_CONTRACT;
         return (InterpreterPrecode*)PCODEToPINSTR(entryPoint);
     }
+
+    TADDR GetMethodDesc();
 };
+
+typedef DPTR(InterpreterPrecode) PTR_InterpreterPrecode;
+
 #endif // FEATURE_INTERPRETER
 
 #ifdef HAS_FIXUP_PRECODE
@@ -393,48 +365,38 @@ extern "C" void FixupPrecodeCode_End();
 // The fixup precode is simple jump once patched. It does not have the two instruction overhead of regular precode.
 struct FixupPrecode
 {
+    static const int Type = 0x2;
 #if defined(TARGET_AMD64)
-    static const int Type = 0xFF;
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 6;
 #elif defined(TARGET_X86)
-    static const int Type = 0xFF;
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 6;
 #elif defined(TARGET_ARM64)
-    static const int Type = 0x0B;
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 8;
 #elif defined(TARGET_ARM)
-    static const int Type = 0xCF;
-    static const SIZE_T CodeSize = 12;
+    static const SIZE_T CodeSize = 16;
     static const int FixupCodeOffset = 4 + THUMB_CODE;
 #elif defined(TARGET_LOONGARCH64)
-    static const int Type = 0x3;
     static const SIZE_T CodeSize = 32;
     static const int FixupCodeOffset = 12;
 #elif defined(TARGET_RISCV64)
-    static const int Type = 0x97;
     static const SIZE_T CodeSize = 32;
     static const int FixupCodeOffset = 10;
 #elif defined(TARGET_WASM)
-    static const int Type = 2;
-    static const SIZE_T CodeSize = 0;
+    static const SIZE_T CodeSize = 2*sizeof(void*);
     static const int FixupCodeOffset = 0;
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
-
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    static void (*FixupPrecodeCode)();
-    static void (*FixupPrecodeCode_End)();
-#endif
 
     void Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
     static void StaticInitialize();
 
     static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
+    static void GenerateDataPage(uint8_t* pageBase, size_t size);
 
     PTR_FixupPrecodeData GetData() const
     {
@@ -460,8 +422,9 @@ struct FixupPrecode
         return &GetData()->Target;
     }
 
-#ifndef DACCESS_COMPILE
     static BOOL IsFixupPrecodeByASM(PCODE addr);
+    static BOOL IsFixupPrecodeByASM_DAC(PCODE addr);
+#ifndef DACCESS_COMPILE
 
     void ResetTargetInterlocked()
     {
@@ -517,21 +480,21 @@ typedef DPTR(FixupPrecode) PTR_FixupPrecode;
 typedef DPTR(class Precode) PTR_Precode;
 
 enum PrecodeType {
-    PRECODE_INVALID         = InvalidPrecode::Type,
-    PRECODE_STUB            = StubPrecode::Type,
+    PRECODE_INVALID         = InvalidPrecode::Type, // 0xFF
+    PRECODE_STUB            = StubPrecode::Type, // 0x3
 #ifdef FEATURE_INTERPRETER
-    PRECODE_INTERPRETER     = InterpreterPrecode::Type,
+    PRECODE_INTERPRETER     = InterpreterPrecode::Type, // 0x6
 #endif // FEATURE_INTERPRETER
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-    PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type,
+    PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type, // 0x5
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     PRECODE_FIXUP           = FixupPrecode::Type,
 #endif // HAS_FIXUP_PRECODE
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-    PRECODE_THISPTR_RETBUF  = ThisPtrRetBufPrecode::Type,
+    PRECODE_THISPTR_RETBUF  = ThisPtrRetBufPrecode::Type, // 0x8
 #endif // HAS_THISPTR_RETBUF_PRECODE
-    PRECODE_UMENTRY_THUNK   = PRECODE_UMENTRY_THUNK_VALUE, // Set the value here and not in UMEntryThunk to avoid circular dependency
+    PRECODE_UMENTRY_THUNK   = PRECODE_UMENTRY_THUNK_VALUE, // 0x7 - Set the value here and not in UMEntryThunk to avoid circular dependency
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     PRECODE_DYNAMIC_HELPERS = 0xa,
 #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -568,6 +531,10 @@ inline BYTE StubPrecode::GetType()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     TADDR type = GetData()->Type;
+
+#ifdef TARGET_WASM
+    return (BYTE)type;
+#endif
 
     // There are a limited number of valid bit patterns here. Restrict to those, so that the
     // speculative variant of GetPrecodeFromEntryPoint is more robust. Type is stored as a TADDR
@@ -637,6 +604,16 @@ private:
     }
 #endif // HAS_THISPTR_RETBUF_PRECODE
 
+#ifdef FEATURE_INTERPRETER
+    InterpreterPrecode* AsInterpreterPrecode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return dac_cast<PTR_InterpreterPrecode>(this);
+    }
+#endif // FEATURE_INTERPRETER
+
     TADDR GetStart()
     {
         SUPPORTS_DAC;
@@ -660,36 +637,32 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-
-#ifdef OFFSETOF_PRECODE_TYPE
-
-#if defined(TARGET_LOONGARCH64)
-        assert(0 == OFFSETOF_PRECODE_TYPE);
-        static_assert(5 == SHIFTOF_PRECODE_TYPE, "expected shift of 5");
-        short type = *((short*)m_data);
-        type >>= SHIFTOF_PRECODE_TYPE;
-#elif defined(TARGET_RISCV64)
-        assert(0 == OFFSETOF_PRECODE_TYPE);
-        BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE);
-#else
-#if defined(SHIFTOF_PRECODE_TYPE)
-#error "did not expect SHIFTOF_PRECODE_TYPE to be defined"
+#ifdef TARGET_WASM // WASM-TODO: we will not need this once we have real precode on Wasm
+        return (PrecodeType)m_data[OFFSETOF_PRECODE_TYPE];
 #endif
-        BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
+        PrecodeType basicPrecodeType = PRECODE_INVALID;
+        if (StubPrecode::IsStubPrecodeByASM(PINSTRToPCODE(dac_cast<TADDR>(this))))
+        {
+            basicPrecodeType = PRECODE_STUB;
+        }
+
+#ifdef HAS_FIXUP_PRECODE
+        if (FixupPrecode::IsFixupPrecodeByASM(PINSTRToPCODE(dac_cast<TADDR>(this))))
+        {
+            basicPrecodeType = PRECODE_FIXUP;
+        }
 #endif
 
-        if (type == StubPrecode::Type)
+        if (basicPrecodeType == PRECODE_STUB)
         {
             // StubPrecode code is used for both StubPrecode, NDirectImportPrecode, InterpreterPrecode, and ThisPtrRetBufPrecode,
             // so we need to get the real type
-            type = AsStubPrecode()->GetType();
+            return (PrecodeType)AsStubPrecode()->GetType();
         }
-
-        return (PrecodeType)type;
-
-#else // OFFSETOF_PRECODE_TYPE
-        return PRECODE_STUB;
-#endif // OFFSETOF_PRECODE_TYPE
+        else
+        {
+            return basicPrecodeType;
+        }
     }
 
     static BOOL IsValidType(PrecodeType t);
@@ -783,24 +756,35 @@ public:
         fSpeculative = TRUE;
 #endif
 
+#ifdef TARGET_WASM // WASM-TODO: we will not need this once we have real precode on Wasm
+        return (PTR_Precode)addr;
+#endif
+
         TADDR pInstr = PCODEToPINSTR(addr);
 
         // Always do consistency check in debug
         if (fSpeculative INDEBUG(|| TRUE))
         {
-            if (!IS_ALIGNED(pInstr, PRECODE_ALIGNMENT) || !IsValidType(PTR_Precode(pInstr)->GetType()))
+            if (!IS_ALIGNED(pInstr, PRECODE_ALIGNMENT))
             {
-                if (fSpeculative) return NULL;
-                _ASSERTE(!"Precode::GetPrecodeFromEntryPoint: Unexpected code in precode");
+                // This not a fixup precode or stub precode
+                return NULL;
+            }
+            if (!StubPrecode::IsStubPrecodeByASM(addr))
+            {
+#ifdef HAS_FIXUP_PRECODE
+                if (!FixupPrecode::IsFixupPrecodeByASM(addr))
+#endif
+                {
+                    // This not a fixup precode or stub precode
+                    return NULL;
+                }
             }
         }
 
         PTR_Precode pPrecode = PTR_Precode(pInstr);
         return pPrecode;
     }
-
-    // If addr is patched fixup precode, returns address that it points to. Otherwise returns NULL.
-    static PCODE TryToSkipFixupPrecode(PCODE addr);
 
     //
     // Precode as temporary entrypoint
@@ -818,6 +802,8 @@ public:
 #endif
 };
 
+void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);
+
 // Verify that the type for each precode is different
 static_assert_no_msg(StubPrecode::Type != NDirectImportPrecode::Type);
 static_assert_no_msg(StubPrecode::Type != FixupPrecode::Type);
@@ -831,33 +817,47 @@ static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 
-#ifndef DACCESS_COMPILE
+#ifdef FEATURE_INTERPRETER
+// we are allocating InterpreterPrecode in the interleaved StubPrecodeHeap
+// (in Precode::AllocateInterpreterPrecode)
+// and so we need it to fit the data into the StubPrecode::CodeSize
+static_assert_no_msg(sizeof(InterpreterPrecodeData) <= StubPrecode::CodeSize);
+#endif // FEATURE_INTERPRETER
+
 // A summary of the precode layout for diagnostic purposes
 struct PrecodeMachineDescriptor
 {
     uint32_t StubCodePageSize;
-
-    uint8_t OffsetOfPrecodeType;
-    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
-    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
-    //   PrecodeType >>= ShiftOfPrecodeType;
-    //   return (byte)PrecodeType;
-    uint8_t ReadWidthOfPrecodeType;
-    uint8_t ShiftOfPrecodeType;
-
     uint8_t InvalidPrecodeType;
-    uint8_t StubPrecodeType;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     uint8_t PInvokeImportPrecodeType;
 #endif
 
 #ifdef HAS_FIXUP_PRECODE
     uint8_t FixupPrecodeType;
-#endif
+    uint8_t FixupCodeOffset;
+    uint8_t FixupStubPrecodeSize;
+    BYTE FixupBytes[FixupPrecode::CodeSize];
+    BYTE FixupIgnoredBytes[FixupPrecode::CodeSize];
+#endif // HAS_FIXUP_PRECODE
+
+    uint8_t StubPrecodeSize;
+    uint8_t StubPrecodeType;
+
+    BYTE StubBytes[StubPrecode::CodeSize];
+    BYTE StubIgnoredBytes[StubPrecode::CodeSize];
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     uint8_t ThisPointerRetBufPrecodeType;
 #endif
+
+#ifdef FEATURE_INTERPRETER
+    uint8_t InterpreterPrecodeType;
+#endif
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    uint8_t DynamicHelperPrecodeType;
+#endif
+    uint8_t UMEntryPrecodeType;
 
 public:
     PrecodeMachineDescriptor() = default;
@@ -865,7 +865,6 @@ public:
     PrecodeMachineDescriptor& operator=(const PrecodeMachineDescriptor&) = delete;
     static void Init(PrecodeMachineDescriptor* dest);
 };
-#endif //DACCESS_COMPILE
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 #ifdef HAS_FIXUP_PRECODE

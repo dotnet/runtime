@@ -2365,7 +2365,7 @@ void Assembly::DeliverSyncEvents()
         SetShouldNotifyDebugger();
 
         // Still work to do even if no debugger is attached.
-        NotifyDebuggerLoad(ATTACH_ASSEMBLY_LOAD, FALSE);
+        NotifyDebuggerLoad(ATTACH_MODULE_LOAD, FALSE);
 
     }
 #endif // DEBUGGING_SUPPORTED
@@ -2388,7 +2388,7 @@ DebuggerAssemblyControlFlags Assembly::ComputeDebuggingConfig()
     IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));
     return (DebuggerAssemblyControlFlags)dacfFlags;
 #else // !DEBUGGING_SUPPORTED
-    return 0;
+    return DACF_NONE;
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2488,16 +2488,7 @@ BOOL Assembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     }
 
     // There is still work we need to do even when no debugger is attached.
-    if (flags & ATTACH_ASSEMBLY_LOAD)
-    {
-        if (ShouldNotifyDebugger())
-        {
-            g_pDebugInterface->LoadAssembly(GetDomainAssembly());
-        }
-        result = TRUE;
-    }
-
-    if(this->ShouldNotifyDebugger())
+    if(this->ShouldNotifyDebugger() && !(flags & ATTACH_MODULE_LOAD))
     {
         result = result ||
             this->GetModule()->NotifyDebuggerLoad(GetDomainAssembly(), flags, attaching);

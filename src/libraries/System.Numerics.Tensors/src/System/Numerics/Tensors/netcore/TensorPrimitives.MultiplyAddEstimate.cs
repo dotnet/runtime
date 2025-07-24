@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -34,8 +33,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> addend, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, MultiplyAddEstimateOperator<float>>(x, y, addend, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+        }
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -60,8 +66,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T addend, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, MultiplyAddEstimateOperator<float>>(x, y, addend, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanScalarIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+        }
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -85,13 +98,22 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> addend, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, MultiplyAddEstimateOperator<float>>(x, y, addend, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+        }
 
         /// <summary>(x * y) + z</summary>
         private readonly struct MultiplyAddEstimateOperator<T> : ITernaryOperator<T>
             where T : INumberBase<T>
         {
+            public static bool Vectorizable => true;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y, T z)
             {

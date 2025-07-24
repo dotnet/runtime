@@ -8,7 +8,7 @@ extern TheUMEntryPrestubWorker:proc
 extern UMEntryPrestubUnwindFrameChainHandler:proc
 
 ;
-; METHODDESC_REGISTER: UMEntryThunk*
+; METHODDESC_REGISTER: UMEntryThunkData*
 ;
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UMEntryPrestubUnwindFrameChainHandler
 

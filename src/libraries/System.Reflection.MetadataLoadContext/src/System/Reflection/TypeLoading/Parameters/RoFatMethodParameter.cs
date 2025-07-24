@@ -19,9 +19,8 @@ namespace System.Reflection.TypeLoading
             Debug.Assert(parameterType != null);
         }
 
-        public sealed override string? Name => _lazyName ??= ComputeName();
+        public sealed override string? Name => field ??= ComputeName();
         protected abstract string? ComputeName();
-        private volatile string? _lazyName;
 
         public sealed override ParameterAttributes Attributes => (_lazyParameterAttributes == ParameterAttributesSentinel) ? (_lazyParameterAttributes = ComputeAttributes()) : _lazyParameterAttributes;
         protected abstract ParameterAttributes ComputeAttributes();

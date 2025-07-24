@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Numerics.Tensors
 {
     /// <summary>Represents a read-only tensor.</summary>
-    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public interface IReadOnlyTensor
     {
         /// <summary>Gets the specified element of the tensor.</summary>
@@ -59,9 +58,5 @@ namespace System.Numerics.Tensors
         /// <summary>Gets the stride of each dimension in the tensor.</summary>
         [UnscopedRef]
         ReadOnlySpan<nint> Strides { get; }
-
-        /// <summary>Pins and gets a <see cref="MemoryHandle"/> to the backing memory.</summary>
-        /// <returns><see cref="MemoryHandle"/></returns>
-        MemoryHandle GetPinnedHandle();
     }
 }

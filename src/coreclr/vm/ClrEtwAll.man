@@ -1932,6 +1932,40 @@
                       </UserData>
                   </template>
 
+                  <template tid="ModuleLoadUnload_V3">
+                      <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ModuleFlags" inType="win:UInt32" map="ModuleFlagsMap" />
+                      <data name="Reserved1"   inType="win:UInt32" />
+                      <data name="ModuleILPath" inType="win:UnicodeString" />
+                      <data name="ModuleNativePath" inType="win:UnicodeString" />
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <data name="ManagedPdbSignature" inType="win:GUID" />
+                      <data name="ManagedPdbAge" inType="win:UInt32" />
+                      <data name="ManagedPdbBuildPath" inType="win:UnicodeString" />
+                      <data name="NativePdbSignature" inType="win:GUID" />
+                      <data name="NativePdbAge" inType="win:UInt32" />
+                      <data name="NativePdbBuildPath" inType="win:UnicodeString" />
+                      <data name="NativeBuildID" inType="win:UnicodeString" />
+                    <UserData>
+                          <ModuleLoadUnload_V3 xmlns="myNs">
+                              <ModuleID> %1 </ModuleID>
+                              <AssemblyID> %2 </AssemblyID>
+                              <ModuleFlags> %3 </ModuleFlags>
+                              <ModuleILPath> %4 </ModuleILPath>
+                              <ModuleNativePath> %5 </ModuleNativePath>
+                              <ClrInstanceID> %6 </ClrInstanceID>
+                              <ManagedPdbSignature> %7 </ManagedPdbSignature>
+                              <ManagedPdbAge> %8 </ManagedPdbAge>
+                              <ManagedPdbBuildPath> %9 </ManagedPdbBuildPath>
+                              <NativePdbSignature> %10 </NativePdbSignature>
+                              <NativePdbAge> %11 </NativePdbAge>
+                              <NativePdbBuildPath> %12 </NativePdbBuildPath>
+                              <NativeBuildID> %13 </NativeBuildID>
+                          </ModuleLoadUnload_V3>
+                      </UserData>
+                  </template>
+
                     <template tid="AssemblyLoadUnload">
                         <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
@@ -4008,6 +4042,11 @@
                            task="CLRLoader"
                            symbol="ModuleLoad_V2" message="$(string.RuntimePublisher.ModuleLoad_V2EventMessage)"/>
 
+                    <event value="152" version="3" level="win:Informational"  template="ModuleLoadUnload_V3"
+                           keywords ="LoaderKeyword PerfTrackKeyword" opcode="ModuleLoad"
+                           task="CLRLoader"
+                           symbol="ModuleLoad_V3" message="$(string.RuntimePublisher.ModuleLoad_V3EventMessage)"/>
+
                     <event value="153" version="0" level="win:Informational"  template="ModuleLoadUnload"
                            keywords ="LoaderKeyword" opcode="ModuleUnload"
                            task="CLRLoader"
@@ -4676,6 +4715,41 @@
                         </UserData>
                     </template>
 
+                    <template tid="ModuleLoadUnloadRundown_V3">
+                      <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="ModuleFlags" inType="win:UInt32" map="ModuleFlagsMap" />
+                      <data name="Reserved1"   inType="win:UInt32" />
+                      <data name="ModuleILPath" inType="win:UnicodeString" />
+                      <data name="ModuleNativePath" inType="win:UnicodeString" />
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <data name="ManagedPdbSignature" inType="win:GUID" />
+                      <data name="ManagedPdbAge" inType="win:UInt32" />
+                      <data name="ManagedPdbBuildPath" inType="win:UnicodeString" />
+                      <data name="NativePdbSignature" inType="win:GUID" />
+                      <data name="NativePdbAge" inType="win:UInt32" />
+                      <data name="NativePdbBuildPath" inType="win:UnicodeString" />
+                      <data name="NativeBuildID" inType="win:UnicodeString" />
+
+                      <UserData>
+                          <ModuleLoadUnloadRundown_V3 xmlns="myNs">
+                              <ModuleID> %1 </ModuleID>
+                              <AssemblyID> %2 </AssemblyID>
+                              <ModuleFlags> %3 </ModuleFlags>
+                              <ModuleILPath> %4 </ModuleILPath>
+                              <ModuleNativePath> %5 </ModuleNativePath>
+                              <ClrInstanceID> %6 </ClrInstanceID>
+                              <ManagedPdbSignature> %7 </ManagedPdbSignature>
+                              <ManagedPdbAge> %8 </ManagedPdbAge>
+                              <ManagedPdbBuildPath> %9 </ManagedPdbBuildPath>
+                              <NativePdbSignature> %10 </NativePdbSignature>
+                              <NativePdbAge> %11 </NativePdbAge>
+                              <NativePdbBuildPath> %12 </NativePdbBuildPath>
+                              <NativeBuildID> %13 </NativeBuildID>
+                          </ModuleLoadUnloadRundown_V3>
+                        </UserData>
+                    </template>
+
                     <template tid="AssemblyLoadUnloadRundown">
                         <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
@@ -5199,6 +5273,11 @@
                            keywords ="LoaderRundownKeyword PerfTrackRundownKeyword" opcode="ModuleDCEnd"
                            task="CLRLoaderRundown"
                            symbol="ModuleDCEnd_V2" message="$(string.RundownPublisher.ModuleDCEnd_V2EventMessage)"/>
+
+                    <event value="154" version="3" level="win:Informational"  template="ModuleLoadUnloadRundown_V3"
+                           keywords ="LoaderRundownKeyword PerfTrackRundownKeyword" opcode="ModuleDCEnd"
+                           task="CLRLoaderRundown"
+                           symbol="ModuleDCEnd_V3" message="$(string.RundownPublisher.ModuleDCEnd_V3EventMessage)"/>
 
                     <event value="155" version="0" level="win:Informational"  template="AssemblyLoadUnloadRundown"
                            keywords ="LoaderRundownKeyword" opcode="AssemblyDCStart"
@@ -8597,6 +8676,7 @@
                 <string id="RuntimePublisher.ModuleLoadEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;ModuleILPath=%4;%nModuleNativePath=%5" />
                 <string id="RuntimePublisher.ModuleLoad_V1EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;%nModuleILPath=%4;%nModuleNativePath=%5;%nClrInstanceID=%6" />
                 <string id="RuntimePublisher.ModuleLoad_V2EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;%nModuleILPath=%4;%nModuleNativePath=%5;%nClrInstanceID=%6;%nManagedPdbSignature=%7;%nManagedPdbAge=%8;%nManagedPdbBuildPath=%9;%nNativePdbSignature=%10;%nNativePdbAge=%11;%nNativePdbBuildPath=%12" />
+                <string id="RuntimePublisher.ModuleLoad_V3EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;%nModuleILPath=%4;%nModuleNativePath=%5;%nClrInstanceID=%6;%nManagedPdbSignature=%7;%nManagedPdbAge=%8;%nManagedPdbBuildPath=%9;%nNativePdbSignature=%10;%nNativePdbAge=%11;%nNativePdbBuildPath=%12;%nNativeBuildID=%13" />
                 <string id="RuntimePublisher.ModuleUnloadEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;ModuleILPath=%4;%nModuleNativePath=%5" />
                 <string id="RuntimePublisher.ModuleUnload_V1EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;%nModuleILPath=%4;%nModuleNativePath=%5;%nClrInstanceID=%6" />
                 <string id="RuntimePublisher.ModuleUnload_V2EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;%nModuleILPath=%4;%nModuleNativePath=%5;%nClrInstanceID=%6;%nManagedPdbSignature=%7;%nManagedPdbAge=%8;%nManagedPdbBuildPath=%9;%nNativePdbSignature=%10;%nNativePdbAge=%11;%nNativePdbBuildPath=%12" />
@@ -8680,6 +8760,7 @@
                 <string id="RundownPublisher.ModuleDCEndEventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;ModuleILPath=%4;ModuleNativePath=%5" />
                 <string id="RundownPublisher.ModuleDCEnd_V1EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;ModuleILPath=%4;ModuleNativePath=%5;%nClrInstanceID=%6" />
                 <string id="RundownPublisher.ModuleDCEnd_V2EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;%nModuleILPath=%4;%nModuleNativePath=%5;%nClrInstanceID=%6;%nManagedPdbSignature=%7;%nManagedPdbAge=%8;%nManagedPdbBuildPath=%9;%nNativePdbSignature=%10;%nNativePdbAge=%11;%nNativePdbBuildPath=%12" />
+                <string id="RundownPublisher.ModuleDCEnd_V3EventMessage" value="ModuleID=%1;%nAssemblyID=%2;%nModuleFlags=%3;%nModuleILPath=%4;%nModuleNativePath=%5;%nClrInstanceID=%6;%nManagedPdbSignature=%7;%nManagedPdbAge=%8;%nManagedPdbBuildPath=%9;%nNativePdbSignature=%10;%nNativePdbAge=%11;%nNativePdbBuildPath=%12;%nNativeBuildID=%13" />
                 <string id="RundownPublisher.AssemblyDCStartEventMessage" value="AssemblyID=%1;%nAppDomainID=%2;%nAssemblyFlags=%3;FullyQualifiedAssemblyName=%4" />
                 <string id="RundownPublisher.AssemblyDCStart_V1EventMessage" value="AssemblyID=%1;%nAppDomainID=%2;%nAssemblyFlags=%3;FullyQualifiedAssemblyName=%4;%nClrInstanceID=%5" />
                 <string id="RundownPublisher.AssemblyDCEndEventMessage" value="AssemblyID=%1;%nAppDomainID=%2;%nAssemblyFlags=%3;FullyQualifiedAssemblyName=%4" />

@@ -33,13 +33,12 @@ namespace System.ComponentModel
         /// culture as the translation context.
         /// </summary>
         public DefaultValueAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            Type type,
             string? value)
         {
             // The null check and try/catch here are because attributes should never throw exceptions.
             // We would fail to load an otherwise normal class.
 
-            Debug.Assert(IsSupported, "Runtime instantiation of this attribute is not allowed with trimming.");
             if (!IsSupported)
             {
                 _value = s_throwSentinel;

@@ -585,14 +585,12 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
 
         case BBJ_EHFINALLYRET:
         {
-            BBehfDesc* currEhfDesc = blk->GetEhfTargets();
-            BBehfDesc* newEhfDesc  = new (this, CMK_BasicBlock) BBehfDesc;
-            newEhfDesc->bbeCount   = currEhfDesc->bbeCount;
-            newEhfDesc->bbeSuccs   = new (this, CMK_FlowEdge) FlowEdge*[newEhfDesc->bbeCount];
+            BBJumpTable* currEhfDesc = blk->GetEhfTargets();
+            FlowEdge**   newSuccs    = new (this, CMK_FlowEdge) FlowEdge*[currEhfDesc->GetSuccCount()];
 
-            for (unsigned i = 0; i < newEhfDesc->bbeCount; i++)
+            for (unsigned i = 0; i < currEhfDesc->GetSuccCount(); i++)
             {
-                FlowEdge* const   inspiringEdge = currEhfDesc->bbeSuccs[i];
+                FlowEdge* const   inspiringEdge = currEhfDesc->GetSucc(i);
                 BasicBlock* const ehfTarget     = inspiringEdge->getDestinationBlock();
                 FlowEdge*         newEdge;
 
@@ -606,9 +604,10 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
                     newEdge = fgAddRefPred(ehfTarget, newBlk, inspiringEdge);
                 }
 
-                newEhfDesc->bbeSuccs[i] = newEdge;
+                newSuccs[i] = newEdge;
             }
 
+            BBJumpTable* newEhfDesc = new (this, CMK_BasicBlock) BBJumpTable(newSuccs, currEhfDesc->GetSuccCount());
             newBlk->SetEhf(newEhfDesc);
             break;
         }
@@ -616,12 +615,12 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
         case BBJ_SWITCH:
         {
             BBswtDesc* currSwtDesc = blk->GetSwitchTargets();
-            BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(currSwtDesc);
-            newSwtDesc->bbsDstTab  = new (this, CMK_FlowEdge) FlowEdge*[newSwtDesc->bbsCount];
+            BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(this, currSwtDesc);
+            FlowEdge** succPtr     = newSwtDesc->GetSuccs();
 
-            for (unsigned i = 0; i < newSwtDesc->bbsCount; i++)
+            for (unsigned i = 0; i < newSwtDesc->GetCaseCount(); i++)
             {
-                FlowEdge* const   inspiringEdge = currSwtDesc->bbsDstTab[i];
+                FlowEdge* const   inspiringEdge = currSwtDesc->GetCase(i);
                 BasicBlock* const switchTarget  = inspiringEdge->getDestinationBlock();
                 FlowEdge*         newEdge;
 
@@ -637,13 +636,16 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
 
                 // Transfer likelihood... instead of doing this gradually
                 // for dup'd edges, we set it once, when we add the last dup.
+                // Also, add the new edge to the unique successor table.
                 //
                 if (newEdge->getDupCount() == inspiringEdge->getDupCount())
                 {
                     newEdge->setLikelihood(inspiringEdge->getLikelihood());
+                    *succPtr = newEdge;
+                    succPtr++;
                 }
 
-                newSwtDesc->bbsDstTab[i] = newEdge;
+                newSwtDesc->GetCases()[i] = newEdge;
             }
 
             newBlk->SetSwitch(newSwtDesc);
@@ -1681,7 +1683,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
         }
 
         // Redirect exit edge from previous iteration to new entry.
-        fgRedirectTrueEdge(prevTestBlock, target);
+        fgRedirectEdge(prevTestBlock->TrueEdgeRef(), target);
         fgRemoveRefPred(prevTestBlock->GetFalseEdge());
         prevTestBlock->SetKindAndTargetEdge(BBJ_ALWAYS, prevTestBlock->GetTrueEdge());
 
@@ -2092,7 +2094,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     preheader->GetFalseEdge()->setLikelihood(condBlock->GetFalseEdge()->getLikelihood());
 
     // Redirect newPreheader from header to stayInLoopSucc
-    fgRedirectTargetEdge(newPreheader, stayInLoopSucc);
+    fgRedirectEdge(newPreheader->TargetEdgeRef(), stayInLoopSucc);
 
     // Duplicate all the code now
     for (int i = 0; i < duplicatedBlocks.Height(); i++)
@@ -2557,6 +2559,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     //
     unsigned preheaderEHRegion    = EHblkDsc::NO_ENCLOSING_INDEX;
     bool     inSameRegionAsHeader = true;
+    bool     headerIsTryEntry     = bbIsTryBeg(header);
     if (header->hasTryIndex())
     {
         preheaderEHRegion = header->getTryIndex();
@@ -2594,6 +2597,14 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     if (inSameRegionAsHeader)
     {
         fgExtendEHRegionBefore(header);
+
+        // If the header was a try region entry, it no longer is.
+        //
+        if (headerIsTryEntry)
+        {
+            assert(!bbIsTryBeg(header));
+            header->RemoveFlags(BBF_DONT_REMOVE);
+        }
     }
     else
     {
@@ -3702,7 +3713,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     // We really should consider hoisting from conditionally executed blocks, if they are frequently executed
     // and it is safe to evaluate the tree early.
     //
-    ArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
+    assert(m_dfsTree != nullptr);
+    BitVecTraits traits(m_dfsTree->PostOrderTraits());
+    BitVec       defExec(BitVecOps::MakeEmpty(&traits));
 
     // Add the pre-headers of any child loops to the list of blocks to consider for hoisting.
     // Note that these are not necessarily definitely executed. However, it is a heuristic that they will
@@ -3760,7 +3773,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
             }
         }
         JITDUMP("  --  " FMT_BB " (child loop pre-header)\n", childPreHead->bbNum);
-        defExec.Push(childPreHead);
+        BitVecOps::AddElemD(&traits, defExec, childPreHead->bbPostorderNum);
     }
 
     if (loop->ExitEdges().size() == 1)
@@ -3785,7 +3798,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         while ((cur != nullptr) && (cur != loop->GetHeader()) && loop->ContainsBlock(cur))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
-            defExec.Push(cur);
+            BitVecOps::AddElemD(&traits, defExec, cur->bbPostorderNum);
             cur = cur->bbIDom;
         }
 
@@ -3801,9 +3814,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     }
 
     JITDUMP("  --  " FMT_BB " (header block)\n", loop->GetHeader()->bbNum);
-    defExec.Push(loop->GetHeader());
+    BitVecOps::AddElemD(&traits, defExec, loop->GetHeader()->bbPostorderNum);
 
-    optHoistLoopBlocks(loop, &defExec, hoistCtxt);
+    optHoistLoopBlocks(loop, &traits, defExec, hoistCtxt);
 
     unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
 #ifdef FEATURE_MASKED_HW_INTRINSICS
@@ -3812,7 +3825,10 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     return numHoisted > 0;
 }
 
-bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt)
+bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
+                                          FlowGraphNaturalLoop* loop,
+                                          LoopHoistContext*     hoistCtxt,
+                                          bool                  defExecuted)
 {
     bool loopContainsCall = m_loopSideEffects[loop->GetIndex()].ContainsCall;
 
@@ -3882,6 +3898,14 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
     // the variables that are read/written inside the loop should
     // always be a subset of the InOut variables for the loop
     assert(loopVarCount <= varInOutCount);
+
+    // If this tree isn't guaranteed to execute every loop iteration,
+    // consider hoisting it only if it is expensive.
+    //
+    if (!defExecuted && (tree->GetCostEx() < (IND_COST_EX * 16)))
+    {
+        return false;
+    }
 
     // When loopVarCount >= availRegCount we believe that all of the
     // available registers will get used to hold LclVars inside the loop.
@@ -4101,17 +4125,14 @@ void LoopSideEffects::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE s
 //
 // Arguments:
 //    loop - The loop
-//    blocks - A stack of blocks belonging to the loop
+//    traits - Bit vector traits for 'defExecuted'
+//    defExecuted - Bit vector of definitely executed blocks in the loop
 //    hoistContext - The loop hoist context
 //
-// Assumptions:
-//    The `blocks` stack contains the definitely-executed blocks in
-//    the loop, in the execution order, starting with the loop entry
-//    block on top of the stack.
-//
-void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
-                                  ArrayStack<BasicBlock*>* blocks,
-                                  LoopHoistContext*        hoistContext)
+void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
+                                  BitVecTraits*         traits,
+                                  BitVec                defExecuted,
+                                  LoopHoistContext*     hoistContext)
 {
     class HoistVisitor : public GenTreeVisitor<HoistVisitor>
     {
@@ -4150,6 +4171,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
         FlowGraphNaturalLoop* m_loop;
         LoopHoistContext*     m_hoistContext;
         BasicBlock*           m_currentBlock;
+        BitVecTraits*         m_traits;
+        BitVec                m_defExec;
 
         bool IsNodeHoistable(GenTree* node)
         {
@@ -4272,13 +4295,19 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
             UseExecutionOrder = true,
         };
 
-        HoistVisitor(Compiler* compiler, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistContext)
+        HoistVisitor(Compiler*             compiler,
+                     FlowGraphNaturalLoop* loop,
+                     LoopHoistContext*     hoistContext,
+                     BitVecTraits*         traits,
+                     BitVec                defExec)
             : GenTreeVisitor(compiler)
             , m_valueStack(compiler->getAllocator(CMK_LoopHoist))
             , m_beforeSideEffect(true)
             , m_loop(loop)
             , m_hoistContext(hoistContext)
             , m_currentBlock(nullptr)
+            , m_traits(traits)
+            , m_defExec(defExec)
         {
         }
 
@@ -4294,7 +4323,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
                 // hoist the top node?
                 if (top.m_hoistable)
                 {
-                    m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loop, m_hoistContext);
+                    const bool defExecuted = BitVecOps::IsMember(m_traits, m_defExec, block->bbPostorderNum);
+                    m_compiler->optHoistCandidate(stmt->GetRootNode(), block, m_loop, m_hoistContext, defExecuted);
                 }
                 else
                 {
@@ -4644,7 +4674,10 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
 
                         if (IsHoistableOverExcepSibling(value.Node(), hasExcep))
                         {
-                            m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loop, m_hoistContext);
+                            const bool defExecuted =
+                                BitVecOps::IsMember(m_traits, m_defExec, m_currentBlock->bbPostorderNum);
+                            m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loop, m_hoistContext,
+                                                          defExecuted);
                         }
 
                         // Don't hoist this tree again.
@@ -4690,12 +4723,9 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
         }
     };
 
-    HoistVisitor visitor(this, loop, hoistContext);
-
-    while (!blocks->Empty())
-    {
-        BasicBlock* block       = blocks->Pop();
-        weight_t    blockWeight = block->getBBWeight(this);
+    HoistVisitor visitor(this, loop, hoistContext, traits, defExecuted);
+    loop->VisitLoopBlocks([&](BasicBlock* block) -> BasicBlockVisit {
+        const weight_t blockWeight = block->getBBWeight(this);
 
         JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " (head: " FMT_BB ")\n",
                 block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loop->GetIndex(),
@@ -4704,22 +4734,23 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
         if (blockWeight < (BB_UNITY_WEIGHT / 10))
         {
             JITDUMP("      block weight is too small to perform hoisting.\n");
-            continue;
+        }
+        else
+        {
+            visitor.HoistBlock(block);
         }
 
-        visitor.HoistBlock(block);
-    }
+        return BasicBlockVisit::Continue;
+    });
 
     hoistContext->ResetHoistedInCurLoop();
 }
 
-void Compiler::optHoistCandidate(GenTree*              tree,
-                                 BasicBlock*           treeBb,
-                                 FlowGraphNaturalLoop* loop,
-                                 LoopHoistContext*     hoistCtxt)
+void Compiler::optHoistCandidate(
+    GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted)
 {
     // It must pass the hoistable profitability tests for this loop level
-    if (!optIsProfitableToHoistTree(tree, loop, hoistCtxt))
+    if (!optIsProfitableToHoistTree(tree, loop, hoistCtxt, defExecuted))
     {
         JITDUMP("   ... not profitable to hoist\n");
         return;
