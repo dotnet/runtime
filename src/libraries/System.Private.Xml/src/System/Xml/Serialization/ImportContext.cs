@@ -16,9 +16,6 @@ namespace System.Xml.Serialization
     public class ImportContext
     {
         private readonly bool _shareTypes;
-        private SchemaObjectCache? _cache; // cached schema top-level items
-        private Hashtable? _mappings; // XmlSchema -> SerializableMapping, XmlSchemaSimpleType -> EnumMapping, XmlSchemaComplexType -> StructMapping
-        private Hashtable? _elements; // XmlSchemaElement -> ElementAccessor
         private CodeIdentifiers? _typeIdentifiers;
 
         public ImportContext(CodeIdentifiers? identifiers, bool shareTypes)
@@ -29,11 +26,11 @@ namespace System.Xml.Serialization
 
         internal ImportContext() : this(null, false) { }
 
-        internal SchemaObjectCache Cache => _cache ??= new SchemaObjectCache();
+        internal SchemaObjectCache Cache => field ??= new SchemaObjectCache(); // cached schema top-level items
 
-        internal Hashtable Elements => _elements ??= new Hashtable();
+        internal Hashtable Elements => field ??= new Hashtable(); // XmlSchemaElement -> ElementAccessor
 
-        internal Hashtable Mappings => _mappings ??= new Hashtable();
+        internal Hashtable Mappings => field ??= new Hashtable(); // XmlSchema -> SerializableMapping, XmlSchemaSimpleType -> EnumMapping, XmlSchemaComplexType -> StructMapping
 
         public CodeIdentifiers TypeIdentifiers => _typeIdentifiers ??= new CodeIdentifiers();
 
@@ -50,19 +47,15 @@ namespace System.Xml.Serialization
 
     internal sealed class SchemaObjectCache
     {
-        private Hashtable? _graph;
-        private Hashtable? _hash;
-        private Hashtable? _objectCache;
-        private StringCollection? _warnings;
         // UNDONE remove me soon, this is debug only code
         internal Hashtable looks = new Hashtable();
-        private Hashtable Graph => _graph ??= new Hashtable();
+        private Hashtable Graph => field ??= new Hashtable();
 
-        private Hashtable Hash => _hash ??= new Hashtable();
+        private Hashtable Hash => field ??= new Hashtable();
 
-        private Hashtable ObjectCache => _objectCache ??= new Hashtable();
+        private Hashtable ObjectCache => field ??= new Hashtable();
 
-        internal StringCollection Warnings => _warnings ??= new StringCollection();
+        internal StringCollection Warnings => field ??= new StringCollection();
 
         internal XmlSchemaObject? AddItem(XmlSchemaObject? item, XmlQualifiedName? qname)
         {

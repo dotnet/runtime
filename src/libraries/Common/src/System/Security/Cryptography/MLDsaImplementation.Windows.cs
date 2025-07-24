@@ -34,6 +34,9 @@ namespace System.Security.Cryptography
         [MemberNotNullWhen(true, nameof(s_algHandle))]
         internal static partial bool SupportsAny() => s_algHandle is not null;
 
+        [MemberNotNullWhen(true, nameof(s_algHandle))]
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm) => SupportsAny();
+
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
         {
             if (!_hasSecretKey)

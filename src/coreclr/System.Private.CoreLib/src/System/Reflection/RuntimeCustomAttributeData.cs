@@ -1270,12 +1270,12 @@ namespace System.Reflection
             for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
 
-            while (type != (RuntimeType)typeof(object) && type != null)
+            do
             {
                 AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 type = (type.BaseType as RuntimeType)!;
-            }
+            } while (type != (RuntimeType)typeof(object) && type != null);
 
             object[] typedResult = CreateAttributeArrayHelper(caType, result.Count);
             for (int i = 0; i < result.Count; i++)

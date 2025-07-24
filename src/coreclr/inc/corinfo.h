@@ -1747,6 +1747,8 @@ struct CORINFO_ASYNC_INFO
     // Method handle for AsyncHelpers.RestoreExecutionContext
     CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureContextsMethHnd;
+    CORINFO_METHOD_HANDLE restoreContextsMethHnd;
 };
 
 // Flags passed from JIT to runtime.

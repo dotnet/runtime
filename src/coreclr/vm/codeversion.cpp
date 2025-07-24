@@ -12,9 +12,11 @@
 #ifdef FEATURE_CODE_VERSIONING
 #include "threadsuspend.h"
 #include "methoditer.h"
+#ifdef DDEBUGGING_SUPPORTED
 #include "../debug/ee/debugger.h"
 #include "../debug/ee/walker.h"
 #include "../debug/ee/controller.h"
+#endif // DDEBUGGING_SUPPORTED
 #endif // FEATURE_CODE_VERSIONING
 
 #ifndef FEATURE_CODE_VERSIONING

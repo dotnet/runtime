@@ -410,7 +410,7 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
-        shadowVarDsc->SetHiddenBufferStructArg(varDsc->IsHiddenBufferStructArg());
+        shadowVarDsc->SetDefinedViaAddress(varDsc->IsDefinedViaAddress());
 #endif
 
         if (varTypeIsStruct(type))

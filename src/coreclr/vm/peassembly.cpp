@@ -68,7 +68,13 @@ void PEAssembly::EnsureLoaded()
         RETURN;
 
     // Ensure that loaded layout is available.
-    PEImageLayout* pLayout = GetPEImage()->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
+    PEImageLayout* pLayout = GetPEImage()->GetOrCreateLayout(
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
+        PEImageLayout::LAYOUT_FLAT
+#else
+        PEImageLayout::LAYOUT_LOADED
+#endif
+        );
     if (pLayout == NULL)
     {
         EEFileLoadException::Throw(this, COR_E_BADIMAGEFORMAT, NULL);

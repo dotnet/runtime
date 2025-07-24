@@ -40,6 +40,16 @@
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
 
+  <!-- This ItemGroup defines Android environment variables that are used for .NET feature switches. -->
+  <ItemGroup>
+    <AndroidEnv Condition="'$(InvariantGlobalization)' == 'true'" Include="DOTNET_SYSTEM_GLOBALIZATION_INVARIANT">
+      <Value>true</Value>
+    </AndroidEnv>
+    <AndroidEnv Condition="'$(PredefinedCulturesOnly)' == 'false'" Include="DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY">
+      <Value>false</Value>
+    </AndroidEnv>
+  </ItemGroup>
+
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and ('$(UseMonoRuntime)' == 'true' and '$(RunAOTCompilation)' == 'true')" Project="$(_CommonTargetsDir)MonoAOTCompiler.props" />

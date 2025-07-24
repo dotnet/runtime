@@ -7,24 +7,18 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public class Tracing : IClassFixture<Tracing.SharedTestState>
+    public class Tracing
     {
-        private SharedTestState sharedTestState;
+        // Trace messages currently expected for running dotnet --list-runtimes
+        private const string ExpectedVerboseMessage = "--- Executing in muxer mode";
+        private const string ExpectedInfoMessage = "--- Invoked dotnet";
 
-        // Trace messages currently expected for a passing app (somewhat randomly selected)
-        private const string ExpectedVerboseMessage = "--- Begin breadcrumb write";
-        private const string ExpectedInfoMessage = "Deps file:";
-        private const string ExpectedBadPathMessage = "Unable to open COREHOST_TRACEFILE=";
-
-        public Tracing(Tracing.SharedTestState fixture)
-        {
-            sharedTestState = fixture;
-        }
+        private const string ExpectedBadPathMessage = "Unable to open specified trace file for writing:";
 
         [Fact]
         public void TracingOff()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec("--list-runtimes")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -36,11 +30,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnDefault()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdErrContaining(ExpectedInfoMessage)
                 .And.HaveStdErrContaining(ExpectedVerboseMessage);
         }
@@ -48,12 +41,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnVerbose()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "4")
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdErrContaining(ExpectedInfoMessage)
                 .And.HaveStdErrContaining(ExpectedVerboseMessage);
         }
@@ -61,12 +53,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnInfo()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "3")
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdErrContaining(ExpectedInfoMessage)
                 .And.NotHaveStdErrContaining(ExpectedVerboseMessage);
         }
@@ -74,12 +65,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnWarning()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
                 .And.NotHaveStdErrContaining(ExpectedInfoMessage)
                 .And.NotHaveStdErrContaining(ExpectedVerboseMessage);
         }
@@ -87,15 +77,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnToFileDefault()
         {
-
             string traceFilePath;
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableHostTracingToFile(out traceFilePath)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
                 .And.NotHaveStdErrContaining(ExpectedInfoMessage)
                 .And.NotHaveStdErrContaining(ExpectedVerboseMessage)
                 .And.FileExists(traceFilePath)
@@ -107,12 +95,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnToFileBadPathDefault()
         {
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, "badpath/TracingOnToFileBadPathDefault.log")
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdErrContaining(ExpectedInfoMessage)
                 .And.HaveStdErrContaining(ExpectedVerboseMessage)
                 .And.HaveStdErrContaining(ExpectedBadPathMessage);
@@ -123,7 +110,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             using (TestArtifact directory = TestArtifact.Create("trace"))
             {
-                var result = TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+                var result = TestContext.BuiltDotNet.Exec("--list-runtimes")
                     .EnableHostTracingToPath(directory.Location)
                     .CaptureStdOut()
                     .CaptureStdErr()
@@ -131,7 +118,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 string traceFilePath = Path.Combine(directory.Location, $"{Path.GetFileNameWithoutExtension(Binaries.DotNet.FileName)}.{result.ProcessId}.log");
                 result.Should().Pass()
-                    .And.HaveStdOutContaining("Hello World")
                     .And.NotHaveStdErrContaining(ExpectedInfoMessage)
                     .And.NotHaveStdErrContaining(ExpectedVerboseMessage)
                     .And.FileExists(traceFilePath)
@@ -139,20 +125,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        public class SharedTestState : IDisposable
+        [Fact]
+        public void LegacyVariableName()
         {
-            public TestApp App { get; }
-
-            public SharedTestState()
-            {
-                App = TestApp.CreateFromBuiltAssets("HelloWorld");
-                App.CreateAppHost();
-            }
-
-            public void Dispose()
-            {
-                App?.Dispose();
-            }
+            TestContext.BuiltDotNet.Exec("--list-runtimes")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedInfoMessage)
+                .And.HaveStdErrContaining(ExpectedVerboseMessage);
         }
     }
 }

@@ -2737,6 +2737,116 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
 
+            case NI_Sve2_DotProductRotateComplex:
+            {
+                assert(isRMW);
+                assert(hasImmediateOperand);
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op4, node, (targetReg != op1Reg) ? 2 : 1);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    if (targetReg != op1Reg)
+                    {
+                        assert(targetReg != op2Reg);
+
+                        GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                    }
+
+                    GetEmitter()->emitInsSve_R_R_R_I(ins, emitSize, targetReg, op2Reg, op3Reg, helper.ImmValue(), opt);
+                }
+                break;
+            }
+
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
+            {
+                assert(isRMW);
+                assert(hasImmediateOperand);
+
+                // If both immediates are constant, we don't need a jump table
+                if (intrin.op4->IsCnsIntOrI() && intrin.op5->IsCnsIntOrI())
+                {
+                    if (targetReg != op1Reg)
+                    {
+                        assert(targetReg != op2Reg);
+                        assert(targetReg != op3Reg);
+                        GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                    }
+
+                    assert(intrin.op4->isContainedIntOrIImmed() && intrin.op5->isContainedIntOrIImmed());
+                    GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg,
+                                                       intrin.op4->AsIntCon()->gtIconVal,
+                                                       intrin.op5->AsIntCon()->gtIconVal, opt);
+                }
+                else
+                {
+                    // Use the helper to generate a table. The table can only use a single lookup value, therefore
+                    // the two immediates index and rotation must be combined to a single value
+                    assert(!intrin.op4->isContainedIntOrIImmed() && !intrin.op5->isContainedIntOrIImmed());
+                    emitAttr scalarSize = emitActualTypeSize(node->GetSimdBaseType());
+
+                    var_types baseType = node->GetSimdBaseType();
+
+                    if (baseType == TYP_BYTE)
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, 2);
+                        GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
+
+                        // index and rotation both take values 0 to 3 so must be
+                        // combined to a single value (0 to 15)
+                        HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 15, node, (targetReg != op1Reg) ? 2 : 1);
+                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                        {
+                            if (targetReg != op1Reg)
+                            {
+                                assert(targetReg != op2Reg);
+                                assert(targetReg != op3Reg);
+                                GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                            }
+
+                            const int     value    = helper.ImmValue();
+                            const ssize_t index    = value & 3;
+                            const ssize_t rotation = (value >> 2) & 3;
+                            GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
+                                                               rotation, opt);
+                        }
+
+                        GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, 3);
+                        GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, 2);
+                    }
+                    else
+                    {
+                        assert(baseType == TYP_SHORT);
+                        GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, 1);
+                        GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
+
+                        // index (0 to 1, in op4Reg) and rotation (0 to 3, in op5Reg) must be
+                        // combined to a single value (0 to 7)
+                        HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 7, node, (targetReg != op1Reg) ? 2 : 1);
+                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                        {
+                            if (targetReg != op1Reg)
+                            {
+                                assert(targetReg != op2Reg);
+                                assert(targetReg != op3Reg);
+                                GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                            }
+
+                            const int     value    = helper.ImmValue();
+                            const ssize_t index    = value & 1;
+                            const ssize_t rotation = value >> 1;
+                            GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
+                                                               rotation, opt);
+                        }
+
+                        GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, 1);
+                        GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, 1);
+                    }
+                }
+
+                break;
+            }
+
             case NI_Sve2_SubtractWideningEven:
             {
                 var_types returnType = node->AsHWIntrinsic()->GetSimdBaseType();

@@ -48,6 +48,12 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFramework">
       <Value>$(TargetFramework)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFrameworkMoniker">
+      <Value>$(TargetFrameworkMoniker)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFrameworkMonikerDisplayName">
+      <Value>$(TargetFrameworkMonikerDisplayName)</Value>
+    </RuntimeHostConfigurationOption>
     <!-- Used in testcase to check the cecil package version. -->
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.CecilPackageVersion">
       <Value>$(MicrosoftDotNetCecilVersion)</Value>

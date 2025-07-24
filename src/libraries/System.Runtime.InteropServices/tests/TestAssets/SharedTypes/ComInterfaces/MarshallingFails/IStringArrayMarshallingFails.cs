@@ -28,7 +28,7 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
     /// Implements IStringArrayMarshallingFails.
     /// </summary>
     [GeneratedComClass]
-    internal partial class IStringArrayMarshallingFailsImpl : IStringArrayMarshallingFails
+    internal partial class IStringArrayMarshallingFailsImpl : IStringArrayMarshallingFails, ISupportErrorInfo
     {
         public static string[] StartingStrings { get; } = new string[] { "Hello", "World", "Lorem", "Ipsum", "Dolor", "Sample", "Text", ".Net", "Interop", "string" };
         private string[] _strings = StartingStrings;
@@ -40,6 +40,15 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
         public void RefParam([MarshalUsing(ConstantElementCount = 10)] ref string[] value) => value[0] = _strings[0];
         [return: MarshalUsing(ConstantElementCount = 10)]
         public string[] ReturnValue() => _strings;
+
+        int ISupportErrorInfo.InterfaceSupportsErrorInfo(in Guid riid)
+        {
+            if (riid == typeof(IStringArrayMarshallingFails).GUID)
+            {
+                return 0; // S_OK
+            }
+            return 1; // S_FALSE
+        }
     }
 
     /// <summary>

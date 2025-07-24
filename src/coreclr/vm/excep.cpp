@@ -3223,21 +3223,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     return CoreLibBinder::IsException(pThrowableMT, reKind);
 }
 
-BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    if (  (GetThreadNULLOk() && GetThread()->IsRudeAbort() && GetThread()->IsRudeAbortInitiated())
-        ||IsExceptionOfType(kThreadAbortException, pThrowable)
-        ||IsExceptionOfType(kThreadInterruptedException, pThrowable)) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
 BOOL IsUncatchable(OBJECTREF *pThrowable)
 {
     CONTRACTL {
@@ -4960,7 +4945,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     IsOutOfMemory)
                 {
                     // We have to be very careful.  If we walk off the end of the stack, the process will just
-                    // die. e.g. IsAsyncThreadException() and Exception.ToString both consume too much stack -- and can't
+                    // die. e.g. Exception.ToString both consume too much stack -- and can't
                     // be called here.
                     dump = FALSE;
 
@@ -4972,12 +4957,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     {
                         PrintToStdErrA("Stack overflow.\n");
                     }
-                }
-                else if (IsAsyncThreadException(&throwable))
-                {
-                    // We don't print anything on async exceptions, like ThreadAbort.
-                    dump = FALSE;
-                    INDEBUG(suppressSelectiveBreak=TRUE);
                 }
 
                 // Finally, should we print the message?

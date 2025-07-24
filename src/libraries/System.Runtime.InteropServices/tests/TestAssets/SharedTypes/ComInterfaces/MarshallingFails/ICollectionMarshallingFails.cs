@@ -26,7 +26,7 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
     }
 
     [GeneratedComClass]
-    internal partial class ICollectionMarshallingFailsImpl : ICollectionMarshallingFails
+    internal partial class ICollectionMarshallingFailsImpl : ICollectionMarshallingFails, ISupportErrorInfo
     {
         int[] _data = new[] { 1, 2, 3, 4, 5, 6, 7, 8 };
         public int[] Get(out int size)
@@ -42,6 +42,15 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
         {
             _data = new int[size];
             value.CopyTo(_data, 0);
+        }
+
+        int ISupportErrorInfo.InterfaceSupportsErrorInfo(in Guid riid)
+        {
+            if (riid == typeof(ICollectionMarshallingFails).GUID)
+            {
+                return 0; // S_OK
+            }
+            return 1; // S_FALSE
         }
     }
 }

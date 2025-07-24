@@ -294,7 +294,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public async Task CompleteWithLargeWriteThrows()
         {
             var completeDelay = TimeSpan.FromMilliseconds(10);
@@ -361,19 +360,97 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(0, Pipe.Writer.UnflushedBytes);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.Is64BitProcess))]
+        [Fact]
         public void UnflushedBytes_HandlesLargeValues()
         {
-            PipeWriter writer = PipeWriter.Create(Stream.Null);
             int bufferSize = 10000;
-
-            while (writer.UnflushedBytes >= 0 && writer.UnflushedBytes <= int.MaxValue)
+            using (SingleBufferMemoryPool pool = new(bufferSize))
             {
-                writer.GetMemory(bufferSize);
-                writer.Advance(bufferSize);
+                PipeWriter writer = PipeWriter.Create(Stream.Null, new StreamPipeWriterOptions(pool));
+
+                while (writer.UnflushedBytes >= 0 && writer.UnflushedBytes <= int.MaxValue)
+                {
+                    writer.GetMemory(bufferSize);
+                    writer.Advance(bufferSize);
+                }
+
+                Assert.Equal(2147490000, writer.UnflushedBytes);
+            }
+        }
+
+        internal class SingleBufferMemoryPool : MemoryPool<byte>
+        {
+            private readonly int _maxBufferSize;
+            private byte[] _buffer;
+            private bool _disposed;
+
+            internal SingleBufferMemoryPool(int maxBufferSize)
+            {
+                _maxBufferSize = maxBufferSize;
+                _buffer = new byte[maxBufferSize];
             }
 
-            Assert.Equal(2147490000, writer.UnflushedBytes);
+            public override int MaxBufferSize => _maxBufferSize;
+
+            public override IMemoryOwner<byte> Rent(int minBufferSize = -1)
+            {
+                if (minBufferSize > _maxBufferSize)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(minBufferSize), $"{nameof(minBufferSize)} should be less than {_maxBufferSize}");
+                }
+
+                return new BufferMemoryOwner(minBufferSize, _maxBufferSize, _buffer);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!_disposed)
+                {
+                    return;
+                }
+
+                if (disposing)
+                {
+                    _buffer = null;
+                }
+
+                _disposed = true;
+            }
+        }
+
+        internal class BufferMemoryOwner : MemoryManager<byte>
+        {
+            private int _minBufferSize;
+            private byte[] _buffer;
+            private bool _disposed;
+
+            public BufferMemoryOwner(int minBufferSize, int maxBufferSize, byte[] buffer)
+            {
+                _minBufferSize = minBufferSize <= 0 ? maxBufferSize : minBufferSize;
+                _buffer = buffer;   
+            }
+
+            public override Span<byte> GetSpan() => new(_buffer, 0, _minBufferSize);
+
+            public override Memory<byte> Memory => new(_buffer, 0, _minBufferSize);
+
+            public override MemoryHandle Pin(int elementIndex = 0) => throw new NotImplementedException();
+            public override void Unpin() => throw new NotImplementedException();
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!_disposed)
+                {
+                    return;
+                }
+
+                if (disposing)    
+                {
+                    _buffer = null;
+                }
+
+                _disposed = true;
+            }
         }
     }
 }

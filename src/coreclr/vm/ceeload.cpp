@@ -4609,8 +4609,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         }
     }
 
-    ECall::EnumFCallMethods();
-
 #ifdef FEATURE_METADATA_UPDATER
     m_ClassList.EnumMemoryRegions();
 

@@ -534,7 +534,7 @@ namespace System.Net.WebSockets
                 return ValueTask.FromException(
                     exc is OperationCanceledException ? exc :
                     _state == WebSocketState.Aborted ? CreateOperationCanceledException(exc) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc)));
             }
             finally
             {
@@ -1714,10 +1714,10 @@ namespace System.Net.WebSockets
         /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
         private static OperationCanceledException CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return new OperationCanceledException(
+            return (OperationCanceledException)ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(
                 new OperationCanceledException().Message,
                 innerException,
-                cancellationToken);
+                cancellationToken));
         }
 
         private void ThrowIfDisposed() => ThrowIfInvalidState(validStates: ManagedWebSocketStates.All);

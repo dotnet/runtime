@@ -190,7 +190,6 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   The value identified by this blob format is &quot;MLKEMPUBLICBLOB&quot;.
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat MLKemPublicBlob => field ??= new CngKeyBlobFormat("MLKEMPUBLICBLOB");
 
         /// <summary>
@@ -204,7 +203,6 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   The value identified by this blob format is &quot;MLKEMPRIVATEBLOB&quot;.
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat MLKemPrivateBlob => field ??= new CngKeyBlobFormat("MLKEMPRIVATEBLOB");
 
         /// <summary>
@@ -218,7 +216,6 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   The value identified by this blob format is &quot;MLKEMPRIVATESEEDBLOB&quot;.
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat MLKemPrivateSeedBlob => field ??= new CngKeyBlobFormat("MLKEMPRIVATESEEDBLOB");
 
         public static CngKeyBlobFormat OpaqueTransportBlob

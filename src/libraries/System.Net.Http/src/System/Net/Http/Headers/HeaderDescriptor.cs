@@ -207,11 +207,16 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 10:
-                    switch (contentTypeValue[0])
+                    switch (contentTypeValue[6])
                     {
-                        case (byte)'t': candidate = "text/plain"; break; // [t]ext/plain
-                        case (byte)'i': candidate = "image/jpeg"; break; // [i]mage/jpeg
+                        case (byte)'l': candidate = "text/plain"; break; // text/p[l]ain
+                        case (byte)'j': candidate = "image/jpeg"; break; // image/[j]peg
+                        case (byte)'w': candidate = "image/webp"; break; // image/[w]ebp
                     }
+                    break;
+
+                case 13:
+                    candidate = "image/svg+xml"; // image/svg+xml
                     break;
 
                 case 15:
@@ -220,6 +225,7 @@ namespace System.Net.Http.Headers
                         case (byte)'p': candidate = "application/pdf"; break; // application/[p]df
                         case (byte)'x': candidate = "application/xml"; break; // application/[x]ml
                         case (byte)'z': candidate = "application/zip"; break; // application/[z]ip
+                        case (byte)'i': candidate = "text/javascript"; break; // text/javascr[i]pt
                     }
                     break;
 
@@ -231,6 +237,10 @@ namespace System.Net.Http.Headers
                     }
                     break;
 
+                case 17:
+                    candidate = "text/event-stream"; // text/event-stream
+                    break;
+
                 case 19:
                     candidate = "multipart/form-data"; // multipart/form-data
                     break;
@@ -239,17 +249,47 @@ namespace System.Net.Http.Headers
                     candidate = "application/javascript"; // application/javascript
                     break;
 
-                case 24:
-                    switch (contentTypeValue[19])
+                case 23:
+                    switch (contentTypeValue[18])
                     {
-                        case (byte)'t': candidate = "application/octet-stream"; break; // application/octet-s[t]ream
-                        case (byte)'u': candidate = "text/html; charset=utf-8"; break; // text/html; charset=[u]tf-8
-                        case (byte)'U': candidate = "text/html; charset=UTF-8"; break; // text/html; charset=[U]TF-8
+                        case (byte)'u': candidate = "text/html;charset=utf-8"; break; // text/html;charset=[u]tf-8
+                        case (byte)'U': candidate = "text/html;charset=UTF-8"; break; // text/html;charset=[U]TF-8
+                    }
+                    break;
+
+                case 24:
+                    switch (contentTypeValue[10] ^ contentTypeValue[19])
+                    {
+                        case 'n' ^ 't': candidate = "application/octet-stream"; break; // applicatio[n]/octet-s[t]ream
+                        case ' ' ^ 'u': candidate = "text/html; charset=utf-8"; break; // text/html;[ ]charset=[u]tf-8
+                        case ' ' ^ 'U': candidate = "text/html; charset=UTF-8"; break; // text/html;[ ]charset=[U]TF-8
+                        case ';' ^ 'u': candidate = "text/plain;charset=utf-8"; break; // text/plain[;]charset=[u]tf-8
+                        case ';' ^ 'U': candidate = "text/plain;charset=UTF-8"; break; // text/plain[;]charset=[U]TF-8
                     }
                     break;
 
                 case 25:
-                    candidate = "text/plain; charset=utf-8"; // text/plain; charset=utf-8
+                    switch (contentTypeValue[20])
+                    {
+                        case (byte)'u': candidate = "text/plain; charset=utf-8"; break; // text/plain; charset=[u]tf-8
+                        case (byte)'U': candidate = "text/plain; charset=UTF-8"; break; // text/plain; charset=[U]TF-8
+                    }
+                    break;
+
+                case 29:
+                    switch (contentTypeValue[19])
+                    {
+                        case (byte)'I': candidate = "text/html; charset=ISO-8859-1"; break; // text/html; charset=[I]SO-8859-1
+                        case (byte)'i': candidate = "text/html; charset=iso-8859-1"; break; // text/html; charset=[i]so-8859-1
+                    }
+                    break;
+
+                case 30:
+                    switch (contentTypeValue[25])
+                    {
+                        case (byte)'u': candidate = "text/javascript; charset=utf-8"; break; // text/javascript; charset=[u]tf-8
+                        case (byte)'U': candidate = "text/javascript; charset=UTF-8"; break; // text/javascript; charset=[U]TF-8
+                    }
                     break;
 
                 case 31:

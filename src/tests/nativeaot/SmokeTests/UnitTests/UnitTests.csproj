@@ -10,6 +10,8 @@
 
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
+    <IlcOrderFile>order.txt</IlcOrderFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicThreading.cs" />
@@ -17,6 +19,7 @@
     <Compile Include="Devirtualization.cs" />
     <Compile Include="Generics.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="Ordering.cs" />
     <Compile Include="Threading.cs" />
     <Compile Include="StackTraces.cs" />
     <Compile Include="Main.cs" />

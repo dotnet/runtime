@@ -48,10 +48,14 @@ namespace TestUnhandledException
             {
                 throw new Exception("Test");
             }
-            if (args[0] == "mainhardware")
+            else if (args[0] == "mainhardware")
             {
                 string s = null;
                 Console.WriteLine(s.Length); // This will cause a NullReferenceException
+            }
+            else if (args[0] == "mainthreadinterrupted")
+            {
+                throw new ThreadInterruptedException("Test");
             }
             else if (args[0] == "foreign")
             {
@@ -76,6 +80,12 @@ namespace TestUnhandledException
             else if (args[0] == "secondaryunhandled")
             {
                 Thread t = new Thread(() => throw new Exception("Test"));
+                t.Start();
+                t.Join();
+            }
+            else if (args[0] == "secondarythreadinterrupted")
+            {
+                Thread t = new Thread(() => throw new ThreadInterruptedException("Test"));
                 t.Start();
                 t.Join();
             }

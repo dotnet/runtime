@@ -78,17 +78,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 _originalsResolver.Dispose();
             }
+        }
 
-            bool HasActiveSkipKeptItemsValidationAttribute(ICustomAttributeProvider provider)
+        internal static bool HasActiveSkipKeptItemsValidationAttribute(ICustomAttributeProvider provider)
+        {
+            if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute))
             {
-                if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute))
-                {
-                    object? by = attribute.GetPropertyValue(nameof(SkipKeptItemsValidationAttribute.By));
-                    return by is null ? true : ((Tool)by).HasFlag(Tool.NativeAot);
-                }
-
-                return false;
+                object? by = attribute.GetPropertyValue(nameof(SkipKeptItemsValidationAttribute.By));
+                return by is null ? true : ((Tool)by).HasFlag(Tool.NativeAot);
             }
+
+            return false;
         }
 
         protected virtual AssemblyChecker CreateAssemblyChecker(AssemblyDefinition original, TrimmedTestCaseResult testResult)

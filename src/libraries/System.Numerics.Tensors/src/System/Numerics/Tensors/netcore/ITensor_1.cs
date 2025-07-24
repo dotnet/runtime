@@ -25,7 +25,7 @@ namespace System.Numerics.Tensors
         ///   <para>If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.</para>
         ///   <para>The underlying buffer is initialized to default values.</para>
         /// </remarks>
-        static abstract TSelf Create(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateFromShape(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
 
         /// <summary>Creates a new tensor with the specified lengths and strides.</summary>
         /// <param name="lengths">The lengths of each dimension.</param>
@@ -35,7 +35,7 @@ namespace System.Numerics.Tensors
         ///   <para>If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.</para>
         ///   <para>The underlying buffer is initialized to default values.</para>
         /// </remarks>
-        static abstract TSelf Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateFromShape(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
         /// <summary>Creates a new tensor with the specified lengths and strides.</summary>
         /// <param name="lengths">The lengths of each dimension.</param>
@@ -44,7 +44,7 @@ namespace System.Numerics.Tensors
         ///   <para>If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.</para>
         ///   <para>The underlying buffer is not initialized.</para>
         /// </remarks>
-        static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
+        static abstract TSelf CreateFromShapeUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned = false);
 
         /// <summary>Creates a new tensor with the specified lengths and strides. If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned. The underlying buffer is not initialized.</summary>
         /// <param name="lengths">The lengths of each dimension.</param>
@@ -54,7 +54,7 @@ namespace System.Numerics.Tensors
         ///   If <paramref name="pinned"/> is true the underlying buffer is created permanently pinned, otherwise the underlying buffer is not pinned.
         /// The underlying buffer is not initialized.
         /// </remarks>
-        static abstract TSelf CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
+        static abstract TSelf CreateFromShapeUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false);
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.this[ReadOnlySpan{nint}]" />
         new ref T this[params scoped ReadOnlySpan<nint> indexes] { get; }
@@ -93,5 +93,17 @@ namespace System.Numerics.Tensors
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetPinnableReference" />
         new ref T GetPinnableReference();
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetSpan(ReadOnlySpan{nint}, int)" />
+        new Span<T> GetSpan(scoped ReadOnlySpan<nint> startIndexes, int length);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetSpan(ReadOnlySpan{NIndex}, int)" />
+        new Span<T> GetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{nint}, int, out ReadOnlySpan{T})" />
+        bool TryGetSpan(scoped ReadOnlySpan<nint> startIndexes, int length, out Span<T> span);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{NIndex}, int, out ReadOnlySpan{T})" />
+        bool TryGetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length, out Span<T> span);
     }
 }

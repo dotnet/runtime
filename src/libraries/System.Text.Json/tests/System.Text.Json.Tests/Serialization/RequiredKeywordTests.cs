@@ -57,4 +57,9 @@ namespace System.Text.Json.Serialization.Tests
     {
         public RequiredKeywordTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
     }
+
+    public class RequiredKeywordTests_PipeWithSmallBuffer : RequiredKeywordTests
+    {
+        public RequiredKeywordTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
+    }
 }

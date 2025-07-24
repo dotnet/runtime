@@ -2183,6 +2183,15 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
     _ASSERTE( !"NYI" );
 }
 
+template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::GetCapturedRegister(
+    int             regNum,
+    PREGDISPLAY     pRD
+    )
+{
+    _ASSERTE( !"NYI" );
+    return nullptr;
+}
+
 #endif // Unknown platform
 
 #ifdef FEATURE_INTERPRETER

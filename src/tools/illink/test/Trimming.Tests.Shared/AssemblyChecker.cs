@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Mono.Cecil;
+using Mono.Linker.Tests.Extensions;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -17,7 +19,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // going to change/increase over time).
             // So we're effectively disabling Kept validation on compiler generated members
 
-            return IsCompilerGeneratedMember(member);
+            if (IsCompilerGeneratedMember(member))
+                return true;
+
+            do
+            {
+                if (ResultChecker.HasActiveSkipKeptItemsValidationAttribute(member))
+                    return true;
+            }
+            while ((member = member.DeclaringType) != null);
+
+            return false;
 
             static bool IsCompilerGeneratedMember(IMemberDefinition member)
             {

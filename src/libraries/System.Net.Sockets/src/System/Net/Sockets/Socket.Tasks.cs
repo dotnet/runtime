@@ -731,7 +731,7 @@ namespace System.Net.Sockets
 
             if (!IsConnectionOriented)
             {
-                var ex = new NotSupportedException(SR.net_notconnected);
+                var ex = ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_notconnected));
                 return ValueTask.FromException(ex);
             }
 

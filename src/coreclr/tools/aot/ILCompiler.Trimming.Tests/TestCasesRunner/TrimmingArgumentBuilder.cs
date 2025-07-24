@@ -199,6 +199,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 Options.SuppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
             }
+            else if (flag == "--disable-generated-code-heuristics")
+            {
+                Options.DisableGeneratedCodeHeuristics = true;
+            }
         }
 
         public virtual void ProcessTestInputAssembly(NPath inputAssemblyPath)

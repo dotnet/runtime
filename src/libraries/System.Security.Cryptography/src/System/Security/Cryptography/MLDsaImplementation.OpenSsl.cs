@@ -46,6 +46,27 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa65 != null ||
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa87 != null;
 
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm)
+        {
+            if (algorithm == MLDsaAlgorithm.MLDsa44)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa44 != null;
+            }
+            else if (algorithm == MLDsaAlgorithm.MLDsa65)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa65 != null;
+            }
+            else if (algorithm == MLDsaAlgorithm.MLDsa87)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa87 != null;
+            }
+            else
+            {
+                Debug.Fail($"Unexpected algorithm: {algorithm}");
+                return false;
+            }
+        }
+
         internal SafeEvpPKeyHandle DuplicateHandle()
         {
             return _key.DuplicateHandle();

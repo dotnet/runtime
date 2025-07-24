@@ -2138,18 +2138,8 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 
     if (IsFCall())
     {
-        // Call FCalls directly when possible
-        if (!IsInterface() && !GetMethodTable()->ContainsGenericVariables())
-        {
-            BOOL fSharedOrDynamicFCallImpl;
-            PCODE pFCallImpl = ECall::GetFCallImpl(this, &fSharedOrDynamicFCallImpl);
-
-            if (!fSharedOrDynamicFCallImpl)
-                return pFCallImpl;
-
-            // Fake ctors share one implementation that has to be wrapped by prestub
-            GetOrCreatePrecode();
-        }
+        // FCalls need stable entrypoint that can be mapped back to MethodDesc
+        return GetStableEntryPoint();
     }
     else
     {
@@ -2234,13 +2224,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS == NULL)
     {
-        // Is it an FCALL?
-        MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
-        if (pFCallMD != NULL)
-        {
-            return pFCallMD;
-        }
-
         return NULL;
     }
 
@@ -2551,6 +2534,10 @@ BOOL MethodDesc::RequiresStableEntryPointCore(BOOL fEstimateForChunk)
 
         // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
         if ((IsInterface() && !IsStatic() && IsVirtual()) || IsCLRToCOMCall())
+            return TRUE;
+
+        // FCalls need stable entrypoint that can be mapped back to MethodDesc
+        if (IsFCall())
             return TRUE;
     }
 

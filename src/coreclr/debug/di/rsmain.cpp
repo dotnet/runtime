@@ -452,7 +452,7 @@ void LeftSideResourceCleanupList::SweepNeuterLeftSideResources(CordbProcess * pP
  * ------------------------------------------------------------------------- */
 extern void* GetClrModuleBase();
 
-// Do any initialization necessary for both CorPublish and CorDebug
+// Do any initialization necessary for CorDebug
 // This includes enabling logging and adding the SEDebug priv.
 void CordbCommonBase::InitializeCommon()
 {

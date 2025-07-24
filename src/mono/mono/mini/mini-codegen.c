@@ -141,12 +141,10 @@ static void
 mono_regstate_assign (MonoRegState *rs)
 {
 #ifdef MONO_ARCH_USE_SHARED_FP_SIMD_BANK
-	/* The regalloc may fail if fp and simd logical regbanks share the same physical reg bank and
-	 * if the values here are not the same.
-	 */
-	g_assert(regbank_callee_regs [MONO_REG_SIMD] == regbank_callee_regs [MONO_REG_DOUBLE]);
+	/* fp and simd logical banks may share the same physical reg bank with unequal overlapping registers */
+	g_assert((regbank_callee_regs [MONO_REG_SIMD] & regbank_callee_regs[MONO_REG_DOUBLE]) == regbank_callee_regs [MONO_REG_DOUBLE]);
+	g_assert(regbank_size [MONO_REG_SIMD] >= regbank_size [MONO_REG_DOUBLE]);
 	g_assert(regbank_callee_saved_regs [MONO_REG_SIMD] == regbank_callee_saved_regs [MONO_REG_DOUBLE]);
-	g_assert(regbank_size [MONO_REG_SIMD] == regbank_size [MONO_REG_DOUBLE]);
 #endif
 
 	if (rs->next_vreg > rs->vassign_size) {
@@ -221,7 +219,8 @@ mono_regstate_alloc_general (MonoRegState *rs, regmask_t allow, int bank)
 			if (mirrored_bank == -1)
 				return i;
 
-			rs->free_mask [mirrored_bank] = rs->free_mask [bank];
+			rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+								|((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
 			return i;
 		}
 	}
@@ -240,7 +239,8 @@ mono_regstate_free_general (MonoRegState *rs, int reg, int bank)
 		mirrored_bank = get_mirrored_bank (bank);
 		if (mirrored_bank == -1)
 			return;
-		rs->free_mask [mirrored_bank] = rs->free_mask [bank];
+		rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+								|((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
 		rs->symbolic [mirrored_bank][reg] = 0;
 	}
 }
@@ -649,7 +649,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 			g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 		else
 			g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num,
-			                        ins->inst_false_bb->block_num);
+									ins->inst_false_bb->block_num);
 		break;
 	case OP_LIVERANGE_START:
 	case OP_LIVERANGE_END:
@@ -1081,8 +1081,8 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 		/* Make sure the other logical reg bank that this bank shares
 		 * a single hard reg bank knows that this hard reg is not free.
 		 */
-		rs->free_mask [mirrored_bank] = rs->free_mask [bank];
-
+		rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+								|((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
 		/* Mark the other logical bank that the this bank shares
 		 * a single hard reg bank with as mirrored.
 		 */
@@ -1566,7 +1566,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			val = rs->vassign [ins->dreg];
 			if (is_soft_reg (ins->dreg, bank) && (val >= 0) && (!(regmask (val) & dreg_mask))) {
 				/* DREG is already allocated to a register needed for sreg1 */
-			    spill_vreg (cfg, bb, tmp, ins, ins->dreg, 0);
+				spill_vreg (cfg, bb, tmp, ins, ins->dreg, 0);
 			}
 		}
 

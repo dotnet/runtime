@@ -42,7 +42,6 @@ jobs:
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - AzureLinux.3.Amd64.Open
-      - Ubuntu.2204.Amd64.Open
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:

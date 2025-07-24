@@ -1131,7 +1131,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private HeaderDescriptor GetHeaderDescriptor(string name)
+        internal HeaderDescriptor GetHeaderDescriptor(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 

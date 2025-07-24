@@ -1153,6 +1153,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         if (linked is AssemblyDefinition)
                             continue;
                         break;
+
+                    // TargetFrameworkAttribute is generated for most testcases, so don't check this.
+                    case "System.Runtime.Versioning.TargetFrameworkAttribute":
+                        if (linked is AssemblyDefinition)
+                            continue;
+                        break;
                 }
 
                 yield return attr.AttributeType.FullName;

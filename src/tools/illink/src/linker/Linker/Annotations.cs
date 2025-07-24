@@ -626,7 +626,13 @@ namespace Mono.Linker
                 return true;
 
             if (method.DeclaringType is not null && TryGetLinkerAttribute(method.DeclaringType, out attribute))
-                return true;
+            {
+                if (!attribute.ExcludeStatics)
+                    return true;
+
+                if (!method.IsStatic)
+                    return true;
+            }
 
             attribute = null;
             return false;
@@ -676,7 +682,13 @@ namespace Mono.Linker
 
                 if ((method.IsStatic || method.IsConstructor) && method.DeclaringType is not null &&
                     TryGetLinkerAttribute(method.DeclaringType, out attribute))
-                    return true;
+                {
+                    if (!attribute.ExcludeStatics)
+                        return true;
+
+                    if (method.IsConstructor)
+                        return true;
+                }
             } while (context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember(method, out method));
 
             attribute = null;
@@ -691,7 +703,7 @@ namespace Mono.Linker
                 return false;
             }
 
-            return TryGetLinkerAttribute(field.DeclaringType, out attribute);
+            return TryGetLinkerAttribute(field.DeclaringType, out attribute) && !attribute.ExcludeStatics;
         }
 
         /// <Summary>

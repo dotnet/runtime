@@ -58,7 +58,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 testCaseDir = testSuiteDir;
                 testPath = Path.Combine(testSuiteDir, $"{testName}.cs");
             }
-            Assert.True(File.Exists(testPath));
+            Assert.True(File.Exists(testPath), $"{testPath} should exist");
             var tree = SyntaxFactory.ParseSyntaxTree(
                 SourceText.From(File.OpenRead(testPath), Encoding.UTF8),
                 path: testPath);

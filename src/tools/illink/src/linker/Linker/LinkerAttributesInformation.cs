@@ -120,20 +120,28 @@ namespace Mono.Linker
 
             if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is string message)
             {
-                var ruca = new RequiresUnreferencedCodeAttribute(message);
+                string? url = null;
+                bool excludeStatics = false;
                 if (customAttribute.HasProperties)
                 {
                     foreach (var prop in customAttribute.Properties)
                     {
                         if (prop.Name == "Url")
                         {
-                            ruca.Url = prop.Argument.Value as string;
-                            break;
+                            url = prop.Argument.Value as string;
+                        }
+                        else if (prop.Name == "ExcludeStatics" && prop.Argument.Value is true)
+                        {
+                            excludeStatics = true;
                         }
                     }
                 }
 
-                return ruca;
+                return new RequiresUnreferencedCodeAttribute(message)
+                {
+                    Url = url,
+                    ExcludeStatics = excludeStatics
+                };
             }
 
             context.LogWarning((IMemberDefinition)provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof(RequiresUnreferencedCodeAttribute).FullName ?? "");

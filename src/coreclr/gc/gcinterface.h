@@ -644,6 +644,9 @@ enum class GCConfigurationType
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
+// NOTE!
+// Only add methods to the end.
+// Do not add overloaded methods. Always use a different name.
 class IGCHeap {
 public:
     /*
@@ -1065,9 +1068,6 @@ public:
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
-
-    // Returns whether nor this GC was promoted by the last GC.
-    virtual bool IsPromoted(Object* object, bool bVerifyNextHeader) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

@@ -1524,7 +1524,7 @@ namespace System.Net.Http
 
                 if (stream is null)
                 {
-                    return ValueTask.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream)));
+                    return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3RequestStream))));
                 }
 
                 Debug.Assert(_response != null);
@@ -1577,7 +1577,7 @@ namespace System.Net.Http
 
                 if (stream is null)
                 {
-                    return ValueTask.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
+                    return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3WriteStream))));
                 }
 
                 return stream.WriteRequestContentAsync(buffer, cancellationToken);
@@ -1589,7 +1589,7 @@ namespace System.Net.Http
 
                 if (stream is null)
                 {
-                    return Task.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
+                    return Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http3WriteStream))));
                 }
 
                 return stream.FlushSendBufferAsync(endStream: false, cancellationToken).AsTask();

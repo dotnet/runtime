@@ -52,11 +52,6 @@ namespace System.Collections.Generic
         /// <summary>Multiplier used on 64-bit to enable faster % operations.</summary>
         private ulong _fastModMultiplier;
 
-        /// <summary>Lazily-initialized wrapper collection that serves up only the keys, in order.</summary>
-        private KeyCollection? _keys;
-        /// <summary>Lazily-initialized wrapper collection that serves up only the values, in order.</summary>
-        private ValueCollection? _values;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="OrderedDictionary{TKey, TValue}"/> class that is empty,
         /// has the default initial capacity, and uses the default equality comparer for the key type.
@@ -257,7 +252,7 @@ namespace System.Collections.Generic
         bool IList.IsFixedSize => false;
 
         /// <summary>Gets a collection containing the keys in the <see cref="OrderedDictionary{TKey, TValue}"/>.</summary>
-        public KeyCollection Keys => _keys ??= new(this);
+        public KeyCollection Keys => field ??= new(this);
 
         /// <inheritdoc/>
         IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
@@ -269,7 +264,7 @@ namespace System.Collections.Generic
         ICollection IDictionary.Keys => Keys;
 
         /// <summary>Gets a collection containing the values in the <see cref="OrderedDictionary{TKey, TValue}"/>.</summary>
-        public ValueCollection Values => _values ??= new(this);
+        public ValueCollection Values => field ??= new(this);
 
         /// <inheritdoc/>
         IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;

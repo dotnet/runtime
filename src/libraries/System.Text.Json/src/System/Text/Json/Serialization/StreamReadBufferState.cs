@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.Text.Json.Serialization
 {
     [StructLayout(LayoutKind.Auto)]
-    internal struct ReadBufferState : IDisposable
+    internal struct StreamReadBufferState : IReadBufferState<StreamReadBufferState, Stream>
     {
         private byte[] _buffer;
         private byte _offset; // Read bytes offset typically used when skipping the UTF-8 BOM.
@@ -35,13 +35,13 @@ namespace System.Text.Json.Serialization
         // The counter is reset to zero whenever the JSON reader has been advanced successfully.
         //
         // The threshold is set to 5 unsuccessful reads. This is a relatively conservative threshold
-        // but should still make fallback unlikely in most scenaria. It should ensure that fallback
+        // but should still make fallback unlikely in most scenarios. It should ensure that fallback
         // isn't triggered in null or boolean tokens even in the worst-case scenario where they are
         // streamed one byte at a time.
         private const int UnsuccessfulReadCountThreshold = 5;
         private int _unsuccessfulReadCount;
 
-        public ReadBufferState(int initialBufferSize)
+        public StreamReadBufferState(int initialBufferSize)
         {
             _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(initialBufferSize, JsonConstants.Utf8Bom.Length));
             _maxCount = _count = _offset = 0;
@@ -51,26 +51,25 @@ namespace System.Text.Json.Serialization
 
         public readonly bool IsFinalBlock => _isFinalBlock;
 
-        public readonly ReadOnlySpan<byte> Bytes => _buffer.AsSpan(_offset, _count);
+        public readonly ReadOnlySequence<byte> Bytes => new(_buffer.AsMemory(_offset, _count));
 
         /// <summary>
         /// Read from the stream until either our buffer is filled or we hit EOF.
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        public readonly async ValueTask<ReadBufferState> ReadFromStreamAsync(
-            Stream utf8Json,
+        public readonly async ValueTask<StreamReadBufferState> ReadAsync(Stream stream,
             CancellationToken cancellationToken,
             bool fillBuffer = true)
         {
             // Since mutable structs don't work well with async state machines,
             // make all updates on a copy which is returned once complete.
-            ReadBufferState bufferState = this;
+            StreamReadBufferState bufferState = this;
 
             int minBufferCount = fillBuffer || _unsuccessfulReadCount > UnsuccessfulReadCountThreshold ? bufferState._buffer.Length : 0;
             do
             {
-                int bytesRead = await utf8Json.ReadAsync(bufferState._buffer.AsMemory(bufferState._count), cancellationToken).ConfigureAwait(false);
+                int bytesRead = await stream.ReadAsync(bufferState._buffer.AsMemory(bufferState._count), cancellationToken).ConfigureAwait(false);
 
                 if (bytesRead == 0)
                 {
@@ -91,11 +90,11 @@ namespace System.Text.Json.Serialization
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        public void ReadFromStream(Stream utf8Json)
+        public void Read(Stream stream)
         {
             do
             {
-                int bytesRead = utf8Json.Read(
+                int bytesRead = stream.Read(
 #if NET
                     _buffer.AsSpan(_count));
 #else
@@ -118,12 +117,14 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Advances the buffer in anticipation of a subsequent read operation.
         /// </summary>
-        public void AdvanceBuffer(int bytesConsumed)
+        public void Advance(long bytesConsumed)
         {
             Debug.Assert(bytesConsumed <= _count);
 
-            _unsuccessfulReadCount = bytesConsumed == 0 ? _unsuccessfulReadCount + 1 : 0;
-            _count -= bytesConsumed;
+            int bytesConsumedInt = (int)bytesConsumed;
+
+            _unsuccessfulReadCount = bytesConsumedInt == 0 ? _unsuccessfulReadCount + 1 : 0;
+            _count -= bytesConsumedInt;
 
             if (!_isFinalBlock)
             {
@@ -136,7 +137,7 @@ namespace System.Text.Json.Serialization
                     byte[] newBuffer = ArrayPool<byte>.Shared.Rent((_buffer.Length < (int.MaxValue / 2)) ? _buffer.Length * 2 : int.MaxValue);
 
                     // Copy the unprocessed data to the new buffer while shifting the processed bytes.
-                    Buffer.BlockCopy(oldBuffer, _offset + bytesConsumed, newBuffer, 0, _count);
+                    Buffer.BlockCopy(oldBuffer, _offset + bytesConsumedInt, newBuffer, 0, _count);
                     _buffer = newBuffer;
                     _maxCount = _count;
 
@@ -147,7 +148,7 @@ namespace System.Text.Json.Serialization
                 else if (_count != 0)
                 {
                     // Shift the processed bytes to the beginning of buffer to make more room.
-                    Buffer.BlockCopy(_buffer, _offset + bytesConsumed, _buffer, 0, _count);
+                    Buffer.BlockCopy(_buffer, _offset + bytesConsumedInt, _buffer, 0, _count);
                 }
             }
 

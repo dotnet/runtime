@@ -171,6 +171,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
+    <Compile Include="System\Runtime\InteropServices\TensorMarshal.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
