@@ -7202,6 +7202,43 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
     CORINFO_ARG_LIST_HANDLE sigParam  = sig.args;
     unsigned                numParams = sig.numArgs;
     unsigned                numArgs   = 0;
+
+    var_types gdvType  = JITtype2varType(sig.retType);
+    var_types callType = call->gtReturnType;
+
+    // Bail if return types do not match.
+    if (!impCheckImplicitArgumentCoercion(gdvType, callType) ||
+        // We should rely only on impCheckImplicitArgumentCoercion here, but the following check
+        // conservatively disables some cases that we don't handle well today (e.g. DOUBLE<->FLOAT).
+        (genActualType(gdvType) != genActualType(callType)))
+    {
+        return false;
+    }
+    if (varTypeIsStruct(gdvType))
+    {
+        assert(varTypeIsStruct(callType));
+        CORINFO_SIG_INFO callSig;
+        info.compCompHnd->getMethodSig(call->gtCallMethHnd, &callSig);
+
+        structPassingKind callRetKind;
+        structPassingKind gdvRetKind;
+        getReturnTypeForStruct(callSig.retTypeClass, call->GetUnmanagedCallConv(), &callRetKind);
+        getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &gdvRetKind);
+
+        if (callRetKind != gdvRetKind)
+        {
+            return false;
+        }
+
+        ClassLayout* callLayout = typGetObjLayout(callSig.retTypeClass);
+        ClassLayout* tarLayout  = typGetObjLayout(sig.retTypeClass);
+
+        if (!ClassLayout::AreCompatible(callLayout, tarLayout))
+        {
+            return false;
+        }
+    }
+
     for (CallArg& arg : call->gtArgs.Args())
     {
         switch (arg.GetWellKnownArg())
