@@ -494,6 +494,7 @@ set(GC_SOURCES_WKS
     ../gc/gceesvr.cpp
     ../gc/gceewks.cpp
     ../gc/gcload.cpp
+    ../gc/gcbridge.cpp
     ../gc/softwarewritewatch.cpp
     ../gc/handletablecache.cpp)
 
@@ -502,6 +503,7 @@ set(GC_HEADERS_WKS
     ../gc/gceventstatus.h
     ../gc/gcconfig.h
     ../gc/gcscan.h
+    ../gc/gcbridge.h
     ../gc/gchandletableimpl.h
     ../gc/softwarewritewatch.h)
 
@@ -542,6 +544,10 @@ if(FEATURE_OBJCMARSHAL)
         interoplibinterface_objc.cpp
     )
 endif(FEATURE_OBJCMARSHAL)
+
+list(APPEND VM_SOURCES_WKS
+    interoplibinterface_java.cpp
+)
 
 if(CLR_CMAKE_TARGET_WIN32)
 
@@ -902,6 +908,14 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/singlestepper.cpp
+        gcinfodecoder.cpp
+    )
+elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
+        ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/helpers.cpp
+        exceptionhandling.cpp
         gcinfodecoder.cpp
     )
 endif()

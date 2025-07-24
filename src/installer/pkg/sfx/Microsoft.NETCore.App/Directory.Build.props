@@ -4,7 +4,6 @@
 
   <PropertyGroup>
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
-    <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
   </PropertyGroup>
 

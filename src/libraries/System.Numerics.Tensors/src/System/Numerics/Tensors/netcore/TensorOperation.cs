@@ -363,11 +363,11 @@ namespace System.Numerics.Tensors
             {
                 if (x.Rank > y.Rank)
                 {
-                    destination = Tensor.CreateUninitialized<TResult>(x._shape.Lengths);
+                    destination = Tensor.CreateFromShapeUninitialized<TResult>(x._shape.Lengths);
                 }
                 else
                 {
-                    destination = Tensor.CreateUninitialized<TResult>(y._shape.Lengths);
+                    destination = Tensor.CreateFromShapeUninitialized<TResult>(y._shape.Lengths);
                 }
                 return;
             }

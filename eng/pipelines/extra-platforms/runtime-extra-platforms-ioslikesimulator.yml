@@ -36,7 +36,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
-      timeoutInMinutes: 180
+      timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
@@ -119,7 +119,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_NativeAOT_RuntimeTests
-      timeoutInMinutes: 240
+      timeoutInMinutes: 180
       buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
       # extra steps, run tests
       extraVariablesTemplates:

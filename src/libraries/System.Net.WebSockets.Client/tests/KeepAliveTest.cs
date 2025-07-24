@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,15 +12,13 @@ using static System.Net.Test.Common.Configuration.WebSockets;
 namespace System.Net.WebSockets.Client.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
-    public class KeepAliveTest : ClientWebSocketTestBase
+    public class KeepAliveTest(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public KeepAliveTest(ITestOutputHelper output) : base(output) { }
-
         [ConditionalFact(nameof(WebSocketsSupported))]
         [OuterLoop("Uses Task.Delay")]
         public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(1)))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(RemoteEchoServer, o => o.KeepAliveInterval = TimeSpan.FromSeconds(1)))
             {
                 await cws.SendAsync(new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, CancellationToken.None);
 
@@ -42,10 +38,8 @@ namespace System.Net.WebSockets.Client.Tests
         [InlineData(1, 2)] // ping/pong
         public async Task KeepAlive_LongDelayBetweenReceiveSends_Succeeds(int keepAliveIntervalSec, int keepAliveTimeoutSec)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(
+            using (ClientWebSocket cws = await GetConnectedWebSocket(
                 RemoteEchoServer,
-                TimeOutMilliseconds,
-                _output,
                 options =>
                 {
                     options.KeepAliveInterval = TimeSpan.FromSeconds(keepAliveIntervalSec);

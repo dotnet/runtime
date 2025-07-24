@@ -39,7 +39,6 @@ public partial class ApkBuilder
     public bool ForceAOT { get; set; }
     public bool ForceFullAOT { get; set; }
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
-    public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
     public string[] RuntimeComponents { get; set; } = Array.Empty<string>();

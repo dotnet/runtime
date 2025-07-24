@@ -4496,7 +4496,7 @@ init_class (MonoClass *klass)
 	}
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
@@ -4934,7 +4934,6 @@ register_icalls (void)
 	register_icall (mono_profiler_raise_exception_clause, mono_icall_sig_void_ptr_int_int_object, TRUE);
 
 	register_icall (mono_trace_enter_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
-	register_icall (mono_trace_samplepoint_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_leave_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	register_icall (mono_trace_tail_method, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);

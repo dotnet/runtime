@@ -522,9 +522,6 @@
 
     <!-- Crossgen2 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/interpreter/InterpreterTester/*">
-            <Issue>https://github.com/dotnet/runtime/issues/116823</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeVarargs/NativeVarargsTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/83942</Issue>
         </ExcludeList>
@@ -572,15 +569,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/multidimmarray/rank1array/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109309</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109309</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109310</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/arrres_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/109311</Issue>
@@ -2732,16 +2720,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_ro/**">
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/invalid_operations/**">
