@@ -358,7 +358,7 @@ namespace R2RDump
                         break;
 
                     case Machine.RiscV64:
-                        ProbeRiscV64Quirks(rtf, imageOffset, rtfOffset, ref fixedTranslatedLine);
+                        // TODO-RISCV64-RVC: Add back ProbeRiscV64Quirks here once it's modified to support compressed instructions.
                         break;
 
                     default:
@@ -1220,10 +1220,10 @@ namespace R2RDump
         /// <param name="instruction">Textual representation of the instruction</param>
         private void ProbeRiscV64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, ref string instruction)
         {
+            // TODO-RISCV64-RVC: Modify this method to detect patterns in forward traversal. See ProbeArm64Quirks implementation.
             const int InstructionSize = 4;
             uint instr = BitConverter.ToUInt32(_reader.Image, imageOffset + rtfOffset);
 
-            // TODO-RISCV64-RVC: Match with matching RVC instruction once they are supported
             if (IsRiscV64JalrInstruction(instr))
             {
                 /*
