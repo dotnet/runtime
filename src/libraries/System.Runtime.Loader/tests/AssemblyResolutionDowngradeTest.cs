@@ -180,8 +180,8 @@ namespace System.Runtime.Loader.Tests
             // Map project names to actual embedded resource names
             string resourceName = assemblyProject switch
             {
-                "System.Runtime.Loader.Test.AssemblyVersion1" => "System.Runtime.Loader.Tests.System.Runtime.Loader.Test.AssemblyVersion1.dll",
-                "System.Runtime.Loader.Test.AssemblyVersion3" => "System.Runtime.Loader.Tests.System.Runtime.Loader.Test.AssemblyVersion3.dll",
+                "System.Runtime.Loader.Test.AssemblyVersion1" => "System.Runtime.Loader.Tests.AssemblyVersion1.dll",
+                "System.Runtime.Loader.Test.AssemblyVersion3" => "System.Runtime.Loader.Tests.AssemblyVersion3.dll",
                 _ => throw new ArgumentException($"Unknown test assembly project: {assemblyProject}")
             };
             

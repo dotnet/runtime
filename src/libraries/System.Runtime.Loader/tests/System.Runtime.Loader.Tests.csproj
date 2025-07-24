@@ -51,8 +51,8 @@
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
-    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion1\System.Runtime.Loader.Test.AssemblyVersion1.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" EmbeddedResourceIdentity="System.Runtime.Loader.Test.AssemblyVersion1.dll" />
-    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion3\System.Runtime.Loader.Test.AssemblyVersion3.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" EmbeddedResourceIdentity="System.Runtime.Loader.Test.AssemblyVersion3.dll" />
+    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion1\System.Runtime.Loader.Test.AssemblyVersion1.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="AssemblyVersion1.dll" />
+    <ProjectReference Include="System.Runtime.Loader.Test.AssemblyVersion3\System.Runtime.Loader.Test.AssemblyVersion3.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="AssemblyVersion3.dll" />
   </ItemGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
