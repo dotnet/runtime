@@ -667,17 +667,17 @@ public partial class ApkBuilder
 
         // Parse runtime config properties and add them to the AppContext keys and values.
         Dictionary<string, string> configProperties = ParseRuntimeConfigProperties();
-        int baseAppContextProperties = 3; // For the base AppContext keys and values we added above.
+        int hardwiredAppContextProperties = 3; // For the hardwired AppContext keys and values above.
         int i = 0;
         foreach ((string key, string value) in configProperties)
         {
-            appContextKeys.AppendLine($"    appctx_keys[{i + baseAppContextProperties}] = \"{key}\";");
-            appContextValues.AppendLine($"    appctx_values[{i + baseAppContextProperties}] = \"{value}\";");
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardwiredAppContextProperties}] = \"{key}\";");
+            appContextValues.AppendLine($"    appctx_values[{i + hardwiredAppContextProperties}] = \"{value}\";");
             i++;
         }
 
         // Replace the template placeholders.
-        string updatedContent = monodroidContent.Replace("%AppContextPropertyCount%", (configProperties.Count + baseAppContextProperties).ToString())
+        string updatedContent = monodroidContent.Replace("%AppContextPropertyCount%", (configProperties.Count + hardwiredAppContextProperties).ToString())
             .Replace("%AppContextKeys%", appContextKeys.ToString().TrimEnd())
             .Replace("%AppContextValues%", appContextValues.ToString().TrimEnd());
         return updatedContent;
