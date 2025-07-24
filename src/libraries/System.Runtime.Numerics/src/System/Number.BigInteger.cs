@@ -1305,7 +1305,7 @@ namespace System
         public static bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<uint> destination)
         {
             if ((typeof(TChar) == typeof(Utf8Char))
-                ? (Number.FromHexString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done)
+                ? (Convert.FromHexString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done)
                 : (Convert.FromHexString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(input), MemoryMarshal.AsBytes(destination), out _, out _) != OperationStatus.Done))
             {
                 return false;
