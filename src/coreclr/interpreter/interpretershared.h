@@ -17,7 +17,10 @@
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
-#define INTERP_INDIRECT_HELPER_TAG 1 // When a helper ftn's address is indirect we tag it with this tag bit
+struct InterpHelperData {
+    uint32_t addressDataItemIndex : 29;
+    uint32_t accessType : 3;
+};
 
 struct CallStubHeader;
 
@@ -137,7 +140,7 @@ struct InterpGenericLookup
     void*                   signature;
 
     // Here is the helper you must call. It is one of CORINFO_HELP_RUNTIMEHANDLE_* helpers.
-    
+
     InterpGenericLookupType lookupType;
 
     // Number of indirections to get there

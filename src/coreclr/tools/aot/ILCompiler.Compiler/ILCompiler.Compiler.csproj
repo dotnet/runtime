@@ -343,6 +343,7 @@
 
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
+    <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AddressTakenMethodNode.cs" />
@@ -556,8 +557,6 @@
     <Compile Include="Compiler\DependencyAnalysis\BlobNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CanonicalDefinitionEETypeNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\CanonicalEETypeNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\NecessaryCanonicalEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsNode.cs" />

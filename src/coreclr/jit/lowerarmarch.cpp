@@ -1984,17 +1984,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (node->GetOperandCount() == 3)
                 {
-                    assert(node->GetAuxiliaryType() != TYP_UNKNOWN);
                     node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), node->Op(3), lclVar);
-                }
-                else if (node->GetOperandCount() == 2)
-                {
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
                 else
                 {
-                    assert(node->GetOperandCount() == 1);
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), lclVar);
+                    assert(node->GetOperandCount() == 2);
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
             }
 
@@ -4026,7 +4021,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     const GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
-                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
+                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatible())
                     {
                         bool     contain  = false;
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
@@ -4096,6 +4091,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplex:
+            case NI_Sve2_DotProductRotateComplex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 if (intrin.op4->IsCnsIntOrI())
@@ -4153,6 +4149,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 assert(varTypeIsIntegral(intrin.op5));

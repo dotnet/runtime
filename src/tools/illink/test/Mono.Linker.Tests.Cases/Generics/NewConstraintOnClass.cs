@@ -130,9 +130,8 @@ namespace Mono.Linker.Tests.Cases.Generics
 
 namespace System.Runtime.CompilerServices
 {
-    // NativeAOT test infra filters out System.* members from validation for now
-    [Kept(By = Tool.Trimmer)]
-    [KeptMember(".ctor()", By = Tool.Trimmer)]
+    [Kept]
+    [KeptMember(".ctor()")]
     public partial class IsUnmanagedAttribute
     {
     }

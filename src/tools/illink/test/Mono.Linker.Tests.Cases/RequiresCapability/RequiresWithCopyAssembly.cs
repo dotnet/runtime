@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
     [LogDoesNotContain("--UnusedVirtualMethod2--")]
     [LogDoesNotContain("--IUnusedInterface.UnusedMethod--")]
     [LogDoesNotContain("--UnusedImplementationClass.UnusedMethod--")]
-    // [LogDoesNotContain ("UnusedVirtualMethod2")] // https://github.com/dotnet/linker/issues/2106
+    // [LogDoesNotContain("UnusedVirtualMethod2")] // https://github.com/dotnet/linker/issues/2106
 
     [ExpectedNoWarnings]
     class RequiresWithCopyAssembly
