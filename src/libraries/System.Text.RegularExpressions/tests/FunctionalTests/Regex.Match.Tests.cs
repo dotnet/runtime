@@ -272,6 +272,12 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(b|a|aa)((?:aa)+?)+?$", "aaaaaaaa", RegexOptions.None, 0, 8, true, "aaaaaaaa");
             yield return (@"(|a|aa)(((?:aa)+?)+?|aaaaab)\w$", "aaaaaabc", RegexOptions.None, 0, 8, true, "aaaaaabc");
 
+            // Nested loops
+            yield return (@"(abcd*)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(abcd*?)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+
             // Testing selected FindOptimizations finds the right prefix
             yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
             yield return (@"(^|($|a+))bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
