@@ -127,6 +127,12 @@ buffer_manager_try_convert_buffer_to_read_only (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeBuffer *new_read_buffer);
 
+static
+void
+buffer_manager_remove_thread_if_buffer_list_empty (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThreadSessionState *thread_session_state);
+
 /*
  * EventPipeBufferList.
  */
@@ -738,6 +744,10 @@ buffer_manager_advance_to_non_empty_buffer (
 
 				// get the next buffer
 				current_buffer = buffer_list->head_buffer;
+
+				if (!current_buffer && (ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (ep_thread_session_state_get_thread (thread_session_state))) > 0))
+					buffer_manager_remove_thread_if_buffer_list_empty (buffer_manager, thread_session_state);
+
 				if (!current_buffer || ep_buffer_get_creation_timestamp (current_buffer) >= before_timestamp) {
 					// no more buffers in the list before this timestamp, we're done
 					current_buffer = NULL;
@@ -1375,6 +1385,51 @@ ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager)
 	return true;
 }
 #endif
+
+/*
+ *  buffer_manager_remove_thread_if_buffer_list_empty
+ *
+ *  This function should only be called when the thread is unregistered and the buffer_list is empty.
+ */
+static
+void
+buffer_manager_remove_thread_if_buffer_list_empty (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThreadSessionState *thread_session_state)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (thread_session_state != NULL);
+
+	ep_buffer_manager_requires_lock_held (buffer_manager);
+
+	EventPipeBufferList *buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
+	if (buffer_list && buffer_list->head_buffer == NULL) {
+		dn_list_remove (buffer_manager->thread_session_state_list, thread_session_state);
+		ep_buffer_list_free (buffer_list);
+		ep_thread_session_state_set_buffer_list (thread_session_state, NULL);
+	}
+}
+
+void
+ep_buffer_manager_remove_thread_if_buffer_list_empty (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThreadSessionState *thread_session_state)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (thread_session_state != NULL);
+
+	ep_buffer_manager_requires_lock_not_held (buffer_manager);
+
+	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
+		buffer_manager_remove_thread_if_buffer_list_empty (buffer_manager, thread_session_state);
+	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */

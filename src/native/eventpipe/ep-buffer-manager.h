@@ -243,5 +243,10 @@ bool
 ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager);
 #endif
 
+void
+ep_buffer_manager_remove_thread_if_buffer_list_empty (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThreadSessionState *thread_session_state);
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_BUFFERMANAGER_H__ */

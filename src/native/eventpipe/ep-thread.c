@@ -56,11 +56,10 @@ ep_thread_free (EventPipeThread *thread)
 
 	EP_ASSERT (ep_rt_volatile_load_uint32_t ((const volatile uint32_t *)&thread->ref_count) == 0);
 
-#ifdef EP_CHECKED_BUILD
 	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
-		EP_ASSERT (thread->session_state [i] == NULL);
+		ep_thread_session_state_free (thread->session_state [i]);
+		thread->session_state [i] = NULL;
 	}
-#endif
 
 	ep_rt_spin_lock_free (&thread->rt_lock);
 	ep_rt_object_free (thread);
@@ -122,6 +121,16 @@ ep_thread_unregister (EventPipeThread *thread)
 	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
 
 	ep_return_false_if_nok (thread != NULL);
+
+	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
+		if (thread->session_state [i] == NULL)
+			continue;
+
+		EventPipeBufferManager *buffer_manager = ep_thread_session_state_get_buffer_manager (thread->session_state [i]);
+		EP_ASSERT (buffer_manager != NULL);
+
+		ep_buffer_manager_remove_thread_if_buffer_list_empty (buffer_manager, thread->session_state [i]);
+	}
 
 	bool found = false;
 	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
@@ -343,10 +352,7 @@ ep_thread_session_state_alloc (
 
 	instance->session = session;
 	instance->sequence_number = 1;
-
-#ifdef EP_CHECKED_BUILD
 	instance->buffer_manager = buffer_manager;
-#endif
 
 ep_on_exit:
 	return instance;
@@ -375,6 +381,7 @@ ep_thread_session_state_free (EventPipeThreadSessionState *thread_session_state)
 {
 	ep_return_void_if_nok (thread_session_state != NULL);
 	ep_thread_holder_fini (&thread_session_state->thread_holder);
+	ep_buffer_list_free (thread_session_state->buffer_list);
 	ep_rt_object_free (thread_session_state);
 }
 
