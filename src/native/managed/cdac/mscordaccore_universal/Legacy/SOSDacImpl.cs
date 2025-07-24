@@ -1962,7 +1962,48 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface4
     int ISOSDacInterface4.GetClrNotification(ClrDataAddress[] arguments, int count, int* pNeeded)
-        => _legacyImpl4 is not null ? _legacyImpl4.GetClrNotification(arguments, count, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        uint MaxClrNotificationArgs = _target.ReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs);
+        try
+        {
+            *pNeeded = (int)MaxClrNotificationArgs;
+            TargetPointer basePtr = _target.ReadGlobalPointer(Constants.Globals.ClrNotificationArguments);
+            if (_target.ReadNUInt(basePtr).Value == 0)
+            {
+                hr = HResults.E_FAIL;
+            }
+            else
+            {
+                for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
+                {
+                    arguments[i] = _target.ReadNUInt(basePtr.Value + (ulong)(i * _target.PointerSize)).Value;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl4 is not null)
+        {
+            ClrDataAddress[] argumentsLocal = new ClrDataAddress[count];
+            int neededLocal;
+            int hrLocal = _legacyImpl4.GetClrNotification(argumentsLocal, count, &neededLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pNeeded == neededLocal);
+                for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
+                {
+                    Debug.Assert(arguments[i] == argumentsLocal[i]);
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface4
 
     #region ISOSDacInterface5
