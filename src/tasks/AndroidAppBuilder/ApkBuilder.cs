@@ -247,11 +247,7 @@ public partial class ApkBuilder
         {
             nativeLibraries = string.Join("\n    ", NativeDependencies.Select(dep => dep));
         }
-        else if (IsNativeAOT)
-        {
-
-        }
-        else
+        else if (!IsNativeAOT)
         {
             string runtimeLib = "";
             if (StaticLinkedRuntime && IsMono)
