@@ -858,6 +858,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         static void TestInstanceMethodOnValueType<T>()
         {
             default(RequiresParameterlessCtor<T>).Do();
