@@ -15,10 +15,6 @@ We have the following goals related to interop code being used in dotnet/runtime
 - Ensure maximal managed code reuse across different OS flavors which have  the same API but not the same ABI.
    - This is the case for UNIX and addressing it is a work-in-progress (see issue #2137 and section on "shims" below.)
 
-## Submitting Changes
-
-Interop code implicitly defines the native platform dependencies that .NET has. These dependencies are tracked and modeled according to the [`os-packages.json` file](https://github.com/dotnet/core/tree/main/release-notes/schemas#os-packages----os-packagesjson) for each version. Whenever a PR is submitted that changes interop code, it needs to be reviewed to determine whether a change to the `os-packages.json` file is required.
-
 ## Approach
 
 ### Interop type
