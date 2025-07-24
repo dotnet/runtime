@@ -19180,7 +19180,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             code = insCodeRM(ins);
 
-            if (TakesApxExtendedEvexPrefix(id) && id->idIsEvexNdContextSet())
+            if (IsApxNddCompatibleInstruction(ins) && id->idIsEvexNdContextSet())
             {
                 // TODO-XArch-APX:
                 // I'm not sure why instructions on this path can be with instruction
