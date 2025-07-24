@@ -1406,6 +1406,27 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData("A B", "Foo", typeof(FormatException))] // Invalid header name
+        [InlineData("Content-Length", "42", typeof(InvalidOperationException))] // Invalid header name for the request headers collection
+        [InlineData("Foo", "Bar\nBaz", typeof(FormatException))] // Invalid header value
+        public async Task SendAsync_PropagatorInjectsInvalidHeaders_Throws(string headerName, string headerValue, Type exceptionType)
+        {
+            using Activity parent = new Activity("parent");
+            parent.SetIdFormat(ActivityIdFormat.W3C);
+            parent.Start();
+
+            using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+            handler.ActivityHeadersPropagator = new DelegatingPropagator([headerName], (activity, carrier, setter) => setter(carrier, headerName, headerValue));
+
+            using var client = new HttpClient(handler);
+
+            // Url doesn't matter since the request should fail before hitting the network.
+            var request = CreateRequest(HttpMethod.Get, new Uri("https://microsoft.com"), UseVersion, exactVersion: true);
+
+            await Assert.ThrowsAsync(exceptionType, () => client.SendAsync(TestAsync, request));
+        }
+
         public static IEnumerable<object[]> SocketsHttpHandler_ActivityCreation_MemberData()
         {
             foreach (var currentActivitySet in new bool[] {
@@ -1854,6 +1875,21 @@ namespace System.Net.Http.Functional.Tests
             using var client = new HttpClient(handler);
             var request = CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true);
             return (request, await client.SendAsync(bool.Parse(testAsync), request, cancellationToken));
+        }
+
+        private sealed class DelegatingPropagator(string[] fields, Action<Activity?, object?, DistributedContextPropagator.PropagatorSetterCallback?> inject) : DistributedContextPropagator
+        {
+            public override IReadOnlyCollection<string> Fields => fields;
+
+            public override IEnumerable<KeyValuePair<string, string?>>? ExtractBaggage(object? carrier, PropagatorGetterCallback? getter) => [];
+
+            public override void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState)
+            {
+                traceId = null;
+                traceState = null;
+            }
+
+            public override void Inject(Activity? activity, object? carrier, PropagatorSetterCallback? setter) => inject(activity, carrier, setter);
         }
     }
 }

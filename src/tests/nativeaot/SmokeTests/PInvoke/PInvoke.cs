@@ -12,13 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-// Make sure the interop data are present even without reflection
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.All)]
-    internal class __BlockAllReflectionAttribute : Attribute { }
-}
-
 // Name of namespace matches the name of the assembly on purpose to
 // ensure that we can handle this (mostly an issue for C++ code generation).
 namespace PInvokeTests

@@ -1386,6 +1386,32 @@ void CodeGen::inst_RV_TT_IV(
     {
         instOptions = AddEmbBroadcastMode(instOptions);
     }
+    else if ((instOptions == INS_OPTS_NONE) && !GetEmitter()->IsVexEncodableInstruction(ins))
+    {
+        // We may have opportunistically selected an EVEX only instruction
+        // that isn't actually required, so fallback to the VEX compatible
+        // encoding to potentially save on the number of bytes emitted.
+
+        switch (ins)
+        {
+            case INS_vextractf64x2:
+            {
+                ins = INS_vextractf32x4;
+                break;
+            }
+
+            case INS_vextracti64x2:
+            {
+                ins = INS_vextracti32x4;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
     OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
@@ -1500,29 +1526,42 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
     {
         instOptions = AddEmbBroadcastMode(instOptions);
+    }
+    else if ((instOptions == INS_OPTS_NONE) && !GetEmitter()->IsVexEncodableInstruction(ins))
+    {
+        // We may have opportunistically selected an EVEX only instruction
+        // that isn't actually required, so fallback to the VEX compatible
+        // encoding to potentially save on the number of bytes emitted.
 
-        if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
+        switch (ins)
         {
-            switch (ins)
+            case INS_vpandq:
             {
-                case INS_pandd:
-                    ins = INS_vpandq;
-                    break;
+                ins = INS_pandd;
+                break;
+            }
 
-                case INS_pandnd:
-                    ins = INS_vpandnq;
-                    break;
+            case INS_vpandnq:
+            {
+                ins = INS_pandnd;
+                break;
+            }
 
-                case INS_pord:
-                    ins = INS_vporq;
-                    break;
+            case INS_vporq:
+            {
+                ins = INS_pord;
+                break;
+            }
 
-                case INS_pxord:
-                    ins = INS_vpxorq;
-                    break;
+            case INS_vpxorq:
+            {
+                ins = INS_pxord;
+                break;
+            }
 
-                default:
-                    unreached();
+            default:
+            {
+                break;
             }
         }
     }
@@ -1612,6 +1651,32 @@ void CodeGen::inst_RV_RV_TT_IV(instruction ins,
     if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
     {
         instOptions = AddEmbBroadcastMode(instOptions);
+    }
+    else if ((instOptions == INS_OPTS_NONE) && !GetEmitter()->IsVexEncodableInstruction(ins))
+    {
+        // We may have opportunistically selected an EVEX only instruction
+        // that isn't actually required, so fallback to the VEX compatible
+        // encoding to potentially save on the number of bytes emitted.
+
+        switch (ins)
+        {
+            case INS_vinsertf64x2:
+            {
+                ins = INS_vinsertf32x4;
+                break;
+            }
+
+            case INS_vinserti64x2:
+            {
+                ins = INS_vinserti32x4;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
     }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 

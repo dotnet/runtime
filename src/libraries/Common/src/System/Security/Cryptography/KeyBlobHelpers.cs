@@ -3,48 +3,47 @@
 
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Numerics;
 
 namespace System.Security.Cryptography
 {
     internal static partial class KeyBlobHelpers
     {
-        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlySpan<byte> span)
+        internal static byte[] ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory)
         {
-            if (span.Length > 1 && span[0] == 0)
+            if (memory.Length > 1 && memory.Span[0] == 0)
             {
-                return span.Slice(1).ToArray();
+                return memory.Slice(1).ToArray();
             }
 
-            return span.ToArray();
+            return memory.ToArray();
         }
 
-        internal static void ToUnsignedIntegerBytes(this ReadOnlySpan<byte> span, Span<byte> destination)
+        internal static void ToUnsignedIntegerBytes(this ReadOnlyMemory<byte> memory, Span<byte> destination)
         {
             int length = destination.Length;
 
-            if (span.Length == length)
+            if (memory.Length == length)
             {
-                span.CopyTo(destination);
+                memory.Span.CopyTo(destination);
                 return;
             }
 
-            if (span.Length == length + 1)
+            if (memory.Length == length + 1)
             {
-                if (span[0] == 0)
+                if (memory.Span[0] == 0)
                 {
-                    span.Slice(1).CopyTo(destination);
+                    memory.Span.Slice(1).CopyTo(destination);
                     return;
                 }
             }
 
-            if (span.Length > length)
+            if (memory.Length > length)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            destination.Slice(0, destination.Length - span.Length).Clear();
-            span.CopyTo(destination.Slice(length - span.Length));
+            destination.Slice(0, destination.Length - memory.Length).Clear();
+            memory.Span.CopyTo(destination.Slice(length - memory.Length));
         }
 
         internal static void WriteKeyParameterInteger(this AsnWriter writer, ReadOnlySpan<byte> integer)
