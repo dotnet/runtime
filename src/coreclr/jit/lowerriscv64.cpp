@@ -218,11 +218,23 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
             // a == b  --->  (a - b) == 0
             var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
             genTreeOps oper = GT_SUB;
-            if (right->IsIntegralConst() && !right->IsIntegralConst(SSIZE_T_MIN))
+            if (right->IsIntegralConst())
             {
-                // a - C  --->  a + (-C)
-                oper = GT_ADD;
-                right->AsIntConCommon()->SetIntegralValue(-right->AsIntConCommon()->IntegralValue());
+                INT64 value  = right->AsIntConCommon()->IntegralValue();
+                INT64 minVal = (type == TYP_INT) ? INT_MIN : SSIZE_T_MIN;
+
+                const INT64 min12BitImm = -2048;
+                if (value == min12BitImm)
+                {
+                    // (a - C) == 0 ---> (a ^ C) == 0
+                    oper = GT_XOR;
+                }
+                else if (value != minVal)
+                {
+                    // a - C  --->  a + (-C)
+                    oper = GT_ADD;
+                    right->AsIntConCommon()->SetIntegralValue(-value);
+                }
             }
             left  = comp->gtNewOperNode(oper, type, left, right);
             right = comp->gtNewZeroConNode(type);
@@ -230,7 +242,7 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
             BlockRange().InsertBefore(cmp, right);
             ContainCheckBinary(left->AsOp());
         }
-        // a == 0  --->  a <= 0 (unsigned)
+        // a != 0  --->  a > 0 (unsigned)
         cmp->SetOperRaw(cmp->OperIs(GT_EQ) ? GT_LE : GT_GT);
         cmp->SetUnsigned();
     }
@@ -241,8 +253,21 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
         {
             // a <= C  --->  a < C+1
             INT64 value = right->AsIntConCommon()->IntegralValue();
-            if (cmp->IsUnsigned() &&
-                ((cmp->OperIs(GT_LE) && value == SIZE_T_MAX) || (cmp->OperIs(GT_GE) && value == 0)))
+
+            bool isOverflow;
+            if (cmp->OperIs(GT_LE))
+            {
+                isOverflow = genActualTypeIsInt(left)
+                                 ? CheckedOps::AddOverflows((INT32)value, (INT32)1, cmp->IsUnsigned())
+                                 : CheckedOps::AddOverflows((INT64)value, (INT64)1, cmp->IsUnsigned());
+            }
+            else
+            {
+                isOverflow = genActualTypeIsInt(left)
+                                 ? CheckedOps::SubOverflows((INT32)value, (INT32)1, cmp->IsUnsigned())
+                                 : CheckedOps::SubOverflows((INT64)value, (INT64)1, cmp->IsUnsigned());
+            }
+            if (isOverflow)
             {
                 BlockRange().Remove(left);
                 BlockRange().Remove(right);
@@ -266,6 +291,16 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
         std::swap(left, right);
     }
     assert(cmp->OperIs(GT_LT));
+
+    if (right->IsIntegralConst(0) && !cmp->IsUnsigned())
+    {
+        // a < 0 (signed)  --->  shift the sign bit into the lowest bit
+        cmp->SetOperRaw(GT_RSZ);
+        cmp->ChangeType(genActualType(left));
+        right->AsIntConCommon()->SetIntegralValue(genTypeSize(cmp) * BITS_PER_BYTE - 1);
+        right->SetContained();
+        return isReversed;
+    }
 
     SignExtendIfNecessary(&left);
     SignExtendIfNecessary(&right);
