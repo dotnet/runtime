@@ -614,6 +614,26 @@ int minipal_getcpufeatures(void)
 
 #endif // HOST_RISCV64
 
+#if defined(HOST_LOONGARCH64)
+
+#if defined(HOST_UNIX)
+
+#if HAVE_AUXV_HWCAP_H
+
+    unsigned long hwCap = getauxval(AT_HWCAP);
+
+    if (hwCap & HWCAP_LOONGARCH_LSX)
+        result |= LoongArch64IntrinsicConstants_LSX;
+
+    if (hwCap & HWCAP_LOONGARCH_LASX)
+        result |= LoongArch64IntrinsicConstants_LASX;
+
+#endif // HAVE_GETAUXVAL
+
+#endif // HOST_UNIX
+
+#endif // HOST_LOONGARCH64
+
     return result;
 }
 
