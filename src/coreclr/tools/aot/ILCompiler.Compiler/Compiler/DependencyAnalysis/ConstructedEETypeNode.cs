@@ -22,14 +22,16 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override bool EmitVirtualSlots => true;
 
+        protected override bool IsReflectionVisible => true;
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
 
-            // Ensure that we track the necessary type symbol if we are working with a constructed type symbol.
+            // Ensure that we track the metadata type symbol if we are working with a constructed type symbol.
             // The emitter will ensure we don't emit both, but this allows us assert that we only generate
             // relocs to nodes we emit.
-            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
+            dependencyList.Add(factory.MetadataTypeSymbol(_type), "MetadataType for constructed type");
 
             if (_type is MetadataType mdType)
                 ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, mdType.Module);

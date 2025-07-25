@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
-            return factory.ConstructedTypeSymbol(_type).Marked;
+            return factory.MetadataTypeSymbol(_type).Marked;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

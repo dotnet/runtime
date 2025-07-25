@@ -78,15 +78,15 @@ namespace ILCompiler
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
-            return GetLdTokenHelperForType(type) == ReadyToRunHelperId.TypeHandle
-                ? _nodeFactory.ConstructedTypeSymbol(type)
+            return GetLdTokenHelperForType(type) == ReadyToRunHelperId.MetadataTypeHandle
+                ? _nodeFactory.MaximallyConstructableType(type)
                 : _nodeFactory.NecessaryTypeSymbol(type);
         }
 
         public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
         {
-            return GetLdTokenHelperForType(type) == ReadyToRunHelperId.TypeHandle
-                ? _nodeFactory.SerializedConstructedRuntimeTypeObject(type)
+            return GetLdTokenHelperForType(type) == ReadyToRunHelperId.MetadataTypeHandle
+                ? _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type)
                 : _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
         }
 

@@ -393,12 +393,15 @@ namespace ILCompiler
                 ArrayBuilder<GenericLookupResult> slotBuilder = default;
                 ArrayBuilder<GenericLookupResult> discardedBuilder = default;
 
-                // Find all constructed type lookups. We'll deduplicate those with necessary type lookups.
+                // Find all constructed and metadata type lookups. We'll use this for deduplication.
                 var constructedTypeLookups = new HashSet<TypeDesc>();
+                var metadataTypeLookups = new HashSet<TypeDesc>();
                 foreach (GenericLookupResult lookupResult in slots)
                 {
                     if (lookupResult is TypeHandleGenericLookupResult thLookup)
                         constructedTypeLookups.Add(thLookup.Type);
+                    else if (lookupResult is MetadataTypeHandleGenericLookupResult mdthLookup)
+                        metadataTypeLookups.Add(mdthLookup.Type);
                 }
 
                 // We go over all slots in the layout, looking for references to method dictionaries
@@ -422,7 +425,12 @@ namespace ILCompiler
                     }
                     else if (lookupResult is NecessaryTypeHandleGenericLookupResult thLookup)
                     {
-                        if (constructedTypeLookups.Contains(thLookup.Type))
+                        if (constructedTypeLookups.Contains(thLookup.Type) || metadataTypeLookups.Contains(thLookup.Type))
+                            continue;
+                    }
+                    else if (lookupResult is MetadataTypeHandleGenericLookupResult mdthLookup)
+                    {
+                        if (constructedTypeLookups.Contains(mdthLookup.Type))
                             continue;
                     }
 

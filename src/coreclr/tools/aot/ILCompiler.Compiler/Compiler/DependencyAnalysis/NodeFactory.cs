@@ -191,6 +191,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             _typeSymbols = new NecessaryTypeSymbolHashtable(this);
 
+            _metadataTypeSymbols = new MetadataTypeSymbolHashtable(this);
+
             _constructedTypeSymbols = new ConstructedTypeSymbolHashtable(this);
 
             _importedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
@@ -639,9 +641,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private IEETypeNode CreateConstructedTypeNode(TypeDesc type)
+        private IEETypeNode CreateMetadataTypeNode(TypeDesc type)
         {
-            // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
+            // Canonical definition types are *not* metadata types (call NecessaryTypeSymbol to get them)
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
             Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
 
@@ -653,8 +655,25 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    return new ConstructedEETypeNode(this, type);
+                    return new MetadataEETypeNode(this, type);
                 }
+            }
+            else
+            {
+                return new ExternEETypeSymbolNode(this, type);
+            }
+        }
+
+        private IEETypeNode CreateConstructedTypeNode(TypeDesc type)
+        {
+            // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
+            Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+            Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
+            Debug.Assert(!type.IsGenericDefinition);
+
+            if (_compilationModuleGroup.ContainsType(type))
+            {
+                return new ConstructedEETypeNode(this, type);
             }
             else
             {
@@ -708,6 +727,31 @@ namespace ILCompiler.DependencyAnalysis
             return _typeSymbols.GetOrCreateValue(type);
         }
 
+        private sealed class MetadataTypeSymbolHashtable : TypeSymbolHashtable
+        {
+            public MetadataTypeSymbolHashtable(NodeFactory factory) : base(factory) { }
+            protected override IEETypeNode CreateValueFromKey(TypeDesc key) => _factory.CreateMetadataTypeNode(key);
+        }
+
+        private MetadataTypeSymbolHashtable _metadataTypeSymbols;
+
+        public IEETypeNode MetadataTypeSymbol(TypeDesc type)
+        {
+            if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
+            {
+                return ImportedEETypeSymbol(type);
+            }
+
+            if (_compilationModuleGroup.ShouldPromoteToFullType(type))
+            {
+                return ConstructedTypeSymbol(type);
+            }
+
+            Debug.Assert(!TypeCannotHaveEEType(type));
+
+            return _metadataTypeSymbols.GetOrCreateValue(type);
+        }
+
         private sealed class ConstructedTypeSymbolHashtable : TypeSymbolHashtable
         {
             public ConstructedTypeSymbolHashtable(NodeFactory factory) : base(factory) { }
@@ -730,8 +774,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode MaximallyConstructableType(TypeDesc type)
         {
-            if (ConstructedEETypeNode.CreationAllowed(type) || type.IsGenericDefinition)
+            if (ConstructedEETypeNode.CreationAllowed(type))
                 return ConstructedTypeSymbol(type);
+            else if (type.IsGenericDefinition)
+                return MetadataTypeSymbol(type);
             else
                 return NecessaryTypeSymbol(type);
         }

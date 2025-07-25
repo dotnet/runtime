@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
         public override void EncodeContents(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
             IEETypeNode typeSymbol = _constructed
-                ? factory.ConstructedTypeSymbol(_type)
+                ? factory.MaximallyConstructableType(_type)
                 : factory.NecessaryTypeSymbol(_type);
 
             dataBuilder.EmitPointerReloc(factory.ConstructedTypeSymbol(ObjectType));
