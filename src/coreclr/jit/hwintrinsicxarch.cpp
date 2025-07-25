@@ -2284,7 +2284,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     break;
                 }
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
+                if (!compOpportunisticallyDependsOn(InstructionSet_SSE42))
                 {
                     break;
                 }
