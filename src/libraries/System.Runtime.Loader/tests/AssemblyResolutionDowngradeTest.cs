@@ -166,8 +166,12 @@ namespace System.Runtime.Loader.Tests
             RemoteExecutor.Invoke(() => {
                 string assemblyV1Path = GetTestAssemblyPath("System.Runtime.Loader.Test.AssemblyVersion1");
                 
-                // Try to load version 3.0.0 directly without any resolvers - this should fail 
-                // since the runtime cannot find an assembly with that exact version
+                // First, load the version 1.0.0 assembly into the default context
+                Assembly loadedV1 = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyV1Path);
+                Assert.Equal(new Version(1, 0, 0, 0), loadedV1.GetName().Version);
+                
+                // Now try to load version 3.0.0 - normal resolution should NOT automatically 
+                // downgrade to the already-loaded 1.0.0 version, it should fail
                 var requestedAssemblyName = new AssemblyName($"{TestAssemblyName}, Version=3.0.0.0");
                 
                 Assert.Throws<FileNotFoundException>(() => 
@@ -203,34 +207,34 @@ namespace System.Runtime.Loader.Tests
             
             return tempPath;
         }
-    }
 
-    /// <summary>
-    /// Custom AssemblyLoadContext that can downgrade version requests.
-    /// </summary>
-    internal class DowngradeAssemblyLoadContext : AssemblyLoadContext
-    {
-        private readonly string _downgradePath;
-        
-        public bool LoadCalled { get; private set; }
-        
-        public DowngradeAssemblyLoadContext(string downgradePath) : base("DowngradeContext")
+        /// <summary>
+        /// Custom AssemblyLoadContext that can downgrade version requests.
+        /// </summary>
+        private class DowngradeAssemblyLoadContext : AssemblyLoadContext
         {
-            _downgradePath = downgradePath;
-        }
-        
-        protected override Assembly Load(AssemblyName assemblyName)
-        {
-            LoadCalled = true;
+            private readonly string _downgradePath;
             
-            if (assemblyName.Name == "System.Runtime.Loader.Test.VersionDowngrade")
+            public bool LoadCalled { get; private set; }
+            
+            public DowngradeAssemblyLoadContext(string downgradePath) : base("DowngradeContext")
             {
-                // Request is for version 3.0, but we return version 1.0 (downgrade)
-                Assert.Equal(new Version(3, 0, 0, 0), assemblyName.Version);
-                return LoadFromAssemblyPath(_downgradePath);
+                _downgradePath = downgradePath;
             }
             
-            return null;
+            protected override Assembly Load(AssemblyName assemblyName)
+            {
+                LoadCalled = true;
+                
+                if (assemblyName.Name == TestAssemblyName)
+                {
+                    // Request is for version 3.0, but we return version 1.0 (downgrade)
+                    Assert.Equal(new Version(3, 0, 0, 0), assemblyName.Version);
+                    return LoadFromAssemblyPath(_downgradePath);
+                }
+                
+                return null;
+            }
         }
     }
 }
