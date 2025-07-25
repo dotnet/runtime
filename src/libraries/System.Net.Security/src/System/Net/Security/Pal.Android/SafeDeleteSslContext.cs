@@ -88,79 +88,66 @@ namespace System.Net
         [UnmanagedCallersOnly]
         private static unsafe void WriteToConnection(IntPtr connection, byte* data, int dataLength)
         {
-            GCHandle h = GCHandle.FromIntPtr(connection);
-            Debug.Assert(h.IsAllocated);
-
-            SafeDeleteSslContext? context = (SafeDeleteSslContext?)h.Target;
-            Debug.Assert(context != null);
-
-            try
+            WeakGCHandle<SafeDeleteSslContext> h = WeakGCHandle<SafeDeleteSslContext>.FromIntPtr(connection);
+            if (!h.TryGetTarget(out SafeDeleteSslContext? context))
             {
-                lock (context._lock)
-                {
-                    if (context._disposed)
-                    {
-                        Debug.Write("WriteToConnection: context is disposed");
-                        return;
-                    }
-
-                    var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
-
-                    context._outputBuffer.EnsureAvailableSpace(dataLength);
-                    inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
-                    context._outputBuffer.Commit(dataLength);
-                }
+                Debug.Write("WriteToConnection: failed to get target context");
+                return;
             }
-            catch (Exception ex)
+
+            lock (context._lock)
             {
-                Debug.Write("Exception Caught. - " + ex);
-                throw;
+                if (context._disposed)
+                {
+                    Debug.Write("WriteToConnection: context is disposed");
+                    return;
+                }
+
+                var inputBuffer = new ReadOnlySpan<byte>(data, dataLength);
+
+                context._outputBuffer.EnsureAvailableSpace(dataLength);
+                inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+                context._outputBuffer.Commit(dataLength);
             }
         }
 
         [UnmanagedCallersOnly]
         private static unsafe PAL_SSLStreamStatus ReadFromConnection(IntPtr connection, byte* data, int* dataLength)
         {
-            GCHandle h = GCHandle.FromIntPtr(connection);
-            Debug.Assert(h.IsAllocated);
-
-            SafeDeleteSslContext? context = (SafeDeleteSslContext?)h.Target;
-            Debug.Assert(context != null);
-
-            try
+            WeakGCHandle<SafeDeleteSslContext> h = WeakGCHandle<SafeDeleteSslContext>.FromIntPtr(connection);
+            if (!h.TryGetTarget(out SafeDeleteSslContext? context))
             {
-                lock (context._lock)
-                {
-                    if (context._disposed)
-                    {
-                        Debug.Write("ReadFromConnection: context is disposed");
-                        *dataLength = 0;
-                        return PAL_SSLStreamStatus.Error;
-                    }
-
-                    int toRead = *dataLength;
-                    if (toRead == 0)
-                        return PAL_SSLStreamStatus.OK;
-
-                    if (context._inputBuffer.ActiveLength == 0)
-                    {
-                        *dataLength = 0;
-                        return PAL_SSLStreamStatus.NeedData;
-                    }
-
-                    toRead = Math.Min(toRead, context._inputBuffer.ActiveLength);
-
-                    context._inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
-                    context._inputBuffer.Discard(toRead);
-
-                    *dataLength = toRead;
-                    return PAL_SSLStreamStatus.OK;
-                }
+                Debug.Write("ReadFromConnection: failed to get target context");
+                *dataLength = 0;
+                return PAL_SSLStreamStatus.Error;
             }
-            catch (Exception ex)
+
+            lock (context._lock)
             {
-                Debug.Write("Exception Caught. - " + ex);
-                throw;
+                if (context._disposed)
+                {
+                    Debug.Write("ReadFromConnection: context is disposed");
+                    *dataLength = 0;
+                    return PAL_SSLStreamStatus.Error;
+                }
+
+                int toRead = *dataLength;
+                if (toRead == 0)
+                    return PAL_SSLStreamStatus.OK;
+
+                if (context._inputBuffer.ActiveLength == 0)
+                {
+                    *dataLength = 0;
+                    return PAL_SSLStreamStatus.NeedData;
+                }
+
+                toRead = Math.Min(toRead, context._inputBuffer.ActiveLength);
+
+                context._inputBuffer.ActiveSpan.Slice(0, toRead).CopyTo(new Span<byte>(data, toRead));
+                context._inputBuffer.Discard(toRead);
+
+                *dataLength = toRead;
+                return PAL_SSLStreamStatus.OK;
             }
         }
 
@@ -170,10 +157,7 @@ namespace System.Net
             if (managedContextHandle != IntPtr.Zero)
             {
                 GCHandle handle = GCHandle.FromIntPtr(managedContextHandle);
-                if (handle.IsAllocated)
-                {
-                    handle.Free();
-                }
+                handle.Free();
             }
         }
 
