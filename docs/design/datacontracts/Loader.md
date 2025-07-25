@@ -66,12 +66,15 @@ ModuleFlags GetFlags(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
-TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
+TargetPointer GetGlobalLoaderAllocator();
+TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
+TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
+TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 ```
 
 ## Version 1
@@ -84,7 +87,6 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 | `Module` | `Base` | Pointer to start of PE file in memory |
 | `Module` | `Flags` | Assembly of the Module |
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
-| `Module` | `ThunkHeap` | Pointer to the thunk heap |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
@@ -115,17 +117,22 @@ bool IsAssemblyLoaded(ModuleHandle handle);
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
 | `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
+| `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
+| `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
+| `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
 | `ArrayListBlock` | `Size` | Size of data section in block |
 | `ArrayListBlock` | `ArrayStart` | Start of data section in block |
+| `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
 
 
 ### Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `AppDomain` | TargetPointer | Pointer to the global AppDomain |
+| `SystemDomain` | TargetPointer | Pointer to the global SystemDomain |
 
 
 ### Contract Constants:
@@ -361,11 +368,6 @@ TargetPointer GetLoaderAllocator(ModuleHandle handle)
     return target.ReadPointer(handle.Address + /* Module::LoaderAllocator offset */);
 }
 
-TargetPointer GetThunkHeap(ModuleHandle handle)
-{
-    return target.ReadPointer(handle.Address + /* Module::ThunkHeap offset */);
-}
-
 TargetPointer GetILBase(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::Base offset */);
@@ -411,20 +413,41 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
     } while (table != TargetPointer.Null);
     return TargetPointer.Null;
 }
-```
 
-```csharp
-bool ILoader.IsCollectible(ModuleHandle handle)
+bool IsCollectible(ModuleHandle handle)
 {
-    TargetPointer assembly = _target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    byte isCollectible = _target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
+    TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
+    byte isCollectible = target.Read<byte>(assembly + /* Assembly::IsCollectible*/);
     return isCollectible != 0;
 }
 
-bool ILoader.IsAssemblyLoaded(ModuleHandle handle)
+bool IsAssemblyLoaded(ModuleHandle handle)
 {
-    TargetPointer assembly = _target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    uint loadLevel = _target.Read<uint>(assembly + /* Assembly::Level*/);
+    TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
+    uint loadLevel = target.Read<uint>(assembly + /* Assembly::Level*/);
     return assembly.Level >= ASSEMBLY_LEVEL_LOADED;
 }
+
+TargetPointer GetGlobalLoaderAllocator()
+{
+    TargetPointer systemDomainPointer = target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
+    return target.ReadPointer(systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */);
+}
+
+TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
+{
+    return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::HighFrequencyHeap offset */);
+}
+
+TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer)
+{
+    return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::LowFrequencyHeap offset */);
+}
+
+TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
+{
+    return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
+}
+
 ```

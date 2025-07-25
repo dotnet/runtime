@@ -98,23 +98,18 @@ bundle_executable_path (const char* executable, const char* bundle_path, const c
 }
 
 static bool
-external_assembly_probe(const char* name, void** data, int64_t* size)
+external_assembly_probe(const char* relative_assembly_path, void** data, int64_t* size)
 {
     if (g_mapped_files_count >= MAX_MAPPED_COUNT)
     {
-        LOG_ERROR("Too many mapped files, cannot map %s", name);
+        LOG_ERROR("Too many mapped files, cannot map %s", relative_assembly_path);
         return false;
     }
 
-    // Get just the file name
-    const char* pos = strrchr(name, '/');
-    if (pos != NULL)
-        name = pos + 1;
-
     // Look in the bundle path where the files were extracted
     char full_path[1024];
-    size_t path_len = strlen(g_bundle_path) + strlen(name) + 1; // +1 for '/'
-    size_t res = snprintf(full_path, path_len + 1, "%s/%s", g_bundle_path, name);
+    size_t path_len = strlen(g_bundle_path) + strlen(relative_assembly_path) + 1; // +1 for '/'
+    size_t res = snprintf(full_path, path_len + 1, "%s/%s", g_bundle_path, relative_assembly_path);
     if (res < 0 || res != path_len)
         return false;
 
@@ -137,7 +132,7 @@ external_assembly_probe(const char* name, void** data, int64_t* size)
         return false;
     }
 
-    LOG_INFO("Mapped %s -> %s", name, full_path);
+    LOG_INFO("Mapped %s -> %s", relative_assembly_path, full_path);
     g_mapped_files[g_mapped_files_count] = mapped;
     g_mapped_file_sizes[g_mapped_files_count] = size_local;
     g_mapped_files_count++;
