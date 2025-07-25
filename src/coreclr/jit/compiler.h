@@ -3602,11 +3602,11 @@ public:
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
 
-    // Returns "true" iff the complexity (not formally defined, but first interpretation
-    // is #of nodes in subtree) of "tree" is greater than "limit".
+    // Returns "true" iff the complexity (defined by 'getComplexity') of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
-    // before they have been set.)
-    bool gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity = nullptr);
+    // before they have been set, if 'getComplexity' is independent of them.)
+    template <typename TFunc>
+    bool gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity);
 
     GenTree* gtReverseCond(GenTree* tree);
 
@@ -7007,7 +7007,8 @@ public:
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
-    bool optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit);
+    template <typename TFunc>
+    bool optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit, TFunc getTreeComplexity);
 
     PhaseStatus optCloneLoops();
     PhaseStatus optRangeCheckCloning();
