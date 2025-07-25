@@ -8723,9 +8723,9 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     }
 #else  // !TARGET_ARM
     SingleTypeRegSet freeRegs = allRegs(type);
-    // We call this method with only either TYP_INT or TYP_FLOAT.
+    // We call getTempRegForResolution() with only either TYP_INT or TYP_FLOAT.
     // We are being conservative with eGPR usage when type is TYP_INT since it could be a reference type.
-    freeRegs                  = getAvailableGPRsForType(freeRegs, (type == TYP_INT) ? TYP_REF : type);
+    freeRegs = getAvailableGPRsForType(freeRegs, (type == TYP_INT) ? TYP_REF : type);
 #endif // !TARGET_ARM
 
 #ifdef DEBUG
