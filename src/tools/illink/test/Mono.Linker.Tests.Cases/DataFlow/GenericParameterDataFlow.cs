@@ -857,7 +857,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             rucType.VirtualMethodRequiresPublicMethods<T>();
         }
 
-        [ExpectedWarning("IL2091", "RequiresParameterlessCtor")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         static void TestInstanceMethodOnValueType<T>()
@@ -865,7 +865,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             default(RequiresParameterlessCtor<T>).Do();
         }
 
-        [ExpectedWarning("IL2091", "RequiresParameterlessCtor")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         [ExpectedWarning("IL2091", "IRequireParameterlessCtor", Tool.Trimmer, "")]
@@ -878,7 +878,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        [ExpectedWarning("IL2091", "RequiresParameterlessCtor")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         static void TestMkrefAny<T>()
@@ -888,7 +888,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // This is a potential box operation, e.g. TypedReference.ToObject(tr);
         }
 
-        [ExpectedWarning("IL2091", "RequiresParameterlessCtor")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         static void TestInArray<T>()
         {
