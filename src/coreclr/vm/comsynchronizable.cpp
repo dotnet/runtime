@@ -904,7 +904,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_CurrentThreadIsFinalizerThread()
 {
     QCALL_CONTRACT;
 
-    BOOL retval;
+    BOOL retval = FALSE;
 
     BEGIN_QCALL;
 
