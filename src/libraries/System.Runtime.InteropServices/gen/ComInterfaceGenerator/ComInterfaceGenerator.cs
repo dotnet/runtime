@@ -107,7 +107,7 @@ namespace Microsoft.Interop
                     return new ComMethodContext(
                         data.Method,
                         data.OwningInterface,
-                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.OwningInterface.Info.Type, ct));
+                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.OwningInterface.Info, ct));
                 }).WithTrackingName(StepNames.CalculateStubInformation);
 
             var interfaceAndMethodsContexts = comMethodContexts
@@ -256,7 +256,7 @@ namespace Microsoft.Interop
                 || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
+        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterfaceInfo, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
@@ -349,7 +349,7 @@ namespace Microsoft.Interop
                     // Add the HRESULT return value in the native signature.
                     // This element does not have any influence on the managed signature, so don't assign a managed index.
                     ElementTypeInformation = returnSwappedSignatureElements.Add(
-                        new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
+                        new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo(owningInterfaceInfo.InterfaceId))
                         {
                             NativeIndex = TypePositionInfo.ReturnIndex
                         })
@@ -425,7 +425,7 @@ namespace Microsoft.Interop
                 virtualMethodIndexData,
                 exceptionMarshallingInfo,
                 environment.EnvironmentFlags,
-                owningInterface,
+                owningInterfaceInfo.Type,
                 declaringType,
                 generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
                 ComInterfaceDispatchMarshallingInfo.Instance);
@@ -826,7 +826,7 @@ namespace Microsoft.Interop
                             EqualsValueClause(
                                 ImplicitObjectCreationExpression()
                                     .AddArgumentListArguments(
-                                        Argument(CreateEmbeddedDataBlobCreationStatement(context.InterfaceId.ToByteArray())))))
+                                        Argument(ComInterfaceGeneratorHelpers.CreateEmbeddedDataBlobCreationStatement(context.InterfaceId.ToByteArray())))))
                         .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
 
             if (context.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
@@ -858,20 +858,6 @@ namespace Microsoft.Interop
                     .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                     .WithExpressionBody(ArrowExpressionClause(LiteralExpression(SyntaxKind.NullLiteralExpression)))
                     .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
-
-
-            static ExpressionSyntax CreateEmbeddedDataBlobCreationStatement(ReadOnlySpan<byte> bytes)
-            {
-                var literals = new CollectionElementSyntax[bytes.Length];
-
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    literals[i] = ExpressionElement(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(bytes[i])));
-                }
-
-                // [ <byte literals> ]
-                return CollectionExpression(SeparatedList(literals));
-            }
         }
     }
 }

@@ -362,30 +362,6 @@
     {                                                                           \
         PAL_TRY_HANDLER_DBG_BEGIN
 
-// PAL_TRY implementation that abstracts usage of COMPILER_INSTANCE*, which is used by
-// JIT64. On Windows, we dont need to do anything special as we dont have nested classes/methods
-// as on PAL.
-#define PAL_TRY_CI(__ParamType, __paramDef, __paramRef)                         \
-{                                                                               \
-    struct __HandlerData {                                                      \
-        __ParamType __param;                                                    \
-        COMPILER_INSTANCE *__ciPtr;                                             \
-    };                                                                          \
-    __HandlerData handlerData;                                                  \
-    handlerData.__param = __paramRef;                                           \
-    handlerData.__ciPtr = ciPtr;                                                \
-     __HandlerData* __param = &handlerData;                                     \
-    __ParamType __paramToPassToFilter = __paramRef;                             \
-    class __Body                                                                \
-    {                                                                           \
-    public:                                                                     \
-    static void Run(__HandlerData* __pHandlerData)                              \
-    {                                                                           \
-    PAL_TRY_HANDLER_DBG_BEGIN                                                   \
-        COMPILER_INSTANCE *ciPtr = __pHandlerData->__ciPtr;                     \
-        __ParamType __paramDef = __pHandlerData->__param;
-
-
 #define PAL_TRY_FOR_DLLMAIN(__ParamType, __paramDef, __paramRef, __reason)      \
 {                                                                               \
     __ParamType __param = __paramRef;                                           \
@@ -434,11 +410,6 @@
     PAL_TRY_NAKED                                                               \
     PAL_TRY_HANDLER_DBG_BEGIN
 
-// PAL_TRY implementation that abstracts usage of COMPILER_INSTANCE*, which is used by
-// JIT64. On Windows, we dont need to do anything special as we dont have nested classes/methods
-// as on PAL.
-#define PAL_TRY_CI(__ParamType, __paramDef, __paramRef) PAL_TRY(__ParamType, __paramDef, __paramRef)
-
 #define PAL_TRY_FOR_DLLMAIN(__ParamType, __paramDef, __paramRef, __reason)      \
 {                                                                               \
     __ParamType __param = __paramRef;                                           \
@@ -463,10 +434,6 @@
     }
 
 #endif // _DEBUG
-
-// Executes the handler if the specified exception code matches
-// the one in the exception. Otherwise, returns EXCEPTION_CONTINUE_SEARCH.
-#define PAL_EXCEPT_IF_EXCEPTION_CODE(dwExceptionCode) PAL_EXCEPT((GetExceptionCode() == (dwExceptionCode))?EXCEPTION_EXECUTE_HANDLER:EXCEPTION_CONTINUE_SEARCH)
 
 #define PAL_CPP_TRY try
 #define PAL_CPP_ENDTRY

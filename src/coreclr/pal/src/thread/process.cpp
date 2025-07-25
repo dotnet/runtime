@@ -2239,6 +2239,7 @@ PROCCreateCrashDump(
     else if (childpid == 0)
     {
         // Close the read end of the pipe, the child doesn't need it
+        int callbackResult = 0;
         close(parent_pipe);
 
         // Only dup the child's stderr if there is error buffer
@@ -2252,7 +2253,12 @@ PROCCreateCrashDump(
             SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
-            g_createdumpCallback(argv.size(), argv.data());
+            callbackResult = g_createdumpCallback(argv.size(), argv.data());
+            // Set the shutdown callback to nullptr and exit
+            // If we don't exit, the child's execution will continue into the diagnostic server behavior
+            // which causes all sorts of problems.
+            g_shutdownCallback = nullptr;
+            exit(callbackResult);
         }
         else
         {
@@ -2597,7 +2603,7 @@ InitializeFlushProcessWriteBuffers()
     }
 #endif
 
-#ifdef TARGET_APPLE
+#if defined(TARGET_APPLE) || defined(TARGET_WASM)
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2627,7 +2633,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_APPLE
+#endif // TARGET_APPLE || TARGET_WASM
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2651,6 +2657,7 @@ VOID
 PALAPI
 FlushProcessWriteBuffers()
 {
+#ifndef TARGET_WASM
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
@@ -2710,6 +2717,7 @@ FlushProcessWriteBuffers()
         CHECK_MACH("vm_deallocate()", machret);
     }
 #endif // TARGET_APPLE
+#endif // !TARGET_WASM
 }
 
 /*++

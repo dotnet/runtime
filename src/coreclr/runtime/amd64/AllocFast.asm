@@ -128,7 +128,7 @@ ENDM ; NEW_ARRAY_FAST
 
 ;; Allocate a string.
 ;;  RCX == MethodTable
-;;  EDX == character/element count
+;;  RDX == character/element count
 LEAF_ENTRY RhNewString, _TEXT
 
         ; we want to limit the element count to the non-negative 32-bit int range
