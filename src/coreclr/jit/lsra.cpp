@@ -518,7 +518,7 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 SingleTypeRegSet LinearScan::getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType)
 {
 #ifdef TARGET_AMD64
-    if ((varTypeIsGC(regType) || varTypeIsLong(regType)) && ((candidates & RBM_LOWINT.getLow()) != 0))
+    if (varTypeIsGC(regType) || varTypeIsLong(regType))
     {
         // For AMD64, we don't use eGPR for GC types.
         candidates &= (SingleTypeRegSet)RBM_LOWINT.getLow();
@@ -8723,6 +8723,8 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     }
 #else  // !TARGET_ARM
     SingleTypeRegSet freeRegs = allRegs(type);
+    // We call this method with only either TYP_INT or TYP_FLOAT.
+    // We are being conservative with eGPR usage when type is TYP_INT since it could be a reference type.
     freeRegs                  = getAvailableGPRsForType(freeRegs, (type == TYP_INT) ? TYP_REF : type);
 #endif // !TARGET_ARM
 
