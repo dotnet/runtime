@@ -2288,7 +2288,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     break;
                 }
-                if (varTypeIsUnsigned(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                if (simdBaseType == TYP_UINT && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     break;
                 }
