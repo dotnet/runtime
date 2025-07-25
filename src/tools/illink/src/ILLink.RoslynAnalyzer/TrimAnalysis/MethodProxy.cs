@@ -31,7 +31,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
         internal partial bool HasGenericParameters() => Method.IsGenericMethod;
 
-        internal partial bool HasGenericParametersCount(int genericParameterCount) => Method.TypeParameters.Length == genericParameterCount;
+        internal partial bool HasGenericArgumentsCount(int genericArgumentCount) => Method.TypeArguments.Length == genericArgumentCount;
 
         internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters()
         {

@@ -33,7 +33,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // that we might be able to lift in the future.
 
             // These are overly conservative (extraneous warnings)
-            // 	 https://github.com/dotnet/linker/issues/2550
+            // https://github.com/dotnet/linker/issues/2550
             TestBranchGoto();
             TestBranchIf();
             TestBranchIfElse();

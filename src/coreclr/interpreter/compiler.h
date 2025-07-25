@@ -11,6 +11,7 @@
 #include <new>
 #include "failures.h"
 #include "simdhash.h"
+#include "intrinsics.h"
 
 struct InterpException
 {
@@ -477,7 +478,12 @@ private:
     CORINFO_CLASS_HANDLE m_classHnd;
     #ifdef DEBUG
     TArray<char> m_methodName;
+#ifdef TARGET_WASM
+    // enable verbose output on wasm temporarily
+    bool m_verbose = true;
+#else
     bool m_verbose = false;
+#endif // TARGET_WASM
 
     const char* PointerIsClassHandle = (const char*)0x1;
     const char* PointerIsMethodHandle = (const char*)0x2;
@@ -493,7 +499,7 @@ private:
         checkNoError(dn_simdhash_ptr_ptr_try_add(m_pointerToNameMap.GetValue(), ptr, (void*)name));
     }
     void PrintNameInPointerMap(void* ptr);
-#endif
+#endif // DEBUG
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
@@ -526,7 +532,7 @@ private:
     void* GetDataItemAtIndex(int32_t index);
     void* GetAddrOfDataItemAtIndex(int32_t index);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
-    int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
+    int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
@@ -695,7 +701,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
-    bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
+    bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
     void    EmitLdelem(int32_t opcode, InterpType type);
@@ -743,7 +749,7 @@ private:
     void PrintBBCode(InterpBasicBlock *pBB);
     void PrintIns(InterpInst *ins);
     void PrintPointer(void* pointer);
-    void PrintHelperFtn(void* helperAddr);
+    void PrintHelperFtn(int32_t _data);
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);

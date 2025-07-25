@@ -1984,16 +1984,23 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+static InterpThreadContext* GetInterpThreadContext()
 {
-    // Argument registers are in the TransitionBlock
-    // The stack arguments are right after the pTransitionBlock
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
     if (threadContext == nullptr || threadContext->pStackStart == nullptr)
     {
         COMPlusThrow(kOutOfMemoryException);
     }
+
+    return threadContext;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+{
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = GetInterpThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
@@ -2019,6 +2026,20 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     frames.interpreterFrame.Pop();
 
     return frames.interpMethodContextFrame.pRetVal;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
+{
+    // copy the arguments to the stack
+    if (size > 0 && pArgs != nullptr)
+    {
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t *sp = threadContext->pStackPointer;
+
+        memcpy(sp, pArgs, size);
+    }
+
+    return ExecuteInterpretedMethod(pTransitionBlock, byteCodeAddr, retBuff);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -2238,14 +2259,10 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else if (IsFCall())
     {
         // Get the fcall implementation
-        BOOL fSharedOrDynamicFCallImpl;
-        pCode = ECall::GetFCallImpl(this, &fSharedOrDynamicFCallImpl);
+        pCode = ECall::GetFCallImpl(this);
 
-        if (fSharedOrDynamicFCallImpl)
-        {
-            // Fake ctors share one implementation that has to be wrapped by prestub
-            GetOrCreatePrecode();
-        }
+        // FCalls are always wrapped in a precode to enable mapping of the entrypoint back to MethodDesc
+        GetOrCreatePrecode();
     }
     else if (IsArray())
     {
@@ -2318,13 +2335,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
 Return:
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
     InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
     if (pInterpreterCode != NULL)
     {
         CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
     }
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && FEATURE_JIT
 
     RETURN pCode;
 }
@@ -2387,14 +2404,13 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
     STANDARD_VM_CONTRACT;
 
     //
-    // Skip fixup precode jump for better perf. Since we have MethodDesc available, we can use cheaper method
-    // than code:Precode::TryToSkipFixupPrecode.
+    // Skip fixup precode jump for better perf.
     //
 #ifdef HAS_FIXUP_PRECODE
     if (pMD->HasPrecode() && pMD->GetPrecode()->GetType() == PRECODE_FIXUP
         && pMD->IsNativeCodeStableAfterInit())
     {
-        PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD) : pMD->GetNativeCode();
+        PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD, false /* throwForInvalidFCall */) : pMD->GetNativeCode();
         if (pDirectTarget != (PCODE)NULL)
             pCode = pDirectTarget;
     }
@@ -3300,7 +3316,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
             if (pHelper != (PCODE)NULL)
             {
-                *(TADDR *)pCell = pHelper;
+                VolatileStore((TADDR *)pCell, pHelper);
             }
 
 #ifdef _DEBUG
