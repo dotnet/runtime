@@ -159,6 +159,7 @@ namespace System.Runtime.Loader.Tests
         /// <summary>
         /// Test that normal runtime resolution (without extension mechanisms) will NOT allow downgrades.
         /// This test verifies the baseline behavior that downgrades only work via extension mechanisms.
+        /// Note: On Mono, downgrades are allowed even in normal resolution, so this test behaves differently.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void NormalResolution_CannotDowngradeVersion()
@@ -170,12 +171,25 @@ namespace System.Runtime.Loader.Tests
                 Assembly loadedV1 = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyV1Path);
                 Assert.Equal(new Version(1, 0, 0, 0), loadedV1.GetName().Version);
                 
-                // Now try to load version 3.0.0 - normal resolution should NOT automatically 
-                // downgrade to the already-loaded 1.0.0 version, it should fail
+                // Now try to load version 3.0.0
                 var requestedAssemblyName = new AssemblyName($"{TestAssemblyName}, Version=3.0.0.0");
                 
-                Assert.Throws<FileNotFoundException>(() => 
-                    AssemblyLoadContext.Default.LoadFromAssemblyName(requestedAssemblyName));
+                if (PlatformDetection.IsMonoRuntime)
+                {
+                    // On Mono, normal resolution allows downgrades, so this should succeed
+                    // and return the already-loaded 1.0.0 assembly
+                    Assembly resolvedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyName(requestedAssemblyName);
+                    Assert.NotNull(resolvedAssembly);
+                    Assert.Equal(new Version(1, 0, 0, 0), resolvedAssembly.GetName().Version);
+                    Assert.Same(loadedV1, resolvedAssembly);
+                }
+                else
+                {
+                    // On CoreCLR, normal resolution should NOT automatically 
+                    // downgrade to the already-loaded 1.0.0 version, it should fail
+                    Assert.Throws<FileNotFoundException>(() => 
+                        AssemblyLoadContext.Default.LoadFromAssemblyName(requestedAssemblyName));
+                }
             }).Dispose();
         }
 
