@@ -46,7 +46,7 @@ you will need to separately download a WASI SDK from https://github.com/WebAssem
 
 ### What is Relinking?
 
-Relinking in WASI builds refers to regenerating the native WASI runtime artifacts (such as `dotnet.native.wasi`, supporting JS, etc.) to reflect changes in configuration, features, or source. This process is essential for producing correct, optimized binaries for WASI environments.
+Relinking in WASI builds refers to regenerating the native WASI runtime artifacts (such as `dotnet.native.wasi`, etc.) to reflect changes in configuration, features, or source. This process is essential for producing correct, optimized binaries for WASI environments.
 
 ### Properties That Trigger Relinking in `wasi.proj`
 
