@@ -7207,7 +7207,7 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
     var_types callType = call->gtReturnType;
 
     const bool sameRetTypes =
-        (genActualType(gdvType) == genActualType(gdvType)) || (varTypeIsStruct(gdvType) && (gdvType == TYP_STRUCT));
+        (genActualType(callType) == genActualType(gdvType)) || (varTypeIsStruct(callType) && (gdvType == TYP_STRUCT));
     if (!sameRetTypes)
     {
         JITDUMP("Incompatible method GDV: Return types do not match - bail out.\n");
