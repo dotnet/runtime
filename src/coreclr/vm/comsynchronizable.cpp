@@ -904,9 +904,13 @@ extern "C" BOOL QCALLTYPE ThreadNative_CurrentThreadIsFinalizerThread()
 {
     QCALL_CONTRACT;
 
+    BOOL retval;
+
     BEGIN_QCALL;
 
-    return IsFinalizerThread() ? TRUE : FALSE;
+    retval = IsFinalizerThread() ? TRUE : FALSE;
 
     END_QCALL;
+
+    return retval;
 }
