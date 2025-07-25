@@ -20,8 +20,8 @@ typedef struct SSLStream
     jobject sslSession;
     jobject appOutBuffer;
     jobject netOutBuffer;
-    jobject netInBuffer;
     jobject appInBuffer;
+    jobject netInBuffer;
     ManagedContextHandle managedContextHandle;
     STREAM_READER streamReader;
     STREAM_WRITER streamWriter;
