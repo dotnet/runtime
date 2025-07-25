@@ -2052,38 +2052,12 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     return hThread;
 }
 
-// Represent the value of DEFAULT_STACK_SIZE as passed in the property bag to the host during construction
-static unsigned long s_defaultStackSizeProperty = 0;
-
-void ParseDefaultStackSize(LPCWSTR valueStr)
-{
-    if (valueStr)
-    {
-        LPWSTR end;
-        errno = 0;
-        unsigned long value = u16_strtoul(valueStr, &end, 16); // Base 16 without a prefix
-
-        if ((errno == ERANGE)     // Parsed value doesn't fit in an unsigned long
-            || (valueStr == end)  // No characters parsed
-            || (end == nullptr)   // Unexpected condition (should never happen)
-            || (end[0] != 0))     // Unprocessed terminal characters
-        {
-            ThrowHR(E_INVALIDARG);
-        }
-        else
-        {
-            s_defaultStackSizeProperty = value;
-        }
-    }
-}
-
 SIZE_T GetDefaultStackSizeSetting()
 {
     static DWORD s_defaultStackSizeEnv = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_DefaultStackSize);
     static DWORD s_defaultStackSizeProp = Configuration::GetKnobDWORDValue(W("System.Threading.DefaultStackSize"), 0);
 
-    uint64_t value = s_defaultStackSizeEnv ? s_defaultStackSizeEnv
-        : (s_defaultStackSizeProperty ? s_defaultStackSizeProperty : s_defaultStackSizeProp);
+    uint64_t value = s_defaultStackSizeEnv ? s_defaultStackSizeEnv : s_defaultStackSizeProp;
 
     SIZE_T minStack = 0x10000;     // 64K - Somewhat arbitrary minimum thread stack size
     SIZE_T maxStack = 0x80000000;  //  2G - Somewhat arbitrary maximum thread stack size
