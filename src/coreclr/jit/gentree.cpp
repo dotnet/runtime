@@ -1829,6 +1829,46 @@ void CallArgs::Remove(CallArg* arg)
     assert(!"Did not find arg to remove in CallArgs::Remove");
 }
 
+//---------------------------------------------------------------
+// RemoveUnsafe: Remove an argument from the argument list, without validation.
+//
+// Parameters:
+//   arg - The arg to remove.
+//
+// Remarks:
+//   This function will break ABI information of other arguments. The caller
+//   needs to know what they are doing.
+//
+void CallArgs::RemoveUnsafe(CallArg* arg)
+{
+    CallArg** slot = &m_lateHead;
+    while (*slot != nullptr)
+    {
+        if (*slot == arg)
+        {
+            *slot = arg->GetLateNext();
+            break;
+        }
+
+        slot = &(*slot)->LateNextRef();
+    }
+
+    slot = &m_head;
+    while (*slot != nullptr)
+    {
+        if (*slot == arg)
+        {
+            *slot = arg->GetNext();
+            RemovedWellKnownArg(arg->GetWellKnownArg());
+            return;
+        }
+
+        slot = &(*slot)->NextRef();
+    }
+
+    assert(!"Did not find arg to remove in CallArgs::Remove");
+}
+
 #ifdef TARGET_XARCH
 //---------------------------------------------------------------
 // NeedsVzeroupper: Determines if the call needs a vzeroupper emitted before it is invoked
@@ -9908,7 +9948,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     }
     else if (tree->IsAsync())
     {
-        copy->asyncInfo = tree->asyncInfo;
+        copy->asyncInfo = new (this, CMK_Async) AsyncCallInfo(*tree->asyncInfo);
     }
     else if (tree->IsTailPrefixedCall())
     {
@@ -11571,9 +11611,9 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
-                if (varDsc->IsHiddenBufferStructArg())
+                if (varDsc->IsDefinedViaAddress())
                 {
-                    printf("(RB)"); // Variable is hidden return buffer
+                    printf("(DA)"); // Variable is defined via address
                 }
                 if (varDsc->lvUnusedStruct)
                 {
@@ -13199,6 +13239,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "&lcl arr";
         case WellKnownArg::RuntimeMethodHandle:
             return "meth hnd";
+        case WellKnownArg::AsyncSuspendedIndicator:
+            return "async susp";
         default:
             return nullptr;
     }
@@ -17825,65 +17867,6 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
     return walker.GetFlags();
 }
 
-//-----------------------------------------------------------
-// gtComplexityExceeds: Check if a tree exceeds a specified complexity in terms
-// of number of sub nodes.
-//
-// Arguments:
-//     tree       - The tree to check
-//     limit      - The limit in terms of number of nodes
-//     complexity - [out, optional] the actual node count (if not greater than limit)
-//
-// Return Value:
-//     True if there are more than limit nodes in tree; otherwise false.
-//
-bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity)
-{
-    struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
-    {
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        ComplexityVisitor(Compiler* comp, unsigned limit)
-            : GenTreeVisitor(comp)
-            , m_limit(limit)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            if (++m_numNodes > m_limit)
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
-
-        unsigned NumNodes()
-        {
-            return m_numNodes;
-        }
-
-    private:
-        unsigned m_limit;
-        unsigned m_numNodes = 0;
-    };
-
-    ComplexityVisitor visitor(this, limit);
-
-    fgWalkResult result = visitor.WalkTree(&tree, nullptr);
-
-    if (complexity != nullptr)
-    {
-        *complexity = visitor.NumNodes();
-    }
-
-    return (result == WALK_ABORT);
-}
-
 bool GenTree::IsPhiNode()
 {
     return (OperGet() == GT_PHI_ARG) || (OperGet() == GT_PHI) || IsPhiDefn();
@@ -19577,7 +19560,33 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
+
+    return node->AsLclVarCommon();
+}
+
+//------------------------------------------------------------------------
+// gtCallGetDefinedAsyncSuspendedIndicatorLclAddr:
+//   Get the tree corresponding to the address of the indicator local that this call defines.
+//
+// Parameters:
+//   call - the Call node
+//
+// Returns:
+//   A tree representing the address of a local.
+//
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call)
+{
+    if (!call->IsAsync() || !call->GetAsyncInfo().HasSuspensionIndicatorDef)
+    {
+        return nullptr;
+    }
+
+    CallArg* asyncSuspensionIndicatorArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
+    assert(asyncSuspensionIndicatorArg != nullptr);
+    GenTree* node = asyncSuspensionIndicatorArg->GetNode();
+
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
 
     return node->AsLclVarCommon();
 }

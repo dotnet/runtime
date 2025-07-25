@@ -809,4 +809,11 @@ void GCToEEInterface::FreeStringConfigValue(const char* value)
     delete[] value;
 }
 
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+#ifdef FEATURE_JAVAMARSHAL
+    JavaMarshalNative::TriggerClientBridgeProcessing(args);
+#endif
+}
+
 #endif // !DACCESS_COMPILE
