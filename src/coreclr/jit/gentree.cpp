@@ -21175,7 +21175,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (varTypeIsIntegral(simdBaseType))
             {
                 assert(!varTypeIsLong(simdBaseType));
-                if (((varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType)) && simdSize > 16) ||
+                if (((varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType) ||
+                      (varTypeIsInt(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512))) &&
+                     simdSize > 16) ||
                     (varTypeIsInt(simdBaseType) && simdSize == 64))
                 {
                     var_types divType  = simdSize == 64 ? TYP_SIMD32 : TYP_SIMD16;
@@ -21183,11 +21185,10 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     GenTree*  op2Dup   = fgMakeMultiUse(&op2);
                     GenTree*  op1Lower = gtNewSimdGetLowerNode(divType, op1, simdBaseJitType, simdSize);
                     GenTree*  op2Lower = gtNewSimdGetLowerNode(divType, op2, simdBaseJitType, simdSize);
-                    GenTree*  op1Upper = gtNewSimdGetUpperNode(divType, op1Dup, simdBaseJitType, simdSize);
-                    GenTree*  op2Upper = gtNewSimdGetUpperNode(divType, op2Dup, simdBaseJitType, simdSize);
-
-                    GenTree* divLower =
+                    GenTree*  divLower =
                         gtNewSimdBinOpNode(GT_DIV, divType, op1Lower, op2Lower, simdBaseJitType, simdSize / 2);
+                    GenTree* op1Upper = gtNewSimdGetUpperNode(divType, op1Dup, simdBaseJitType, simdSize);
+                    GenTree* op2Upper = gtNewSimdGetUpperNode(divType, op2Dup, simdBaseJitType, simdSize);
                     GenTree* divUpper =
                         gtNewSimdBinOpNode(GT_DIV, divType, op1Upper, op2Upper, simdBaseJitType, simdSize / 2);
                     GenTree* divResult = gtNewSimdWithUpperNode(type, divLower, divUpper, simdBaseJitType, simdSize);
@@ -21197,7 +21198,10 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 if (varTypeIsShort(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     assert(simdSize == 16);
-                    CorInfoType    cvtType      = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_INT : CORINFO_TYPE_UINT;
+                    CorInfoType cvtType =
+                        varTypeIsUnsigned(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX512)
+                            ? CORINFO_TYPE_UINT
+                            : CORINFO_TYPE_INT;
                     NamedIntrinsic cvtIntrinsic = NI_AVX2_ConvertToVector256Int32;
                     op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, cvtIntrinsic, simdBaseJitType, simdSize);
                     op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op2, cvtIntrinsic, simdBaseJitType, simdSize);
@@ -21213,7 +21217,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     GenTree* divResultDup   = fgMakeMultiUse(&divResult);
                     GenTree* divResultLower = gtNewSimdGetLowerNode(type, divResult, cvtType, simdSize * 2);
                     GenTree* divResultUpper = gtNewSimdGetUpperNode(type, divResultDup, cvtType, simdSize * 2);
-                    return gtNewSimdNarrowNode(type, divResultLower, divResultUpper, cvtType, simdSize);
+                    return gtNewSimdNarrowNode(type, divResultLower, divResultUpper, simdBaseJitType, simdSize);
                 }
 
                 if (varTypeIsByte(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
@@ -21229,11 +21233,10 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     GenTree* op2Dup   = fgMakeMultiUse(&op2);
                     GenTree* op1Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op1, cvtType, simdSize * 4);
                     GenTree* op2Lower = gtNewSimdGetLowerNode(TYP_SIMD32, op2, cvtType, simdSize * 4);
-                    GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, cvtType, simdSize * 4);
-                    GenTree* op2Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op2Dup, cvtType, simdSize * 4);
-
                     GenTree* divLower =
                         gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1Lower, op2Lower, cvtType, simdSize * 2);
+                    GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, cvtType, simdSize * 4);
+                    GenTree* op2Upper = gtNewSimdGetUpperNode(TYP_SIMD32, op2Dup, cvtType, simdSize * 4);
                     GenTree* divUpper =
                         gtNewSimdBinOpNode(GT_DIV, TYP_SIMD32, op1Upper, op2Upper, cvtType, simdSize * 2);
 
@@ -21247,18 +21250,25 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 if (varTypeIsShort(simdBaseType) || varTypeIsByte(simdBaseType))
                 {
                     assert(simdSize == 16);
-                    CorInfoType signedType = varTypeIsShort(simdBaseType) ? CORINFO_TYPE_INT : CORINFO_TYPE_SHORT;
-                    CorInfoType unsignedType = varTypeIsShort(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_USHORT;
-                    CorInfoType cvtType = varTypeIsSigned(simdBaseType) ? signedType : unsignedType;
-                    GenTree* op1Dup = fgMakeMultiUse(&op1);
-                    GenTree* op2Dup = fgMakeMultiUse(&op2);
+                    CorInfoType cvtType = varTypeIsShort(simdBaseType) ? CORINFO_TYPE_INT : CORINFO_TYPE_SHORT;
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        CorInfoType signedType = varTypeIsShort(simdBaseType) ? CORINFO_TYPE_INT : CORINFO_TYPE_SHORT;
+                        CorInfoType unsignedType =
+                            varTypeIsShort(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_USHORT;
+                        cvtType = varTypeIsSigned(simdBaseType) ? signedType : unsignedType;
+                    }
+                    GenTree* op1Dup        = fgMakeMultiUse(&op1);
+                    GenTree* op2Dup        = fgMakeMultiUse(&op2);
                     GenTree* op1LowerWiden = gtNewSimdWidenLowerNode(type, op1, simdBaseJitType, simdSize);
-                    GenTree* op1UpperWiden = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseJitType, simdSize);
                     GenTree* op2LowerWiden = gtNewSimdWidenLowerNode(type, op2, simdBaseJitType, simdSize);
+                    GenTree* divLower =
+                        gtNewSimdBinOpNode(GT_DIV, type, op1LowerWiden, op2LowerWiden, cvtType, simdSize);
+                    GenTree* op1UpperWiden = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseJitType, simdSize);
                     GenTree* op2UpperWiden = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseJitType, simdSize);
-                    GenTree* divLower = gtNewSimdBinOpNode(GT_DIV, type, op1LowerWiden, op2LowerWiden, cvtType, simdSize);
-                    GenTree* divUpper = gtNewSimdBinOpNode(GT_DIV, type, op1UpperWiden, op2UpperWiden, cvtType, simdSize);
-                    return gtNewSimdNarrowNode(type, divLower, divUpper, cvtType, simdSize);
+                    GenTree* divUpper =
+                        gtNewSimdBinOpNode(GT_DIV, type, op1UpperWiden, op2UpperWiden, cvtType, simdSize);
+                    return gtNewSimdNarrowNode(type, divLower, divUpper, simdBaseJitType, simdSize);
                 }
 
                 assert((varTypeIsSigned(simdBaseType) && compIsaSupportedDebugOnly(InstructionSet_AVX)) ||
