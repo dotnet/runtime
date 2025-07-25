@@ -7206,28 +7206,25 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
     var_types gdvType  = JITtype2varType(sig.retType);
     var_types callType = call->gtReturnType;
 
-    // Bail if return types do not match.
-    if (!impCheckImplicitArgumentCoercion(gdvType, callType) ||
-        // We should rely only on impCheckImplicitArgumentCoercion here, but the following check
-        // conservatively disables some cases that we don't handle well today (e.g. DOUBLE<->FLOAT).
-        (genActualType(gdvType) != genActualType(callType)))
+    const bool sameRetTypes =
+        (genActualType(gdvType) == genActualType(gdvType)) || (varTypeIsStruct(gdvType) && (gdvType == TYP_STRUCT));
+    if (!sameRetTypes)
     {
         JITDUMP("Incompatible method GDV: Return types do not match - bail out.\n");
         return false;
     }
+
     if (varTypeIsStruct(gdvType))
     {
         assert(varTypeIsStruct(callType));
-        CORINFO_SIG_INFO callSig;
-        info.compCompHnd->getMethodSig(call->gtCallMethHnd, &callSig);
 
         structPassingKind callRetKind;
         structPassingKind gdvRetKind;
-        getReturnTypeForStruct(callSig.retTypeClass, call->GetUnmanagedCallConv(), &callRetKind);
+        getReturnTypeForStruct(call->gtRetClsHnd, call->GetUnmanagedCallConv(), &callRetKind);
         getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &gdvRetKind);
 
         if ((callRetKind != gdvRetKind) ||
-            !ClassLayout::AreCompatible(typGetObjLayout(callSig.retTypeClass), typGetObjLayout(sig.retTypeClass)))
+            !ClassLayout::AreCompatible(typGetObjLayout(call->gtRetClsHnd), typGetObjLayout(sig.retTypeClass)))
         {
             JITDUMP("Incompatible method GDV: Return struct types do not match - bail out.\n");
             return false;
