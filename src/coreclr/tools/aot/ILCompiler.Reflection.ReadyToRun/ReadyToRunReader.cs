@@ -515,7 +515,28 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if ((CompositeReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
                 {
                     if (!TryLocateNativeReadyToRunHeader())
+                    {
+                        Console.Error.WriteLine($"Image file '{Filename}' information:");
+                        Console.Error.WriteLine($"Size: {Image.Length} byte(s)");
+                        Console.Error.WriteLine($"MetadataSize: {CompositeReader.PEHeaders.MetadataSize} byte(s)");
+
+                        if (CompositeReader.PEHeaders.PEHeader is PEHeader header)
+                        {
+                            Console.Error.WriteLine($"SizeOfImage: {header.SizeOfImage} byte(s)");
+                            Console.Error.WriteLine($"ImageBase: 0x{header.ImageBase:X}");
+                            Console.Error.WriteLine($"FileAlignment: 0x{header.FileAlignment:X}");
+                            Console.Error.WriteLine($"SectionAlignment: 0x{header.SectionAlignment:X}");
+                        }
+                        else
+                            Console.Error.WriteLine("No PEHeader");
+
+                        Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader.Flags}");
+
+                        var exportTable = CompositeReader.GetExportTable();
+                        exportTable.DumpToConsoleError();
+
                         throw new BadImageFormatException("The file is not a ReadyToRun image");
+                    }
 
                     Debug.Assert(Composite);
                 }
