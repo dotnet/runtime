@@ -192,11 +192,7 @@ namespace System.Security.Cryptography
 
                     Interop.NCrypt.PBE_PARAMS pbeParams = default;
                     Span<byte> salt = new Span<byte>(pbeParams.rgbSalt, Interop.NCrypt.PBE_PARAMS.RgbSaltSize);
-#if NET
                     RandomNumberGenerator.Fill(salt);
-#else
-                    CngHelpers.GetRandomBytes(salt);
-#endif
                     pbeParams.Params.cbSalt = salt.Length;
                     pbeParams.Params.iIterations = kdfCount;
 

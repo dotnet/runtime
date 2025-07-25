@@ -143,6 +143,7 @@ internal readonly struct Loader_1 : ILoader
     {
         return handle.Address;
     }
+
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
@@ -352,5 +353,30 @@ internal readonly struct Loader_1 : ILoader
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
         return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
+    }
+
+    TargetPointer ILoader.GetGlobalLoaderAllocator()
+    {
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        return systemDomain.GlobalLoaderAllocator;
+    }
+
+    TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.HighFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.LowFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetStubHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.StubHeap;
     }
 }
