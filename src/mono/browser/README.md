@@ -241,8 +241,6 @@ The following MSBuild properties will trigger a relinking (full rebuild of nativ
 - **`WasmBuildNative`** - `/p:WasmBuildNative=true` - Forces a fresh build of the native runtime components.
 - **`WasmRelinkNative`** - `/p:WasmRelinkNative=true` - Explicitly requests relinking, even if not otherwise required by other property changes.
 - **`RunAOTCompilation`** - `/p:RunAOTCompilation=true` - Enables Ahead-of-Time (AOT) compilation. Changing this requires relinking to produce the correct output.
-- **`PublishTrimmed`** - `/p:PublishTrimmed=true` - The set of assemblies and code passed to the native linker changes significantly.
-- **`WasmEnableThreads`** - `/p:WasmEnableThreads=true` - Affects memory layout (e.g., usage of `SharedArrayBuffer` in browser or `DISABLE_THREADS` switches in runtime).
 - **`WasmEnableExceptionHandling`** - `/p:WasmEnableExceptionHandling=true` - Changes exception handling mechanisms in the native runtime.
 - **`EnableDiagnostics`** - `/p:EnableDiagnostics=true` - Enables or disables diagnostic features in the native runtime.
 - **`WasmProfilers`** - `/p:WasmProfilers=...` - Changes profiler configuration in the native runtime.

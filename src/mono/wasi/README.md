@@ -55,8 +55,6 @@ The following MSBuild properties will trigger a relinking during the WASI build 
 - **`WasiBuildNative`** - `/p:WasiBuildNative=true` - Forces a rebuild of all native WASI binaries, regardless of detected changes.
 - **`WasiRelinkNative`** - `/p:WasiRelinkNative=true` - Explicitly requests relinking of native WASI artifacts.
 - **`RunAOTCompilation`** - `/p:RunAOTCompilation=true` - Enables AOT compilation for WASI. Changing this property requires relinking for correct WASI output.
-- **`PublishTrimmed`** - `/p:PublishTrimmed=true` - The set of assemblies and code passed to the native linker changes significantly.
-- **`WasmEnableThreads`** - `/p:WasmEnableThreads=true` - Affects memory layout and threading model in the WASI runtime.
 - **`WasmSingleFileBundle`** - `/p:WasmSingleFileBundle=true` - Bundles all assets into the `.wasm` file, requiring native relinking.
 - **`EnableDiagnostics`** - `/p:EnableDiagnostics=true` - Enables or disables diagnostic features in the native runtime.
 - **`WasmProfilers`** - `/p:WasmProfilers=...` - Changes profiler configuration in the native runtime.

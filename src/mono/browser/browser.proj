@@ -343,9 +343,7 @@
       { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
       { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" },
       { "identity": "EmccInitialHeapSize",          "defaultValueInRuntimePack": "$(EmccInitialHeapSize)" },
-      { "identity": "WasmEnableThreads",            "defaultValueInRuntimePack": "$(WasmEnableThreads)" },
-      { "identity": "RunAOTCompilation",            "defaultValueInRuntimePack": "$(RunAOTCompilation)" },
-      { "identity": "PublishTrimmed",               "defaultValueInRuntimePack": "$(PublishTrimmed)" }
+      { "identity": "RunAOTCompilation",            "defaultValueInRuntimePack": "$(RunAOTCompilation)" }
     ]
   }
 }
