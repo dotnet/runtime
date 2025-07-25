@@ -156,6 +156,9 @@
   <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
     <value>Composite signature generation failed due to an error in one or both of the components.</value>
   </data>
+  <data name="Cryptography_ConcurrentUseNotSupported" xml:space="preserve">
+    <value>Concurrent operations from multiple threads on this type are not supported.</value>
+  </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>
   </data>

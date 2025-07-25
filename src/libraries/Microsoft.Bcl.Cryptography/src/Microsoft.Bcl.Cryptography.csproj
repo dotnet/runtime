@@ -461,6 +461,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETStandard'">
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngHelpers.cs"
@@ -483,6 +485,16 @@
              Link="Common\System\Security\Cryptography\MLKemCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaCng.cs"
              Link="Common\System\Security\Cryptography\SlhDsaCng.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs"
              Link="Common\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs"
