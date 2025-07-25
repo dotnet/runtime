@@ -2157,6 +2157,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.PropVariantClear.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.PropVariantClear.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.GetErrorInfo.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.GetErrorInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\Secur32\Interop.GetUserNameExW.cs</Link>
     </Compile>

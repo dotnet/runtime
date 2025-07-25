@@ -456,6 +456,8 @@
              Link="Common\System\Security\Cryptography\SlhDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\SlhDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaCng.cs"
+             Link="Common\System\Security\Cryptography\SlhDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdf.cs"
