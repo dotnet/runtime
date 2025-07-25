@@ -2336,8 +2336,12 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             var_types nodeType = node->TypeGet();
             emitAttr  typeSize = emitTypeSize(nodeType);
             noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
-            emitAttr divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
+            emitAttr divTypeSize = typeSize;
 
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
+            }
             simd_t               negOneIntVec = simd_t::AllBitsSet();
             CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
 
@@ -2372,6 +2376,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, tmpReg1, tmpReg2, instOptions);
             emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvttpd2dq : INS_vcvttpd2udq, divTypeSize, targetReg,
                               targetReg, instOptions);
+
             break;
         }
 
