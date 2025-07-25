@@ -12,6 +12,7 @@
 #include "cdacplatformmetadata.hpp"
 #include "methodtable.h"
 #include "threads.h"
+#include "vars.hpp"
 #include "exinfo.h"
 
 #include "configure.h"

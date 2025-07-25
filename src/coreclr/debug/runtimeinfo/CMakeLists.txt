@@ -47,4 +47,10 @@ if(CDAC_BUILD_TOOL_BINARY_PATH AND "${CLR_DOTNET_RID}" STREQUAL "")
 endif()
 configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 
-generate_data_descriptors(LIBRARY_NAME cdac_contract_descriptor)
+generate_data_descriptors(
+   LIBRARY_NAME cdac_contract_descriptor
+   CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
+   POINTER_DATA_NAME "contractDescriptorPointerData"
+   CONTRACT_NAME "DotNetRuntimeContractDescriptor"
+   INCLUDE_DIRS "${VM_DIR}" "${VM_DIR}/${ARCH_SOURCES_DIR}" "${CLR_DIR}/interop/inc"
+   DEPENDENCIES cee_wks_core)

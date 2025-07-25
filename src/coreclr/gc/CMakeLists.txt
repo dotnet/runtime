@@ -104,6 +104,9 @@ list(APPEND GC_SOURCES ${GC_HEADERS})
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
 if(FEATURE_STANDALONE_GC)
+
+  add_subdirectory(gcdatadescriptors)
+
   # clrgcexp is build with standalone+regions
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     add_library_clr(clrgcexp SHARED ${GC_SOURCES})
@@ -117,6 +120,7 @@ if(FEATURE_STANDALONE_GC)
   add_library_clr(clrgc SHARED ${GC_SOURCES})
   add_dependencies(clrgc eventing_headers)
   target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
+  target_link_libraries(clrgc PRIVATE gc_contract_descriptor)
   install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)
 
   add_definitions(-DBUILD_AS_STANDALONE)

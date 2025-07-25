@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
+#include "nameconfigure.h"
 
 #ifdef _MSC_VER
 #define DLLEXPORT __declspec(dllexport)
@@ -20,20 +21,20 @@ struct DotNetRuntimeContractDescriptor
     const uintptr_t *pointer_data;
 };
 
-extern const uintptr_t contractDescriptorPointerData[];
+extern const uintptr_t POINTER_NAME[];
 
 // just the placeholder pointer
-const uintptr_t contractDescriptorPointerData[] = { (uintptr_t)0 };
+const uintptr_t POINTER_NAME[] = { (uintptr_t)0 };
 
-DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor;
+DLLEXPORT struct DotNetRuntimeContractDescriptor CONTRACT_NAME;
 
 #define STUB_DESCRIPTOR "{\"version\":0,\"baseline\":\"empty\",\"contracts\":{},\"types\":{},\"globals\":{}}"
 
-DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor = {
+DLLEXPORT struct DotNetRuntimeContractDescriptor CONTRACT_NAME = {
     .magic = 0x0043414443434e44ull, // "DNCCDAC\0"
     .flags = 0x1u & (sizeof(void*) == 4 ? 0x02u : 0x00u),
     .descriptor_size = sizeof(STUB_DESCRIPTOR),
     .descriptor = STUB_DESCRIPTOR,
     .pointer_data_count = 1,
-    .pointer_data = &contractDescriptorPointerData[0],
+    .pointer_data = &POINTER_NAME[0],
 };
