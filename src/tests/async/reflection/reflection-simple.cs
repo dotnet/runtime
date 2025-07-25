@@ -4,6 +4,7 @@
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -126,5 +127,54 @@ public class Async2Reflection
 
         Assert.Equal("System.Threading.Tasks.Task TReturning() --> System.Threading.Tasks.Task TReturning()",
             $"{map.InterfaceMethods[1]?.ToString()} --> {map.TargetMethods[1]?.ToString()}");
+    }
+
+    [Fact]
+    public static void DynamicAsyncMethod()
+    {
+        //  we will be compiling a dynamic vesion of this method
+        //
+        //  public async static Task StaticMethod(Task arg)
+        //  {
+        //    await arg;
+        //  }
+
+        // Define a dynamic assembly and module
+        AssemblyName assemblyName = new AssemblyName("DynamicAssembly");
+        AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+        ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
+
+        // Define a type
+        TypeBuilder typeBuilder = moduleBuilder.DefineType("DynamicType", TypeAttributes.Public);
+
+        // Define a method
+        MethodBuilder methodBuilder = typeBuilder.DefineMethod(
+            "DynamicMethod",
+            MethodAttributes.Public | MethodAttributes.Static,
+            typeof(Task),
+            new Type[] { typeof(Task) });
+
+        // Set `MethodImpl.Async` flag
+        methodBuilder.SetImplementationFlags(MethodImplAttributes.Async);
+
+        // {
+        //   Await(arg_0);
+        //   ret;
+        // }
+        ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+        ilGenerator.Emit(OpCodes.Ldarg_0);
+#pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
+        var mi = typeof(System.Runtime.CompilerServices.AsyncHelpers).GetMethod("Await", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Task) })!;
+#pragma warning restore SYSLIB5007
+        ilGenerator.EmitCall(OpCodes.Call, mi, new Type[] { typeof(Task) });
+        ilGenerator.Emit(OpCodes.Ret);
+
+        // Create the type and invoke the method
+        Type dynamicType = typeBuilder.CreateType();
+        MethodInfo dynamicMethod = dynamicType.GetMethod("DynamicMethod");
+        var del = dynamicMethod.CreateDelegate<Func<Task, Task>>();
+
+        // This throws right now since `MethodImpl.Async` has no effect on dynamic methods, thus we have stack underflow at `ret` instruction.
+        Assert.ThrowsAsync<InvalidProgramException>(() => del(Task.CompletedTask));
     }
 }
