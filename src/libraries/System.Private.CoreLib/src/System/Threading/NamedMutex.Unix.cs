@@ -38,7 +38,8 @@ namespace System.Threading
 
         public SharedMemoryId Id => _processDataHeader._id;
 
-        public abstract bool IsLockOwnedByCurrentThread { get; }
+        public bool IsLockOwnedByCurrentThread => IsLockOwnedByThreadInThisProcess(Thread.CurrentThread);
+        protected abstract bool IsLockOwnedByThreadInThisProcess(Thread thread);
         public bool IsLockOwnedByAnyThreadInThisProcess => _lockOwnerThread is not null;
 
         protected abstract void SetLockOwnerToCurrentThread();
@@ -136,20 +137,42 @@ namespace System.Threading
             namedMutexProcessDataBase._nextInThreadOwnedNamedMutexList = null;
         }
 
-        public void Abandon()
+        public void Abandon(Thread abandonedThread)
         {
+            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+
+            // This method can be called from one of two threads:
+            // 1. The dead thread that owns the mutex.
+            //   In the first case, we know that no one else can acquire the lock, so we can safely
+            //   set the lock count to 0 and abandon the mutex.
+            // 2. The finalizer thread after the owning thread has died.
+            //   In this case, its possible for the mutex to have been acquired by another thread
+            //   after the owning thread died if it is backed by a pthread mutex.
+            //   A pthread mutex doesn't need our Abandon() call to be abandoned, it will be automatically abandoned
+            //   when the owning thread dies.
+            //   In this case, we don't want to do anything. Our named mutex implementation will handle the abandonment
+            //   as part of acquisition.
+            Debug.Assert(IsLockOwnedByCurrentThread || (!abandonedThread.IsAlive && Thread.CurrentThreadIsFinalizerThread()),
+                "Abandon can only be called from the thread that owns the lock or from the finalizer thread when the owning thread is dead.");
+
+            if (!IsLockOwnedByThreadInThisProcess(abandonedThread))
+            {
+                Debug.Assert(Thread.CurrentThreadIsFinalizerThread());
+                // Lock is owned by a different thread already, so we don't need to do anything.
+                // Just remove it from the list of owned named mutexes.
+                RemoveOwnedNamedMutex(abandonedThread, this);
+                return;
+            }
+
             IsAbandoned = true;
 
             _lockCount = 0;
 
-            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
-
-            Debug.Assert(IsLockOwnedByCurrentThread || Thread.CurrentThreadIsFinalizerThread(),
-                "Abandon can only be called from the thread that owns the lock or from the finalizer thread.");
+            Debug.Assert(_lockOwnerThread is not null);
 
             ReleaseLockCore();
 
-            RemoveOwnedNamedMutex(Thread.CurrentThread, this);
+            RemoveOwnedNamedMutex(_lockOwnerThread, this);
             _lockOwnerThread = null;
             // Remove the refcount from the thread's wait info.
             _processDataHeader.DecrementRefCount();
@@ -250,14 +273,11 @@ namespace System.Threading
         public static nuint SharedDataSize { get; } = (nuint)Interop.Sys.LowLevelCrossProcessMutex_Size();
         private readonly void* _sharedData = SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>.GetDataPointer(processDataHeader);
 
-        public override bool IsLockOwnedByCurrentThread
+        protected override bool IsLockOwnedByThreadInThisProcess(Thread thread)
         {
-            get
-            {
-                Interop.Sys.LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(_sharedData, out uint ownerProcessId, out uint ownerThreadId);
-                return ownerProcessId == (uint)Environment.ProcessId &&
-                       ownerThreadId == (uint)Thread.CurrentThread.ManagedThreadId;
-            }
+            Interop.Sys.LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(_sharedData, out uint ownerProcessId, out uint ownerThreadId);
+            return ownerProcessId == (uint)Environment.ProcessId &&
+                   ownerThreadId == (uint)thread.ManagedThreadId;
         }
 
         protected override void SetLockOwnerToCurrentThread()
@@ -293,10 +313,18 @@ namespace System.Threading
                 return MutexTryAcquireLockResult.TimedOut;
             }
 
+            if (result == MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned)
+            {
+                // If the underlying pthread mutex was abandoned, treat this as an abandoned mutex.
+                // Its possible that the underlying pthread mutex was abandoned, but the shared data and process data
+                // is out of sync. This can happen if the dead thread did not call Abandon() before it exited
+                // and is relying on the finalizer to clean it up.
+                return result;
+            }
+
             if (_lockCount != 0)
             {
                 Debug.Assert(IsLockOwnedByCurrentThread);
-                Debug.Assert(result != MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned);
                 Debug.Assert(!IsAbandoned);
                 try
                 {
@@ -372,13 +400,10 @@ namespace System.Threading
             _sharedLockFileHandle = SharedMemoryHelpers.CreateOrOpenFile(lockFilePath, Id, created, out _);
         }
 
-        public override bool IsLockOwnedByCurrentThread
+        protected override bool IsLockOwnedByThreadInThisProcess(Thread thread)
         {
-            get
-            {
-                return _sharedData->LockOwnerProcessId == (uint)Environment.ProcessId &&
-                       _sharedData->LockOwnerThreadId == (uint)Thread.CurrentThread.ManagedThreadId;
-            }
+            return _sharedData->LockOwnerProcessId == (uint)Environment.ProcessId &&
+                   _sharedData->LockOwnerThreadId == (uint)thread.ManagedThreadId;
         }
 
         protected override void SetLockOwnerToCurrentThread()

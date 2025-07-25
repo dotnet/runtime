@@ -923,7 +923,7 @@ namespace System.Threading.Tests
                         }
                         return createdNew;
                     }
-                });
+                }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
             }
         }
 

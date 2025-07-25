@@ -615,7 +615,7 @@ namespace System.Threading
                             break;
                         }
 
-                        namedMutex.Abandon();
+                        namedMutex.Abandon(_thread);
                         Debug.Assert(LockedNamedMutexesHead != namedMutex);
                     }
                 }
