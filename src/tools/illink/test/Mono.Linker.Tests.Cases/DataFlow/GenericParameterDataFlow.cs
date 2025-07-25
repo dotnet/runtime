@@ -875,6 +875,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         static void TestMkrefAny<T>()
         {
             RequiresParameterlessCtor<T> val = default;
