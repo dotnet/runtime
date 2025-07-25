@@ -866,6 +866,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         [ExpectedWarning("IL2091", "RequiresParameterlessCtor")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
         static void TestValueTypeBox<T>()
         {
             if (default(RequiresParameterlessCtor<T>) is IRequireParameterlessCtor<T> i)
