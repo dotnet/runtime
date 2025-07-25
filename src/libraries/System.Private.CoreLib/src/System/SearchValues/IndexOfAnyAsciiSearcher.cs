@@ -288,6 +288,8 @@ namespace System.Buffers
             where TUniqueLowNibble : struct, SearchValues.IRuntimeConst
             where TResultMapper : struct, IResultMapper<short, TResult>
         {
+            if (searchSpaceLength != 0 && Unsafe.IsNullRef(ref searchSpace)) throw new InvalidOperationException("Span is empty or not initialized properly. " + searchSpaceLength);
+
             ref short currentSearchSpace = ref searchSpace;
 
             if (searchSpaceLength < Vector128<ushort>.Count)
