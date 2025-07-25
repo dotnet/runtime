@@ -1245,7 +1245,8 @@ public:
                 assert(TopValue(1).Node() == node);
                 assert(TopValue(0).Node() == node->AsCast()->CastOp());
 
-                bool isPtrCast = (node->CastToType() == TYP_I_IMPL) || (node->CastToType() == TYP_BYREF);
+                var_types castToType = node->CastToType();
+                bool isPtrCast = (castToType == TYP_I_IMPL) || (castToType == TYP_U_IMPL) || (castToType == TYP_BYREF);
                 if (!isPtrCast || node->gtOverflow() || !TopValue(0).IsAddress() ||
                     !TopValue(1).AddOffset(TopValue(0), 0))
                 {
