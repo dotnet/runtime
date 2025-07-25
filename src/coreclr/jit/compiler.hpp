@@ -5472,8 +5472,7 @@ bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTree
         const unsigned slack = limit - localCount;
         if (comp->gtComplexityExceeds(stmt->GetRootNode(), slack, getComplexity))
         {
-            overLimit = true;
-            break;
+            return true;
         }
     }
 
@@ -5512,8 +5511,7 @@ bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, TFun
         const unsigned slack = limit - localCount;
         if (block->ComplexityExceeds(comp, slack, getComplexity))
         {
-            overLimit = true;
-            break;
+            return true;
         }
     }
 
