@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-using System.Reflection;
 
 #if SYSTEM_SECURITY_CRYPTOGRAPHY
 using TCertificate = System.Security.Cryptography.X509Certificates.CertificatePal;
@@ -18,6 +17,14 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal static partial class CertificateHelpers
     {
+        private static partial CryptographicException GetExceptionForLastError();
+
+        private static partial SafeNCryptKeyHandle CreateSafeNCryptKeyHandle(IntPtr handle, SafeHandle parentHandle);
+
+        private static partial TCertificate CopyFromRawBytes(TCertificate certificate);
+
+        private static partial int GuessKeySpec(CngProvider provider, string keyName, bool machineKey, CngAlgorithmGroup? algorithmGroup);
+
 #if !SYSTEM_SECURITY_CRYPTOGRAPHY
         [SupportedOSPlatform("windows")]
 #endif
@@ -29,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 TCertificate? clone = CopyWithPersistedCngKey(certificate, key);
 
-                if (clone != null)
+                if (clone is not null)
                 {
                     return clone;
                 }
@@ -113,15 +120,15 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+#if !SYSTEM_SECURITY_CRYPTOGRAPHY
         [SupportedOSPlatform("windows")]
+#endif
         private static SafeNCryptKeyHandle? TryAcquireCngPrivateKey(
             SafeCertContextHandle certificateContext,
             out CngKeyHandleOpenOptions handleOptions)
         {
             Debug.Assert(certificateContext != null);
             Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid);
-
-            IntPtr privateKeyPtr;
 
             // If the certificate has a key handle without a key prov info, return the
             // ephemeral key
@@ -132,7 +139,7 @@ namespace System.Security.Cryptography.X509Certificates
                 if (Interop.Crypt32.CertGetCertificateContextProperty(
                     certificateContext,
                     Interop.Crypt32.CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
-                    out privateKeyPtr,
+                    out IntPtr privateKeyPtr,
                     ref cbData))
                 {
                     handleOptions = CngKeyHandleOpenOptions.EphemeralKey;
@@ -145,13 +152,12 @@ namespace System.Security.Cryptography.X509Certificates
             handleOptions = CngKeyHandleOpenOptions.None;
             try
             {
-                Interop.Crypt32.CryptKeySpec keySpec = 0;
                 if (!Interop.Crypt32.CryptAcquireCertificatePrivateKey(
                     certificateContext,
                     Interop.Crypt32.CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_ONLY_NCRYPT_KEY_FLAG,
                     IntPtr.Zero,
                     out privateKey,
-                    out keySpec,
+                    out Interop.Crypt32.CryptKeySpec _,
                     out freeKey))
                 {
 
@@ -170,7 +176,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // of the certificate.
                 if (!freeKey && privateKey != null && !privateKey.IsInvalid)
                 {
-                    var newKeyHandle = CreateSafeNCryptKeyHandle(privateKey.DangerousGetHandle(), certificateContext);
+                    SafeNCryptKeyHandle newKeyHandle = CreateSafeNCryptKeyHandle(privateKey.DangerousGetHandle(), certificateContext);
                     privateKey.SetHandleAsInvalid();
                     privateKey = newKeyHandle;
                     freeKey = true;
@@ -201,7 +207,9 @@ namespace System.Security.Cryptography.X509Certificates
         // It would have been nice not to let this ugliness escape out of this helper method. But X509Certificate2.ToString() calls this
         // method too so we cannot just change it without breaking its output.
         //
+#if !SYSTEM_SECURITY_CRYPTOGRAPHY
         [SupportedOSPlatform("windows")]
+#endif
         internal static CspParameters? GetPrivateKeyCsp(SafeCertContextHandle hCertContext)
         {
             int cbData = 0;
@@ -226,13 +234,14 @@ namespace System.Security.Cryptography.X509Certificates
                         throw GetExceptionForLastError();
                     Interop.Crypt32.CRYPT_KEY_PROV_INFO* pKeyProvInfo = (Interop.Crypt32.CRYPT_KEY_PROV_INFO*)pPrivateKey;
 
-                    CspParameters cspParameters = new CspParameters();
-                    cspParameters.ProviderName = Marshal.PtrToStringUni((IntPtr)(pKeyProvInfo->pwszProvName));
-                    cspParameters.KeyContainerName = Marshal.PtrToStringUni((IntPtr)(pKeyProvInfo->pwszContainerName));
-                    cspParameters.ProviderType = pKeyProvInfo->dwProvType;
-                    cspParameters.KeyNumber = pKeyProvInfo->dwKeySpec;
-                    cspParameters.Flags = (CspProviderFlags)((pKeyProvInfo->dwFlags & Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) == Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET ? CspProviderFlags.UseMachineKeyStore : 0);
-                    return cspParameters;
+                    return new CspParameters
+                    {
+                        ProviderName = Marshal.PtrToStringUni((IntPtr)(pKeyProvInfo->pwszProvName)),
+                        KeyContainerName = Marshal.PtrToStringUni((IntPtr)(pKeyProvInfo->pwszContainerName)),
+                        ProviderType = pKeyProvInfo->dwProvType,
+                        KeyNumber = pKeyProvInfo->dwKeySpec,
+                        Flags = (pKeyProvInfo->dwFlags & Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) == Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET ? CspProviderFlags.UseMachineKeyStore : 0,
+                    };
                 }
             }
         }
@@ -283,7 +292,9 @@ namespace System.Security.Cryptography.X509Certificates
             return newCert;
         }
 
+#if !SYSTEM_SECURITY_CRYPTOGRAPHY
         [UnsupportedOSPlatform("browser")]
+#endif
         internal static TCertificate CopyWithEphemeralKey(TCertificate certificate, CngKey cngKey)
         {
             Debug.Assert(string.IsNullOrEmpty(cngKey.KeyName));

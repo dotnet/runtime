@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Versioning;
 
 #if !NET10_0_OR_GREATER
 using System.Formats.Asn1;
@@ -10,11 +9,7 @@ using System.Security.Cryptography.Asn1;
 #endif
 
 #if !NET10_0_OR_GREATER && !NETSTANDARD
-using Internal.Cryptography;
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Reflection;
 #endif
 
 namespace System.Security.Cryptography.X509Certificates
@@ -187,12 +182,9 @@ namespace System.Security.Cryptography.X509Certificates
 #else
             ArgumentNullException.ThrowIfNull(certificate);
 
-#if !NETFRAMEWORK
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
+            if (!IsOSPlatformWindows)
                 throw new PlatformNotSupportedException();
-            }
-#endif
+
             return CertificateHelpers.GetPrivateKey<MLDsa>(
                 certificate,
                 _ =>
@@ -238,12 +230,8 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(certificate);
             ArgumentNullException.ThrowIfNull(privateKey);
 
-#if !NETFRAMEWORK
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
+            if (!IsOSPlatformWindows)
                 throw new PlatformNotSupportedException();
-            }
-#endif
 
             if (certificate.HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
@@ -351,6 +339,14 @@ namespace System.Security.Cryptography.X509Certificates
             certificate.CopyWithPrivateKey(privateKey);
 #else
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
+#endif
+
+#if NETFRAMEWORK
+        private static bool IsOSPlatformWindows => true;
+#else
+        [Runtime.Versioning.SupportedOSPlatformGuard("windows")]
+        private static bool IsOSPlatformWindows =>
+            Runtime.InteropServices.RuntimeInformation.IsOSPlatform(Runtime.InteropServices.OSPlatform.Windows);
 #endif
 
 #if !NET10_0_OR_GREATER

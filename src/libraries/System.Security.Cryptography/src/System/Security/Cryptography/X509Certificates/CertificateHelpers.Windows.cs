@@ -3,30 +3,23 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-using System.Reflection;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     internal static partial class CertificateHelpers
     {
-        private static CryptographicException GetExceptionForLastError()
-        {
-#if NETFRAMEWORK
-            return Marshal.GetHRForLastWin32Error().ToCryptographicException();
-#else
-            return Marshal.GetLastPInvokeError().ToCryptographicException();
-#endif
-        }
+        private static partial CryptographicException GetExceptionForLastError() =>
+            Marshal.GetLastPInvokeError().ToCryptographicException();
 
-        private static CertificatePal CopyFromRawBytes(CertificatePal certificate)
-        {
-            return (CertificatePal)CertificatePal.FromBlob(certificate.RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
-        }
+        private static partial CertificatePal CopyFromRawBytes(CertificatePal certificate) =>
+            (CertificatePal)CertificatePal.FromBlob(certificate.RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
 
-        private static int GuessKeySpec(
+        private static partial SafeNCryptKeyHandle CreateSafeNCryptKeyHandle(IntPtr handle, SafeHandle parentHandle) =>
+            new SafeNCryptKeyHandle(handle, parentHandle);
+
+        private static partial int GuessKeySpec(
             CngProvider provider,
             string keyName,
             bool machineKey,
@@ -69,9 +62,7 @@ namespace System.Security.Cryptography.X509Certificates
                     cspParameters.Flags |= CspProviderFlags.UseMachineKeyStore;
                 }
 
-                int keySpec;
-
-                if (TryGuessKeySpec(cspParameters, algorithmGroup, out keySpec))
+                if (TryGuessKeySpec(cspParameters, algorithmGroup, out int keySpec))
                 {
                     return keySpec;
                 }
@@ -111,7 +102,7 @@ namespace System.Security.Cryptography.X509Certificates
             // These are ordered in terms of perceived likeliness, given that the key
             // is AT_SIGNATURE.
             int[] provTypes =
-            {
+            [
                 PROV_RSA_FULL,
                 PROV_RSA_AES,
                 PROV_RSA_SCHANNEL,
@@ -119,7 +110,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // Nothing should be PROV_RSA_SIG, but if everything else has failed,
                 // just try this last thing.
                 PROV_RSA_SIG,
-            };
+            ];
 
             foreach (int provType in provTypes)
             {
@@ -151,10 +142,10 @@ namespace System.Security.Cryptography.X509Certificates
             const int PROV_DSS_DH = 13;
 
             int[] provTypes =
-            {
+            [
                 PROV_DSS_DH,
                 PROV_DSS,
-            };
+            ];
 
             foreach (int provType in provTypes)
             {
@@ -178,12 +169,6 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Fail("DSA key did not open with KeyNumber 0 or AT_SIGNATURE");
             keySpec = 0;
             return false;
-        }
-
-        [SupportedOSPlatform("windows")]
-        private static SafeNCryptKeyHandle CreateSafeNCryptKeyHandle(IntPtr handle, SafeHandle parentHandle)
-        {
-            return new SafeNCryptKeyHandle(handle, parentHandle);
         }
     }
 }
