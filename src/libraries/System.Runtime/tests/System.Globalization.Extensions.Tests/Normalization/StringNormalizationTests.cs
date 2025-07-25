@@ -130,7 +130,7 @@ namespace System.Globalization.Tests
             char[] overlappingDestination = new char[5] { 'a', 'b', 'c', 'd', 'e' };
             Assert.Throws<ArgumentException>(() => overlappingDestination.AsSpan().TryNormalize(overlappingDestination.AsSpan(), out int charsWritten, NormalizationForm.FormC));
             Assert.Throws<ArgumentException>(() => overlappingDestination.AsSpan(0, 3).TryNormalize(overlappingDestination.AsSpan(), out int charsWritten, NormalizationForm.FormC));
-            Assert.Throws<ArgumentException>(() => overlappingDestination.AsSpan().TryNormalize(overlappingDestination.AsSpan(4), out int charsWritten, NormalizationForm.FormC));
+            Assert.Throws<ArgumentException>(() => overlappingDestination.AsSpan(4).TryNormalize(overlappingDestination.AsSpan(), out int charsWritten, NormalizationForm.FormC));
         }
 
         [Fact]
