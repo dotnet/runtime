@@ -266,7 +266,7 @@ public partial class ApkBuilder
                 runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
             }
 
-            if (!File.Exists(runtimeLib) && !IsNativeAOT)
+            if (!File.Exists(runtimeLib))
             {
                 throw new ArgumentException($"{runtimeLib} was not found");
             }
