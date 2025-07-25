@@ -2742,8 +2742,8 @@ namespace System
                 RuntimeMethodHandleInternal ifaceRtMethodHandle = RuntimeTypeHandle.GetMethodAt(ifaceRtType, i);
 
                 // GetMethodAt may return null handle for methods that do not exist or are not supposed
-                // to be seen in reflection.
-                // One example is async variant methods.
+                // to be seen in reflection. One example is async variant methods.
+                // We do not record mapping for interface methods that do not exist.
                 if (ifaceRtMethodHandle.IsNullHandle())
                     continue;
 
@@ -2756,7 +2756,10 @@ namespace System
                 RuntimeMethodHandleInternal classRtMethodHandle = TypeHandle.GetInterfaceMethodImplementation(ifaceRtTypeHandle, ifaceRtMethodHandle);
 
                 if (classRtMethodHandle.IsNullHandle())
+                {
+                    actualCount++;
                     continue;
+                }
 
                 // If we resolved to an interface method, use the interface type as reflected type. Otherwise use `this`.
                 RuntimeType reflectedType = RuntimeMethodHandle.GetDeclaringType(classRtMethodHandle);
@@ -2771,10 +2774,8 @@ namespace System
                 // the TargetMethod provided to us by runtime internals may be a generic method instance,
                 //  potentially with invalid arguments. TargetMethods in the InterfaceMap should never be
                 //  instances, only definitions.
-                im.TargetMethods[actualCount] = (targetMethod is { IsGenericMethod: true, IsGenericMethodDefinition: false })
+                im.TargetMethods[actualCount++] = (targetMethod is { IsGenericMethod: true, IsGenericMethodDefinition: false })
                     ? targetMethod.GetGenericMethodDefinition() : targetMethod!;
-
-                actualCount++;
             }
 
             if (actualCount != ifaceVirtualMethodCount)
