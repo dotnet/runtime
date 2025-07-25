@@ -5460,7 +5460,6 @@ bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTree
     assert(comp != nullptr);
 
     unsigned localCount    = 0;
-    bool     overLimit     = false;
     auto     getComplexity = [&](GenTree* tree) -> unsigned {
         const unsigned treeComplexity = getTreeComplexity(tree);
         localCount += treeComplexity;
@@ -5476,7 +5475,7 @@ bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTree
         }
     }
 
-    return overLimit;
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -5499,7 +5498,6 @@ bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, TFun
     assert(comp != nullptr);
 
     unsigned localCount    = 0;
-    bool     overLimit     = false;
     auto     getComplexity = [&](GenTree* tree) -> unsigned {
         const unsigned treeComplexity = getTreeComplexity(tree);
         localCount += treeComplexity;
@@ -5515,7 +5513,7 @@ bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, TFun
         }
     }
 
-    return overLimit;
+    return false;
 }
 
 //------------------------------------------------------------------------
