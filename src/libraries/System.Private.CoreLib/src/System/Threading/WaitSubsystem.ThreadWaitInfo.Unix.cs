@@ -93,7 +93,7 @@ namespace System.Threading
             /// The linked list has only a head and no tail, which means acquired mutexes are prepended and
             /// mutexes are abandoned in reverse order.
             /// </summary>
-            private NamedMutexProcessDataBase? _lockedNamedMutexesHead;
+            private NamedMutexOwnershipChain? _namedMutexOwnershipChain;
 #endif
 
             public ThreadWaitInfo(Thread thread)
@@ -564,17 +564,18 @@ namespace System.Threading
             }
 
 #if FEATURE_CROSS_PROCESS_MUTEX
-            public NamedMutexProcessDataBase? LockedNamedMutexesHead
+            public NamedMutexOwnershipChain NamedMutexOwnershipChain
             {
                 get
                 {
                     SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
-                    return _lockedNamedMutexesHead;
-                }
-                set
-                {
-                    SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
-                    _lockedNamedMutexesHead = value;
+                    return Volatile.Read(ref _namedMutexOwnershipChain) ?? AllocateOwnershipChain();
+
+                    NamedMutexOwnershipChain AllocateOwnershipChain()
+                    {
+                        Interlocked.CompareExchange(ref _namedMutexOwnershipChain, new NamedMutexOwnershipChain(this._thread), null!);
+                        return _namedMutexOwnershipChain;
+                    }
                 }
             }
 #endif
@@ -604,25 +605,7 @@ namespace System.Threading
                 }
 
 #if FEATURE_CROSS_PROCESS_MUTEX
-                LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
-                try
-                {
-                    while (true)
-                    {
-                        NamedMutexProcessDataBase? namedMutex = LockedNamedMutexesHead;
-                        if (namedMutex == null)
-                        {
-                            break;
-                        }
-
-                        namedMutex.Abandon(_thread);
-                        Debug.Assert(LockedNamedMutexesHead != namedMutex);
-                    }
-                }
-                finally
-                {
-                    scope.Dispose();
-                }
+                _namedMutexOwnershipChain?.Abandon();
 #endif
             }
 
