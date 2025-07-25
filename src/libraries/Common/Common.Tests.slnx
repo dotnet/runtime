@@ -5,6 +5,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Common.Tests.csproj" />
+    <Project Path="tests/ComplianceTests/Compliance.Tests.csproj" />
     <Project Path="tests/StreamConformanceTests/StreamConformanceTests.csproj" />
     <Project Path="tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
