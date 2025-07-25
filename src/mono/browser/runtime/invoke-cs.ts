@@ -123,7 +123,7 @@ function bind_fn_0V (closure: BindingClosure) {
             // call C# side
             invoke_sync_jsexport(method, args);
         } finally {
-            if (loaderHelpers.is_runtime_running()) if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+            if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
 
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
