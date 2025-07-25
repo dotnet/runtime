@@ -739,7 +739,7 @@ extends:
           platforms:
           - android_x64
           - browser_wasm
-          # - wasi_wasm
+          - wasi_wasm
           - ios_arm64 # tvos and ios use the same offsets so we only need to build once
           - maccatalyst_x64
           variables:
