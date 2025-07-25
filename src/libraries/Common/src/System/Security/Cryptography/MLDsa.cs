@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
-            Helpers.ThrowIfWrongLength(destination, Algorithm.SignatureSizeInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SignatureSizeInBytes);
 
             if (context.Length > MaxContextLength)
             {
@@ -302,7 +302,7 @@ namespace System.Security.Cryptography
         public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
             ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
-            Helpers.ThrowIfWrongLength(destination, Algorithm.SignatureSizeInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SignatureSizeInBytes);
 
             if (context.Length > MaxContextLength)
             {
@@ -641,8 +641,10 @@ namespace System.Security.Cryptography
         /// <seealso cref="VerifyExternalMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public void SignExternalMu(ReadOnlySpan<byte> mu, Span<byte> destination)
         {
-            Helpers.ThrowIfWrongLength(mu, Algorithm.MuSizeInBytes);
-            Helpers.ThrowIfWrongLength(destination, Algorithm.SignatureSizeInBytes);
+            if (mu.Length != Algorithm.MuSizeInBytes)
+                throw new ArgumentException(SR.Argument_MLDsaMuInvalidLength, nameof(mu));
+
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SignatureSizeInBytes);
             ThrowIfDisposed();
 
             SignExternalMuCore(mu, destination);
@@ -1267,7 +1269,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public void ExportMLDsaPublicKey(Span<byte> destination)
         {
-            Helpers.ThrowIfWrongLength(destination, Algorithm.PublicKeySizeInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.PublicKeySizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaPublicKeyCore(destination);
@@ -1309,7 +1311,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void ExportMLDsaSecretKey(Span<byte> destination)
         {
-            Helpers.ThrowIfWrongLength(destination, Algorithm.SecretKeySizeInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SecretKeySizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaSecretKeyCore(destination);
@@ -1349,7 +1351,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void ExportMLDsaPrivateSeed(Span<byte> destination)
         {
-            Helpers.ThrowIfWrongLength(destination, Algorithm.PrivateSeedSizeInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.PrivateSeedSizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaPrivateSeedCore(destination);

@@ -20,7 +20,6 @@ namespace System.Security.Cryptography.Tests
         // TODO: Windows does not support signing empty data. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
         internal static bool SigningEmptyDataIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
-        // TODO: Windows does not support external mu. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
         internal static bool ExternalMuIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
         // DER encoding of ASN.1 BitString "foo"

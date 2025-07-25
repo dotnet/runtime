@@ -26,7 +26,17 @@ namespace System.Security.Cryptography
         ///   Gets the ML-DSA key associated with this signature mu (&#x3BC;) computation.
         /// </summary>
         /// <value>The ML-DSA key associated with this signature mu (&#x3BC;) computation.</value>
-        protected MLDsa Key { get; private set; }
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        protected MLDsa Key
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return field;
+            }
+
+            private set;
+        }
 
         /// <summary>
         ///   Gets the output size, in bytes, of this hash algorithm.
@@ -240,7 +250,7 @@ namespace System.Security.Cryptography
         /// <seealso cref="HashLengthInBytes"/>
         public void GetHashAndReset(Span<byte> destination)
         {
-            Helpers.ThrowIfWrongLength(destination, HashLengthInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, HashLengthInBytes);
             ThrowIfDisposed();
 
             GetHashAndResetCore(destination);
@@ -275,7 +285,7 @@ namespace System.Security.Cryptography
         /// <seealso cref="GetHashAndReset(Span{byte})" />
         public void GetCurrentHash(Span<byte> destination)
         {
-            Helpers.ThrowIfWrongLength(destination, HashLengthInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, HashLengthInBytes);
             ThrowIfDisposed();
 
             GetCurrentHashCore(destination);
@@ -351,7 +361,7 @@ namespace System.Security.Cryptography
             // Rather than keeping the key instance alive, we'll just be backwards here.
             ThrowIfDisposed();
 
-            Helpers.ThrowIfWrongLength(destination, Key.Algorithm.SignatureSizeInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, Key.Algorithm.SignatureSizeInBytes);
 
             int hashLength = HashLengthInBytes;
             Debug.Assert(hashLength == 64);
@@ -430,7 +440,10 @@ namespace System.Security.Cryptography
         /// </remarks>
         protected virtual void ResetCore()
         {
-            Span<byte> discard = stackalloc byte[HashLengthInBytes];
+            int hashLength = HashLengthInBytes;
+            Debug.Assert(hashLength == 64);
+
+            Span<byte> discard = stackalloc byte[hashLength];
             GetHashAndResetCore(discard);
         }
 

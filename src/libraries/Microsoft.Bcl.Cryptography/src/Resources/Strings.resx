@@ -87,6 +87,9 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_MLDsaMuInvalidLength" xml:space="preserve">
+    <value>The specified mu value is not the correct length for the ML-DSA algorithm.</value>
+  </data>
   <data name="Argument_PemEncoding_InvalidLabel" xml:space="preserve">
     <value>The specified label is not valid.</value>
   </data>

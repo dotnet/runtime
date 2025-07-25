@@ -258,18 +258,7 @@ namespace Internal.Cryptography
         }
 
 #if !BUILDING_PKCS
-        internal static void ThrowIfWrongLength(
-           ReadOnlySpan<byte> source,
-           int expectedLength,
-           [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(source))] string? paramName = null)
-        {
-            if (source.Length != expectedLength)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_DestinationImprecise, expectedLength), paramName);
-            }
-        }
-
-        internal static void ThrowIfWrongLength(
+        internal static void ThrowIfDestinationWrongLength(
             Span<byte> destination,
             int expectedLength,
             [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(destination))] string? paramName = null)
