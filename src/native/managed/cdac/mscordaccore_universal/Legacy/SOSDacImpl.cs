@@ -110,8 +110,81 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomainData(addr, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, DacpAppDomainData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (addr == 0)
+            {
+                hr = HResults.E_INVALIDARG;
+            }
+            else
+            {
+                *data = default;
+                data->AppDomainPtr = addr;
+                TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+                ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
+                Contracts.ILoader loader = _target.Contracts.Loader;
+                TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
+                data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+                data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
+                if (addr != systemDomain)
+                {
+                    TargetPointer pAppDomain = addr.ToTargetPointer(_target);
+                    data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+
+                    IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                        pAppDomain,
+                        AssemblyIterationFlags.IncludeLoading |
+                        AssemblyIterationFlags.IncludeLoaded |
+                        AssemblyIterationFlags.IncludeExecution);
+
+                    foreach (Contracts.ModuleHandle module in modules)
+                    {
+                        if (loader.IsAssemblyLoaded(module))
+                        {
+                            data->AssemblyCount++;
+                        }
+                    }
+
+                    IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
+                        pAppDomain,
+                        AssemblyIterationFlags.IncludeFailedToLoad);
+                    data->FailedAssemblyCount = failedModules.Count();
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpAppDomainData dataLocal = default;
+            int hrLocal = _legacyImpl.GetAppDomainData(addr, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->AppDomainPtr == dataLocal.AppDomainPtr);
+                Debug.Assert(data->pHighFrequencyHeap == dataLocal.pHighFrequencyHeap);
+                Debug.Assert(data->pLowFrequencyHeap == dataLocal.pLowFrequencyHeap);
+                Debug.Assert(data->pStubHeap == dataLocal.pStubHeap);
+                Debug.Assert(data->DomainLocalBlock == dataLocal.DomainLocalBlock);
+                Debug.Assert(data->pDomainLocalModules == dataLocal.pDomainLocalModules);
+                Debug.Assert(data->dwId == dataLocal.dwId);
+                Debug.Assert(data->appDomainStage == dataLocal.appDomainStage);
+                Debug.Assert(data->AssemblyCount == dataLocal.AssemblyCount);
+                Debug.Assert(data->FailedAssemblyCount == dataLocal.FailedAssemblyCount);
+            }
+        }
+#endif
+        return hr;
+
+    }
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
     {
         int hr = HResults.S_OK;
