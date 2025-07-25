@@ -46,7 +46,7 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     andi $t1, $r21, 0x40
     bnez $t1, LOCAL_LABEL(Restore_CONTEXT_LSX)
 
-    // 64-bits FPU. Not Support LSX/LASX
+    // Neither LSX or LASX is supported.
     fld.d  $f0 , $a0, CONTEXT_FPU_OFFSET
     fld.d  $f1 , $a0, CONTEXT_FPU_OFFSET + 8*1
     fld.d  $f2 , $a0, CONTEXT_FPU_OFFSET + 8*2
@@ -309,7 +309,7 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     andi $t3, $t1, 0x40
     bnez $t3, LOCAL_LABEL(Store_CONTEXT_LSX)
 
-    // 64-bits FPU. Not Support LSX/LASX
+    // Neither LSX or LASX is supported.
     fst.d  $f0 , $a0, CONTEXT_FPU_OFFSET
     fst.d  $f1 , $a0, CONTEXT_FPU_OFFSET + 8*1
     fst.d  $f2 , $a0, CONTEXT_FPU_OFFSET + 8*2
