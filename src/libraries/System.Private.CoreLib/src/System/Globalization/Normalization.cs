@@ -46,7 +46,7 @@ namespace System.Globalization
 
             if (source.Overlaps(destination))
             {
-                throw new ArgumentException(SR.Argument_OverlapSpansAreNotAllowed, nameof(destination));
+                ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
             }
 
             // In Invariant mode we assume all characters are normalized because we don't support any linguistic operations on strings.

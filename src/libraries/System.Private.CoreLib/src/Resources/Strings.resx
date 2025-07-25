@@ -3791,9 +3791,6 @@
   <data name="Argument_OverlapAlignmentMismatch" xml:space="preserve">
     <value>Overlapping spans have mismatching alignment.</value>
   </data>
-  <data name="Argument_OverlapSpansAreNotAllowed" xml:space="preserve">
-    <value>Overlapping source and destination spans are not allowed.</value>
-  </data>
   <data name="Arg_InsufficientNumberOfElements" xml:space="preserve">
     <value>At least {0} element(s) are expected in the parameter "{1}".</value>
   </data>
