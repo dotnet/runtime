@@ -718,25 +718,6 @@ namespace ILCompiler
             return _modulesWithMetadata;
         }
 
-        private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
-        {
-            // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
-            {
-                if (!IsReflectionBlocked(constructedType))
-                    yield return constructedType;
-            }
-
-            // All necessary types for which this is the highest load level that are not blocked
-            // get runtime mapping.
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                    yield return necessaryType;
-            }
-        }
-
         public override void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, FieldDesc writtenField)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
@@ -857,7 +838,7 @@ namespace ILCompiler
                 reflectableTypes[typeWithMetadata] = MetadataCategory.Description;
             }
 
-            foreach (var constructedType in GetTypesWithRuntimeMapping())
+            foreach (var constructedType in GetTypesWithEETypes())
             {
                 reflectableTypes[constructedType] |= MetadataCategory.RuntimeMapping;
 
