@@ -1296,6 +1296,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
         m_idxFPReg = 0;
+#elif defined(TARGET_WASM)
+        // we put everything on the stack, we don't have registers
+        // WASM_TODO find out whether we can use implicit stack here
+        m_ofsStack = 0;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
 #endif
@@ -1867,6 +1871,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
 
+    return argOfs;
+#elif defined(TARGET_WASM)
+    int cbArg = ALIGN_UP(StackElemSize(argSize), TARGET_POINTER_SIZE);
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+    
+    m_ofsStack += cbArg;
+    
     return argOfs;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");

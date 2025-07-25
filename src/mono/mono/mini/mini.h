@@ -1306,6 +1306,12 @@ typedef enum {
 #define vreg_is_ref(cfg, vreg) (GINT_TO_UINT32(vreg) < (cfg)->vreg_is_ref_len ? (cfg)->vreg_is_ref [(vreg)] : 0)
 #define vreg_is_mp(cfg, vreg) (GINT_TO_UINT32(vreg) < (cfg)->vreg_is_mp_len ? (cfg)->vreg_is_mp [(vreg)] : 0)
 
+typedef struct {
+	MonoInst* addr_var;
+	int alloc_size;
+	GSList* localloc_ins;
+} MonoCachedLocallocInfo;
+
 /*
  * Control Flow Graph and compilation unit information
  */
@@ -1660,6 +1666,8 @@ typedef struct {
 	MonoGraphDumper *gdump_ctx;
 
 	gboolean *clause_is_dead;
+
+	MonoCachedLocallocInfo localloc_cache [2];
 
 	/* Stats */
 	int stat_allocate_var;
