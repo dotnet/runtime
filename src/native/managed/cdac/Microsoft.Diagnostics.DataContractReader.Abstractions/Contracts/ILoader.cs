@@ -41,15 +41,6 @@ public enum ModuleFlags
     BeingUnloaded = 0x100000,
 }
 
-public record struct ModuleLookupTables(
-    TargetPointer FieldDefToDesc,
-    TargetPointer ManifestModuleReferences,
-    TargetPointer MemberRefToDesc,
-    TargetPointer MethodDefToDesc,
-    TargetPointer TypeDefToMethodTable,
-    TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
-
 [Flags]
 public enum AssemblyIterationFlags
 {
@@ -71,6 +62,15 @@ public enum AssemblyIterationFlags
     IncludeCollected = 0x00000080, // Include all collectible assemblies that have been collected
 }
 
+public record struct ModuleLookupTables(
+    TargetPointer FieldDefToDesc,
+    TargetPointer ManifestModuleReferences,
+    TargetPointer MemberRefToDesc,
+    TargetPointer MethodDefToDesc,
+    TargetPointer TypeDefToMethodTable,
+    TargetPointer TypeRefToMethodTable,
+    TargetPointer MethodDefToILCodeVersioningState);
+
 public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
@@ -88,14 +88,17 @@ public interface ILoader : IContract
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
-
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
-
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
     bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
+
+    TargetPointer GetGlobalLoaderAllocator() => throw new NotImplementedException();
+    TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

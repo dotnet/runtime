@@ -3613,22 +3613,24 @@ bool ObjectAllocator::ShouldClone(CloneInfo* info)
     unsigned const sizeLimit   = (sizeConfig >= 0) ? (unsigned)sizeConfig : UINT_MAX;
     unsigned       size        = 0;
     bool           shouldClone = true;
+    auto           countNode   = [&size](GenTree* tree) -> unsigned {
+        size++;
+        return 1;
+    };
 
     for (BasicBlock* const block : *info->m_blocksToClone)
     {
         // Note this overstates the size a bit since we'll resolve GDVs
         // in the clone and the original...
         //
-        unsigned const slack     = sizeLimit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(comp, slack, &blockSize))
+        unsigned const slack = sizeLimit - size;
+        if (block->ComplexityExceeds(comp, slack, countNode))
         {
             JITDUMP("Rejecting");
             JITDUMPEXEC(DumpIndex(info->m_pseudoIndex));
             JITDUMP(" cloning: exceeds size limit %u\n", sizeLimit);
             return false;
         }
-        size += blockSize;
     }
 
     // TODO: some kind of profile check...
