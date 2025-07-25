@@ -2,25 +2,37 @@
 
 function(generate_data_descriptors)
   set(options "")
-  set(oneValueArgs LIBRARY_NAME)
-  set(multiValueArgs "")
+  set(oneValueArgs LIBRARY_NAME CONTRACT_FILE HEADER_FILE INLINE_FILE POINTER_DATA_NAME CONTRACT_NAME)
+  set(multiValueArgs INCLUDE_DIRS DEPENDENCIES)
   cmake_parse_arguments(DATA_DESCRIPTORS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
+
+  set(DATA_DESCRIPTOR_SHARED_SOURCE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/debug/datadescriptor")
+  set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
+
+  set(POINTER_DATA_NAME ${DATA_DESCRIPTORS_POINTER_DATA_NAME})
+  set(CONTRACT_NAME ${DATA_DESCRIPTORS_CONTRACT_NAME})
+  configure_file("${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/nameconfigure.h.in" "${GENERATED_CDAC_DESCRIPTOR_DIR}/nameconfigure.h")
+
+  set(LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME})
+  set(INTERMEDIARY_LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME}_INTERMEDIARY)
 
   if (NOT CDAC_BUILD_TOOL_BINARY_PATH)
     # if CDAC_BUILD_TOOL_BINARY_PATH is unspecified (for example for a build without a .NET SDK or msbuild),
     # link a stub contract descriptor into the runtime
-    add_library_clr(${LIBRARY_NAME} OBJECT contractdescriptorstub.c)
+    add_library_clr(${LIBRARY} OBJECT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contractdescriptorstub.c")
+    target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
     message(STATUS "Using a stub cDAC contract descriptor")
   else()
     # generate a contract descriptor using cdac-build-tool from a data descriptor and contract json file
 
-    set(LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME})
-    set(INTERMEDIARY_LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME}_INTERMEDIARY)
+    if(NOT EXISTS "${CDAC_BUILD_TOOL_BINARY_PATH}")
+      message(FATAL_ERROR "${CDAC_BUILD_TOOL_BINARY_PATH} does not exist")
+    endif()
 
-    add_library(${INTERMEDIARY_LIBRARY} OBJECT datadescriptor.cpp)
+    add_library(${INTERMEDIARY_LIBRARY} OBJECT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/datadescriptor.cpp")
 
-    # don't build the data descriptor before the VM (and any of its dependencies' generated headers)
-    add_dependencies(${INTERMEDIARY_LIBRARY} cee_wks_core)
+    target_compile_definitions(${INTERMEDIARY_LIBRARY} PRIVATE POINTER_DATA="${DATA_DESCRIPTOR_POINTER_NAME}")
+    target_compile_definitions(${INTERMEDIARY_LIBRARY} PRIVATE CONTRACT_EXPORT="${DATA_DESCRIPTOR_CONTRACT_NAME}")
 
     if(CLR_CMAKE_TARGET_WIN32)
       # turn off whole program optimization:
@@ -31,19 +43,19 @@ function(generate_data_descriptors)
           INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO OFF)
     endif()
 
-    target_include_directories(${INTERMEDIARY_LIBRARY} BEFORE PRIVATE ${VM_DIR})
-    target_include_directories(${INTERMEDIARY_LIBRARY} BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})
-    target_include_directories(${INTERMEDIARY_LIBRARY} PRIVATE ${CLR_DIR}/interop/inc)
-
-    set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
-    set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
-    if(NOT EXISTS "${CDAC_BUILD_TOOL_BINARY_PATH}")
-      message(FATAL_ERROR "${CDAC_BUILD_TOOL_BINARY_PATH} does not exist")
+    # don't build the data descriptor before the VM (and any of its dependencies' generated headers)
+    if(DEFINED DATA_DESCRIPTORS_DEPENDENCIES)
+      add_dependencies(${INTERMEDIARY_LIBRARY} ${DATA_DESCRIPTORS_DEPENDENCIES})
     endif()
-    set(CONTRACT_DESCRIPTOR_INPUT "${CMAKE_CURRENT_SOURCE_DIR}/contract-descriptor.c.in")
+    if(DEFINED DATA_DESCRIPTORS_INCLUDE_DIRS)
+      target_include_directories(${INTERMEDIARY_LIBRARY} BEFORE PRIVATE ${DATA_DESCRIPTORS_INCLUDE_DIRS})
+    endif()
+
+    set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
 
     set(CONTRACT_BASELINE_DIR "${CLR_REPO_ROOT_DIR}/docs/design/datacontracts/data")
-    set(CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc")
+    set(CONTRACT_DESCRIPTOR_INPUT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contract-descriptor.c.in")
+    set(CONTRACT_FILE "${DATA_DESCRIPTORS_CONTRACT_FILE}")
 
     # generate the contract descriptor by running cdac-build-tool
     # n.b. this just uses `dotnet` from the PATH.  InitializeDotNetCli adds the apropropriate directory
@@ -51,7 +63,7 @@ function(generate_data_descriptors)
       OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
       VERBATIM
       COMMAND ${CLR_DOTNET_HOST_PATH} ${CDAC_BUILD_TOOL_BINARY_PATH} compose -i "${CONTRACT_DESCRIPTOR_INPUT}" -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -b "${CONTRACT_BASELINE_DIR}" -c "${CONTRACT_FILE}" $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}>
-      DEPENDS ${INTERMEDIARY_LIBRARY} cee_wks_core $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}> "${CONTRACT_FILE}" "${CONTRACT_DESCRIPTOR_INPUT}"
+      DEPENDS ${INTERMEDIARY_LIBRARY} ${DATA_DESCRIPTORS_DEPENDENCIES} $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}> "${CONTRACT_FILE}" "${CONTRACT_DESCRIPTOR_INPUT}"
       USES_TERMINAL
     )
 
@@ -60,11 +72,18 @@ function(generate_data_descriptors)
     # DotNetRuntimeContractDescriptor since it is not referenced anywhere.
     add_library_clr(${LIBRARY} OBJECT
       "${CONTRACT_DESCRIPTOR_OUTPUT}"
-      contractpointerdata.cpp
+      "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contractpointerdata.cpp"
     )
-    target_include_directories(${LIBRARY} BEFORE PRIVATE ${VM_DIR})
-    target_include_directories(${LIBRARY} BEFORE PRIVATE ${VM_DIR}/${ARCH_SOURCES_DIR})
-    target_include_directories(${LIBRARY} PRIVATE ${CLR_DIR}/interop/inc)
-    add_dependencies(${LIBRARY} ${INTERMEDIARY_LIBRARY} cee_wks_core)
+
+    add_dependencies(${LIBRARY} ${INTERMEDIARY_LIBRARY})
+    if(DEFINED DATA_DESCRIPTORS_DEPENDENCIES)
+      add_dependencies(${LIBRARY} ${DATA_DESCRIPTORS_DEPENDENCIES})
+    endif()
+    if(DEFINED DATA_DESCRIPTORS_INCLUDE_DIRS)
+      target_include_directories(${LIBRARY} BEFORE PRIVATE ${DATA_DESCRIPTORS_INCLUDE_DIRS})
+    endif()
+
+    target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
+
   endif()
 endfunction(generate_data_descriptors)
