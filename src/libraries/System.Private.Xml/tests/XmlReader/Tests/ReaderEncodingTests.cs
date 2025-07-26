@@ -126,7 +126,7 @@ namespace System.Xml.XmlReaderTests
         [Fact]
         public static void ReadWithMalformedUtf8InXmlDeclaration()
         {
-            // This test verifies the fix for issue #113061 where malformed UTF-8 sequences
+            // This test verifies the fix for issue dotnet/runtime#113061 where malformed UTF-8 sequences
             // in XML declaration caused ArgumentOutOfRangeException instead of XmlException
             string data = "<?xml version=\"1.0\xbf\"?>";
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes(data);
