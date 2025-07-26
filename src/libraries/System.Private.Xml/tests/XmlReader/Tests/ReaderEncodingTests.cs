@@ -122,5 +122,19 @@ namespace System.Xml.XmlReaderTests
             XmlException ex = Assert.Throws<XmlException>(() => reader.Read());
             Assert.Contains(_invalidCharMessageStart, ex.Message);
         }
+
+        [Fact]
+        public static void ReadWithMalformedUtf8InXmlDeclaration()
+        {
+            // This test verifies the fix for issue #113061 where malformed UTF-8 sequences
+            // in XML declaration caused ArgumentOutOfRangeException instead of XmlException
+            string data = "<?xml version=\"1.0\xbf\"?>";
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(data);
+            var reader = XmlReader.Create(new MemoryStream(bytes));
+
+            // Should throw XmlException, not ArgumentOutOfRangeException
+            XmlException ex = Assert.Throws<XmlException>(() => reader.Read());
+            Assert.Contains(_invalidCharInThisEncoding, ex.Message);
+        }
     }
 }

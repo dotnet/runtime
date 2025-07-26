@@ -3418,6 +3418,11 @@ namespace System.Xml
                         {
                             _ps.bytesUsed = 0;
                         }
+                        else if (bytesLeft < 0)
+                        {
+                            // This can happen when encoding switch causes bytePos to be calculated incorrectly for malformed data
+                            Throw(SR.Xml_InvalidCharInThisEncoding);
+                        }
                         else
                         {
                             Debug.Assert(_ps.bytes != null);
