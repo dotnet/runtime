@@ -412,9 +412,6 @@ namespace System.Runtime.CompilerServices
         /// This check is conceptually similar to "(void*)(&amp;left) &gt;= (void*)(&amp;right)".
         /// </remarks>
         [Intrinsic]
-        // CoreCLR:CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN_OR_EQUAL_TO
-        // AOT:IsAddressGreaterThanOrEqualTo
-        // Mono:IsAddressGreaterThanOrEqualTo
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAddressGreaterThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
@@ -455,9 +452,6 @@ namespace System.Runtime.CompilerServices
         /// This check is conceptually similar to "(void*)(&amp;left) &lt;= (void*)(&amp;right)".
         /// </remarks>
         [Intrinsic]
-        // CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN_OR_EQUAL_TO
-        // AOT:IsAddressLessThanOrEqualTo
-        // Mono:IsAddressLessThanOrEqualTo
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAddressLessThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
