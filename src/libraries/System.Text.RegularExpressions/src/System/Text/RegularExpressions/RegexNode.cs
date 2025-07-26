@@ -790,6 +790,11 @@ namespace System.Text.RegularExpressions
                             start = endExclusive;
                         }
 
+                        // Force a re-reduction if we know we've exposed new opportunities that'll be handled.
+                        reordered |=
+                            child.ChildCount() == 2 &&
+                            (child.Child(0).Kind is RegexNodeKind.Empty || child.Child(1).Kind is RegexNodeKind.Empty); // can be transformed into a ? or ??
+
                         // If anything was reordered, there may be new optimization opportunities inside
                         // of the alternation, so reduce it again.
                         if (reordered)
@@ -1032,6 +1037,22 @@ namespace System.Text.RegularExpressions
                             if (node.Kind == RegexNodeKind.Alternate)
                             {
                                 node = RemoveRedundantEmptiesAndNothings(node);
+
+                                // If the alternation is actually just a ? or ?? in disguise, transform it accordingly.
+                                //     (a|) becomes a?
+                                //     (|a) becomes a??
+                                // Such "optional" nodes are processed more efficiently, including being able to be better coalesced with surrounding nodes.
+                                if (node.Kind is RegexNodeKind.Alternate && node.ChildCount() == 2)
+                                {
+                                    if (node.Child(1).Kind is RegexNodeKind.Empty)
+                                    {
+                                        node = node.Child(0).MakeQuantifier(lazy: false, min: 0, max: 1);
+                                    }
+                                    else if (node.Child(0).Kind is RegexNodeKind.Empty)
+                                    {
+                                        node = node.Child(1).MakeQuantifier(lazy: true, min: 0, max: 1);
+                                    }
+                                }
                             }
                         }
                     }
