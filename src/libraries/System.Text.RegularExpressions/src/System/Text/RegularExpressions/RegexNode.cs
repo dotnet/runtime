@@ -894,7 +894,9 @@ namespace System.Text.RegularExpressions
             // If the Loop or Lazyloop now only has one child node and its a Set, One, or Notone,
             // reduce to just Setloop/lazy, Oneloop/lazy, or Notoneloop/lazy.  The parser will
             // generally have only produced the latter, but other reductions could have exposed
-            // this.
+            // this. We can also reduce or eliminate certain loops that are nops, e.g.
+            // a loop with a minimum of 0 that wraps a zero-width assertion is either asserting something
+            // or not, and is thus useless.
             if (u.ChildCount() == 1)
             {
                 RegexNode child = u.Child(0);
@@ -905,6 +907,17 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Set:
                         child.MakeRep(u.Kind == RegexNodeKind.Lazyloop ? RegexNodeKind.Onelazy : RegexNodeKind.Oneloop, u.M, u.N);
                         u = child;
+                        break;
+
+                    case RegexNodeKind.Empty:
+                    case RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or
+                         RegexNodeKind.Beginning or RegexNodeKind.Start or
+                         RegexNodeKind.Bol or RegexNodeKind.Eol or
+                         RegexNodeKind.End or RegexNodeKind.EndZ or
+                         RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+                         RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary
+                         when u.M == 0:
+                        u = new RegexNode(RegexNodeKind.Empty, Options);
                         break;
                 }
             }
