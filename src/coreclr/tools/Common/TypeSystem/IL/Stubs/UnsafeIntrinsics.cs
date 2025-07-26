@@ -59,27 +59,11 @@ namespace Internal.IL.Stubs
                         (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
                         (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.cgt_un),
                         (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-                case "IsAddressGreaterThanOrEqualTo":
-                    return new ILStubMethodIL(method, new byte[]
-                    {
-                        (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
-                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.clt_un),
-                        (byte)ILOpcode.ldc_i4_0,
-                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ceq),
-                        (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                 case "IsAddressLessThan":
                     return new ILStubMethodIL(method, new byte[]
                     {
                         (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
                         (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.clt_un),
-                        (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-                case "IsAddressLessThanOrEqualTo":
-                    return new ILStubMethodIL(method, new byte[]
-                    {
-                        (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
-                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.cgt_un),
-                        (byte)ILOpcode.ldc_i4_0,
-                        (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ceq),
                         (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                 case "ByteOffset":
                     return new ILStubMethodIL(method, new byte[]

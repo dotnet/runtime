@@ -117,8 +117,8 @@ namespace System.Collections.Frozen.Tests
                 new[]
                 {
                     "AsPointer", "As", "AsRef", "Add", "AddByteOffset", "Copy", "CopyBlock", "CopyBlockUnaligned", "InitBlock", "InitBlockUnaligned", "Read", "Write",
-                    "ReadUnaligned", "WriteUnaligned", "AreSame", "IsAddressGreaterThan", "IsAddressGreaterThanOrEqualTo", "IsAddressLessThan", "IsAddressLessThanOrEqualTo",
-                    "ByteOffset", "NullRef",  "IsNullRef", "SkipInit", "Subtract", "SubtractByteOffset", "Unbox",
+                    "ReadUnaligned", "WriteUnaligned", "AreSame", "IsAddressGreaterThan", "IsAddressLessThan", "ByteOffset", "NullRef",  "IsNullRef", "SkipInit",
+                    "Subtract", "SubtractByteOffset", "Unbox",
                 },
 
                 // from https://raw.githubusercontent.com/dotnet/roslyn/0456b4adc6939e366e7c509318b3ac6a85cda496/src/Compilers/CSharp/Test/Emit2/CodeGen/CodeGenLengthBasedSwitchTests.cs
