@@ -1338,7 +1338,7 @@ public:
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 #endif
 
-    void inst_SET(emitJumpKind condition, regNumber reg);
+    void inst_SET(emitJumpKind condition, regNumber reg, insOpts instOptions = INS_OPTS_NONE);
 
     void inst_RV(instruction ins, regNumber reg, var_types type, emitAttr size = EA_UNKNOWN);
 
