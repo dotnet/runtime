@@ -174,7 +174,8 @@ public class Async2Reflection
         MethodInfo dynamicMethod = dynamicType.GetMethod("DynamicMethod");
         var del = dynamicMethod.CreateDelegate<Func<Task, Task>>();
 
-        // This throws right now since `MethodImpl.Async` has no effect on dynamic methods, thus we have stack underflow at `ret` instruction.
-        Assert.ThrowsAsync<InvalidProgramException>(() => del(Task.CompletedTask));
+        // the following should not crash
+        del(Task.CompletedTask);
+        del(FooTask());
     }
 }

@@ -1205,8 +1205,15 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 
     Module *pModule = GetModule();
 
+    TADDR pIL = 0;
     // Always pickup overrides like reflection emit, EnC, etc.
-    TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
+    // Unless it is an async thunk.
+    // A thunk cannot be overriden, bur shares methoddef with the real method,
+    // which could be overriden, but we do not want that override.
+    if (!IsAsyncThunkMethod())
+    {
+        pIL = pModule->GetDynamicIL(GetMemberDef());
+    }
 
     if (pIL == (TADDR)NULL)
     {
