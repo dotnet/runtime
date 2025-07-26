@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
@@ -523,7 +524,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(names.Length == values.Length);
 
             Dictionary<string, string>? enumMemberAttributes = null;
-            foreach (FieldInfo field in typeof(T).GetFields(BindingFlags.Public | BindingFlags.Static))
+            foreach (FieldInfo field in GetFields())
             {
                 if (field.GetCustomAttribute<JsonStringEnumMemberNameAttribute>() is { } attribute)
                 {
@@ -561,6 +562,12 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return enumFields;
+
+#if !NET9_0_OR_GREATER
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2090:UnrecognizedReflectionPattern",
+                Justification = "Enum fields are always preserved by trimming.")]
+#endif
+            static IEnumerable<FieldInfo> GetFields() => typeof(T).GetFields(BindingFlags.Public | BindingFlags.Static);
         }
 
         private static string ResolveAndValidateJsonName(string name, JsonNamingPolicy? namingPolicy, EnumFieldNameKind kind)
