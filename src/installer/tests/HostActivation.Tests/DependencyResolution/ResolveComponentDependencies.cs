@@ -458,7 +458,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .WithPackage(AdditionalDependencyName, "2.0.1", p => p.WithAssemblyGroup(null, g => g
                         .WithAsset($"lib/netstandard1.0/{AdditionalDependencyName}.dll", f => f
                             .WithVersion("2.0.0.0", "2.0.1.23344")
-                            .WithFileOnDiskPath($"{AdditionalDependencyName}.dll"))))
+                            .WithLocalPath($"{AdditionalDependencyName}.dll"))))
                     .WithPackage("Libuv", "1.9.1", p => p
                         .WithNativeLibraryGroup("debian-x64", g => g.WithAsset("runtimes/debian-x64/native/libuv.so"))
                         .WithNativeLibraryGroup("fedora-x64", g => g.WithAsset("runtimes/fedora-x64/native/libuv.so"))
