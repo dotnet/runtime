@@ -389,6 +389,16 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(abc?)*?d", "(ab(?>c?))*?d")]
         [InlineData("(ab*c)*d", "(?>(a(?>b*)c)*)d")]
         [InlineData("(aba)?d", "(?>(aba)?)d")]
+        // Anchors
+        [InlineData(@"\b\b", @"\b")]
+        [InlineData(@"\b\b\b\b\b", @"\b")]
+        [InlineData(@"\B\B", @"\B")]
+        [InlineData(@"^^", @"^")]
+        [InlineData(@"$", @"$")]
+        [InlineData(@"\Z\Z", @"\Z")]
+        [InlineData(@"\z\z", @"\z")]
+        [InlineData(@"\G\G", @"\G")]
+        [InlineData(@"\A\A", @"\A")]
         // Nothing handling
         [InlineData(@"\wabc(?!)def", "(?!)")]
         [InlineData(@"\wabc(?!)def|ghi(?!)", "(?!)")]
@@ -550,6 +560,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a(?<=abc)+b", "ab")]
         [InlineData("a(?<!abc){1,2}b", "ab")]
         [InlineData("a${3,}b", "ab")]
+        // Anchors
+        [InlineData(@"\b\B", "\b")]
+        [InlineData(@"^$", "^")]
+        [InlineData(@"^$", "$")]
         public void PatternsReduceDifferently(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
