@@ -6895,23 +6895,6 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN_OR_EQUAL_TO)->GetMemberDef())
-    {
-        // Compare the two arguments
-        static const BYTE ilcode[] =
-        {
-            CEE_LDARG_0,
-            CEE_LDARG_1,
-            CEE_PREFIX1, (CEE_CLT_UN & 0xFF),
-            CEE_LDC_I4_0,
-            CEE_PREFIX1, (CEE_CEQ & 0xFF),
-            CEE_RET
-        };
-
-        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
-
-        return true;
-    }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN)->GetMemberDef())
     {
         // Compare the two arguments
@@ -6920,23 +6903,6 @@ static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
             CEE_LDARG_0,
             CEE_LDARG_1,
             CEE_PREFIX1, (CEE_CLT_UN & 0xFF),
-            CEE_RET
-        };
-
-        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
-
-        return true;
-    }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN_OR_EQUAL_TO)->GetMemberDef())
-    {
-        // Compare the two arguments
-        static const BYTE ilcode[] =
-        {
-            CEE_LDARG_0,
-            CEE_LDARG_1,
-            CEE_PREFIX1, (CEE_CGT_UN & 0xFF),
-            CEE_LDC_I4_0,
-            CEE_PREFIX1, (CEE_CEQ & 0xFF),
             CEE_RET
         };
 

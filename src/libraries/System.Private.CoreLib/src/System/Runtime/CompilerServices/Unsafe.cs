@@ -421,13 +421,6 @@ namespace System.Runtime.CompilerServices
             where T : allows ref struct
         {
             return !IsAddressLessThan(in left, in right);
-
-            // ldarg.0
-            // ldarg.1
-            // clt.un
-            // ldc.i4.0
-            // ceq
-            // ret
         }
 
         /// <summary>
@@ -471,13 +464,6 @@ namespace System.Runtime.CompilerServices
             where T : allows ref struct
         {
             return !IsAddressGreaterThan(in left, in right);
-
-            // ldarg.0
-            // ldarg.1
-            // cgt.un
-            // ldc.i4.0
-            // ceq
-            // ret
         }
 
         /// <summary>
