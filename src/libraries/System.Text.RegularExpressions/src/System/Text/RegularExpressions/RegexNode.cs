@@ -1832,6 +1832,16 @@ namespace System.Text.RegularExpressions
                             currentNode.MakeRep(RegexNodeKind.Oneloop, 2, 2);
                             next++;
                             continue;
+
+                        // Coalescing identical anchors (e.g. \b\b). These don't need to become loops, as they collapse to a single anchor.
+                        case RegexNodeKind.Beginning or RegexNodeKind.Start or
+                             RegexNodeKind.End or RegexNodeKind.EndZ or
+                             RegexNodeKind.Bol or RegexNodeKind.Eol or
+                             RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or
+                             RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary
+                             when nextNode.Kind == currentNode.Kind:
+                            next++;
+                            continue;
                     }
                 }
 
