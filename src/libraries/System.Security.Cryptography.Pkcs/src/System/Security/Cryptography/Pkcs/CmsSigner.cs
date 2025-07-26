@@ -118,6 +118,18 @@ namespace System.Security.Cryptography.Pkcs
 #else
         private
 #endif
+        CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, MLDsa? privateKey)
+            : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
+        {
+        }
+
+
+#if NET || NETSTANDARD2_1
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public
+#else
+        private
+#endif
         CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, SlhDsa? privateKey)
             : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
         {
@@ -193,7 +205,7 @@ namespace System.Security.Cryptography.Pkcs
             Certificate = certificate;
             DigestAlgorithm = s_defaultAlgorithm.CopyOid();
 
-            Debug.Assert(privateKey is null or AsymmetricAlgorithm or SlhDsa);
+            Debug.Assert(privateKey is null or AsymmetricAlgorithm or MLDsa or SlhDsa);
             _privateKey = (IDisposable?)privateKey;
 
             _signaturePadding = signaturePadding;
