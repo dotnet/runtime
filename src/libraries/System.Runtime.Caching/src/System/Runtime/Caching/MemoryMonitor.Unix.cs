@@ -25,7 +25,8 @@ namespace System.Runtime.Caching
             s_totalPhysical = memInfo.TotalAvailableMemoryBytes;
 
             // s_totalVirtual/TotalVirtual on the other hand is only used to decide if an x86 Windows machine is running in /3GB mode or not...
-            //  ... so it can appropriately set the "Auto" memory limit of the cache size - which again, is never enforced in .Net Core.
+            //  ... but only so it can appropriately set the "Auto" memory limit of the cache size - which again, is never enforced in .Net Core.
+            //  So we don't need to worry about it here.
             //s_totalVirtual = default(long);
         }
 #pragma warning restore CA1810
