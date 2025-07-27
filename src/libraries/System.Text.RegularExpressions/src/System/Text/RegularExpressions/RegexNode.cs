@@ -981,6 +981,17 @@ namespace System.Text.RegularExpressions
                 case RegexCharClass.NotSpaceSpaceClass:
                     Str = RegexCharClass.AnyClass;
                     break;
+
+                // Different ways of saying \D, \S, \W
+                case RegexCharClass.NegatedDigitClass: // [^\d]
+                    Str = RegexCharClass.NotDigitClass;
+                    break;
+                case RegexCharClass.NegatedSpaceClass: // [^\s]
+                    Str = RegexCharClass.NotSpaceClass;
+                    break;
+                case RegexCharClass.NegatedWordClass: // [^\w]
+                    Str = RegexCharClass.NotWordClass;
+                    break;
             }
 
             return this;
