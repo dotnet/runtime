@@ -34,7 +34,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
         [InlineData(@"(?=.*$)abc", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight)]
         [InlineData(@"(?=^)abc", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft)]
-        [InlineData(@"abc(?=^)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft)]
+        [InlineData(@"abc(?=^)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning)]
         [InlineData(@"(?<!42)(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
         [InlineData(@"(?<=^)abc", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight)]
         [InlineData(@"(?<=^)(?=^)abc", 0, (int)FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning)]
