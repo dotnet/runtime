@@ -2044,6 +2044,43 @@ namespace System.Text.RegularExpressions
             Debug.Assert(Kind is RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround);
             Debug.Assert(ChildCount() == 1);
 
+            // Captures inside of negative lookarounds are undone after the lookaround. Thus, if there's nothing
+            // inside of the negative lookaround that needs that capture group (namely a backreference), we can
+            // remove the capture.
+            if (Kind is RegexNodeKind.NegativeLookaround && ContainsBackreference(Child(0)) is false)
+            {
+                if (RemoveCaptures(this, 0))
+                {
+                    // If we removed captures, we may have changed the structure of the tree in a way that exposed more
+                    // optimization possibility, so re-reduce the children.
+                    ReplaceChild(0, Child(0));
+                }
+
+                static bool RemoveCaptures(RegexNode parent, int nodeIndex)
+                {
+                    RegexNode node = parent.Child(nodeIndex);
+
+                    if (node.Kind is RegexNodeKind.Capture)
+                    {
+                        parent.ReplaceChild(nodeIndex, node.Child(0));
+                        RemoveCaptures(parent, nodeIndex);
+                        return true;
+                    }
+
+                    bool changesMade = false;
+                    if (StackHelper.TryEnsureSufficientExecutionStack())
+                    {
+                        int childCount = node.ChildCount();
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            changesMade |= RemoveCaptures(node, i);
+                        }
+                    }
+
+                    return changesMade;
+                }
+            }
+
             // A lookaround is a zero-width atomic assertion.
             // As it's atomic, nothing will backtrack into it, and we can
             // eliminate any ending backtracking from it.
@@ -2084,6 +2121,32 @@ namespace System.Text.RegularExpressions
             RegexNodeKind.End or RegexNodeKind.EndZ or
             RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
             RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary;
+
+        /// <summary>Gets whether the node contains a backreference anywhere in its tree.</summary>
+        private static bool? ContainsBackreference(RegexNode node)
+        {
+            if (node.Kind is RegexNodeKind.Backreference or RegexNodeKind.BackreferenceConditional)
+            {
+                return true;
+            }
+
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                // If we can't recur further, just stop optimizing.
+                return null;
+            }
+
+            int childCount = node.ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                if (ContainsBackreference(node.Child(i)) is true)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>Optimizations for backreference conditionals.</summary>
         private RegexNode ReduceBackreferenceConditional()
