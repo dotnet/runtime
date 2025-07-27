@@ -76,6 +76,12 @@
     <Compile Include="Pkcs8PrivateKeyInfoTests.cs" />
     <Compile Include="PrivateKeyHelpers.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="TargetFrameworkHelpers.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework' and '$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="TargetFrameworkHelpers.AnyOS.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />
   </ItemGroup>

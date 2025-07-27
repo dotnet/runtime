@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class GeneralTests
     {
         public static bool SupportsDiffieHellman { get; } = KeyAgreeRecipientInfoTests.SupportsDiffieHellman;
-        public static bool SupportsRsaOaepCerts => PlatformDetection.IsWindows;
+        public static bool SupportsRsaOaepCerts => TargetFrameworkHelpers.TargetsWindows;
 
         [Fact]
         public static void DefaultEncryptionAlgorithm()

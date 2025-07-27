@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class KeyTransRecipientInfoRsaOaepCertTests
     {
-        public static bool SupportsRsaOaepCerts => PlatformDetection.IsWindows;
+        public static bool SupportsRsaOaepCerts => TargetFrameworkHelpers.TargetsWindows;
         public static bool DoesNotSupportRsaOaepCerts => !SupportsRsaOaepCerts;
 
         [ConditionalFact(nameof(SupportsRsaOaepCerts))]

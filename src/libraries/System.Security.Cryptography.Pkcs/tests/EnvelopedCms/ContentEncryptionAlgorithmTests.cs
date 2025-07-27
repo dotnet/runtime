@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class ContentEncryptionAlgorithmTests
     {
         public static bool SupportsRc2 => PlatformSupport.IsRC2Supported;
-        public static bool SupportsRc4 => PlatformDetection.IsWindows;
+        public static bool SupportsRc4 => TargetFrameworkHelpers.TargetsWindows;
         public static bool DoesNotSupportRc4 => !SupportsRc4;
 
         [ConditionalFact(nameof(SupportsRc2))]

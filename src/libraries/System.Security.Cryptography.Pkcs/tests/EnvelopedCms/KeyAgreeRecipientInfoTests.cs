@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         internal static readonly AlgorithmIdentifier TripleDesAlgId =
             new AlgorithmIdentifier(new Oid(Oids.TripleDesCbc, null));
 
-        public static bool SupportsDiffieHellman => PlatformDetection.IsWindows;
+        public static bool SupportsDiffieHellman => TargetFrameworkHelpers.TargetsWindows;
         public static bool DoesNotSupportDiffieHellman => !SupportsDiffieHellman;
 
         [ConditionalFact(nameof(DoesNotSupportDiffieHellman))]
