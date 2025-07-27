@@ -402,11 +402,16 @@ sgen_los_free_object (LOSObject *obj)
 #ifdef USE_MALLOC
 	g_free (obj);
 #else
-	if (!sgen_los_enable_sections_allocator || size > LOS_SECTION_OBJECT_LIMIT) {
+	if (size > LOS_SECTION_OBJECT_LIMIT) {
 		int pagesize = mono_pagesize ();
 		size += sizeof (LOSObject);
 		size = SGEN_ALIGN_UP_TO (size, pagesize);
 		sgen_free_os_memory ((gpointer)SGEN_ALIGN_DOWN_TO ((mword)obj, pagesize), size, SGEN_ALLOC_HEAP, MONO_MEM_ACCOUNT_SGEN_LOS);
+		sgen_los_memory_usage_total -= size;
+		sgen_memgov_release_space (size, SPACE_LOS);
+	} else if (!sgen_los_enable_sections_allocator) {
+		size += sizeof (LOSObject);
+		sgen_free_os_memory (obj, size, SGEN_ALLOC_HEAP, MONO_MEM_ACCOUNT_SGEN_LOS);
 		sgen_los_memory_usage_total -= size;
 		sgen_memgov_release_space (size, SPACE_LOS);
 	} else {
@@ -459,7 +464,7 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	obj = g_malloc (size + sizeof (LOSObject));
 	memset (obj, 0, size + sizeof (LOSObject));
 #else
-	if (!sgen_los_enable_sections_allocator || size > LOS_SECTION_OBJECT_LIMIT) {
+	if (size > LOS_SECTION_OBJECT_LIMIT) {
 		size_t obj_size = size + sizeof (LOSObject);
 		int pagesize = mono_pagesize ();
 		size_t alloc_size = SGEN_ALIGN_UP_TO (obj_size, pagesize);
@@ -469,6 +474,13 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 				sgen_los_memory_usage_total += alloc_size;
 				obj = randomize_los_object_start (obj, obj_size, alloc_size, pagesize);
 			}
+		}
+	} else if (!sgen_los_enable_sections_allocator) {
+		size_t alloc_size = size + sizeof (LOSObject);
+		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
+			obj = (LOSObject *)sgen_alloc_os_memory_aligned (alloc_size, SGEN_ALLOC_ALIGN, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL, MONO_MEM_ACCOUNT_SGEN_LOS);
+			if (obj)
+				sgen_los_memory_usage_total += alloc_size;
 		}
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));
