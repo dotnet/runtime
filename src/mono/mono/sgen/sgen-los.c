@@ -125,6 +125,12 @@ mword sgen_los_memory_usage = 0;
 /* Total memory used by the LOS allocator */
 mword sgen_los_memory_usage_total = 0;
 
+#ifdef HOST_WASM
+const gboolean sgen_los_enable_sections_allocator = 0;
+#else
+const gboolean sgen_los_enable_sections_allocator = 1;
+#endif
+
 static LOSSection *los_sections = NULL;
 static LOSFreeChunks *los_fast_free_lists [LOS_NUM_FAST_SIZES]; /* 0 is for larger sizes */
 static mword los_num_objects = 0;
@@ -155,6 +161,9 @@ los_consistency_check (void)
 	LOSObject *obj;
 	int i;
 	mword memory_usage = 0;
+
+	if (!sgen_los_enable_sections_allocator)
+		return;
 
 	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
 		mword obj_size = sgen_los_object_size (obj);
@@ -393,7 +402,7 @@ sgen_los_free_object (LOSObject *obj)
 #ifdef USE_MALLOC
 	g_free (obj);
 #else
-	if (size > LOS_SECTION_OBJECT_LIMIT) {
+	if (!sgen_los_enable_sections_allocator || size > LOS_SECTION_OBJECT_LIMIT) {
 		int pagesize = mono_pagesize ();
 		size += sizeof (LOSObject);
 		size = SGEN_ALIGN_UP_TO (size, pagesize);
@@ -450,7 +459,7 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	obj = g_malloc (size + sizeof (LOSObject));
 	memset (obj, 0, size + sizeof (LOSObject));
 #else
-	if (size > LOS_SECTION_OBJECT_LIMIT) {
+	if (!sgen_los_enable_sections_allocator || size > LOS_SECTION_OBJECT_LIMIT) {
 		size_t obj_size = size + sizeof (LOSObject);
 		int pagesize = mono_pagesize ();
 		size_t alloc_size = SGEN_ALIGN_UP_TO (obj_size, pagesize);
