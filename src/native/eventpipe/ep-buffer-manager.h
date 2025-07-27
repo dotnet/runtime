@@ -190,20 +190,6 @@ ep_buffer_manager_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
-// READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to
-// write_event that start during the suspension period or were in progress but hadn't yet recorded
-// their event into a buffer before the start of the suspension period will return false and the
-// event will not be recorded. Any events that not recorded as a result of this suspension will be
-// treated the same as events that were not recorded due to configuration.
-// EXPECTED USAGE: First the caller will disable all events via configuration, then call
-// suspend_write_event () to force any write_event calls that may still be in progress to either
-// finish or cancel. After that all BufferLists and Buffers can be safely drained and/or deleted.
-// _Requires_lock_held (ep)
-void
-ep_buffer_manager_suspend_write_event (
-	EventPipeBufferManager *buffer_manager,
-	uint32_t session_index);
-
 // Write the contents of the managed buffers to the specified file.
 // The stop_timeStamp is used to determine when tracing was stopped to ensure that we
 // skip any events that might be partially written due to races when tracing is stopped.
