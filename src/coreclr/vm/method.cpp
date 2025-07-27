@@ -1136,20 +1136,9 @@ ULONG MethodDesc::GetRVA()
     }
     CONTRACTL_END
 
-    if (IsRuntimeSupplied())
-    {
-        return 0;
-    }
-
-    // Methods without metadata don't have an RVA.  Examples are IL stubs and LCG methods.
-    if (IsNoMetadata())
-    {
-        return 0;
-    }
-
-    // Between two Async variants of the same method only one represents the actual IL.
-    // It is the variant that is not a thunk.
-    if (IsAsyncThunkMethod())
+    // It must be a method that can have an IL header
+    // not IL, dynamic IL or transient IL would have no RVA
+    if (!MayHaveILHeader())
     {
         return 0;
     }
@@ -1198,22 +1187,14 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     {
         THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(IsIL());
-        PRECONDITION(!IsUnboxingStub());
+        PRECONDITION(MayHaveILHeader());
     }
     CONTRACTL_END
 
     Module *pModule = GetModule();
 
-    TADDR pIL = 0;
     // Always pickup overrides like reflection emit, EnC, etc.
-    // Unless it is an async thunk.
-    // A thunk cannot be overriden, bur shares methoddef with the real method,
-    // which could be overriden, but we do not want that override.
-    if (!IsAsyncThunkMethod())
-    {
-        pIL = pModule->GetDynamicIL(GetMemberDef());
-    }
+    TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
 
     if (pIL == (TADDR)NULL)
     {
