@@ -721,19 +721,6 @@ COR_ILMETHOD* EEDbgInterfaceImpl::MethodDescGetILHeader(MethodDesc *pFD)
     RETURN NULL;
 }
 
-ULONG EEDbgInterfaceImpl::MethodDescGetRVA(MethodDesc *pFD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pFD));
-    }
-    CONTRACTL_END;
-
-    return pFD->GetRVA();
-}
-
 MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,
                                                           mdToken memberRef)
 {
