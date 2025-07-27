@@ -11,7 +11,7 @@ using Xunit;
 public class Async2Reflection
 {
     [Fact]
-    public static void DynamicInvoke()
+    public static void MethodInfo_Invoke()
     {
         var mi = typeof(Async2Reflection).GetMethod("Foo", BindingFlags.Static | BindingFlags.NonPublic)!;
         Task<int> r = (Task<int>)mi.Invoke(null, null)!;
