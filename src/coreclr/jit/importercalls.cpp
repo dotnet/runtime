@@ -5503,6 +5503,25 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             return gtFoldExpr(tmp);
         }
 
+        case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_GE, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
         case NI_SRCS_UNSAFE_IsAddressLessThan:
         {
             assert(sig->sigInst.methInstCount == 1);
@@ -5516,6 +5535,25 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_LT, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
+        case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_LE, TYP_INT, op1, op2);
             tmp->gtFlags |= GTF_UNSIGNED;
             return gtFoldExpr(tmp);
         }
@@ -10722,9 +10760,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_SRCS_UNSAFE_IsAddressGreaterThan;
                             }
+                            else if (strcmp(methodName, "IsAddressGreaterThanOrEqualTo") == 0)
+                            {
+                                result = NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo;
+                            }
                             else if (strcmp(methodName, "IsAddressLessThan") == 0)
                             {
                                 result = NI_SRCS_UNSAFE_IsAddressLessThan;
+                            }
+                            else if (strcmp(methodName, "IsAddressLessThanOrEqualTo") == 0)
+                            {
+                                result = NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo;
                             }
                             else if (strcmp(methodName, "IsNullRef") == 0)
                             {
