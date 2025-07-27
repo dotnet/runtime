@@ -1136,8 +1136,8 @@ ULONG MethodDesc::GetRVA()
     }
     CONTRACTL_END
 
-    // It must be a method that can have an IL header
-    // not IL, dynamic IL or transient IL would have no RVA
+    // It must be a method that can have an IL header.
+    // Not IL, dynamic IL or transient IL would have no RVA
     if (!MayHaveILHeader())
     {
         return 0;
