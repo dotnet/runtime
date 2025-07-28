@@ -1286,7 +1286,7 @@ public:
         this->bbWeight = this->bbWeight * scale;
     }
 
-    // Set block weight to zero, and set run rarely flag.
+    // Set block weight to zero.
     //
     void bbSetRunRarely()
     {
