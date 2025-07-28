@@ -447,11 +447,11 @@ namespace Microsoft.Interop
             // Generate numElements expression with null check for pointer types
             ExpressionSyntax numElementsExpression = ElementsMarshalling.GenerateNumElementsExpression(countInfo, castCountInfo, CodeContext, context);
 
-            // If the marshalling direction is unmanaged-to-managed and we have count information that uses
-            // a parameter (like SizeParamIndex), we need to check if the native pointer is null before
-            // using the size parameter to avoid allocating arrays for null pointers.
+            // If the marshalling direction is unmanaged-to-managed and we have a native pointer type,
+            // we need to check if the native pointer is null before using the size parameter to avoid
+            // allocating arrays for null pointers.
             if (CodeContext.Direction == MarshalDirection.UnmanagedToManaged &&
-                countInfo is SizeAndParamIndexInfo { ParamAtIndex: not null })
+                innerMarshaller.NativeType is PointerTypeInfo)
             {
                 string nativeIdentifier = context.GetIdentifiers(TypeInfo).native;
 
