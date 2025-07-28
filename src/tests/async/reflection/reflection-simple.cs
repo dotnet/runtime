@@ -11,7 +11,7 @@ using Xunit;
 public class Async2Reflection
 {
     [Fact]
-    public static void MethodInfo_Invoke()
+    public static void MethodInfo_Invoke_TaskReturning()
     {
         var mi = typeof(Async2Reflection).GetMethod("Foo", BindingFlags.Static | BindingFlags.NonPublic)!;
         Task<int> r = (Task<int>)mi.Invoke(null, null)!;
@@ -23,7 +23,7 @@ public class Async2Reflection
 
 #pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
     [Fact]
-    public static void DynamicInvokeAsync()
+    public static void MethodInfo_Invoke_AsyncHelper()
     {
         var mi = typeof(System.Runtime.CompilerServices.AsyncHelpers).GetMethod("Await", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Task) })!;
         Assert.NotNull(mi);
@@ -44,7 +44,7 @@ public class Async2Reflection
         return 90;
     }
 
-    private static async Task FooTask()
+    private static async Task ()
     {
         await Task.Yield();
     }
@@ -55,8 +55,8 @@ public class Async2Reflection
         return 10;
     }
 
-    [Fact]
-    public static void DynamicLambda()
+[Fact]
+    public static void AwaitTaskReturningExpressionLambda()
     {
         var expr1 = (Expression<Func<Task<int>>>)(() => Task.FromResult(42));
         var del = expr1.Compile();
@@ -130,7 +130,7 @@ public class Async2Reflection
     }
 
     [Fact]
-    public static void DynamicAsyncMethod()
+    public static void TypeBuilder_DefineMethod()
     {
         //  we will be compiling a dynamic vesion of this method
         //
