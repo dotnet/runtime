@@ -11,6 +11,7 @@ using System.Text;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -612,8 +613,80 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetJitHelperFunctionName(ip, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetJitManagerList(uint count, void* managers, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetJitManagerList(count, managers, pNeeded) : HResults.E_NOTIMPL;
+
+    private bool IsJumpRel64(TargetPointer pThunk)
+        => 0x48 == _target.Read<byte>(pThunk) &&
+           0xB8 == _target.Read<byte>(pThunk + 1) &&
+           0xFF == _target.Read<byte>(pThunk + 10) &&
+           0xE0 == _target.Read<byte>(pThunk + 11);
+
+    private TargetPointer DecodeJump64(TargetPointer pThunk)
+    {
+        Debug.Assert(IsJumpRel64(pThunk), "Expected a jump thunk");
+
+        return _target.ReadPointer(pThunk + 2);
+    }
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
-        => _legacyImpl is not null ? _legacyImpl.GetJumpThunkTarget(ctx, targetIP, targetMD) : HResults.E_NOTIMPL;
+    {
+        if (ctx == null || targetIP == null || targetMD == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        int hr = HResults.S_OK;
+        try
+        {
+            // API is implemented for x64 only
+            if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X64)
+            {
+                IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+
+                // Context is not stored in the target, but in our own process
+                context.FillFromBuffer(new Span<byte>(ctx, (int)context.Size));
+                TargetPointer pThunk = context.InstructionPointer;
+
+                if (IsJumpRel64(pThunk))
+                {
+                    *targetMD = 0;
+                    *targetIP = DecodeJump64(pThunk).ToClrDataAddress(_target);
+                }
+                else
+                {
+                    hr = HResults.E_FAIL;
+                }
+            }
+            else
+            {
+                hr = HResults.E_FAIL;
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // If the target read fails, expect HResult to be CORDBG_E_READVIRTUAL_FAILURE
+            hr = CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress targetIPLocal;
+            ClrDataAddress targetMDLocal;
+            int hrLocal = _legacyImpl.GetJumpThunkTarget(ctx, &targetIPLocal, &targetMDLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*targetIP == targetIPLocal, $"cDAC: {*targetIP:x}, DAC: {targetIPLocal:x}");
+                Debug.Assert(*targetMD == targetMDLocal, $"cDAC: {*targetMD:x}, DAC: {targetMDLocal:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetMethodDescData(ClrDataAddress addr, ClrDataAddress ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
     {
         if (addr == 0)
