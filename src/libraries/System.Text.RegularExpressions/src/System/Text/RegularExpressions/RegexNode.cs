@@ -893,10 +893,7 @@ namespace System.Text.RegularExpressions
 
             // If the Loop or Lazyloop now only has one child node and its a Set, One, or Notone,
             // reduce to just Setloop/lazy, Oneloop/lazy, or Notoneloop/lazy.  The parser will
-            // generally have only produced the latter, but other reductions could have exposed
-            // this. We can also reduce or eliminate certain loops that are nops, e.g.
-            // a loop with a minimum of 0 that wraps a zero-width assertion is either asserting something
-            // or not, and is thus useless.
+            // generally have only produced the latter, but other reductions could have exposed this.
             if (u.ChildCount() == 1)
             {
                 RegexNode child = u.Child(0);
@@ -910,14 +907,27 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNodeKind.Empty:
-                    case RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or
+                        // A loop around an empty is itself empty, regardless of iteration counts.
+                        u = child;
+                        break;
+
+                    case RegexNodeKind.PositiveLookaround when ContainsKind(child, [RegexNodeKind.Capture]) is false:
+                    case RegexNodeKind.NegativeLookaround or
                          RegexNodeKind.Beginning or RegexNodeKind.Start or
                          RegexNodeKind.Bol or RegexNodeKind.Eol or
                          RegexNodeKind.End or RegexNodeKind.EndZ or
                          RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
-                         RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary
-                         when u.M == 0:
-                        u = new RegexNode(RegexNodeKind.Empty, Options);
+                         RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
+                        // A loop around (most) zero-width assertions can also be reduced. If it has a lower bound of 0,
+                        // then it's either asserting something or not, and is thus useless and replaceable by empty.
+                        // If it has a lower bound > 0, then the contents are still needed, but the loop isn't, since
+                        // it's non-consuming and thus any more repetitions than 1 are redundant. The one zero-width assertion
+                        // that can't be handled in this way is a PositiveLookaround, because it might contain capture groups
+                        // with captures that must persist past the lookaround (in contrast, negative lookarounds undo all
+                        // captures); if it were to be removed, it could affect both subsequent backreferences as well as access
+                        // to capture information in the resulting Match. Thus, we can only transform a PositiveLookaround in
+                        // this manner if it doesn't contain any captures.
+                        u = u.M == 0 ? new RegexNode(RegexNodeKind.Empty, Options) : child;
                         break;
                 }
             }
@@ -2067,7 +2077,7 @@ namespace System.Text.RegularExpressions
             // Captures inside of negative lookarounds are undone after the lookaround. Thus, if there's nothing
             // inside of the negative lookaround that needs that capture group (namely a backreference), we can
             // remove the capture.
-            if (Kind is RegexNodeKind.NegativeLookaround && ContainsBackreference(Child(0)) is false)
+            if (Kind is RegexNodeKind.NegativeLookaround && ContainsKind(Child(0), [RegexNodeKind.Backreference, RegexNodeKind.BackreferenceConditional]) is false)
             {
                 if (RemoveCaptures(this, 0))
                 {
@@ -2140,26 +2150,32 @@ namespace System.Text.RegularExpressions
             RegexNodeKind.Bol or RegexNodeKind.Eol or
             RegexNodeKind.End or RegexNodeKind.EndZ or
             RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
-            RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary;
+            RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary or
+            RegexNodeKind.UpdateBumpalong;
 
-        /// <summary>Gets whether the node contains a backreference anywhere in its tree.</summary>
-        private static bool? ContainsBackreference(RegexNode node)
+        /// <summary>Gets whether the node contains any of the specified kinds anywhere in its tree.</summary>
+        /// <returns><see langword="true"/> if it does, <see langword="false"/> if it does't, and <see langword="null"/> if it can't be determined.</returns>
+        private static bool? ContainsKind(RegexNode node, ReadOnlySpan<RegexNodeKind> kinds)
         {
-            if (node.Kind is RegexNodeKind.Backreference or RegexNodeKind.BackreferenceConditional)
+            foreach (RegexNodeKind kind in kinds)
             {
-                return true;
+                if (node.Kind == kind)
+                {
+                    return true;
+                }
             }
 
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                // If we can't recur further, just stop optimizing.
+                // If we can't recur further, just stop optimizing. We need to return null to signal
+                // that the result can't be trusted.
                 return null;
             }
 
             int childCount = node.ChildCount();
             for (int i = 0; i < childCount; i++)
             {
-                if (ContainsBackreference(node.Child(i)) is true)
+                if (ContainsKind(node.Child(i), kinds) is true)
                 {
                     return true;
                 }
@@ -2796,25 +2812,10 @@ namespace System.Text.RegularExpressions
                     // Skip over empty nodes, as they're pure nops. They would ideally have been optimized away,
                     // but can still remain in some situations.
                 }
-                else if (consumeZeroWidthNodes &&
-                         // anchors
-                         child.Kind is RegexNodeKind.Beginning or
-                                       RegexNodeKind.Bol or
-                                       RegexNodeKind.Start or
-                                       // boundaries
-                                       RegexNodeKind.Boundary or
-                                       RegexNodeKind.ECMABoundary or
-                                       RegexNodeKind.NonBoundary or
-                                       RegexNodeKind.NonECMABoundary or
-                                       // lookarounds
-                                       RegexNodeKind.NegativeLookaround or
-                                       RegexNodeKind.PositiveLookaround or
-                                       // logic
-                                       RegexNodeKind.UpdateBumpalong)
+                else if (consumeZeroWidthNodes && IsZeroWidthAssertion(child.Kind))
                 {
-                    // Skip over zero-width nodes that might be reasonable at the beginning of or within a substring.
-                    // We can only do these if consumeZeroWidthNodes is true, as otherwise we'd be producing a string that
-                    // may not fully represent the semantics of this portion of the pattern.
+                    // Skip over zero-width nodes. We can only do these if consumeZeroWidthNodes is true, as otherwise we'd
+                    // be producing a string that may not fully represent the semantics of this portion of the pattern.
                 }
                 else
                 {

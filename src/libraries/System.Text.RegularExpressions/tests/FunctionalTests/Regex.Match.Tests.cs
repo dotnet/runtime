@@ -93,6 +93,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
                 yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
                 yield return (@"(?!(abc))+\w\w\w", "abcdef", RegexOptions.None, 0, 6, true, "bcd");
+                yield return (@"(?=(abc))?\1", "abc", RegexOptions.None, 0, 3, true, "abc");
+                yield return (@"(?=(abc))+\1", "abc", RegexOptions.None, 0, 3, true, "abc");
+                yield return (@"(?=(abc))*\1", "abc", RegexOptions.None, 0, 3, true, "abc");
 
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
