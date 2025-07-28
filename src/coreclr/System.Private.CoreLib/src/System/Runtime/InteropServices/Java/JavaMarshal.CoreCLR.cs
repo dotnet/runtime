@@ -12,39 +12,24 @@ namespace System.Runtime.InteropServices.Java
     {
         public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences)
         {
-#if NATIVEAOT
-            throw new NotImplementedException();
-#elif FEATURE_JAVAMARSHAL
             ArgumentNullException.ThrowIfNull(markCrossReferences);
 
             if (!InitializeInternal((IntPtr)markCrossReferences))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ReinitializeJavaMarshal);
             }
-#else
-            throw new PlatformNotSupportedException();
-#endif
         }
 
         public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context)
         {
-#if NATIVEAOT
-            throw new NotImplementedException();
-#elif FEATURE_JAVAMARSHAL
             ArgumentNullException.ThrowIfNull(obj);
 
             IntPtr handle = CreateReferenceTrackingHandleInternal(ObjectHandleOnStack.Create(ref obj), context);
             return GCHandle.FromIntPtr(handle);
-#else
-            throw new PlatformNotSupportedException();
-#endif
         }
 
         public static unsafe void* GetContext(GCHandle obj)
         {
-#if NATIVEAOT
-            throw new NotImplementedException();
-#elif FEATURE_JAVAMARSHAL
             IntPtr handle = GCHandle.ToIntPtr(obj);
             if (handle == IntPtr.Zero
                 || !GetContextInternal(handle, out void* context))
@@ -53,18 +38,12 @@ namespace System.Runtime.InteropServices.Java
             }
 
             return context;
-#else
-            throw new PlatformNotSupportedException();
-#endif
         }
 
         public static unsafe void FinishCrossReferenceProcessing(
             MarkCrossReferencesArgs* crossReferences,
             ReadOnlySpan<GCHandle> unreachableObjectHandles)
         {
-#if NATIVEAOT
-            throw new NotImplementedException();
-#elif FEATURE_JAVAMARSHAL
             fixed (GCHandle* pHandles = unreachableObjectHandles)
             {
                 FinishCrossReferenceProcessing(
@@ -72,12 +51,8 @@ namespace System.Runtime.InteropServices.Java
                     (nuint)unreachableObjectHandles.Length,
                     pHandles);
             }
-#else
-            throw new PlatformNotSupportedException();
-#endif
         }
 
-#if FEATURE_JAVAMARSHAL && !NATIVEAOT
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_Initialize")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool InitializeInternal(IntPtr callback);
@@ -92,6 +67,5 @@ namespace System.Runtime.InteropServices.Java
         [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool GetContextInternal(IntPtr handle, out void* context);
-#endif
     }
 }

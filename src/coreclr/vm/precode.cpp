@@ -134,6 +134,9 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     TADDR pMD = (TADDR)NULL;
 
     PrecodeType precodeType = GetType();
+#ifdef TARGET_WASM
+    pMD = *(TADDR*)(m_data + OFFSETOF_PRECODE_MD);
+#else
     switch (precodeType)
     {
     case PRECODE_STUB:
@@ -166,6 +169,7 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     default:
         break;
     }
+#endif // TARGET_WASM
 
     if (pMD == (TADDR)NULL)
     {
@@ -318,6 +322,10 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef TARGET_WASM
+    m_data[OFFSETOF_PRECODE_TYPE] = t;
+    *(TADDR*)(m_data + OFFSETOF_PRECODE_MD) = (TADDR)pMD;
+#else
     switch (t) {
     case PRECODE_STUB:
         ((StubPrecode*)this)->Init((StubPrecode*)pPrecodeRX, (TADDR)pMD, pLoaderAllocator);
@@ -341,6 +349,7 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
         UnexpectedPrecodeType("Precode::Init", t);
         break;
     }
+#endif
 
     _ASSERTE(IsValidType(GetType()));
 }
@@ -562,6 +571,8 @@ void StubPrecode::StaticInitialize()
     }
 
     #undef ENUM_PAGE_SIZE
+#elif defined(TARGET_WASM)
+    // StubPrecode is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
 #endif
@@ -714,6 +725,8 @@ void FixupPrecode::StaticInitialize()
         // This should fail if the template is used on a platform which doesn't support the supported page size for templates
         ThrowHR(COR_E_EXECUTIONENGINE);
     }
+#elif defined(TARGET_WASM)
+    // FixupPrecode is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) <= FixupPrecode::CodeSize);
 #endif
