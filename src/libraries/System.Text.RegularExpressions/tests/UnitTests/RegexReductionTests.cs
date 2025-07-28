@@ -403,6 +403,16 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\z\z", @"\z")]
         [InlineData(@"\G\G", @"\G")]
         [InlineData(@"\A\A", @"\A")]
+        // Lookarounds
+        [InlineData(@"(?=^)abc", @"^abc")]
+        [InlineData(@"(?=\G)abc", @"\Gabc")]
+        [InlineData(@"abc(?=$)", @"abc$")]
+        [InlineData(@"(?=\b)abc", @"\babc")]
+        [InlineData(@"abc(?=\z)", @"abc\z")]
+        [InlineData(@"abc(?=\Z)", @"abc\Z")]
+        [InlineData(@"abc(?=\A)", @"abc\A")]
+        [InlineData(@"(?=(?=(?=abc)))", @"(?=abc)")]
+        [InlineData(@"(?=(?<=(?=abc)))", @"(?<=(?=abc))")]
         // Nothing handling
         [InlineData(@"\wabc(?!)def", "(?!)")]
         [InlineData(@"\wabc(?!)def|ghi(?!)", "(?!)")]
