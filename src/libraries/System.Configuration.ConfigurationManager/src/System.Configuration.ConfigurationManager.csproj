@@ -5,7 +5,7 @@
     <NoWarn>$(NoWarn);CA2249</NoWarn>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
     <IsTrimmable>false</IsTrimmable>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <IsAotCompatible>false</IsAotCompatible>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
