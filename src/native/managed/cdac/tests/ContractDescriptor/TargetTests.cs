@@ -192,7 +192,6 @@ public unsafe class TargetTests
         uint expected = 0xdeadbeef;
         ulong addr = 0x1000;
 
-        Encoding encoding = arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
         MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[4] };
         builder.AddHeapFragment(fragment);
 

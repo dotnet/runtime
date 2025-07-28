@@ -317,7 +317,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// </summary>
     /// <typeparam name="T">Type of value to write</typeparam>
     /// <param name="address">Address to start writing to</param>
-    // /// <returns>True if value successfully written, throws exception otherwise</returns>
+    /// <returns>True if the value is successfully written. Throws an InvalidOperationException otherwise.</returns>
     public override bool Write<T>(ulong address, T value)
     {
         if (!TryWrite(address, _config.IsLittleEndian, _dataTargetDelegates, value))

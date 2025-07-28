@@ -234,7 +234,6 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     }
     int IXCLRDataProcess.SetOtherNotificationFlags(uint flags)
     {
-        // return 0;
         int hr = HResults.S_OK;
         try
         {
