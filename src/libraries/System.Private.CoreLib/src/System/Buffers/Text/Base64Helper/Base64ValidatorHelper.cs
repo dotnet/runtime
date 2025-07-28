@@ -146,7 +146,7 @@ namespace System.Buffers.Text
         internal readonly struct Base64CharValidatable : IBase64Validatable<char>
         {
             // to make structure size 4 instead of 1 as workaround for WASM AOT problem with empty structs
-            private readonly int dummy; 
+            private readonly int dummy;
             public Base64CharValidatable()
             {
                 dummy = 0;
@@ -178,7 +178,7 @@ namespace System.Buffers.Text
         internal readonly struct Base64ByteValidatable : IBase64Validatable<byte>
         {
             // to make structure size 4 instead of 1 as workaround for WASM AOT problem with empty structs
-            private readonly int dummy; 
+            private readonly int dummy;
             public Base64ByteValidatable()
             {
                 dummy = 0;
