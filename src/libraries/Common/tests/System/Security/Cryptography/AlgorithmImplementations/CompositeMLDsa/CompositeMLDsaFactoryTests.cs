@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void NullArgumentValidation()
         {
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => CompositeMLDsa.GenerateKey(null));
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => CompositeMLDsa.IsAlgorithmSupported(null));
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(null, Array.Empty<byte>()));
             AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => CompositeMLDsa.ImportCompositeMLDsaPrivateKey(null, ReadOnlySpan<byte>.Empty));
@@ -170,6 +171,17 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void AlgorithmMatches_GenerateKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            AssertThrowIfNotSupported(() =>
+            {
+                using CompositeMLDsa dsa = CompositeMLDsa.GenerateKey(algorithm);
+                Assert.Equal(algorithm, dsa.Algorithm);
+            });
+        }
+
+        [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void AlgorithmMatches_Import(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
@@ -186,7 +198,7 @@ namespace System.Security.Cryptography.Tests
         public static void IsSupported_AgreesWithPlatform()
         {
             // Composites are supported everywhere MLDsa is supported
-            Assert.Equal(MLDsa.IsSupported && !PlatformDetection.IsLinux, CompositeMLDsa.IsSupported);
+            Assert.Equal(MLDsa.IsSupported, CompositeMLDsa.IsSupported);
         }
 
         [Theory]
@@ -195,7 +207,7 @@ namespace System.Security.Cryptography.Tests
         {
             bool supported = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                 algorithm,
-                _ => MLDsa.IsSupported && !PlatformDetection.IsLinux,
+                _ => MLDsa.IsSupported,
                 _ => false,
                 _ => false);
 
