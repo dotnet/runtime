@@ -79,8 +79,8 @@ private:
     // If set to true, all versions (including pre-release) are considered even if starting from a release framework reference.
     bool m_roll_forward_to_prerelease;
 
-    bool parse_framework(const json_parser_t::value_t& fx_obj, fx_reference_t& fx_out, bool name_and_version_only = false);
-    bool read_framework_array(const json_parser_t::value_t& frameworks, fx_reference_vector_t& frameworks_out, bool name_and_version_only = false);
+    bool parse_framework(const json_parser_t::value_t& fx_obj, bool name_and_version_only, fx_reference_t& fx_out);
+    bool read_framework_array(const json_parser_t::value_t& frameworks, bool name_and_version_only, fx_reference_vector_t& frameworks_out);
 
     bool mark_specified_setting(specified_setting setting);
 };

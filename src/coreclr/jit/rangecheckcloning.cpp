@@ -443,8 +443,13 @@ static bool DoesComplexityExceed(Compiler* comp, ArrayStack<BoundsCheckInfo>* bn
         GenTree* rootNode = currentStmt->GetRootNode();
         if (rootNode != nullptr)
         {
-            unsigned actual = 0;
-            if (comp->gtComplexityExceeds(rootNode, budget, &actual))
+            unsigned actual    = 0;
+            auto     countNode = [&actual](GenTree* tree) -> unsigned {
+                actual++;
+                return 1;
+            };
+
+            if (comp->gtComplexityExceeds(rootNode, budget, countNode))
             {
                 JITDUMP("\tExceeded budget!");
                 return true;
