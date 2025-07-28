@@ -54,6 +54,7 @@ namespace System.Buffers
             // We could have more than one entry in 'uniqueValues' if this value is an exact prefix of all the others.
             Debug.Assert(value.Length > 1);
             Debug.Assert(ch3Offset == 0 || ch3Offset > ch2Offset);
+            Debug.Assert(value[0] <= byte.MaxValue && value[ch2Offset] <= byte.MaxValue && value[ch3Offset] <= byte.MaxValue);
 
             _valueState = new SingleValueState(value, IgnoreCase);
             _minusValueTailLength = -(value.Length - 1);

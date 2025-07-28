@@ -58,6 +58,8 @@ namespace System.Buffers
 
             if (IgnoreCase)
             {
+                Debug.Assert(char.IsAscii((char)_ch1) && char.IsAscii((char)_ch2) && char.IsAscii((char)_ch3));
+
                 _ch1 &= CaseConversionMask;
                 _ch2 &= CaseConversionMask;
                 _ch3 &= CaseConversionMask;

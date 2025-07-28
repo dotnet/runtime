@@ -279,7 +279,8 @@ namespace System.Buffers
                         // See comments on SingleStringSearchValuesPackedThreeChars.CanSkipAnchorMatchVerification.
                         // When running on Arm64, this helper is also used to confirm vectorized anchor matches.
                         // We do so because we're using UnzipEven when packing inputs, which may produce false positive anchor matches.
-                        Debug.Assert((matchStart & 0xFF) == state.Value[0]);
+                        // When called from SingleStringSearchValuesThreeChars (non-packed), we could skip to the else branch instead.
+                        Debug.Assert(matchStart == state.Value[0] || (matchStart & 0xFF) == state.Value[0]);
 
                         uint differentBits = Unsafe.ReadUnaligned<uint>(ref matchByteStart) - state.Value32_0;
                         differentBits |= Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) - state.Value32_1;
@@ -347,6 +348,7 @@ namespace System.Buffers
                         // See comments on SingleStringSearchValuesPackedThreeChars.CanSkipAnchorMatchVerification.
                         // When running on Arm64, this helper is also used to confirm vectorized anchor matches.
                         // We do so because we're using UnzipEven when packing inputs, which may produce false positive anchor matches.
+                        // When called from SingleStringSearchValuesThreeChars (non-packed), we could skip to the else branch instead.
                         Debug.Assert(TransformInput((char)(matchStart & 0xFF)) == state.Value[0]);
 
                         uint differentBits = (Unsafe.ReadUnaligned<uint>(ref matchByteStart) & CaseMask) - state.Value32_0;
