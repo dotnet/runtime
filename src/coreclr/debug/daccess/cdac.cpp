@@ -45,8 +45,7 @@ namespace
 
     int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t count, void* context)
     {
-        ICorDebugMutableDataTarget* target = reinterpret_cast<ICorDebugMutableDataTarget*>(context);
-        HRESULT hr = target->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        HRESULT hr = ((ICorDebugMutableDataTarget*)context)->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
         if (FAILED(hr))
             return hr;
 

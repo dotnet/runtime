@@ -245,7 +245,6 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             {
                 hr = HResults.E_INVALIDARG;
             }
-
             else
             {
                 TargetPointer dacNotificationFlags = _target.ReadGlobalPointer(Constants.Globals.DacNotificationFlags);
@@ -278,6 +277,8 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             {
                 Debug.Assert(flags == flagsLocal);
             }
+            // update the DAC cache
+            _legacyProcess.SetOtherNotificationFlags(flags);
         }
 #endif
         return hr;

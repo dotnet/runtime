@@ -83,9 +83,9 @@ internal unsafe static partial class MockMemorySpace
             return this;
         }
 
-        internal ReadContext GetReadContext()
+        internal MemoryContext GetMemoryContext()
         {
-            ReadContext context = new ReadContext
+            MemoryContext context = new MemoryContext
             {
                 HeapFragments = _heapFragments,
             };
@@ -133,9 +133,9 @@ internal unsafe static partial class MockMemorySpace
     }
 
     // Used by ReadFromTarget to return the appropriate bytes
-    internal class ReadContext
+    internal class MemoryContext
     {
-        public IReadOnlyList<HeapFragment> HeapFragments { get; init; }
+        public List<HeapFragment> HeapFragments { get; init; }
 
         internal int ReadFromTarget(ulong address, Span<byte> buffer)
         {
@@ -182,12 +182,6 @@ internal unsafe static partial class MockMemorySpace
                 throw new InvalidOperationException($"Not enough data in fragment at {lastHeapFragment.Address:X} ('{lastHeapFragment.Name}') to read {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
             return -1;
         }
-    }
-
-    // Used by WriteToTarget to write the appropriate bytes
-    internal class WriteContext
-    {
-        public List<HeapFragment> HeapFragments { get; init; }
 
         internal int WriteToTarget(ulong address, Span<byte> buffer)
         {
