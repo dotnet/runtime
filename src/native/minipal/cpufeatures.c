@@ -455,16 +455,14 @@ int minipal_getcpufeatures(void)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
-    if (((hwCap & HWCAP_ASIMD) == 0) ||
-        ((hwCap & HWCAP_ATOMICS) == 0))
+    if ((hwCap & HWCAP_ASIMD) == 0)
     {
         // One of the baseline ISAs is not supported
         result |= IntrinsicConstants_Invalid;
     }
-    else
-    {
+
+    if ((hwCap & HWCAP_ATOMICS) != 0)
         result |= ARM64IntrinsicConstants_Atomics;
-    }
 
     if (hwCap & HWCAP_AES)
         result |= ARM64IntrinsicConstants_Aes;

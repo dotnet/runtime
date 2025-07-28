@@ -182,8 +182,10 @@ bool DetectCPUFeatures()
     {
 #if defined(HOST_X86) || defined(HOST_AMD64)
         PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n");
-#elif defined(HOST_ARM64)
+#elif defined(HOST_ARM64) && (defined(HOST_WINDOWS) || defined(HOST_APPLE))
         PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n");
+#elif defined(HOST_ARM64)
+        PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n");
 #else
         PalPrintFatalError("\nThe current CPU is missing one or more of the baseline instruction sets.\n");
 #endif

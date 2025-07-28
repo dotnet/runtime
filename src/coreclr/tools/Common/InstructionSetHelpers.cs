@@ -36,7 +36,11 @@ namespace System.CommandLine
                 else
                 {
                     instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+
+                    if (targetOS == TargetOS.Windows)
+                    {
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                    }
                 }
             }
 
