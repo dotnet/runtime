@@ -21,7 +21,6 @@ namespace System.Runtime.Loader.Tests
         {
             RemoteExecutor.Invoke(() => {
                 string assemblyV1Path = GetTestAssemblyPath("System.Runtime.Loader.Test.AssemblyVersion1");
-                string assemblyV3Path = GetTestAssemblyPath("System.Runtime.Loader.Test.AssemblyVersion3");
                 
                 bool resolverCalled = false;
                 
@@ -78,7 +77,6 @@ namespace System.Runtime.Loader.Tests
         {
             RemoteExecutor.Invoke(() => {
                 string assemblyV1Path = GetTestAssemblyPath("System.Runtime.Loader.Test.AssemblyVersion1");
-                string assemblyV3Path = GetTestAssemblyPath("System.Runtime.Loader.Test.AssemblyVersion3");
                 
                 bool resolverCalled = false;
                 
@@ -130,7 +128,6 @@ namespace System.Runtime.Loader.Tests
         {
             RemoteExecutor.Invoke(() => {
                 string assemblyV1Path = GetTestAssemblyPath("System.Runtime.Loader.Test.AssemblyVersion1");
-                string assemblyV3Path = GetTestAssemblyPath("System.Runtime.Loader.Test.AssemblyVersion3");
                 
                 var customContext = new DowngradeAssemblyLoadContext(assemblyV1Path);
                 
@@ -199,7 +196,6 @@ namespace System.Runtime.Loader.Tests
             string resourceName = assemblyProject switch
             {
                 "System.Runtime.Loader.Test.AssemblyVersion1" => "System.Runtime.Loader.Tests.AssemblyVersion1.dll",
-                "System.Runtime.Loader.Test.AssemblyVersion3" => "System.Runtime.Loader.Tests.AssemblyVersion3.dll",
                 _ => throw new ArgumentException($"Unknown test assembly project: {assemblyProject}")
             };
             
