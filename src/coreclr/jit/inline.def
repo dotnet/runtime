@@ -42,6 +42,7 @@ INLINE_OBSERVATION(IS_ARRAY_METHOD,           bool,   "is array method",        
 INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoinline",             FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_NOINLINE,               bool,   "noinline per IL/cached result",        FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_SYNCHRONIZED,           bool,   "is synchronized",                      FATAL,       CALLEE)
+INLINE_OBSERVATION(IS_UNMANAGED,              bool,   "is unmanaged code",                    FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_VM_NOINLINE,            bool,   "noinline per VM",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(LACKS_RETURN,              bool,   "no return opcode",                     FATAL,       CALLEE)
 INLINE_OBSERVATION(LDFLD_NEEDS_HELPER,        bool,   "ldfld needs helper",                   FATAL,       CALLEE)

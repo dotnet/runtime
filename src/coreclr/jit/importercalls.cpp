@@ -7847,6 +7847,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
+    if (call->IsUnmanaged())
+    {
+        // We must have IL to inline.
+        //
+        inlineResult->NoteFatal(InlineObservation::CALLEE_IS_UNMANAGED);
+        return;
+    }
+
     // Inlining candidate determination needs to honor only IL tail prefix.
     // Inlining takes precedence over implicit tail call optimization (if the call is not directly recursive).
     if (call->IsTailPrefixedCall())
@@ -8028,6 +8036,10 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (methAttr & CORINFO_FLG_PINVOKE)
     {
+        // We should have already ruled out cases where we can directly call the unamanged method.
+        //
+        assert(!call->IsUnmanaged());
+
         if (!impCanPInvokeInlineCallSite(compCurBB))
         {
             inlineResult->NoteFatal(InlineObservation::CALLSITE_PINVOKE_EH);
@@ -8051,14 +8063,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         if (bbInFilterBBRange(compCurBB))
         {
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
-            return;
-        }
-
-        // Do not inline pinvoke stubs with EH.
-        //
-        if ((methAttr & CORINFO_FLG_PINVOKE) != 0)
-        {
-            inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
             return;
         }
     }
