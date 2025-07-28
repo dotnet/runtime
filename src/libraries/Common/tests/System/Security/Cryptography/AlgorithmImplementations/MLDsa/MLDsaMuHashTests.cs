@@ -115,14 +115,14 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void BaseDispose_ClearsKey()
+        public static void KeyInaccessibleAfterDispose()
         {
             using (MLDsaTestImplementation key = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa87))
             using (MLDsaMuHashTestImplementation muHash = new MLDsaMuHashTestImplementation(key))
             {
                 Assert.NotNull(muHash.ExposedKey);
                 muHash.Dispose();
-                Assert.Null(muHash.ExposedKey);
+                AssertExtensions.Throws<ObjectDisposedException>(() => _ = muHash.ExposedKey);
             }
         }
 

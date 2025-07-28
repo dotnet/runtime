@@ -505,6 +505,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The current platform does not support signing or verification with an externally computed mu value.
+        /// </exception>
         public MLDsaMuHash OpenExternalMuHash()
         {
             return OpenExternalMuHash(ReadOnlySpan<byte>.Empty);
@@ -534,6 +537,9 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The current platform does not support signing or verification with an externally computed mu value.
         /// </exception>
         public MLDsaMuHash OpenExternalMuHash(ReadOnlySpan<byte> context)
         {
@@ -600,6 +606,9 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the hash.</para>
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The current platform does not support signing with an externally computed mu value.
+        /// </exception>
         /// <seealso cref="OpenExternalMuHash(byte[])"/>
         /// <seealso cref="VerifyExternalMu(byte[], byte[])"/>
         public byte[] SignExternalMu(ReadOnlySpan<byte> mu)
@@ -636,6 +645,9 @@ namespace System.Security.Cryptography
         ///   <para>The instance represents only a public key.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The current platform does not support signing with an externally computed mu value.
         /// </exception>
         /// <seealso cref="OpenExternalMuHash(ReadOnlySpan{byte})"/>
         /// <seealso cref="VerifyExternalMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
@@ -690,6 +702,9 @@ namespace System.Security.Cryptography
         ///   This instance has been disposed.
         /// </exception>
         /// <exception cref="CryptographicException">An error occurred while verifying the mu value.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The current platform does not support verification with an externally computed mu value.
+        /// </exception>
         public bool VerifyExternalMu(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature)
         {
             if (mu.Length != Algorithm.MuSizeInBytes || signature.Length != Algorithm.SignatureSizeInBytes)

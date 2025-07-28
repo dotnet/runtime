@@ -134,30 +134,11 @@ namespace System.Security.Cryptography
 
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
             {
-                hashHandle.Dispose();
+                hashHandle?.Dispose();
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
 
             return hashHandle;
-        }
-
-        private void Act(Action action)
-        {
-            if (Interlocked.Increment(ref _concurrentCount) == 1)
-            {
-                try
-                {
-                    action();
-                }
-                finally
-                {
-                    Interlocked.Decrement(ref _concurrentCount);
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException("Concurrent access is not allowed.");
-            }
         }
 #else // !NETFRAMEWORK
 #pragma warning disable CA1822

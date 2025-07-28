@@ -97,15 +97,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        /// <summary>
-        ///   Appends the specified data to the data already processed in the hash.
-        /// </summary>
-        /// <param name="data">The data to process.</param>
+        /// <inheritdoc cref="AppendData(ReadOnlySpan{byte})"/>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="data" /> is <see langword="null" />.
         /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        /// <exception cref="CryptographicException">An error occurred processing the data.</exception>
         public void AppendData(byte[] data)
         {
             ArgumentNullException.ThrowIfNull(data);
