@@ -444,8 +444,28 @@ namespace Microsoft.Interop
 
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
 
+            // Generate numElements expression with null check for pointer types
+            ExpressionSyntax numElementsExpression = ElementsMarshalling.GenerateNumElementsExpression(countInfo, castCountInfo, CodeContext, context);
+
+            // If the marshalling direction is unmanaged-to-managed and we have native pointers,
+            // we need to check if the native pointer is null before using the size parameter to avoid
+            // allocating arrays for null pointers. This applies to LPArray scenarios.
+            if (CodeContext.Direction == MarshalDirection.UnmanagedToManaged &&
+                innerMarshaller.NativeType.FullTypeName.EndsWith("*"))
+            {
+                string nativeIdentifier = context.GetIdentifiers(TypeInfo).native;
+
+                // Generate: nativePointer == null ? 0 : sizeExpression
+                numElementsExpression = ConditionalExpression(
+                    BinaryExpression(SyntaxKind.EqualsExpression,
+                        IdentifierName(nativeIdentifier),
+                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)),
+                    numElementsExpression);
+            }
+
             // <numElements> = <numElementsExpression>;
-            yield return AssignmentStatement(IdentifierName(numElementsIdentifier), ElementsMarshalling.GenerateNumElementsExpression(countInfo, castCountInfo, CodeContext, context));
+            yield return AssignmentStatement(IdentifierName(numElementsIdentifier), numElementsExpression);
 
             yield return elementsMarshalling.GenerateUnmarshalStatement(context);
 
