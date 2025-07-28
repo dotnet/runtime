@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,7 +23,7 @@ public abstract class DirectoryTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.SplitNewLineDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
     public void Create(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -33,7 +36,7 @@ public abstract class DirectoryTestBase : IDisposable
 
     public static IEnumerable<object[]> Delete_TestData() =>
         new int[] { 0, 2, 8 }.SelectMany(recurseLevel =>
-        TestHelper.s_splitNewLineDecodedTestData.Select(testData => new object[] { recurseLevel, testData }));
+        TestHelper.s_nonExceedingPathNameMaxDecodedTestData.Select(testData => new object[] { recurseLevel, testData }));
 
     [Theory]
     [MemberData(nameof(Delete_TestData))]
@@ -52,7 +55,7 @@ public abstract class DirectoryTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.SplitNewLineDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
     public void Move(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);

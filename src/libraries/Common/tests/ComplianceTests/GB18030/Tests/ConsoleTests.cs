@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -6,7 +9,9 @@ namespace GB18030.Tests;
 
 public class ConsoleTests
 {
-    [Theory]
+    protected static readonly int WaitInMS = 30 * 1000 * PlatformDetection.SlowRuntimeTimeoutModifier;
+
+    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
     public void StandardOutput(string decodedText)
     {
@@ -24,10 +29,10 @@ public class ConsoleTests
 
 
         Assert.Equal(decodedText, remoteHandle.Process.StandardOutput.ReadToEnd());
-        Assert.True(remoteHandle.Process.WaitForExit(5_000));
+        Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
     public void StandardInput(string decodedText)
     {
@@ -58,10 +63,10 @@ public class ConsoleTests
             remoteHandle.Process.StandardInput.Close();
         }
 
-        Assert.True(remoteHandle.Process.WaitForExit(5_000));
+        Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
     public void StandardError(string decodedText)
     {
@@ -79,6 +84,6 @@ public class ConsoleTests
 
 
         Assert.Equal(decodedText, remoteHandle.Process.StandardError.ReadToEnd());
-        Assert.True(remoteHandle.Process.WaitForExit(5_000));
+        Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
     }
 }

@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.IO;
 using Xunit;
@@ -24,7 +27,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.SplitNewLineDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
     public void Create(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -36,7 +39,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.SplitNewLineDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
     public void Delete(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -49,7 +52,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.SplitNewLineDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
     public void Move(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -66,7 +69,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.SplitNewLineDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
     public void Copy(string gb18030Line)
     {
         ReadOnlySpan<byte> sampleContent = "File_Copy"u8;

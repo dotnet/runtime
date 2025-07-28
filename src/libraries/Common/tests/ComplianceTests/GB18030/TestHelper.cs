@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -41,21 +44,51 @@ public static class TestHelper
     {
         get
         {
+            if (s_gb18030Encoding is null)
+            {
 #if !NETFRAMEWORK
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
-            return s_gb18030Encoding ??= Encoding.GetEncoding("gb18030");
+                s_gb18030Encoding = Encoding.GetEncoding("gb18030");
+            }
+
+            return s_gb18030Encoding;
         }
     }
 
     private static readonly IEnumerable<byte[]> s_encodedTestData = GetTestData();
     internal static readonly IEnumerable<string> s_decodedTestData = s_encodedTestData.Select(data => GB18030Encoding.GetString(data));
-    internal static readonly IEnumerable<string> s_splitNewLineDecodedTestData = s_decodedTestData.SelectMany(
+    private static readonly IEnumerable<string> s_splitNewLineDecodedTestData = s_decodedTestData.SelectMany(
         data => data.Split([Environment.NewLine], StringSplitOptions.RemoveEmptyEntries));
+
+    internal static readonly IEnumerable<string> s_nonExceedingPathNameMaxDecodedTestData =
+        s_splitNewLineDecodedTestData.SelectMany<string, string>(
+        (data) =>
+        {
+            const int MaxPathSegmentName = 255;
+            Encoding fileSystemEncoding = PlatformDetection.IsWindows ? Encoding.Unicode : Encoding.UTF8;
+
+            if (fileSystemEncoding.GetByteCount(data) <= MaxPathSegmentName)
+                return [data];
+
+            List<string> result = new();
+            string current = string.Empty;
+            foreach (string element in GetTextElements(data))
+            {
+                if (fileSystemEncoding.GetByteCount(current) > MaxPathSegmentName)
+                {
+                    result.Add(current);
+                    current = string.Empty;
+                }
+                current += element;
+            }
+            result.Add(current);
+            return result;
+        });
 
     public static IEnumerable<object[]> EncodedTestData { get; } = s_encodedTestData.Select(data => new object[] { data });
     public static IEnumerable<object[]> DecodedTestData { get; } = s_decodedTestData.Select(data => new object[] { data });
-    public static IEnumerable<object[]> SplitNewLineDecodedTestData { get; } = s_splitNewLineDecodedTestData.Select(data => new object[] { data });
+    public static IEnumerable<object[]> NonExceedingPathNameMaxDecodedTestData { get; } = s_nonExceedingPathNameMaxDecodedTestData.Select(data => new object[] { data });
 
     private static IEnumerable<byte[]> GetTestData()
     {

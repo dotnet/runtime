@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,22 +15,19 @@ public class DirectoryTests : DirectoryTestBase
     protected override void MoveDirectory(string source, string destination) => Directory.Move(source, destination);
 
     [Theory]
-    [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
-    public void EnumerateFileSystemEntries(string decoded)
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    public void EnumerateFileSystemEntries(string gb18030Line)
     {
         string rootDir = TempDirectory.FullName;
         List<string> expected = [];
 
-        foreach (string gb18030Line in decoded.Split([Environment.NewLine], StringSplitOptions.None))
-        {
-            string gb18030Dir = Path.Combine(rootDir, gb18030Line);
-            Directory.CreateDirectory(gb18030Dir);
-            expected.Add(gb18030Dir);
+        string gb18030Dir = Path.Combine(rootDir, gb18030Line);
+        Directory.CreateDirectory(gb18030Dir);
+        expected.Add(gb18030Dir);
 
-            string gb18030File = Path.Combine(rootDir, gb18030Line + ".txt");
-            File.Create(gb18030File).Dispose();
-            expected.Add(gb18030File);
-        }
+        string gb18030File = Path.Combine(rootDir, gb18030Line + ".txt");
+        File.Create(gb18030File).Dispose();
+        expected.Add(gb18030File);
 
         Assert.Equivalent(expected, Directory.EnumerateFileSystemEntries(rootDir));
     }
