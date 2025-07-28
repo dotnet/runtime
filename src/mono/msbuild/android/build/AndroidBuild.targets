@@ -292,5 +292,4 @@
     </RuntimeConfigParserTask>
   </Target>
 
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(UseNativeAOTRuntime)' == 'true'" />
 </Project>

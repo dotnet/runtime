@@ -574,7 +574,7 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\System.Globalization.Tests.csproj" Condition="'$(OS)' != 'Windows_NT'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(TargetOS)' != 'android'">
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
@@ -605,6 +605,10 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\*.Test.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'NativeAOT'">
+    <SmokeTestProject Include="$(RepoRoot)src\tests\FunctionalTests\Android\Device_Emulator\NativeAOT\*.Test.csproj"/>
   </ItemGroup>
 
   <!--
@@ -718,11 +722,6 @@
                       BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'NativeAOT'">
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\NativeAOT\Android.Device_Emulator.NativeAOT.Test.csproj"
                       BuildInParallel="false" />
   </ItemGroup>
 

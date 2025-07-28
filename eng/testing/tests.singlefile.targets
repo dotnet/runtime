@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType Condition="'$(TargetOS)' != 'android'">Exe</OutputType>
 
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
@@ -49,7 +49,8 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
-             Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs" />
+             Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs"
+             Condition="'$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
