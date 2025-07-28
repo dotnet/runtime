@@ -89,9 +89,14 @@ class TestHardwareIntrinsics
         public static bool IsAvxVnniSupported = AvxVnni.IsSupported;
     }
 
-    class Complex
+    class Simple3
     {
         public static bool IsPopcntSupported = Popcnt.IsSupported;
+    }
+    
+    class Complex
+    {
+        public static bool IsAvx512FSupported = Avx512F.IsSupported;
     }
 
     public static void Run()
@@ -101,12 +106,15 @@ class TestHardwareIntrinsics
 
         Assert.IsPreinitialized(typeof(Simple2));
         Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
+        
+        Assert.IsPreinitialized(typeof(Simple3));
+        Assert.AreEqual(Popcnt.IsSupported, Simple3.IsPopcntSupported);
 
         if (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64)
             Assert.IsLazyInitialized(typeof(Complex));
         else
             Assert.IsPreinitialized(typeof(Complex));
-        Assert.AreEqual(Popcnt.IsSupported, Complex.IsPopcntSupported);
+        Assert.AreEqual(Avx512F.IsSupported, Complex.IsAvx512FSupported);
     }
 }
 
