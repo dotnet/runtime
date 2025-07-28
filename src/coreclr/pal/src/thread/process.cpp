@@ -1406,7 +1406,9 @@ static const char* IpcNameFormat = "%s-%d-%llu-%s";
 
 #ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
 static const char* RuntimeStartupPipeName = "st";
-static const char* RuntimeContinuePipeName= "co";
+static const char* RuntimeContinuePipeName = "co";
+
+#define PIPE_OPEN_RETRY_DELAY_NS 500000000 // 500 ms
 
 typedef enum
 {
@@ -1433,14 +1435,14 @@ OpenPipe(const char* name, int mode)
     flags |= O_CLOEXEC;
 #endif
 
-    while(fd == -1)
+    while (fd == -1)
     {
         fd = open(name, flags);
         if (fd == -1)
         {
             if (mode == O_WRONLY && errno == ENXIO)
             {
-                PAL_nanosleep(500 * 1000 * 1000);
+                PAL_nanosleep(PIPE_OPEN_RETRY_DELAY_NS);
                 continue;
             }
             else if (errno == EINTR)
@@ -1482,7 +1484,7 @@ ClosePipe(int fd)
 {
     if (fd != -1)
     {
-        while(close(fd) < 0 && errno == EINTR);
+        while (close(fd) < 0 && errno == EINTR);
     }
 }
 
