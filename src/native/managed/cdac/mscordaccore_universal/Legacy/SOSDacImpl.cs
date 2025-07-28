@@ -1943,12 +1943,7 @@ internal sealed unsafe partial class SOSDacImpl
                 Contracts.ILoader loaderContract = _target.Contracts.Loader;
                 Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
                 Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(rtsContract.GetModule(methodTableHandle));
-                TargetPointer assemblyLoadContextPtr = loaderContract.GetBinderAssemblyLoadContext(moduleHandle);
-                TargetPointer alc = TargetPointer.Null;
-                if (assemblyLoadContextPtr != TargetPointer.Null)
-                {
-                    alc = _target.ReadPointer(assemblyLoadContextPtr);
-                }
+                TargetPointer alc = loaderContract.GetAssemblyLoadContext(moduleHandle);
                 *assemblyLoadContext = alc.ToClrDataAddress(_target);
             }
         }

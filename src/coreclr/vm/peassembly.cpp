@@ -641,6 +641,7 @@ PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
                 BOOL isSystem,
+                AssemblyBinder* pFallbackBinder /*= NULL*/,
                 PEImage * pPEImage /*= NULL*/,
                 BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 {
@@ -664,8 +665,7 @@ PEAssembly::PEAssembly(
     m_refCount = 1;
     m_isSystem = isSystem;
     m_pHostAssembly = nullptr;
-    m_pFallbackBinder = nullptr;
-    m_pActiveBinder = nullptr;
+    m_pAssemblyBinder = nullptr;
 
     pPEImage = pBindResultInfo ? pBindResultInfo->GetPEImage() : pPEImage;
     if (pPEImage)
@@ -719,14 +719,11 @@ PEAssembly::PEAssembly(
 
     if (m_pHostAssembly != nullptr)
     {
-        m_pActiveBinder = m_pHostAssembly->GetBinder();
+        m_pAssemblyBinder = m_pHostAssembly->GetBinder();
     }
     else
     {
-        if (m_PEImage == NULL)
-        {
-            m_pActiveBinder = m_pFallbackBinder;
-        }
+        m_pAssemblyBinder = pFallbackBinder;
     }
 
 #ifdef LOGGING
@@ -747,6 +744,7 @@ PEAssembly *PEAssembly::Open(
         nullptr,        // BindResult
         nullptr,        // IMetaDataEmit
         FALSE,          // isSystem
+        nullptr,
         pPEImageIL,
         pHostAssembly);
 
@@ -840,7 +838,7 @@ PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
 };
 
 /* static */
-PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
+PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBinder *pFallbackBinder)
 {
     CONTRACT(PEAssembly *)
     {
@@ -854,7 +852,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
     // we have.)
     SafeComHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    RETURN new PEAssembly(NULL, pEmit, FALSE);
+    RETURN new PEAssembly(NULL, pEmit, FALSE, pFallbackBinder);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1090,25 +1088,5 @@ TADDR PEAssembly::GetMDInternalRWAddress()
 // Returns the AssemblyBinder* instance associated with the PEAssembly
 PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
 {
-    LIMITED_METHOD_CONTRACT;
-
-    PTR_AssemblyBinder pBinder = NULL;
-
-    PTR_BINDER_SPACE_Assembly pHostAssembly = GetHostAssembly();
-    if (pHostAssembly)
-    {
-        pBinder = pHostAssembly->GetBinder();
-    }
-    else
-    {
-        // If we do not have a host assembly, check if we are dealing with
-        // a dynamically emitted assembly and if so, use its fallback load context
-        // binder reference.
-        if (IsReflectionEmit())
-        {
-            pBinder = GetFallbackBinder();
-        }
-    }
-
-    return pBinder;
+    return m_pAssemblyBinder;
 }

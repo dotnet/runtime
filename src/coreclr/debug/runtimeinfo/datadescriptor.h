@@ -263,7 +263,7 @@ CDAC_TYPE_END(LoaderAllocator)
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
 CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, PEImage, cdac_data<PEAssembly>::PEImage)
-CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, ActiveBinder, cdac_data<PEAssembly>::ActiveBinder)
+CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, AssemblyBinder, cdac_data<PEAssembly>::AssemblyBinder)
 CDAC_TYPE_END(PEAssembly)
 
 CDAC_TYPE_BEGIN(AssemblyBinder)

@@ -91,7 +91,7 @@ public interface ILoader : IContract
 
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
-    TargetPointer GetBinderAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
