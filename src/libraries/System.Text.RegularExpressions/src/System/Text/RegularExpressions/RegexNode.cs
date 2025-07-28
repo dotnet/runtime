@@ -2488,6 +2488,55 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Gets whether this node is known to be immediately preceded by a word character.</summary>
+        public bool IsKnownPrecededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(false);
+
+        /// <summary>Gets whether this node is known to be immediately succeeded by a word character.</summary>
+        public bool IsKnownSucceededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(true);
+
+        private bool IsKnownPrecededOrSucceededByWordChar(bool succeeded)
+        {
+            RegexNode node = this;
+            Debug.Assert(node.Kind is not RegexNodeKind.Concatenate, "The existing logic assumes that the node itself isn't a concatenation.");
+
+            // As in CanBeMadeAtomic, conservatively walk up through a limited set of constructs to the next concatenation.
+            while (true)
+            {
+                if ((node.Options & RegexOptions.RightToLeft) != 0 ||
+                    node.Parent is not RegexNode parent)
+                {
+                    return false;
+                }
+
+                switch (parent.Kind)
+                {
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Alternate:
+                    case RegexNodeKind.Capture:
+                        node = parent;
+                        continue;
+
+                    case RegexNodeKind.Concatenate:
+                        var peers = (List<RegexNode>)parent.Children!;
+                        int index = peers.IndexOf(node) + (succeeded ? 1 : -1);
+                        if ((uint)index < (uint)peers.Count)
+                        {
+                            // Now that we've found the concatenation, build a set that represents the characters that could come
+                            // before or after this node, depending on whether we're looking for a preceding or succeeding word character.
+                            return
+                                RegexPrefixAnalyzer.FindFirstOrLastCharClass(peers[index], findFirst: succeeded) is string set &&
+                                RegexCharClass.IsKnownWordClassSubset(set);
+                        }
+
+                        node = parent;
+                        continue;
+
+                    default:
+                        return false;
+                }
+            }
+        }
+
         /// <summary>Computes a min bound on the required length of any string that could possibly match.</summary>
         /// <returns>The min computed length.  If the result is 0, there is no minimum we can enforce.</returns>
         /// <remarks>
