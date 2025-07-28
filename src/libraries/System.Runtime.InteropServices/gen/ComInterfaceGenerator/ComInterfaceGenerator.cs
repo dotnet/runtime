@@ -108,7 +108,7 @@ namespace Microsoft.Interop
                             symbolMap[data.Method.MethodInfo],
                             data.Method.Index,
                             env,
-                            data.OwningInterface.Info.Type,
+                            data.OwningInterface.Info,
                             ct));
                 }).WithTrackingName(StepNames.CalculateStubInformation);
 
@@ -267,7 +267,7 @@ namespace Microsoft.Interop
             int index,
             StubEnvironment environment,
             ISignatureDiagnosticLocations diagnosticLocations,
-            ManagedTypeInfo owningInterface,
+            ComInterfaceInfo owningInterfaceInfo,
             CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
@@ -434,7 +434,7 @@ namespace Microsoft.Interop
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
+        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
         {
             ISignatureDiagnosticLocations locations = syntax is null
                 ? NoneSignatureDiagnosticLocations.Instance
