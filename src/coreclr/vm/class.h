@@ -1800,6 +1800,7 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
     static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
     static constexpr size_t FieldDescList = offsetof(EEClass, m_pFieldDescList);
+    static constexpr size_t MethodDescChunk = offsetof(EEClass, m_pChunks);
     static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
     static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
     static constexpr size_t NumInstanceFields = offsetof(EEClass, m_NumInstanceFields);
