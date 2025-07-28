@@ -104,7 +104,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
         {
-            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length, bb);
+            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length);
 
             // We already guaranteed (by a sequence of preceding checks) that the array length operator will not
             // throw an exception because we null checked the base array.
@@ -3080,6 +3080,10 @@ PhaseStatus Compiler::optCloneLoops()
             bool      allTrue   = false;
             bool      anyFalse  = false;
             const int sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
+            auto      countNode = [](GenTree* tree) -> unsigned {
+                return 1;
+            };
+
             context.EvaluateConditions(loop->GetIndex(), &allTrue, &anyFalse DEBUGARG(verbose));
             if (anyFalse)
             {
@@ -3102,7 +3106,7 @@ PhaseStatus Compiler::optCloneLoops()
             // tree nodes in all statements in all blocks in the loop.
             // This value is compared to a hard-coded threshold, and if bigger,
             // then the method returns false.
-            else if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit))
+            else if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit, countNode))
             {
                 context.CancelLoopOptInfo(loop->GetIndex());
             }

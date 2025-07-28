@@ -117,7 +117,7 @@ usage()
   echo ""
   echo "However, for this example, you need to already have ROOTFS_DIR set up."
   echo "Further information on this can be found here:"
-  echo "https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/linux-instructions.md"
+  echo "https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/cross-building.md"
   echo ""
   echo "* Build Mono runtime for Linux x64 on Release configuration."
   echo "./build.sh mono -c release"
@@ -150,7 +150,7 @@ initDistroRid()
 
 showSubsetHelp()
 {
-  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary /tl:false"
+  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary" "/tl:false"
 }
 
 arguments=()

@@ -489,8 +489,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             public Type GetOnlyProperty { get; }
 
-            // Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/runtime/issues/93277
-            [ExpectedWarning("IL2074", nameof(WriteToGetOnlyProperty), nameof(GetUnknownType), Tool.Trimmer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL2074", nameof(WriteToGetOnlyProperty), nameof(GetUnknownType))]
             public WriteToGetOnlyProperty()
             {
                 GetOnlyProperty = GetUnknownType();
@@ -568,9 +567,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type GetOnlyProperty { get; }
 
-            // Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/runtime/issues/93277
-            [ExpectedWarning("IL2074", nameof(WriteCapturedGetOnlyProperty), nameof(GetUnknownType), Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL2074", nameof(WriteCapturedGetOnlyProperty), nameof(GetTypeWithPublicConstructors), Tool.Trimmer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL2074", nameof(WriteCapturedGetOnlyProperty), nameof(GetUnknownType))]
+            [ExpectedWarning("IL2074", nameof(WriteCapturedGetOnlyProperty), nameof(GetTypeWithPublicConstructors))]
             public WriteCapturedGetOnlyProperty()
             {
                 GetOnlyProperty = GetUnknownType() ?? GetTypeWithPublicConstructors();
@@ -907,7 +905,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
                 [ExpectedWarning("IL2098")]
                 static void RequirePublicFields(
-                    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                     ref string s)
                 {
                 }

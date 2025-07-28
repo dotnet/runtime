@@ -48,7 +48,7 @@ namespace ILLink.Shared.TrimAnalysis
             _requireDynamicallyAccessedMembersAction = new(reflectionMarker, diagnosticContext, reason);
         }
 
-        private partial bool TryHandleIntrinsic (
+        private partial bool TryHandleIntrinsic(
             MethodProxy calledMethod,
             MultiValue instanceValue,
             IReadOnlyList<MultiValue> argumentValues,
@@ -221,7 +221,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Array
                 //
-                // CreateInstance (Type, Int32)
+                // CreateInstance(Type, Int32)
                 //
                 case IntrinsicId.Array_CreateInstance:
                     {
@@ -234,7 +234,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Enum
                 //
-                // static GetValues (Type)
+                // static GetValues(Type)
                 //
                 case IntrinsicId.Enum_GetValues:
                     {
@@ -243,7 +243,7 @@ namespace ILLink.Shared.TrimAnalysis
                         // type instead).
                         //
                         // At least until we have shared enum code, this needs extra handling to get it right.
-                        foreach (var value in argumentValues[0].AsEnumerable ())
+                        foreach (var value in argumentValues[0].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -263,10 +263,10 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Runtime.InteropServices.Marshal
                 //
-                // static SizeOf (Type)
-                // static PtrToStructure (IntPtr, Type)
-                // static DestroyStructure (IntPtr, Type)
-                // static OffsetOf (Type, string)
+                // static SizeOf(Type)
+                // static PtrToStructure(IntPtr, Type)
+                // static DestroyStructure(IntPtr, Type)
+                // static OffsetOf(Type, string)
                 //
                 case IntrinsicId.Marshal_SizeOf:
                 case IntrinsicId.Marshal_PtrToStructure:
@@ -278,7 +278,7 @@ namespace ILLink.Shared.TrimAnalysis
                             ? 0 : 1;
 
                         // We need the data to do struct marshalling.
-                        foreach (var value in argumentValues[paramIndex].AsEnumerable ())
+                        foreach (var value in argumentValues[paramIndex].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -304,12 +304,12 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Runtime.InteropServices.Marshal
                 //
-                // static GetDelegateForFunctionPointer (IntPtr, Type)
+                // static GetDelegateForFunctionPointer(IntPtr, Type)
                 //
                 case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
                     {
                         // We need the data to do delegate marshalling.
-                        foreach (var value in argumentValues[1].AsEnumerable ())
+                        foreach (var value in argumentValues[1].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -329,11 +329,11 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Delegate
                 //
-                // get_Method ()
+                // get_Method()
                 //
                 // System.Reflection.RuntimeReflectionExtensions
                 //
-                // GetMethodInfo (System.Delegate)
+                // GetMethodInfo(System.Delegate)
                 //
                 case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
                 case IntrinsicId.Delegate_get_Method:
@@ -373,12 +373,12 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 case IntrinsicId.Object_GetType:
                     {
-                        if (instanceValue.IsEmpty ()) {
-                            AddReturnValue (MultiValueLattice.Top);
+                        if (instanceValue.IsEmpty()) {
+                            AddReturnValue(MultiValueLattice.Top);
                             break;
                         }
 
-                        foreach (var valueNode in instanceValue.AsEnumerable ())
+                        foreach (var valueNode in instanceValue.AsEnumerable())
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:

@@ -34,11 +34,62 @@ namespace System.Security.Cryptography
         [MemberNotNullWhen(true, nameof(s_algHandle))]
         internal static partial bool SupportsAny() => s_algHandle is not null;
 
-        protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+        [MemberNotNullWhen(true, nameof(s_algHandle))]
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm) => SupportsAny();
+
+        protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
+        {
+            if (!_hasSecretKey)
+            {
+                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+            }
+
             Interop.BCrypt.BCryptSignHashPqcPure(_key, data, context, destination);
+        }
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.BCrypt.BCryptVerifySignaturePqcPure(_key, data, context, signature);
+
+        protected override void SignPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            Span<byte> destination)
+        {
+            if (!_hasSecretKey)
+            {
+                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+            }
+
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            Interop.BCrypt.BCryptSignHashPqcPreHash(_key, hash, hashAlgorithmIdentifier, context, destination);
+        }
+
+        protected override bool VerifyPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            ReadOnlySpan<byte> signature)
+        {
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            return Interop.BCrypt.BCryptVerifySignaturePqcPreHash(_key, hash, hashAlgorithmIdentifier, context, signature);
+        }
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm)
         {
@@ -153,8 +204,13 @@ namespace System.Security.Cryptography
 
         protected override void Dispose(bool disposing)
         {
-            _key?.Dispose();
-            _key = null!;
+            if (disposing)
+            {
+                _key?.Dispose();
+                _key = null!;
+            }
+
+            base.Dispose(disposing);
         }
 
         private void ExportKey(string keyBlobType, int expectedKeySize, Span<byte> destination)

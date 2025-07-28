@@ -648,6 +648,22 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
+struct LocalDef
+{
+    GenTreeLclVarCommon* Def;
+    bool                 IsEntire;
+    ssize_t              Offset;
+    unsigned             Size;
+
+    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, unsigned size)
+        : Def(def)
+        , IsEntire(isEntire)
+        , Offset(offset)
+        , Size(size)
+    {
+    }
+};
+
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -695,6 +711,12 @@ struct GenTree
 #define GTSTRUCT_3_SPECIAL(fn, en, en2, en3) GTSTRUCT_3(fn, en, en2, en3)
 
 #include "gtstructs.h"
+
+    enum class VisitResult
+    {
+        Abort    = false,
+        Continue = true
+    };
 
     genTreeOps gtOper; // enum subtype BYTE
     var_types  gtType; // enum subtype BYTE
@@ -1084,7 +1106,18 @@ public:
 
     bool IsNotGcDef() const
     {
-        return IsIntegralConst(0) || OperIs(GT_LCL_ADDR);
+        if (IsIntegralConst(0) || OperIs(GT_LCL_ADDR))
+        {
+            return true;
+        }
+
+        // Any NonGC object or NonGC object + any offset.
+        if (IsIconHandle(GTF_ICON_OBJ_HDL) || (OperIs(GT_ADD) && gtGetOp1()->IsIconHandle(GTF_ICON_OBJ_HDL)))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     // LIR flags
@@ -1483,12 +1516,13 @@ public:
 #ifdef FEATURE_HW_INTRINSICS
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
-    bool isRMWHWIntrinsic(Compiler* comp);
+    bool isRMWHWIntrinsic(Compiler* comp) const;
 #if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
     bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const;
+    bool isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, CorInfoType& tgtSimdBaseJitType) const;
 #endif // TARGET_XARCH
-    bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
+    bool isEmbeddedMaskingCompatible() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1500,7 +1534,7 @@ public:
         return false;
     }
 
-    bool isRMWHWIntrinsic(Compiler* comp)
+    bool isRMWHWIntrinsic(Compiler* comp) const
     {
         return false;
     }
@@ -1517,7 +1551,7 @@ public:
     }
 #endif // TARGET_XARCH
 
-    bool isEmbeddedMaskingCompatibleHWIntrinsic() const
+    bool isEmbeddedMaskingCompatible() const
     {
         return false;
     }
@@ -1803,8 +1837,9 @@ public:
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
+    inline bool IsMaskZero() const;
+    inline bool IsMaskAllBitsSet() const;
     inline bool IsTrueMask(var_types simdBaseType) const;
-    inline bool IsFalseMask() const;
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -2010,11 +2045,13 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    bool DefinesLocal(Compiler*             comp,
-                      GenTreeLclVarCommon** pLclVarTree,
-                      bool*                 pIsEntire = nullptr,
-                      ssize_t*              pOffset   = nullptr,
-                      unsigned*             pSize     = nullptr);
+    template <typename TVisitor>
+    VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLocalDefNodes(Compiler* comp, TVisitor visitor);
+
+    bool HasAnyLocalDefs(Compiler* comp);
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr, target_ssize_t* offset);
@@ -2336,12 +2373,6 @@ public:
 
     // Returns a range that will produce the operands of this node in execution order.
     IteratorPair<GenTreeOperandIterator> Operands();
-
-    enum class VisitResult
-    {
-        Abort    = false,
-        Continue = true
-    };
 
     // Visits each operand of this node. The operand must be either a lambda, function, or functor with the signature
     // `GenTree::VisitResult VisitorFunction(GenTree* operand)`. Here is a simple example:
@@ -4303,6 +4334,69 @@ inline GenTreeCallDebugFlags& operator &=(GenTreeCallDebugFlags& a, GenTreeCallD
 
 // clang-format on
 
+enum class ExecutionContextHandling
+{
+    // No special handling of execution context is required.
+    None,
+    // Always save and restore ExecutionContext around this await.
+    // Used for task awaits.
+    SaveAndRestore,
+    // Save and restore execution context on suspension/resumption only.
+    // Used for custom awaitables.
+    AsyncSaveAndRestore,
+};
+
+enum class ContinuationContextHandling
+{
+    // No special handling of SynchronizationContext/TaskScheduler is required.
+    None,
+    // Continue on SynchronizationContext/TaskScheduler
+    ContinueOnCapturedContext,
+    // Continue on thread pool thread
+    ContinueOnThreadPool,
+};
+
+// Additional async call info.
+struct AsyncCallInfo
+{
+    // The following information is used to implement the proper observable handling of `ExecutionContext`,
+    // `SynchronizationContext` and `TaskScheduler` in async methods.
+    //
+    // The breakdown of the handling is as follows:
+    //
+    // - For custom awaitables there is no special handling of `SynchronizationContext` or `TaskScheduler`. All the
+    // handling that exists is custom implemented by the user. In this case "ContinuationContextHandling == None" and
+    // "SaveAndRestoreSynchronizationContextField == false".
+    //
+    // - For custom awaitables there _is_ special handling of `ExecutionContext`: when the custom awaitable suspends,
+    // the JIT ensures that the `ExecutionContext` will be captured on suspension and restored when the continuation is
+    // running. This is represented by "ExecutionContextHandling == AsyncSaveAndRestore".
+    //
+    // - For task awaits there is special handling of `SynchronizationContext` and `TaskScheduler` in multiple ways:
+    //
+    //   * The JIT ensures that `Thread.CurrentThread._synchronizationContext` is saved and restored around
+    //   synchronously finishing calls. This is represented by "SaveAndRestoreSynchronizationContextField == true".
+    //
+    //   * The JIT/runtime/BCL ensure that when the callee suspends, the caller will eventually be resumed on the
+    //   `SynchronizationContext`/`TaskScheduler` present before the call started, depending on the configuration of the
+    //   task await by the user. This resumption can be inlined if the `SynchronizationContext` is current when the
+    //   continuation is about to run, and otherwise will be posted to it. This is represented by
+    //   "ContinuationContextHandling == ContinueOnCapturedContext/ContinueOnThreadPool".
+    //
+    //   * When the callee suspends restoration of `Thread.CurrentThread._synchronizationContext` is left up to the
+    //   custom implementation of the `SynchronizationContext`, it must not be done by the JIT.
+    //
+    // - For task awaits the runtime/BCL ensure that `Thread.CurrentThread._executionContext` is captured before the
+    // call and restored after it. This happens consistently regardless of whether the callee finishes synchronously or
+    // not. This is represented by "ExecutionContextHandling == SaveAndRestore".
+    //
+    ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
+    bool                        SaveAndRestoreSynchronizationContextField = false;
+    bool                        HasSuspensionIndicatorDef                 = false;
+    unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
+};
+
 // Return type descriptor of a GT_CALL node.
 // x64 Unix, Arm64, Arm32 and x86 allow a value to be returned in multiple
 // registers. For such calls this struct provides the following info
@@ -4573,6 +4667,7 @@ enum class WellKnownArg : unsigned
     X86TailCallSpecialArg,
     StackArrayLocal,
     RuntimeMethodHandle,
+    AsyncSuspendedIndicator,
 };
 
 #ifdef DEBUG
@@ -4787,6 +4882,7 @@ public:
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
+    void     RemoveUnsafe(CallArg* arg);
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
@@ -4955,9 +5051,12 @@ struct GenTreeCall final : public GenTree
 
     union
     {
+        // Used for explicit tail prefixed calls
         TailCallSiteInfo* tailCallInfo;
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
+        // Used for async calls
+        AsyncCallInfo* asyncInfo;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -5015,12 +5114,22 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void SetIsAsync()
+    void SetIsAsync(AsyncCallInfo* info)
     {
+        assert(info != nullptr);
         gtCallMoreFlags |= GTF_CALL_M_ASYNC;
+        asyncInfo = info;
     }
 
     bool IsAsync() const;
+
+    const AsyncCallInfo& GetAsyncInfo() const
+    {
+        assert(IsAsync());
+        return *asyncInfo;
+    }
+
+    bool IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.
@@ -9598,6 +9707,42 @@ inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
     return false;
 }
 
+//-------------------------------------------------------------------
+// IsMaskZero: returns true if this node is a mask constant with all bits zero.
+//
+// Returns:
+//     True if this node is a mask constant with all bits zero
+//
+inline bool GenTree::IsMaskZero() const
+{
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (IsCnsMsk())
+    {
+        return AsMskCon()->IsZero();
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsMaskAllBitsSet: returns true if this node is a mask constant with all bits set.
+//
+// Returns:
+//     True if this node is a mask constant with all bits set
+//
+inline bool GenTree::IsMaskAllBitsSet() const
+{
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (IsCnsMsk())
+    {
+        return AsMskCon()->IsAllBitsSet();
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    return false;
+}
+
 //------------------------------------------------------------------------
 // IsTrueMask: Is the given node a true mask
 //
@@ -9618,23 +9763,6 @@ inline bool GenTree::IsTrueMask(var_types simdBaseType) const
     if (IsCnsMsk())
     {
         return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
-    }
-#endif
-
-    return false;
-}
-
-//------------------------------------------------------------------------
-// IsFalseMask: Is the given node a false mask
-//
-// Returns true if the node is a false mask, ie all zeros
-//
-inline bool GenTree::IsFalseMask() const
-{
-#ifdef TARGET_ARM64
-    if (IsCnsMsk())
-    {
-        return AsMskCon()->IsZero();
     }
 #endif
 

@@ -1721,9 +1721,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 JITDUMP("Inlinee is not nested inside any EH region\n");
             }
 
-            // Grow the EH table.
-            //
-            // TODO: verify earlier that this won't fail...
+            // Grow the EH table. We verified in fgFindBasicBlocks that this won't fail.
             //
             EHblkDsc* const outermostEbd =
                 fgTryAddEHTableEntries(insertBeforeIndex, inlineeRegionCount, /* deferAdding */ false);
@@ -1852,7 +1850,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // Insert inlinee's blocks into inliner's block list.
         assert(topBlock->KindIs(BBJ_ALWAYS));
         assert(topBlock->TargetIs(bottomBlock));
-        fgRedirectTargetEdge(topBlock, InlineeCompiler->fgFirstBB);
+        fgRedirectEdge(topBlock->TargetEdgeRef(), InlineeCompiler->fgFirstBB);
 
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
@@ -2268,7 +2266,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         GenTree* thisOp = impInlineFetchArg(inlArgInfo[0], lclVarInfo[0]);
         if (fgAddrCouldBeNull(thisOp))
         {
-            nullcheck = gtNewNullCheck(thisOp, block);
+            nullcheck = gtNewNullCheck(thisOp);
             // The NULL-check statement will be inserted to the statement list after those statements
             // that assign arguments to temps and before the actual body of the inlinee method.
         }
@@ -2397,7 +2395,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 //    If the call we're inlining is in tail position then
 //    we skip nulling the locals, since it can interfere
 //    with tail calls introduced by the local.
-
+//
 void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
 {
     // Null out any gc ref locals

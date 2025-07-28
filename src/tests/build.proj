@@ -263,6 +263,7 @@
     <AndroidAppBuilderTask
         AppDir="$(BuildDir)"
         DiagnosticPorts="$(DiagnosticPorts)"
+        EnvironmentVariables="@(AndroidEnv)"
         ForceInterpreter="$(MonoInterp)"
         RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         OutputDir="$(AppDir)"
