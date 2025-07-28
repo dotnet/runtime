@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -971,6 +972,33 @@ namespace System.PrivateUri.Tests
                         }
                     }
                 }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("Manual only. This test takes a few minutes to execute.")]
+        public static async Task VeryLongInputs_ThrowOOM()
+        {
+            // This string will expand 6x when escaped (12 = 6x growth * 2 chars in the string)
+            string longString = string.Concat(Enumerable.Repeat("\uD83C\uDF49", int.MaxValue / 12));
+
+            Task userInfo = Task.Run(() => Test($"http://{longString}@host/path"));
+            Task path = Task.Run(() => Test($"http://host/{longString}"));
+            Task query = Task.Run(() => Test($"http://host/path?{longString}"));
+            Task fragment = Task.Run(() => Test($"http://host/path?foo=bar#{longString}"));
+
+            await userInfo;
+            await path;
+            await query;
+            await fragment;
+
+            static void Test(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                Assert.Throws<OutOfMemoryException>(() => uri.AbsoluteUri);
+
+                Assert.True(Uri.TryCreate(uriString, UriKind.Absolute, out uri));
+                Assert.Throws<OutOfMemoryException>(() => uri.AbsoluteUri);
             }
         }
     }

@@ -1747,6 +1747,8 @@ struct CORINFO_ASYNC_INFO
     // Method handle for AsyncHelpers.RestoreExecutionContext
     CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureContextsMethHnd;
+    CORINFO_METHOD_HANDLE restoreContextsMethHnd;
 };
 
 // Flags passed from JIT to runtime.
@@ -3137,12 +3139,6 @@ public:
             CORINFO_METHOD_HANDLE   ftn,
             bool                    isUnsafeFunctionPointer,
             CORINFO_CONST_LOOKUP *  pResult
-            ) = 0;
-
-    // get the synchronization handle that is passed to monXstatic function
-    virtual void* getMethodSync(
-            CORINFO_METHOD_HANDLE   ftn,
-            void**                  ppIndirection = NULL
             ) = 0;
 
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).

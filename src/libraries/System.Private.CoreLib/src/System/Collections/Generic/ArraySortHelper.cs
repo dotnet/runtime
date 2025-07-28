@@ -487,7 +487,7 @@ namespace System.Collections.Generic
                     while (Unsafe.IsAddressGreaterThan(ref rightRef, ref zeroRef) && LessThan(ref pivot, ref rightRef = ref Unsafe.Add(ref rightRef, -1))) ;
                 }
 
-                if (!Unsafe.IsAddressLessThan(ref leftRef, ref rightRef))
+                if (Unsafe.IsAddressGreaterThanOrEqualTo(ref leftRef, ref rightRef))
                 {
                     break;
                 }
