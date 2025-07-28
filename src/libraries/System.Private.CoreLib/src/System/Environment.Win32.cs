@@ -216,7 +216,7 @@ namespace System
             //
             // The only SpecialFolderOption defines we have are equivalent to KnownFolderFlags.
 
-            string folderGuid;
+            Guid folderId;
             string? fallbackEnv = null;
             switch (folder)
             {
@@ -229,154 +229,153 @@ namespace System
 
                 // Map the SpecialFolder to the appropriate Guid
                 case SpecialFolder.ApplicationData:
-                    folderGuid = Interop.Shell32.KnownFolders.RoamingAppData;
+                    folderId = Interop.Shell32.KnownFolders.RoamingAppData;
                     fallbackEnv = "APPDATA";
                     break;
                 case SpecialFolder.CommonApplicationData:
-                    folderGuid = Interop.Shell32.KnownFolders.ProgramData;
+                    folderId = Interop.Shell32.KnownFolders.ProgramData;
                     fallbackEnv = "ProgramData";
                     break;
                 case SpecialFolder.LocalApplicationData:
-                    folderGuid = Interop.Shell32.KnownFolders.LocalAppData;
+                    folderId = Interop.Shell32.KnownFolders.LocalAppData;
                     fallbackEnv = "LOCALAPPDATA";
                     break;
                 case SpecialFolder.Cookies:
-                    folderGuid = Interop.Shell32.KnownFolders.Cookies;
+                    folderId = Interop.Shell32.KnownFolders.Cookies;
                     break;
                 case SpecialFolder.Desktop:
-                    folderGuid = Interop.Shell32.KnownFolders.Desktop;
+                    folderId = Interop.Shell32.KnownFolders.Desktop;
                     break;
                 case SpecialFolder.Favorites:
-                    folderGuid = Interop.Shell32.KnownFolders.Favorites;
+                    folderId = Interop.Shell32.KnownFolders.Favorites;
                     break;
                 case SpecialFolder.History:
-                    folderGuid = Interop.Shell32.KnownFolders.History;
+                    folderId = Interop.Shell32.KnownFolders.History;
                     break;
                 case SpecialFolder.InternetCache:
-                    folderGuid = Interop.Shell32.KnownFolders.InternetCache;
+                    folderId = Interop.Shell32.KnownFolders.InternetCache;
                     break;
                 case SpecialFolder.Programs:
-                    folderGuid = Interop.Shell32.KnownFolders.Programs;
+                    folderId = Interop.Shell32.KnownFolders.Programs;
                     break;
                 case SpecialFolder.MyComputer:
-                    folderGuid = Interop.Shell32.KnownFolders.ComputerFolder;
+                    folderId = Interop.Shell32.KnownFolders.ComputerFolder;
                     break;
                 case SpecialFolder.MyMusic:
-                    folderGuid = Interop.Shell32.KnownFolders.Music;
+                    folderId = Interop.Shell32.KnownFolders.Music;
                     break;
                 case SpecialFolder.MyPictures:
-                    folderGuid = Interop.Shell32.KnownFolders.Pictures;
+                    folderId = Interop.Shell32.KnownFolders.Pictures;
                     break;
                 case SpecialFolder.MyVideos:
-                    folderGuid = Interop.Shell32.KnownFolders.Videos;
+                    folderId = Interop.Shell32.KnownFolders.Videos;
                     break;
                 case SpecialFolder.Recent:
-                    folderGuid = Interop.Shell32.KnownFolders.Recent;
+                    folderId = Interop.Shell32.KnownFolders.Recent;
                     break;
                 case SpecialFolder.SendTo:
-                    folderGuid = Interop.Shell32.KnownFolders.SendTo;
+                    folderId = Interop.Shell32.KnownFolders.SendTo;
                     break;
                 case SpecialFolder.StartMenu:
-                    folderGuid = Interop.Shell32.KnownFolders.StartMenu;
+                    folderId = Interop.Shell32.KnownFolders.StartMenu;
                     break;
                 case SpecialFolder.Startup:
-                    folderGuid = Interop.Shell32.KnownFolders.Startup;
+                    folderId = Interop.Shell32.KnownFolders.Startup;
                     break;
                 case SpecialFolder.Templates:
-                    folderGuid = Interop.Shell32.KnownFolders.Templates;
+                    folderId = Interop.Shell32.KnownFolders.Templates;
                     break;
                 case SpecialFolder.DesktopDirectory:
-                    folderGuid = Interop.Shell32.KnownFolders.Desktop;
+                    folderId = Interop.Shell32.KnownFolders.Desktop;
                     break;
                 case SpecialFolder.Personal:
                     // Same as Personal
                     // case SpecialFolder.MyDocuments:
-                    folderGuid = Interop.Shell32.KnownFolders.Documents;
+                    folderId = Interop.Shell32.KnownFolders.Documents;
                     break;
                 case SpecialFolder.ProgramFiles:
-                    folderGuid = Interop.Shell32.KnownFolders.ProgramFiles;
+                    folderId = Interop.Shell32.KnownFolders.ProgramFiles;
                     fallbackEnv = "ProgramFiles";
                     break;
                 case SpecialFolder.CommonProgramFiles:
-                    folderGuid = Interop.Shell32.KnownFolders.ProgramFilesCommon;
+                    folderId = Interop.Shell32.KnownFolders.ProgramFilesCommon;
                     fallbackEnv = "CommonProgramFiles";
                     break;
                 case SpecialFolder.AdminTools:
-                    folderGuid = Interop.Shell32.KnownFolders.AdminTools;
+                    folderId = Interop.Shell32.KnownFolders.AdminTools;
                     break;
                 case SpecialFolder.CDBurning:
-                    folderGuid = Interop.Shell32.KnownFolders.CDBurning;
+                    folderId = Interop.Shell32.KnownFolders.CDBurning;
                     break;
                 case SpecialFolder.CommonAdminTools:
-                    folderGuid = Interop.Shell32.KnownFolders.CommonAdminTools;
+                    folderId = Interop.Shell32.KnownFolders.CommonAdminTools;
                     break;
                 case SpecialFolder.CommonDocuments:
-                    folderGuid = Interop.Shell32.KnownFolders.PublicDocuments;
+                    folderId = Interop.Shell32.KnownFolders.PublicDocuments;
                     break;
                 case SpecialFolder.CommonMusic:
-                    folderGuid = Interop.Shell32.KnownFolders.PublicMusic;
+                    folderId = Interop.Shell32.KnownFolders.PublicMusic;
                     break;
                 case SpecialFolder.CommonOemLinks:
-                    folderGuid = Interop.Shell32.KnownFolders.CommonOEMLinks;
+                    folderId = Interop.Shell32.KnownFolders.CommonOEMLinks;
                     break;
                 case SpecialFolder.CommonPictures:
-                    folderGuid = Interop.Shell32.KnownFolders.PublicPictures;
+                    folderId = Interop.Shell32.KnownFolders.PublicPictures;
                     break;
                 case SpecialFolder.CommonStartMenu:
-                    folderGuid = Interop.Shell32.KnownFolders.CommonStartMenu;
+                    folderId = Interop.Shell32.KnownFolders.CommonStartMenu;
                     break;
                 case SpecialFolder.CommonPrograms:
-                    folderGuid = Interop.Shell32.KnownFolders.CommonPrograms;
+                    folderId = Interop.Shell32.KnownFolders.CommonPrograms;
                     break;
                 case SpecialFolder.CommonStartup:
-                    folderGuid = Interop.Shell32.KnownFolders.CommonStartup;
+                    folderId = Interop.Shell32.KnownFolders.CommonStartup;
                     break;
                 case SpecialFolder.CommonDesktopDirectory:
-                    folderGuid = Interop.Shell32.KnownFolders.PublicDesktop;
+                    folderId = Interop.Shell32.KnownFolders.PublicDesktop;
                     break;
                 case SpecialFolder.CommonTemplates:
-                    folderGuid = Interop.Shell32.KnownFolders.CommonTemplates;
+                    folderId = Interop.Shell32.KnownFolders.CommonTemplates;
                     break;
                 case SpecialFolder.CommonVideos:
-                    folderGuid = Interop.Shell32.KnownFolders.PublicVideos;
+                    folderId = Interop.Shell32.KnownFolders.PublicVideos;
                     break;
                 case SpecialFolder.Fonts:
-                    folderGuid = Interop.Shell32.KnownFolders.Fonts;
+                    folderId = Interop.Shell32.KnownFolders.Fonts;
                     break;
                 case SpecialFolder.NetworkShortcuts:
-                    folderGuid = Interop.Shell32.KnownFolders.NetHood;
+                    folderId = Interop.Shell32.KnownFolders.NetHood;
                     break;
                 case SpecialFolder.PrinterShortcuts:
-                    folderGuid = Interop.Shell32.KnownFolders.PrintersFolder;
+                    folderId = Interop.Shell32.KnownFolders.PrintersFolder;
                     break;
                 case SpecialFolder.UserProfile:
-                    folderGuid = Interop.Shell32.KnownFolders.Profile;
+                    folderId = Interop.Shell32.KnownFolders.Profile;
                     fallbackEnv = "USERPROFILE";
                     break;
                 case SpecialFolder.CommonProgramFilesX86:
-                    folderGuid = Interop.Shell32.KnownFolders.ProgramFilesCommonX86;
+                    folderId = Interop.Shell32.KnownFolders.ProgramFilesCommonX86;
                     fallbackEnv = "CommonProgramFiles(x86)";
                     break;
                 case SpecialFolder.ProgramFilesX86:
-                    folderGuid = Interop.Shell32.KnownFolders.ProgramFilesX86;
+                    folderId = Interop.Shell32.KnownFolders.ProgramFilesX86;
                     fallbackEnv = "ProgramFiles(x86)";
                     break;
                 case SpecialFolder.Resources:
-                    folderGuid = Interop.Shell32.KnownFolders.ResourceDir;
+                    folderId = Interop.Shell32.KnownFolders.ResourceDir;
                     break;
                 case SpecialFolder.LocalizedResources:
-                    folderGuid = Interop.Shell32.KnownFolders.LocalizedResourcesDir;
+                    folderId = Interop.Shell32.KnownFolders.LocalizedResourcesDir;
                     break;
                 case SpecialFolder.SystemX86:
-                    folderGuid = Interop.Shell32.KnownFolders.SystemX86;
+                    folderId = Interop.Shell32.KnownFolders.SystemX86;
                     break;
                 case SpecialFolder.Windows:
-                    folderGuid = Interop.Shell32.KnownFolders.Windows;
+                    folderId = Interop.Shell32.KnownFolders.Windows;
                     fallbackEnv = "windir";
                     break;
             }
 
-            Guid folderId = new Guid(folderGuid);
             int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out string path);
             if (hr == 0)
                 return path;

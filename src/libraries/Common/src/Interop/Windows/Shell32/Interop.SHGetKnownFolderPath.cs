@@ -25,289 +25,339 @@ internal static partial class Interop
             /// (CSIDL_ADMINTOOLS) Per user Administrative Tools
             /// "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Administrative Tools"
             /// </summary>
-            internal const string AdminTools = "{724EF170-A42D-4FEF-9F26-B60E846FBA4F}";
+            internal static Guid AdminTools =>
+                new(0x724EF170, 0xA42D, 0x4FEF, 0x9F, 0x26, 0xB6, 0x0E, 0x84, 0x6F, 0xBA, 0x4F);
 
             /// <summary>
             /// (CSIDL_CDBURN_AREA) Temporary Burn folder
             /// "%LOCALAPPDATA%\Microsoft\Windows\Burn\Burn"
             /// </summary>
-            internal const string CDBurning = "{9E52AB10-F80D-49DF-ACB8-4330F5687855}";
+            internal static Guid CDBurning =>
+                new(0x9E52AB10, 0xF80D, 0x49DF, 0xAC, 0xB8, 0x43, 0x30, 0xF5, 0x68, 0x78, 0x55);
 
             /// <summary>
             /// (CSIDL_COMMON_ADMINTOOLS) Common Administrative Tools
             /// "%ALLUSERSPROFILE%\Microsoft\Windows\Start Menu\Programs\Administrative Tools"
             /// </summary>
-            internal const string CommonAdminTools = "{D0384E7D-BAC3-4797-8F14-CBA229B392B5}";
+            internal static Guid CommonAdminTools =>
+                new(0xD0384E7D, 0xBAC3, 0x4797, 0x8F, 0x14, 0xCB, 0xA2, 0x29, 0xB3, 0x92, 0xB5);
 
             /// <summary>
             /// (CSIDL_COMMON_OEM_LINKS) OEM Links folder
             /// "%ALLUSERSPROFILE%\OEM Links"
             /// </summary>
-            internal const string CommonOEMLinks = "{C1BAE2D0-10DF-4334-BEDD-7AA20B227A9D}";
+            internal static Guid CommonOEMLinks =>
+                new(0xC1BAE2D0, 0x10DF, 0x4334, 0xBE, 0xDD, 0x7A, 0xA2, 0x0B, 0x22, 0x7A, 0x9D);
 
             /// <summary>
             /// (CSIDL_COMMON_PROGRAMS) Common Programs folder
             /// "%ALLUSERSPROFILE%\Microsoft\Windows\Start Menu\Programs"
             /// </summary>
-            internal const string CommonPrograms = "{0139D44E-6AFE-49F2-8690-3DAFCAE6FFB8}";
+            internal static Guid CommonPrograms =>
+                new(0x0139D44E, 0x6AFE, 0x49F2, 0x86, 0x90, 0x3D, 0xAF, 0xCA, 0xE6, 0xFF, 0xB8);
 
             /// <summary>
             /// (CSIDL_COMMON_STARTMENU) Common Start Menu folder
             /// "%ALLUSERSPROFILE%\Microsoft\Windows\Start Menu"
             /// </summary>
-            internal const string CommonStartMenu = "{A4115719-D62E-491D-AA7C-E74B8BE3B067}";
+            internal static Guid CommonStartMenu =>
+                new(0xA4115719, 0xD62E, 0x491D, 0xAA, 0x7C, 0xE7, 0x4B, 0x8B, 0xE3, 0xB0, 0x67);
 
             /// <summary>
             /// (CSIDL_COMMON_STARTUP, CSIDL_COMMON_ALTSTARTUP) Common Startup folder
             /// "%ALLUSERSPROFILE%\Microsoft\Windows\Start Menu\Programs\StartUp"
             /// </summary>
-            internal const string CommonStartup = "{82A5EA35-D9CD-47C5-9629-E15D2F714E6E}";
+            internal static Guid CommonStartup =>
+                new(0x82A5EA35, 0xD9CD, 0x47C5, 0x96, 0x29, 0xE1, 0x5D, 0x2F, 0x71, 0x4E, 0x6E);
 
             /// <summary>
             /// (CSIDL_COMMON_TEMPLATES) Common Templates folder
             /// "%ALLUSERSPROFILE%\Microsoft\Windows\Templates"
             /// </summary>
-            internal const string CommonTemplates = "{B94237E7-57AC-4347-9151-B08C6C32D1F7}";
+            internal static Guid CommonTemplates =>
+                new(0xB94237E7, 0x57AC, 0x4347, 0x91, 0x51, 0xB0, 0x8C, 0x6C, 0x32, 0xD1, 0xF7);
 
             /// <summary>
             /// (CSIDL_DRIVES) Computer virtual folder
             /// </summary>
-            internal const string ComputerFolder = "{0AC0837C-BBF8-452A-850D-79D08E667CA7}";
+            internal static Guid ComputerFolder =>
+                new(0x0AC0837C, 0xBBF8, 0x452A, 0x85, 0x0D, 0x79, 0xD0, 0x8E, 0x66, 0x7C, 0xA7);
 
             /// <summary>
             /// (CSIDL_CONNECTIONS) Network Connections virtual folder
             /// </summary>
-            internal const string ConnectionsFolder = "{6F0CD92B-2E97-45D1-88FF-B0D186B8DEDD}";
+            internal static Guid ConnectionsFolder =>
+                new(0x6F0CD92B, 0x2E97, 0x45D1, 0x88, 0xFF, 0xB0, 0xD1, 0x86, 0xB8, 0xDE, 0xDD);
 
             /// <summary>
             /// (CSIDL_CONTROLS) Control Panel virtual folder
             /// </summary>
-            internal const string ControlPanelFolder = "{82A74AEB-AEB4-465C-A014-D097EE346D63}";
+            internal static Guid ControlPanelFolder =>
+                new(0x82A74AEB, 0xAEB4, 0x465C, 0xA0, 0x14, 0xD0, 0x97, 0xEE, 0x34, 0x6D, 0x63);
 
             /// <summary>
             /// (CSIDL_COOKIES) Cookies folder
             /// "%APPDATA%\Microsoft\Windows\Cookies"
             /// </summary>
-            internal const string Cookies = "{2B0F765D-C0E9-4171-908E-08A611B84FF6}";
+            internal static Guid Cookies =>
+                new(0x2B0F765D, 0xC0E9, 0x4171, 0x90, 0x8E, 0x08, 0xA6, 0x11, 0xB8, 0x4F, 0xF6);
 
             /// <summary>
             /// (CSIDL_DESKTOP, CSIDL_DESKTOPDIRECTORY) Desktop folder
             /// "%USERPROFILE%\Desktop"
             /// </summary>
-            internal const string Desktop = "{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}";
+            internal static Guid Desktop =>
+                new(0xB4BFCC3A, 0xDB2C, 0x424C, 0xB0, 0x29, 0x7F, 0xE9, 0x9A, 0x87, 0xC6, 0x41);
 
             /// <summary>
             /// (CSIDL_MYDOCUMENTS, CSIDL_PERSONAL) Documents (My Documents) folder
             /// "%USERPROFILE%\Documents"
             /// </summary>
-            internal const string Documents = "{FDD39AD0-238F-46AF-ADB4-6C85480369C7}";
+            internal static Guid Documents =>
+                new(0xFDD39AD0, 0x238F, 0x46AF, 0xAD, 0xB4, 0x6C, 0x85, 0x48, 0x03, 0x69, 0xC7);
 
             /// <summary>
             /// (CSIDL_FAVORITES, CSIDL_COMMON_FAVORITES) Favorites folder
             /// "%USERPROFILE%\Favorites"
             /// </summary>
-            internal const string Favorites = "{1777F761-68AD-4D8A-87BD-30B759FA33DD}";
+            internal static Guid Favorites =>
+                new(0x1777F761, 0x68AD, 0x4D8A, 0x87, 0xBD, 0x30, 0xB7, 0x59, 0xFA, 0x33, 0xDD);
 
             /// <summary>
             /// (CSIDL_FONTS) Fonts folder
             /// "%windir%\Fonts"
             /// </summary>
-            internal const string Fonts = "{FD228CB7-AE11-4AE3-864C-16F3910AB8FE}";
+            internal static Guid Fonts =>
+                new(0xFD228CB7, 0xAE11, 0x4AE3, 0x86, 0x4C, 0x16, 0xF3, 0x91, 0x0A, 0xB8, 0xFE);
 
             /// <summary>
             /// (CSIDL_HISTORY) History folder
             /// "%LOCALAPPDATA%\Microsoft\Windows\History"
             /// </summary>
-            internal const string History = "{D9DC8A3B-B784-432E-A781-5A1130A75963}";
+            internal static Guid History =>
+                new(0xD9DC8A3B, 0xB784, 0x432E, 0xA7, 0x81, 0x5A, 0x11, 0x30, 0xA7, 0x59, 0x63);
 
             /// <summary>
             /// (CSIDL_INTERNET_CACHE) Temporary Internet Files folder
             /// "%LOCALAPPDATA%\Microsoft\Windows\Temporary Internet Files"
             /// </summary>
-            internal const string InternetCache = "{352481E8-33BE-4251-BA85-6007CAEDCF9D}";
+            internal static Guid InternetCache =>
+                new(0x352481E8, 0x33BE, 0x4251, 0xBA, 0x85, 0x60, 0x07, 0xCA, 0xED, 0xCF, 0x9D);
 
             /// <summary>
             /// (CSIDL_INTERNET) The Internet virtual folder
             /// </summary>
-            internal const string InternetFolder = "{4D9F7874-4E0C-4904-967B-40B0D20C3E4B}";
+            internal static Guid InternetFolder =>
+                new(0x4D9F7874, 0x4E0C, 0x4904, 0x96, 0x7B, 0x40, 0xB0, 0xD2, 0x0C, 0x3E, 0x4B);
 
             /// <summary>
             /// (CSIDL_LOCAL_APPDATA) Local folder
             /// "%LOCALAPPDATA%" ("%USERPROFILE%\AppData\Local")
             /// </summary>
-            internal const string LocalAppData = "{F1B32785-6FBA-4FCF-9D55-7B8E7F157091}";
+            internal static Guid LocalAppData =>
+                new(0xF1B32785, 0x6FBA, 0x4FCF, 0x9D, 0x55, 0x7B, 0x8E, 0x7F, 0x15, 0x70, 0x91);
 
             /// <summary>
             /// (CSIDL_RESOURCES_LOCALIZED) Fixed localized resources folder
             /// "%windir%\resources\0409" (per active codepage)
             /// </summary>
-            internal const string LocalizedResourcesDir = "{2A00375E-224C-49DE-B8D1-440DF7EF3DDC}";
+            internal static Guid LocalizedResourcesDir =>
+                new(0x2A00375E, 0x224C, 0x49DE, 0xB8, 0xD1, 0x44, 0x0D, 0xF7, 0xEF, 0x3D, 0xDC);
 
             /// <summary>
             /// (CSIDL_MYMUSIC) Music folder
             /// "%USERPROFILE%\Music"
             /// </summary>
-            internal const string Music = "{4BD8D571-6D19-48D3-BE97-422220080E43}";
+            internal static Guid Music =>
+                new(0x4BD8D571, 0x6D19, 0x48D3, 0xBE, 0x97, 0x42, 0x22, 0x20, 0x08, 0x0E, 0x43);
 
             /// <summary>
             /// (CSIDL_NETHOOD) Network shortcuts folder "%APPDATA%\Microsoft\Windows\Network Shortcuts"
             /// </summary>
-            internal const string NetHood = "{C5ABBF53-E17F-4121-8900-86626FC2C973}";
+            internal static Guid NetHood =>
+                new(0xC5ABBF53, 0xE17F, 0x4121, 0x89, 0x00, 0x86, 0x62, 0x6F, 0xC2, 0xC9, 0x73);
 
             /// <summary>
             /// (CSIDL_NETWORK, CSIDL_COMPUTERSNEARME) Network virtual folder
             /// </summary>
-            internal const string NetworkFolder = "{D20BEEC4-5CA8-4905-AE3B-BF251EA09B53}";
+            internal static Guid NetworkFolder =>
+                new(0xD20BEEC4, 0x5CA8, 0x4905, 0xAE, 0x3B, 0xBF, 0x25, 0x1E, 0xA0, 0x9B, 0x53);
 
             /// <summary>
             /// (CSIDL_MYPICTURES) Pictures folder "%USERPROFILE%\Pictures"
             /// </summary>
-            internal const string Pictures = "{33E28130-4E1E-4676-835A-98395C3BC3BB}";
+            internal static Guid Pictures =>
+                new(0x33E28130, 0x4E1E, 0x4676, 0x83, 0x5A, 0x98, 0x39, 0x5C, 0x3B, 0xC3, 0xBB);
 
             /// <summary>
             /// (CSIDL_PRINTERS) Printers virtual folder
             /// </summary>
-            internal const string PrintersFolder = "{76FC4E2D-D6AD-4519-A663-37BD56068185}";
+            internal static Guid PrintersFolder =>
+                new(0x76FC4E2D, 0xD6AD, 0x4519, 0xA6, 0x63, 0x37, 0xBD, 0x56, 0x06, 0x81, 0x85);
 
             /// <summary>
             /// (CSIDL_PRINTHOOD) Printer Shortcuts folder
             /// "%APPDATA%\Microsoft\Windows\Printer Shortcuts"
             /// </summary>
-            internal const string PrintHood = "{9274BD8D-CFD1-41C3-B35E-B13F55A758F4}";
+            internal static Guid PrintHood =>
+                new(0x9274BD8D, 0xCFD1, 0x41C3, 0xB3, 0x5E, 0xB1, 0x3F, 0x55, 0xA7, 0x58, 0xF4);
 
             /// <summary>
             /// (CSIDL_PROFILE) The root users profile folder "%USERPROFILE%"
             /// ("%SystemDrive%\Users\%USERNAME%")
             /// </summary>
-            internal const string Profile = "{5E6C858F-0E22-4760-9AFE-EA3317B67173}";
+            internal static Guid Profile =>
+                new(0x5E6C858F, 0x0E22, 0x4760, 0x9A, 0xFE, 0xEA, 0x33, 0x17, 0xB6, 0x71, 0x73);
 
             /// <summary>
             /// (CSIDL_COMMON_APPDATA) ProgramData folder
             /// "%ALLUSERSPROFILE%" ("%ProgramData%", "%SystemDrive%\ProgramData")
             /// </summary>
-            internal const string ProgramData = "{62AB5D82-FDC1-4DC3-A9DD-070D1D495D97}";
+            internal static Guid ProgramData =>
+                new(0x62AB5D82, 0xFDC1, 0x4DC3, 0xA9, 0xDD, 0x07, 0x0D, 0x1D, 0x49, 0x5D, 0x97);
 
             /// <summary>
             /// (CSIDL_PROGRAM_FILES) Program Files folder for the current process architecture
             /// "%ProgramFiles%" ("%SystemDrive%\Program Files")
             /// </summary>
-            internal const string ProgramFiles = "{905e63b6-c1bf-494e-b29c-65b732d3d21a}";
+            internal static Guid ProgramFiles =>
+                new(0x905e63b6, 0xc1bf, 0x494e, 0xb2, 0x9c, 0x65, 0xb7, 0x32, 0xd3, 0xd2, 0x1a);
 
             /// <summary>
             /// (CSIDL_PROGRAM_FILESX86) 32 bit Program Files folder (available to both 32/64 bit processes)
             /// </summary>
-            internal const string ProgramFilesX86 = "{7C5A40EF-A0FB-4BFC-874A-C0F2E0B9FA8E}";
+            internal static Guid ProgramFilesX86 =>
+                new(0x7C5A40EF, 0xA0FB, 0x4BFC, 0x87, 0x4A, 0xC0, 0xF2, 0xE0, 0xB9, 0xFA, 0x8E);
 
             /// <summary>
             /// (CSIDL_PROGRAM_FILES_COMMON) Common Program Files folder for the current process architecture
             /// "%ProgramFiles%\Common Files"
             /// </summary>
-            internal const string ProgramFilesCommon = "{F7F1ED05-9F6D-47A2-AAAE-29D317C6F066}";
+            internal static Guid ProgramFilesCommon =>
+                new(0xF7F1ED05, 0x9F6D, 0x47A2, 0xAA, 0xAE, 0x29, 0xD3, 0x17, 0xC6, 0xF0, 0x66);
 
             /// <summary>
             /// (CSIDL_PROGRAM_FILES_COMMONX86) Common 32 bit Program Files folder (available to both 32/64 bit processes)
             /// </summary>
-            internal const string ProgramFilesCommonX86 = "{DE974D24-D9C6-4D3E-BF91-F4455120B917}";
+            internal static Guid ProgramFilesCommonX86 =>
+                new(0xDE974D24, 0xD9C6, 0x4D3E, 0xBF, 0x91, 0xF4, 0x45, 0x51, 0x20, 0xB9, 0x17);
 
             /// <summary>
             /// (CSIDL_PROGRAMS) Start menu Programs folder
             /// "%APPDATA%\Microsoft\Windows\Start Menu\Programs"
             /// </summary>
-            internal const string Programs = "{A77F5D77-2E2B-44C3-A6A2-ABA601054A51}";
+            internal static Guid Programs =>
+                new(0xA77F5D77, 0x2E2B, 0x44C3, 0xA6, 0xA2, 0xAB, 0xA6, 0x01, 0x05, 0x4A, 0x51);
 
             /// <summary>
             /// (CSIDL_COMMON_DESKTOPDIRECTORY) Public Desktop folder
             /// "%PUBLIC%\Desktop"
             /// </summary>
-            internal const string PublicDesktop = "{C4AA340D-F20F-4863-AFEF-F87EF2E6BA25}";
+            internal static Guid PublicDesktop =>
+                new(0xC4AA340D, 0xF20F, 0x4863, 0xAF, 0xEF, 0xF8, 0x7E, 0xF2, 0xE6, 0xBA, 0x25);
 
             /// <summary>
             /// (CSIDL_COMMON_DOCUMENTS) Public Documents folder
             /// "%PUBLIC%\Documents"
             /// </summary>
-            internal const string PublicDocuments = "{ED4824AF-DCE4-45A8-81E2-FC7965083634}";
+            internal static Guid PublicDocuments =>
+                new(0xED4824AF, 0xDCE4, 0x45A8, 0x81, 0xE2, 0xFC, 0x79, 0x65, 0x08, 0x36, 0x34);
 
             /// <summary>
             /// (CSIDL_COMMON_MUSIC) Public Music folder
             /// "%PUBLIC%\Music"
             /// </summary>
-            internal const string PublicMusic = "{3214FAB5-9757-4298-BB61-92A9DEAA44FF}";
+            internal static Guid PublicMusic =>
+                new(0x3214FAB5, 0x9757, 0x4298, 0xBB, 0x61, 0x92, 0xA9, 0xDE, 0xAA, 0x44, 0xFF);
 
             /// <summary>
             /// (CSIDL_COMMON_PICTURES) Public Pictures folder
             /// "%PUBLIC%\Pictures"
             /// </summary>
-            internal const string PublicPictures = "{B6EBFB86-6907-413C-9AF7-4FC2ABF07CC5}";
+            internal static Guid PublicPictures =>
+                new(0xB6EBFB86, 0x6907, 0x413C, 0x9A, 0xF7, 0x4F, 0xC2, 0xAB, 0xF0, 0x7C, 0xC5);
 
             /// <summary>
             /// (CSIDL_COMMON_VIDEO) Public Videos folder
             /// "%PUBLIC%\Videos"
             /// </summary>
-            internal const string PublicVideos = "{2400183A-6185-49FB-A2D8-4A392A602BA3}";
+            internal static Guid PublicVideos =>
+                new(0x2400183A, 0x6185, 0x49FB, 0xA2, 0xD8, 0x4A, 0x39, 0x2A, 0x60, 0x2B, 0xA3);
 
             /// <summary>
             /// (CSIDL_RECENT) Recent Items folder
             /// "%APPDATA%\Microsoft\Windows\Recent"
             /// </summary>
-            internal const string Recent = "{AE50C081-EBD2-438A-8655-8A092E34987A}";
+            internal static Guid Recent =>
+                new(0xAE50C081, 0xEBD2, 0x438A, 0x86, 0x55, 0x8A, 0x09, 0x2E, 0x34, 0x98, 0x7A);
 
             /// <summary>
             /// (CSIDL_BITBUCKET) Recycle Bin virtual folder
             /// </summary>
-            internal const string RecycleBinFolder = "{B7534046-3ECB-4C18-BE4E-64CD4CB7D6AC}";
+            internal static Guid RecycleBinFolder =>
+                new(0xB7534046, 0x3ECB, 0x4C18, 0xBE, 0x4E, 0x64, 0xCD, 0x4C, 0xB7, 0xD6, 0xAC);
 
             /// <summary>
             /// (CSIDL_RESOURCES) Resources fixed folder
             /// "%windir%\Resources"
             /// </summary>
-            internal const string ResourceDir = "{8AD10C31-2ADB-4296-A8F7-E4701232C972}";
+            internal static Guid ResourceDir =>
+                new(0x8AD10C31, 0x2ADB, 0x4296, 0xA8, 0xF7, 0xE4, 0x70, 0x12, 0x32, 0xC9, 0x72);
 
             /// <summary>
             /// (CSIDL_APPDATA) Roaming user application data folder
             /// "%APPDATA%" ("%USERPROFILE%\AppData\Roaming")
             /// </summary>
-            internal const string RoamingAppData = "{3EB685DB-65F9-4CF6-A03A-E3EF65729F3D}";
+            internal static Guid RoamingAppData =>
+                new(0x3EB685DB, 0x65F9, 0x4CF6, 0xA0, 0x3A, 0xE3, 0xEF, 0x65, 0x72, 0x9F, 0x3D);
 
             /// <summary>
             /// (CSIDL_SENDTO) SendTo folder
             /// "%APPDATA%\Microsoft\Windows\SendTo"
             /// </summary>
-            internal const string SendTo = "{8983036C-27C0-404B-8F08-102D10DCFD74}";
+            internal static Guid SendTo =>
+                new(0x8983036C, 0x27C0, 0x404B, 0x8F, 0x08, 0x10, 0x2D, 0x10, 0xDC, 0xFD, 0x74);
 
             /// <summary>
             /// (CSIDL_STARTMENU) Start Menu folder
             /// "%APPDATA%\Microsoft\Windows\Start Menu"
             /// </summary>
-            internal const string StartMenu = "{625B53C3-AB48-4EC1-BA1F-A1EF4146FC19}";
+            internal static Guid StartMenu =>
+                new(0x625B53C3, 0xAB48, 0x4EC1, 0xBA, 0x1F, 0xA1, 0xEF, 0x41, 0x46, 0xFC, 0x19);
 
             /// <summary>
             /// (CSIDL_STARTUP, CSIDL_ALTSTARTUP) Startup folder
             /// "%APPDATA%\Microsoft\Windows\Start Menu\Programs\StartUp"
             /// </summary>
-            internal const string Startup = "{B97D20BB-F46A-4C97-BA10-5E3608430854}";
+            internal static Guid Startup =>
+                new(0xB97D20BB, 0xF46A, 0x4C97, 0xBA, 0x10, 0x5E, 0x36, 0x08, 0x43, 0x08, 0x54);
 
             /// <summary>
             /// (CSIDL_SYSTEMX86) X86 System32 folder
             /// "%windir%\system32" or "%windir%\syswow64"
             /// </summary>
-            internal const string SystemX86 = "{D65231B0-B2F1-4857-A4CE-A8E7C6EA7D27}";
+            internal static Guid SystemX86 =>
+                new(0xD65231B0, 0xB2F1, 0x4857, 0xA4, 0xCE, 0xA8, 0xE7, 0xC6, 0xEA, 0x7D, 0x27);
 
             /// <summary>
             /// (CSIDL_TEMPLATES) Templates folder
             /// "%APPDATA%\Microsoft\Windows\Templates"
             /// </summary>
-            internal const string Templates = "{A63293E8-664E-48DB-A079-DF759E0509F7}";
+            internal static Guid Templates =>
+                new(0xA63293E8, 0x664E, 0x48DB, 0xA0, 0x79, 0xDF, 0x75, 0x9E, 0x05, 0x09, 0xF7);
 
             /// <summary>
             /// (CSIDL_MYVIDEO) Videos folder
             /// "%USERPROFILE%\Videos"
             /// </summary>
-            internal const string Videos = "{18989B1D-99B5-455B-841C-AB7C74E4DDFC}";
+            internal static Guid Videos =>
+                new(0x18989B1D, 0x99B5, 0x455B, 0x84, 0x1C, 0xAB, 0x7C, 0x74, 0xE4, 0xDD, 0xFC);
 
             /// <summary>
             /// (CSIDL_WINDOWS) Windows folder "%windir%"
             /// </summary>
-            internal const string Windows = "{F38BF404-1D43-42F2-9305-67DE0B28FC23}";
+            internal static Guid Windows =>
+                new(0xF38BF404, 0x1D43, 0x42F2, 0x93, 0x05, 0x67, 0xDE, 0x0B, 0x28, 0xFC, 0x23);
         }
     }
 }
