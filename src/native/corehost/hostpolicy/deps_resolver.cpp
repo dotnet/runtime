@@ -329,14 +329,11 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
         else if (config.is_app())
         {
             assert(fx_level == AppFxLevel);
-            if (entry.is_rid_specific)
+            if (entry.is_rid_specific && entry.asset.local_path.empty())
             {
-                // Look up rid specific assets in the rid folders.
-                // if (entry.to_package_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
-                if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
+                // Look up rid specific assets without a local path specified in the rid folders.
+                if (entry.to_package_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
                 {
-                    // Bundles are expected to be RID-specific themselves, so RID-specific assets are not expected to be found in the bundle.
-                    assert(!entry.is_rid_specific || !found_in_bundle);
                     trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                     return true;
                 }
@@ -346,6 +343,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 // Look up assets relative to the deps directory
                 if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
                 {
+                    // Bundles are expected to be RID-specific themselves, so RID-specific assets are not expected to be found in the bundle.
+                    assert(!entry.is_rid_specific || !found_in_bundle);
                     trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                     return true;
                 }
