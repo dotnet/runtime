@@ -6,15 +6,17 @@ function(generate_data_descriptors)
   set(multiValueArgs INCLUDE_DIRS DEPENDENCIES)
   cmake_parse_arguments(DATA_DESCRIPTORS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
 
-  set(DATA_DESCRIPTOR_SHARED_SOURCE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/debug/datadescriptor")
-  set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac")
+  # INTERMEDIARY_LIBRARY is used as part of the build and not linked into the final product.
+  set(INTERMEDIARY_LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME}_temp)
+  set(LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME})
 
+  set(DATA_DESCRIPTOR_SHARED_SOURCE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/debug/datadescriptor")
+  set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac-${LIBRARY}")
+
+  # configure contract export name
   set(POINTER_DATA_NAME ${DATA_DESCRIPTORS_POINTER_DATA_NAME})
   set(CONTRACT_NAME ${DATA_DESCRIPTORS_CONTRACT_NAME})
-  configure_file("${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/nameconfigure.h.in" "${GENERATED_CDAC_DESCRIPTOR_DIR}/nameconfigure.h")
-
-  set(LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME})
-  set(INTERMEDIARY_LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME}_INTERMEDIARY)
+  configure_file("${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contractconfiguration.h.in" "${GENERATED_CDAC_DESCRIPTOR_DIR}/contractconfiguration.h")
 
   if (NOT CDAC_BUILD_TOOL_BINARY_PATH)
     # if CDAC_BUILD_TOOL_BINARY_PATH is unspecified (for example for a build without a .NET SDK or msbuild),
@@ -31,9 +33,6 @@ function(generate_data_descriptors)
 
     add_library(${INTERMEDIARY_LIBRARY} OBJECT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/datadescriptor.cpp")
 
-    target_compile_definitions(${INTERMEDIARY_LIBRARY} PRIVATE POINTER_DATA="${DATA_DESCRIPTOR_POINTER_NAME}")
-    target_compile_definitions(${INTERMEDIARY_LIBRARY} PRIVATE CONTRACT_EXPORT="${DATA_DESCRIPTOR_CONTRACT_NAME}")
-
     if(CLR_CMAKE_TARGET_WIN32)
       # turn off whole program optimization:
       # 1. it creates object files that cdac-build-tool can't read
@@ -43,7 +42,7 @@ function(generate_data_descriptors)
           INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO OFF)
     endif()
 
-    # don't build the data descriptor before the VM (and any of its dependencies' generated headers)
+    # don't build the data descriptor before dependencies
     if(DEFINED DATA_DESCRIPTORS_DEPENDENCIES)
       add_dependencies(${INTERMEDIARY_LIBRARY} ${DATA_DESCRIPTORS_DEPENDENCIES})
     endif()
@@ -51,14 +50,13 @@ function(generate_data_descriptors)
       target_include_directories(${INTERMEDIARY_LIBRARY} BEFORE PRIVATE ${DATA_DESCRIPTORS_INCLUDE_DIRS})
     endif()
 
-    set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
-
     set(CONTRACT_BASELINE_DIR "${CLR_REPO_ROOT_DIR}/docs/design/datacontracts/data")
     set(CONTRACT_DESCRIPTOR_INPUT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contract-descriptor.c.in")
+    set(CONTRACT_DESCRIPTOR_OUTPUT "${GENERATED_CDAC_DESCRIPTOR_DIR}/contract-descriptor.c")
     set(CONTRACT_FILE "${DATA_DESCRIPTORS_CONTRACT_FILE}")
 
     # generate the contract descriptor by running cdac-build-tool
-    # n.b. this just uses `dotnet` from the PATH.  InitializeDotNetCli adds the apropropriate directory
+    # n.b. this just uses `dotnet` from the PATH.  InitializeDotNetCli adds the appropriate directory
     add_custom_command(
       OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
       VERBATIM
@@ -79,11 +77,10 @@ function(generate_data_descriptors)
     if(DEFINED DATA_DESCRIPTORS_DEPENDENCIES)
       add_dependencies(${LIBRARY} ${DATA_DESCRIPTORS_DEPENDENCIES})
     endif()
+
+    target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
     if(DEFINED DATA_DESCRIPTORS_INCLUDE_DIRS)
       target_include_directories(${LIBRARY} BEFORE PRIVATE ${DATA_DESCRIPTORS_INCLUDE_DIRS})
     endif()
-
-    target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
-
   endif()
 endfunction(generate_data_descriptors)

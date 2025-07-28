@@ -1,10 +1,9 @@
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 set(RUNTIMEINFO_SOURCES
     runtimeinfo.cpp
 )
 
 add_library_clr(runtimeinfo STATIC ${RUNTIMEINFO_SOURCES})
+target_include_directories(runtimeinfo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 function(generate_module_index Target ModuleIndexFile)
     # Win32 may be false when cross compiling
@@ -52,5 +51,14 @@ generate_data_descriptors(
    CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
    POINTER_DATA_NAME "contractDescriptorPointerData"
    CONTRACT_NAME "DotNetRuntimeContractDescriptor"
-   INCLUDE_DIRS "${VM_DIR}" "${VM_DIR}/${ARCH_SOURCES_DIR}" "${CLR_DIR}/interop/inc"
+   INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}" "${VM_DIR}" "${VM_DIR}/${ARCH_SOURCES_DIR}" "${CLR_DIR}/interop/inc"
+   DEPENDENCIES cee_wks_core)
+
+set(GC_DESCRIPTOR_DIR "${CLR_DIR}/gc/gcdatadescriptors")
+generate_data_descriptors(
+   LIBRARY_NAME in_process_gc_contract_descriptor
+   CONTRACT_FILE "${GC_DESCRIPTOR_DIR}/contracts.jsonc"
+   POINTER_DATA_NAME "InProcGCContractPointerData"
+   CONTRACT_NAME "InProcGCContractDescriptor"
+   INCLUDE_DIRS "${GC_DESCRIPTOR_DIR}" "${CLR_DIR}/gc"
    DEPENDENCIES cee_wks_core)
