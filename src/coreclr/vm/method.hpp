@@ -1709,14 +1709,13 @@ public:
     // Running the Prestub preparation step.
 
     // The stub produced by prestub requires method desc to be passed
-    // in dedicated register. Used to implement stubs shared between
-    // MethodDescs (e.g. PInvoke stubs)
-    BOOL RequiresMethodDescCallingConvention(BOOL fEstimateForChunk = FALSE);
+    // in dedicated register.
+    BOOL RequiresMethodDescCallingConvention();
 
     // Returns true if the method has to have stable entrypoint always.
-    BOOL RequiresStableEntryPoint(BOOL fEstimateForChunk = FALSE);
+    BOOL RequiresStableEntryPoint();
 private:
-    BOOL RequiresStableEntryPointCore(BOOL fEstimateForChunk);
+    BOOL RequiresStableEntryPointCore();
 public:
 
     //
@@ -2900,7 +2899,7 @@ public:
     bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || (IsPInvokeStub() && !HasFlags(FlagIsDelegate));
+        return IsCLRToCOMStub();
     }
 
     //

@@ -808,12 +808,16 @@ public:
         }
         else if (SF_IsStructMarshalStub(m_dwStubFlags))
         {
-            // Struct marshal stubs don't actually call anything so they do not need the secrect parameter.
+            // Struct marshal stubs don't actually call anything so they do not need the secret parameter.
         }
         else if (SF_IsForwardDelegateStub(m_dwStubFlags))
         {
             // Forward delegate stubs get all the context they need in 'this' so they
             // don't use the secret parameter.
+        }
+        else if (SF_IsForwardStub(m_dwStubFlags))
+        {
+            // Forward stubs (i.e., NDirects) don't use the secret parameter
         }
         else
         {

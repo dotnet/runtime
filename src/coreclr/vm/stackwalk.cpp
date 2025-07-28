@@ -2988,11 +2988,11 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP)
           )
     {
-        BOOL fReportInteropMD =
         // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
         // was passed to the stub as its secret argument. This is the true interop MD.
         // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
         // the call is made using the CALLI instruction.
+        BOOL fReportInteropMD =
             m_crawl.pFrame != FRAME_TOP &&
             m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame &&
             m_crawl.pFunc != NULL &&
