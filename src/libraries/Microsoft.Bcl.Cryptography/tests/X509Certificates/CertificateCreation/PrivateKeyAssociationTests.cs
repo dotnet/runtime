@@ -25,6 +25,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPrivateKey =>
             X509CertificateKeyAccessors.GetSlhDsaPrivateKey;
 
+        private static partial Func<X509Certificate2, MLDsa, X509Certificate2> CopyWithPrivateKey_MLDsa =>
+            X509CertificateKeyAccessors.CopyWithPrivateKey;
+
+        private static partial Func<X509Certificate2, MLDsa> GetMLDsaPublicKey =>
+            X509CertificateKeyAccessors.GetMLDsaPublicKey;
+
+        private static partial Func<X509Certificate2, MLDsa> GetMLDsaPrivateKey =>
+            X509CertificateKeyAccessors.GetMLDsaPrivateKey;
+
         private static partial void CheckCopyWithPrivateKey<TKey>(
             X509Certificate2 cert,
             X509Certificate2 wrongAlgorithmCert,

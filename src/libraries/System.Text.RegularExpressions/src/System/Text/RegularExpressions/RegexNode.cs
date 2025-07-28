@@ -894,7 +894,9 @@ namespace System.Text.RegularExpressions
             // If the Loop or Lazyloop now only has one child node and its a Set, One, or Notone,
             // reduce to just Setloop/lazy, Oneloop/lazy, or Notoneloop/lazy.  The parser will
             // generally have only produced the latter, but other reductions could have exposed
-            // this.
+            // this. We can also reduce or eliminate certain loops that are nops, e.g.
+            // a loop with a minimum of 0 that wraps a zero-width assertion is either asserting something
+            // or not, and is thus useless.
             if (u.ChildCount() == 1)
             {
                 RegexNode child = u.Child(0);
@@ -905,6 +907,17 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Set:
                         child.MakeRep(u.Kind == RegexNodeKind.Lazyloop ? RegexNodeKind.Onelazy : RegexNodeKind.Oneloop, u.M, u.N);
                         u = child;
+                        break;
+
+                    case RegexNodeKind.Empty:
+                    case RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or
+                         RegexNodeKind.Beginning or RegexNodeKind.Start or
+                         RegexNodeKind.Bol or RegexNodeKind.Eol or
+                         RegexNodeKind.End or RegexNodeKind.EndZ or
+                         RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+                         RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary
+                         when u.M == 0:
+                        u = new RegexNode(RegexNodeKind.Empty, Options);
                         break;
                 }
             }
@@ -967,6 +980,17 @@ namespace System.Text.RegularExpressions
                 case RegexCharClass.SpaceNotSpaceClass:
                 case RegexCharClass.NotSpaceSpaceClass:
                     Str = RegexCharClass.AnyClass;
+                    break;
+
+                // Different ways of saying \D, \S, \W
+                case RegexCharClass.NegatedDigitClass: // [^\d]
+                    Str = RegexCharClass.NotDigitClass;
+                    break;
+                case RegexCharClass.NegatedSpaceClass: // [^\s]
+                    Str = RegexCharClass.NotSpaceClass;
+                    break;
+                case RegexCharClass.NegatedWordClass: // [^\w]
+                    Str = RegexCharClass.NotWordClass;
                     break;
             }
 
@@ -1048,7 +1072,7 @@ namespace System.Text.RegularExpressions
                             }
                             j--;
                         }
-                        else if (at.Kind is RegexNodeKind.Set or RegexNodeKind.One)
+                        else if (at.Kind is RegexNodeKind.Set or RegexNodeKind.One or RegexNodeKind.Notone)
                         {
                             // Cannot merge sets if L or I options differ, or if either are negated.
                             optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
@@ -1071,7 +1095,7 @@ namespace System.Text.RegularExpressions
                                 break;
                             }
 
-                            // The last node was a Set or a One, we're a Set or One and our options are the same.
+                            // The last node was a Set/One/Notone, we're a Set/One/Notone, and our options are the same.
                             // Merge the two nodes.
                             j--;
                             prev = children[j];
@@ -1082,6 +1106,11 @@ namespace System.Text.RegularExpressions
                                 prevCharClass = new RegexCharClass();
                                 prevCharClass.AddChar(prev.Ch);
                             }
+                            else if (prev.Kind == RegexNodeKind.Notone)
+                            {
+                                prevCharClass = new RegexCharClass();
+                                prevCharClass.AddNotChar(prev.Ch);
+                            }
                             else
                             {
                                 prevCharClass = RegexCharClass.Parse(prev.Str!);
@@ -1090,6 +1119,10 @@ namespace System.Text.RegularExpressions
                             if (at.Kind == RegexNodeKind.One)
                             {
                                 prevCharClass.AddChar(at.Ch);
+                            }
+                            else if (at.Kind == RegexNodeKind.Notone)
+                            {
+                                prevCharClass.AddNotChar(at.Ch);
                             }
                             else
                             {
@@ -1832,6 +1865,16 @@ namespace System.Text.RegularExpressions
                             currentNode.MakeRep(RegexNodeKind.Oneloop, 2, 2);
                             next++;
                             continue;
+
+                        // Coalescing identical anchors (e.g. \b\b). These don't need to become loops, as they collapse to a single anchor.
+                        case RegexNodeKind.Beginning or RegexNodeKind.Start or
+                             RegexNodeKind.End or RegexNodeKind.EndZ or
+                             RegexNodeKind.Bol or RegexNodeKind.Eol or
+                             RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or
+                             RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary
+                             when nextNode.Kind == currentNode.Kind:
+                            next++;
+                            continue;
                     }
                 }
 
@@ -2021,26 +2064,108 @@ namespace System.Text.RegularExpressions
             Debug.Assert(Kind is RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround);
             Debug.Assert(ChildCount() == 1);
 
+            // Captures inside of negative lookarounds are undone after the lookaround. Thus, if there's nothing
+            // inside of the negative lookaround that needs that capture group (namely a backreference), we can
+            // remove the capture.
+            if (Kind is RegexNodeKind.NegativeLookaround && ContainsBackreference(Child(0)) is false)
+            {
+                if (RemoveCaptures(this, 0))
+                {
+                    // If we removed captures, we may have changed the structure of the tree in a way that exposed more
+                    // optimization possibility, so re-reduce the children.
+                    ReplaceChild(0, Child(0));
+                }
+
+                static bool RemoveCaptures(RegexNode parent, int nodeIndex)
+                {
+                    RegexNode node = parent.Child(nodeIndex);
+
+                    if (node.Kind is RegexNodeKind.Capture)
+                    {
+                        parent.ReplaceChild(nodeIndex, node.Child(0));
+                        RemoveCaptures(parent, nodeIndex);
+                        return true;
+                    }
+
+                    bool changesMade = false;
+                    if (StackHelper.TryEnsureSufficientExecutionStack())
+                    {
+                        int childCount = node.ChildCount();
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            changesMade |= RemoveCaptures(node, i);
+                        }
+                    }
+
+                    return changesMade;
+                }
+            }
+
             // A lookaround is a zero-width atomic assertion.
             // As it's atomic, nothing will backtrack into it, and we can
             // eliminate any ending backtracking from it.
             EliminateEndingBacktracking();
 
-            // A positive lookaround wrapped around an empty is a nop, and we can reduce it
-            // to simply Empty.  A developer typically doesn't write this, but rather it evolves
-            // due to optimizations resulting in empty.
+            RegexNode child = Child(0);
 
-            // A negative lookaround wrapped around an empty child, i.e. (?!), is
-            // sometimes used as a way to insert a guaranteed no-match into the expression,
-            // often as part of a conditional. We can reduce it to simply Nothing.
-
-            if (Child(0).Kind == RegexNodeKind.Empty)
+            // A positive lookahead that wraps a zero-width assertion is useless wrapping and can be removed.
+            // Similarly, a positive lookaround wrapped around an empty can be reduced simply to Empty.
+            // A developer typically doesn't write this, but rather it evolves due to optimizations resulting in empty.
+            if (Kind is RegexNodeKind.PositiveLookaround)
             {
-                Kind = Kind == RegexNodeKind.PositiveLookaround ? RegexNodeKind.Empty : RegexNodeKind.Nothing;
-                Children = null;
+                if (((Options & RegexOptions.RightToLeft) == 0 && IsZeroWidthAssertion(child.Kind)) ||
+                    child.Kind is RegexNodeKind.Empty)
+                {
+                    return child;
+                }
+            }
+            else if (Kind is RegexNodeKind.NegativeLookaround)
+            {
+                // A negative lookaround wrapped around an empty child, i.e. (?!), is
+                // sometimes used as a way to insert a guaranteed no-match into the expression,
+                // often as part of a conditional. We can reduce it to simply Nothing.
+                if (child.Kind is RegexNodeKind.Empty)
+                {
+                    Kind = RegexNodeKind.Nothing;
+                    Children = null;
+                }
             }
 
             return this;
+        }
+
+        private static bool IsZeroWidthAssertion(RegexNodeKind kind) => kind is
+            RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or
+            RegexNodeKind.Beginning or RegexNodeKind.Start or
+            RegexNodeKind.Bol or RegexNodeKind.Eol or
+            RegexNodeKind.End or RegexNodeKind.EndZ or
+            RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+            RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary;
+
+        /// <summary>Gets whether the node contains a backreference anywhere in its tree.</summary>
+        private static bool? ContainsBackreference(RegexNode node)
+        {
+            if (node.Kind is RegexNodeKind.Backreference or RegexNodeKind.BackreferenceConditional)
+            {
+                return true;
+            }
+
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                // If we can't recur further, just stop optimizing.
+                return null;
+            }
+
+            int childCount = node.ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                if (ContainsBackreference(node.Child(i)) is true)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Optimizations for backreference conditionals.</summary>

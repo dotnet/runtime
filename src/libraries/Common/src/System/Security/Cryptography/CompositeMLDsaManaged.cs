@@ -52,8 +52,82 @@ namespace System.Security.Cryptography
                 });
         }
 
-        internal static CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm) =>
-            throw new PlatformNotSupportedException();
+        internal static CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm)
+        {
+            Debug.Assert(IsAlgorithmSupportedImpl(algorithm));
+
+            AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
+
+            // draft-ietf-lamps-pq-composite-sigs-latest (July 7, 2025), 4.1
+            //  1.  Generate component keys
+            //
+            //      mldsaSeed = Random(32)
+            //      (mldsaPK, _) = ML-DSA.KeyGen(mldsaSeed)
+            //      (tradPK, tradSK) = Trad.KeyGen()
+
+            MLDsa? mldsaKey = null;
+            ComponentAlgorithm? tradKey = null;
+
+            try
+            {
+                mldsaKey = MLDsaImplementation.GenerateKey(metadata.MLDsaAlgorithm);
+            }
+            catch (CryptographicException)
+            {
+            }
+
+            try
+            {
+                tradKey = metadata.TraditionalAlgorithm switch
+                {
+                    RsaAlgorithm rsaAlgorithm => RsaComponent.GenerateKey(rsaAlgorithm),
+                    ECDsaAlgorithm ecdsaAlgorithm => ECDsaComponent.GenerateKey(ecdsaAlgorithm),
+                    _ => FailAndGetNull(),
+                };
+
+                static ComponentAlgorithm? FailAndGetNull()
+                {
+                    Debug.Fail("Only supported algorithms should reach here.");
+                    return null;
+                }
+            }
+            catch (CryptographicException)
+            {
+            }
+
+            //  2.  Check for component key gen failure
+            //
+            //      if NOT (mldsaPK, mldsaSK) or NOT (tradPK, tradSK):
+            //          output "Key generation error"
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            static bool KeyGenFailed([NotNullWhen(false)] MLDsa? mldsaKey, [NotNullWhen(false)] ComponentAlgorithm? tradKey) =>
+                (mldsaKey is null) | (tradKey is null);
+
+            if (KeyGenFailed(mldsaKey, tradKey))
+            {
+                try
+                {
+                    Debug.Assert(mldsaKey is null || tradKey is null);
+
+                    mldsaKey?.Dispose();
+                    tradKey?.Dispose();
+                }
+                catch (CryptographicException)
+                {
+                }
+
+                throw new CryptographicException();
+            }
+
+            //  3.  Output the composite public and private keys
+            //
+            //      pk = SerializePublicKey(mldsaPK, tradPK)
+            //      sk = SerializePrivateKey(mldsaSeed, tradSK)
+            //      return (pk, sk)
+
+            return new CompositeMLDsaManaged(algorithm, mldsaKey, tradKey);
+        }
 
         internal static CompositeMLDsa ImportCompositeMLDsaPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {

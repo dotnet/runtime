@@ -9,6 +9,13 @@ namespace System.Security.Cryptography.Tests
     public sealed class CompositeMLDsaImplementationTests : CompositeMLDsaTestsBase
     {
         [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void CompositeMLDsaIsOnlyPublicAncestor_GenerateKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            AssertCompositeMLDsaIsOnlyPublicAncestor(() => CompositeMLDsa.GenerateKey(algorithm));
+        }
+
+        [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void CompositeMLDsaIsOnlyPublicAncestor_Import(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
@@ -31,6 +38,66 @@ namespace System.Security.Cryptography.Tests
 
             Assert.Equal(typeof(CompositeMLDsa), keyType);
         }
+
+        #region Roundtrip by exporting then importing
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void RoundTrip_Export_Import_PublicKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            // Generate new key
+            using CompositeMLDsa dsa = GenerateKey(algorithm);
+
+            CompositeMLDsaTestHelpers.AssertExportPublicKey(
+                export =>
+                {
+                    // Roundtrip using public key. First export it.
+                    byte[] exportedPublicKey = export(dsa);
+                    CompositeMLDsaTestHelpers.AssertImportPublicKey(
+                        import =>
+                        {
+                            // Then import it.
+                            using CompositeMLDsa roundTrippedDsa = import();
+
+                            // Verify the roundtripped object has the same key
+                            Assert.Equal(algorithm, roundTrippedDsa.Algorithm);
+                            AssertExtensions.SequenceEqual(dsa.ExportCompositeMLDsaPublicKey(), roundTrippedDsa.ExportCompositeMLDsaPublicKey());
+                            Assert.Throws<CryptographicException>(() => roundTrippedDsa.ExportCompositeMLDsaPrivateKey());
+                        },
+                        algorithm,
+                        exportedPublicKey);
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public void RoundTrip_Export_Import_PrivateKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            // Generate new key
+            using CompositeMLDsa dsa = GenerateKey(algorithm);
+
+            CompositeMLDsaTestHelpers.AssertExportPrivateKey(
+                export =>
+                {
+                    // Roundtrip using secret key. First export it.
+                    byte[] exportedSecretKey = export(dsa);
+                    CompositeMLDsaTestHelpers.AssertImportPrivateKey(
+                        import =>
+                        {
+                            // Then import it.
+                            using CompositeMLDsa roundTrippedDsa = import();
+
+                            // Verify the roundtripped object has the same key
+                            Assert.Equal(algorithm, roundTrippedDsa.Algorithm);
+                            AssertExtensions.SequenceEqual(dsa.ExportCompositeMLDsaPrivateKey(), roundTrippedDsa.ExportCompositeMLDsaPrivateKey());
+                            AssertExtensions.SequenceEqual(dsa.ExportCompositeMLDsaPublicKey(), roundTrippedDsa.ExportCompositeMLDsaPublicKey());
+                        },
+                        algorithm,
+                        exportedSecretKey);
+                });
+        }
+
+        #endregion Roundtrip by exporting then importing
 
         #region Roundtrip by importing then exporting
 
@@ -59,6 +126,9 @@ namespace System.Security.Cryptography.Tests
         }
 
         #endregion Roundtrip by importing then exporting
+
+        protected override CompositeMLDsa GenerateKey(CompositeMLDsaAlgorithm algorithm) =>
+            CompositeMLDsa.GenerateKey(algorithm);
 
         protected override CompositeMLDsa ImportPublicKey(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             CompositeMLDsa.ImportCompositeMLDsaPublicKey(algorithm, source);

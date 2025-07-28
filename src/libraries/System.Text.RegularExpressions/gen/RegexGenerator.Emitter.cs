@@ -403,13 +403,15 @@ namespace System.Text.RegularExpressions.Generator
             // - There are only 4 or 5 characters in the needle and they're all ASCII.
 
             return chars.Length > 5 || RegexCharClass.IsAscii(chars)
-                ? EmitSearchValues(chars.ToArray(), requiredHelpers)
+                ? EmitSearchValues(chars, requiredHelpers)
                 : Literal(chars.ToString());
         }
 
         /// <summary>Adds a SearchValues instance declaration to the required helpers collection.</summary>
-        private static string EmitSearchValues(char[] chars, Dictionary<string, string[]> requiredHelpers, string? fieldName = null)
+        private static string EmitSearchValues(ReadOnlySpan<char> charsSpan, Dictionary<string, string[]> requiredHelpers, string? fieldName = null)
         {
+            char[] chars = charsSpan.ToArray();
+
             Array.Sort(chars);
 
             if (fieldName is null)
