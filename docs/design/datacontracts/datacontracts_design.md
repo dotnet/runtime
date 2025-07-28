@@ -43,7 +43,7 @@ include padding bytes).
 
 #### (Optional) Sub-descriptor pointers
 
-Sub-descriptors are special global values which contain a pointer to another data descriptor. These are used when data defintions are not known by the runtime at compile time but may be known by an external component. In that case the data descriptor defers to the external component to describe its data.
+Sub-descriptors are special global values which contain a pointer to another data descriptor. These are used when data definitions are not known by the runtime at compile time but may be known by an external component. In that case the data descriptor defers to the external component to describe its data.
 
 ### Compatible Contract
 
