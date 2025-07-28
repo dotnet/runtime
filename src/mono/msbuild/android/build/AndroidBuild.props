@@ -17,6 +17,12 @@
     <StaticLinkedRuntime Condition="'$(RuntimeFlavor)' == 'nativeaot'">false</StaticLinkedRuntime>
     <StaticLinkedRuntime Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(StaticLinkedRuntime)' == ''">false</StaticLinkedRuntime>
 
+    <!-- Android NDK uses x86_64 as the architecture for naming, even on MacOS arm64 -->
+    <NdkToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</NdkToolchainPrebuiltOS>
+    <NdkToolchainPrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</NdkToolchainPrebuiltOS>
+    <NdkToolchainPrebuiltOS Condition="'$(HostOS)' == 'windows'">windows-x86_64</NdkToolchainPrebuiltOS>
+    <CppCompilerAndLinker>$(ANDROID_NDK_ROOT)\toolchains\llvm\prebuilt\$(NdkToolchainPrebuiltOS)\bin\clang</CppCompilerAndLinker>
+
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
     <AndroidBuildDependsOn Condition="'$(UseMonoRuntime)' == 'true'">
         $(_ReadRuntimeComponentsManifestTargetName);
