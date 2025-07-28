@@ -1133,15 +1133,11 @@ ULONG MethodDesc::GetRVA()
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
+        // It must be a method that can have an IL header.
+        // Not IL, dynamic IL or transient IL would not have an RVA
+        PRECONDITION(MayHaveILHeader());
     }
     CONTRACTL_END
-
-    // It must be a method that can have an IL header.
-    // Not IL, dynamic IL or transient IL would have no RVA
-    if (!MayHaveILHeader())
-    {
-        return 0;
-    }
 
     if (GetMemberDef() & 0x00FFFFFF)
     {
