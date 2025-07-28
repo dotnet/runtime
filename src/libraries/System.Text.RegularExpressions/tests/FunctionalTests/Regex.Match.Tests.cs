@@ -97,6 +97,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?=(abc))+\1", "abc", RegexOptions.None, 0, 3, true, "abc");
                 yield return (@"(?=(abc))*\1", "abc", RegexOptions.None, 0, 3, true, "abc");
 
+                // Zero-width positive lookahead assertion
+                yield return (@"a*(?=b)\bb", "ab", RegexOptions.None, 0, 2, true, "ab");
+
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
                 yield return (@"(?<=c)def", "123abcdef", RegexOptions.None, 0, 9, true, "def");
