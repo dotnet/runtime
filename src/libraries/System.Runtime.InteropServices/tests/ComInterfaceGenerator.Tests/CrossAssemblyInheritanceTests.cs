@@ -251,8 +251,6 @@ namespace ComInterfaceGenerator.Tests
             var deepDerivedVTable = new ReadOnlySpan<nint>(deepDerivedDetails.ManagedVirtualMethodTable, derivedFromExternalDerivedVTableSize);
             Assert.True(derivedFromExternalDerivedVTable.SequenceEqual(deepDerivedVTable),
                 "IDerivedFromDerivedExternalDerived should have consistent IDerivedFromExternalDerived vtable layout");
-            Assert.True(derivedFromExternalDerivedVTable.SequenceEqual(deepDerivedVTable),
-                "IDerivedFromDerivedExternalDerived should have consistent IDerivedFromExternalDerived vtable layout");
         }
     }
 }

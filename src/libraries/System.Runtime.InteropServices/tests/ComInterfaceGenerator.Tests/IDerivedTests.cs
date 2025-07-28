@@ -13,13 +13,12 @@ namespace ComInterfaceGenerator.Tests
 {
     public partial class IDerivedTests
     {
-
-        // [GeneratedComInterface]
-        // [Guid("7F0DB364-3C04-4487-9193-4BB05DC7B654")]
-        // internal partial interface IDerivedFromSharedType2 : SharedTypes.ComInterfaces.IGetAndSetInt
-        // {
-        //     int GetTwoTimesInt();
-        // }
+        [GeneratedComInterface]
+        [Guid("7F0DB364-3C04-4487-9193-4BB05DC7B654")]
+        internal partial interface IDerivedFromSharedType2 : SharedTypes.ComInterfaces.IGetAndSetInt
+        {
+            int GetTwoTimesInt();
+        }
 
         [GeneratedComInterface]
         [Guid("7F0DB364-3C04-4487-9194-4BB05DC7B654")]
@@ -32,7 +31,7 @@ namespace ComInterfaceGenerator.Tests
 
         [GeneratedComClass]
         [Guid("7F0DB364-3C04-4487-9195-4BB05DC7B654")]
-        internal partial class DerivedFromSharedTypeImpl : IDerivedFromSharedType//, IDerivedFromSharedType2
+        internal partial class DerivedFromSharedTypeImpl : IDerivedFromSharedType, IDerivedFromSharedType2
         {
             int _value = 42;
 
@@ -51,16 +50,16 @@ namespace ComInterfaceGenerator.Tests
             object managedObj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
             IGetAndSetInt getAndSetInt = (IGetAndSetInt)managedObj;
             IDerivedFromSharedType derivedFromSharedType = (IDerivedFromSharedType)managedObj;
-            // IDerivedFromSharedType2 derivedFromSharedType2 = (IDerivedFromSharedType2)managedObj;
+            IDerivedFromSharedType2 derivedFromSharedType2 = (IDerivedFromSharedType2)managedObj;
 
             Assert.Equal(42, getAndSetInt.GetInt());
             Assert.Equal(42, derivedFromSharedType.GetInt());
-            // Assert.Equal(42, derivedFromSharedType2.GetInt());
+            Assert.Equal(42, derivedFromSharedType2.GetInt());
 
             getAndSetInt.SetInt(100);
             Assert.Equal(100, getAndSetInt.GetInt());
             Assert.Equal(101, derivedFromSharedType.GetIntPlusOne());
-            // Assert.Equal(200, derivedFromSharedType2.GetTwoTimesInt());
+            Assert.Equal(200, derivedFromSharedType2.GetTwoTimesInt());
         }
 
 
