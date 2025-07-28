@@ -1239,4 +1239,10 @@
   <data name="TypeNameIsNotAssemblyQualifiedTitle" xml:space="preserve">
     <value>Type name is not assembly qualified.</value>
   </data>
+  <data name="ReferenceNotMarkedIsTrimmableTitle" xml:space="preserve">
+    <value>Referenced assembly is not marked as trimmable.</value>
+  </data>
+  <data name="ReferenceNotMarkedIsTrimmableMessage" xml:space="preserve">
+    <value>Referenced assembly '{0}' is not marked with AssemblyMetadataAttribute IsTrimmable=True and may not be compatible with trimming.</value>
+  </data>
 </root>

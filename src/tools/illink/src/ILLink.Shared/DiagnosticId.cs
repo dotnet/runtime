@@ -189,6 +189,7 @@ namespace ILLink.Shared
         TypeNameIsNotAssemblyQualified = 2122,
         RequiresUnreferencedCodeOnEntryPoint = 2123,
         TypeMapGroupTypeCannotBeStaticallyDetermined = 2124,
+        ReferenceNotMarkedIsTrimmable = 2125,
         _EndTrimAnalysisWarningsSentinel,
 
         // Single-file diagnostic ids.

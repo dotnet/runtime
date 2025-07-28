@@ -36,6 +36,7 @@ namespace ILLink.RoslynAnalyzer
 
         private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
         private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
+        private protected virtual ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions { get; } = ImmutableArray<Action<CompilationAnalysisContext>>.Empty;
 
         public override void Initialize(AnalysisContext context)
         {
@@ -165,6 +166,9 @@ namespace ILLink.RoslynAnalyzer
                     }
                 }
             });
+
+            foreach (var extraCompilationAction in ExtraCompilationActions)
+                context.RegisterCompilationAction(extraCompilationAction);
         }
 
         internal void CheckAndCreateRequiresDiagnostic(

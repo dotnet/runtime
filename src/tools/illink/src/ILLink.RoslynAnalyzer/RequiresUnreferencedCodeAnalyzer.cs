@@ -26,6 +26,7 @@ namespace ILLink.RoslynAnalyzer
         private static readonly DiagnosticDescriptor s_requiresUnreferencedCodeOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnEntryPoint);
 
         private static readonly DiagnosticDescriptor s_typeDerivesFromRucClassRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnBaseClass);
+        private static readonly DiagnosticDescriptor s_referenceNotMarkedIsTrimmableRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReferenceNotMarkedIsTrimmable);
 
         private Action<SymbolAnalysisContext> typeDerivesFromRucBase
         {
@@ -50,7 +51,7 @@ namespace ILLink.RoslynAnalyzer
         }
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_typeDerivesFromRucClassRule, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint);
+            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_typeDerivesFromRucClassRule, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint, s_referenceNotMarkedIsTrimmableRule);
 
         private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
@@ -70,6 +71,37 @@ namespace ILLink.RoslynAnalyzer
 
         internal override bool IsAnalyzerEnabled(AnalyzerOptions options) =>
             options.IsMSBuildPropertyValueTrue(MSBuildPropertyOptionNames.EnableTrimAnalyzer);
+
+        private void CheckReferencedAssembliesForTrimmable(CompilationAnalysisContext context)
+        {
+            var options = context.Options;
+            if (!IsAnalyzerEnabled(options))
+                return;
+
+            if (!options.IsMSBuildPropertyValueTrue(MSBuildPropertyOptionNames.VerifyReferenceTrimCompatibility))
+                return;
+
+            foreach (var reference in context.Compilation.References)
+            {
+                var refAssembly = context.Compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
+                if (refAssembly is null)
+                    continue;
+
+                var isTrimmable = refAssembly.GetAttributes().FirstOrDefault(attr =>
+                    attr.AttributeClass?.Name == "AssemblyMetadataAttribute" &&
+                    attr.ConstructorArguments.Length == 2 &&
+                    attr.ConstructorArguments[0].Value?.ToString() == "IsTrimmable" &&
+                    string.Equals(attr.ConstructorArguments[1].Value?.ToString(), "True", StringComparison.OrdinalIgnoreCase));
+
+                if (isTrimmable is null)
+                {
+                    var diag = Diagnostic.Create(s_referenceNotMarkedIsTrimmableRule,
+                        Location.None,
+                        refAssembly.Name);
+                    context.ReportDiagnostic(diag);
+                }
+            }
+        }
 
         private protected override bool IsRequiresCheck(IPropertySymbol propertySymbol, Compilation compilation)
         {
@@ -101,6 +133,9 @@ namespace ILLink.RoslynAnalyzer
         }
         private protected override ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions =>
             ImmutableArray.Create<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>((typeDerivesFromRucBase, new SymbolKind[] { SymbolKind.NamedType }));
+
+        private protected override ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions =>
+            ImmutableArray.Create<Action<CompilationAnalysisContext>>(CheckReferencedAssembliesForTrimmable);
 
         protected override bool VerifyAttributeArguments(AttributeData attribute) =>
             RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments(attribute);
