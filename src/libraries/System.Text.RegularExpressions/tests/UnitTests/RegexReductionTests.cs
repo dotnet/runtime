@@ -9,6 +9,12 @@ namespace System.Text.RegularExpressions.Tests
     public class RegexReductionTests
     {
         [Theory]
+        // Well-known sets
+        [InlineData(@"[^\d]", @"\D")]
+        [InlineData(@"[^\w]", @"\W")]
+        [InlineData(@"[^\s]", @"\S")]
+        [InlineData(@"[\s\S]", @"[\d\D]")]
+        [InlineData(@"[\s\S]", @"[\w\W]")]
         // Two greedy one loops
         [InlineData("a*a*", "a*")]
         [InlineData("(a*a*)", "(a*)")]
