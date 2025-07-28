@@ -5573,7 +5573,7 @@ bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned lim
                                                                     : BasicBlockVisit::Continue;
     });
 
-    return (result == BasicBlockVisit::Abort) ? true : false;
+    return (result == BasicBlockVisit::Abort);
 }
 
 /*****************************************************************************/
