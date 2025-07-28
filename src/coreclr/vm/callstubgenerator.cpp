@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
 #include "callstubgenerator.h"
 #include "ecall.h"
@@ -1090,6 +1090,8 @@ extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*p
 extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetVector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRet3Double();
@@ -1098,6 +1100,8 @@ extern "C" void InterpreterStubRetFloat();
 extern "C" void InterpreterStubRet2Float();
 extern "C" void InterpreterStubRet3Float();
 extern "C" void InterpreterStubRet4Float();
+extern "C" void InterpreterStubRetVector64();
+extern "C" void InterpreterStubRetVector128();
 #endif // TARGET_ARM64
 
 #if LOG_COMPUTE_CALL_STUB
@@ -1154,6 +1158,10 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRet3Float);
         case ReturnType4Float:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Float);
+        case ReturnTypeVector64:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetVector64);
+        case ReturnTypeVector128:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetVector128);
 #endif // TARGET_ARM64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
@@ -1215,6 +1223,10 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRet3Float);
         case ReturnType4Float:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Float);
+        case ReturnTypeVector64:
+            RETURN_TYPE_HANDLER(InterpreterStubRetVector64);
+        case ReturnTypeVector128:
+            RETURN_TYPE_HANDLER(InterpreterStubRetVector128);
 #endif // TARGET_ARM64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
@@ -1709,7 +1721,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
         }
 #else
         return ReturnTypeBuff;
-#endif        
+#endif
     }
     else
     {
@@ -1827,8 +1839,28 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                     break;
                             }
                                 break;
+                            case CORINFO_HFA_ELEM_VECTOR64:
+                                switch (thReturnValueType.GetSize())
+                                {
+                                    case 8:
+                                        return ReturnTypeVector64;
+                                    default:
+                                        _ASSERTE(!"Unsupported Vector64 HFA size");
+                                        break;
+                                }
+                                break;
+                            case CORINFO_HFA_ELEM_VECTOR128:
+                                switch (thReturnValueType.GetSize())
+                                {
+                                    case 16:
+                                        return ReturnTypeVector128;
+                                    default:
+                                        _ASSERTE(!"Unsupported Vector128 HFA size");
+                                        break;
+                                }
+                                break;
                         default:
-                            _ASSERTE(!"HFA types other than float and double are not supported yet");
+                            _ASSERTE(!"HFA type is not supported");
                             break;
                     }
                 }
@@ -1863,4 +1895,4 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
     return ReturnTypeVoid;
 }
 
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && !TARGET_WASM

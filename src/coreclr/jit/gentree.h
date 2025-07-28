@@ -648,6 +648,22 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
+struct LocalDef
+{
+    GenTreeLclVarCommon* Def;
+    bool                 IsEntire;
+    ssize_t              Offset;
+    unsigned             Size;
+
+    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, unsigned size)
+        : Def(def)
+        , IsEntire(isEntire)
+        , Offset(offset)
+        , Size(size)
+    {
+    }
+};
+
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -695,6 +711,12 @@ struct GenTree
 #define GTSTRUCT_3_SPECIAL(fn, en, en2, en3) GTSTRUCT_3(fn, en, en2, en3)
 
 #include "gtstructs.h"
+
+    enum class VisitResult
+    {
+        Abort    = false,
+        Continue = true
+    };
 
     genTreeOps gtOper; // enum subtype BYTE
     var_types  gtType; // enum subtype BYTE
@@ -2023,11 +2045,13 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    bool DefinesLocal(Compiler*             comp,
-                      GenTreeLclVarCommon** pLclVarTree,
-                      bool*                 pIsEntire = nullptr,
-                      ssize_t*              pOffset   = nullptr,
-                      unsigned*             pSize     = nullptr);
+    template <typename TVisitor>
+    VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLocalDefNodes(Compiler* comp, TVisitor visitor);
+
+    bool HasAnyLocalDefs(Compiler* comp);
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr, target_ssize_t* offset);
@@ -2349,12 +2373,6 @@ public:
 
     // Returns a range that will produce the operands of this node in execution order.
     IteratorPair<GenTreeOperandIterator> Operands();
-
-    enum class VisitResult
-    {
-        Abort    = false,
-        Continue = true
-    };
 
     // Visits each operand of this node. The operand must be either a lambda, function, or functor with the signature
     // `GenTree::VisitResult VisitorFunction(GenTree* operand)`. Here is a simple example:
@@ -4341,8 +4359,42 @@ enum class ContinuationContextHandling
 // Additional async call info.
 struct AsyncCallInfo
 {
-    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
-    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+    // The following information is used to implement the proper observable handling of `ExecutionContext`,
+    // `SynchronizationContext` and `TaskScheduler` in async methods.
+    //
+    // The breakdown of the handling is as follows:
+    //
+    // - For custom awaitables there is no special handling of `SynchronizationContext` or `TaskScheduler`. All the
+    // handling that exists is custom implemented by the user. In this case "ContinuationContextHandling == None" and
+    // "SaveAndRestoreSynchronizationContextField == false".
+    //
+    // - For custom awaitables there _is_ special handling of `ExecutionContext`: when the custom awaitable suspends,
+    // the JIT ensures that the `ExecutionContext` will be captured on suspension and restored when the continuation is
+    // running. This is represented by "ExecutionContextHandling == AsyncSaveAndRestore".
+    //
+    // - For task awaits there is special handling of `SynchronizationContext` and `TaskScheduler` in multiple ways:
+    //
+    //   * The JIT ensures that `Thread.CurrentThread._synchronizationContext` is saved and restored around
+    //   synchronously finishing calls. This is represented by "SaveAndRestoreSynchronizationContextField == true".
+    //
+    //   * The JIT/runtime/BCL ensure that when the callee suspends, the caller will eventually be resumed on the
+    //   `SynchronizationContext`/`TaskScheduler` present before the call started, depending on the configuration of the
+    //   task await by the user. This resumption can be inlined if the `SynchronizationContext` is current when the
+    //   continuation is about to run, and otherwise will be posted to it. This is represented by
+    //   "ContinuationContextHandling == ContinueOnCapturedContext/ContinueOnThreadPool".
+    //
+    //   * When the callee suspends restoration of `Thread.CurrentThread._synchronizationContext` is left up to the
+    //   custom implementation of the `SynchronizationContext`, it must not be done by the JIT.
+    //
+    // - For task awaits the runtime/BCL ensure that `Thread.CurrentThread._executionContext` is captured before the
+    // call and restored after it. This happens consistently regardless of whether the callee finishes synchronously or
+    // not. This is represented by "ExecutionContextHandling == SaveAndRestore".
+    //
+    ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
+    bool                        SaveAndRestoreSynchronizationContextField = false;
+    bool                        HasSuspensionIndicatorDef                 = false;
+    unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4615,6 +4667,7 @@ enum class WellKnownArg : unsigned
     X86TailCallSpecialArg,
     StackArrayLocal,
     RuntimeMethodHandle,
+    AsyncSuspendedIndicator,
 };
 
 #ifdef DEBUG
@@ -4829,6 +4882,7 @@ public:
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
+    void     RemoveUnsafe(CallArg* arg);
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
@@ -5002,7 +5056,7 @@ struct GenTreeCall final : public GenTree
         // Only used for unmanaged calls, which cannot be tail-called
         CorInfoCallConvExtension unmgdCallConv;
         // Used for async calls
-        const AsyncCallInfo* asyncInfo;
+        AsyncCallInfo* asyncInfo;
     };
 
 #if FEATURE_MULTIREG_RET
@@ -5060,7 +5114,7 @@ struct GenTreeCall final : public GenTree
 #endif
     }
 
-    void SetIsAsync(const AsyncCallInfo* info)
+    void SetIsAsync(AsyncCallInfo* info)
     {
         assert(info != nullptr);
         gtCallMoreFlags |= GTF_CALL_M_ASYNC;

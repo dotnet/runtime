@@ -135,17 +135,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 _originalsResolver.Dispose();
                 _linkedResolver.Dispose();
             }
+        }
 
-            bool HasActiveSkipKeptItemsValidationAttribute(ICustomAttributeProvider provider)
+        internal static bool HasActiveSkipKeptItemsValidationAttribute(IMemberDefinition provider)
+        {
+            if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute))
             {
-                if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute))
-                {
-                    object by = attribute.GetPropertyValue(nameof(SkipKeptItemsValidationAttribute.By));
-                    return by is null ? true : ((Tool)by).HasFlag(Tool.Trimmer);
-                }
-
-                return false;
+                object by = attribute.GetPropertyValue(nameof(SkipKeptItemsValidationAttribute.By));
+                return by is null ? true : ((Tool)by).HasFlag(Tool.Trimmer);
             }
+
+            return false;
         }
 
         protected virtual void VerifyILOfOtherAssemblies(TrimmedTestCaseResult linkResult)
@@ -1415,7 +1415,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         }
 
 #nullable enable
-        static bool TryGetCustomAttribute(ICustomAttributeProvider caProvider, string attributeName, [NotNullWhen(true)] out CustomAttribute? customAttribute)
+        internal static bool TryGetCustomAttribute(ICustomAttributeProvider caProvider, string attributeName, [NotNullWhen(true)] out CustomAttribute? customAttribute)
         {
             if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
             {

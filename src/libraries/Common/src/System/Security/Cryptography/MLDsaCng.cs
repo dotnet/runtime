@@ -63,18 +63,15 @@ namespace System.Security.Cryptography
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey);
 
         /// <summary>
-        ///   Gets the key that will be used by the <see cref="MLDsaCng"/> object for any cryptographic operation that it performs.
+        ///   Gets a new <see cref="CngKey" /> representing the key used by the current instance.
         /// </summary>
-        /// <value>
-        ///   The key that will be used by the <see cref="MLDsaCng"/> object for any cryptographic operation that it performs.
-        /// </value>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
         /// </exception>
         /// <remarks>
-        ///   This <see cref="CngKey"/> object is not the same as the one passed to the <see cref="MLDsaCng"/> constructor,
+        ///   This <see cref="CngKey"/> object is not the same as the one passed to <see cref="MLDsaCng(CngKey)"/>,
         ///   if that constructor was used. However, it will point to the same CNG key.
         /// </remarks>
-        public partial CngKey Key { get; }
+        public partial CngKey GetKey();
     }
 }

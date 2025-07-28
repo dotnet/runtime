@@ -135,7 +135,4 @@
   <data name="net_http_unsupported_version" xml:space="preserve">
     <value>Request version value must be one of 1.0, 1.1, 2.0, or 3.0.</value>
   </data>
-  <data name="net_http_invalid_header_value" xml:space="preserve">
-    <value>Request headers must be valid Latin-1 characters.</value>
-  </data>
 </root>
