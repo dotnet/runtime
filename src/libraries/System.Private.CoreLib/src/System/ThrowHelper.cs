@@ -609,6 +609,18 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowFormatException_BadHexChar()
+        {
+            throw new FormatException(SR.Format_BadHexChar);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowFormatException_BadHexLength()
+        {
+            throw new FormatException(SR.Format_BadHexLength);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowFormatException_NeedSingleChar()
         {
             throw new FormatException(SR.Format_NeedSingleChar);

@@ -4,8 +4,6 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <!-- Support for native aot not yet implemented -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
