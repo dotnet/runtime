@@ -71,6 +71,9 @@ namespace System.Security.Cryptography.Tests
         public static IEnumerable<object[]> AllAlgorithmsTestData =>
             AllAlgorithms.Select(v => new object[] { v });
 
+        public static IEnumerable<object[]> SupportedAlgorithmsTestData =>
+            AllAlgorithms.Where(CompositeMLDsa.IsAlgorithmSupported).Select(v => new object[] { v });
+
         internal static MLDsaKeyInfo GetMLDsaIetfTestVector(CompositeMLDsaAlgorithm algorithm)
         {
             MLDsaAlgorithm mldsaAlgorithm = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm];

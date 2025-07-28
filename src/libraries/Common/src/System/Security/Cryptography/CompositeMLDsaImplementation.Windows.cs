@@ -37,8 +37,17 @@ namespace System.Security.Cryptography
             return CompositeMLDsaManaged.IsAlgorithmSupportedImpl(algorithm);
         }
 
-        internal static partial CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm) =>
-            throw new PlatformNotSupportedException();
+        internal static partial CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm)
+        {
+#if !NETFRAMEWORK
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
+#endif
+
+            return CompositeMLDsaManaged.GenerateKeyImpl(algorithm);
+        }
 
         internal static partial CompositeMLDsa ImportCompositeMLDsaPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {

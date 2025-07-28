@@ -361,7 +361,7 @@ namespace Microsoft.Interop
                     // Add the HRESULT return value in the native signature.
                     // This element does not have any influence on the managed signature, so don't assign a managed index.
                     ElementTypeInformation = returnSwappedSignatureElements.Add(
-                        new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
+                        new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo(owningInterfaceInfo.InterfaceId))
                         {
                             NativeIndex = TypePositionInfo.ReturnIndex
                         })
@@ -428,7 +428,7 @@ namespace Microsoft.Interop
                 new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com),
                 exceptionMarshallingInfo,
                 environment.EnvironmentFlags,
-                owningInterface,
+                owningInterfaceInfo.Type,
                 declaringType,
                 generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
                 ComInterfaceDispatchMarshallingInfo.Instance);
@@ -867,7 +867,7 @@ namespace Microsoft.Interop
                             EqualsValueClause(
                                 ImplicitObjectCreationExpression()
                                     .AddArgumentListArguments(
-                                        Argument(CreateEmbeddedDataBlobCreationStatement(context.InterfaceId.ToByteArray())))))
+                                        Argument(ComInterfaceGeneratorHelpers.CreateEmbeddedDataBlobCreationStatement(context.InterfaceId.ToByteArray())))))
                         .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
 
             if (context.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
@@ -899,20 +899,6 @@ namespace Microsoft.Interop
                     .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                     .WithExpressionBody(ArrowExpressionClause(LiteralExpression(SyntaxKind.NullLiteralExpression)))
                     .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
-
-
-            static ExpressionSyntax CreateEmbeddedDataBlobCreationStatement(ReadOnlySpan<byte> bytes)
-            {
-                var literals = new CollectionElementSyntax[bytes.Length];
-
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    literals[i] = ExpressionElement(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(bytes[i])));
-                }
-
-                // [ <byte literals> ]
-                return CollectionExpression(SeparatedList(literals));
-            }
         }
     }
 }

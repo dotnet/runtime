@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(_TargetFrameworkForXHarness)</TargetFramework>
-    <!-- this DLL is loaded into xharness via reflection. 
+    <!-- this DLL is loaded into xharness via reflection.
          It could be running on machine with $(NetCoreAppPrevious) installed and it would be $(NetCoreAppPrevious) process.
          Because xharness is built for $(NetPrevious).
          That prevents dependencies from $(AspNetCoreAppCurrent) to be loaded -->
@@ -33,6 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System/Net/WebSockets/WebSocketEchoHelper.cs" />
+    <Compile Include="$(CommonTestPath)System/Net/WebSockets/WebSocketEchoOptions.cs" />
     <Compile Include="Handlers\DeflateHandler.cs" />
     <Compile Include="Handlers\EchoHandler.cs" />
     <Compile Include="Handlers\EchoBodyHandler.cs" />
@@ -51,6 +53,7 @@
     <Compile Include="Helpers\NameValueCollectionConverter.cs" />
     <Compile Include="Helpers\RequestHelper.cs" />
     <Compile Include="Helpers\RequestInformation.cs" />
+    <Compile Include="Helpers\WebSocketAcceptHelper.cs" />
     <Compile Include="GenericHandler.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Startup.cs" />

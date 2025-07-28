@@ -150,6 +150,9 @@
   <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
     <value>The computed authentication tag did not match the input authentication tag.</value>
   </data>
+  <data name="Cryptography_Cert_AlreadyHasPrivateKey" xml:space="preserve">
+    <value>The certificate already has an associated private key.</value>
+  </data>
   <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
     <value>Composite signature generation failed due to an error in one or both of the components.</value>
   </data>
@@ -224,6 +227,12 @@
   </data>
   <data name="Cryptography_PqcNoSeed" xml:space="preserve">
     <value>The current instance does not contain a seed.</value>
+  </data>
+  <data name="Cryptography_PrivateKey_DoesNotMatch" xml:space="preserve">
+    <value>The provided key does not match the public key for this certificate.</value>
+  </data>
+  <data name="Cryptography_PrivateKey_WrongAlgorithm" xml:space="preserve">
+    <value>The provided key does not match the public key algorithm for this certificate.</value>
   </data>
   <data name="Cryptography_RSAPrivateKey_VersionTooNew" xml:space="preserve">
     <value>The provided RSAPrivateKey value has version '{0}', but version '{1}' is the maximum supported.</value>

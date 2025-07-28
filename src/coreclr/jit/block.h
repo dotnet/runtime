@@ -1779,7 +1779,9 @@ public:
     //
     unsigned StatementCount();
     bool     StatementCountExceeds(unsigned limit, unsigned* count = nullptr);
-    bool     ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* complexity = nullptr);
+
+    template <typename TFunc>
+    bool ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity);
 
     GenTree* lastNode() const;
 
@@ -2086,7 +2088,8 @@ public:
         return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
     }
 
-    bool ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count = nullptr);
+    template <typename TFunc>
+    bool ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity);
 };
 
 // BBJumpTable -- descriptor blocks with N successors
