@@ -1061,7 +1061,7 @@ namespace System.Text.RegularExpressions
                             }
                             j--;
                         }
-                        else if (at.Kind is RegexNodeKind.Set or RegexNodeKind.One)
+                        else if (at.Kind is RegexNodeKind.Set or RegexNodeKind.One or RegexNodeKind.Notone)
                         {
                             // Cannot merge sets if L or I options differ, or if either are negated.
                             optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
@@ -1084,7 +1084,7 @@ namespace System.Text.RegularExpressions
                                 break;
                             }
 
-                            // The last node was a Set or a One, we're a Set or One and our options are the same.
+                            // The last node was a Set/One/Notone, we're a Set/One/Notone, and our options are the same.
                             // Merge the two nodes.
                             j--;
                             prev = children[j];
@@ -1095,6 +1095,11 @@ namespace System.Text.RegularExpressions
                                 prevCharClass = new RegexCharClass();
                                 prevCharClass.AddChar(prev.Ch);
                             }
+                            else if (prev.Kind == RegexNodeKind.Notone)
+                            {
+                                prevCharClass = new RegexCharClass();
+                                prevCharClass.AddNotChar(prev.Ch);
+                            }
                             else
                             {
                                 prevCharClass = RegexCharClass.Parse(prev.Str!);
@@ -1103,6 +1108,10 @@ namespace System.Text.RegularExpressions
                             if (at.Kind == RegexNodeKind.One)
                             {
                                 prevCharClass.AddChar(at.Ch);
+                            }
+                            else if (at.Kind == RegexNodeKind.Notone)
+                            {
+                                prevCharClass.AddNotChar(at.Ch);
                             }
                             else
                             {
