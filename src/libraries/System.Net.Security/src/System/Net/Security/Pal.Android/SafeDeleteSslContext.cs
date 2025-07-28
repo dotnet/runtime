@@ -157,7 +157,7 @@ namespace System.Net
             if (managedContextHandle != IntPtr.Zero)
             {
                 WeakGCHandle<SafeDeleteSslContext> handle = WeakGCHandle<SafeDeleteSslContext>.FromIntPtr(managedContextHandle);
-                handle.Free();
+                handle.Dispose();
             }
         }
 
