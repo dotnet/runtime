@@ -750,7 +750,7 @@ PEAssembly *PEAssembly::Open(
         nullptr,        // BindResult
         nullptr,        // IMetaDataEmit
         FALSE,          // isSystem
-        nullptr,
+        nullptr,        // FallbackBinder
         pPEImageIL,
         pHostAssembly);
 
