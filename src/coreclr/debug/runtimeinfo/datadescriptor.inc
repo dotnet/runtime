@@ -1003,9 +1003,11 @@ CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
+
+CDAC_GLOBAL_POINTER(GCDescriptor, &::g_gcDescriptors)
 CDAC_GLOBALS_END()
 
-#undef CDAC_BASELINE
+#undef CDAC_BASELINEF
 #undef CDAC_TYPES_BEGIN
 #undef CDAC_TYPE_BEGIN
 #undef CDAC_TYPE_INDETERMINATE

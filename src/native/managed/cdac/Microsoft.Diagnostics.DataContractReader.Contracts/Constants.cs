@@ -67,6 +67,8 @@ public static class Constants
         public const string OperatingSystem = nameof(OperatingSystem);
 
         public const string GCInfoVersion = nameof(GCInfoVersion);
+
+        public const string GCDescriptor = nameof(GCDescriptor);
     }
     public static class FieldNames
     {

@@ -142,3 +142,22 @@ GC_Initialize(
     *gcHeap = heap;
     return S_OK;
 }
+
+extern "C"
+{
+    struct DotNetRuntimeContractDescriptor;
+    extern DotNetRuntimeContractDescriptor GCContractDescriptor;
+}
+
+GC_EXPORT
+HRESULT LOCALGC_CALLCONV
+GC_GetDescriptors(
+    /* Out */ TADDR* gcDescriptors
+)
+{
+    assert(gcDescriptors != nullptr);
+
+    *gcDescriptors = (TADDR)&GCContractDescriptor;
+
+    return S_OK;
+}

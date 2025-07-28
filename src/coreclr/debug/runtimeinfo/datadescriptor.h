@@ -22,3 +22,5 @@
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
+
+#include "gcheaputilities.h"

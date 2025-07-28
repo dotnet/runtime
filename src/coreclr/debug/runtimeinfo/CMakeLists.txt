@@ -58,7 +58,7 @@ set(GC_DESCRIPTOR_DIR "${CLR_DIR}/gc/gcdatadescriptors")
 generate_data_descriptors(
    LIBRARY_NAME in_process_gc_contract_descriptor
    CONTRACT_FILE "${GC_DESCRIPTOR_DIR}/contracts.jsonc"
-   POINTER_DATA_NAME "InProcGCContractPointerData"
-   CONTRACT_NAME "InProcGCContractDescriptor"
+   POINTER_DATA_NAME "GContractPointerData"
+   CONTRACT_NAME "GCContractDescriptor"
    INCLUDE_DIRS "${GC_DESCRIPTOR_DIR}" "${CLR_DIR}/gc"
    DEPENDENCIES cee_wks_core)
