@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
-#include "nameconfigure.h"
+#include "contractconfiguration.h"
 
 #ifdef _MSC_VER
 #define DLLEXPORT __declspec(dllexport)
