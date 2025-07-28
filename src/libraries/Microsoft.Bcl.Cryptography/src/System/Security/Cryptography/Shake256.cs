@@ -134,7 +134,7 @@ namespace System.Security.Cryptography
 
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
             {
-                hashHandle?.Dispose();
+                hashHandle.Dispose();
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
             }
 
