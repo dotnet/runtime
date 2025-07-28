@@ -277,6 +277,14 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*?)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
 
             // Testing selected FindOptimizations finds the right prefix
             yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
