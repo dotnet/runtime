@@ -42,6 +42,11 @@
         _AndroidGenerateAppBundle;
         _AfterAndroidBuild
     </AndroidBuildDependsOn>
+    <AndroidBuildDependsOn Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    $(AndroidBuildDependsOn);
+    CopyNativeBinary;
+    _CopyAotSymbols
+    </AndroidBuildDependsOn>
 
     <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
