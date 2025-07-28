@@ -423,7 +423,7 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            // API is only relevant for x64
+            // API is implemented for x64 only
             if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X64)
             {
                 IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
@@ -450,7 +450,7 @@ internal sealed unsafe partial class SOSDacImpl
         catch (InvalidOperationException)
         {
             // If the target read fails, expect HResult to be CORDBG_E_READVIRTUAL_FAILURE
-            hr = unchecked((int)0x80131c49 /*CORDBG_E_READVIRTUAL_FAILURE*/);
+            hr = CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE;
         }
         catch (System.Exception ex)
         {
