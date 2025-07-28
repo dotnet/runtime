@@ -2452,20 +2452,16 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>Gets whether this node is known to be immediately preceeded by a word character.</summary>
-        public bool IsKnownPrecededByWordChar() =>  IsKnownPrecededOrSuccededByWordChar(false);
+        /// <summary>Gets whether this node is known to be immediately preceded by a word character.</summary>
+        public bool IsKnownPrecededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(false);
 
         /// <summary>Gets whether this node is known to be immediately succeeded by a word character.</summary>
-        public bool IsKnownSuccededByWordChar() =>  IsKnownPrecededOrSuccededByWordChar(true);
+        public bool IsKnownSucceededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(true);
 
-        private bool IsKnownPrecededOrSuccededByWordChar(bool succeeded)
+        private bool IsKnownPrecededOrSucceededByWordChar(bool succeeded)
         {
             RegexNode node = this;
-
-            if (node.Kind is RegexNodeKind.Concatenate)
-            {
-                return false;
-            }
+            Debug.Assert(node.Kind is not RegexNodeKind.Concatenate, "The existing logic assumes that the node itself isn't a concatenation.");
 
             // As in CanBeMadeAtomic, conservatively walk up through a limited set of constructs to the next concatenation.
             while (true)

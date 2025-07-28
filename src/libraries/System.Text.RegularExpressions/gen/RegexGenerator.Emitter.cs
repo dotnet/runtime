@@ -332,11 +332,10 @@ namespace System.Text.RegularExpressions.Generator
                     "",
                     "/// <summary>Gets a bitmap for whether each character 0 through 127 is in [\\w]</summary>",
                     $"private static ReadOnlySpan<byte> {WordCharBitmap} => new byte[]",
-                    "    {",
-                    "        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,",
-                    "        0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07",
-                    "    };",
-                    "",
+                    "{",
+                    "    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,",
+                    "    0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07",
+                    "};",
                 ]);
             }
         }
@@ -3285,7 +3284,7 @@ namespace System.Text.RegularExpressions.Generator
                             call = $"{negation}{HelpersTypeName}.{IsPostWordCharBoundary}";
                             AddIsPostWordCharBoundaryHelper(requiredHelpers, checkOverflow);
                         }
-                        else if (node.IsKnownSuccededByWordChar())
+                        else if (node.IsKnownSucceededByWordChar())
                         {
                             call = $"{negation}{HelpersTypeName}.{IsPreWordCharBoundary}";
                             AddIsPreWordCharBoundaryHelper(requiredHelpers, checkOverflow);

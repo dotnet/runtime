@@ -3057,7 +3057,7 @@ namespace System.Text.RegularExpressions
                         {
                             Call(IsPostWordCharBoundaryMethod);
                         }
-                        else if (node.IsKnownSuccededByWordChar())
+                        else if (node.IsKnownSucceededByWordChar())
                         {
                             Call(IsPreWordCharBoundaryMethod);
                         }
