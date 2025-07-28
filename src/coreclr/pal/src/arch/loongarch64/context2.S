@@ -16,12 +16,12 @@
 LEAF_ENTRY RtlRestoreContext, _TEXT
 #ifdef HAS_ADDRESS_SANITIZER
     ld.w  $r21, $a0, CONTEXT_ContextFlags
-    andi $r21, $r21, (1 << CONTEXT_CONTROL_BIT)
-    beq $r21, $r0, LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
+    andi  $r21, $r21, (1 << CONTEXT_CONTROL_BIT)
+    beqz  $r21, LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
 
     addi.d  $sp, $sp, -16
-    st.d  a0, $sp, 0
-    st.d  a1, $sp, 8
+    st.d  $a0, $sp, 0
+    st.d  $a1, $sp, 8
 
     bl  __asan_handle_no_return
 
@@ -37,14 +37,19 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     andi $t1, $r21, (1 << CONTEXT_FLOATING_POINT_BIT)
     beqz $t1, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
 
-    ori $r21, $zero, 2
-    cpucfg $r21, $r21
-    // CPUCFG.2.LASX[bit7]
-    andi $t1, $r21, 0x80
-    bnez $t1, LOCAL_LABEL(Restore_CONTEXT_LASX)
-    // CPUCFG.2.LSX[bit6]
-    andi $t1, $r21, 0x40
-    bnez $t1, LOCAL_LABEL(Restore_CONTEXT_LSX)
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32
+    st.d  $a0, $fp, 16
+    st.d  $a1, $fp, 24
+    bl  C_FUNC(minipal_getcpufeatures)
+    ori  $t1, $a0, 0
+    ld.d  $a0, $fp, 16
+    ld.d  $a1, $fp, 24
+    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
+
+    andi $t3, $t1, CONTEXT_HWCAP_LOONGARCH_LASX_BIT
+    bnez $t3, LOCAL_LABEL(Restore_CONTEXT_LASX)
+    andi $t3, $t1, CONTEXT_HWCAP_LOONGARCH_LSX_BIT
+    bnez $t3, LOCAL_LABEL(Restore_CONTEXT_LSX)
 
     // Neither LSX or LASX is supported.
     fld.d  $f0 , $a0, CONTEXT_FPU_OFFSET
@@ -209,7 +214,7 @@ LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
 LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
 
     andi  $r21, $r21, (1 << CONTEXT_CONTROL_BIT)
-    beq  $r21, $r0, LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
+    beqz  $r21, LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
 
     ld.d  $ra, $t4, CONTEXT_Ra
     ld.d  $fp, $t4, CONTEXT_Fp
@@ -300,13 +305,16 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     andi  $t3, $t1, (1 << CONTEXT_FLOATING_POINT_BIT)
     beqz  $t3, LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT)
 
-    ori $t1, $zero, 2
-    cpucfg $t1, $t1
-    // CPUCFG.2.LASX[bit7]
-    andi $t3, $t1, 0x80
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32
+    st.d  $a0, $fp, 16
+    bl  C_FUNC(minipal_getcpufeatures)
+    ori  $t1, $a0, 0
+    ld.d  $a0, $fp, 16
+    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
+
+    andi $t3, $t1, CONTEXT_HWCAP_LOONGARCH_LASX_BIT
     bnez $t3, LOCAL_LABEL(Store_CONTEXT_LASX)
-    // CPUCFG.2.LSX[bit6]
-    andi $t3, $t1, 0x40
+    andi $t3, $t1, CONTEXT_HWCAP_LOONGARCH_LSX_BIT
     bnez $t3, LOCAL_LABEL(Store_CONTEXT_LSX)
 
     // Neither LSX or LASX is supported.
