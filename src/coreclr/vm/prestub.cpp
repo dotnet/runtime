@@ -706,9 +706,10 @@ namespace
         _ASSERTE(pConfig != NULL);
         _ASSERTE(pDecoderMemory != NULL);
 
-        COR_ILMETHOD_DECODER* pHeader = NULL;
         if (!pMD->MayHaveILHeader())
-            return pHeader;
+            return NULL;
+
+        COR_ILMETHOD_DECODER* pHeader = NULL;
 
         COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
 
