@@ -541,7 +541,7 @@ namespace System.Memory.Tests.Span
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
-        //[ActiveIssue("Manual execution only. Worth running any time SearchValues<string> logic is modified.")]
+        [ActiveIssue("Manual execution only. Worth running any time SearchValues<string> logic is modified.")]
         public static void TestIndexOfAny_RandomInputs_Stress()
         {
             RunStress();
@@ -572,7 +572,7 @@ namespace System.Memory.Tests.Span
 
             static void RunStress()
             {
-                foreach (int maxNeedleCount in new[] { 1 })
+                foreach (int maxNeedleCount in new[] { 2, 8, 20, 100 })
                 {
                     foreach (int maxNeedleValueLength in new[] { 8, 40 })
                     {
@@ -589,7 +589,7 @@ namespace System.Memory.Tests.Span
                                 HaystackIterationsPerNeedle = 1_000,
                             };
 
-                            helper.StressRandomInputs(TimeSpan.FromSeconds(20));
+                            helper.StressRandomInputs(TimeSpan.FromSeconds(5));
                         }
                     }
                 }
@@ -689,7 +689,7 @@ namespace System.Memory.Tests.Span
                 ExceptionDispatchInfo? exception = null;
                 Stopwatch s = Stopwatch.StartNew();
 
-                Parallel.For(0, Environment.ProcessorCount, _ =>
+                Parallel.For(0, Environment.ProcessorCount - 1, _ =>
                 {
                     while (s.Elapsed < duration && Volatile.Read(ref exception) is null)
                     {
