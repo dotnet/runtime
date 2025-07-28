@@ -1268,15 +1268,8 @@ public:
         assert(0 <= percentage && percentage <= 100);
 
         this->bbWeight = (bSrc->bbWeight * percentage) / 100;
-
-        if (bSrc->hasProfileWeight())
-        {
-            this->SetFlags(BBF_PROF_WEIGHT);
-        }
-        else
-        {
-            this->RemoveFlags(BBF_PROF_WEIGHT);
-        }
+        this->RemoveFlags(BBF_PROF_WEIGHT);
+        this->CopyFlags(bSrc, BBF_PROF_WEIGHT);
     }
 
     // Scale a blocks' weight by some factor.
