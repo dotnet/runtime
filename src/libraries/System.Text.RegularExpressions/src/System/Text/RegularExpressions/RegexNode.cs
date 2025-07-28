@@ -2086,22 +2086,41 @@ namespace System.Text.RegularExpressions
             // eliminate any ending backtracking from it.
             EliminateEndingBacktracking();
 
-            // A positive lookaround wrapped around an empty is a nop, and we can reduce it
-            // to simply Empty.  A developer typically doesn't write this, but rather it evolves
-            // due to optimizations resulting in empty.
+            RegexNode child = Child(0);
 
-            // A negative lookaround wrapped around an empty child, i.e. (?!), is
-            // sometimes used as a way to insert a guaranteed no-match into the expression,
-            // often as part of a conditional. We can reduce it to simply Nothing.
-
-            if (Child(0).Kind == RegexNodeKind.Empty)
+            // A positive lookahead that wraps a zero-width assertion is useless wrapping and can be removed.
+            // Similarly, a positive lookaround wrapped around an empty can be reduced simply to Empty.
+            // A developer typically doesn't write this, but rather it evolves due to optimizations resulting in empty.
+            if (Kind is RegexNodeKind.PositiveLookaround)
             {
-                Kind = Kind == RegexNodeKind.PositiveLookaround ? RegexNodeKind.Empty : RegexNodeKind.Nothing;
-                Children = null;
+                if (((Options & RegexOptions.RightToLeft) == 0 && IsZeroWidthAssertion(child.Kind)) ||
+                    child.Kind is RegexNodeKind.Empty)
+                {
+                    return child;
+                }
+            }
+            else if (Kind is RegexNodeKind.NegativeLookaround)
+            {
+                // A negative lookaround wrapped around an empty child, i.e. (?!), is
+                // sometimes used as a way to insert a guaranteed no-match into the expression,
+                // often as part of a conditional. We can reduce it to simply Nothing.
+                if (child.Kind is RegexNodeKind.Empty)
+                {
+                    Kind = RegexNodeKind.Nothing;
+                    Children = null;
+                }
             }
 
             return this;
         }
+
+        private static bool IsZeroWidthAssertion(RegexNodeKind kind) => kind is
+            RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or
+            RegexNodeKind.Beginning or RegexNodeKind.Start or
+            RegexNodeKind.Bol or RegexNodeKind.Eol or
+            RegexNodeKind.End or RegexNodeKind.EndZ or
+            RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+            RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary;
 
         /// <summary>Gets whether the node contains a backreference anywhere in its tree.</summary>
         private static bool? ContainsBackreference(RegexNode node)
