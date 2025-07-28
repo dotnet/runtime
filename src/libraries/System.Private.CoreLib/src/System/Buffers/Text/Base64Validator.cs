@@ -17,7 +17,7 @@ namespace System.Buffers.Text
         /// where whitespace is defined as the characters ' ', '\t', '\r', or '\n'.
         /// </remarks>
         public static bool IsValid(ReadOnlySpan<char> base64Text) =>
-            Base64Helper.IsValid(default(Base64CharValidatable), base64Text, 123, out _);
+            Base64Helper.IsValid(default(Base64CharValidatable), base64Text, out _);
 
         /// <summary>Validates that the specified span of text is comprised of valid base-64 encoded data.</summary>
         /// <param name="base64Text">A span of text to validate.</param>
@@ -30,7 +30,7 @@ namespace System.Buffers.Text
         /// where whitespace is defined as the characters ' ', '\t', '\r', or '\n'.
         /// </remarks>
         public static bool IsValid(ReadOnlySpan<char> base64Text, out int decodedLength) =>
-            Base64Helper.IsValid(default(Base64CharValidatable), base64Text, 123, out decodedLength);
+            Base64Helper.IsValid(default(Base64CharValidatable), base64Text, out decodedLength);
 
         /// <summary>Validates that the specified span of UTF-8 text is comprised of valid base-64 encoded data.</summary>
         /// <param name="base64TextUtf8">A span of UTF-8 text to validate.</param>
@@ -41,7 +41,7 @@ namespace System.Buffers.Text
         /// where whitespace is defined as the characters ' ', '\t', '\r', or '\n' (as bytes).
         /// </remarks>
         public static bool IsValid(ReadOnlySpan<byte> base64TextUtf8) =>
-            Base64Helper.IsValid(default(Base64ByteValidatable), base64TextUtf8, 123, out _);
+            Base64Helper.IsValid(default(Base64ByteValidatable), base64TextUtf8, out _);
 
         /// <summary>Validates that the specified span of UTF-8 text is comprised of valid base-64 encoded data.</summary>
         /// <param name="base64TextUtf8">A span of UTF-8 text to validate.</param>
@@ -53,7 +53,7 @@ namespace System.Buffers.Text
         /// where whitespace is defined as the characters ' ', '\t', '\r', or '\n' (as bytes).
         /// </remarks>
         public static bool IsValid(ReadOnlySpan<byte> base64TextUtf8, out int decodedLength) =>
-            Base64Helper.IsValid(default(Base64ByteValidatable), base64TextUtf8, 123, out decodedLength);
+            Base64Helper.IsValid(default(Base64ByteValidatable), base64TextUtf8, out decodedLength);
 
     }
 }
