@@ -893,10 +893,7 @@ namespace System.Text.RegularExpressions
 
             // If the Loop or Lazyloop now only has one child node and its a Set, One, or Notone,
             // reduce to just Setloop/lazy, Oneloop/lazy, or Notoneloop/lazy.  The parser will
-            // generally have only produced the latter, but other reductions could have exposed
-            // this. We can also reduce or eliminate certain loops that are nops, e.g.
-            // a loop with a minimum of 0 that wraps a zero-width assertion is either asserting something
-            // or not, and is thus useless.
+            // generally have only produced the latter, but other reductions could have exposed this.
             if (u.ChildCount() == 1)
             {
                 RegexNode child = u.Child(0);
@@ -910,14 +907,21 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNodeKind.Empty:
+                        // A loop around an empty is itself empty, regardless of iteration counts.
+                        u = child;
+                        break;
+
                     case RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or
                          RegexNodeKind.Beginning or RegexNodeKind.Start or
                          RegexNodeKind.Bol or RegexNodeKind.Eol or
                          RegexNodeKind.End or RegexNodeKind.EndZ or
                          RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
-                         RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary
-                         when u.M == 0:
-                        u = new RegexNode(RegexNodeKind.Empty, Options);
+                         RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
+                        // A loop around a zero-width assertion can also be reduced. If it has a lower bound of 0,
+                        // then it's either asserting something or not, and is thus useless and replaceable by empty.
+                        // If it has a lower bound > 0, then the contents are still needed, but the loop isn't, since
+                        // it's non-consuming and thus any more repetitions than 1 are redundant.
+                        u = u.M == 0 ? new RegexNode(RegexNodeKind.Empty, Options) : child;
                         break;
                 }
             }
