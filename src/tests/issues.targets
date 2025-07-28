@@ -549,17 +549,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/GenericContextTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/109200</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/VarianceSafety/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109201</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_68278/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/BBT/Scenario4/Not-Int32/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method002/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109202</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_72845/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
@@ -570,17 +564,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/multidimmarray/rank1array/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109310</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/arrres_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/109311</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/WeakReference/IsAlive/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109312</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/lifetime/lifetime2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109313</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/109314</Issue>

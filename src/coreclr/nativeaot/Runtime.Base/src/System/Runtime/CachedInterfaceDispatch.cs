@@ -29,17 +29,7 @@ namespace System.Runtime
             IntPtr pTargetCode = RhResolveDispatchWorker(pObject, (void*)pCell, ref cellInfo);
             if (pTargetCode != IntPtr.Zero)
             {
-                // We don't update the dispatch cell cache if this is IDynamicInterfaceCastable because this
-                // scenario is by-design dynamic. There is no guarantee that another instance with the same MethodTable
-                // as the one we just resolved would do the resolution the same way. We will need to ask again.
-                if (!pObject.GetMethodTable()->IsIDynamicInterfaceCastable)
-                {
-                    return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable(), ref cellInfo);
-                }
-                else
-                {
-                    return pTargetCode;
-                }
+                return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable(), ref cellInfo);
             }
 
             // "Valid method implementation was not found."

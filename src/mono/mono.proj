@@ -953,6 +953,14 @@ JS_ENGINES = [NODE_JS]
       <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')&quot;</_MonoAOTCFLAGSOption>
       <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')&quot;</_MonoAOTCXXFLAGSOption>
     </PropertyGroup>
+
+    <PropertyGroup>
+      <_PythonCmd Condition="'$(HostOS)' != 'windows'">python3</_PythonCmd>
+      <_PythonCmd Condition="'$(HostOS)' == 'windows'">python</_PythonCmd>
+      <!-- Use python from the transport pack on Browser/Wasi -->
+      <_PythonCmd Condition="'$(HostOS)' == 'windows' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_56_Python_win-x64)', 'tools', 'python.exe'))</_PythonCmd>
+    </PropertyGroup>
+
     <ItemGroup>
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
@@ -975,15 +983,12 @@ JS_ENGINES = [NODE_JS]
       <!-- rename exe -->
       <MonoAOTCMakeArgs Include="-DMONO_CROSS_COMPILE_EXECUTABLE_NAME=1" />
       <MonoAOTCMakeArgs Include="-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true" Condition="'$(KeepNativeSymbols)' == 'true'" />
+      <MonoAOTCMakeArgs Condition="'$(HostOS)' == 'windows' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')" Include="-DPython_ROOT_DIR=$([System.IO.Directory]::GetParent('$(_PythonCmd)'))" />
     </ItemGroup>
 
     <PropertyGroup>
       <_MonoSkipInitCompiler Condition="'$(AotHostArchitecture)' != '$(BuildArchitecture)'">false</_MonoSkipInitCompiler>
       <_MonoSkipInitCompiler Condition="'$(CrossBuild)' == 'true'">false</_MonoSkipInitCompiler>
-      <_PythonCmd Condition="'$(HostOS)' != 'windows'">python3</_PythonCmd>
-      <_PythonCmd Condition="'$(HostOS)' == 'windows'">python</_PythonCmd>
-      <!-- Use python from the transport pack on Browser/Wasi -->
-      <_PythonCmd Condition="'$(HostOS)' == 'windows' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_56_Python_win-x64)', 'tools', 'python.exe'))</_PythonCmd>
       <_MonoAotCrossOffsetsToolPath>$(MonoProjectRoot)mono\offsets\offsets-tool.py</_MonoAotCrossOffsetsToolPath>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(_PythonCmd) $(_MonoAotCrossOffsetsToolPath) @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoAotCMakeConfigureCommand>

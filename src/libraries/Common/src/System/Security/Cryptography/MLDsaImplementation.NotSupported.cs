@@ -16,11 +16,19 @@ namespace System.Security.Cryptography
 
         internal static partial bool SupportsAny() => false;
 
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm) => false;
+
         // The instance override methods are unreachable, as the constructor will always throw.
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException();
 
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>

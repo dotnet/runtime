@@ -52,7 +52,6 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
     _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
 }
 
-// ~LoaderHeap is not synchronised (obviously)
 UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
 {
     CONTRACTL
@@ -186,7 +185,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
 
-    // For interleaved heaps, we perform two commits, each being half of the requested size
+    // We perform two commits, each being half of the requested size
     dwSizeToCommitPart /= 2;
 
     if (!CommitPages(pData, dwSizeToCommitPart))
@@ -314,7 +313,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     // This mode interleaves data and code pages 1:1. So the code size is required to be smaller than
     // or equal to the page size to ensure that the code range is consecutive.
     _ASSERTE(dwMinSize <= GetStubCodePageSize());
-    // For interleaved heap, we always get two memory pages - one for code and one for data
+    // We always get two memory pages - one for code and one for data
     dwMinSize = 2 * GetStubCodePageSize();
 
     // Does this fit in the reserved region?
@@ -322,7 +321,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         SIZE_T dwSizeToCommit;
 
-        // For interleaved heaps, the allocation cannot cross page boundary since there are data and executable
+        // The allocation cannot cross page boundary since there are data and executable
         // pages interleaved in a 1:1 fashion.
         dwSizeToCommit = dwMinSize;
 
@@ -330,12 +329,12 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         PTR_BYTE pCommitBaseAddress = m_pPtrToEndOfCommittedRegion;
 
-        // The end of committed region for interleaved heaps points to the end of the executable
+        // The end of committed region points to the end of the executable
         // page and the data pages goes right after that. So we skip the data page here.
         pCommitBaseAddress += GetStubCodePageSize();
 
         size_t dwSizeToCommitPart = dwSizeToCommit;
-        // For interleaved heaps, we perform two commits, each being half of the requested size
+        // We perform two commits, each being half of the requested size
         dwSizeToCommitPart /= 2;
 
         if (!CommitPages(pCommitBaseAddress, dwSizeToCommitPart))
@@ -345,7 +344,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         INDEBUG(m_dwDebugWastedBytes += unusedRemainder;)
 
-        // For interleaved heaps, further allocations will start from the newly committed page as they cannot
+        // Further allocations will start from the newly committed page as they cannot
         // cross page boundary.
         m_pAllocPtr = (BYTE*)pCommitBaseAddress;
 

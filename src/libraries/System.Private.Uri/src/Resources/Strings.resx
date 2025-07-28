@@ -168,9 +168,6 @@
   <data name="net_uri_PortOutOfRange" xml:space="preserve">
     <value>A derived type '{0}' has reported an invalid value for the Uri port '{1}'.</value>
   </data>
-  <data name="net_uri_SizeLimit" xml:space="preserve">
-    <value>Invalid URI: The Uri string is too long.</value>
-  </data>
   <data name="net_uri_UserDrivenParsing" xml:space="preserve">
     <value>A derived type '{0}' is responsible for parsing this Uri instance. The base implementation must not be used.</value>
   </data>
