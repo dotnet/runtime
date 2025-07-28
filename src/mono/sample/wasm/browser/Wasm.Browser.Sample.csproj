@@ -3,4 +3,19 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- 
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishTrimmed>false</PublishTrimmed>
+    -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ShouldILStrip>false</ShouldILStrip>
+    <WasmStripILAfterAOT>false</WasmStripILAfterAOT>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <WasmNativeStrip>false</WasmNativeStrip>
+  </PropertyGroup>
+
 </Project>

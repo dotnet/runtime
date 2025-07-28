@@ -3,25 +3,16 @@
 
 import { dotnet, exit } from './_framework/dotnet.js'
 
-function displayMeaning(meaning) {
-    document.getElementById("out").innerHTML = `${meaning}`;
-}
-
 try {
-    const { setModuleImports } = await dotnet
+    const { runMain } = await dotnet
         .withElementOnExit()
+        .withDiagnosticTracing(true)
+        .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        .withEnvironmentVariable("MONO_LOG_MASK", "all")
         .withExitOnUnhandledError()
         .create();
 
-    setModuleImports("main.js", {
-        Sample: {
-            Test: {
-                displayMeaning
-            }
-        }
-    });
-
-    await dotnet.run();
+    await runMain();
 }
 catch (err) {
     exit(2, err);
