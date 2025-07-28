@@ -12,7 +12,7 @@ namespace System.Buffers.Text
             where TBase64Validatable : IBase64Validatable<T>
             where T : struct
         {
-            if (!base64Text.IsEmpty && Unsafe.IsNullRef(ref MemoryMarshal.GetReference(base64Text))) throw new InvalidOperationException("Base64Helper1: Span is empty or not initialized properly. " + base64Text.Length+dummy);
+            if (!base64Text.IsEmpty && Unsafe.IsNullRef(ref MemoryMarshal.GetReference(base64Text))) throw new InvalidOperationException("Base64Helper1: Span is empty or not initialized properly. " + base64Text.Length);
 
             int length = 0, paddingCount = 0;
             T lastChar = default;
