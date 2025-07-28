@@ -148,8 +148,7 @@ namespace System.Net.Http
         public const bool SupportsProxy = false;
         public const bool SupportsRedirectConfiguration = false;
 
-        private Dictionary<string, object?>? _properties;
-        public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+        public IDictionary<string, object?> Properties => field ??= new Dictionary<string, object?>();
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

@@ -59,6 +59,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             "<Module>.StartupCodeMain(Int32,IntPtr)",
             "<Module>.MainMethodWrapper()",
             "<Module>.MainMethodWrapper(String[])",
+            "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute.__GetFieldHelper(Int32,MethodTable*&)",
+            "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.__GetFieldHelper(Int32,MethodTable*&)",
+            "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute.__GetFieldHelper(Int32,MethodTable*&)",
+            "System.Runtime.InteropServices.TypeMapping",
+            "System.Runtime.InteropServices.TypeMapping.GetOrCreateExternalTypeMapping<TTypeMapGroup>()",
+            "System.Runtime.InteropServices.TypeMapping.GetOrCreateProxyTypeMapping<TTypeMapGroup>()",
 
             // Ignore compiler generated code which can't be reasonably matched to the source method
             "<PrivateImplementationDetails>",
@@ -102,7 +108,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             // TODO - this is mostly attribute verification
             // foreach (var originalModule in originalAssembly.Modules)
-            //   VerifyModule(originalModule, linkedAssembly.Modules.FirstOrDefault(m => m.Name == originalModule.Name));
+            //   VerifyModule(originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name));
 
             // TODO
             // VerifyResources(originalAssembly, linkedAssembly);
@@ -291,11 +297,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     if (metadataType.Namespace.StartsWith("Internal"))
                         return false;
 
-                    // Simple way to filter out system assemblies - the best way would be to get a list
-                    // of input/reference assemblies and filter on that, but it's tricky and this should work for basically everything
-                    if (metadataType.Namespace.StartsWith("System"))
+                    if (metadataType.Module.Assembly is EcmaAssembly asm && asm.Assembly.GetName().Name == "System.Private.CoreLib")
                         return false;
-
 
                     return ShouldIncludeEntityByDisplayName(type);
                 }
@@ -2059,7 +2062,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var missingInLinked = originalTypes.Keys.Except(linkedTypes.Keys);
 
             if (missingInLinked.Any())
+            {
                 yield return $"Expected all types to exist in the linked assembly {assemblyName}, but one or more were missing";
+                yield break;
+            }
 
             foreach (var originalKvp in originalTypes)
             {
