@@ -4,6 +4,12 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <XunitShowProgress>true</XunitShowProgress>
+    <!-- 
+    <PublishTrimmed>true</PublishTrimmed>
+    -->
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <NoWarn>IL2091</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
