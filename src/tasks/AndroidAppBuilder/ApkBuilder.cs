@@ -391,45 +391,21 @@ public partial class ApkBuilder
             cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
             File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
-            File.WriteAllText(Path.Combine(OutputDir, monodroidSource), Utils.GetEmbeddedResource(monodroidSource));
+
+            string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
+            if (IsCoreCLR)
+            {
+                monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
+            }
+            File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
 
             AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
             project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
             project.BuildCMake(OutputDir, StripDebugSymbols);
+            abi = project.Abi;
 
             // TODO: https://github.com/dotnet/runtime/issues/115717
-
-            abi = project.Abi;
         }
-
-        if (ForceFullAOT)
-        {
-            defines.AppendLine("add_definitions(-DFULL_AOT=1)");
-        }
-
-        if (!string.IsNullOrEmpty(DiagnosticPorts))
-        {
-            defines.AppendLine("add_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
-        }
-
-        cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
-
-        File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
-
-        string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
-        if (IsCoreCLR)
-        {
-            monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
-        }
-        File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
-
-        AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
-        project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
-        project.BuildCMake(OutputDir, StripDebugSymbols);
-
-        // TODO: https://github.com/dotnet/runtime/issues/115717
-
-        string abi = project.Abi;
 
         // 2. Compile Java files
 
