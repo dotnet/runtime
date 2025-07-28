@@ -93,10 +93,10 @@ class TestHardwareIntrinsics
     {
         public static bool IsPopcntSupported = Popcnt.IsSupported;
     }
-    
+
     class Complex
     {
-        public static bool IsAvx512FSupported = Avx512F.IsSupported;
+        public static bool IsX86SerializeSupported = X86Serialize.IsSupported;
     }
 
     public static void Run()
@@ -106,7 +106,7 @@ class TestHardwareIntrinsics
 
         Assert.IsPreinitialized(typeof(Simple2));
         Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
-        
+
         Assert.IsPreinitialized(typeof(Simple3));
         Assert.AreEqual(Popcnt.IsSupported, Simple3.IsPopcntSupported);
 
@@ -114,7 +114,7 @@ class TestHardwareIntrinsics
             Assert.IsLazyInitialized(typeof(Complex));
         else
             Assert.IsPreinitialized(typeof(Complex));
-        Assert.AreEqual(Avx512F.IsSupported, Complex.IsAvx512FSupported);
+        Assert.AreEqual(X86Serialize.IsSupported, Complex.IsX86SerializeSupported);
     }
 }
 
