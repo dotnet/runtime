@@ -366,6 +366,17 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return _dataTargetDelegates.ReadFromTarget(address, buffer) >= 0;
     }
 
+    public override void WriteBuffer(ulong address, Span<byte> buffer)
+    {
+        if (!TryWriteBuffer(address, buffer))
+            throw new InvalidOperationException($"Failed to write {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
+    private bool TryWriteBuffer(ulong address, Span<byte> buffer)
+    {
+        return _dataTargetDelegates.WriteToTarget(address, buffer) >= 0;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsSigned<T>() where T : struct, INumberBase<T>, IMinMaxValue<T>
     {

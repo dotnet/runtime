@@ -73,6 +73,13 @@ public abstract class Target
     public abstract void ReadBuffer(ulong address, Span<byte> buffer);
 
     /// <summary>
+    /// Write some bytes to the target
+    /// </summary>
+    /// <param name="address">The address where to start writing</param>
+    /// <param name="buffer">Source of the bytes to write, the number of bytes to write is the span length</param>
+    public abstract void WriteBuffer(ulong address, Span<byte> buffer);
+
+    /// <summary>
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
