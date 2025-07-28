@@ -276,8 +276,8 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: false))
-                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: false))
+                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: true))
+                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: true))
                 {
                     publicKey.ExportMLDsaPublicKey(pk1.Span);
                     privateKey.ExportMLDsaPublicKey(pk2.Span);

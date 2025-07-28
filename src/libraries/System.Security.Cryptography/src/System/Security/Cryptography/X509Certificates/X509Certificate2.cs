@@ -865,8 +865,8 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.EncapsulationKeySizeInBytes, skipClear: false))
-                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.EncapsulationKeySizeInBytes, skipClear: false))
+                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.EncapsulationKeySizeInBytes, skipClear: true))
+                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.EncapsulationKeySizeInBytes, skipClear: true))
                 {
                     publicKey.ExportEncapsulationKey(pk1.Span);
                     privateKey.ExportEncapsulationKey(pk2.Span);
@@ -970,8 +970,8 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: false))
-                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: false))
+                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: true))
+                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: true))
                 {
                     publicKey.ExportMLDsaPublicKey(pk1.Span);
                     privateKey.ExportMLDsaPublicKey(pk2.Span);
@@ -1066,16 +1066,19 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: false))
-                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: false))
-                {
-                    publicKey.ExportSlhDsaPublicKey(pk1.Span);
-                    privateKey.ExportSlhDsaPublicKey(pk2.Span);
+                const int MaxPublicKeySize = 64;
+                Debug.Assert(publicKey.Algorithm.PublicKeySizeInBytes <= MaxPublicKeySize);
 
-                    if (!pk1.Span.SequenceEqual(pk2.Span))
-                    {
-                        throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
-                    }
+                Span<byte> publicKeysBuffer = stackalloc byte[MaxPublicKeySize * 2];
+                Span<byte> pk1 = publicKeysBuffer.Slice(0, publicKey.Algorithm.PublicKeySizeInBytes);
+                Span<byte> pk2 = publicKeysBuffer.Slice(pk1.Length, publicKey.Algorithm.PublicKeySizeInBytes);
+
+                publicKey.ExportSlhDsaPublicKey(pk1);
+                privateKey.ExportSlhDsaPublicKey(pk2);
+
+                if (!pk1.SequenceEqual(pk2))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
             }
 
