@@ -27865,6 +27865,8 @@ GenTree* Compiler::gtNewSimdWithElementNode(
     assert(varTypeIsArithmetic(op3));
 
 #if defined(TARGET_XARCH)
+    assert(!varTypeIsLong(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_X86Base_X64));
+
     if (simdSize == 64)
     {
         hwIntrinsicID = NI_Vector512_WithElement;

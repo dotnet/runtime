@@ -3969,6 +3969,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
 
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_X86Base_X64))
+                {
+                    return nullptr;
+                }
+            }
+
             GenTree* valueOp  = impPopStack().val;
             GenTree* indexOp  = impPopStack().val;
             GenTree* vectorOp = impSIMDPopStack();
