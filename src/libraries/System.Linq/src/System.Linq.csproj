@@ -36,6 +36,7 @@
     <Compile Include="System\Linq\InfiniteSequence.cs" />
     <Compile Include="System\Linq\Intersect.cs" />
     <Compile Include="System\Linq\Iterator.cs" />
+    <Compile Include="System\Linq\Iterator.SizeOpt.cs" />
     <Compile Include="System\Linq\Iterator.SpeedOpt.cs" />
     <Compile Include="System\Linq\Join.cs" />
     <Compile Include="System\Linq\Last.cs" />
@@ -70,7 +71,6 @@
     <Compile Include="System\Linq\Single.cs" />
     <Compile Include="System\Linq\SingleLinkedNode.cs" />
     <Compile Include="System\Linq\Skip.cs" />
-    <Compile Include="System\Linq\Skip.SizeOpt.cs" />
     <Compile Include="System\Linq\Skip.SpeedOpt.cs" />
     <Compile Include="System\Linq\SkipTake.SpeedOpt.cs" />
     <Compile Include="System\Linq\Sum.cs" />

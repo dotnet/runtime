@@ -35,7 +35,7 @@ namespace System.Linq
                 return iterator.Skip(count) ?? Empty<TSource>();
             }
 
-            return IsSizeOptimized ? SizeOptimizedSkipIterator(source, count) : SpeedOptimizedSkipIterator(source, count);
+            return SpeedOptimizedSkipIterator(source, count);
         }
 
         public static IEnumerable<TSource> SkipWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
