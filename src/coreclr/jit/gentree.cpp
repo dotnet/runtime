@@ -21758,19 +21758,19 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
         switch (simdTargetBaseType)
         {
             case TYP_INT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation;
                 break;
 
             case TYP_UINT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation;
                 break;
 
             case TYP_LONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation;
                 break;
 
             case TYP_ULONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncationSaturation;
+                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation;
                 break;
 
             default:

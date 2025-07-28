@@ -3472,10 +3472,10 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512_X64_ConvertToInt64:
         case NI_AVX512_X64_ConvertToUInt64:
         case NI_AVX512_X64_ConvertToUInt64WithTruncation:
-        case NI_AVX10v2_ConvertToInt32WithTruncationSaturation:
-        case NI_AVX10v2_ConvertToUInt32WithTruncationSaturation:
-        case NI_AVX10v2_X64_ConvertToInt64WithTruncationSaturation:
-        case NI_AVX10v2_X64_ConvertToUInt64WithTruncationSaturation:
+        case NI_AVX10v2_ConvertToInt32WithTruncatedSaturation:
+        case NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation:
+        case NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation:
+        case NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation:
         {
             assert(baseType == TYP_DOUBLE || baseType == TYP_FLOAT);
             emitAttr attr = emitTypeSize(targetType);

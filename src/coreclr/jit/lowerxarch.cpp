@@ -864,16 +864,16 @@ void Lowering::LowerCast(GenTree* tree)
             switch (dstType)
             {
                 case TYP_INT:
-                    intrinsicId = NI_AVX10v2_ConvertToInt32WithTruncationSaturation;
+                    intrinsicId = NI_AVX10v2_ConvertToInt32WithTruncatedSaturation;
                     break;
                 case TYP_UINT:
-                    intrinsicId = NI_AVX10v2_ConvertToUInt32WithTruncationSaturation;
+                    intrinsicId = NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation;
                     break;
                 case TYP_LONG:
-                    intrinsicId = NI_AVX10v2_X64_ConvertToInt64WithTruncationSaturation;
+                    intrinsicId = NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation;
                     break;
                 case TYP_ULONG:
-                    intrinsicId = NI_AVX10v2_X64_ConvertToUInt64WithTruncationSaturation;
+                    intrinsicId = NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation;
                     break;
                 default:
                     unreached();
