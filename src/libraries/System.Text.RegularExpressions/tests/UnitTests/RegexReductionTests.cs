@@ -306,6 +306,12 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("abcd|aefg", "a(?>bcd|efg)")]
         [InlineData("abcd|abc|ab|a", "a(?>bcd|bc|b|)")]
         [InlineData("^abcd|^abce", "^(?:abc[de])")]
+        [InlineData("abc|", "(?:abc)?")]
+        [InlineData("a|", "a?")]
+        [InlineData("(?:abc|)d", "(?>(?:abc)?)d")]
+        [InlineData("(?:a|)a", "a{1,2}")]
+        [InlineData("(?:a|)a*", "a*")]
+        [InlineData("a+(?:a|)", "a+")]
         // [InlineData("abcde|abcdef", "abcde(?>|f)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("abcdef|abcde", "abcde(?>f|)")]
         [InlineData("abcdef|abcdeg|abcdeh|abcdei|abcdej|abcdek|abcdel", "abcde[f-l]")]
