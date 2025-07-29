@@ -22,7 +22,6 @@ Revision History:
 
 #include "pal/corunix.hpp"
 #include "pal/thread.hpp"
-#include "pal/mutex.hpp"
 #include "pal/seh.hpp"
 #include "pal/init.h"
 #include "pal/dbgmsg.h"
@@ -50,7 +49,53 @@ CONST BYTE WAKEUPCODE=0x2A;
 suspension mutex or spinlock. The downside is that it restricts us to only
 performing one suspension or resumption in the PAL at a time. */
 #ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
-static LONG g_ssSuspensionLock = 0;
+
+#define SYNCSPINLOCK_F_ASYMMETRIC  1
+
+#define SPINLOCKInit(lock) (*(lock) = 0)
+
+namespace
+{
+    LONG g_ssSuspensionLock = 0;
+
+    /* Basic spinlock implementation */
+    void SPINLOCKAcquire (LONG * lock, unsigned int flags)
+    {
+        size_t loop_seed = 1, loop_count = 0;
+
+        if (flags & SYNCSPINLOCK_F_ASYMMETRIC)
+        {
+            loop_seed = ((size_t)pthread_self() % 10) + 1;
+        }
+        while (InterlockedCompareExchange(lock, 1, 0))
+        {
+            if (!(flags & SYNCSPINLOCK_F_ASYMMETRIC) || (++loop_count % loop_seed))
+            {
+#if PAL_IGNORE_NORMAL_THREAD_PRIORITY
+                struct timespec tsSleepTime;
+                tsSleepTime.tv_sec = 0;
+                tsSleepTime.tv_nsec = 1;
+                nanosleep(&tsSleepTime, NULL);
+#else
+                sched_yield();
+#endif
+            }
+        }
+
+    }
+
+    void SPINLOCKRelease (LONG * lock)
+    {
+        VolatileStore(lock, 0);
+    }
+
+    DWORD SPINLOCKTryAcquire (LONG * lock)
+    {
+        return InterlockedCompareExchange(lock, 1, 0);
+        // only returns 0 or 1.
+    }
+
+}
 #endif
 
 /*++

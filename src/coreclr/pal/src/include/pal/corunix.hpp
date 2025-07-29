@@ -159,7 +159,6 @@ namespace CorUnix
     {
         otiAutoResetEvent = 0,
         otiManualResetEvent,
-        otiMutex,
         otiSemaphore,
         otiFile,
         otiFileMapping,
