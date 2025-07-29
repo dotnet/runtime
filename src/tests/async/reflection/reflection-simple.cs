@@ -44,7 +44,7 @@ public class Async2Reflection
         return 90;
     }
 
-    private static async Task ()
+    private static async Task FooTask()
     {
         await Task.Yield();
     }
