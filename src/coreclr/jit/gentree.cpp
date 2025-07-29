@@ -32109,6 +32109,15 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     return true;
 }
 
+//------------------------------------------------------------------------
+// gtFoldExprHWIntrinsic: Attempt to fold a HWIntrinsic
+//
+// Arguments:
+//    tree - HWIntrinsic to fold
+//
+// Return Value:
+//    folded expression if it could be folded, else the original tree
+//
 #if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
