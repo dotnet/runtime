@@ -151,7 +151,7 @@ namespace Internal.Cryptography.Pal.Windows
                             if (typeof(T) == typeof(DSA))
                                 return (T)(object)new DSACng(cngKey);
                             if (typeof(T) == typeof(MLDsa))
-                                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
+                                return (T)(object)new MLDsaCng(cngKey);
                             if (typeof(T) == typeof(SlhDsa))
                                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
 

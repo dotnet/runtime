@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
         public static void SignCmsUsingExplicitMLDsaKey()
         {
-            using (X509Certificate2 cert = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
             using (MLDsa key = cert.GetMLDsaPrivateKey())
             {
                 VerifyWithExplicitPrivateKey(cert, key);
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         {
             using (X509Certificate2 cert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
             using (ECDsa key = cert.GetECDsaPrivateKey())
-            using (X509Certificate2 counterSignerCert = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 counterSignerCert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
             using (MLDsa counterSignerKey = counterSignerCert.GetMLDsaPrivateKey())
             {
                 VerifyCounterSignatureWithExplicitPrivateKey(cert, key, counterSignerCert, counterSignerKey);
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
         public static void CounterSignCmsUsingExplicitMLDsaKeyForFirstSignerAndRSAForCounterSignature()
         {
-            using (X509Certificate2 cert = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
             using (MLDsa key = cert.GetMLDsaPrivateKey())
             using (X509Certificate2 counterSignerCert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
             using (RSA counterSignerKey = counterSignerCert.GetRSAPrivateKey())
@@ -259,7 +259,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void SignCmsUsingECDsaCertAndMLDsaKeyThrows()
         {
             byte[] content = { 9, 8, 7, 6, 5 };
@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void SignCmsUsingMLDsaCertAndRSAKeyThrows()
         {
             byte[] content = { 9, 8, 7, 6, 5 };
@@ -283,7 +283,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             ContentInfo contentInfo = new ContentInfo(content);
             SignedCms cms = new SignedCms(contentInfo, detached: false);
 
-            using (X509Certificate2 cert = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].GetCertificate())
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].GetCertificate())
             using (RSA key = RSA.Create())
             {
                 CmsSigner signer = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key);
@@ -374,7 +374,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void SignCmsUsingMLDsaCertWithNotMatchingKeyThrows()
         {
             byte[] content = { 9, 8, 7, 6, 5 };
@@ -382,7 +382,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             ContentInfo contentInfo = new ContentInfo(content);
             SignedCms cms = new SignedCms(contentInfo, detached: false);
 
-            using (X509Certificate2 cert = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].GetCertificate())
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].GetCertificate())
             using (MLDsa key = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65))
             {
                 CmsSigner signer = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key);
@@ -637,23 +637,20 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void AddSigner_MLDsa_EphemeralKey()
         {
             using (MLDsa MLDsa = MLDsa.ImportMLDsaPrivateSeed(MLDsaAlgorithm.MLDsa65, MLDsaTestsData.IetfMLDsa65.PrivateSeed))
-            using (X509Certificate2 publicCertificate = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].GetCertificate())
-            using (X509Certificate2 certificateWithKey = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey(exportable: true))
+            using (X509Certificate2 publicCertificate = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].GetCertificate())
+            using (X509Certificate2 certWithEphemeralKey = publicCertificate.CopyWithPrivateKey(MLDsa))
             {
-                using (X509Certificate2 certWithEphemeralKey = publicCertificate.CopyWithPrivateKey(MLDsa))
+                ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+                SignedCms cms = new SignedCms(content, false);
+                CmsSigner signer = new CmsSigner(certWithEphemeralKey)
                 {
-                    ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
-                    SignedCms cms = new SignedCms(content, false);
-                    CmsSigner signer = new CmsSigner(certWithEphemeralKey)
-                    {
-                        IncludeOption = X509IncludeOption.EndCertOnly
-                    };
-                    cms.ComputeSignature(signer);
-                }
+                    IncludeOption = X509IncludeOption.EndCertOnly
+                };
+                cms.ComputeSignature(signer);
             }
         }
 
@@ -662,18 +659,15 @@ namespace System.Security.Cryptography.Pkcs.Tests
         {
             using (SlhDsa slhDsa = SlhDsa.ImportSlhDsaSecretKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
             using (X509Certificate2 publicCertificate = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
-            using (X509Certificate2 certificateWithKey = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey(exportable: true))
+            using (X509Certificate2 certWithEphemeralKey = publicCertificate.CopyWithPrivateKey(slhDsa))
             {
-                using (X509Certificate2 certWithEphemeralKey = publicCertificate.CopyWithPrivateKey(slhDsa))
+                ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+                SignedCms cms = new SignedCms(content, false);
+                CmsSigner signer = new CmsSigner(certWithEphemeralKey)
                 {
-                    ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
-                    SignedCms cms = new SignedCms(content, false);
-                    CmsSigner signer = new CmsSigner(certWithEphemeralKey)
-                    {
-                        IncludeOption = X509IncludeOption.EndCertOnly
-                    };
-                    cms.ComputeSignature(signer);
-                }
+                    IncludeOption = X509IncludeOption.EndCertOnly
+                };
+                cms.ComputeSignature(signer);
             }
         }
 
@@ -824,14 +818,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
             ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
             SignedCms cms = new SignedCms(content);
 
-            using (X509Certificate2 cert = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
             {
                 CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert, null, RSASignaturePadding.Pss);
                 Assert.ThrowsAny<CryptographicException>(() => cms.ComputeSignature(signer));
             }
         }
 
-        [ConditionalTheory(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [InlineData(Oids.RsaPkcs1Sha256)]
         public static void ComputeSignature_MLDsa_ThrowsWithUnsupportedHash(string hashAlgorithm)
         {
@@ -844,7 +838,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     MLDsaTestsData.IetfMLDsa65.PrivateSeed);
 
             using (MLDsa)
-            using (X509Certificate2 cert = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].GetCertificate())
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].GetCertificate())
             {
                 CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
                 signer.DigestAlgorithm = new Oid(hashAlgorithm, null);
@@ -1036,7 +1030,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms(content);
             byte[] cmsBytes;
 
-            using (X509Certificate2 cert = Certificates.MLDsaIetf_Seed[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
             {
                 CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
                 signer.DigestAlgorithm = new Oid(hashAlgorithm, null);

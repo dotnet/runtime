@@ -816,32 +816,13 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         [ConditionalTheory(nameof(MLDsaAndRsaSha1SignaturesSupported))]
         [MemberData(nameof(AddCounterSignerMLDsaTestData))]
-        public static void AddCounterSigner_MLDsa_Seed(SubjectIdentifierType identifierType, string digestOid, MLDsaAlgorithm algorithm)
-        {
-            AddCounterSigner_MLDsa(identifierType, digestOid, Certificates.MLDsaIetf_Seed[algorithm]);
-        }
-
-        [ConditionalTheory(nameof(MLDsaAndRsaSha1SignaturesSupported))]
-        [MemberData(nameof(AddCounterSignerMLDsaTestData))]
-        public static void AddCounterSigner_MLDsa_Expanded(SubjectIdentifierType identifierType, string digestOid, MLDsaAlgorithm algorithm)
-        {
-            AddCounterSigner_MLDsa(identifierType, digestOid, Certificates.MLDsaIetf_Expanded[algorithm]);
-        }
-
-        [ConditionalTheory(nameof(MLDsaAndRsaSha1SignaturesSupported))]
-        [MemberData(nameof(AddCounterSignerMLDsaTestData))]
-        public static void AddCounterSigner_MLDsa_Both(SubjectIdentifierType identifierType, string digestOid, MLDsaAlgorithm algorithm)
-        {
-            AddCounterSigner_MLDsa(identifierType, digestOid, Certificates.MLDsaIetf_Both[algorithm]);
-        }
-
-        private static void AddCounterSigner_MLDsa(SubjectIdentifierType identifierType, string digestOid, CertLoader loader)
+        public static void AddCounterSigner_MLDsa(SubjectIdentifierType identifierType, string digestOid, MLDsaAlgorithm algorithm)
         {
             AssertAddCounterSigner(
                 identifierType,
                 signer =>
                 {
-                    using (X509Certificate2 signerCert = loader.TryGetCertificateWithPrivateKey())
+                    using (X509Certificate2 signerCert = Certificates.MLDsaIetf[algorithm].TryGetCertificateWithPrivateKey())
                     {
                         CmsSigner counterSigner = new CmsSigner(identifierType, signerCert);
                         counterSigner.IncludeOption = X509IncludeOption.EndCertOnly;

@@ -111,7 +111,6 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-
 #if NET || NETSTANDARD2_1
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public
@@ -122,7 +121,6 @@ namespace System.Security.Cryptography.Pkcs
             : this(signerIdentifierType, certificate, privateKey, signaturePadding: null)
         {
         }
-
 
 #if NET || NETSTANDARD2_1
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
@@ -383,36 +381,8 @@ namespace System.Security.Cryptography.Pkcs
 
             if (SignerIdentifierType == SubjectIdentifierType.NoSignature)
             {
-                // The behavior of this scenario should match Windows which currently does not
-                // implement PQC. So we do a best effort determination of whether the algorithm
-                // is a pure algorithm and throw if so. This is subject to change once Windows
-                // implements PQC.
-                string? keyAlgorithm = null;
-                if (Certificate != null)
-                {
-                    try
-                    {
-                        keyAlgorithm = Certificate.GetKeyAlgorithm();
-                    }
-                    catch (CryptographicException)
-                    {
-                    }
-                }
-
-                if (keyAlgorithm != null)
-                {
-                    CmsSignature? processor = CmsSignature.ResolveAndVerifyKeyType(keyAlgorithm, _privateKey, SignaturePadding);
-                    if (processor?.NeedsHashedMessage == false)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Cms_CertificateDoesNotSupportNoSignature);
-                    }
-                }
-
-                ReadOnlyMemory<byte> messageToSign =
-                    GetMessageToSign(shouldHash: true, data, contentTypeOid, out newSignerInfo.SignedAttributes);
-
                 signatureAlgorithm = Oids.NoSignature;
-                signatureValue = messageToSign;
+                signatureValue = GetMessageToSign(shouldHash: true, data, contentTypeOid, out newSignerInfo.SignedAttributes);
                 signed = true;
             }
             else

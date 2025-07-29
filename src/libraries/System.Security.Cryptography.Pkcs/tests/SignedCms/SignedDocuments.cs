@@ -1823,7 +1823,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
             "77A5BF5851350C96F01142696CC1391632CB95C3370220017FD4D9329F00" +
             "1EC74210CD34CAEE3878B2302602DB7930347E104679734291").HexToByteArray();
 
-
         // produced with
         // echo -n "Hello World!" | openssl cms -sign -signer ietfcert.pfx -md sha256 -nodetach -outform DER
         internal static readonly byte[] MLDsa65_Sha256_SignedDocument = Convert.FromBase64String(

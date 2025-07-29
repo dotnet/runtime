@@ -39,25 +39,11 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static readonly CertLoader SlhDsaSha2_128s_Ietf = new CertLoaderFromRawData(SlhDsaTestData.IetfSlhDsaSha2_128sCertificate, SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx, "PLACEHOLDER");
         public static readonly CertLoader[] SlhDsaGeneratedCerts = [..SlhDsaTestData.GeneratedKeyInfosRaw.Select(info => new CertLoaderFromRawData(info.Certificate, info.SelfSignedCertificatePfx, info.EncryptionPassword))];
 
-        public static readonly Dictionary<MLDsaAlgorithm, CertLoader> MLDsaIetf_Seed = new()
+        public static readonly Dictionary<MLDsaAlgorithm, CertLoader> MLDsaIetf = new()
         {
             { MLDsaAlgorithm.MLDsa44, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa44.Certificate, MLDsaTestsData.IetfMLDsa44.Pfx_Seed, "PLACEHOLDER") },
             { MLDsaAlgorithm.MLDsa65, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa65.Certificate, MLDsaTestsData.IetfMLDsa65.Pfx_Seed, "PLACEHOLDER") },
             { MLDsaAlgorithm.MLDsa87, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa87.Certificate, MLDsaTestsData.IetfMLDsa87.Pfx_Seed, "PLACEHOLDER") },
-        };
-
-        public static readonly Dictionary<MLDsaAlgorithm, CertLoader> MLDsaIetf_Expanded = new()
-        {
-            { MLDsaAlgorithm.MLDsa44, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa44.Certificate, MLDsaTestsData.IetfMLDsa44.Pfx_Expanded, "PLACEHOLDER") },
-            { MLDsaAlgorithm.MLDsa65, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa65.Certificate, MLDsaTestsData.IetfMLDsa65.Pfx_Expanded, "PLACEHOLDER") },
-            { MLDsaAlgorithm.MLDsa87, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa87.Certificate, MLDsaTestsData.IetfMLDsa87.Pfx_Expanded, "PLACEHOLDER") },
-        };
-
-        public static readonly Dictionary<MLDsaAlgorithm, CertLoader> MLDsaIetf_Both = new()
-        {
-            { MLDsaAlgorithm.MLDsa44, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa44.Certificate, MLDsaTestsData.IetfMLDsa44.Pfx_Both, "PLACEHOLDER") },
-            { MLDsaAlgorithm.MLDsa65, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa65.Certificate, MLDsaTestsData.IetfMLDsa65.Pfx_Both, "PLACEHOLDER") },
-            { MLDsaAlgorithm.MLDsa87, new CertLoaderFromRawData(MLDsaTestsData.IetfMLDsa87.Certificate, MLDsaTestsData.IetfMLDsa87.Pfx_Both, "PLACEHOLDER") },
         };
 
         // Note: the raw data is its own (nested) class to avoid problems with static field initialization ordering.
