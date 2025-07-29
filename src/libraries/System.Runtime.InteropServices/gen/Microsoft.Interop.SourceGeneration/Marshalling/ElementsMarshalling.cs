@@ -283,7 +283,7 @@ namespace Microsoft.Interop
             statements.Add(GenerateContentsMarshallingStatement(
                     context,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context)),
+                        IdentifierName(managedSpanIdentifier),
                         IdentifierName("Length")),
                     elementMarshaller,
                     StubIdentifierContext.Stage.Marshal));
@@ -310,7 +310,7 @@ namespace Microsoft.Interop
                 GenerateContentsMarshallingStatement(
                     context,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context)),
+                        IdentifierName(nativeSpanIdentifier),
                         IdentifierName("Length")),
                     elementMarshaller,
                     StubIdentifierContext.Stage.UnmarshalCapture, StubIdentifierContext.Stage.Unmarshal));
@@ -357,7 +357,7 @@ namespace Microsoft.Interop
                 GenerateContentsMarshallingStatement(
                     context,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context)),
+                        IdentifierName(managedSpanIdentifier),
                         IdentifierName("Length")),
                     elementMarshaller,
                     StubIdentifierContext.Stage.UnmarshalCapture, StubIdentifierContext.Stage.Unmarshal));
@@ -463,7 +463,7 @@ namespace Microsoft.Interop
                 GenerateContentsMarshallingStatement(
                     context,
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(MarshallerHelpers.GetManagedSpanIdentifier(CollectionSource.TypeInfo, context)),
+                        IdentifierName(nativeSpanIdentifier),
                         IdentifierName("Length")),
                     new FreeAlwaysOwnedOriginalValueGenerator(elementMarshaller),
                     stagesToGenerate));
