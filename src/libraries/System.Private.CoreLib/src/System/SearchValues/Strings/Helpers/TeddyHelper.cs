@@ -208,7 +208,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Read two <see cref="Vector128{ushort}" /> and concatenate their lower bytes together into a single <see cref="Vector128{byte}" />.
+        /// Read two <see cref="Vector128&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector128&lt;Byte&gt;" />.
         /// </summary>
         /// <remarks>
         /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
@@ -238,7 +238,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Read two <see cref="Vector256{ushort}" /> and concatenate their lower bytes together into a single <see cref="Vector256{byte}" />.
+        /// Read two <see cref="Vector256&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector256&lt;Byte&gt;" />.
         /// </summary>
         /// <remarks>
         /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
@@ -256,7 +256,7 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Read two <see cref="Vector512{ushort}" /> and concatenate their lower bytes together into a single <see cref="Vector512{byte}" />.
+        /// Read two <see cref="Vector512&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector512&lt;Byte&gt;" />.
         /// </summary>
         /// <remarks>
         /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
