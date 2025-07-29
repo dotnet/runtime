@@ -6140,30 +6140,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_I2) LDFLD(gint32, gint16); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_U2) LDFLD(gint32, guint16); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_I4) LDFLD(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_I8) do {
-    MonoObject* o = (*(MonoObject**)(locals + (ip[2]))); do {
-        if ((!(o))) do {
-            interp_throw_ex_general((interp_get_exception_null_reference(frame, ip)), context, frame, (ip), 0); goto resume;
-        } while (0);
-    } while (0); 
-    if (0) 
-	    memcpy(locals + ip[1], (char*)o + ip[3], sizeof(gint64)); 
-    else 
-	    {
-	    MH_LOG("MINT_LDFLD_I8_UNALIGNED *(%p + %d) = %p", (void*)o, ip[3], *(gint64*)((char*)o + ip[3]));
-	    (*(gint64*)(locals + (ip[1]))) = *(gint64*)((char*)o + ip[3]); 
-	    ip += 4;
-	    }
-} while (0); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_I8) LDFLD(gint64, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_R4) LDFLD(float, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_R8) LDFLD(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_O)  do {
-    MonoObject* o = (*(MonoObject**)(locals + (ip[2]))); do {
-        if ((!(o))) do {
-            interp_throw_ex_general((interp_get_exception_null_reference(frame, ip)), context, frame, (ip), 0); goto resume;
-        } while (0);
-    } while (0); if (0) memcpy(locals + ip[1], (char*)o + ip[3], sizeof(gpointer)); else (*(gpointer*)(locals + (ip[1]))) = *(gpointer*)((char*)o + ip[3]); ip += 4;
-} while (0); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLD_O)  LDFLD(gpointer, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_I8_UNALIGNED) LDFLD_UNALIGNED(gint64, gint64, TRUE); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_R8_UNALIGNED) LDFLD_UNALIGNED(double, double, TRUE); MINT_IN_BREAK;
 
@@ -6195,13 +6175,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_I8) STFLD(gint64, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R4) STFLD(float, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R8) STFLD(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STFLD_O) {
-			MonoObject *o = LOCAL_VAR (ip [1], MonoObject*);
-			NULL_CHECK (o);
-			mono_gc_wbarrier_set_field_internal (o, (char*)o + ip [3], LOCAL_VAR (ip [2], MonoObject*));
-			ip += 4;
-			MINT_IN_BREAK;
-		}
+		MINT_IN_CASE(MINT_STFLD_O) 
 		MINT_IN_CASE(MINT_STFLD_I8_UNALIGNED) STFLD_UNALIGNED(gint64, gint64, TRUE); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R8_UNALIGNED) STFLD_UNALIGNED(double, double, TRUE); MINT_IN_BREAK;
 
