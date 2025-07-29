@@ -431,18 +431,13 @@
              Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\MLDsaImplementation.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaMuHash.cs"
-             Link="Common\System\Security\Cryptography\MLDsaMuHash.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\ErrorCode.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\ErrorCode.cs" />
 
     <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
-    <Compile Include="System\Security\Cryptography\Shake256.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETStandard'">
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs"
-             Link="Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertStoreHandle.cs"
@@ -477,16 +472,6 @@
              Link="Common\System\Security\Cryptography\SlhDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDuplicateHash.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"

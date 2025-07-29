@@ -102,12 +102,12 @@ namespace System.Security.Cryptography
                 static (key, encodedMessage, signature) => Interop.Crypto.MLDsaVerifyPreEncoded(key, encodedMessage, signature));
 
         /// <inheritdoc />
-        protected override void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
-            Interop.Crypto.MLDsaSignExternalMu(_key, mu, destination);
+        protected override void SignMuCore(ReadOnlySpan<byte> externalMu, Span<byte> destination) =>
+            Interop.Crypto.MLDsaSignExternalMu(_key, externalMu, destination);
 
         /// <inheritdoc />
-        protected override bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
-            Interop.Crypto.MLDsaVerifyExternalMu(_key, mu, signature);
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature) =>
+            Interop.Crypto.MLDsaVerifyExternalMu(_key, externalMu, signature);
 
         /// <inheritdoc />
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>

@@ -42,10 +42,10 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => mldsa.SignPreHash(mu, signature, HashInfo.Sha512.Oid));
             Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyPreHash(mu, signature, HashInfo.Sha512.Oid));
             Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyPreHash(new ReadOnlySpan<byte>(mu), signature, HashInfo.Sha512.Oid));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.SignExternalMu(mu));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.SignExternalMu(new ReadOnlySpan<byte>(mu)));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyExternalMu(mu, signature));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyExternalMu(new ReadOnlySpan<byte>(mu), signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignMu(mu));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.SignMu(new ReadOnlySpan<byte>(mu)));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyMu(mu, signature));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.VerifyMu(new ReadOnlySpan<byte>(mu), signature));
 
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed());
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed(new byte[mldsa.Algorithm.PrivateSeedSizeInBytes]));
@@ -69,10 +69,6 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfo());
             Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportSubjectPublicKeyInfo(bigBuffer, out _));
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportSubjectPublicKeyInfoPem());
-
-            Assert.Throws<ObjectDisposedException>(() => mldsa.OpenExternalMuHash());
-            Assert.Throws<ObjectDisposedException>(() => mldsa.OpenExternalMuHash(mu));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.OpenExternalMuHash(new ReadOnlySpan<byte>(mu)));
 
             // Doesn't throw:
             Assert.NotNull(mldsa.Algorithm);

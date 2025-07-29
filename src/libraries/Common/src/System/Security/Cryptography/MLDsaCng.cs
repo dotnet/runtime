@@ -49,11 +49,11 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc />
-        protected override void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
+        protected override void SignMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
         /// <inheritdoc />
-        protected override bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException();
 
         private static MLDsaAlgorithm AlgorithmFromHandleWithPlatformCheck(CngKey key, out CngKey duplicateKey)

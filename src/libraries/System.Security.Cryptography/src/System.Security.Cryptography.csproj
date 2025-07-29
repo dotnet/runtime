@@ -416,8 +416,6 @@
              Link="Common\System\Security\Cryptography\MLDsaAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.cs"
              Link="Common\System\Security\Cryptography\MLDsaCng.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaMuHash.cs"
-             Link="Common\System\Security\Cryptography\MLDsaMuHash.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaPkcs8.cs"
              Link="Common\System\Security\Cryptography\MLDsaPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaImplementation.cs"

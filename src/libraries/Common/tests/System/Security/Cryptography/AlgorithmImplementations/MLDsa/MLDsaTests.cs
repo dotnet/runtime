@@ -85,9 +85,9 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("signature", () => mldsa.VerifyPreHash(hash, null, null));
             AssertExtensions.Throws<ArgumentNullException>("hashAlgorithmOid", () => mldsa.VerifyPreHash(hash, signature, null));
 
-            AssertExtensions.Throws<ArgumentNullException>("mu", () => mldsa.SignExternalMu(null));
-            AssertExtensions.Throws<ArgumentNullException>("mu", () => mldsa.VerifyExternalMu(null, null));
-            AssertExtensions.Throws<ArgumentNullException>("signature", () => mldsa.VerifyExternalMu(Array.Empty<byte>(), null));
+            AssertExtensions.Throws<ArgumentNullException>("externalMu", () => mldsa.SignMu(null));
+            AssertExtensions.Throws<ArgumentNullException>("externalMu", () => mldsa.VerifyMu(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("signature", () => mldsa.VerifyMu(Array.Empty<byte>(), null));
 
             AssertExtensions.Throws<ArgumentNullException>("password", () => mldsa.ExportEncryptedPkcs8PrivateKey((string)null, pbeParameters));
             AssertExtensions.Throws<ArgumentNullException>("password", () => mldsa.ExportEncryptedPkcs8PrivateKeyPem((string)null, pbeParameters));
@@ -136,8 +136,8 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPrivateSeed(new byte[privateSeedSize + 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, shortSignature, ReadOnlySpan<byte>.Empty));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, longSignature, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignExternalMu(mu, shortSignature));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignExternalMu(mu, longSignature));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignMu(mu, shortSignature));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignMu(mu, longSignature));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize], shortSignature, HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize], longSignature, HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
 
@@ -148,14 +148,12 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.VerifyData(Array.Empty<byte>(), signature, new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignPreHash(hash.AsSpan(), signature, HashInfo.Sha256.Oid, new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignPreHash(hash, HashInfo.Sha256.Oid, new byte[256]));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.OpenExternalMuHash(new byte[256]));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.OpenExternalMuHash(new ReadOnlySpan<byte>(new byte[256])));
 
             // Mu must be the correct size
-            AssertExtensions.Throws<ArgumentException>("mu", () => mldsa.SignExternalMu(shortMu));
-            AssertExtensions.Throws<ArgumentException>("mu", () => mldsa.SignExternalMu(longMu));
-            AssertExtensions.Throws<ArgumentException>("mu", () => mldsa.SignExternalMu(shortMu, signature));
-            AssertExtensions.Throws<ArgumentException>("mu", () => mldsa.SignExternalMu(longMu, signature));
+            AssertExtensions.Throws<ArgumentException>("externalMu", () => mldsa.SignMu(shortMu));
+            AssertExtensions.Throws<ArgumentException>("externalMu", () => mldsa.SignMu(longMu));
+            AssertExtensions.Throws<ArgumentException>("externalMu", () => mldsa.SignMu(shortMu, signature));
+            AssertExtensions.Throws<ArgumentException>("externalMu", () => mldsa.SignMu(longMu, signature));
 
             // Hash length of known OID hash algorithms must be correct
             AssertExtensions.Throws<CryptographicException>(() => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize - 1], new byte[signatureSize], HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
@@ -935,49 +933,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
-        public static void OpenExternalMu_DoesNotCheckForNullReturn(MLDsaAlgorithm algorithm)
-        {
-            using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
-            mldsa.OpenExternalMuHashHook = context => null!;
-
-            // It's not good if a derived type returns null, but since they shouldn't, we don't check.
-            Assert.Null(mldsa.OpenExternalMuHash());
-        }
-
-        [Theory]
-        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
-        public static void OpenExternalMu_GetsContext(MLDsaAlgorithm algorithm)
-        {
-            using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
-
-            mldsa.OpenExternalMuHashHook =
-                context =>
-                {
-                    AssertExtensions.Same(ReadOnlySpan<byte>.Empty, context);
-                    return null;
-                };
-
-            mldsa.OpenExternalMuHash()?.Dispose();
-            Assert.Equal(1, mldsa.OpenExternalMuHashCoreCallCount);
-
-            byte[] providedContext = [ 2, 0, 0, 1 ];
-
-            mldsa.OpenExternalMuHashHook =
-                context =>
-                {
-                    AssertExtensions.Same(providedContext, context);
-                    return null;
-                };
-
-            mldsa.OpenExternalMuHash(providedContext)?.Dispose();
-            Assert.Equal(2, mldsa.OpenExternalMuHashCoreCallCount);
-
-            mldsa.OpenExternalMuHash(new ReadOnlySpan<byte>(providedContext))?.Dispose();
-            Assert.Equal(3, mldsa.OpenExternalMuHashCoreCallCount);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public static void SignExternalMu_GetsMuAndDestination(MLDsaAlgorithm algorithm)
         {
             using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
@@ -986,13 +941,13 @@ namespace System.Security.Cryptography.Tests
             Memory<byte> signature = buffer.AsMemory(PaddingSize, signatureSize);
             byte[] mu = new byte[64];
 
-            mldsa.SignExternalMuHook = (mu, destination) => destination.Fill(0xAB);
+            mldsa.SignMuHook = (mu, destination) => destination.Fill(0xAB);
             mldsa.AddLengthAssertion();
             mldsa.AddDataBufferIsSameAssertion(mu);
             mldsa.AddDestinationBufferIsSameAssertion(signature);
 
-            mldsa.SignExternalMu(mu, signature.Span);
-            Assert.Equal(1, mldsa.SignExternalMuCoreCallCount);
+            mldsa.SignMu(mu, signature.Span);
+            Assert.Equal(1, mldsa.SignMuCoreCallCount);
 
             AssertExpectedFill(buffer, fillElement: 0xAB, paddingElement: 0x42, PaddingSize, signatureSize);
         }
@@ -1006,13 +961,13 @@ namespace System.Security.Cryptography.Tests
             Memory<byte> signature = buffer.AsMemory(PaddingSize, algorithm.SignatureSizeInBytes);
             byte[] mu = new byte[64];
 
-            mldsa.VerifyExternalMuHook = (mu, signature) => true;
+            mldsa.VerifyMuHook = (mu, signature) => true;
             mldsa.AddLengthAssertion();
             mldsa.AddDataBufferIsSameAssertion(mu);
             mldsa.AddDestinationBufferIsSameAssertion(signature);
 
-            mldsa.VerifyExternalMu(mu, signature.Span);
-            Assert.Equal(1, mldsa.VerifyExternalMuCoreCallCount);
+            mldsa.VerifyMu(mu, signature.Span);
+            Assert.Equal(1, mldsa.VerifyMuCoreCallCount);
         }
 
         [Theory]
@@ -1032,10 +987,10 @@ namespace System.Security.Cryptography.Tests
                     continue;
                 }
 
-                AssertExtensions.FalseExpression(mldsa.VerifyExternalMu(mu.AsSpan(0, i), signature));
+                AssertExtensions.FalseExpression(mldsa.VerifyMu(mu.AsSpan(0, i), signature));
             }
 
-            Assert.Equal(0, mldsa.VerifyExternalMuCoreCallCount);
+            Assert.Equal(0, mldsa.VerifyMuCoreCallCount);
         }
 
         [Theory]
@@ -1046,10 +1001,10 @@ namespace System.Security.Cryptography.Tests
             byte[] mu = new byte[64];
             byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes + 1];
 
-            AssertExtensions.FalseExpression(mldsa.VerifyExternalMu(mu, signature));
-            AssertExtensions.FalseExpression(mldsa.VerifyExternalMu(mu, signature.AsSpan(2)));
+            AssertExtensions.FalseExpression(mldsa.VerifyMu(mu, signature));
+            AssertExtensions.FalseExpression(mldsa.VerifyMu(mu, signature.AsSpan(2)));
 
-            Assert.Equal(0, mldsa.VerifyExternalMuCoreCallCount);
+            Assert.Equal(0, mldsa.VerifyMuCoreCallCount);
         }
 
         private static void AssertExpectedFill(ReadOnlySpan<byte> source, byte fillElement) =>

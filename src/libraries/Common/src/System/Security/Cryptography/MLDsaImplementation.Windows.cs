@@ -91,10 +91,10 @@ namespace System.Security.Cryptography
             return Interop.BCrypt.BCryptVerifySignaturePqcPreHash(_key, hash, hashAlgorithmIdentifier, context, signature);
         }
 
-        protected override void SignExternalMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
+        protected override void SignMuCore(ReadOnlySpan<byte> externalMu, Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool VerifyExternalMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException();
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm)
