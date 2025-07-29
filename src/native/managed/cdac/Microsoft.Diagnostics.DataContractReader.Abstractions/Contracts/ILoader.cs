@@ -91,6 +91,7 @@ public interface ILoader : IContract
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
