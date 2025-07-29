@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef TARGET_WINDOWS
 #include <assert.h>
+#include <pthread.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <minipal/memory.h>
-#include <minipal/thread.h>
 
 #ifdef __APPLE__
 #include <mach/thread_state.h>
@@ -24,7 +26,6 @@
 
 #endif // __APPLE__
 
-#ifndef TARGET_WINDOWS
 #ifdef __linux__
 #include <linux/membarrier.h>
 #include <sys/syscall.h>
@@ -101,7 +102,7 @@ bool minipal_initialize_flush_process_write_buffers()
     {
         assert(g_helperPage == 0);
 
-        g_helperPage = static_cast<uint8_t*>(mmap(0, minipal_get_page_size(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+        g_helperPage = (uint8_t*)(mmap(0, minipal_get_page_size(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
 
         if (g_helperPage == MAP_FAILED)
         {
