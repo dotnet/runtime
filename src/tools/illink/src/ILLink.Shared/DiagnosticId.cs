@@ -209,6 +209,7 @@ namespace ILLink.Shared
         CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
         RequiresDynamicCodeOnStaticConstructor = 3056,
         RequiresDynamicCodeOnEntryPoint = 3057,
+        ReferenceNotMarkedIsAotCompatible = 3058,
         _EndAotAnalysisWarningsSentinel,
 
         // Feature guard diagnostic ids.

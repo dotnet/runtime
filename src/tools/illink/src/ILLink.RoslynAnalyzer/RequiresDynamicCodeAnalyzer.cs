@@ -23,9 +23,41 @@ namespace ILLink.RoslynAnalyzer
         private static readonly DiagnosticDescriptor s_requiresDynamicCodeOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresDynamicCodeOnEntryPoint);
         private static readonly DiagnosticDescriptor s_requiresDynamicCodeRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresDynamicCode);
         private static readonly DiagnosticDescriptor s_requiresDynamicCodeAttributeMismatch = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresDynamicCodeAttributeMismatch);
+        private static readonly DiagnosticDescriptor s_referenceNotMarkedIsAotCompatibleRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReferenceNotMarkedIsAotCompatible);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(s_requiresDynamicCodeRule, s_requiresDynamicCodeAttributeMismatch, s_requiresDynamicCodeOnStaticCtor, s_requiresDynamicCodeOnEntryPoint);
+            ImmutableArray.Create(s_requiresDynamicCodeRule, s_requiresDynamicCodeAttributeMismatch, s_requiresDynamicCodeOnStaticCtor, s_requiresDynamicCodeOnEntryPoint, s_referenceNotMarkedIsAotCompatibleRule);
+
+        private void CheckReferencedAssembliesForAotCompatible(CompilationAnalysisContext context)
+        {
+            var options = context.Options;
+            if (!IsAnalyzerEnabled(options))
+                return;
+
+            if (!options.IsMSBuildPropertyValueTrue(MSBuildPropertyOptionNames.VerifyReferenceAotCompatibility))
+                return;
+
+            foreach (var reference in context.Compilation.References)
+            {
+                var refAssembly = context.Compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
+                if (refAssembly is null)
+                    continue;
+
+                var isAotCompatible = refAssembly.GetAttributes().FirstOrDefault(attr =>
+                    attr.AttributeClass?.Name == "AssemblyMetadataAttribute" &&
+                    attr.ConstructorArguments.Length == 2 &&
+                    attr.ConstructorArguments[0].Value?.ToString() == "IsAotCompatible" &&
+                    string.Equals(attr.ConstructorArguments[1].Value?.ToString(), "True", StringComparison.OrdinalIgnoreCase));
+
+                if (isAotCompatible is null)
+                {
+                    var diag = Diagnostic.Create(s_referenceNotMarkedIsAotCompatibleRule,
+                        Location.None,
+                        refAssembly.Name);
+                    context.ReportDiagnostic(diag);
+                }
+            }
+        }
 
         private protected override string RequiresAttributeName => RequiresDynamicCodeAttribute;
 
@@ -162,6 +194,9 @@ namespace ILLink.RoslynAnalyzer
 
             return SymbolEqualityComparer.Default.Equals(propertySymbol, isDynamicCodeSupportedProperty);
         }
+
+        private protected override ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions =>
+            ImmutableArray.Create<Action<CompilationAnalysisContext>>(CheckReferencedAssembliesForAotCompatible);
 
         protected override bool VerifyAttributeArguments(AttributeData attribute) =>
             attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments is [{ Type.SpecialType: SpecialType.System_String }, ..];

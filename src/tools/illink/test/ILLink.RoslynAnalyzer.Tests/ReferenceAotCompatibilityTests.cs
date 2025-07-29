@@ -10,68 +10,66 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using System.IO;
-using ILLink.CodeFix;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-    ILLink.RoslynAnalyzer.RequiresUnreferencedCodeAnalyzer,
-    ILLink.CodeFix.RequiresUnreferencedCodeCodeFixProvider>;
+    ILLink.RoslynAnalyzer.RequiresDynamicCodeAnalyzer,
+    ILLink.CodeFix.RequiresDynamicCodeCodeFixProvider>;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using ILLink.CodeFix;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-    public class ReferenceTrimCompatibilityTests
+    public class ReferenceAotCompatibilityTests
     {
         [Fact]
-        public async Task EmitsWarningForReferenceWithoutIsTrimmable_WhenPropertyEnabled()
+        public async Task EmitsWarningForReferenceWithoutIsAotCompatible_WhenPropertyEnabled()
         {
             var referencedSource = "public class ReferencedClass { }";
             var testSource = "public class MainClass { ReferencedClass c; }";
 
-            var test = ReferenceCompatibilityTestUtils.CreateTestWithReference<RequiresUnreferencedCodeAnalyzer, RequiresUnreferencedCodeCodeFixProvider>(
+            var test = ReferenceCompatibilityTestUtils.CreateTestWithReference<RequiresDynamicCodeAnalyzer, RequiresDynamicCodeCodeFixProvider>(
                 testSource, referencedSource);
             test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", Microsoft.CodeAnalysis.Text.SourceText.From($"""
                 is_global = true
-                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true
-                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.VerifyReferenceTrimCompatibility} = true
+                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.EnableAotAnalyzer} = true
+                build_property.VerifyReferenceAotCompatibility = true
                 """)));
-            test.ExpectedDiagnostics.Add(VerifyCS.Diagnostic(DiagnosticId.ReferenceNotMarkedIsTrimmable).WithArguments("ReferencedAssembly"));
+            test.ExpectedDiagnostics.Add(VerifyCS.Diagnostic(DiagnosticId.ReferenceNotMarkedIsAotCompatible).WithArguments("ReferencedAssembly"));
             await test.RunAsync();
         }
 
         [Fact]
-        public async Task DoesNotEmitWarning_WhenVerifyReferenceTrimCompatibilityDisabled()
+        public async Task DoesNotEmitWarning_WhenVerifyReferenceAotCompatibilityDisabled()
         {
             var referencedSource = "public class ReferencedClass { }";
             var testSource = "public class MainClass { ReferencedClass c; }";
 
-            var test = ReferenceCompatibilityTestUtils.CreateTestWithReference<RequiresUnreferencedCodeAnalyzer, RequiresUnreferencedCodeCodeFixProvider>(
+            var test = ReferenceCompatibilityTestUtils.CreateTestWithReference<RequiresDynamicCodeAnalyzer, RequiresDynamicCodeCodeFixProvider>(
                 testSource, referencedSource);
             test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", Microsoft.CodeAnalysis.Text.SourceText.From($"""
                 is_global = true
-                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true
-                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.VerifyReferenceTrimCompatibility} = false
+                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.EnableAotAnalyzer} = true
+                build_property.VerifyReferenceAotCompatibility = false
                 """)));
-
             await test.RunAsync();
         }
 
         [Fact]
-        public async Task DoesNotEmitWarning_WhenReferenceMarkedIsTrimmable()
+        public async Task DoesNotEmitWarning_WhenReferenceMarkedIsAotCompatible()
         {
             var referencedSource = """
-                [assembly: System.Reflection.AssemblyMetadata("IsTrimmable", "True")]
+                [assembly: System.Reflection.AssemblyMetadata("IsAotCompatible", "True")]
                 public class ReferencedClass { }
                 """;
             var testSource = "public class MainClass { ReferencedClass c; }";
 
-            var test = ReferenceCompatibilityTestUtils.CreateTestWithReference<RequiresUnreferencedCodeAnalyzer, RequiresUnreferencedCodeCodeFixProvider>(
+            var test = ReferenceCompatibilityTestUtils.CreateTestWithReference<RequiresDynamicCodeAnalyzer, RequiresDynamicCodeCodeFixProvider>(
                 testSource, referencedSource);
             test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", Microsoft.CodeAnalysis.Text.SourceText.From($"""
                 is_global = true
-                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true
-                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.VerifyReferenceTrimCompatibility} = true
+                build_property.{ILLink.RoslynAnalyzer.MSBuildPropertyOptionNames.EnableAotAnalyzer} = true
+                build_property.VerifyReferenceAotCompatibility = true
                 """)));
-
             await test.RunAsync();
         }
     }
