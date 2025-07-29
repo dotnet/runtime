@@ -126,7 +126,7 @@ internal unsafe static partial class MockMemorySpace
     // Used by ReadFromTarget to return the appropriate bytes
     internal class MemoryContext
     {
-        public List<HeapFragment> HeapFragments { get; init; }
+        public IList<HeapFragment> HeapFragments { get; init; }
 
         internal int ReadFromTarget(ulong address, Span<byte> buffer)
         {
