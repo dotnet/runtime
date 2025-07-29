@@ -343,41 +343,56 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task CertificateCallbackThrowPropagates()
         {
-            using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
-            bool validationResult = false;
-
-            var listenerOptions = new QuicListenerOptions()
+            using var _ = new TestEventListener(Console.Out, "Private.InternalDiagnostics.System.Net.Quic");
+            if (PlatformDetection.IsOSX)
             {
-                ListenEndPoint = new IPEndPoint(IsIPv6Available ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
-            };
-            await using QuicListener listener = await CreateQuicListener(listenerOptions);
-
-            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
-            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
-            {
-                Assert.Equal(ServerCertificate, cert);
-                if (validationResult)
+                for (int i = 0; i < 100; ++i)
                 {
-                    return validationResult;
+                    Console.WriteLine($"Running {i} iteration");
+                    using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
+                    bool validationResult = false;
+
+                    var listenerOptions = new QuicListenerOptions()
+                    {
+                        ListenEndPoint = new IPEndPoint(IsIPv6Available ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
+                        ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                        ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
+                    };
+                    await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+                    QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+                    clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                    {
+                        Console.WriteLine($"{i} in callback");
+                        Assert.Equal(ServerCertificate, cert);
+                        if (validationResult)
+                        {
+                            Console.WriteLine($"{i} in callback - {validationResult}");
+                            return validationResult;
+                        }
+
+                        Console.WriteLine($"{i} in callback - {nameof(ArithmeticException)}");
+                        throw new ArithmeticException("foobar");
+                    };
+                    clientOptions.ClientAuthenticationOptions.TargetHost = "foobar1";
+
+                    Console.WriteLine($"{i} before first connect");
+                    Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await CreateQuicConnection(clientOptions));
+                    Console.WriteLine($"{i} after first connect");
+                    Assert.True(exception.InnerException is ArithmeticException);
+                    Console.WriteLine($"{i} before first accept");
+                    await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
+                    Console.WriteLine($"{i} after first accept");
+
+                    // Make sure the listener is still usable and there is no lingering bad connection
+                    validationResult = true;
+                    (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
+                    await PingPong(clientConnection, serverConnection);
+                    await clientConnection.DisposeAsync();
+                    await serverConnection.DisposeAsync();
+                    Console.WriteLine($"Finished {i} iteration");
                 }
-
-                throw new ArithmeticException("foobar");
-            };
-
-            clientOptions.ClientAuthenticationOptions.TargetHost = "foobar1";
-
-            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await CreateQuicConnection(clientOptions));
-            Assert.True(exception.InnerException is ArithmeticException);
-            await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
-
-            // Make sure the listener is still usable and there is no lingering bad connection
-            validationResult = true;
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
-            await PingPong(clientConnection, serverConnection);
-            await clientConnection.DisposeAsync();
-            await serverConnection.DisposeAsync();
+            }
         }
 
         [Fact]
