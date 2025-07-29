@@ -328,11 +328,9 @@ namespace Microsoft.Interop
                 // Generate numElements expression with null check for pointer types
                 ExpressionSyntax numElementsExpression = ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context);
 
-                // If the marshalling direction is unmanaged-to-managed and we have a native pointer type,
-                // we need to check if the native pointer is null before using the size parameter to avoid
-                // allocating arrays for null pointers.
-                if (CodeContext.Direction == MarshalDirection.UnmanagedToManaged &&
-                    NativeType is PointerTypeInfo)
+                // If we have a native pointer type, we need to check if the native pointer is null
+                // before using the size parameter to avoid allocating arrays for null pointers.
+                if (NativeType is PointerTypeInfo)
                 {
                     // Generate: nativePointer == null ? 0 : sizeExpression
                     numElementsExpression = ConditionalExpression(
@@ -383,11 +381,10 @@ namespace Microsoft.Interop
             // Generate numElements expression with null check for pointer types
             ExpressionSyntax numElementsExpression = ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context);
 
-            // If the marshalling direction is unmanaged-to-managed and we have a native pointer type,
-            // we need to check if the native pointer is null before using the size parameter to avoid
-            // allocating arrays for null pointers.
-            if (CodeContext.Direction == MarshalDirection.UnmanagedToManaged &&
-                NativeType is PointerTypeInfo)
+            // If we have a native pointer type, we need to check if the native pointer is null
+            // before using the size parameter to avoid allocating arrays for null pointers.
+            // This method only runs for unmarshal scenarios (not ManagedToUnmanaged).
+            if (NativeType is PointerTypeInfo)
             {
                 // Generate: nativePointer == null ? 0 : sizeExpression
                 numElementsExpression = ConditionalExpression(

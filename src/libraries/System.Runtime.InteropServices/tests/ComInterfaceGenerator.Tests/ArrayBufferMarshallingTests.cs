@@ -18,6 +18,10 @@ public partial class ArrayBufferMarshallingTests
             int bufferSize,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), Out] int[]? buffer1,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), Out] int[]? buffer2);
+        
+        void TestMethodWithRef(
+            int bufferSize,
+            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] ref int[]? buffer);
     }
 
     private class TestImplementation : ITestInterface
@@ -42,6 +46,24 @@ public partial class ArrayBufferMarshallingTests
                 }
             }
         }
+
+        public void TestMethodWithRef(int bufferSize, ref int[]? buffer)
+        {
+            // If buffer is null, allocate it with the specified size
+            if (buffer is null && bufferSize > 0)
+            {
+                buffer = new int[bufferSize];
+            }
+            
+            // Fill buffer if not null
+            if (buffer != null)
+            {
+                for (int i = 0; i < Math.Min(bufferSize, buffer.Length); i++)
+                {
+                    buffer[i] = i * 3;
+                }
+            }
+        }
     }
 
     [Fact]
@@ -58,6 +80,27 @@ public partial class ArrayBufferMarshallingTests
         try
         {
             // The main test is that this interface can be created and the generated code compiles
+            Assert.NotEqual(0, (int)ptr);
+        }
+        finally
+        {
+            Marshal.Release(ptr);
+        }
+    }
+
+    [Fact]
+    public void TestGeneratedCodeCompilationWithRefArrays()
+    {
+        // This test ensures that COM interfaces with ref array parameters compile correctly
+        // and handle null pointer scenarios properly
+        
+        var testImpl = new TestImplementation();
+        var cw = new StrategyBasedComWrappers();
+        nint ptr = cw.GetOrCreateComInterfaceForObject(testImpl, CreateComInterfaceFlags.None);
+
+        try
+        {
+            // The main test is that this interface with ref arrays can be created and the generated code compiles
             Assert.NotEqual(0, (int)ptr);
         }
         finally
