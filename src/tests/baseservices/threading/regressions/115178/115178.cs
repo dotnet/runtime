@@ -166,9 +166,10 @@ public class Test_wait_interrupted_user_apc
             stopwatch.Stop();
 
             long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-            if (elapsedMilliseconds < 1500)
+            if (elapsedMilliseconds < 1980)
             {
-                Console.WriteLine($"Error waiting on event, wait returned too early. Waited {elapsedMilliseconds} ms, expected at least 1500 ms.");
+                // Wait uses low resolution timer, test includes a margin of 20ms to account for timer resolution differences.
+                Console.WriteLine($"Error waiting on event, wait returned too early. Waited {elapsedMilliseconds} ms, expected at least 1980 ms.");
                 result = 5;
             }
 
