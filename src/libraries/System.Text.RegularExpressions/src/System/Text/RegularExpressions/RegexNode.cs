@@ -2326,11 +2326,17 @@ namespace System.Text.RegularExpressions
                         return true;
                 }
 
-                // If this node is a {one/notone/set}loop, see if it overlaps with its successor in the concatenation.
-                // If it doesn't, then we can upgrade it to being a {one/notone/set}loopatomic.
-                // Doing so avoids unnecessary backtracking.
+                // If this node is a loop, see if it overlaps with its successor in the concatenation.
+                // If it doesn't, then we can upgrade it to being atomic to avoid unnecessary backtracking.
                 switch (node.Kind)
                 {
+                    case RegexNodeKind when iterateNullableSubsequent && subsequent.Kind is RegexNodeKind.PositiveLookaround:
+                        if (!CanBeMadeAtomic(node, subsequent.Child(0), iterateNullableSubsequent: false, allowLazy: allowLazy))
+                        {
+                            return false;
+                        }
+                        break;
+
                     case RegexNodeKind.Oneloop:
                     case RegexNodeKind.Onelazy when allowLazy:
                         switch (subsequent.Kind)

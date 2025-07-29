@@ -288,6 +288,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"abc(?=\Z)", @"abc\Z")]
         [InlineData(@"abc(?=\A)", @"abc\A")]
         [InlineData(@"abc(?=$)", @"abc$")]
+        [InlineData(@"a*(?=b)bcd", @"(?>a*)(?=b)bcd")]
         // Alternation reduction
         [InlineData("a|b", "[ab]")]
         [InlineData("a|b|c|d|e|g|h|z", "[a-eghz]")]
@@ -574,6 +575,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?=(abc))", "(?=abc)")]
         [InlineData("(?=a(b*)c)", "(?=ab*c)")]
         [InlineData("(?=a((((b))))c)", "(?=abc)")]
+        [InlineData(@"a*(?=a)", @"(?>a*)(?=a)")]
+        [InlineData(@"a*(?!b)b", @"(?>a*)(?!b)b")]
+        [InlineData(@"a*(?<!b)cde", @"(?>a*)(?<!b)cde")]
+        [InlineData(@"a*(?<=b)cde", @"(?>a*)(?<=b)cde")]
         // Loops inside alternation constructs
         [InlineData("(abc*|def)chi", "(ab(?>c*)|def)chi")]
         [InlineData("(abc|def*)fhi", "(abc|de(?>f*))fhi")]
