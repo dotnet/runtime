@@ -1018,8 +1018,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     _ASSERTE(resolver != NULL);
     _ASSERTE(methodILDecoder != NULL);
     _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
-    _ASSERTE(IsIL());
-    _ASSERTE(GetRVA() == 0);
+    _ASSERTE(MayHaveILHeader());
 
     // The UnsafeAccessorAttribute is applied to methods with an
     // RVA of 0 (for example, C#'s extern keyword).

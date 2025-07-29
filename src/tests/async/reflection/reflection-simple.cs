@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -177,5 +178,61 @@ public class Async2Reflection
         // the following should not crash
         del(Task.CompletedTask);
         del(FooTask());
+    }
+
+    public class PrivateAsync1<T>
+    {
+        public static int s;
+        private static async Task<T> a_task1(int i)
+        {
+            s++;
+            if (i == 0)
+            {
+                await Task.Yield();
+                return default;
+            }
+
+            return await Accessors2.accessor<T>(null, i - 1);
+        }
+    }
+
+    public class PrivateAsync2
+    {
+        public static int s;
+        private static async Task<T> a_task2<T>(int i)
+        {
+            s++;
+            if (i == 0)
+            {
+                await Task.Yield();
+                return default;
+            }
+
+            return await Accessors1<T>.accessor(null, i - 1);
+        }
+    }
+
+    public class Accessors1<T>
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "a_task1")]
+        public extern static Task<T> accessor(PrivateAsync1<T> o, int i);
+    }
+
+    public class Accessors2
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "a_task2")]
+        public extern static Task<T> accessor<T>(PrivateAsync2 o, int i);
+    }
+
+    [Fact]
+    public static void UnsafeAccessors()
+    {
+        Accessors2.accessor<int>(null, 7).GetAwaiter().GetResult();
+        Assert.Equal(4, PrivateAsync1<int>.s);
+        Assert.Equal(4, PrivateAsync2.s);
+
+        Accessors1<int>.accessor(null, 7).GetAwaiter().GetResult();
+        Assert.Equal(8, PrivateAsync1<int>.s);
+        Assert.Equal(8, PrivateAsync2.s);
     }
 }
