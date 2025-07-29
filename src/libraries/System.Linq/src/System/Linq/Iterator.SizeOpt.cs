@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq;
 
@@ -27,17 +28,11 @@ public static partial class Enumerable
         void ICollection<TResult>.Add(TResult item) => ThrowHelper.ThrowNotSupportedException();
         void ICollection<TResult>.Clear() => ThrowHelper.ThrowNotSupportedException();
         bool ICollection<TResult>.Contains(TResult item)
-        {
-            for (int i = 0; i < _source.Count; i++)
-            {
-                if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), item))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        int IList<TResult>.IndexOf(TResult item)
+            => IndexOf(item) >= 0;
+
+        int IList<TResult>.IndexOf(TResult item) => IndexOf(item);
+
+        private int IndexOf(TResult item)
         {
             for (int i = 0; i < _source.Count; i++)
             {
@@ -66,14 +61,12 @@ public static partial class Enumerable
 
         public override bool MoveNext()
         {
-            // _state - 1 represents the zero-based index into the list.
-            // Having a separate field for the index would be more readable. However, we save it
-            // into _state with a bias to minimize field size of the iterator.
+            var source = _source;
             int index = _state - 1;
-            if ((uint)index <= (uint)_source.Count)
+            if ((uint)index < (uint)source.Count)
             {
-                ++_state;
-                _current = _selector(_source[index]);
+                _state++;
+                _current = _selector(source[index]);
                 return true;
             }
 
