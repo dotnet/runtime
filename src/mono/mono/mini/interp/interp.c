@@ -796,7 +796,7 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 static int
 stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 {
-	MH_LOG("Converting stackval to data for type %s: ", mono_type_get_name (type));
+	//MH_LOG("Converting stackval to data for type %s: ", mono_type_get_name (type));
 	log_mono_type (type);
 	
 	if (m_type_is_byref (type)) {
@@ -1479,7 +1479,7 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 			margs->fargs = g_malloc0 (sizeof (double) * margs->flen);
 	}	
 	for (int i = 0; i < sig->param_count; i++) {
-		MH_LOG_INDENT();
+		//MH_LOG_INDENT();
 		guint32 offset = get_arg_offset (frame->imethod, sig, i);
 		stackval *sp_arg = STACK_ADD_BYTES (frame->stack, offset);
 
@@ -1561,7 +1561,7 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 		g_assert_not_reached ();
 		break;
 	}
-	MH_LOG_UNINDENT();
+	//MH_LOG_UNINDENT();
 }
 #endif
 
@@ -3529,11 +3529,11 @@ mono_interp_leave (InterpFrame* parent_frame)
 	 * to check the abort threshold. For this to work we use frame as a
 	 * dummy frame that is stored in the lmf and serves as the transition frame
 	 */
-	MH_LOG_INDENT();
-	MH_LOG("Calling do_icall_wrapper for mono_thread_get_undeniable_exception\n");
+	//MH_LOG_INDENT();
+	//MH_LOG("Calling do_icall_wrapper for mono_thread_get_undeniable_exception\n");
 	do_icall_wrapper (&frame, NULL, MINT_ICALLSIG_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
-	MH_LOG("..Finished calling do_icall_wrapper for mono_thread_get_undeniable_exception\n");
-	MH_LOG_UNINDENT();
+	//MH_LOG("..Finished calling do_icall_wrapper for mono_thread_get_undeniable_exception\n");
+	//MH_LOG_UNINDENT();
 	return (MonoException*)tmp_sp.data.p;
 }
 
@@ -4364,38 +4364,38 @@ interp_call:
 		}
 		MINT_IN_CASE(MINT_RET)
 			frame->retval [0] = LOCAL_VAR (ip [1], stackval);
-			MH_LOG("returning pointer %p or long %lld", frame->retval [0].data.p, frame->retval [0].data.l);
+			//MH_LOG("returning pointer %p or long %lld", frame->retval [0].data.p, frame->retval [0].data.l);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I1)
 			frame->retval [0].data.i = (gint8) LOCAL_VAR (ip [1], gint32);
-			MH_LOG("MINT_RET_I1 %d", frame->retval [0].data.i);
+			//MH_LOG("MINT_RET_I1 %d", frame->retval [0].data.i);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_U1)
 			frame->retval [0].data.i = (guint8) LOCAL_VAR (ip [1], gint32);
-			MH_LOG("MINT_RET_U1 %d", frame->retval [0].data.i);
+			//MH_LOG("MINT_RET_U1 %d", frame->retval [0].data.i);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I2)
 			frame->retval [0].data.i = (gint16) LOCAL_VAR (ip [1], gint32);
-			MH_LOG("MINT_RET_I2 %d", frame->retval [0].data.i);
+			//MH_LOG("MINT_RET_I2 %d", frame->retval [0].data.i);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_U2)
 			frame->retval [0].data.i = (guint16) LOCAL_VAR (ip [1], gint32);
-			MH_LOG("MINT_RET_U2 %d", frame->retval [0].data.i);
+			//MH_LOG("MINT_RET_U2 %d", frame->retval [0].data.i);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I4_IMM)
 			frame->retval [0].data.i = (gint16)ip [1];
-			MH_LOG("MINT_RET_I4_IMM");
+			//MH_LOG("MINT_RET_I4_IMM");
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I8_IMM)
 			frame->retval [0].data.l = (gint16)ip [1];
-			MH_LOG("MINT_RET_I8_IMM casting to gint16 ip[1] = %lld", frame->retval [0].data.l);
+			//MH_LOG("MINT_RET_I8_IMM casting to gint16 ip[1] = %lld", frame->retval [0].data.l);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VOID)
-			MH_LOG("void returning");
+			//MH_LOG("void returning");
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VT) {
 			memmove (frame->retval, locals + ip [1], ip [2]);
-			MH_LOG("returning vt, moved %d bytes from offset to give %p", ip[2], ip[1]);
+			//MH_LOG("returning vt, moved %d bytes from offset to give %p", ip[2], ip[1]);
 			goto exit_frame;
 		}
 		MINT_IN_CASE(MINT_RET_LOCALLOC)
@@ -4987,10 +4987,10 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDIND_I8)
 #ifdef NO_UNALIGNED_ACCESS
-			MH_LOG("doing unaligned access for MINT_LDIND_I8\n");
+			//MH_LOG("doing unaligned access for MINT_LDIND_I8\n");
 			LDIND(gint64, gint64, TRUE);
 #else
-			MH_LOG("doing aligned access for MINT_LDIND_I8\n");
+			//MH_LOG("doing aligned access for MINT_LDIND_I8\n");
 			LDIND(gint64, gint64, FALSE);
 #endif
 			MINT_IN_BREAK;
@@ -7620,7 +7620,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		// stack, no additional conversion is needed.
 		MINT_IN_CASE(MINT_MOV_1) 
 			(*(gint8*)(locals + (ip[1]))) = (*(gint8*)(locals + (ip[2]))); 
-			MH_LOG("MINT_MOV_1: %d <- %d: %p\n", ip[1], ip[2], (void*)(*(gint8*)(locals + (ip[1]))));
+			//MH_LOG("MINT_MOV_1: %d <- %d: %p\n", ip[1], ip[2], (void*)(*(gint8*)(locals + (ip[1]))));
 			ip += 3;
 		MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MOV_2) MOV(gint16, gint16); MINT_IN_BREAK;
@@ -7629,7 +7629,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			// TODO: this is hardcoded for x64
 			//assert(((uintptr_t)locals % 8) == 0 && "locals is not 8-byte aligned");
 			(*(guint32*)(locals + (ip[1]))) = (*(guint32*)(locals + (ip[2]))); 
-			MH_LOG("MINT_MOV_4: %d <- %d: %p\n", ip[1], ip[2], (void*)(*(guint32*)(locals + (ip[1]))));
+			//MH_LOG("MINT_MOV_4: %d <- %d: %p\n", ip[1], ip[2], (void*)(*(guint32*)(locals + (ip[1]))));
 			ip += 3;; 
 		MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MOV_8) 
@@ -7638,7 +7638,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			(*(guint64*)(locals + (ip[1]))) = (*(guint64*)(locals + (ip[2])));
 			intptr_t result = (*(guint64*)(locals + (ip[1])));		
-			MH_LOG("MINT_MOV_8: *(%p + %d) = *(%p + %d): %p", locals, ip[1], locals, ip[2], (void*)result);
+			//MH_LOG("MINT_MOV_8: *(%p + %d) = *(%p + %d): %p", locals, ip[1], locals, ip[2], (void*)result);
 			ip += 3;; 
 		MINT_IN_BREAK;
 
@@ -7955,7 +7955,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
-			MH_LOG("*** Jiterpreter thunk warning location: %p\n", ip);
+			//MH_LOG("*** Jiterpreter thunk warning location: %p\n", ip);
 			// The fn ptr is encoded in a guint16 relative to the index of the first trace fn ptr, so compute the actual ptr
 			JiterpreterThunk thunk = (JiterpreterThunk)(void *)(((JiterpreterOpcode *)ip)->relative_fn_ptr + mono_jiterp_first_trace_fn_ptr);
 			ptrdiff_t offset = thunk (frame, locals, NULL, ip);
@@ -9181,7 +9181,7 @@ mono_jiterp_get_simd_opcode (int arity, int index)
 EMSCRIPTEN_KEEPALIVE intptr_t
 mono_jiterp_get_opcode_info (int opcode, int type)
 {
-	MH_LOG("Test jiterp opcode %d type %d\n", opcode, type);
+	//MH_LOG("Test jiterp opcode %d type %d\n", opcode, type);
 	g_assert ((opcode >= 0) && (opcode <= MINT_LASTOP));
 	switch (type) {
 		case JITERP_OPINFO_TYPE_NAME:
