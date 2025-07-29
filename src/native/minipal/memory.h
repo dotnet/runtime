@@ -16,7 +16,7 @@ extern "C"
     void minipal_flush_process_write_buffers();
 
 #ifndef TARGET_WINDOWS
-    extern size_t g_pageSize;
+    extern size_t g_pageSizeUnixInl;
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -25,7 +25,7 @@ extern "C"
 #ifdef TARGET_WINDOWS
         return 0x1000;
 #else
-        return g_pageSize;
+        return g_pageSizeUnixInl;
 #endif
     }
 #endif // DACCESS_COMPILE
