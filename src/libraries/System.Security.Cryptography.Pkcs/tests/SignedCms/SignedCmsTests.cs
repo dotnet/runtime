@@ -1876,31 +1876,28 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 });
         }
 
-        private static void AssertSignerHasCorrectDefaultDigest(Action<Action<CmsSigner>> test, bool doSign = true)
+        private static void AssertSignerHasCorrectDefaultDigest(Action<Action<CmsSigner>> test)
         {
             // DigestAlgorithm property on new signer has correct default value
-            test(static signer => { Assert.Equal(DefaultHashForPlatform.Value, signer.DigestAlgorithm.Value); });
+            test(static signer => Assert.Equal(DefaultHashForPlatform.Value, signer.DigestAlgorithm.Value));
 
-            if (doSign)
-            {
-                // Signer signs with correct digest value
-                test(
-                    static signer =>
-                    {
-                        byte[] message = "Hello World!"u8.ToArray();
-                        SignedCms cms = new SignedCms(new ContentInfo(message));
+            // Signer signs with correct digest value
+            test(
+                static signer =>
+                {
+                    byte[] message = "Hello World!"u8.ToArray();
+                    SignedCms cms = new SignedCms(new ContentInfo(message));
 
-                        cms.ComputeSignature(signer);
+                    cms.ComputeSignature(signer);
 
-                        Assert.Equal(DefaultHashForPlatform.Value, cms.SignerInfos[0].DigestAlgorithm.Value);
+                    Assert.Equal(DefaultHashForPlatform.Value, cms.SignerInfos[0].DigestAlgorithm.Value);
 
-                        // Assert.NoThrow
-                        cms.SignerInfos[0].CheckSignature(verifySignatureOnly: true);
-                    });
-            }
+                    // Assert.NoThrow
+                    cms.SignerInfos[0].CheckSignature(verifySignatureOnly: true);
+                });
         }
 
-        private static bool IsNetFramework471OrLower =>
+        private static bool IsNetFramework471OrLower { get; } =
             PlatformDetection.IsNetFramework && new FrameworkName(AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName).Version <= new Version(4, 7, 1);
 
         private static Oid DefaultHashForPlatform = IsNetFramework471OrLower ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256);
