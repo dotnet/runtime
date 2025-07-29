@@ -6063,10 +6063,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double ReciprocalExponent(double op1)
         {
-            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
+            if (double.IsNaN(op1))
+            {
+                return double.NaN;
+            }
 
-            // Invert the exponent
-            bits ^= 0x7FF0000000000000;
+            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
+            ulong exp = bits & 0x7FF0000000000000;
+
+            if (exp == 0)
+            {
+                // Replace exponent with maximum exponent
+                bits ^= exp ^ 0x7FE0000000000000;
+            }
+            else
+            {
+                // Invert the exponent
+                bits ^= 0x7FF0000000000000;
+            }
+
             // Zero the fraction
             bits &= 0xFFF0000000000000;
 
@@ -6075,10 +6090,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float ReciprocalExponent(float op1)
         {
-            uint bits = BitConverter.SingleToUInt32Bits(op1);
+            if (float.IsNaN(op1))
+            {
+                return float.NaN;
+            }
 
-            // Invert the exponent
-            bits ^= 0x7F800000;
+            uint bits = BitConverter.SingleToUInt32Bits(op1);
+            uint exp = bits & 0x7F800000;
+
+            if (exp == 0)
+            {
+                // Replace exponent with maximum exponent
+                bits ^= exp ^ 0x7F000000;
+            }
+            else
+            {
+                // Invert the exponent
+                bits ^= 0x7F800000;
+            }
+
             // Zero the fraction
             bits &= 0xFF800000;
 
