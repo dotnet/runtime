@@ -24,7 +24,6 @@ Revision History:
 #include "pal/synchobjects.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/event.hpp"
-#include "pal/mutex.hpp"
 #include "pal/semaphore.hpp"
 #include "pal/dbgmsg.h"
 #include <new>
@@ -39,7 +38,6 @@ static PalObjectTypeId sg_rgWaitObjectsIds[] =
     {
         otiAutoResetEvent,
         otiManualResetEvent,
-        otiMutex,
         otiSemaphore,
         otiProcess,
         otiThread
@@ -51,7 +49,6 @@ static PalObjectTypeId sg_rgSignalableObjectIds[] =
 {
     otiAutoResetEvent,
     otiManualResetEvent,
-    otiMutex,
     otiSemaphore
 };
 static CAllowedObjectTypes sg_aotSignalableObject(sg_rgSignalableObjectIds, ARRAY_SIZE(sg_rgSignalableObjectIds));
@@ -677,10 +674,6 @@ DWORD CorUnix::InternalSignalObjectAndWait(
         case otiAutoResetEvent:
         case otiManualResetEvent:
             palError = InternalSetEvent(thread, hObjectToSignal, true /* fSetEvent */);
-            break;
-
-        case otiMutex:
-            palError = InternalReleaseMutex(thread, hObjectToSignal);
             break;
 
         case otiSemaphore:

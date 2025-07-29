@@ -202,7 +202,6 @@ set(SOURCES
   safecrt/wmakepath_s.cpp
   synchobj/event.cpp
   synchobj/semaphore.cpp
-  synchobj/mutex.cpp
   synchmgr/synchcontrollers.cpp
   synchmgr/synchmanager.cpp
   synchmgr/wait.cpp
