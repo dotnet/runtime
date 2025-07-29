@@ -322,13 +322,33 @@ namespace Microsoft.Interop
             if (MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext) != MarshalDirection.ManagedToUnmanaged)
             {
                 // If we are marshalling from unmanaged to managed, we need to get the number of elements again.
+                string nativeIdentifier = context.GetIdentifiers(TypeInfo).native;
                 string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
+
+                // Generate numElements expression with null check for pointer types
+                ExpressionSyntax numElementsExpression = ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context);
+
+                // If the marshalling direction is unmanaged-to-managed and we have a native pointer type,
+                // we need to check if the native pointer is null before using the size parameter to avoid
+                // allocating arrays for null pointers.
+                if (CodeContext.Direction == MarshalDirection.UnmanagedToManaged &&
+                    NativeType is PointerTypeInfo)
+                {
+                    // Generate: nativePointer == null ? 0 : sizeExpression
+                    numElementsExpression = ConditionalExpression(
+                        BinaryExpression(SyntaxKind.EqualsExpression,
+                            IdentifierName(nativeIdentifier),
+                            LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)),
+                        numElementsExpression);
+                }
+
                 // <numElements> = <numElementsExpression>;
                 yield return ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(numElementsIdentifier),
-                        ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context)));
+                        numElementsExpression));
             }
         }
 
@@ -360,11 +380,29 @@ namespace Microsoft.Interop
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(TypeInfo);
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
 
+            // Generate numElements expression with null check for pointer types
+            ExpressionSyntax numElementsExpression = ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context);
+
+            // If the marshalling direction is unmanaged-to-managed and we have a native pointer type,
+            // we need to check if the native pointer is null before using the size parameter to avoid
+            // allocating arrays for null pointers.
+            if (CodeContext.Direction == MarshalDirection.UnmanagedToManaged &&
+                NativeType is PointerTypeInfo)
+            {
+                // Generate: nativePointer == null ? 0 : sizeExpression
+                numElementsExpression = ConditionalExpression(
+                    BinaryExpression(SyntaxKind.EqualsExpression,
+                        IdentifierName(nativeIdentifier),
+                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)),
+                    numElementsExpression);
+            }
+
             yield return ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(numElementsIdentifier),
-                    ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context)));
+                    numElementsExpression));
 
             // <managedIdentifier> = <marshallerType>.AllocateContainerForManagedElementsFinally(<nativeIdentifier>, <numElements>);
             yield return ExpressionStatement(
@@ -448,11 +486,29 @@ namespace Microsoft.Interop
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(TypeInfo);
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
 
+            // Generate numElements expression with null check for pointer types
+            ExpressionSyntax numElementsExpression = ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context);
+
+            // If the marshalling direction is unmanaged-to-managed and we have a native pointer type,
+            // we need to check if the native pointer is null before using the size parameter to avoid
+            // allocating arrays for null pointers.
+            if (CodeContext.Direction == MarshalDirection.UnmanagedToManaged &&
+                NativeType is PointerTypeInfo)
+            {
+                // Generate: nativePointer == null ? 0 : sizeExpression
+                numElementsExpression = ConditionalExpression(
+                    BinaryExpression(SyntaxKind.EqualsExpression,
+                        IdentifierName(nativeIdentifier),
+                        LiteralExpression(SyntaxKind.NullLiteralExpression)),
+                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)),
+                    numElementsExpression);
+            }
+
             yield return ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(numElementsIdentifier),
-                    ElementsMarshalling.GenerateNumElementsExpression(countInfo, countInfoRequiresCast, CodeContext, context)));
+                    numElementsExpression));
 
             // <managedIdentifier> = <marshallerType>.AllocateContainerForManagedElements(<nativeIdentifier>, <numElements>);
             yield return ExpressionStatement(
