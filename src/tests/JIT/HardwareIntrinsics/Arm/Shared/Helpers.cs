@@ -2710,7 +2710,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
         {
             // Get the underlying integer value
-            dynamic value = Convert.ChangeType(n, typeof(long));
+            dynamic value = n;
+            value = (long)value;
 
             // Mask to extract the lowest numBits
             long mask = (1L << numBits) - 1;

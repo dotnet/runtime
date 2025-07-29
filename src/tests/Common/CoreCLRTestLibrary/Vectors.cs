@@ -10,41 +10,21 @@ namespace TestLibrary
 {
     public static class Vectors
     {
-        public static void VectorToArray<T>(ref T[] to, Vector<T> from)
+        public static void VectorToArray<T>(ref T[] dst, Vector<T> src) where T : struct
         {
-            long tsize = Unsafe.SizeOf<T>();
-            long vsize = Unsafe.SizeOf<Vector<T>>();
-            if (to.Length * tsize != vsize)
-            {
-                throw new ArgumentException("sizeof(to) != sizeof(from)");
-            }
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref to[0]), from);
-        }
-
-        public static void ArrayToVector<T>(ref Vector<T> to, T[] from)
-        {
-            long tsize = Unsafe.SizeOf<T>();
-            long vsize = Unsafe.SizeOf<Vector<T>>();
-            if (from.Length * tsize != vsize)
-            {
-                throw new ArgumentException("sizeof(to) != sizeof(from)");
-            }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector<T>, byte>(ref to), ref Unsafe.As<T, byte>(ref from[0]), checked((uint)vsize));
+            Span<byte> span = MemoryMarshal.AsBytes(dst.AsSpan());
+            MemoryMarshal.Write(span, src);
         }
 
         public static Vector<T> GetRandomVector<T>()
         {
             long vsize = Unsafe.SizeOf<Vector<T>>();
-
             byte[] data = new byte[vsize];
             for (int i = 0; i < vsize; i++)
             {
                 data[i] = TestLibrary.Generator.GetByte();
             }
-
-            Vector<T> vec = new Vector<T>();
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector<T>, byte>(ref vec), ref Unsafe.AsRef<byte>(ref data[0]), checked((uint)vsize));
-            return vec;
+            return new Vector<T>(data.AsSpan());
         }
 
         public static Vector<T> GetRandomMask<T>()
@@ -53,10 +33,6 @@ namespace TestLibrary
             long tsize = Unsafe.SizeOf<T>();
 
             byte[] data = new byte[vsize];
-            for (int i = 0; i < vsize; i++)
-            {
-                data[i] = 0;
-            }
 
             long count = vsize / tsize;
             for (int i = 0; i < count; i++)
@@ -64,12 +40,10 @@ namespace TestLibrary
                 data[i * tsize] |= (byte)(TestLibrary.Generator.GetByte() & 1);
             }
 
-            Vector<T> vec = new Vector<T>();
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector<T>, byte>(ref vec), ref Unsafe.AsRef<byte>(ref data[0]), checked((uint)vsize));
-            return vec;
+            return new Vector<T>(data.AsSpan());
         }
 
-        public class PinnedVector<T>
+        public class PinnedVector<T> where T : struct
         {
             private byte[] buf;
             private GCHandle inHandle1;
