@@ -1906,6 +1906,8 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#else
+#error TARGET_64BIT is not defined
 #endif
         private static unsafe TChar* Int64ToHexChars<TChar>(TChar* buffer, ulong value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {

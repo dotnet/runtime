@@ -24,47 +24,26 @@ export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 export const JavaScriptMarshalerArgSize = isWasm64 ? 64 : 32;
 
 // keep in sync with JSMarshalerArgumentImpl offsets
-const JSMarshalerArgumentOffsets = isWasm64 ? {
-    BooleanValue: 0,
-    ByteValue: 0,
-    CharValue: 0,
-    Int16Value: 0,
-    Int32Value: 0,
-    Int64Value: 0,
-    SingleValue: 0,
-    DoubleValue: 0,
-    IntPtrValue: 0,
-    JSHandle: 8,
-    GCHandle: 8,
-    Length: 16,
-    Type: 24,
-    ElementType: 25,
-    ContextHandle: 32,
-    ReceiverShouldFree: 40,
-    CallerNativeTID: 48,
-    SyncDoneSemaphorePtr: 56,
+const enum JSMarshalerArgumentOffsets {
+    BooleanValue = 0,
+    ByteValue = 0,
+    CharValue = 0,
+    Int16Value = 0,
+    Int32Value = 0,
+    Int64Value = 0,
+    SingleValue = 0,
+    DoubleValue = 0,
+    IntPtrValue = 0,
+    JSHandle = 8,
+    GCHandle = 8,
+    Length = 16,
+    Type = 24,
+    ElementType = 25,
+    ContextHandle = 32,
+    ReceiverShouldFree = 40,
+    CallerNativeTID = 48,
+    SyncDoneSemaphorePtr = 56,
 }
-    :
-    {
-        BooleanValue: 0,
-        ByteValue: 0,
-        CharValue: 0,
-        Int16Value: 0,
-        Int32Value: 0,
-        Int64Value: 0,
-        SingleValue: 0,
-        DoubleValue: 0,
-        IntPtrValue: 0,
-        JSHandle: 4,
-        GCHandle: 4,
-        Length: 8,
-        Type: 12,
-        ElementType: 13,
-        ContextHandle: 16,
-        ReceiverShouldFree: 20,
-        CallerNativeTID: 24,
-        SyncDoneSemaphorePtr: 28,
-    };
 
 export const JSMarshalerTypeSize = 32;
 // keep in sync with JSFunctionBinding.JSBindingType
@@ -118,13 +97,13 @@ export function is_receiver_should_free (args: JSMarshalerArguments): boolean {
 export function get_sync_done_semaphore_ptr (args: JSMarshalerArguments): VoidPtr {
     if (!WasmEnableThreads) return VoidPtrNull;
     mono_assert(args, "Null args");
-    return getI32(add_offset(args, JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr)) as any;
+    return get_arg_handle(args, JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) as any;
 }
 
 export function get_caller_native_tid (args: JSMarshalerArguments): PThreadPtr {
     if (!WasmEnableThreads) return PThreadPtrNull;
     mono_assert(args, "Null args");
-    return getI32(add_offset(args, JSMarshalerArgumentOffsets.CallerNativeTID)) as any;
+    return get_arg_handle(args, JSMarshalerArgumentOffsets.CallerNativeTID) as any;
 }
 
 export function set_receiver_should_free (args: JSMarshalerArguments): void {
@@ -340,7 +319,10 @@ export function set_arg_i32 (arg: JSMarshalerArgument, value: number): void {
 export function set_arg_intptr (arg: JSMarshalerArgument, value: VoidPtr | bigint | number): void {
     mono_assert(arg, "Null arg");
     if (isWasm64) {
-        setI64Big(<any>arg, value as bigint);
+        if (typeof value !== "bigint")
+            setI64Big(<any>arg, BigInt(value as number));
+        else
+            setI64Big(<any>arg, value as bigint);
     } else {
         setU32(<any>arg, value as number);
     }
@@ -375,31 +357,46 @@ export function set_arg_f32 (arg: JSMarshalerArgument, value: number): void {
     setF32(<any>arg, value);
 }
 
-export function get_arg_js_handle (arg: JSMarshalerArgument): JSHandle {
-    mono_assert(arg, "Null arg");
-    return getI32(add_offset(arg, JSMarshalerArgumentOffsets.JSHandle)) as any;
+function set_arg_handle (arg: JSMarshalerArgument, offset: number, handle: JSHandle | GCHandle | undefined): void {
+    if (isWasm64) {
+        if (typeof handle !== "bigint")
+            setI64Big(add_offset(arg, offset), BigInt(handle as any as number));
+        else
+            setI64Big(add_offset(arg, offset), handle as bigint);
+    } else {
+        setI32(add_offset(arg, offset), handle as any);
+    }
 }
 
+function get_arg_handle (arg: JSMarshalerArgument | JSMarshalerArguments, offset: JSMarshalerArgumentOffsets): GCHandle | JSHandle | undefined {
+    return isWasm64 ? getI64Big(add_offset(arg, offset)) as any : getI32(add_offset(arg, offset)) as any;
+}
+
+export function get_arg_js_handle (arg: JSMarshalerArgument): JSHandle {
+    mono_assert(arg, "Null arg");
+    return get_arg_handle(arg, JSMarshalerArgumentOffsets.JSHandle) as any;
+    //return getI32(add_offset(arg, JSMarshalerArgumentOffsets.JSHandle)) as any;
+}
 export function set_arg_proxy_context (arg: JSMarshalerArgument): void {
     if (!WasmEnableThreads) return;
     mono_assert(arg, "Null arg");
-    setI32(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), runtimeHelpers.proxyGCHandle as any);
+    set_arg_handle(arg, JSMarshalerArgumentOffsets.ContextHandle, runtimeHelpers.proxyGCHandle);
 }
 
 export function set_js_handle (arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     mono_assert(arg, "Null arg");
-    setI32(add_offset(arg, JSMarshalerArgumentOffsets.JSHandle), jsHandle as any);
+    set_arg_handle(arg, JSMarshalerArgumentOffsets.JSHandle, jsHandle);
     set_arg_proxy_context(arg);
 }
 
 export function get_arg_gc_handle (arg: JSMarshalerArgument): GCHandle {
     mono_assert(arg, "Null arg");
-    return getI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle)) as any;
+    return get_arg_handle(arg, JSMarshalerArgumentOffsets.GCHandle) as any;
 }
 
 export function set_gc_handle (arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     mono_assert(arg, "Null arg");
-    setI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle), gcHandle as any);
+    set_arg_handle(arg, JSMarshalerArgumentOffsets.GCHandle, gcHandle);
     set_arg_proxy_context(arg);
 }
 

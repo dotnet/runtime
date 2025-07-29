@@ -2241,6 +2241,7 @@ namespace System
             // See comment in Span<T>.Slice for how this works.
             if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
 #else
+#error TARGET_64BIT is not defined
             if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
 #endif
             {

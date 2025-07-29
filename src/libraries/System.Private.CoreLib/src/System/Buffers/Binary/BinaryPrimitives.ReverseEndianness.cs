@@ -13,6 +13,7 @@ using System.Runtime.Intrinsics;
 using nint_t = System.Int64;
 using nuint_t = System.UInt64;
 #else
+#error TARGET_64BIT is not defined
 using nint_t = System.Int32;
 using nuint_t = System.UInt32;
 #endif

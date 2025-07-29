@@ -205,6 +205,7 @@ namespace System.Threading
 #if TARGET_64BIT
             return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value);
 #else
+#error TARGET_64BIT is not defined
             return (IntPtr)Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
 #endif
 #pragma warning restore CA2020

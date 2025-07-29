@@ -10,7 +10,7 @@ static int MH_LOG_indent_level = 0;
 #else
 #define MH_LOG(msg, ...) { \
   printf("MH_NATIVE_LOG: "); \
-  for (int i = 0; i < MH_LOG_indent_level; i++) { \
+  for (int mh_idx = 0; mh_idx < MH_LOG_indent_level; mh_idx++) { \
     printf("  "); \
   } \
   printf("%s : %s | %d :: ", __func__, __FILE__, __LINE__); \

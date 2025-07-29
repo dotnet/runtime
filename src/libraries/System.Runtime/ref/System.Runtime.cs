@@ -42,7 +42,12 @@ namespace Microsoft.Win32.SafeHandles
     }
 }
 namespace System
-{
+{    
+    public partial class MHTestClass 
+    {        
+        public static IntPtr RunTestArray() { return 0;}
+        public static IntPtr RunTestArrayRaw() { return 0; }
+    }
     public partial class AccessViolationException : System.SystemException
     {
         public AccessViolationException() { }

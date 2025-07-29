@@ -356,6 +356,7 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             return (nint)ReadInt64(ptr, ofs);
 #else // 32
+#error TARGET_64BIT is not defined
             return (nint)ReadInt32(ptr, ofs);
 #endif
         }
@@ -473,6 +474,7 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+
 #pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
 #pragma warning restore CA2020

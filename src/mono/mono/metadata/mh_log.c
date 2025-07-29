@@ -39,7 +39,7 @@ void log_mono_type(MonoType* type) {
         default: type_str = "UNKNOWN"; break;
     }
     
-    MH_LOG("MonoType: %s", type_str);
+    MH_LOG("MonoType: %s (%d)", type_str, type->type);
 }
 
 void log_mono_type_enum(MonoTypeEnum type_enum) {

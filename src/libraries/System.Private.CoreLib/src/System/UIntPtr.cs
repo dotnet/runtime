@@ -16,6 +16,7 @@ using System.Runtime.Versioning;
 using nuint_t = System.UInt64;
 #else
 using nuint_t = System.UInt32;
+#error TARGET_64BIT is not defined
 #endif
 
 namespace System

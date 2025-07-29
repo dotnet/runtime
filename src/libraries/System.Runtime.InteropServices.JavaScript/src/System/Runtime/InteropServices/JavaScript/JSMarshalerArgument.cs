@@ -24,11 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal JSMarshalerArgumentImpl slot;
         // keep in sync with JSMarshalerArgumentOffsets in marshal.ts
-#if WASM64
         [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 64)]
-#else
-        [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 32)]
-#endif 
         internal struct JSMarshalerArgumentImpl
         {
             [FieldOffset(0)]
@@ -49,7 +45,6 @@ namespace System.Runtime.InteropServices.JavaScript
             internal double DoubleValue;// must be aligned to 8 because of Module.HEAPF64 view alignment
             [FieldOffset(0)]
             internal IntPtr IntPtrValue;
-#if WASM64
             [FieldOffset(8)]
             internal IntPtr JSHandle;
             [FieldOffset(8)]
@@ -79,37 +74,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 [FieldOffset(56)]
                 internal IntPtr SyncDoneSemaphorePtr;
     #endif
-#else
-            [FieldOffset(4)]
-            internal IntPtr JSHandle;
-            [FieldOffset(4)]
-            internal IntPtr GCHandle;
-
-            [FieldOffset(8)]
-            internal int Length;
-
-            /// <summary>
-            /// Discriminators
-            /// </summary>
-            [FieldOffset(12)]
-            internal MarshalerType Type;
-            [FieldOffset(13)]
-            internal MarshalerType ElementType;
-
-    #if FEATURE_WASM_MANAGED_THREADS
-                [FieldOffset(16)]
-                internal IntPtr ContextHandle;
-
-                [FieldOffset(20)]
-                internal bool ReceiverShouldFree; // note this is 1 byte
-
-                [FieldOffset(24)]
-                internal IntPtr CallerNativeTID;
-
-                [FieldOffset(28)]
-                internal IntPtr SyncDoneSemaphorePtr;
-    #endif
-#endif
         }
 
         /// <summary>

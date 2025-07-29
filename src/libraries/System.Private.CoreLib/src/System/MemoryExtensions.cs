@@ -202,6 +202,7 @@ namespace System
             if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)text.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 #else
+#error TARGET_64BIT is not defined
             if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 #endif

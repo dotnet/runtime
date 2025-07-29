@@ -57,7 +57,7 @@
 #include "monitor.h"
 #include "icall-decl.h"
 #include "icall-signatures.h"
-
+#include <mono/metadata/mh_log.h>
 #if _MSC_VER
 #pragma warning(disable:4312) // FIXME pointer cast to different size
 #endif
@@ -2559,6 +2559,7 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *
 static MonoObject*
 do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
+	MH_LOG("starting invoke for %s\n", mono_method_full_name (method, TRUE));
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoObject *result = NULL;
@@ -2568,11 +2569,11 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
 	error_init (error);
 
 	MONO_PROFILER_RAISE (method_begin_invoke, (method));
-
+	
 	result = callbacks.runtime_invoke (method, obj, params, exc, error);
 
 	MONO_PROFILER_RAISE (method_end_invoke, (method));
-
+	MH_LOG("ending invoke for %s\n", mono_method_full_name (method, TRUE));
 	if (!is_ok (error))
 		return NULL;
 
@@ -7995,8 +7996,7 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 
 	g_assert (size >= 0);
 	if (align)
-		*align = m_class_get_min_align (klass);
-
+		*align = m_class_get_min_align (klass);	
 	return size;
 }
 

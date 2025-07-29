@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
+#define MH_USE_INTPTR
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -11,6 +11,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
+
+using Mono;
 
 namespace System
 {
@@ -38,6 +40,17 @@ namespace System
                               FormatFullInst
     }
 
+    public partial class MHTestClass 
+    {        
+        public static IntPtr RunTestArray()
+        {
+            return RuntimeType.TestArray();
+        }
+        public static IntPtr RunTestArrayRaw()
+        {
+            return RuntimeType.TestArrayRaw();
+        }
+    }
     internal unsafe partial class RuntimeType
     {
         #region Definitions
@@ -2180,6 +2193,81 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetConstructors_native(QCallTypeHandle type, BindingFlags bindingAttr);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr TestArray_native();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr TestArrayRaw_native();
+
+        public static IntPtr TestArray()
+        {
+            // This is a test method to ensure that the native code can be called correctly.
+            // It is not used in production code and is only for testing purposes.
+            IntPtr result = TestArray_native();
+
+            //var h = new Mono.SafeGPtrArrayHandle(result);
+            //var h = new Mono.RuntimeGPtrArrayHandle(result);
+            RuntimeStructs.GPtrArray* myData = (RuntimeStructs.GPtrArray*)result;
+            
+
+            IntPtr* data = myData->data;
+            long idx = 0x1;
+            var a = data[idx];
+            var b = data[idx];
+            var c = data[idx];
+                        
+            var sum = c + a;
+
+            IntPtr[] array = new IntPtr[6];
+            array[0] = 0x555;
+            array[1] = 0x666;
+            array[2] = 0x777;
+
+            var d = array[0];
+            var e = array[1];
+            var f = array[2];
+
+            sum = f - d + e;
+            return sum;
+        }
+
+        public static IntPtr TestArrayRaw()
+        {
+            int size = Marshal.SizeOf(typeof(IntPtr));
+            System.Diagnostics.Debug.Assert(size == 8, "IntPtr is not the expected size of 8");
+
+            // This is a test method to ensure that the native code can be called correctly.
+            // It is not used in production code and is only for testing purposes.
+            //IntPtr* data = (IntPtr*)TestArrayRaw_native();
+
+#if MH_USE_INTPTR
+            IntPtr* data = (IntPtr*)TestArrayRaw_native();
+
+            long idx0 = 0x0;
+            long idx1 = 0x1;
+            long idx2 = 0x2;
+
+            IntPtr a = data[idx0];
+            IntPtr b = data[idx1];
+            IntPtr c = data[idx2];
+
+            IntPtr sum = (IntPtr)(b + c + a);
+#else
+            Int64* data = (Int64*)TestArrayRaw_native();
+
+            long idx0 = 0x0;
+            long idx1 = 0x1;
+            long idx2 = 0x2;
+
+            Int64 a = data[idx0];
+            Int64 b = data[idx1];
+            Int64 c = data[idx2];
+
+            IntPtr sum = (IntPtr)(b + c + a);
+#endif
+            return sum;
+        }
 
         private RuntimeConstructorInfo[] GetConstructors_internal(BindingFlags bindingAttr, RuntimeType reflectedType)
         {

@@ -271,6 +271,7 @@ Div1Word:
                     return true;
                 }
 #else
+#error TARGET_64BIT is not defined
                 // 32-bit RyuJIT doesn't convert 64-bit division by constant into multiplication by reciprocal. Do half-width divisions instead.
                 Debug.Assert(pow <= ushort.MaxValue);
                 uint num, mid32, low16, div, rem;

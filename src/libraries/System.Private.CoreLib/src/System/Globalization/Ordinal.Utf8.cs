@@ -210,6 +210,8 @@ namespace System.Globalization
                 byteOffset += 8;
                 length -= 8;
             }
+#else
+            #error TARGET_64BIT is not defined
 #endif
 
             uint valueAu32 = 0;

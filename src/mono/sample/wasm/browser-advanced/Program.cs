@@ -14,7 +14,7 @@ namespace Sample
         public static async Task<int> Main(string[] args)
         {
             Console.WriteLine("Hello, World!");
-
+            
             var rand = new Random();
             Console.WriteLine("Today's lucky number is " + rand.Next(100) + " and " + Guid.NewGuid());
 
@@ -53,13 +53,73 @@ namespace Sample
 
         [JSExport]
         internal static async Task PrintMeaning(Task<int> meaningPromise)
-        {
+        {            
             Console.WriteLine("Meaning of life is " + await meaningPromise);
         }
 
         [JSExport]
+        internal static async Task PrintMeaningDEBUG(int value)
+        {
+            Console.WriteLine("Meaning of life is " + value);
+        }
+        [JSExport]
+        internal static int SimpleTestFunctionInt()
+        {
+            return 666;
+        }
+
+        [JSExport]
+        internal static int SimpleTestFunctionIntSize()
+        {
+            return sizeof(int);
+        }
+
+        [JSExport]
+        internal static string SimpleTestFunctionString()
+        {
+            return "Your lucky number today is:";
+        }
+
+        [JSExport]
+        internal static void SimpleTestFunctionPrintEmptyString()
+        {
+            // write an empty string to the console
+            Console.WriteLine("");
+        }
+        [JSExport]
+        internal static bool SimpleTestConsole()
+        {
+            // see if we can access anything from the console
+            System.IO.TextWriter output = Console.Out;
+            return output != null;
+        }
+        [JSExport]
+        internal static void SimpleTestArray()
+        {
+            
+            var arrayPtr = System.MHTestClass.RunTestArray();
+            //var arrayPtr = System.MHTestClass.RunTestArrayRaw();
+            //var h = new Mono.SafeGPtrArrayHandle(arrayPtr);
+
+            var a = 1;// h[0];
+            var b = 2;// h[1];
+            var c = 3;// h[2];
+            
+            //return a + b + c;
+            //using (var h = new Mono.SafeGPtrArrayHandle(TestArray_native());
+        }
+        
+        [JSExport]
+        internal static void SimpleTestFunctionPrintString()
+        {
+            // write an empty string to the console
+            Console.WriteLine("MH DOING A TEST");
+        }
+        [JSExport]
         internal static int TestMeaning()
         {
+            int testSize = 123;
+            Console.WriteLine("Size of an int is " + sizeof(int) + " bytes, and test size is " + testSize + " bytes.");
             // call to C code via [DllImport]
             var half = Fibonacci(8);
             // call back to JS via [JSImport]
@@ -69,6 +129,7 @@ namespace Sample
         [JSExport]
         internal static void SillyLoop()
         {
+            Console.WriteLine("Entering SillyLoop()");
             // this silly method will generate few sample points for the profiler
             for (int i = 1; i <= 60; i ++)
             {

@@ -880,6 +880,7 @@ namespace System.Runtime.InteropServices
             [NonVersionable]
             get => (NFloat)BitConverter.UInt64BitsToDouble(0xFFFF_FFFF_FFFF_FFFF);
 #else
+#error TARGET_64BIT is not defined
             [NonVersionable]
             get => BitConverter.UInt32BitsToSingle(0xFFFF_FFFF);
 #endif

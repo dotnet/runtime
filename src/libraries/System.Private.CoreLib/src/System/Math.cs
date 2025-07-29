@@ -193,6 +193,7 @@ namespace System
 #if TARGET_64BIT
             return Math.BigMul((ulong)a, (ulong)b, out low);
 #else
+#error TARGET_64BIT is not defined
             ulong prodL = ((ulong)(uint)a) * b;
             ulong prodH = (prodL >> 32) + (((ulong)(uint)(a >> 32)) * b);
 

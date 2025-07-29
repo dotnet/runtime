@@ -226,6 +226,7 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 	void *p = mono_wasm_interp_to_native_callback (cookie);
 	if (!p)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
+	MH_LOG("Got interp to native trampoline %p for cookie %s", p, cookie);
 	return p;
 }
 

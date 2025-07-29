@@ -282,7 +282,7 @@
 
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">-O1</_EmccOptimizationFlagDefault>
-      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
+      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-O0</_EmccOptimizationFlagDefault>
 
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
       <!-- FIXME: which one should take precedence? -->
@@ -340,6 +340,8 @@
       <_EmccCFlags Include="-sWASM_ASYNC_COMPILATION=0" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="-emit-llvm" />
+      <_EmccCFlags Include="-sUSE_CLOSURE_COMPILER=1" />
+      <_EmccCFlags Include="-sMEMORY64"                        Condition="'$(WasmEnableMemory64)' == 'true'"/> 
 
       <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
       <_EmccCFlags Include="-g"                                Condition="'$(WasmNativeDebugSymbols)' == 'true'" />

@@ -51,7 +51,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-path.h>
-
+#include <mono/metadata/mh_log.h>
 /*
  * This lock protects the hash tables inside MonoImage used by the metadata
  * loading functions in class.c and loader.c.
@@ -406,9 +406,8 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 static MonoMethod *
 find_method_in_class (MonoClass *klass, const char *name, const char *qname, const char *fqname,
 		      MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
-{
- 	int i;
-
+{	
+ 	int i;	
 	/* FIXME: method refs from metadata-upate probably end up here */
 
 	/* Search directly in the metadata to avoid calling setup_methods () */

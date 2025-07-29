@@ -659,11 +659,16 @@ void    g_array_set_size          (GArray *array, gint length);
  * Pointer Array
  */
 
-typedef struct _GPtrArray GPtrArray;
-struct _GPtrArray {
-	gpointer *pdata;
-	guint len;
+#if defined(_MSC_VER)
+__declspec(align(8)) struct _GPtrArray {
+#else
+struct __attribute__((aligned(8))) _GPtrArray {
+#endif
+    gpointer *pdata;
+    guint len;
+    guint padding;
 };
+typedef struct _GPtrArray GPtrArray;
 
 GPtrArray *g_ptr_array_new                (void);
 GPtrArray *g_ptr_array_sized_new          (guint reserved_size);
