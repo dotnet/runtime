@@ -321,8 +321,7 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
     CONST HANDLE *lpHandles,
     BOOL bWaitAll,
     DWORD dwMilliseconds,
-    BOOL bAlertable,
-    BOOL bPrioritize)
+    BOOL bAlertable)
 {
     DWORD dwRet = WAIT_FAILED;
     PAL_ERROR palErr = NO_ERROR;
@@ -516,8 +515,7 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
             palErr = ppISyncWaitCtrlrs[i]->RegisterWaitingThread(
                                                         wtWaitType,
                                                         i,
-                                                        (TRUE == bAlertable),
-                                                        bPrioritize != FALSE);
+                                                        (TRUE == bAlertable));
             if (NO_ERROR != palErr)
             {
                 ERROR("RegisterWaitingThread() failed for %d-th object "

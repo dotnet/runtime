@@ -247,8 +247,7 @@ namespace CorUnix
     PAL_ERROR CSynchWaitController::RegisterWaitingThread(
         WaitType wtWaitType,
         DWORD dwIndex,
-        bool fAlertable,
-        bool fPrioritize)
+        bool fAlertable)
     {
         VALIDATEOBJECT(m_psdSynchData);
 
@@ -366,7 +365,7 @@ namespace CorUnix
         }
 
         // Add new node to queue
-        m_psdSynchData->WaiterEnqueue(pwtlnNewNode, fPrioritize);
+        m_psdSynchData->WaiterEnqueue(pwtlnNewNode);
 
         // Succeeded: update object count
         ptwiWaitInfo->lObjCount++;
@@ -1113,60 +1112,32 @@ namespace CorUnix
     Note: this method must be called while holding the local process
           synchronization lock.
     --*/
-    void CSynchData::WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode, bool fPrioritize)
+    void CSynchData::WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode)
     {
         VALIDATEOBJECT(this);
         VALIDATEOBJECT(pwtlnNewNode);
 
-        if (!fPrioritize)
+        // Enqueue normally to the end of the queue
+        WaitingThreadsListNode * pwtlnCurrLast = m_ptrWTLTail.ptr;
+
+        pwtlnNewNode->ptrNext.ptr = NULL;
+        if (NULL == pwtlnCurrLast)
         {
-            // Enqueue normally to the end of the queue
-            WaitingThreadsListNode * pwtlnCurrLast = m_ptrWTLTail.ptr;
+            _ASSERT_MSG(NULL == m_ptrWTLHead.ptr,
+                        "Corrupted waiting list on local CSynchData @ %p\n",
+                        this);
 
-            pwtlnNewNode->ptrNext.ptr = NULL;
-            if (NULL == pwtlnCurrLast)
-            {
-                _ASSERT_MSG(NULL == m_ptrWTLHead.ptr,
-                            "Corrupted waiting list on local CSynchData @ %p\n",
-                            this);
-
-                pwtlnNewNode->ptrPrev.ptr = NULL;
-                m_ptrWTLHead.ptr = pwtlnNewNode;
-                m_ptrWTLTail.ptr = pwtlnNewNode;
-            }
-            else
-            {
-                VALIDATEOBJECT(pwtlnCurrLast);
-
-                pwtlnNewNode->ptrPrev.ptr = pwtlnCurrLast;
-                pwtlnCurrLast->ptrNext.ptr = pwtlnNewNode;
-                m_ptrWTLTail.ptr = pwtlnNewNode;
-            }
+            pwtlnNewNode->ptrPrev.ptr = NULL;
+            m_ptrWTLHead.ptr = pwtlnNewNode;
+            m_ptrWTLTail.ptr = pwtlnNewNode;
         }
         else
         {
-            // The wait is prioritized, enqueue to the beginning of the queue
-            WaitingThreadsListNode * pwtlnCurrFirst = m_ptrWTLHead.ptr;
+            VALIDATEOBJECT(pwtlnCurrLast);
 
-            pwtlnNewNode->ptrPrev.ptr = NULL;
-            if (NULL == pwtlnCurrFirst)
-            {
-                _ASSERT_MSG(NULL == m_ptrWTLTail.ptr,
-                            "Corrupted waiting list on local CSynchData @ %p\n",
-                            this);
-
-                pwtlnNewNode->ptrNext.ptr = NULL;
-                m_ptrWTLHead.ptr = pwtlnNewNode;
-                m_ptrWTLTail.ptr = pwtlnNewNode;
-            }
-            else
-            {
-                VALIDATEOBJECT(pwtlnCurrFirst);
-
-                pwtlnNewNode->ptrNext.ptr = pwtlnCurrFirst;
-                pwtlnCurrFirst->ptrPrev.ptr = pwtlnNewNode;
-                m_ptrWTLHead.ptr = pwtlnNewNode;
-            }
+            pwtlnNewNode->ptrPrev.ptr = pwtlnCurrLast;
+            pwtlnCurrLast->ptrNext.ptr = pwtlnNewNode;
+            m_ptrWTLTail.ptr = pwtlnNewNode;
         }
 
         m_ulcWaitingThreads += 1;

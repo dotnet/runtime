@@ -3358,7 +3358,6 @@ retry:
         goto retry;
     }
     _ASSERTE((ret >= WAIT_OBJECT_0  && ret < (WAIT_OBJECT_0  + (DWORD)countHandles)) ||
-             (ret >= WAIT_ABANDONED && ret < (WAIT_ABANDONED + (DWORD)countHandles)) ||
              (ret == WAIT_TIMEOUT) || (ret == WAIT_FAILED));
     // countHandles is used as an unsigned -- it should never be negative.
     _ASSERTE(countHandles >= 0);
@@ -3456,11 +3455,13 @@ retry:
                 DWORD subRet = WaitForSingleObject (handles[i], 0);
                 if ((subRet == WAIT_OBJECT_0) || (subRet == WAIT_FAILED))
                     break;
+#ifdef HOST_WINDOWS
                 if (subRet == WAIT_ABANDONED)
                 {
                     ret = (ret - WAIT_OBJECT_0) + WAIT_ABANDONED;
                     break;
                 }
+#endif // HOST_WINDOWS
                 // If we get alerted it just masks the real state of the current
                 // handle, so retry the wait.
                 if (subRet == WAIT_IO_COMPLETION)
@@ -3616,11 +3617,18 @@ retry:
 WaitCompleted:
 
     //Check that the return state is valid
+#ifdef HOST_WINDOWS
     _ASSERTE(WAIT_OBJECT_0 == ret  ||
          WAIT_ABANDONED == ret ||
          WAIT_TIMEOUT == ret ||
          WAIT_FAILED == ret  ||
          ERROR_TOO_MANY_POSTS == ret);
+#else
+    _ASSERTE(WAIT_OBJECT_0 == ret  ||
+         WAIT_TIMEOUT == ret ||
+         WAIT_FAILED == ret  ||
+         ERROR_TOO_MANY_POSTS == ret);
+#endif // HOST_WINDOWS
 
     //Wrong to time out if the wait was infinite
     _ASSERTE((WAIT_TIMEOUT != ret) || (INFINITE != millis));
