@@ -1,25 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Runtime.Versioning;
-using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-
     internal sealed class NamedMutexOwnershipChain(Thread thread)
     {
-        private Thread _thread = thread;
+        private readonly Thread _thread = thread;
         private NamedMutexProcessDataBase? _head;
 
         public void Add(NamedMutexProcessDataBase namedMutex)
@@ -76,6 +68,7 @@ namespace System.Threading
             }
         }
     }
+
     internal abstract class NamedMutexProcessDataBase(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> header) : ISharedMemoryProcessData
     {
         private const byte SyncSystemVersion = 1;
