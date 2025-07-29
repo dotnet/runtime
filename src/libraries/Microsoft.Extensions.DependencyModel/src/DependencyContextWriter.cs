@@ -59,10 +59,10 @@ namespace Microsoft.Extensions.DependencyModel
         private static void WriteRuntimeGraph(DependencyContext context, Utf8JsonWriter jsonWriter)
         {
             jsonWriter.WriteStartObject(DependencyContextStrings.RuntimesPropertyName);
-            foreach (RuntimeFallbacks runtimeFallback in context.RuntimeGraph)
+            foreach (RuntimeFallbacks runtimeFallback in context.RuntimeGraph.OrderBy(r => r.Runtime, StringComparer.Ordinal))
             {
                 jsonWriter.WriteStartArray(runtimeFallback.Runtime);
-                foreach (string? fallback in runtimeFallback.Fallbacks)
+                foreach (string? fallback in runtimeFallback.Fallbacks.OrderBy(s => s, StringComparer.Ordinal))
                 {
                     jsonWriter.WriteStringValue(fallback);
                 }
@@ -148,7 +148,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             jsonWriter.WriteStartObject(key);
 
-            foreach (string packageName in runtimeLookup.Keys.Concat(compileLookup.Keys).Distinct())
+            foreach (string packageName in runtimeLookup.Keys.Concat(compileLookup.Keys).Distinct().OrderBy(s => s, StringComparer.Ordinal))
             {
                 runtimeLookup.TryGetValue(packageName, out RuntimeLibrary? runtimeLibrary);
 
@@ -201,7 +201,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             jsonWriter.WriteStartObject(DependencyContextStrings.DependenciesPropertyName);
-            foreach (Dependency dependency in dependencies)
+            foreach (Dependency dependency in dependencies.OrderBy(d => d.Name, StringComparer.Ordinal).ThenBy(d => d.Version, StringComparer.Ordinal))
             {
                 jsonWriter.WriteString(dependency.Name, dependency.Version);
             }
@@ -210,6 +210,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static void AddResourceAssemblies(IReadOnlyList<ResourceAssembly> resourceAssemblies, Utf8JsonWriter jsonWriter)
         {
+            resourceAssemblies = resourceAssemblies.OrderBy(r => r.Path, StringComparer.Ordinal).ToList();
             int count = resourceAssemblies.Count;
             if (count == 0)
             {
@@ -264,7 +265,12 @@ namespace Microsoft.Extensions.DependencyModel
         {
             jsonWriter.WriteStartObject(key);
 
-            var dependencies = new HashSet<Dependency>();
+            var dependencyComparer = Comparer<Dependency>.Create((d1, d2) =>
+            {
+                int nameComparison = string.Compare(d1.Name, d2.Name, StringComparison.Ordinal);
+                return (nameComparison != 0) ? nameComparison : string.Compare(d1.Version, d2.Version, StringComparison.Ordinal);
+            });
+            var dependencies = new SortedSet<Dependency>(dependencyComparer);
             if (runtimeLibrary != null)
             {
                 dependencies.UnionWith(runtimeLibrary.Dependencies);
@@ -310,7 +316,9 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static bool AddRuntimeSpecificAssetGroups(string assetType, IEnumerable<RuntimeAssetGroup> assetGroups, bool wroteObjectStart, Utf8JsonWriter jsonWriter)
         {
-            using IEnumerator<RuntimeAssetGroup> groups = assetGroups.Where(g => !string.IsNullOrEmpty(g.Runtime)).GetEnumerator();
+            using IEnumerator<RuntimeAssetGroup> groups = assetGroups.Where(g => !string.IsNullOrEmpty(g.Runtime))
+                                                                     .OrderBy(g => g.Runtime, StringComparer.Ordinal)
+                                                                     .GetEnumerator();
 
             if (groups.MoveNext())
             {
@@ -351,7 +359,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static void AddRuntimeSpecificAssets(IEnumerable<RuntimeFile> assets, string? runtime, string? assetType, Utf8JsonWriter jsonWriter)
         {
-            foreach (RuntimeFile asset in assets)
+            foreach (RuntimeFile asset in assets.OrderBy(f => f.Path, StringComparer.Ordinal))
             {
                 jsonWriter.WriteStartObject(NormalizePath(asset.Path));
 
@@ -380,7 +388,7 @@ namespace Microsoft.Extensions.DependencyModel
         private static void WriteAssetList(string key, IEnumerable<string> assetPaths, Utf8JsonWriter jsonWriter)
         {
             jsonWriter.WriteStartObject(key);
-            foreach (string assembly in assetPaths)
+            foreach (string assembly in assetPaths.OrderBy(s => s, StringComparer.Ordinal))
             {
                 jsonWriter.WriteStartObject(NormalizePath(assembly));
                 jsonWriter.WriteEndObject();
@@ -392,7 +400,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             jsonWriter.WriteStartObject(key);
 
-            foreach (RuntimeFile runtimeFile in runtimeFiles)
+            foreach (RuntimeFile runtimeFile in runtimeFiles.OrderBy(r => r.Path, StringComparer.Ordinal))
             {
                 jsonWriter.WriteStartObject(NormalizePath(runtimeFile.Path));
 
@@ -421,7 +429,8 @@ namespace Microsoft.Extensions.DependencyModel
         {
             IEnumerable<IGrouping<string, Library>> allLibraries =
                 context.RuntimeLibraries.Cast<Library>().Concat(context.CompileLibraries)
-                    .GroupBy(library => library.Name + DependencyContextStrings.VersionSeparator + library.Version);
+                    .GroupBy(library => library.Name + DependencyContextStrings.VersionSeparator + library.Version)
+                    .OrderBy(grouping => grouping.Key, StringComparer.Ordinal);
 
             jsonWriter.WriteStartObject(DependencyContextStrings.LibrariesPropertyName);
             foreach (IGrouping<string, Library> libraryGroup in allLibraries)
