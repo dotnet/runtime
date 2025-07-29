@@ -493,28 +493,82 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     MethodDesc*     pMD         = NULL;
 
 #ifndef DACCESS_COMPILE
-    if (pSigLoaderModule == NULL)
-    {
-        pSigLoaderModule = (pTargetMD != NULL) ? pTargetMD->GetLoaderModule() : pSigModule;
-    }
+    ILStubHashBlob* pBlob       = NULL;
 
-    SigTypeContext typeContext;
-    if (pTypeContext == NULL)
+    INDEBUG(LPCSTR  pszResult   = "[hit cache]");
+
+    if (SF_IsSharedStub(dwStubFlags))
     {
-        if (pTargetMD != NULL)
+        CrstHolder ch(&m_crst);
+
+        // Try to find the stub
+        const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
+        if (phe)
         {
-            SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+            pMD = phe->m_pMethodDesc;
         }
-        pTypeContext = &typeContext;
     }
 
-    MethodTable *pStubMT = GetOrCreateStubMethodTable(pSigLoaderModule);
-    pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, pTypeContext, pamTracker);
+    if (!pMD)
+    {
+        //
+        // Couldn't find it, let's make a new one.
+        //
+
+        if (pSigLoaderModule == NULL)
+        {
+            pSigLoaderModule = (pTargetMD != NULL) ? pTargetMD->GetLoaderModule() : pSigModule;
+        }
+
+        SigTypeContext typeContext;
+        if (pTypeContext == NULL)
+        {
+            if (pTargetMD != NULL)
+            {
+                SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+            }
+            pTypeContext = &typeContext;
+        }
+
+        MethodTable *pStubMT = GetOrCreateStubMethodTable(pSigLoaderModule);
+        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, pTypeContext, pamTracker);
+
+        if (SF_IsSharedStub(dwStubFlags))
+        {
+            size_t cbSizeOfBlob = pHashBlob->m_cbSizeOfBlob;
+
+            CrstHolder ch(&m_crst);
+
+            const ILStubCacheEntry* phe = m_hashMap.LookupPtr(pHashBlob);
+            if (phe == NULL)
+            {
+                AllocMemHolder<ILStubHashBlob> pBlobHolder( m_pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbSizeOfBlob)) );
+                pBlob = pBlobHolder;
+                _ASSERTE(pHashBlob->m_cbSizeOfBlob == cbSizeOfBlob);
+                memcpy(pBlob, pHashBlob, cbSizeOfBlob);
+
+                m_hashMap.Add(ILStubCacheEntry{ pMD, pBlob });
+                pBlobHolder.SuppressRelease();
+
+                INDEBUG(pszResult   = "[missed cache]");
+                bILStubCreator = true;
+            }
+            else
+            {
+                INDEBUG(pszResult   = "[hit cache][wasted new MethodDesc due to race]");
+                pMD = phe->m_pMethodDesc;
+            }
+        }
+        else
+        {
+            INDEBUG(pszResult   = "[cache disabled for COM->CLR field access stubs]");
+        }
+    }
 
 #ifdef _DEBUG
     CQuickBytes qbManaged;
     PrettyPrintSig(pSig,  cbSig, "*",  &qbManaged, pSigModule->GetMDImport(), NULL);
-    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::GetStubMethodDesc StubMD: %p module: %p sig: %s\n", pMD, pSigModule, qbManaged.Ptr()));
+    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::GetStubMethodDesc %s StubMD: %p module: %p blob: %p sig: %s\n", pszResult, pMD, pSigModule, pBlob, qbManaged.Ptr()));
 #endif // _DEBUG
 #endif // DACCESS_COMPILE
 

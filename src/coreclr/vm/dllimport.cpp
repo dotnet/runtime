@@ -815,7 +815,7 @@ public:
             // Forward delegate stubs get all the context they need in 'this' so they
             // don't use the secret parameter.
         }
-        else if (SF_IsForwardStub(m_dwStubFlags))
+        else if (SF_IsForwardPInvokeStub(m_dwStubFlags))
         {
             // Forward stubs (i.e., NDirects) don't use the secret parameter
         }
@@ -4938,6 +4938,47 @@ namespace
                                 COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
                             }
                             UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
+                        }
+
+                        if (SF_IsSharedStub(params.m_dwStubFlags))
+                        {
+                            // We need to re-acquire the lock in case we need to get a new pStubMD
+                            // in the case that the owner of the shared stub was destroyed.
+                            pILStubLock.Acquire();
+
+                            // Assure that pStubMD we have now has not been destroyed by other threads
+                            ilStubCreatorHelper.GetStubMethodDesc();
+
+                            while (pStubMD != ilStubCreatorHelper.GetStubMD())
+                            {
+                                pStubMD = ilStubCreatorHelper.GetStubMD();
+
+                                pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
+                                pEntryLock.Assign(pEntry, FALSE);
+
+                                // We have the entry lock we need to use, so we can release the global lock.
+                                pILStubLock.Release();
+
+                                if (!pEntryLock.DeadlockAwareAcquire())
+                                {
+                                    // the IL generation is not recursive.
+                                    // However, we can encounter a recursive situation when attempting to
+                                    // marshal a struct containing a layout class containing another struct.
+                                    // Throw an exception here instead of asserting.
+                                    if (SF_IsStructMarshalStub(dwStubFlags))
+                                    {
+                                        _ASSERTE(pSigDesc->m_pMT != nullptr);
+                                        StackSString strTypeName;
+                                        TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
+                                        COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
+                                    }
+                                    UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
+                                }
+
+                                pILStubLock.Acquire();
+
+                                ilStubCreatorHelper.GetStubMethodDesc();
+                            }
                         }
 
                         for (;;)
