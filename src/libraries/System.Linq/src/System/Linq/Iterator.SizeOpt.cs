@@ -72,8 +72,8 @@ public static partial class Enumerable
             int index = _state - 1;
             if ((uint)index <= (uint)_source.Count)
             {
-                _current = _selector(_source[index]);
                 ++_state;
+                _current = _selector(_source[index]);
                 return true;
             }
 
