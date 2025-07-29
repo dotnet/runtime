@@ -89,7 +89,7 @@ struct CDacStringPoolSizes
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
     char cdac_string_pool_trailing_nil;
 #undef DECL_LEN
 };
@@ -107,7 +107,7 @@ enum
     CDacBlobTypesCount =
 #define CDAC_TYPES_BEGIN() 0
 #define CDAC_TYPE_BEGIN(name) + 1
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 };
 
 // count the field pool size.
@@ -118,7 +118,7 @@ enum
 #define CDAC_TYPES_BEGIN() 1
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) + 1
 #define CDAC_TYPE_END(name) + 1
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 };
 
 // count the literal globals
@@ -127,7 +127,7 @@ enum
     CDacBlobGlobalLiteralsCount =
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL(name,tyname,value) + 1
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 };
 
 // count the aux vector globals
@@ -136,7 +136,7 @@ enum
     CDacBlobGlobalPointersCount =
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL_POINTER(name,value) + 1
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 };
 
 // count the global strings
@@ -145,7 +145,7 @@ enum
     CDacBlobGlobalStringsCount =
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL_STRING(name,value) + 1
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 };
 
 
@@ -175,7 +175,7 @@ struct CDacFieldsPoolSizes
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(CONCAT4(cdac_fields_pool_member__, tyname, __, membername))
 #define CDAC_TYPE_END(name) DECL_LEN(CONCAT4(cdac_fields_pool_member__, tyname, _, endmarker)) \
     } MAKE_TYPEFIELDS_TYNAME(name);
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 #undef DECL_LEN
 };
 
@@ -197,7 +197,7 @@ struct CDacGlobalPointerIndex
 #define DECL_LEN(membername) char membername;
 #define CDAC_GLOBALS_BEGIN() DECL_LEN(cdac_global_pointer_index_start_placeholder__)
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(CONCAT(cdac_global_pointer_index__, name))
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 #undef DECL_LEN
 };
 
@@ -295,7 +295,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #define CDAC_TYPE_INDETERMINATE(name) /*.Size = */ 0,
 #define CDAC_TYPE_SIZE(size) /* .Size = */ size,
 #define CDAC_TYPE_END(name) },
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
         },
 
         /* .FieldsPool = */ {
@@ -306,22 +306,22 @@ struct MagicAndBlob BlobDataDescriptor = {
     /* .FieldOffset = */ offset, \
 },
 #define CDAC_TYPE_END(name) { 0, },
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
         },
 
         /* .GlobalLiteralValues = */ {
 #define CDAC_GLOBAL(name,tyname,value) { /*.Name = */ GET_GLOBAL_NAME(name), /* .TypeName = */ GET_GLOBALTYPE_NAME(name), /* .Value = */ value },
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
         },
 
         /* .GlobalPointerValues = */ {
 #define CDAC_GLOBAL_POINTER(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .PointerDataIndex = */ GET_GLOBAL_POINTER_INDEX(name) },
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
         },
 
         /* .GlobalStringValues = */ {
 #define CDAC_GLOBAL_STRING(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .Value = */ GET_GLOBALSTRING_VALUE(name) },
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
         },
 
         /* .NamesPool = */ ("\0" // starts with a nul
@@ -331,7 +331,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 #define CDAC_GLOBAL_STRING(name,value) #name "\0" STRINGIFY(value) "\0"
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
 #define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
                   ),
 
         /* .EndMagic = */ { 0x01, 0x02, 0x03, 0x04 },

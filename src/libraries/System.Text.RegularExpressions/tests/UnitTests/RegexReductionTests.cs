@@ -9,6 +9,12 @@ namespace System.Text.RegularExpressions.Tests
     public class RegexReductionTests
     {
         [Theory]
+        // Well-known sets
+        [InlineData(@"[^\d]", @"\D")]
+        [InlineData(@"[^\w]", @"\W")]
+        [InlineData(@"[^\s]", @"\S")]
+        [InlineData(@"[\s\S]", @"[\d\D]")]
+        [InlineData(@"[\s\S]", @"[\w\W]")]
         // Two greedy one loops
         [InlineData("a*a*", "a*")]
         [InlineData("(a*a*)", "(a*)")]
@@ -244,6 +250,19 @@ namespace System.Text.RegularExpressions.Tests
         // Large loop patterns
         [InlineData("a*a*a*a*a*a*a*b*b*?a+a*", "a*b*b*?a+")]
         [InlineData("a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "a{0,30}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+        // Nop loops
+        [InlineData("(?:)*", "")]
+        [InlineData("a(?=abc)*b", "ab")]
+        [InlineData("a(?<=abc)*b", "ab")]
+        [InlineData("a(?<!abc)*b", "ab")]
+        [InlineData("a$*b", "ab")]
+        [InlineData("a^?b", "ab")]
+        [InlineData(@"a\b*b", "ab")]
+        [InlineData(@"a\B*b", "ab")]
+        [InlineData(@"a\z?b", "ab")]
+        [InlineData(@"a\Z?b", "ab")]
+        [InlineData(@"a\A?b", "ab")]
+        [InlineData(@"a\G?b", "ab")]
         // Group elimination
         [InlineData("(?:(?:(?:(?:(?:(?:a*))))))", "a*")]
         // Nested loops
@@ -256,10 +275,27 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?>(?>(?>(?>))))", "")]
         [InlineData("(?>(?>(?>(?>(?!)))))", "(?!)")]
         [InlineData("(?=(?>))", "")]
+        // Lookaround reduction
+        [InlineData("(?!(abc))", "(?!abc)")]
+        [InlineData("(?!a(b*)c)", "(?!ab*c)")]
+        [InlineData("(?!a((((b))))c)", "(?!abc)")]
+        [InlineData(@"(?=(?=(?=abc)))", @"(?=abc)")]
+        [InlineData(@"(?=(?<=(?=abc)))", @"(?<=(?=abc))")]
+        [InlineData(@"(?=\G)abc", @"\Gabc")]
+        [InlineData(@"(?=^)abc", @"^abc")]
+        [InlineData(@"(?=\b)abc", @"\babc")]
+        [InlineData(@"abc(?=\z)", @"abc\z")]
+        [InlineData(@"abc(?=\Z)", @"abc\Z")]
+        [InlineData(@"abc(?=\A)", @"abc\A")]
+        [InlineData(@"abc(?=$)", @"abc$")]
         // Alternation reduction
         [InlineData("a|b", "[ab]")]
         [InlineData("a|b|c|d|e|g|h|z", "[a-eghz]")]
         [InlineData("a|b|c|def|g|h", "(?>[a-c]|def|[gh])")]
+        [InlineData("a|[^a]", @"[\s\S]")]
+        [InlineData(".|\n", @"[\s\S]")]
+        [InlineData(".|\n|a", @"[\s\S]")]
+        [InlineData("abc|.|\n|def", @"abc|[\s\S]|def")]
         [InlineData("this|that|there|then|those", "th(?>is|at|ere|en|ose)")]
         [InlineData("^this|^that|^there|^then|^those", "^th(?>is|at|ere|en|ose)")]
         [InlineData("\bthis|\bthat|\bthere|\bthen|\bthose", "\bth(?>is|at|ere|en|ose)")]
@@ -270,6 +306,12 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("abcd|aefg", "a(?>bcd|efg)")]
         [InlineData("abcd|abc|ab|a", "a(?>bcd|bc|b|)")]
         [InlineData("^abcd|^abce", "^(?:abc[de])")]
+        [InlineData("abc|", "(?:abc)?")]
+        [InlineData("a|", "a?")]
+        [InlineData("(?:abc|)d", "(?>(?:abc)?)d")]
+        [InlineData("(?:a|)a", "a{1,2}")]
+        [InlineData("(?:a|)a*", "a*")]
+        [InlineData("a+(?:a|)", "a+")]
         // [InlineData("abcde|abcdef", "abcde(?>|f)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("abcdef|abcde", "abcde(?>f|)")]
         [InlineData("abcdef|abcdeg|abcdeh|abcdei|abcdej|abcdek|abcdel", "abcde[f-l]")]
@@ -376,6 +418,16 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(abc?)*?d", "(ab(?>c?))*?d")]
         [InlineData("(ab*c)*d", "(?>(a(?>b*)c)*)d")]
         [InlineData("(aba)?d", "(?>(aba)?)d")]
+        // Anchors
+        [InlineData(@"\b\b", @"\b")]
+        [InlineData(@"\b\b\b\b\b", @"\b")]
+        [InlineData(@"\B\B", @"\B")]
+        [InlineData(@"^^", @"^")]
+        [InlineData(@"$", @"$")]
+        [InlineData(@"\Z\Z", @"\Z")]
+        [InlineData(@"\z\z", @"\z")]
+        [InlineData(@"\G\G", @"\G")]
+        [InlineData(@"\A\A", @"\A")]
         // Nothing handling
         [InlineData(@"\wabc(?!)def", "(?!)")]
         [InlineData(@"\wabc(?!)def|ghi(?!)", "(?!)")]
@@ -518,6 +570,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(abc?)*?d", "(?>(ab(?>c?))*)d")]
         [InlineData("(aba)+d", "(?>(aba)+)d")]
         [InlineData("(abc*)*d", "(?>(ab(?>c*))*)d")]
+        // Lookaround reduction
+        [InlineData("(?=(abc))", "(?=abc)")]
+        [InlineData("(?=a(b*)c)", "(?=ab*c)")]
+        [InlineData("(?=a((((b))))c)", "(?=abc)")]
         // Loops inside alternation constructs
         [InlineData("(abc*|def)chi", "(ab(?>c*)|def)chi")]
         [InlineData("(abc|def*)fhi", "(abc|de(?>f*))fhi")]
@@ -532,6 +588,15 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a*(?(xyz)bcd)", "(?>a*)(?(xyz)bcd)")]
         // Different prefixes on alternation branches
         [InlineData("^abcd|$abce", "^abcd|^abce")]
+        // Zero-width assertions in non-removable loops
+        [InlineData("a(?=abc)+b", "ab")]
+        [InlineData("a(?<=abc)+b", "ab")]
+        [InlineData("a(?<!abc){1,2}b", "ab")]
+        [InlineData("a${3,}b", "ab")]
+        // Anchors
+        [InlineData(@"\b\B", "\b")]
+        [InlineData(@"^$", "^")]
+        [InlineData(@"^$", "$")]
         public void PatternsReduceDifferently(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.

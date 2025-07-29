@@ -1903,10 +1903,45 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // Check if loop is small enough to consider for inversion.
     // Large loops are less likely to benefit from inversion.
-    const int sizeLimit = JitConfig.JitLoopInversionSizeLimit();
-    if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit))
+    const int invertSizeLimit = JitConfig.JitLoopInversionSizeLimit();
+    if (invertSizeLimit >= 0)
     {
-        return false;
+        const int cloneSizeLimit          = JitConfig.JitCloneLoopsSizeLimit();
+        bool      mightBenefitFromCloning = false;
+        unsigned  loopSize                = 0;
+
+        // Loops with bounds checks can benefit from cloning, which depends on inversion running.
+        // Thus, we will try to proceed with inversion for slightly oversize loops if they show potential for cloning.
+        auto countNode = [&mightBenefitFromCloning, &loopSize](GenTree* tree) -> unsigned {
+            mightBenefitFromCloning |= tree->OperIs(GT_BOUNDS_CHECK);
+            loopSize++;
+            return 1;
+        };
+
+        optLoopComplexityExceeds(loop, (unsigned)max(invertSizeLimit, cloneSizeLimit), countNode);
+        if (loopSize > (unsigned)invertSizeLimit)
+        {
+            // Don't try to invert oversize loops if they don't show cloning potential,
+            // or if they're too big to be cloned anyway.
+            JITDUMP(FMT_LP " exceeds inversion size limit of %d\n", loop->GetIndex(), invertSizeLimit);
+            const bool tooBigToClone = (cloneSizeLimit >= 0) && (loopSize > (unsigned)cloneSizeLimit);
+            if (!mightBenefitFromCloning || tooBigToClone)
+            {
+                JITDUMP("No inversion for " FMT_LP ": %s\n", loop->GetIndex(),
+                        tooBigToClone ? "too big to clone" : "unlikely to benefit from cloning");
+                return false;
+            }
+
+            // If the loop shows cloning potential, tolerate some excess size.
+            const unsigned liberalInvertSizeLimit = (unsigned)(invertSizeLimit * 1.25);
+            if (loopSize > liberalInvertSizeLimit)
+            {
+                JITDUMP(FMT_LP " might benefit from cloning, but is too large to invert.\n", loop->GetIndex());
+                return false;
+            }
+
+            JITDUMP(FMT_LP " might benefit from cloning. Continuing.\n", loop->GetIndex());
+        }
     }
 
     unsigned estDupCostSz = 0;
@@ -2343,7 +2378,6 @@ void Compiler::optResetLoopInfo()
         if (!block->hasProfileWeight())
         {
             block->bbWeight = BB_UNITY_WEIGHT;
-            block->RemoveFlags(BBF_RUN_RARELY);
         }
     }
 }
@@ -2864,47 +2898,6 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     return true;
 }
 
-//------------------------------------------------------------------------
-// optLoopComplexityExceeds: Check if the number of nodes in the loop exceeds some limit
-//
-// Arguments:
-//     loop  - the loop to compute the number of nodes in
-//     limit - limit on the number of nodes
-//
-// Returns:
-//     true if the number of nodes exceeds the limit
-//
-bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit)
-{
-    assert(loop != nullptr);
-
-    // See if loop size exceeds the limit.
-    //
-    unsigned size = 0;
-
-    BasicBlockVisit const result = loop->VisitLoopBlocks([this, limit, &size](BasicBlock* block) {
-        assert(limit >= size);
-        unsigned const slack     = limit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(this, slack, &blockSize))
-        {
-            return BasicBlockVisit::Abort;
-        }
-
-        size += blockSize;
-        return BasicBlockVisit::Continue;
-    });
-
-    if (result == BasicBlockVisit::Abort)
-    {
-        JITDUMP("Loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), limit);
-        return true;
-    }
-
-    JITDUMP("Loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size, limit);
-    return false;
-}
-
 //-----------------------------------------------------------------------------
 // optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
 // or exit, after it has been added to the flowgraph.
@@ -2933,15 +2926,6 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
     else
     {
         block->RemoveFlags(BBF_PROF_WEIGHT);
-    }
-
-    if (newWeight == BB_ZERO_WEIGHT)
-    {
-        block->SetFlags(BBF_RUN_RARELY);
-    }
-    else
-    {
-        block->RemoveFlags(BBF_RUN_RARELY);
     }
 }
 
