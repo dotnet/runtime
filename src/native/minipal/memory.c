@@ -3,10 +3,26 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <minipal/memory.h>
 #include <minipal/thread.h>
+
+#ifdef __APPLE__
+#include <mach/thread_state.h>
+
+#define CHECK_MACH(_msg, machret) do {                                      \
+        if (machret != KERN_SUCCESS)                                        \
+        {                                                                   \
+            char _szError[1024];                                            \
+            snprintf(_szError, ARRAY_SIZE(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            mach_error(_szError, machret);                                  \
+            abort();                                                        \
+        }                                                                   \
+    } while (false)
+
+#endif // __APPLE__
 
 #ifndef TARGET_WINDOWS
 #ifdef __linux__
@@ -62,13 +78,13 @@ static uint8_t* g_helperPage = 0;
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
-size_t g_pageSize = 0;
+size_t g_pageSizeUnixInl = 0;
 
 bool minipal_initialize_flush_process_write_buffers()
 {
     int pageSize = sysconf( _SC_PAGE_SIZE );
 
-    g_pageSize = (size_t)((pageSize > 0) ? pageSize : 0x1000);
+    g_pageSizeUnixInl = (size_t)((pageSize > 0) ? pageSize : 0x1000);
 
 #ifndef TARGET_WASM
     //
@@ -78,7 +94,7 @@ bool minipal_initialize_flush_process_write_buffers()
 
     if (CanFlushUsingMembarrier())
     {
-        s_flushUsingMemBarrier = TRUE;
+        s_flushUsingMemBarrier = true;
     }
 #ifndef TARGET_APPLE
     else

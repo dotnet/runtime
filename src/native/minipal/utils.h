@@ -4,6 +4,19 @@
 #ifndef HAVE_MINIPAL_UTILS_H
 #define HAVE_MINIPAL_UTILS_H
 
+#ifndef _MSC_VER
+#define __stdcall
+#ifdef __GNUC__
+#define __forceinline __attribute__((always_inline)) inline
+#else // __GNUC__
+#define __forceinline inline
+#endif // __GNUC__
+// [LOCALGC TODO] is there a better place for this?
+#define NOINLINE __attribute__((noinline))
+#else // !_MSC_VER
+#define NOINLINE __declspec(noinline)
+#endif // _MSC_VER
+
 #define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 // Number of characters in a string literal. Excludes terminating NULL.
