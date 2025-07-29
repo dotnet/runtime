@@ -37,8 +37,7 @@ namespace CorUnix
         CONST HANDLE *lpHandles,
         BOOL bWaitAll,
         DWORD dwMilliseconds,
-        BOOL bAlertable,
-        BOOL bPrioritize = FALSE);
+        BOOL bAlertable);
 
     DWORD InternalSignalObjectAndWait(
         CPalThread *thread,
