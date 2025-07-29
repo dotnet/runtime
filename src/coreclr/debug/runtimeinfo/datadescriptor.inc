@@ -295,6 +295,7 @@ CDAC_TYPE_BEGIN(AppDomain)
 CDAC_TYPE_INDETERMINATE(AppDomain)
 CDAC_TYPE_FIELD(AppDomain, /*pointer*/, RootAssembly, cdac_data<AppDomain>::RootAssembly)
 CDAC_TYPE_FIELD(AppDomain, /*DomainAssemblyList*/, DomainAssemblyList, cdac_data<AppDomain>::DomainAssemblyList)
+CDAC_TYPE_FIELD(AppDomain, /*pointer*/, FriendlyName, cdac_data<AppDomain>::FriendlyName)
 CDAC_TYPE_END(AppDomain)
 
 CDAC_TYPE_BEGIN(SystemDomain)
