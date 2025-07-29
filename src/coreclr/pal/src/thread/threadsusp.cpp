@@ -50,14 +50,18 @@ suspension mutex or spinlock. The downside is that it restricts us to only
 performing one suspension or resumption in the PAL at a time. */
 #ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
 
+namespace
+{
+    LONG g_ssSuspensionLock = 0;
+}
+#endif
+
 #define SYNCSPINLOCK_F_ASYMMETRIC  1
 
 #define SPINLOCKInit(lock) (*(lock) = 0)
 
 namespace
 {
-    LONG g_ssSuspensionLock = 0;
-
     /* Basic spinlock implementation */
     void SPINLOCKAcquire (LONG * lock, unsigned int flags)
     {
@@ -94,9 +98,7 @@ namespace
         return InterlockedCompareExchange(lock, 1, 0);
         // only returns 0 or 1.
     }
-
 }
-#endif
 
 /*++
 Function:
