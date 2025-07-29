@@ -246,7 +246,7 @@ reinit_frame (InterpFrame *frame, InterpFrame *parent, InterpMethod *imethod, gp
 	frame->stack = (stackval*)stack;
 	frame->retval = (stackval*)retval;
 	frame->state.ip = NULL;
-	MH_LOG("Reinitializing frame %p with imethod %s (%p), retval %p, stack %p", frame, mono_method_get_name_full(imethod->method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL), imethod, retval, stack);
+	//MH_LOG("Reinitializing frame %p with imethod %s (%p), retval %p, stack %p", frame, mono_method_get_name_full(imethod->method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL), imethod, retval, stack);
 }
 
 #define STACK_ADD_ALIGNED_BYTES(sp,bytes) ((stackval*)((char*)(sp) + (bytes)))
@@ -1665,7 +1665,7 @@ ves_pinvoke_method (
 	gpointer args;
 
 	MONO_REQ_GC_UNSAFE_MODE;	
-	MH_LOG("invoking %s", mono_method_full_name(imethod->method, TRUE));
+	//MH_LOG("invoking %s", mono_method_full_name(imethod->method, TRUE));
 #ifdef HOST_WASM
 	/*
 	 * Use a per-signature entry function.
@@ -2139,11 +2139,11 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	// method is transformed.
 	context->stack_pointer = (guchar*)(sp + 4);
 	g_assert (context->stack_pointer < context->stack_end);	
-	MH_LOG("calling mono_interp_exec_method for %s : %s", method->name, mono_method_full_name (method, TRUE));
+	//MH_LOG("calling mono_interp_exec_method for %s : %s", method->name, mono_method_full_name (method, TRUE));
 	MONO_ENTER_GC_UNSAFE;
 	mono_interp_exec_method (&frame, context, NULL);
 	MONO_EXIT_GC_UNSAFE;
-	MH_LOG_UNINDENT();
+	//MH_LOG_UNINDENT();
 	context->stack_pointer = (guchar*)sp;
 
 	if (context->has_resume_state) {
@@ -4271,7 +4271,7 @@ jit_call:
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			return_offset = ip [1];
 			call_args_offset = ip [2];
-			MH_LOG("MINT_CALL for %s. return offset %d, call_args_offset %d", mono_method_get_name_full(frame->imethod->method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL), return_offset, call_args_offset);
+			//MH_LOG("MINT_CALL for %s. return offset %d, call_args_offset %d", mono_method_get_name_full(frame->imethod->method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL), return_offset, call_args_offset);
 #ifdef ENABLE_EXPERIMENT_TIERED
 			ip += 5;
 #else
@@ -7996,7 +7996,7 @@ exit_frame:
 		 * a param_area and all calls would inherit the same sp, or if we are full coop.
 		 */
 		context->stack_pointer = (guchar*)frame->stack + frame->imethod->alloca_size;
-		MH_LOG("exiting frame %p for %s", frame, mono_method_get_name_full(frame->imethod->method, FALSE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
+		//MH_LOG("exiting frame %p for %s", frame, mono_method_get_name_full(frame->imethod->method, FALSE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
 		LOAD_INTERP_STATE (frame);
 
 		CHECK_RESUME_STATE (context);
