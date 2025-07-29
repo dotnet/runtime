@@ -2838,6 +2838,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+
+                if (baseType == TYP_UINT && !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                }
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;
