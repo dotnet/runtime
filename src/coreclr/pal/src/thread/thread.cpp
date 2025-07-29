@@ -103,8 +103,7 @@ CObjectType CorUnix::otThread(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
 
 CAllowedObjectTypes aotThread(otiThread);
@@ -795,20 +794,6 @@ CorUnix::InternalEndCurrentThread(
 {
     PAL_ERROR palError = NO_ERROR;
     ISynchStateController *pSynchStateController = NULL;
-
-    //
-    // Abandon any objects owned by this thread
-    //
-
-    palError = g_pSynchronizationManager->AbandonObjectsOwnedByThread(
-        pThread,
-        pThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Failure abandoning owned objects");
-    }
 
     //
     // Need to synchronize setting the thread state to TS_DONE since

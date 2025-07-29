@@ -75,8 +75,7 @@ CObjectType CorUnix::otFile(
                 CFileProcessLocalDataCleanupRoutine,
                 CObjectType::UnwaitableObject,
                 CObjectType::SignalingNotApplicable,
-                CObjectType::ThreadReleaseNotApplicable,
-                CObjectType::OwnershipNotApplicable
+                CObjectType::ThreadReleaseNotApplicable
                 );
 
 CAllowedObjectTypes CorUnix::aotFile(otiFile);

@@ -67,7 +67,6 @@ namespace CorUnix
     class CSynchData;
 
     typedef struct _WaitingThreadsListNode * PWaitingThreadsListNode;
-    typedef struct _OwnedObjectsListNode * POwnedObjectsListNode;
     typedef struct _ThreadApcInfoNode * PThreadApcInfoNode;
 
     typedef struct _ThreadWaitInfo
@@ -156,14 +155,6 @@ namespace CorUnix
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
         PAL_ERROR RunDeferredThreadConditionSignalings();
 #endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
-
-        // NOTE: the following methods provide non-synchronized access to
-        //       the list of owned objects for this thread. Any thread
-        //       accessing this list MUST own the appropriate
-        //       synchronization lock(s).
-        void AddObjectToOwnedList(POwnedObjectsListNode pooln);
-        void RemoveObjectFromOwnedList(POwnedObjectsListNode pooln);
-        POwnedObjectsListNode RemoveFirstObjectFromOwnedList(void);
 
         // The following methods provide access to the native wait lock for
         // those implementations that need a lock to protect the support for

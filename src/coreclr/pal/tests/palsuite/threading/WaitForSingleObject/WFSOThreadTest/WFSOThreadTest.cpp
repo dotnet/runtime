@@ -3,14 +3,14 @@
 
 /*============================================================
 **
-** Source: WFSOThreadTest.c 
+** Source: WFSOThreadTest.c
 **
-** Purpose: Test for WaitForSingleObjectTest. 
+** Purpose: Test for WaitForSingleObjectTest.
 **			Create One Thread and do some work
-**			Use WFSO For the Thread to finish 
-**			
+**			Use WFSO For the Thread to finish
+**
 ** Test Passes if the above operations are successful
-**	
+**
 **
 **
 **=========================================================*/
@@ -33,10 +33,10 @@ PALTEST(threading_WaitForSingleObject_WFSOThreadTest_paltest_waitforsingleobject
 {
 
 	//Declare local variables
-	DWORD dwThreadId=0; 
-	DWORD dwWaitResult=0; 
+	DWORD dwThreadId=0;
+	DWORD dwWaitResult=0;
 
-	//Initialize PAL 
+	//Initialize PAL
 	if(0 != (PAL_Initialize(argc, argv)))
 	    {
 	        return ( FAIL );
@@ -51,86 +51,69 @@ PALTEST(threading_WaitForSingleObject_WFSOThreadTest_paltest_waitforsingleobject
 			"GetLastError returned %d\n", GetLastError());
 	}
 
-	
+
 	//Create Thread
 	hThread_WFSOThreadTest = CreateThread(
-		NULL,         
-		0,            
-		incrementCounter,     
-		NULL,     
-		0,           
+		NULL,
+		0,
+		incrementCounter,
+		NULL,
+		0,
 		&dwThreadId);
 
-	    if ( NULL == hThread_WFSOThreadTest ) 
+	    if ( NULL == hThread_WFSOThreadTest )
 	    {
 		Fail ( "CreateThread() returned NULL.  Failing test.\n"
-		       "GetLastError returned %d\n", GetLastError());   
+		       "GetLastError returned %d\n", GetLastError());
 	    }
 
 
-	//Wait For Thread to signal start  
+	//Wait For Thread to signal start
 	dwWaitResult  = WaitForSingleObject(hEvent_WFSOThreadTest,INFINITE);
-	
-	switch (dwWaitResult) 
+
+	switch (dwWaitResult)
     	{
         // The thread wait was successful
-        case WAIT_OBJECT_0: 
+        case WAIT_OBJECT_0:
             	  		{
 
 				Trace ("Wait for Single Object (hEvent) was successful.\n");
-			       break; 
-    			        } 
+			       break;
+    			        }
 
 	// Time-out.
-        case WAIT_TIMEOUT: 
+        case WAIT_TIMEOUT:
 				{
 					Fail ( "Time -out.  Failing test.\n"
-		       			"GetLastError returned %d\n", GetLastError());  
+		       			"GetLastError returned %d\n", GetLastError());
 					return FALSE;
         			}
-
-        // Got ownership of the abandoned event object.
-        case WAIT_ABANDONED: 
-				{
-					Fail ( "Got ownership of the abandoned event object.  Failing test.\n"
-		       			"GetLastError returned %d\n", GetLastError());  
-					return FALSE; 
-        			}
-
     	}
 
-		
-	//Wait for Thread to finish 
-	dwWaitResult = WaitForSingleObject( 
+
+	//Wait for Thread to finish
+	dwWaitResult = WaitForSingleObject(
 	        hThread_WFSOThreadTest,   //handle to thread
 	        5000L);     //Wait Indefinitely
 
-       
-	switch (dwWaitResult) 
+
+	switch (dwWaitResult)
     	{
         // The thread wait was successful
-        case WAIT_OBJECT_0: 
+        case WAIT_OBJECT_0:
             	  		{
 
 				Trace("Wait for thread was successful\n");
-			
-				break; 
-    			        } 
+
+				break;
+    			        }
 
         // Time-out.
-        case WAIT_TIMEOUT: 
+        case WAIT_TIMEOUT:
 				{
 					Fail ( "Time -out.  Failing test.\n"
-		       			"GetLastError returned %d\n", GetLastError());  
+		       			"GetLastError returned %d\n", GetLastError());
 					return FALSE;
-        			}
-
-        // Got ownership of the abandoned thread object.
-        case WAIT_ABANDONED: 
-				{
-					Fail ( "Got ownership of the abandoned thread object.  Failing test.\n"
-		       			"GetLastError returned %d\n", GetLastError());  
-					return FALSE; 
         			}
 
     }
@@ -139,13 +122,13 @@ PALTEST(threading_WaitForSingleObject_WFSOThreadTest_paltest_waitforsingleobject
 //Close Handles
 if (0==CloseHandle(hEvent_WFSOThreadTest))
 		 {
-		    	Trace("Could not Close event handle\n"); 
-			Fail ( "GetLastError returned %d\n", GetLastError());  
+		    	Trace("Could not Close event handle\n");
+			Fail ( "GetLastError returned %d\n", GetLastError());
 	    	}
 if (0==CloseHandle(hThread_WFSOThreadTest))
 		 {
-		    	Trace("Could not Close thread handle\n"); 
-			Fail ( "GetLastError returned %d\n", GetLastError());  
+		    	Trace("Could not Close thread handle\n");
+			Fail ( "GetLastError returned %d\n", GetLastError());
 	    	}
 
 PAL_Terminate();
@@ -160,13 +143,13 @@ DWORD PALAPI incrementCounter(LPVOID params)
 	if (0==SetEvent(hEvent_WFSOThreadTest))
 	{
 		Fail ( "SetEvent returned Zero.  Failing test.\n"
-		       "GetLastError returned %d\n", GetLastError());  
+		       "GetLastError returned %d\n", GetLastError());
 	}
 
 	for (globalcounter_WFSOThreadTest=0;globalcounter_WFSOThreadTest<100000;globalcounter_WFSOThreadTest++);
 
 	//Sleep(5000);
-	
+
 	Trace("Global Counter Value: %d \n", globalcounter_WFSOThreadTest);
 	return 0;
 }
