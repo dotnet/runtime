@@ -478,7 +478,15 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	} else if (!sgen_los_enable_sections_allocator) {
 		size_t alloc_size = size + sizeof (LOSObject);
 		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
-			obj = (LOSObject *)sgen_alloc_os_memory_aligned (alloc_size, SGEN_ALLOC_ALIGN, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL, MONO_MEM_ACCOUNT_SGEN_LOS);
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+			int alignment = SGEN_ALLOC_ALIGN;
+#else
+			// If we don't use the shadow card table, having a card map to 2 different los objects is invalid
+			// because once we scan the first object we could clear the card, leading to failure to detect refs
+			// in the second object. We prevent this by aligning the los object to the card size.
+			int alignment = CARD_SIZE_IN_BYTES;
+#endif
+			obj = (LOSObject *)sgen_alloc_os_memory_aligned (alloc_size, alignment, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL, MONO_MEM_ACCOUNT_SGEN_LOS);
 			if (obj)
 				sgen_los_memory_usage_total += alloc_size;
 		}
