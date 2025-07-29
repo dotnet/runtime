@@ -139,6 +139,16 @@ internal readonly struct Loader_1 : ILoader
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
         return appDomain.RootAssembly;
     }
+
+    string ILoader.GetAppDomainFriendlyName()
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        return appDomain.FriendlyName != TargetPointer.Null
+            ? _target.ReadUtf16String(appDomain.FriendlyName)
+            : string.Empty;
+    }
+
     TargetPointer ILoader.GetModule(ModuleHandle handle)
     {
         return handle.Address;
@@ -294,6 +304,15 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return module.Base;
+    }
+
+    TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+        Data.AssemblyBinder binder = _target.ProcessedData.GetOrAdd<Data.AssemblyBinder>(peAssembly.AssemblyBinder);
+        Data.ObjectHandle objectHandle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(binder.ManagedAssemblyLoadContext);
+        return objectHandle.Object;
     }
 
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)

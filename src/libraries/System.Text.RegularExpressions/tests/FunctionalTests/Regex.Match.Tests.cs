@@ -93,6 +93,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
                 yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
                 yield return (@"(?!(abc))+\w\w\w", "abcdef", RegexOptions.None, 0, 6, true, "bcd");
+                yield return (@"(?=(abc))?\1", "abc", RegexOptions.None, 0, 3, true, "abc");
+                yield return (@"(?=(abc))+\1", "abc", RegexOptions.None, 0, 3, true, "abc");
+                yield return (@"(?=(abc))*\1", "abc", RegexOptions.None, 0, 3, true, "abc");
 
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
@@ -277,6 +280,14 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*?)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
+            yield return (@"(?:m(?:((e)?)??)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
+            yield return (@"(?:m(?:|(e)?)|a)\b", "you and you", RegexOptions.None, 0, 11, false, "");
 
             // Testing selected FindOptimizations finds the right prefix
             yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
