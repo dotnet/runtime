@@ -110,11 +110,11 @@ try {
         document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
     }
     //exports.Sample.Test.SimpleTestFunctionPrintString();
-    //const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
-    console.clear();
-    const deepMeaning = new Promise(resolve => {        
-        resolve(meaning);
-    });    
+    const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
+    
+    //const deepMeaning = new Promise(resolve => {        
+    //    resolve(meaning);
+    //});    
     exports.Sample.Test.PrintMeaning(deepMeaning);
     //exports.Sample.Test.PrintMeaningDEBUG(meaning);
     exports.Sample.Test.SillyLoop();
