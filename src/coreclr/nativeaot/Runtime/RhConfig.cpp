@@ -205,7 +205,7 @@ size_t GetDefaultStackSizeSetting()
     if (g_pRhConfig->ReadConfigValue("Thread_DefaultStackSize", &uiStacksize)
         || g_pRhConfig->ReadKnobUInt64Value("System.Threading.DefaultStackSize", &uiStacksize))
     {
-        if (uiStacksize < maxStack || uiStacksize >= minStack)
+        if (uiStacksize < maxStack && uiStacksize >= minStack)
         {
             return (size_t)uiStacksize;
         }

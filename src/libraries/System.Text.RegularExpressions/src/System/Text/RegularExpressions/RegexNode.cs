@@ -790,6 +790,11 @@ namespace System.Text.RegularExpressions
                             start = endExclusive;
                         }
 
+                        // Force a re-reduction if we know we've exposed new opportunities that'll be handled.
+                        reordered |=
+                            child.ChildCount() == 2 &&
+                            (child.Child(0).Kind is RegexNodeKind.Empty || child.Child(1).Kind is RegexNodeKind.Empty); // can be transformed into a ? or ??
+
                         // If anything was reordered, there may be new optimization opportunities inside
                         // of the alternation, so reduce it again.
                         if (reordered)
@@ -1032,6 +1037,22 @@ namespace System.Text.RegularExpressions
                             if (node.Kind == RegexNodeKind.Alternate)
                             {
                                 node = RemoveRedundantEmptiesAndNothings(node);
+
+                                // If the alternation is actually just a ? or ?? in disguise, transform it accordingly.
+                                //     (a|) becomes a?
+                                //     (|a) becomes a??
+                                // Such "optional" nodes are processed more efficiently, including being able to be better coalesced with surrounding nodes.
+                                if (node.Kind is RegexNodeKind.Alternate && node.ChildCount() == 2)
+                                {
+                                    if (node.Child(1).Kind is RegexNodeKind.Empty)
+                                    {
+                                        node = node.Child(0).MakeQuantifier(lazy: false, min: 0, max: 1);
+                                    }
+                                    else if (node.Child(0).Kind is RegexNodeKind.Empty)
+                                    {
+                                        node = node.Child(1).MakeQuantifier(lazy: true, min: 0, max: 1);
+                                    }
+                                }
                             }
                         }
                     }
@@ -2305,11 +2326,17 @@ namespace System.Text.RegularExpressions
                         return true;
                 }
 
-                // If this node is a {one/notone/set}loop, see if it overlaps with its successor in the concatenation.
-                // If it doesn't, then we can upgrade it to being a {one/notone/set}loopatomic.
-                // Doing so avoids unnecessary backtracking.
+                // If this node is a loop, see if it overlaps with its successor in the concatenation.
+                // If it doesn't, then we can upgrade it to being atomic to avoid unnecessary backtracking.
                 switch (node.Kind)
                 {
+                    case RegexNodeKind when iterateNullableSubsequent && subsequent.Kind is RegexNodeKind.PositiveLookaround:
+                        if (!CanBeMadeAtomic(node, subsequent.Child(0), iterateNullableSubsequent: false, allowLazy: allowLazy))
+                        {
+                            return false;
+                        }
+                        break;
+
                     case RegexNodeKind.Oneloop:
                     case RegexNodeKind.Onelazy when allowLazy:
                         switch (subsequent.Kind)
@@ -2484,6 +2511,55 @@ namespace System.Text.RegularExpressions
                     }
 
                     break;
+                }
+            }
+        }
+
+        /// <summary>Gets whether this node is known to be immediately preceded by a word character.</summary>
+        public bool IsKnownPrecededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(false);
+
+        /// <summary>Gets whether this node is known to be immediately succeeded by a word character.</summary>
+        public bool IsKnownSucceededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(true);
+
+        private bool IsKnownPrecededOrSucceededByWordChar(bool succeeded)
+        {
+            RegexNode node = this;
+            Debug.Assert(node.Kind is not RegexNodeKind.Concatenate, "The existing logic assumes that the node itself isn't a concatenation.");
+
+            // As in CanBeMadeAtomic, conservatively walk up through a limited set of constructs to the next concatenation.
+            while (true)
+            {
+                if ((node.Options & RegexOptions.RightToLeft) != 0 ||
+                    node.Parent is not RegexNode parent)
+                {
+                    return false;
+                }
+
+                switch (parent.Kind)
+                {
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Alternate:
+                    case RegexNodeKind.Capture:
+                        node = parent;
+                        continue;
+
+                    case RegexNodeKind.Concatenate:
+                        var peers = (List<RegexNode>)parent.Children!;
+                        int index = peers.IndexOf(node) + (succeeded ? 1 : -1);
+                        if ((uint)index < (uint)peers.Count)
+                        {
+                            // Now that we've found the concatenation, build a set that represents the characters that could come
+                            // before or after this node, depending on whether we're looking for a preceding or succeeding word character.
+                            return
+                                RegexPrefixAnalyzer.FindFirstOrLastCharClass(peers[index], findFirst: succeeded) is string set &&
+                                RegexCharClass.IsKnownWordClassSubset(set);
+                        }
+
+                        node = parent;
+                        continue;
+
+                    default:
+                        return false;
                 }
             }
         }
