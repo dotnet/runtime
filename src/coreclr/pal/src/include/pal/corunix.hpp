@@ -204,10 +204,6 @@ namespace CorUnix
     //   Must be ThreadReleaseHasNoSideEffects if eSignalingSemantics is
     //   SingleTransitionObject
     //
-    // * eOwnershipSemantics: OwnershipTracked only for mutexes, for which the
-    //   previous two items must also ObjectCanBeUnsignaled and
-    //   ThreadReleaseAltersSignalCount.
-    //
 
     class CObjectType
     {
@@ -232,13 +228,6 @@ namespace CorUnix
             ThreadReleaseNotApplicable
         };
 
-        enum OwnershipSemantics
-        {
-            OwnershipTracked,
-            NoOwner,
-            OwnershipNotApplicable
-        };
-
     private:
 
         //
@@ -259,7 +248,6 @@ namespace CorUnix
         SynchronizationSupport m_eSynchronizationSupport;
         SignalingSemantics m_eSignalingSemantics;
         ThreadReleaseSemantics m_eThreadReleaseSemantics;
-        OwnershipSemantics m_eOwnershipSemantics;
 
     public:
 
@@ -273,8 +261,7 @@ namespace CorUnix
             OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE pProcessLocalDataCleanupRoutine,
             SynchronizationSupport eSynchronizationSupport,
             SignalingSemantics eSignalingSemantics,
-            ThreadReleaseSemantics eThreadReleaseSemantics,
-            OwnershipSemantics eOwnershipSemantics
+            ThreadReleaseSemantics eThreadReleaseSemantics
             )
             :
             m_eTypeId(eTypeId),
@@ -286,8 +273,7 @@ namespace CorUnix
             m_pProcessLocalDataCleanupRoutine(pProcessLocalDataCleanupRoutine),
             m_eSynchronizationSupport(eSynchronizationSupport),
             m_eSignalingSemantics(eSignalingSemantics),
-            m_eThreadReleaseSemantics(eThreadReleaseSemantics),
-            m_eOwnershipSemantics(eOwnershipSemantics)
+            m_eThreadReleaseSemantics(eThreadReleaseSemantics)
         {
             s_rgotIdMapping[eTypeId] = this;
         };
@@ -397,14 +383,6 @@ namespace CorUnix
             )
         {
             return  m_eThreadReleaseSemantics;
-        };
-
-        OwnershipSemantics
-        GetOwnershipSemantics(
-            void
-            )
-        {
-            return  m_eOwnershipSemantics;
         };
     };
 
@@ -529,36 +507,6 @@ namespace CorUnix
             LONG lAmountToDecrement
             ) = 0;
 
-        //
-        // The following two routines may only be used for object types
-        // where eOwnershipSemantics is OwnershipTracked (i.e., mutexes).
-        //
-
-        //
-        // SetOwner is intended to be used in the implementation of
-        // CreateMutex when bInitialOwner is TRUE. It must be called
-        // before the new object instance is registered with the
-        // handle manager. Any other call to this method is an error.
-        //
-
-        virtual
-        PAL_ERROR
-        SetOwner(
-            CPalThread *pNewOwningThread
-            ) = 0;
-
-        //
-        // DecrementOwnershipCount returns an error if the object
-        // is unowned, or if the thread this controller is bound to
-        // is not the owner of the object.
-        //
-
-        virtual
-        PAL_ERROR
-        DecrementOwnershipCount(
-            void
-            ) = 0;
-
         virtual
         void
         ReleaseController(
@@ -604,8 +552,7 @@ namespace CorUnix
         virtual
         PAL_ERROR
         CanThreadWaitWithoutBlocking(
-            bool *pfCanWaitWithoutBlocking,     // OUT
-            bool *pfAbandoned
+            bool *pfCanWaitWithoutBlocking     // OUT
             ) = 0;
 
         virtual
@@ -915,7 +862,6 @@ namespace CorUnix
     {
         WaitSucceeded,
         Alerted,
-        MutexAbandoned,
         WaitTimeout,
         WaitFailed
     };
@@ -944,13 +890,6 @@ namespace CorUnix
             bool fIsSleep,
             ThreadWakeupReason *peWakeupReason, // OUT
             DWORD *pdwSignaledObject       // OUT
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        AbandonObjectsOwnedByThread(
-            CPalThread *pCallingThread,
-            CPalThread *pTargetThread
             ) = 0;
 
         virtual

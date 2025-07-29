@@ -133,8 +133,7 @@ namespace CorUnix
     signaled)
     --*/
     PAL_ERROR CSynchWaitController::CanThreadWaitWithoutBlocking(
-        bool * pfCanWaitWithoutBlocking,
-        bool * pfAbandoned)
+        bool * pfCanWaitWithoutBlocking)
     {
         VALIDATEOBJECT(m_psdSynchData);
 
@@ -142,9 +141,8 @@ namespace CorUnix
 
         _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
         _ASSERTE(NULL != pfCanWaitWithoutBlocking);
-        _ASSERTE(NULL != pfAbandoned);
 
-        fRetVal = m_psdSynchData->CanWaiterWaitWithoutBlocking(m_pthrOwner, pfAbandoned);
+        fRetVal = m_psdSynchData->CanWaiterWaitWithoutBlocking(m_pthrOwner);
 
         if(!fRetVal && otiProcess == m_psdSynchData->GetObjectTypeId())
         {
@@ -563,117 +561,6 @@ namespace CorUnix
 
     /*++
     Method:
-      CSynchStateController::SetOwner
-
-    Sets the owner of the target object and initializes the ownership
-    count to 1 (for objects with tracked ownership).
-    --*/
-    PAL_ERROR CSynchStateController::SetOwner(CPalThread * pNewOwningThread)
-    {
-        VALIDATEOBJECT(m_psdSynchData);
-
-        PAL_ERROR palErr = NO_ERROR;
-
-        _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERTE(NULL != pNewOwningThread);
-        _ASSERT_MSG(CObjectType::OwnershipTracked ==
-                    m_potObjectType->GetOwnershipSemantics(),
-                    "SetOwner called on an object without OwnershipTracked "
-                    "semantics\n");
-
-        if (0 != m_psdSynchData->GetOwnershipCount())
-        {
-            ASSERT("Ownership count should be zero at this time\n");
-            palErr = ERROR_INTERNAL_ERROR;
-            goto SO_exit;
-        }
-
-        palErr = m_psdSynchData->AssignOwnershipToThread(m_pthrOwner,
-                                                       pNewOwningThread);
-
-        _ASSERT_MSG(0 == m_psdSynchData->GetOwnershipCount() ||
-                    0 == m_psdSynchData->GetSignalCount(),
-                    "Conflicting values for SignalCount [%d] and "
-                    "OwnershipCount [%d]\n",
-                    m_psdSynchData->GetOwnershipCount(),
-                    m_psdSynchData->GetSignalCount());
-
-    SO_exit:
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CSynchStateController::DecrementOwnershipCount
-
-    Decrements the ownership count of the target object possibly triggering
-    waiting threads awakening (for objects with tracked ownership).
-    --*/
-    PAL_ERROR CSynchStateController::DecrementOwnershipCount()
-    {
-        VALIDATEOBJECT(m_psdSynchData);
-
-        PAL_ERROR palErr = NO_ERROR;
-        LONG lOwnershipCount = m_psdSynchData->GetOwnershipCount();
-
-        _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
-        _ASSERT_MSG(CObjectType::OwnershipTracked ==
-                    m_potObjectType->GetOwnershipSemantics(),
-                    "Trying to decrement ownership count on an object with "
-                    "ownership semantics other than OwnershipTracked\n");
-        _ASSERT_MSG(0 <= lOwnershipCount,
-                    "Operation would make ownership count negative - object "
-                    "should be owned at this time [ownership count=%d]\n",
-                    lOwnershipCount);
-
-        if ( (1 > lOwnershipCount) ||
-             (m_psdSynchData->GetOwnerProcessID() != gPID) ||
-             (m_psdSynchData->GetOwnerThread() != m_pthrOwner) )
-        {
-            palErr = ERROR_NOT_OWNER;
-            goto DOC_exit;
-        }
-
-        lOwnershipCount--;
-        m_psdSynchData->SetOwnershipCount(lOwnershipCount);
-
-        if (0 == lOwnershipCount)
-        {
-            CPalSynchronizationManager * pSynchManager =
-                CPalSynchronizationManager::GetInstance();
-            OwnedObjectsListNode * pooln =
-                m_psdSynchData->GetOwnershipListNode();
-
-            _ASSERT_MSG(NULL != pooln,
-                        "Null ownership node pointer in SynchData with ownership "
-                        "semantics\n");
-            _ASSERT_MSG(m_psdSynchData == pooln->pPalObjSynchData,
-                        "Corrupted ownership node\n");
-
-            // Object has been released
-            // Remove it from list of owned objs for current thread
-            m_pthrOwner->synchronizationInfo.RemoveObjectFromOwnedList(pooln);
-
-            // Release SynchData reference count implied by the ownership
-            // list node
-            m_psdSynchData->Release(m_pthrOwner);
-
-            // Return node to the cache
-            pSynchManager->CacheAddOwnedObjsListNode(m_pthrOwner, pooln);
-
-            // Reset ownership
-            m_psdSynchData->ResetOwnership();
-
-            // Signal it and trigger waiter thread awakening
-            m_psdSynchData->Signal(m_pthrOwner, 1);
-        }
-
-    DOC_exit:
-        return palErr;
-    }
-
-    /*++
-    Method:
       CSynchStateController::ReleaseController
 
     Releases the controller.
@@ -786,11 +673,8 @@ namespace CorUnix
         CObjectType::SignalingSemantics ssSignalingSemantics =
             potObjectType->GetSignalingSemantics();
 #endif // _DEBUG
-        CObjectType::OwnershipSemantics osOwnershipSemantics =
-            potObjectType->GetOwnershipSemantics();
         CObjectType::ThreadReleaseSemantics trsThreadReleaseSemantics =
             potObjectType->GetThreadReleaseSemantics();
-        bool fReenteringObjWithOwnership = false;
 
         _ASSERT_MSG(CObjectType::SignalingNotApplicable != ssSignalingSemantics,
                     "Signaling not applicable");
@@ -798,57 +682,22 @@ namespace CorUnix
                     trsThreadReleaseSemantics,
                     "Thread releasing not applicable");
         _ASSERT_MSG(CObjectType::SingleTransitionObject != ssSignalingSemantics ||
-                    (CObjectType::ThreadReleaseHasNoSideEffects ==
-                     trsThreadReleaseSemantics &&
-                     CObjectType::NoOwner == osOwnershipSemantics),
+                    CObjectType::ThreadReleaseHasNoSideEffects == trsThreadReleaseSemantics,
                     "Conflicting object synchronization attributes "
-                    "[SignalingSemantics=%u OwnershipSemantics=%u "
-                    "ThreadReleaseSemantics=%u]\n", ssSignalingSemantics,
-                    osOwnershipSemantics, trsThreadReleaseSemantics);
+                    "[SignalingSemantics=%u "
+                    "ThreadReleaseSemantics=%u]\n",
+                    ssSignalingSemantics,
+                    trsThreadReleaseSemantics);
 
-        if (CObjectType::OwnershipTracked == osOwnershipSemantics &&
-            0 < GetOwnershipCount())
-        {
-            // We are rentering an object with ownership: we need to skip
-            // the object unsignaling
-            fReenteringObjWithOwnership = true;
-        }
-
-        if (!fReenteringObjWithOwnership &&
-            CObjectType::ThreadReleaseAltersSignalCount == trsThreadReleaseSemantics)
+        if (CObjectType::ThreadReleaseAltersSignalCount == trsThreadReleaseSemantics)
         {
             _ASSERT_MSG(0 < GetSignalCount(),
                         "Internal error: operation would make signal count "
                         "negative - object should be signaled at this time "
                         "[signal count=%d]", GetSignalCount());
-            _ASSERT_MSG(CObjectType::OwnershipTracked != osOwnershipSemantics ||
-                        1 == GetSignalCount(),
-                        "Ownable objects cannot have signal count greater "
-                        "than zero [current SignalCount=%d]\n",
-                        GetSignalCount());
 
             // Unsignal the object
             DecrementSignalCount();
-        }
-
-        if (CObjectType::OwnershipTracked == osOwnershipSemantics)
-        {
-            _ASSERT_MSG(0 == GetOwnershipCount() || 0 == GetSignalCount(),
-                        "OwnershipCount and SignalCount with conflicting "
-                        "values\n");
-
-            // Take ownership or increment ownership count.
-            // We do this after the object unsignaling to minimize possibilities
-            // of having both SignalCount and OwnershipCount greater than zero
-            // (see comment in AssignOwnershipToThread)
-            palErr = AssignOwnershipToThread(pthrCurrent, pthrTarget);
-
-            if (NO_ERROR != palErr)
-            {
-                ERROR("AssignOwnershipToThread failed with error %u; "
-                      "ownership data on object with SynchData {p=%p} "
-                      "may be corrupted\n", palErr, this);
-            }
         }
 
 #ifdef SYNCH_STATISTICS
@@ -873,45 +722,11 @@ namespace CorUnix
           object is local, both local and shared one if the object is shared).
     --*/
     bool CSynchData::CanWaiterWaitWithoutBlocking(
-        CPalThread * pWaiterThread,
-        bool * pfAbandoned)
+        CPalThread * pWaiterThread)
     {
         VALIDATEOBJECT(this);
 
-        bool fRetVal = (0 < GetSignalCount());
-        bool fAbandoned = false;
-        bool fOwnershipTracked = (CObjectType::OwnershipTracked ==
-                                  GetObjectType()->GetOwnershipSemantics());
-        if (fRetVal)
-        {
-            // Object signaled: thread can wait without blocking
-            if (fOwnershipTracked)
-            {
-                fAbandoned = IsAbandoned();
-            }
-
-            goto CWWWB_exit;
-        }
-
-        // Object not signaled: thread can wait without blocking only if the
-        // object is an ownable one, and it is owned by the current thread
-        if (fOwnershipTracked)
-        {
-            _ASSERT_MSG(0 < GetSignalCount() || 0 < GetOwnershipCount(),
-                        "Objects with ownership must be either signaled or "
-                        "owned by a thread\n");
-
-            if ((GetOwnerProcessID() == gPID) &&
-                (GetOwnerThread() == pWaiterThread) )
-            {
-                fRetVal = true;
-                goto CWWWB_exit;
-            }
-        }
-
-    CWWWB_exit:
-        *pfAbandoned = fAbandoned;
-        return fRetVal;
+        return 0 < GetSignalCount();
     }
 
     /*++
@@ -958,12 +773,6 @@ namespace CorUnix
             }
         }
 
-        _ASSERT_MSG(CObjectType::OwnershipTracked !=
-                    GetObjectType()->GetOwnershipSemantics() ||
-                    0 == GetOwnershipCount() || 0 == GetSignalCount(),
-                    "Conflicting values for SignalCount [%d] and "
-                    "OwnershipCount [%d]\n",
-                    GetOwnershipCount(), GetSignalCount());
         return;
     }
 
@@ -1038,31 +847,6 @@ namespace CorUnix
                     dwObjIdx = pwtlnItem->dwObjIndex;
 
                     ThreadWaitInfo * ptwiWaitInfo = pwtlnItem->ptwiWaitInfo;
-                    bool fAbandoned = false;
-
-                    if (CObjectType::OwnershipTracked ==
-                        GetObjectType()->GetOwnershipSemantics())
-                    {
-                        // Get the abandoned status before resetting it by
-                        // assigning ownership to target thread
-                        fAbandoned = IsAbandoned();
-
-                        // Assign ownership to target thread
-                        // Note: This will cause both ownership count and
-                        //       signal count to be greater than zero at the
-                        //       same time; the signal count will be anyway
-                        //       decremented immediately by the caller
-                        //       CsynchData::Signal
-                        palErr = AssignOwnershipToThread(pthrCurrent,
-                                                            ptwiWaitInfo->pthrOwner);
-                        if (NO_ERROR != palErr)
-                        {
-                            ERROR("Synch Worker: AssignOwnershipToThread "
-                                    "failed with error %u; ownership data on "
-                                    "object with SynchData %p may be "
-                                    "corrupted\n", palErr, this);
-                        }
-                    }
 
                     if (fWaitAll)
                     {
@@ -1089,7 +873,7 @@ namespace CorUnix
                     palErr = CPalSynchronizationManager::WakeUpLocalThread(
                         pthrCurrent,
                         ptwiWaitInfo->pthrOwner,
-                        fAbandoned ? MutexAbandoned : WaitSucceeded,
+                        WaitSucceeded,
                         dwObjIdx);
 
                     if (NO_ERROR != palErr)
@@ -1172,26 +956,6 @@ namespace CorUnix
                     dwObjIdx = pwtlnItem->dwObjIndex;
 
                     ThreadWaitInfo * ptwiWaitInfo = pwtlnItem->ptwiWaitInfo;
-                    bool fAbandoned = false;
-
-                    if (CObjectType::OwnershipTracked ==
-                        GetObjectType()->GetOwnershipSemantics())
-                    {
-                        // Get the abandoned status before resetting it by
-                        // assigning ownership to target thread
-                        fAbandoned = IsAbandoned();
-
-                        // Assign ownership to target thread
-                        palErr = AssignOwnershipToThread(pthrCurrent,
-                                                         ptwiWaitInfo->pthrOwner);
-                        if (NO_ERROR != palErr)
-                        {
-                            ERROR("Synch Worker: AssignOwnershipToThread "
-                                  "failed with error %u; ownership data on "
-                                  "object with SynchData %p may be "
-                                  "corrupted\n", palErr, this);
-                        }
-                    }
 
                     if (fWaitAll)
                     {
@@ -1218,7 +982,7 @@ namespace CorUnix
                     palErr = CPalSynchronizationManager::WakeUpLocalThread(
                         pthrCurrent,
                         ptwiWaitInfo->pthrOwner,
-                        fAbandoned ? MutexAbandoned : WaitSucceeded,
+                        WaitSucceeded,
                         dwObjIdx);
 
                     if (NO_ERROR != palErr)
@@ -1263,7 +1027,7 @@ namespace CorUnix
     WaitCompletionState CSynchData::IsRestOfWaitAllSatisfied(
         WaitingThreadsListNode * pwtlnNode)
     {
-        int iSignaledOrOwnedObjCount = 0;
+        int iSignaledObjCount = 0;
         int iTgtCount = 0;
         int i;
         WaitCompletionState wcsWaitCompletionState = WaitIsNotSatisfied;
@@ -1290,7 +1054,6 @@ namespace CorUnix
         {
             WaitingThreadsListNode * pwtlnItem = ptwiWaitInfo->rgpWTLNodes[i];
             bool fRetVal;
-            bool fIsAbandoned;
 
             VALIDATEOBJECT(pwtlnItem);
 
@@ -1307,17 +1070,16 @@ namespace CorUnix
                 // The target object (the one related to pwtlnNode) is counted as
                 // signaled/owned without checking it (also if it is not, as
                 // it normally happens when this method is called)
-                iSignaledOrOwnedObjCount++;
+                iSignaledObjCount++;
                 continue;
             }
 
             fRetVal = psdSynchDataItem->CanWaiterWaitWithoutBlocking(
-                ptwiWaitInfo->pthrOwner,
-                &fIsAbandoned);
+                ptwiWaitInfo->pthrOwner);
 
             if (fRetVal)
             {
-                iSignaledOrOwnedObjCount++;
+                iSignaledObjCount++;
             }
             else
             {
@@ -1325,7 +1087,7 @@ namespace CorUnix
             }
         }
 
-        if (iSignaledOrOwnedObjCount < iTgtCount)
+        if (iSignaledObjCount < iTgtCount)
         {
             wcsWaitCompletionState = WaitIsNotSatisfied;
         }
@@ -1337,145 +1099,6 @@ namespace CorUnix
         TRACE("IsRestOfWaitAllSatisfied() returning %u \n", wcsWaitCompletionState);
 
         return wcsWaitCompletionState;
-    }
-
-
-    /*++
-    Method:
-      CSynchData::SetOwner
-
-    Blindly sets the thread whose CPalThread is passed as argument, as the
-    owner of the current object.
-    WARNING: this method discards any previous ownership data and does not
-    update the list of the object owned by the owner thread.
-
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
-    --*/
-    void CSynchData::SetOwner(CPalThread * pOwnerThread)
-    {
-        VALIDATEOBJECT(this);
-
-        m_dwOwnerPid   = gPID;
-        m_dwOwnerTid   = pOwnerThread->GetThreadId();
-        m_pOwnerThread = pOwnerThread;
-    }
-
-    /*++
-    Method:
-      CSynchData::ResetOwnership
-
-    Resets current object's ownership data
-
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
-    --*/
-    void CSynchData::ResetOwnership()
-    {
-        VALIDATEOBJECT(this);
-
-        m_lOwnershipCount          = 0;
-        m_dwOwnerPid               = 0;
-        m_dwOwnerTid               = 0;
-        m_pOwnerThread             = NULL;
-        m_poolnOwnedObjectListNode = NULL;
-    }
-
-    /*++
-    Method:
-      CSynchData::AssignOwnershipToThread
-
-    Assigns thw ownership of the current object to the target thread, performing
-    all the operations neede to mantain the correct status of ownership data,
-    also handling recursive object ownership acquisition
-
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
-    --*/
-    PAL_ERROR CSynchData::AssignOwnershipToThread(
-        CPalThread * pthrCurrent,
-        CPalThread * pthrTarget)
-    {
-        // Note: when this method is called by ReleaseFirstWaiter there is
-        //       a small time window in which both SignalCount and
-        //       OwnershipCount can be greater than zero (which normally
-        //       is illegal). Anyway that is fine since ReleaseFirstWaiter
-        //       will restore the value right after, and such situation
-        //       takes place while holding synchroniztion locks, so no
-        //       other thread/process can access the object.
-
-        PAL_ERROR palErr = NO_ERROR;
-
-        _ASSERT_MSG(CObjectType::OwnershipTracked ==
-                    GetObjectType()->GetOwnershipSemantics(),
-                    "AssignOwnershipToThread called on a non-ownable "
-                    "CSynchData [this=%p OwnershipSemantics=%u]\n", this,
-                    GetObjectType()->GetOwnershipSemantics());
-
-
-        if (0 < m_lOwnershipCount)
-        {
-            //
-            // Object already owned, incrementing ownership count
-            //
-            _ASSERT_MSG(0 == GetSignalCount(),
-                        "Conflicting OwnershipCount and SignalCount values\n");
-
-            _ASSERT_MSG(pthrTarget == m_pOwnerThread && gPID == m_dwOwnerPid,
-                        "Attempting to assign ownership of CSynchData %p to "
-                        "thread {pid=%#x tid=%#x} while it is currently owned "
-                        "by thread {pid=%#x tid=%#x}\n", this,
-                        gPID, pthrTarget->GetThreadId(),
-                        m_dwOwnerPid, m_pOwnerThread->GetThreadId());
-
-            m_lOwnershipCount++;
-
-            TRACE("Incrementing ownership count for object with "
-                  "SynchData %p owned by thread %#x [new count=%d]\n",
-                  this, pthrTarget->GetThreadId(), m_lOwnershipCount);
-        }
-        else
-        {
-            //
-            // Acquiring currently not owned object
-            //
-            CPalSynchronizationManager * pSynchManager =
-                CPalSynchronizationManager::GetInstance();
-            OwnedObjectsListNode * pooln;
-
-            pooln = pSynchManager->CacheGetOwnedObjsListNode(pthrCurrent);
-            if (NULL == pooln)
-            {
-                ERROR("Out of memory while acquiring mutex ownership");
-                // In this case we bail out. It will result in no
-                // thread being awakend, which may cause deadlock,
-                // but it is anyway better than corrupting the
-                // ownership list
-                palErr = ERROR_NOT_ENOUGH_MEMORY;
-                goto AOTT_exit;
-            }
-
-            TRACE("Assigning ownable object with SynchData %p to "
-                  "thread %#x\n",
-                  this, pthrTarget->GetThreadId());
-
-            // Set ownership data
-            SetOwner(pthrTarget);
-            SetOwnershipListNode(pooln);
-            SetOwnershipCount(1);
-            SetAbandoned(false);
-
-            // Add object to list of owned objs for current thread
-            pooln->pPalObjSynchData = this;
-            AddRef();
-            pthrTarget->synchronizationInfo.AddObjectToOwnedList(pooln);
-        }
-
-    AOTT_exit:
-        return palErr;
     }
 
     /*++
