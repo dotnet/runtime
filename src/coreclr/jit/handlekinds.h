@@ -24,7 +24,7 @@ HANDLE_KIND(GTF_ICON_CIDMID_HDL      , "cid/mid"                    , HKF_INVARI
 HANDLE_KIND(GTF_ICON_BBC_PTR         , "bbc"                        , 0)             // basic block count pointer
 HANDLE_KIND(GTF_ICON_STATIC_BOX_PTR  , "static box ptr"             , 0)             // address of the box for a STATIC_IN_HEAP field
 HANDLE_KIND(GTF_ICON_FIELD_SEQ       , "field seq"                  , 0)             // FieldSeq* (used only as VNHandle)
-HANDLE_KIND(GTF_ICON_STATIC_ADDR_PTR , "static base addr cell"      , HKF_INVARIANT) // pointer to a static base address
+HANDLE_KIND(GTF_ICON_STATIC_ADDR_PTR , "static base addr cell"      , HKF_INVARIANT | HKF_NONNULL) // pointer to a static base address
 HANDLE_KIND(GTF_ICON_SECREL_OFFSET   , "relative offset in section" , HKF_INVARIANT) // offset in a certain section.
 HANDLE_KIND(GTF_ICON_TLSGD_OFFSET    , "tls global dynamic offset"  , HKF_INVARIANT) // argument to tls_get_addr.
 
