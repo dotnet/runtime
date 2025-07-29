@@ -45,7 +45,8 @@ namespace
 
     int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t count, void* context)
     {
-        HRESULT hr = ((ICorDebugMutableDataTarget*)context)->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        ICorDebugMutableDataTarget* target = static_cast<ICorDebugMutableDataTarget*>(context);
+        HRESULT hr = target->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
         if (FAILED(hr))
             return hr;
 
@@ -63,7 +64,7 @@ namespace
     }
 }
 
-CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, IUnknown* legacyImpl)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
