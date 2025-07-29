@@ -140,6 +140,12 @@ CDAC_TYPE_INDETERMINATE(RuntimeThreadLocals)
 CDAC_TYPE_FIELD(RuntimeThreadLocals, /*EEAllocContext*/, AllocContext, offsetof(RuntimeThreadLocals, alloc_context))
 CDAC_TYPE_END(RuntimeThreadLocals)
 
+CDAC_TYPE_BEGIN(IdDispenser)
+CDAC_TYPE_INDETERMINATE(IdDispenser)
+CDAC_TYPE_FIELD(IdDispenser, /*pointer*/, IdToThread, cdac_data<IdDispenser>::IdToThread)
+CDAC_TYPE_FIELD(IdDispenser, /*uint32*/, HighestId, cdac_data<IdDispenser>::HighestId)
+CDAC_TYPE_END(IdDispenser)
+
 CDAC_TYPE_BEGIN(EEAllocContext)
 CDAC_TYPE_INDETERMINATE(EEAllocContext)
 CDAC_TYPE_FIELD(EEAllocContext, /*GCAllocContext*/, GCAllocationContext, offsetof(ee_alloc_context, m_GCAllocContext))
@@ -985,6 +991,7 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
+CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS

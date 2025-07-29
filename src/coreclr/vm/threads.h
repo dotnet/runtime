@@ -4390,7 +4390,17 @@ public:
         _ASSERTE(result == NULL || (dac_cast<size_t>(result) & 0x3) == 0 || ((Thread*)result)->GetThreadId() == id);
         return result;
     }
+
+    friend struct ::cdac_data<IdDispenser>;
 };
+
+template<>
+struct cdac_data<IdDispenser>
+{
+    static constexpr size_t IdToThread = offsetof(IdDispenser, m_idToThread);
+    static constexpr size_t HighestId = offsetof(IdDispenser, m_highestId);
+};
+
 typedef DPTR(IdDispenser) PTR_IdDispenser;
 
 
