@@ -1,14 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Security.Cryptography
 {
@@ -122,29 +117,6 @@ namespace System.Security.Cryptography
             bytesWritten = actual.Length;
             return true;
         }
-
-#if NETFRAMEWORK || NETSTANDARD2_0
-        internal static async Task<int> ReadAsync(this Stream stream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            Debug.Assert(stream != null);
-
-            if (buffer.IsEmpty)
-            {
-                return await stream.ReadAsync(Array.Empty<byte>(), 0, 0, cancellationToken).ConfigureAwait(false);
-            }
-
-            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
-            {
-                return await stream.ReadAsync(segment.Array!, segment.Offset, segment.Count, cancellationToken).ConfigureAwait(false);
-            }
-
-            byte[] rented = ArrayPool<byte>.Shared.Rent(buffer.Length);
-            int bytesRead = await stream.ReadAsync(rented, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
-            rented.AsSpan(0, bytesRead).CopyTo(buffer.Span);
-            ArrayPool<byte>.Shared.Return(rented, clearArray: true);
-            return bytesRead;
-        }
-#endif
     }
 
 #if !NETSTANDARD2_1_OR_GREATER
