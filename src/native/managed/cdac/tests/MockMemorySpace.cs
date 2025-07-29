@@ -92,15 +92,6 @@ internal unsafe static partial class MockMemorySpace
             return context;
         }
 
-        internal WriteContext GetWriteContext()
-        {
-            WriteContext context = new WriteContext
-            {
-                HeapFragments = _heapFragments,
-            };
-            return context;
-        }
-
         private bool FragmentFits(HeapFragment f)
         {
             foreach (var fragment in _heapFragments)
