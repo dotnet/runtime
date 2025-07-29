@@ -19,7 +19,6 @@ namespace System.Threading
 
         public static int Wait(this IWaitableObject waitable, ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
         {
-            Debug.Assert(waitInfo != null);
             Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
 
             Debug.Assert(timeoutMilliseconds >= -1);

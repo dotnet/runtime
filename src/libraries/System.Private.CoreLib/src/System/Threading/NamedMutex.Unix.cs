@@ -143,7 +143,7 @@ namespace System.Threading
         {
             if (!IsLockOwnedByCurrentThread)
             {
-                throw new InvalidOperationException("Cannot release a lock that is not owned by the current thread.");
+                throw new InvalidOperationException(SR.Arg_InvalidOperationException_CannotReleaseUnownedMutex);
             }
 
             --_lockCount;
@@ -276,7 +276,7 @@ namespace System.Threading
                 if (Interop.Sys.LowLevelCrossProcessMutex_Init(v) != 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    throw Interop.GetExceptionForIoErrno(errorInfo, "Failed to initialize pthread mutex");
+                    throw Interop.GetExceptionForIoErrno(errorInfo, SR.Arg_FailedToInitializePThreadMutex);
                 }
             }
             else

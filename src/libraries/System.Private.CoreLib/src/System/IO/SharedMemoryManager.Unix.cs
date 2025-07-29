@@ -96,7 +96,7 @@ namespace System.IO
         private struct SharedMemoryAndVersion
         {
             public SharedMemoryType Type;
-            public uint Version;
+            public byte Version;
         }
 
         [FieldOffset(0)]
@@ -106,9 +106,9 @@ namespace System.IO
         private ulong _raw;
 
         public readonly SharedMemoryType Type => _data.Type;
-        public readonly uint Version => _data.Version;
+        public readonly byte Version => _data.Version;
 
-        public SharedMemorySharedDataHeader(SharedMemoryType type, uint version)
+        public SharedMemorySharedDataHeader(SharedMemoryType type, byte version)
         {
             _data = new SharedMemoryAndVersion
             {
@@ -143,7 +143,7 @@ namespace System.IO
             SharedMemoryManager<TSharedMemoryProcessData>.Instance.AddProcessDataHeader(this);
         }
 
-        public static void* GetDataPointer(SharedMemoryProcessDataHeader<TSharedMemoryProcessData> processDataHeader)
+        public static void* GetDataPointer(SharedMemoryProcessDataHeader<TSharedMemoryProcessData>? processDataHeader)
         {
             return processDataHeader is null
                 ? null
@@ -161,7 +161,10 @@ namespace System.IO
             out AutoReleaseFileLock creationDeletionLockFileHandle)
         {
             created = false;
-            creationDeletionLockFileHandle = new AutoReleaseFileLock(new SafeFileHandle());
+
+            AutoReleaseFileLock placeholderAutoReleaseLock = new AutoReleaseFileLock(new SafeFileHandle());
+
+            creationDeletionLockFileHandle = placeholderAutoReleaseLock;
             SharedMemoryId id = new(name, isUserScope);
 
             nuint sharedDataUsedByteCount = (nuint)sizeof(SharedMemorySharedDataHeader) + sharedMemoryDataSize;
@@ -274,6 +277,8 @@ namespace System.IO
             if (!createdFile)
             {
                 creationDeletionLockFileHandle.Dispose();
+                // Reset to the placeholder value to avoid returning a pre-disposed lock.
+                creationDeletionLockFileHandle = placeholderAutoReleaseLock;
             }
 
             processDataHeader = new SharedMemoryProcessDataHeader<TSharedMemoryProcessData>(
@@ -390,6 +395,8 @@ namespace System.IO
         private const UnixFileMode PermissionsMask_Sticky = UnixFileMode.StickyBit;
 
         private const string SharedMemoryUniqueTempNameTemplate = ".dotnet.XXXXXX";
+
+        // See https://developer.apple.com/documentation/Foundation/FileManager/containerURL(forSecurityApplicationGroupIdentifier:)#App-Groups-in-macOS for details on this path.
         private const string ApplicationContainerBasePathSuffix = "/Library/Group Containers/";
 
         public static string SharedFilesPath { get; } = InitalizeSharedFilesPath();
@@ -445,13 +452,13 @@ namespace System.IO
                     if (fileStatus.Uid != id.Uid)
                     {
                         fd.Dispose();
-                        throw new IOException($"The file '{sharedMemoryFilePath}' is not owned by the current user with UID {id.Uid}.");
+                        throw new IOException(SR.Format(SR.IO_SharedMemory_FileNotOwnedByUid, sharedMemoryFilePath, id.Uid));
                     }
 
                     if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
                     {
                         fd.Dispose();
-                        throw new IOException($"The file '{sharedMemoryFilePath}' does not have the expected permissions for user scope: {PermissionsMask_OwnerUser_ReadWrite}.");
+                        throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
                     }
                 }
                 createdFile = false;
@@ -593,7 +600,7 @@ namespace System.IO
                 }
                 else
                 {
-                    throw new IOException($"The path '{directoryPath}' exists but is not a directory.");
+                    throw new IOException(SR.Format(SR.IO_SharedMemory_PathExistsButNotDirectory, directoryPath));
                 }
             }
 
@@ -620,7 +627,7 @@ namespace System.IO
                     return true;
                 }
 
-                throw new IOException($"The directory '{directoryPath}' does not have the expected owner or permissions for system scope: {fileStatus.Uid}, {Convert.ToString(fileStatus.Mode, 8)}.");
+                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrect, directoryPath, fileStatus.Uid, Convert.ToString(fileStatus.Mode, 8)));
             }
 
             // For non-system directories (such as SharedFilesPath/UserUnscopedRuntimeTempDirectoryName),
@@ -630,7 +637,7 @@ namespace System.IO
             // For user-scoped directories, verify the owner UID
             if (id.IsUserScope && fileStatus.Uid != id.Uid)
             {
-                throw new IOException($"The directory '{directoryPath}' is not owned by the current user with UID {id.Uid}.");
+                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryNotOwnedByUid, directoryPath, id.Uid));
             }
 
             // Verify the permissions, or try to change them if possible
@@ -644,7 +651,7 @@ namespace System.IO
             // since other users aren't sufficiently restricted in permissions.
             if (id.IsUserScope)
             {
-                throw new IOException($"The directory '{directoryPath}' does not have the expected permissions for user scope: {Convert.ToString(fileStatus.Mode, 8)}.");
+                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryPermissionsIncorrectUserScope, directoryPath, Convert.ToString(fileStatus.Mode, 8)));
             }
 
 
@@ -652,7 +659,7 @@ namespace System.IO
             permissionsMask = PermissionsMask_OwnerUser_ReadWriteExecute;
             if ((fileStatus.Mode & (int)permissionsMask) != (int)permissionsMask)
             {
-                throw new IOException($"The directory '{directoryPath}' does not have the expected owner permissions: {Convert.ToString(fileStatus.Mode, 8)}.");
+                throw new IOException(SR.Format(SR.IO_SharedMemory_DirectoryOwnerPermissionsIncorrect, directoryPath, Convert.ToString(fileStatus.Mode, 8)));
             }
 
             return true;
