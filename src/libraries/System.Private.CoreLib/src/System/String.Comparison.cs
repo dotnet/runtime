@@ -132,6 +132,7 @@ namespace System
                     length -= 12; a += 12; b += 12;
                 }
 #else // TARGET_64BIT
+#error TARGET_64BIT is not defined
                 while (length >= 10)
                 {
                     if (*(int*)a != *(int*)b) goto DiffOffset0;

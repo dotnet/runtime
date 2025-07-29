@@ -1448,6 +1448,7 @@ namespace System
                 result = (TOther)(object)actualResult;
                 return true;
 #else
+#error TARGET_64BIT is not defined
                 nuint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
                                      (value <= uint.MinValue) ? uint.MinValue : (nuint)value;
                 result = (TOther)(object)actualResult;

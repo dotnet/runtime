@@ -53,8 +53,14 @@ namespace Sample
 
         [JSExport]
         internal static async Task PrintMeaning(Task<int> meaningPromise)
-        {
+        {            
             Console.WriteLine("Meaning of life is " + await meaningPromise);
+        }
+
+        [JSExport]
+        internal static async Task PrintMeaningDEBUG(int value)
+        {
+            Console.WriteLine("Meaning of life is " + value);
         }
         [JSExport]
         internal static int SimpleTestFunctionInt()
@@ -91,8 +97,8 @@ namespace Sample
         internal static void SimpleTestArray()
         {
             
-            //var arrayPtr = System.MHTestClass.RunTestArray();
-            var arrayPtr = System.MHTestClass.RunTestArrayRaw();
+            var arrayPtr = System.MHTestClass.RunTestArray();
+            //var arrayPtr = System.MHTestClass.RunTestArrayRaw();
             //var h = new Mono.SafeGPtrArrayHandle(arrayPtr);
 
             var a = 1;// h[0];
@@ -107,13 +113,13 @@ namespace Sample
         internal static void SimpleTestFunctionPrintString()
         {
             // write an empty string to the console
-            Console.WriteLine("Test");
+            Console.WriteLine("MH DOING A TEST");
         }
         [JSExport]
         internal static int TestMeaning()
         {
-            // int testSize = 123;
-            // Console.WriteLine("Size of an int is " + sizeof(int) + " bytes, and test size is " + testSize + " bytes.");
+            int testSize = 123;
+            Console.WriteLine("Size of an int is " + sizeof(int) + " bytes, and test size is " + testSize + " bytes.");
             // call to C code via [DllImport]
             var half = Fibonacci(8);
             // call back to JS via [JSImport]

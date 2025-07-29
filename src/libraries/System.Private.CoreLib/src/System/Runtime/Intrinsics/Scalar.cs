@@ -524,6 +524,7 @@ namespace System.Runtime.Intrinsics
                 ulong bits = (ulong)(nint)(object)value;
                 return (uint)(bits >> 63);
 #else
+#error TARGET_64BIT is not defined
                 uint bits = (uint)(nint)(object)value;
                 return bits >> 31;
 #endif

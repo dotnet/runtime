@@ -196,6 +196,10 @@ static char * log_sig(MonoMethodSignature* sig)
 {
 	char buffer[256];
 	int offset = 0;
+	if (!sig) {
+		MH_LOG("Signature is NULL");
+		return NULL;
+	}
 	MH_LOG_INDENT();
 	for (int i = 0; i < sig->param_count; ++i) {
 		MonoType* tp = sig->params[i];		
@@ -762,7 +766,7 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 	}
 	case MINT_ICALLSIG_PPPPP_V:
 	case MINT_ICALLSIG_PPPPP_P: {
-		log_sig(sig);  // just here for a breakpoint
+		//log_sig(sig);  // just here for a breakpoint
 		if (!strcmp(sigTest,"44444_V")) {
 			typedef void (*T)(I4,I4,I4,I4,I4);
 			T func = (T)ptr;
@@ -1247,7 +1251,7 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 	}
 	case MINT_ICALLSIG_PPPPPP_V:
 	case MINT_ICALLSIG_PPPPPP_P: {
-		log_sig(sig);  // just here for a breakpoint
+		//log_sig(sig);  // just here for a breakpoint
 		if (!strcmp(sigTest,"444444_V")) {
 			typedef void (*T)(I4,I4,I4,I4,I4,I4);
 			T func = (T)ptr;

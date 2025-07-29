@@ -41,6 +41,8 @@ namespace System.Collections.Generic
         private Entry[]? _entries;
 #if TARGET_64BIT
         private ulong _fastModMultiplier;
+#else
+        #error TARGET_64BIT is not defined
 #endif
         private int _count;
         private int _freeList;

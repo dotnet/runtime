@@ -34,6 +34,7 @@ namespace System
         internal const int OFFSET_TO_STRING = 20;
 #else
         internal const int OFFSET_TO_STRING = 12;
+#error TARGET_64BIT is not defined
 #endif
 
         // TODO: Should be pointing to Buffer instead

@@ -117,6 +117,7 @@ namespace System
             Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<long>(ref src));
             Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -8), Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref srcEnd, -8)));
 #else
+#error TARGET_64BIT is not defined
             Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<int>(ref src));
             Unsafe.WriteUnaligned(ref Unsafe.Add(ref dest, 4), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref src, 4)));
             Unsafe.WriteUnaligned(ref Unsafe.Add(ref destEnd, -8), Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref srcEnd, -8)));

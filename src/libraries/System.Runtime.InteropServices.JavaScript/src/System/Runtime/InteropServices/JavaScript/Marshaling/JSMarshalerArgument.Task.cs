@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_MANAGED_THREADS
             lock (ctx)
 #endif
-            {
+            {                
                 var holder = ctx.GetPromiseHolder(slot.GCHandle);
                 TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder, TaskCreationOptions.RunContinuationsAsynchronously);
                 ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>

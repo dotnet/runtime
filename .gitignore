@@ -363,3 +363,7 @@ src/coreclr/System.Private.CoreLib/common
 .dotnet-daily/
 run-stress-*
 test:.cs
+
+src/mono/System.Private.CoreLib/CompatibilitySuppressions.xml
+
+src/mono/mono/offsets/wasm64-unknown-none.h

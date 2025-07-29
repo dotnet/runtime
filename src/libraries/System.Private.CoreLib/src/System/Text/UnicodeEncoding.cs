@@ -401,6 +401,7 @@ namespace System.Text
 #if TARGET_64BIT
                         (unchecked((long)chars) & 7) == 0 &&
 #else
+#error TARGET_64BIT is not defined
                         (unchecked((int)chars) & 3) == 0 &&
 #endif
                         charLeftOver == 0)

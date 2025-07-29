@@ -101,6 +101,7 @@ namespace System.Numerics
 #if TARGET_64BIT
                 return (uint)(0x1_0000_0000ul >> LeadingZeroCount(value - 1));
 #else
+#error TARGET_64BIT is not defined
                 int shift = 32 - LeadingZeroCount(value - 1);
                 return (1u ^ (uint)(shift >> 5)) << shift;
 #endif

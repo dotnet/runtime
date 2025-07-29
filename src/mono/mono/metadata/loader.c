@@ -406,8 +406,7 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 static MonoMethod *
 find_method_in_class (MonoClass *klass, const char *name, const char *qname, const char *fqname,
 		      MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
-{
-	MH_LOG("find method %s in class - log return value", name);
+{	
  	int i;	
 	/* FIXME: method refs from metadata-upate probably end up here */
 

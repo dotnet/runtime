@@ -772,6 +772,8 @@ namespace System
 #if TARGET_64BIT
             // On 32-bit, this will always be true since sizeof(nuint) == 4
             if (length < sizeof(uint))
+#else
+            #error TARGET_64BIT is not defined
 #endif
             {
                 uint differentBits = 0;

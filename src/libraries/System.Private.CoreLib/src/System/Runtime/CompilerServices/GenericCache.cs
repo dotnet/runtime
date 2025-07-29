@@ -101,6 +101,7 @@ namespace System.Runtime.CompilerServices
 #if TARGET_64BIT
             return (int)(((ulong)hash * 11400714819323198485ul) >> hashShift);
 #else
+#error TARGET_64BIT is not defined
             return (int)(((uint)hash * 2654435769u) >> hashShift);
 #endif
         }

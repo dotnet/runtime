@@ -91,6 +91,7 @@ namespace System.Threading
 #if TARGET_64BIT
             (long)Unsafe.As<long, VolatileIntPtr>(ref Unsafe.AsRef(in location)).Value;
 #else
+#error TARGET_64BIT is not defined
             // On 32-bit machines, we use Interlocked, since an ordinary volatile read would not be atomic.
             Interlocked.CompareExchange(ref Unsafe.AsRef(in location), 0, 0);
 #endif

@@ -24,47 +24,26 @@ export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 export const JavaScriptMarshalerArgSize = isWasm64 ? 64 : 32;
 
 // keep in sync with JSMarshalerArgumentImpl offsets
-const JSMarshalerArgumentOffsets = isWasm64 ? {
-    BooleanValue: 0,
-    ByteValue: 0,
-    CharValue: 0,
-    Int16Value: 0,
-    Int32Value: 0,
-    Int64Value: 0,
-    SingleValue: 0,
-    DoubleValue: 0,
-    IntPtrValue: 0,
-    JSHandle: 8,
-    GCHandle: 8,
-    Length: 16,
-    Type: 24,
-    ElementType: 25,
-    ContextHandle: 32,
-    ReceiverShouldFree: 40,
-    CallerNativeTID: 48,
-    SyncDoneSemaphorePtr: 56,
+const enum JSMarshalerArgumentOffsets {
+    BooleanValue = 0,
+    ByteValue = 0,
+    CharValue = 0,
+    Int16Value = 0,
+    Int32Value = 0,
+    Int64Value = 0,
+    SingleValue = 0,
+    DoubleValue = 0,
+    IntPtrValue = 0,
+    JSHandle = 8,
+    GCHandle = 8,
+    Length = 16,
+    Type = 24,
+    ElementType = 25,
+    ContextHandle = 32,
+    ReceiverShouldFree = 40,
+    CallerNativeTID = 48,
+    SyncDoneSemaphorePtr = 56,
 }
-    :
-    {
-        BooleanValue: 0,
-        ByteValue: 0,
-        CharValue: 0,
-        Int16Value: 0,
-        Int32Value: 0,
-        Int64Value: 0,
-        SingleValue: 0,
-        DoubleValue: 0,
-        IntPtrValue: 0,
-        JSHandle: 4,
-        GCHandle: 4,
-        Length: 8,
-        Type: 12,
-        ElementType: 13,
-        ContextHandle: 16,
-        ReceiverShouldFree: 20,
-        CallerNativeTID: 24,
-        SyncDoneSemaphorePtr: 28,
-    };
 
 export const JSMarshalerTypeSize = 32;
 // keep in sync with JSFunctionBinding.JSBindingType
@@ -340,7 +319,10 @@ export function set_arg_i32 (arg: JSMarshalerArgument, value: number): void {
 export function set_arg_intptr (arg: JSMarshalerArgument, value: VoidPtr | bigint | number): void {
     mono_assert(arg, "Null arg");
     if (isWasm64) {
-        setI64Big(<any>arg, value as bigint);
+        if (typeof value !== "bigint")
+            setI64Big(<any>arg, BigInt(value as number));
+        else
+            setI64Big(<any>arg, value as bigint);
     } else {
         setU32(<any>arg, value as number);
     }
@@ -383,7 +365,15 @@ export function get_arg_js_handle (arg: JSMarshalerArgument): JSHandle {
 export function set_arg_proxy_context (arg: JSMarshalerArgument): void {
     if (!WasmEnableThreads) return;
     mono_assert(arg, "Null arg");
-    setI32(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), runtimeHelpers.proxyGCHandle as any);
+
+    if (isWasm64) {
+        if (typeof runtimeHelpers.proxyGCHandle !== "bigint")
+            setI64Big(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), BigInt(runtimeHelpers.proxyGCHandle as any as number));
+        else
+            setI64Big(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), runtimeHelpers.proxyGCHandle as bigint);
+    } else {
+        setI32(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), runtimeHelpers.proxyGCHandle as any);
+    }
 }
 
 export function set_js_handle (arg: JSMarshalerArgument, jsHandle: JSHandle): void {
@@ -394,12 +384,21 @@ export function set_js_handle (arg: JSMarshalerArgument, jsHandle: JSHandle): vo
 
 export function get_arg_gc_handle (arg: JSMarshalerArgument): GCHandle {
     mono_assert(arg, "Null arg");
-    return getI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle)) as any;
+    return isWasm64 ? getI64Big(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle)) as any : getI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle)) as any;
 }
 
 export function set_gc_handle (arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     mono_assert(arg, "Null arg");
-    setI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle), gcHandle as any);
+    mono_log_debug(`set_gc_handle(${arg}, ${gcHandle}) at offset ${JSMarshalerArgumentOffsets.GCHandle}`);
+
+    if (isWasm64) {
+        if (typeof gcHandle !== "bigint")
+            setI64Big(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle), BigInt(gcHandle as any as number));
+        else
+            setI64Big(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle), gcHandle as bigint);
+    } else {
+        setI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle), gcHandle as any);
+    }
     set_arg_proxy_context(arg);
 }
 
