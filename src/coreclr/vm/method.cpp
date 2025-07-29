@@ -1123,8 +1123,10 @@ BOOL MethodDesc::HasRetBuffArg()
 }
 
 //*******************************************************************************
-// This returns the offset of the IL.
-// The offset is relative to the base of the IL image.
+// This typically returns the offset of the IL.
+// Another case when a method may have an RVA is earlybound IJW PInvokes,
+// in which case the RVA is referring to native code.
+// The offset is relative to the base of the image.
 ULONG MethodDesc::GetRVA()
 {
     CONTRACTL
@@ -1133,9 +1135,8 @@ ULONG MethodDesc::GetRVA()
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
-        // It must be a method that can have an IL header.
-        // Not IL, dynamic IL or transient IL would not have an RVA
-        PRECONDITION(MayHaveILHeader());
+        PRECONDITION((IsIL() && MayHaveILHeader()) ||
+            (IsNDirect() && ((NDirectMethodDesc*)this)->IsEarlyBound()));
     }
     CONTRACTL_END
 
