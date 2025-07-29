@@ -159,8 +159,7 @@ namespace CorUnix
           m_cacheSHRSynchData(SynchDataCacheMaxSize),
           m_cacheWTListNodes(WTListNodeCacheMaxSize),
           m_cacheSHRWTListNodes(WTListNodeCacheMaxSize),
-          m_cacheThreadApcInfoNodes(ApcInfoNodeCacheMaxSize),
-          m_cacheOwnedObjectsListNodes(OwnedObjectsListCacheMaxSize)
+          m_cacheThreadApcInfoNodes(ApcInfoNodeCacheMaxSize)
     {
 #if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
         m_iKQueue = -1;
@@ -396,7 +395,6 @@ namespace CorUnix
                 break;
             }
             case WaitSucceeded:
-            case MutexAbandoned:
                 *pdwSignaledObject = dwSigObjIdx;
                 break;
             default:
@@ -530,98 +528,6 @@ namespace CorUnix
 
     TNW_exit:
         TRACE("ThreadNativeWait: returning %u [WakeupReason=%u]\n", palErr, *ptwrWakeupReason);
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::AbandonObjectsOwnedByThread
-
-    This method is called by a thread at thread-exit time to abandon
-    any currently owned waitable object (mutexes). If pthrTarget is
-    different from pthrCurrent, AbandonObjectsOwnedByThread assumes
-    to be called whether by TerminateThread or at shutdown time. See
-    comments below for more details
-    --*/
-    PAL_ERROR CPalSynchronizationManager::AbandonObjectsOwnedByThread(
-        CPalThread * pthrCurrent,
-        CPalThread * pthrTarget)
-    {
-        PAL_ERROR palErr = NO_ERROR;
-        OwnedObjectsListNode * poolnItem;
-        CThreadSynchronizationInfo * pSynchInfo = &pthrTarget->synchronizationInfo;
-        CPalSynchronizationManager * pSynchManager = GetInstance();
-
-        // Local lock
-        AcquireLocalSynchLock(pthrCurrent);
-
-        // Abandon owned objects
-        while (NULL != (poolnItem = pSynchInfo->RemoveFirstObjectFromOwnedList()))
-        {
-            CSynchData * psdSynchData = poolnItem->pPalObjSynchData;
-
-            _ASSERT_MSG(NULL != psdSynchData,
-                        "NULL psdSynchData pointer in ownership list node\n");
-
-            VALIDATEOBJECT(psdSynchData);
-
-            TRACE("Abandoning object with SynchData at %p\n", psdSynchData);
-
-            // Reset ownership data
-            psdSynchData->ResetOwnership();
-
-            // Set abandoned status; in case there is a thread to be released:
-            //  - if the thread is local, ReleaseFirstWaiter will reset the
-            //    abandoned status
-            //  - if the thread is remote, the remote worker thread will use
-            //    the value and reset it
-            psdSynchData->SetAbandoned(true);
-
-            // Signal the object and trigger thread awakening
-            psdSynchData->Signal(pthrCurrent, 1);
-
-            // Release reference to SynchData
-            psdSynchData->Release(pthrCurrent);
-
-            // Return node to the cache
-            pSynchManager->m_cacheOwnedObjectsListNodes.Add(pthrCurrent, poolnItem);
-        }
-
-        if (pthrTarget != pthrCurrent)
-        {
-            // If the target thead is not the current one, we are being called
-            // at shutdown time, right before the target thread is suspended,
-            // or anyway the target thread is being terminated.
-            // In this case we switch its wait state to TWS_EARLYDEATH so that,
-            // if the thread is currently waiting/sleeping and it wakes up
-            // before shutdown code manage to suspend it, it will be rerouted
-            // to ThreadPrepareForShutdown (that will be done without holding
-            // any internal lock, in a way to accommodate shutdown time thread
-            // suspension).
-            // At this time we also unregister the wait, so no dummy nodes are
-            // left around on waiting objects.
-            // The TWS_EARLYDEATH wait-state will also prevent the thread from
-            // successfully registering for a possible new wait in the same
-            // time window.
-            LONG lTWState;
-            DWORD * pdwWaitState;
-
-            pdwWaitState = SharedIDToTypePointer(DWORD, pthrTarget->synchronizationInfo.m_shridWaitAwakened);
-            lTWState = InterlockedExchange((LONG *)pdwWaitState, TWS_EARLYDEATH);
-
-            if (( ((LONG)TWS_WAITING == lTWState) || ((LONG)TWS_ALERTABLE == lTWState) ) &&
-                (0 < pSynchInfo->m_twiWaitInfo.lObjCount))
-            {
-                // Unregister the wait
-                UnRegisterWait(pthrCurrent, &pSynchInfo->m_twiWaitInfo);
-            }
-        }
-
-        // Unlock
-        ReleaseLocalSynchLock(pthrCurrent);
-
-        DiscardAllPendingAPCs(pthrCurrent, pthrTarget);
-
         return palErr;
     }
 
@@ -3157,52 +3063,6 @@ namespace CorUnix
         m_twiWaitInfo.pthrOwner = pthrCurrent;
 
         return palErr;
-    }
-
-
-    /*++
-    Method:
-      CThreadSynchronizationInfo::AddObjectToOwnedList
-
-    Adds an object to the list of currently owned objects.
-    --*/
-    void CThreadSynchronizationInfo::AddObjectToOwnedList(POwnedObjectsListNode pooln)
-    {
-        InsertTailList(&m_leOwnedObjsList, &pooln->Link);
-    }
-
-    /*++
-    Method:
-      CThreadSynchronizationInfo::RemoveObjectFromOwnedList
-
-    Removes an object from the list of currently owned objects.
-    --*/
-    void CThreadSynchronizationInfo::RemoveObjectFromOwnedList(POwnedObjectsListNode pooln)
-    {
-        RemoveEntryList(&pooln->Link);
-    }
-
-    /*++
-    Method:
-      CThreadSynchronizationInfo::RemoveFirstObjectFromOwnedList
-
-    Removes the first object from the list of currently owned objects.
-    --*/
-    POwnedObjectsListNode CThreadSynchronizationInfo::RemoveFirstObjectFromOwnedList()
-    {
-        OwnedObjectsListNode * poolnItem;
-
-        if (IsListEmpty(&m_leOwnedObjsList))
-        {
-            poolnItem = NULL;
-        }
-        else
-        {
-            PLIST_ENTRY pLink = RemoveHeadList(&m_leOwnedObjsList);
-            poolnItem = CONTAINING_RECORD(pLink, OwnedObjectsListNode, Link);
-        }
-
-        return poolnItem;
     }
 
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING

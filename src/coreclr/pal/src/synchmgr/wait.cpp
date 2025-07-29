@@ -328,7 +328,6 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
     PAL_ERROR palErr = NO_ERROR;
     int i, iSignaledObjCount, iSignaledObjIndex = -1;
     bool fWAll = (bool)bWaitAll, fNeedToBlock  = false;
-    bool fAbandoned = false;
     WaitType wtWaitType;
 
     IPalObject            * pIPalObjStackArray[MAXIMUM_STACK_WAITOBJ_ARRAY_SIZE] = { NULL };
@@ -444,18 +443,14 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
     iSignaledObjIndex = -1;
     for (i=0;i<(int)nCount;i++)
     {
-        bool fValue, fWaitObjectAbandoned = false;
-        palErr = ppISyncWaitCtrlrs[i]->CanThreadWaitWithoutBlocking(&fValue, &fWaitObjectAbandoned);
+        bool fValue;
+        palErr = ppISyncWaitCtrlrs[i]->CanThreadWaitWithoutBlocking(&fValue);
         if (NO_ERROR != palErr)
         {
             ERROR("ISynchWaitController::CanThreadWaitWithoutBlocking() failed for "
                   "%d-th object [handle=%p error=%u]\n", i, lpHandles[i], palErr);
             pThread->SetLastError(ERROR_INTERNAL_ERROR);
             goto WFMOExIntReleaseControllers;
-        }
-        if (fWaitObjectAbandoned)
-        {
-            fAbandoned = true;
         }
         if (fValue)
         {
@@ -505,7 +500,7 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
             }
         }
 
-        dwRet = (fAbandoned ? WAIT_ABANDONED_0 : WAIT_OBJECT_0);
+        dwRet = WAIT_OBJECT_0;
     }
     else if (0 == dwMilliseconds)
     {
@@ -571,9 +566,6 @@ WFMOExIntReleaseControllers:
         case WaitSucceeded:
             dwRet = WAIT_OBJECT_0; // offset added later
             break;
-        case MutexAbandoned:
-            dwRet =  WAIT_ABANDONED_0; // offset added later
-            break;
         case WaitTimeout:
             dwRet = WAIT_TIMEOUT;
             break;
@@ -595,14 +587,14 @@ WFMOExIntReleaseControllers:
         }
     }
 
-    if (!fWAll && ((WAIT_OBJECT_0 == dwRet) || (WAIT_ABANDONED_0 == dwRet)))
+    if (!fWAll && (WAIT_OBJECT_0 == dwRet))
     {
         _ASSERT_MSG(0 <= iSignaledObjIndex,
-                    "Failed to identify signaled/abandoned object\n");
+                    "Failed to identify signaled object\n");
         _ASSERT_MSG(iSignaledObjIndex >= 0 && nCount > static_cast<DWORD>(iSignaledObjIndex),
                     "SignaledObjIndex object out of range "
                     "[index=%d obj_count=%u\n",
-                    iSignaledObjCount, nCount);
+                    iSignaledObjIndex, nCount);
 
         if (iSignaledObjIndex < 0)
         {
@@ -784,9 +776,6 @@ DWORD CorUnix::InternalSleepEx (
             palErr = g_pSynchronizationManager->DispatchPendingAPCs(pThread);
             _ASSERT_MSG(NO_ERROR == palErr, "Awakened for APC, but no APC is pending\n");
 
-            break;
-        case MutexAbandoned:
-            ASSERT("Thread %p awakened with reason=MutexAbandoned from a SleepEx\n", pThread);
             break;
         case WaitFailed:
         default:
