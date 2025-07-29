@@ -28462,22 +28462,6 @@ bool GenTree::OperIsConvertVectorToMask() const
 }
 
 //------------------------------------------------------------------------
-// OperIsVectorConditionalSelect: Is this a vector ConditionalSelect hwintrinsic
-//
-// Return Value:
-//    true if the node is a vector ConditionalSelect hwintrinsic
-//    otherwise; false
-//
-bool GenTree::OperIsVectorConditionalSelect() const
-{
-    if (OperIsHWIntrinsic())
-    {
-        return AsHWIntrinsic()->OperIsVectorConditionalSelect();
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
 // OperIsVectorFusedMultiplyOp: Is this a vector FusedMultiplyOp hwintrinsic
 //
 // Return Value:
