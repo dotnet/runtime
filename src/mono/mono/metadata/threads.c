@@ -1762,7 +1762,7 @@ ves_icall_System_Threading_Thread_GetCurrentThread (void)
 MonoBoolean
 ves_icall_System_Threading_Thread_CurrentThreadIsFinalizerThread (void)
 {
-	return mono_gc_is_finalizer_internal_thread (mono_thread_internal_current ());
+	return mono_gc_is_finalizer_internal_thread (mono_thread_internal_current ()) ? TRUE : FALSE;
 }
 
 static MonoInternalThread*

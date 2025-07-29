@@ -58,7 +58,7 @@ static int32_t AcquirePThreadMutexWithTimeout(pthread_mutex_t* mutex, int32_t ti
     assert(error == 0);
 
     timeoutTimeSpec.tv_sec = tv.tv_sec;
-    timeoutTimeSpec.tv_nsec = tv.tv_usec * 1000;
+    timeoutTimeSpec.tv_nsec = (long)(tv.tv_usec * 1000);
 
     uint64_t nanoseconds = (uint64_t)timeoutMilliseconds * 1000 * 1000 + (uint64_t)timeoutTimeSpec.tv_nsec;
 
