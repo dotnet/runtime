@@ -179,7 +179,7 @@ namespace CorUnix
             CPalThread * pthrCurrent,
             CPalThread * pthrTarget);
 
-        void WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode, bool fPrioritize);
+        void WaiterEnqueue(WaitingThreadsListNode * pwtlnNewNode);
 
         // Object Type accessor methods
         CObjectType * GetObjectType(void)
@@ -366,8 +366,7 @@ namespace CorUnix
         virtual PAL_ERROR RegisterWaitingThread(
             WaitType wtWaitType,
             DWORD dwIndex,
-            bool fAlertable,
-            bool fPrioritize);
+            bool fAlertable);
 
         virtual void ReleaseController(void);
 
