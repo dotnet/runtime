@@ -1172,7 +1172,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
             srcCount += BuildDelayFreeUses(shiftBy, source, SRBM_RCX);
             buildKillPositionsForNode(tree, currentLoc + 1, SRBM_RCX);
         }
-        dstCandidates = (tree->GetRegNum() == REG_NA) ? ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported()) : dstCandidates;
+        dstCandidates = (tree->GetRegNum() == REG_NA)
+                            ? ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported())
+                            : dstCandidates;
         BuildDef(tree, dstCandidates);
     }
     else
