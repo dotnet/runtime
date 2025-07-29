@@ -400,7 +400,7 @@ namespace System.Threading
     internal sealed unsafe class NamedMutexProcessDataNoPThreads : NamedMutexProcessDataBase
     {
         private const string SharedMemoryLockFilesDirectoryName = "lockfiles";
-        private readonly Lock _processLevelLock = new();
+        private readonly Mutex _processLevelMutex = new Mutex(initiallyOwned: false);
         private readonly SafeFileHandle _sharedLockFileHandle;
 
         private readonly SharedData* _sharedData;
@@ -458,7 +458,7 @@ namespace System.Threading
             _sharedData->LockOwnerThreadId = InvalidThreadId;
 
             Interop.Sys.FLock(_sharedLockFileHandle, Interop.Sys.LockOperations.LOCK_UN);
-            _processLevelLock.Exit();
+            _processLevelMutex.ReleaseMutex();
         }
 
         protected override bool IsAbandoned
@@ -472,7 +472,7 @@ namespace System.Threading
             base.Close(releaseSharedData);
 
             _sharedLockFileHandle.Dispose();
-            _processLevelLock.Dispose();
+            _processLevelMutex.Dispose();
         }
 
         protected override unsafe MutexTryAcquireLockResult AcquireLockCore(int timeoutMilliseconds)
@@ -486,9 +486,17 @@ namespace System.Threading
             // Acquire the process lock. A file lock can only be acquired once per file descriptor, so to synchronize the threads of
             // this process, the process lock is used.
             bool releaseProcessLock = true;
-            if (!_processLevelLock.TryEnter(timeoutMilliseconds))
+            try
             {
-                return MutexTryAcquireLockResult.TimedOut;
+                if (!_processLevelMutex.WaitOne(timeoutMilliseconds))
+                {
+                    return MutexTryAcquireLockResult.TimedOut;
+                }
+            }
+            catch (AbandonedMutexException)
+            {
+                // If the process-level lock was abandoned, the shared mutex will also have been abandoned.
+                // We don't need to do anything here. We'll acquire the shared lock below and throw for abandonment as expected.
             }
 
             try
@@ -570,7 +578,7 @@ namespace System.Threading
             {
                 if (releaseProcessLock)
                 {
-                    _processLevelLock.Exit();
+                    _processLevelMutex.ReleaseMutex();
                 }
             }
         }

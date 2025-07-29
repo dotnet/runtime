@@ -584,6 +584,10 @@ namespace System.Threading
             {
                 // Abandon locked mutexes. Acquired mutexes are prepended to the linked list, so the mutexes are abandoned in
                 // last-acquired-first-abandoned order.
+
+#if FEATURE_CROSS_PROCESS_MUTEX
+                _namedMutexOwnershipChain?.Abandon();
+#endif
                 s_lock.Acquire();
                 try
                 {
@@ -604,9 +608,6 @@ namespace System.Threading
                     s_lock.Release();
                 }
 
-#if FEATURE_CROSS_PROCESS_MUTEX
-                _namedMutexOwnershipChain?.Abandon();
-#endif
             }
 
             public sealed class WaitedListNode
