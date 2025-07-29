@@ -36,6 +36,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
+#include <minipal/memory.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -580,7 +581,7 @@ Initialize(
         if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
         {
             // Initialize before first thread is created for faster load on Linux
-            if (!InitializeFlushProcessWriteBuffers())
+            if (!minipal_initialize_flush_process_write_buffers())
             {
                 ERROR("Unable to initialize flush process write buffers\n");
                 palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;

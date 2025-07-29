@@ -5,13 +5,8 @@
 #define __GCENV_WINDOWS_INL__
 
 #include "gcenv.os.h"
+#include <minipal/memory.h>
 
-
-#define OS_PAGE_SIZE GCToOSInterface::GetPageSize()
-
-__forceinline size_t GCToOSInterface::GetPageSize()
-{
-    return 0x1000;
-}
+#define OS_PAGE_SIZE minipal_get_page_size()
 
 #endif // __GCENV_WINDOWS_INL__

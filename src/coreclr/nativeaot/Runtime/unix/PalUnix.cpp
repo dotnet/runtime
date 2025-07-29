@@ -40,6 +40,7 @@
 #include <sys/time.h>
 #include <cstdarg>
 #include <signal.h>
+#include <minipal/memory.h>
 #include <minipal/thread.h>
 
 #ifdef TARGET_LINUX
@@ -1235,7 +1236,7 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
 
 void PalFlushProcessWriteBuffers()
 {
-    GCToOSInterface::FlushProcessWriteBuffers();
+    minipal_flush_process_write_buffers();
 }
 
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
