@@ -1,8 +1,6 @@
-﻿<Project>
+<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
     <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 </Project>
