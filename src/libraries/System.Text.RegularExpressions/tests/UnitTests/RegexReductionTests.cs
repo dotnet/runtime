@@ -576,7 +576,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?=a(b*)c)", "(?=ab*c)")]
         [InlineData("(?=a((((b))))c)", "(?=abc)")]
         [InlineData(@"a*(?=a)", @"(?>a*)(?=a)")]
-        [InlineData(@"a*(?!b)b", @"(?>a*)(?!a)b")]
+        [InlineData(@"a*(?!b)b", @"(?>a*)(?!b)b")]
         [InlineData(@"a*(?<!b)cde", @"(?>a*)(?<!b)cde")]
         [InlineData(@"a*(?<=b)cde", @"(?>a*)(?<=b)cde")]
         // Loops inside alternation constructs
