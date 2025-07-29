@@ -46,7 +46,7 @@ namespace TestLibrary
         public class PinnedVector<T> where T : struct
         {
             private byte[] buf;
-            private GCHandle inHandle1;
+            private GCHandle inHandle;
             private ulong alignment;
 
             private void Alloc(T[] data, int alignment)
@@ -60,7 +60,7 @@ namespace TestLibrary
                     }
 
                     buf = new byte[alignment * 2];
-                    inHandle1 = GCHandle.Alloc(buf, GCHandleType.Pinned);
+                    inHandle = GCHandle.Alloc(buf, GCHandleType.Pinned);
                     this.alignment = (ulong)alignment;
                     Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(Ptr), ref Unsafe.As<T, byte>(ref data[0]), (uint)sizeOfinArray1);
                 }
@@ -81,11 +81,11 @@ namespace TestLibrary
                 Alloc(data, alignment);
             }
 
-            public unsafe void* Ptr => Align((byte*)inHandle1.AddrOfPinnedObject().ToPointer(), alignment);
+            public unsafe void* Ptr => Align((byte*)inHandle.AddrOfPinnedObject().ToPointer(), alignment);
 
             public void Dispose()
             {
-                inHandle1.Free();
+                inHandle.Free();
             }
 
             private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
