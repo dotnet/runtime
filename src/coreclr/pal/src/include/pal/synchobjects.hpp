@@ -21,7 +21,6 @@ Abstract:
 
 #include "corunix.hpp"
 #include "threadinfo.hpp"
-#include "mutex.hpp"
 #include "list.h"
 
 #include <pthread.h>

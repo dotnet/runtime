@@ -964,10 +964,6 @@ namespace CorUnix
                     "Conflicting values for SignalCount [%d] and "
                     "OwnershipCount [%d]\n",
                     GetOwnershipCount(), GetSignalCount());
-
-        _ASSERT_MSG(otiMutex != m_otiObjectTypeId || m_lSignalCount <= 1,
-                    "Mutex with invalid singal count\n");
-
         return;
     }
 
