@@ -4334,4 +4334,10 @@ public:
 }
 #endif
 
+#ifndef TARGET_WASM
+#define _ReturnAddress() __builtin_return_address(0)
+#else
+#define _ReturnAddress() 0
+#endif
+
 #endif // __PAL_H__

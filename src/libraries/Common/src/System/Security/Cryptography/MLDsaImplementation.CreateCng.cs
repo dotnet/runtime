@@ -7,7 +7,9 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class MLDsaImplementation
     {
+#if !SYSTEM_SECURITY_CRYPTOGRAPHY
         [SupportedOSPlatform("windows")]
+#endif
         internal CngKey CreateEphemeralCng()
         {
             string bcryptBlobType =

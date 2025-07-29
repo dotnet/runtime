@@ -3676,7 +3676,7 @@ namespace System.Security.Cryptography.Tests
                 new MLDsaNistTestCase(
                     nistTestCaseId: 54,
                     algorithm: MLDsaAlgorithm.MLDsa65,
-                    shouldPass: true,
+                    shouldPass: false, // SHAKE128 does not meet lambda requirement of HashML-DSA-65.
                     publicKeyHex:
                         "D8D1170517D75DB90659838E13D45E98ED20D1961D98AEC16D2F10C51DF289E7FC4ED97D52166C8C" +
                         "913E7CE9D2CA02AFD7791B95E8F2919F7487F9F1C6B0FE2133E2227FC405FD890DEE8C1B79114C32" +
@@ -4015,7 +4015,7 @@ namespace System.Security.Cryptography.Tests
                 new MLDsaNistTestCase(
                     nistTestCaseId: 76,
                     algorithm: MLDsaAlgorithm.MLDsa87,
-                    shouldPass: true,
+                    shouldPass: false, // SHA-3-256 does not meet lambda requirement of ML-DSA-87.
                     publicKeyHex:
                         "E4C74427766F1AE8399213E114EFA1EEFC7A85CD583C28B38EDFB5AA2351698ACABF5487E7B721F6" +
                         "D15D5A60E0D0B629C663D2EF7007CE21C574F3F01A1D9C7A9A80E4DED8B3D14E3996C9FBD4018390" +
