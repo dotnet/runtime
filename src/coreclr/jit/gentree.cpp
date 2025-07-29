@@ -7727,10 +7727,9 @@ GenTreeFlags Compiler::gtTokenToIconFlags(unsigned token)
 // gtNewIndOfIconHandleNode: Creates an indirection GenTree node of a constant handle
 //
 // Arguments:
-//    indType     - The type returned by the indirection node
-//    addr        - The constant address to read from
-//    iconFlags   - The GTF_ICON flag value that specifies the kind of handle that we have
-//    isInvariant - The indNode should also be marked as invariant
+//    indType   - The type returned by the indirection node
+//    addr      - The constant address to read from
+//    iconFlags - The GTF_ICON flag value that specifies the kind of handle that we have
 //
 // Return Value:
 //    Returns a GT_IND node representing value at the address provided by 'addr'
@@ -7739,21 +7738,17 @@ GenTreeFlags Compiler::gtTokenToIconFlags(unsigned token)
 //    The GT_IND node is marked as non-faulting.
 //    If the indirection is not invariant, we also mark the indNode as GTF_GLOB_REF.
 //
-GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant)
+GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags)
 {
     GenTree*     addrNode   = gtNewIconHandleNode(addr, iconFlags);
     GenTreeFlags indirFlags = GTF_IND_NONFAULTING; // This indirection won't cause an exception.
-
-    if (isInvariant)
+    if (GenTree::HandleKindDataIsInvariant(iconFlags))
     {
-        // This indirection also is invariant.
         indirFlags |= GTF_IND_INVARIANT;
-
-        if (iconFlags == GTF_ICON_STR_HDL)
-        {
-            // String literals are never null
-            indirFlags |= GTF_IND_NONNULL;
-        }
+    }
+    if (GenTree::HandleKindDataIsNotNull(iconFlags))
+    {
+        indirFlags |= GTF_IND_NONNULL;
     }
 
     GenTree* indNode = gtNewIndir(indType, addrNode, indirFlags);
@@ -7823,13 +7818,13 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
-            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, true);
+            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL);
             INDEBUG(tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue);
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection.
-            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_CONST_PTR, true);
+            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_CONST_PTR);
             INDEBUG(tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue);
             // Create the second indirection.
             tree = gtNewIndir(TYP_REF, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
@@ -10841,17 +10836,29 @@ static const uint8_t g_handleKindsFlags[] = {
 };
 
 //------------------------------------------------------------------------------
-// HandleKindDataIsInvariant: Returns true if the data referred to by a handle
+// HandleKindDataIsInvariant: Returns true if the data pointed to by a handle
 // address is guaranteed to be invariant.
 //
 // Arguments:
-//    flags - GenTree flags for handle.
+//    flags - the handle kind
 //
-/* static */
 bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
 {
     unsigned handleKindIndex = HandleKindToHandleKindIndex(flags);
     return (g_handleKindsFlags[handleKindIndex] & HKF_INVARIANT) != 0;
+}
+
+//------------------------------------------------------------------------------
+// HandleKindDataIsNotNull: Returns true if the data pointed to by a handle
+// address is guaranteed to be non-null if interpreted as a pointer.
+//
+// Arguments:
+//    flags - the handle kind
+//
+bool GenTree::HandleKindDataIsNotNull(GenTreeFlags flags)
+{
+    unsigned handleKindIndex = HandleKindToHandleKindIndex(flags);
+    return (g_handleKindsFlags[handleKindIndex] & HKF_NONNULL) != 0;
 }
 
 #ifdef DEBUG

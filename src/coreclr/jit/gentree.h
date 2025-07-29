@@ -336,6 +336,7 @@ struct Statement;
 enum HandleKindFlag
 {
     HKF_INVARIANT = 1, // Points to invariant data.
+    HKF_NONNULL   = 2, // Points to non-null data.
 };
 
 enum class HandleKindIndex : unsigned
@@ -2324,6 +2325,7 @@ public:
 #endif // FEATURE_HW_INTRINSICS
 
     static bool HandleKindDataIsInvariant(GenTreeFlags flags);
+    static bool HandleKindDataIsNotNull(GenTreeFlags flags);
 
     bool IsCall() const
     {

@@ -4164,7 +4164,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             else
             {
                 assert(pFieldInfo->fieldLookup.accessType == IAT_PVALUE);
-                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
+                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR);
             }
             GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
             isHoistable     = true;

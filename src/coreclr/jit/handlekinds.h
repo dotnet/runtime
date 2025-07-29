@@ -11,7 +11,7 @@ HANDLE_KIND(GTF_ICON_CLASS_HDL       , "class"                      , HKF_INVARI
 HANDLE_KIND(GTF_ICON_METHOD_HDL      , "method"                     , HKF_INVARIANT) // method handle
 HANDLE_KIND(GTF_ICON_FIELD_HDL       , "field"                      , HKF_INVARIANT) // field handle
 HANDLE_KIND(GTF_ICON_STATIC_HDL      , "static"                     , 0)             // handle to static data
-HANDLE_KIND(GTF_ICON_STR_HDL         , "string"                     , HKF_INVARIANT) // pinned handle pointing to a string object
+HANDLE_KIND(GTF_ICON_STR_HDL         , "string"                     , HKF_INVARIANT | HKF_NONNULL) // pinned handle pointing to a string object
 HANDLE_KIND(GTF_ICON_OBJ_HDL         , "object"                     , 0)             // object handle (e.g. frozen string or Type object)
 HANDLE_KIND(GTF_ICON_CONST_PTR       , "const ptr"                  , HKF_INVARIANT) // pointer to immutable data, (e.g. IAT_PPVALUE)
 HANDLE_KIND(GTF_ICON_GLOBAL_PTR      , "global ptr"                 , 0)             // pointer to mutable data (e.g. from the VM state)
