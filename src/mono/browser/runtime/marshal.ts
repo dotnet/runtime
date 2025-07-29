@@ -97,13 +97,13 @@ export function is_receiver_should_free (args: JSMarshalerArguments): boolean {
 export function get_sync_done_semaphore_ptr (args: JSMarshalerArguments): VoidPtr {
     if (!WasmEnableThreads) return VoidPtrNull;
     mono_assert(args, "Null args");
-    return getI32(add_offset(args, JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr)) as any;
+    return get_arg_handle(args, JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) as any;
 }
 
 export function get_caller_native_tid (args: JSMarshalerArguments): PThreadPtr {
     if (!WasmEnableThreads) return PThreadPtrNull;
     mono_assert(args, "Null args");
-    return getI32(add_offset(args, JSMarshalerArgumentOffsets.CallerNativeTID)) as any;
+    return get_arg_handle(args, JSMarshalerArgumentOffsets.CallerNativeTID) as any;
 }
 
 export function set_receiver_should_free (args: JSMarshalerArguments): void {
@@ -368,42 +368,34 @@ function set_arg_handle (arg: JSMarshalerArgument, offset: number, handle: JSHan
     }
 }
 
-function get_arg_handle (arg: JSMarshalerArgument | JSMarshalerArguments, offset: number): GCHandle | JSHandle | undefined {
+function get_arg_handle (arg: JSMarshalerArgument | JSMarshalerArguments, offset: JSMarshalerArgumentOffsets): GCHandle | JSHandle | undefined {
     return isWasm64 ? getI64Big(add_offset(arg, offset)) as any : getI32(add_offset(arg, offset)) as any;
 }
 
 export function get_arg_js_handle (arg: JSMarshalerArgument): JSHandle {
     mono_assert(arg, "Null arg");
-    return getI32(add_offset(arg, JSMarshalerArgumentOffsets.JSHandle)) as any;
+    return get_arg_handle(arg, JSMarshalerArgumentOffsets.JSHandle) as any;
+    //return getI32(add_offset(arg, JSMarshalerArgumentOffsets.JSHandle)) as any;
 }
 export function set_arg_proxy_context (arg: JSMarshalerArgument): void {
     if (!WasmEnableThreads) return;
     mono_assert(arg, "Null arg");
-
-    if (isWasm64) {
-        if (typeof runtimeHelpers.proxyGCHandle !== "bigint")
-            setI64Big(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), BigInt(runtimeHelpers.proxyGCHandle as any as number));
-        else
-            setI64Big(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), runtimeHelpers.proxyGCHandle as bigint);
-    } else {
-        setI32(add_offset(arg, JSMarshalerArgumentOffsets.ContextHandle), runtimeHelpers.proxyGCHandle as any);
-    }
+    set_arg_handle(arg, JSMarshalerArgumentOffsets.ContextHandle, runtimeHelpers.proxyGCHandle);
 }
 
 export function set_js_handle (arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     mono_assert(arg, "Null arg");
-    setI32(add_offset(arg, JSMarshalerArgumentOffsets.JSHandle), jsHandle as any);
+    set_arg_handle(arg, JSMarshalerArgumentOffsets.JSHandle, jsHandle);
     set_arg_proxy_context(arg);
 }
 
 export function get_arg_gc_handle (arg: JSMarshalerArgument): GCHandle {
     mono_assert(arg, "Null arg");
-    return isWasm64 ? getI64Big(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle)) as any : getI32(add_offset(arg, JSMarshalerArgumentOffsets.GCHandle)) as any;
+    return get_arg_handle(arg, JSMarshalerArgumentOffsets.GCHandle) as any;
 }
 
 export function set_gc_handle (arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     mono_assert(arg, "Null arg");
-    mono_log_debug(`set_gc_handle(${arg}, ${gcHandle}) at offset ${JSMarshalerArgumentOffsets.GCHandle}`);
     set_arg_handle(arg, JSMarshalerArgumentOffsets.GCHandle, gcHandle);
     set_arg_proxy_context(arg);
 }
