@@ -2288,10 +2288,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     break;
                 }
-                if (simdBaseType == TYP_UINT && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                {
-                    break;
-                }
                 impSpillSideEffect(true, stackState.esStackDepth -
                                              2 DEBUGARG("Spilling op1 side effects for vector integer division"));
 #else
