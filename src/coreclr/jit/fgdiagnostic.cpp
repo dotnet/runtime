@@ -3928,6 +3928,12 @@ void Compiler::fgDebugCheckBlockLinks()
         // If this is a switch, check that the tables are consistent.
         if (block->KindIs(BBJ_SWITCH))
         {
+            // Switch blocks with dominant cases must have profile-derived weights.
+            if (block->GetSwitchTargets()->HasDominantCase())
+            {
+                assert(block->hasProfileWeight());
+            }
+
             // Create a set with all the successors.
             BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
             BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
