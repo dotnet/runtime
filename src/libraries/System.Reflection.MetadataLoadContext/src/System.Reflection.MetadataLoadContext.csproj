@@ -4,7 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <RootNamespace>System.Reflection</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <IsAotCompatible>false</IsAotCompatible>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <NoWarn>$(NoWarn);CA1865</NoWarn>
