@@ -38,32 +38,33 @@ namespace System.Text.Json.Serialization.Converters
 #if NET
             int bufferLength = reader.ValueLength;
             char[]? rentedBuffer = null;
-            Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
-                ? stackalloc char[JsonConstants.StackallocCharThreshold]
-                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+            try
+            {
+                Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                    ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                    : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
 
-            int bytesWritten = reader.CopyString(charBuffer);
-            ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
+                int bytesWritten = reader.CopyString(charBuffer);
+                ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
 
-            if (source.Length > 0 && (char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1]) || source[0] == '+'))
+                if (source.Length > 0 && (char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1]) || source[0] == '+'))
+                {
+                    ThrowHelper.ThrowFormatException(DataType.Version);
+                }
+
+                bool success = Version.TryParse(source, out Version? result);
+
+                if (success)
+                {
+                    return result!;
+                }
+            }
+            finally
             {
                 if (rentedBuffer is not null)
                 {
                     ArrayPool<char>.Shared.Return(rentedBuffer);
                 }
-                ThrowHelper.ThrowFormatException(DataType.Version);
-            }
-
-            bool success = Version.TryParse(source, out Version? result);
-
-            if (rentedBuffer is not null)
-            {
-                ArrayPool<char>.Shared.Return(rentedBuffer);
-            }
-
-            if (success)
-            {
-                return result!;
             }
 #else
             string? versionString = reader.GetString();
