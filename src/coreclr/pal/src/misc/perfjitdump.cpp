@@ -218,9 +218,18 @@ struct PerfJitDumpState
 
         fd = result;
 
-        result = write(fd, &header, sizeof(FileHeader));
+        char* message = (char*)&header;
+        size_t messageSize = sizeof(FileHeader);
+        while (messageSize > 0)
+        {
+            while (-1 == (result = write(fd, message, messageSize)) && errno == EINTR);
+            if (result == -1) break;
+            messageSize -= result;
+            message += result;
+            if (messageSize == 0) break;
+        }
 
-        if (result == -1)
+        if (result == -1 || messageSize != 0)
             return FatalError();
 
         while (-1 == (result = fsync(fd)) && errno == EINTR);

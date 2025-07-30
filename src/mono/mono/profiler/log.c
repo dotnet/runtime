@@ -11,6 +11,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
+#include <errno.h>
 #include <config.h>
 #include <gmodule.h>
 #include <mono/metadata/assembly.h>
@@ -2498,7 +2499,9 @@ static void
 signal_helper_thread (char c)
 {
 #ifdef HAVE_COMMAND_PIPES
-	if (write (log_profiler.pipes [1], &c, 1) != 1) {
+	ssize_t result;
+	while (-1 == (result = write (log_profiler.pipes [1], &c, 1)) && errno == EINTR);
+	if (result != 1) {
 		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", g_strerror (errno));
 		exit (1);
 	}

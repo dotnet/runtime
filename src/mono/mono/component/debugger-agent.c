@@ -7067,7 +7067,7 @@ valid_memory_address (gpointer addr, gint size)
 	if(file_check_valid_memory < 0) {
 		return TRUE;
 	}
-	write (file_check_valid_memory,  (gpointer)addr, 1);
+	while (-1 == write (file_check_valid_memory,  (gpointer)addr, 1) && errno == EINTR);
 	if (errno == EFAULT) {
 		ret = FALSE;
 	}

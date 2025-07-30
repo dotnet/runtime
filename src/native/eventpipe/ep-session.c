@@ -228,7 +228,7 @@ session_user_events_tracepoints_init (
 		EP_ASSERT (session_provider != NULL);
 		ep_raise_error_if_nok (ep_session_provider_register_tracepoints (session_provider, session->user_events_data_fd));
 	} DN_LIST_FOREACH_END;
-	
+
 	result = true;
 
 ep_on_exit:
@@ -366,7 +366,7 @@ ep_session_remove_dangling_session_states (EventPipeSession *session)
 				EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
 				if (session_state) {
 					// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
-					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access 
+					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access
 					// the session from the thread session state. Whenever we terminate a session we check to make sure
 					// we haven't leaked any thread session states.
 					ep_thread_delete_session_state(thread, session);
@@ -685,7 +685,7 @@ construct_extension_activity_ids_buffer (
 		memcpy (extension + offset, activity_id, EP_ACTIVITY_ID_SIZE);
 		offset += EP_ACTIVITY_ID_SIZE;
 	}
-	
+
 	EP_ASSERT ((size_t)(offset + 1 + EP_ACTIVITY_ID_SIZE) <= extension_size);
 	if (!related_activity_id_is_empty) {
 		extension[offset] = 0x03;
@@ -837,7 +837,28 @@ session_tracepoint_write_event (
 	payload_rel_loc = ep_event_payload_total_size << 16 | (extension_len & 0xFFFF);
 
 	ssize_t bytes_written;
-	while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, io_index) < 0) && errno == EINTR);
+	struct iovec *iov = io;
+	int iovcnt = io_index;
+	while (iovcnt > 0)
+	{
+		while ((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)iov, iovcnt) < 0) && errno == EINTR);
+		if (bytes_written <= 0) break;
+		while (iovcnt > 0 && bytes_written > 0)
+		{
+			if (iov->iov_len >= bytes_written)
+			{
+				bytes_written -= iov->iov_len;
+				iovcnt--;
+				iov++;
+			}
+			else
+			{
+				iov->iov_len -= bytes_written;
+				iov->iov_base += bytes_written;
+				break;
+			}
+		}
+	}
 
 	if (io != static_io)
 		free (io);

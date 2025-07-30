@@ -1525,35 +1525,12 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         }
 
         memset( buf, 0, BUFFER_SIZE );
-        if (NewSize - OrigSize - BUFFER_SIZE >= 0 && BUFFER_SIZE > 0)
+        size_t toWrite = NewSize - (UINT)OrigSize;
+        while (toWrite > 0)
         {
-            for ( x = 0; x < NewSize - OrigSize - BUFFER_SIZE; x += BUFFER_SIZE )
-            {
-                if ( write( UnixFD, (LPVOID)buf, BUFFER_SIZE ) == -1 )
-                {
-                    ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
-                    if((errno == ENOSPC) || (errno == EDQUOT))
-                    {
-                        palError = ERROR_DISK_FULL;
-                    }
-                    else
-                    {
-                        palError = ERROR_INTERNAL_ERROR;
-                    }
-                    goto done;
-                }
-            }
-        }
-        else
-        {
-            //This will be an infinite loop because it did not pass the check.
-            palError = ERROR_INTERNAL_ERROR;
-            goto done;
-        }
-        /* Catch any left overs. */
-        if ( x != NewSize )
-        {
-            if ( write( UnixFD, (LPVOID)buf, NewSize - OrigSize - x) == -1 )
+            ssize_t writeResult;
+            while (-1 == (writeResult = write( UnixFD, (LPVOID)buf, std::min(toWrite, BUFFER_SIZE) )) && errno == EINTR);
+            if (writeResult == -1)
             {
                 ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
                 if((errno == ENOSPC) || (errno == EDQUOT))
@@ -1566,6 +1543,20 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
                 }
                 goto done;
             }
+            else if (writeResult == 0)
+            {
+                break;
+            }
+            else
+            {
+                toWrite -= (size_t)writeResult;
+            }
+        }
+        if (toWrite > 0)
+        {
+            palError = ERROR_INTERNAL_ERROR;
+            ERROR( "Unable to grow the file. Reason=%s\n", "write returned 0 earlier than expected." );
+            goto done;
         }
 
         /* restore the file pointer position */

@@ -81,14 +81,32 @@ write_short (MonoCompile *cfg, short s)
 {
 	short swap = htons (s);
 	int ret;
-	while ((ret = write (cfg->gdump_ctx->fd, &swap, 2)) < 0 && errno == EINTR);
+	char* message = (char*)&swap;
+	size_t messageSize = 2;
+	do
+	{
+		while ((ret = write (cfg->gdump_ctx->fd, message, messageSize)) < 0 && errno == EINTR);
+		if (ret <= 0) break;
+		message += ret;
+		messageSize -= ret;
+	}
+	while (messageSize > 0);
 }
 
 static void
 write_int (MonoCompile *cfg, int v)
 {
 	int swap = htonl (v), ret;
-	while ((ret = write (cfg->gdump_ctx->fd, &swap, 4)) < 0 && errno == EINTR);
+	char* message = (char*)&swap;
+	size_t messageSize = 4;
+	do
+	{
+		while ((ret = write (cfg->gdump_ctx->fd, message, messageSize)) < 0 && errno == EINTR);
+		if (ret <= 0) break;
+		message += ret;
+		messageSize -= ret;
+	}
+	while (messageSize > 0);
 }
 
 static void

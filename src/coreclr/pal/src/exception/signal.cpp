@@ -652,9 +652,22 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             if (GetCurrentPalThread())
             {
 #if defined(TARGET_TVOS)
-                (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                const char *message = StackOverflowMessage;
+                size_t messageSize = sizeof(StackOverflowMessage) - 1;
+                ssize_t writeResult;
+                while (true)
+                {
+                    while (-1 == (writeResult = write(STDERR_FILENO, message, messageSize)) && errno == EINTR);
+                    if (writeResult <= 0 || (ssize_t)messageSize < writeResult) break;
+                    messageSize -= (size_t)writeResult;
+                    message += writeResult;
+                    if (messageSize == 0) break;
+                }
                 PROCAbort(SIGSEGV, siginfo);
 #else // TARGET_TVOS
+                const char *message;
+                size_t messageSize;
+                ssize_t writeResult;
                 size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
                 if (handlerStackTop == 0)
                 {
@@ -665,7 +678,16 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                     // Temporary check to debug issue https://github.com/dotnet/runtime/issues/110173
                     if (stackOverflowThreadId == THREADSilentGetCurrentThreadId())
                     {
-                        (void)!write(STDERR_FILENO, StackOverflowOnTheSameThreadMessage, sizeof(StackOverflowOnTheSameThreadMessage) - 1);
+                        message = StackOverflowOnTheSameThreadMessage;
+                        messageSize = sizeof(StackOverflowOnTheSameThreadMessage) - 1;
+                        while (true)
+                        {
+                            while (-1 == (writeResult = write(STDERR_FILENO, message, messageSize)) && errno == EINTR);
+                            if (writeResult <= 0 || (ssize_t)messageSize < writeResult) break;
+                            messageSize -= (size_t)writeResult;
+                            message += writeResult;
+                            if (messageSize == 0) break;
+                        }
                     }
 
                     while (true)
@@ -682,12 +704,31 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                 {
                     PROCAbort(SIGSEGV, siginfo);
                 }
-                (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
+                message = StackOverflowHandlerReturnedMessage;
+                messageSize = sizeof(StackOverflowHandlerReturnedMessage) - 1;
+                while (true)
+                {
+                    while (-1 == (writeResult = write(STDERR_FILENO, message, messageSize)) && errno == EINTR);
+                    if (writeResult <= 0 || (ssize_t)messageSize < writeResult) break;
+                    messageSize -= (size_t)writeResult;
+                    message += writeResult;
+                    if (messageSize == 0) break;
+                }
 #endif // TARGET_TVOS
             }
             else
             {
-                (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                const char *message = StackOverflowMessage;
+                size_t messageSize = sizeof(StackOverflowMessage) - 1;
+                ssize_t writeResult;
+                while (true)
+                {
+                    while (-1 == (writeResult = write(STDERR_FILENO, message, messageSize)) && errno == EINTR);
+                    if (writeResult <= 0 || (ssize_t)messageSize < writeResult) break;
+                    messageSize -= (size_t)writeResult;
+                    message += writeResult;
+                    if (messageSize == 0) break;
+                }
             }
 
             // The current executable (shared library) doesn't have hardware exception handler installed or opted to not to

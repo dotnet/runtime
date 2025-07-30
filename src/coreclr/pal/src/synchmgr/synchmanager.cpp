@@ -2165,9 +2165,10 @@ namespace CorUnix
         {
             sszWritten = write(m_iProcessPipeWrite, &byCmd, sizeof(BYTE));
         } while (-1 == sszWritten &&
-                 EAGAIN == errno &&
+                 ((EAGAIN == errno &&
                  ++iRetryCount < MaxConsecutiveEagains &&
-                 0 == sched_yield());
+                 0 == sched_yield()) ||
+                 EINTR == errno));
 
         if (sszWritten != sizeof(BYTE))
         {

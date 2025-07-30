@@ -846,7 +846,18 @@ void PalPrintFatalError(const char* message)
     // message, so there is not much that can be done here.
     // write() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)write(..)`,
     // so we use additional NOT(!) operator to force unused-result suppression.
-    (void)!write(STDERR_FILENO, message, strlen(message));
+    size_t toWrite = strlen(message);
+    while (toWrite > 0)
+    {
+        ssize_t result = write(STDERR_FILENO, message, toWrite);
+        if (result < 0)
+        {
+            if (errno != EINTR) break;
+            else result = 0;
+        }
+        message += result;
+        toWrite -= result;
+    }
 }
 
 char* PalCopyTCharAsChar(const TCHAR* toCopy)
