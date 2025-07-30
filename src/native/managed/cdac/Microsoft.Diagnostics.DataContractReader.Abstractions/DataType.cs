@@ -36,6 +36,7 @@ public enum DataType
     Assembly,
     LoaderAllocator,
     PEAssembly,
+    AssemblyBinder,
     PEImage,
     PEImageLayout,
     CGrowableSymbolStream,
