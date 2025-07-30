@@ -51,6 +51,23 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     }
 
     [Fact]
+    public async Task LoadLazyAssemblyBeforeItIsNeededPublishAot()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LazyLoadingTests");
+        PublishProject(info, config, new PublishOptions(AOT: true, ExtraMSBuildArgs: $"-p:LazyLoadingTestExtension=wasm -p:TestLazyLoading=true"));
+
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            config,
+            TestScenario: "LazyLoadingTest",
+            BrowserQueryString: new NameValueCollection { {"lazyLoadingTestExtension", "dll" } }
+        ));
+
+        Assert.True(result.TestOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
+        Assert.True(result.ConsoleOutput.Any(m => m.Contains("Attempting to download") && m.Contains("_framework/Json.") && m.Contains(".pdb")), "The lazy loading test didn't load PDB");
+    }
+
+    [Fact]
     public async Task FailOnMissingLazyAssembly()
     {
         Configuration config = Configuration.Debug;
