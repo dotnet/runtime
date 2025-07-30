@@ -1715,7 +1715,6 @@ public:
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
     bool OperIsConvertMaskToVector() const;
     bool OperIsConvertVectorToMask() const;
-    bool OperIsVectorConditionalSelect() const;
     bool OperIsVectorFusedMultiplyOp() const;
 
     // This is here for cleaner GT_LONG #ifdefs.
@@ -6574,34 +6573,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 #else
         return false;
 #endif
-    }
-
-    bool OperIsVectorConditionalSelect() const
-    {
-        switch (GetHWIntrinsicId())
-        {
-#if defined(TARGET_XARCH)
-            case NI_Vector128_ConditionalSelect:
-            case NI_Vector256_ConditionalSelect:
-            case NI_Vector512_ConditionalSelect:
-            {
-                return true;
-            }
-#endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-            case NI_AdvSimd_BitwiseSelect:
-            case NI_Sve_ConditionalSelect:
-            {
-                return true;
-            }
-#endif // TARGET_ARM64
-
-            default:
-            {
-                return false;
-            }
-        }
     }
 
     bool OperIsVectorFusedMultiplyOp() const

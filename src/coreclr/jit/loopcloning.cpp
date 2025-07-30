@@ -3108,6 +3108,7 @@ PhaseStatus Compiler::optCloneLoops()
             // then the method returns false.
             else if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit, countNode))
             {
+                JITDUMP(FMT_LP " exceeds cloning size limit %d\n", loop->GetIndex(), sizeLimit);
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
         }
