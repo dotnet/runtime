@@ -163,6 +163,8 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         SignExtendIfNecessary(op);
         CheckImmedAndMakeContained(jcmp, *op);
     }
+    assert(!jcmp->gtOp1->isContained() || !jcmp->gtOp2->isContained());
+
     return jcmp->gtNext;
 }
 
@@ -218,7 +220,7 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
             // a == b  --->  (a - b) == 0
             var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
             genTreeOps oper = GT_SUB;
-            if (right->IsIntegralConst())
+            if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(comp))
             {
                 INT64 value  = right->AsIntConCommon()->IntegralValue();
                 INT64 minVal = (type == TYP_INT) ? INT_MIN : SSIZE_T_MIN;
@@ -248,7 +250,7 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
 
     if (cmp->OperIs(GT_LE, GT_GE))
     {
-        if (right->IsIntegralConst())
+        if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(comp))
         {
             // a <= C  --->  a < C+1
             INT64 value = right->AsIntConCommon()->IntegralValue();
@@ -291,7 +293,7 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
     }
     assert(cmp->OperIs(GT_LT));
 
-    if (right->IsIntegralConst(0) && !cmp->IsUnsigned())
+    if (right->IsIntegralConst(0) && !right->AsIntCon()->ImmedValNeedsReloc(comp) && !cmp->IsUnsigned())
     {
         // a < 0 (signed)  --->  shift the sign bit into the lowest bit
         cmp->SetOperRaw(GT_RSZ);
@@ -1283,10 +1285,11 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    if (cmp->gtOp1->IsIntegralConst(0))
-        cmp->gtOp1->SetContained();
+    if (cmp->gtOp1->IsIntegralConst(0) && !cmp->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp))
+        MakeSrcContained(cmp, cmp->gtOp1);
 
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
+    assert(!cmp->gtOp1->isContained() || !cmp->gtOp2->isContained());
 }
 
 //------------------------------------------------------------------------
