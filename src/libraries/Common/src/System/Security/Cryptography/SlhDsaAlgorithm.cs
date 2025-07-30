@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///  The size of the secret key in bytes for this algorithm.
         /// </value>
-        public int SecretKeySizeInBytes { get; }
+        public int PrivateKeySizeInBytes { get; }
 
         /// <summary>
         ///  Gets the size of the public key in bytes for this algorithm.
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
 
             // The secret key and public key sizes are shown to be 4n and 2n respectively in
             // section 9.1 "Key Generation", particularly figure 15 and 16.
-            SecretKeySizeInBytes = 4 * n;
+            PrivateKeySizeInBytes = 4 * n;
             PublicKeySizeInBytes = 2 * n;
             SignatureSizeInBytes = signatureSizeInBytes;
             Oid = oid;
