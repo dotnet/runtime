@@ -29,6 +29,7 @@ const char *GetTType( TraceType tt)
         case TRACE_UNJITTED_METHOD:           return "TRACE_UNJITTED_METHOD";
         case TRACE_MULTICAST_DELEGATE_HELPER: return "TRACE_MULTICAST_DELEGATE_HELPER";
         case TRACE_EXTERNAL_METHOD_FIXUP:     return "TRACE_EXTERNAL_METHOD_FIXUP";
+        case TRACE_GENERIC_PINVOKE_CALLI:     return "TRACE_GENERIC_PINVOKE_CALLI";
     }
     return "TRACE_REALLY_WACKED";
 }
@@ -126,6 +127,10 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
 
             case TRACE_EXTERNAL_METHOD_FIXUP:
                 pValue = "TRACE_EXTERNAL_METHOD_FIXUP";
+                break;
+
+            case TRACE_GENERIC_PINVOKE_CALLI:
+                pValue = "TRACE_GENERIC_PINVOKE_CALLI";
                 break;
 
             case TRACE_OTHER:
@@ -1919,8 +1924,14 @@ BOOL InteropDispatchStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestin
 
 #ifndef DACCESS_COMPILE
      _ASSERTE(CheckIsStub_Internal(stubStartAddress));
-
-    trace->InitForManagerPush(stubStartAddress, this);
+    if (stubStartAddress == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
+    {
+        trace->InitForGenericPInvokeCalli();
+    }
+    else
+    {
+        trace->InitForManagerPush(stubStartAddress, this);
+    }
 
     LOG_TRACE_DESTINATION(trace, stubStartAddress, "InteropDispatchStubManager::DoTraceStub");
 

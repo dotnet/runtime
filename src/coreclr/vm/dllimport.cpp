@@ -38,7 +38,7 @@
 #include "pinvokeoverride.h"
 #include "nativelibrary.h"
 #include "interoplibinterface.h"
-
+#include "../debug/ee/debugger.h"
 #include <formattype.h>
 #include "../md/compiler/custattr.h"
 
@@ -6089,6 +6089,11 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    if (g_genericPInvokeCalliHelperTraceActiveCount > 0)
+    {
+        g_pDebugger->GenericPInvokeCalliNextStep(pVASigCookie->pNDirectILStub);
+    }
 
     RETURN pVASigCookie->pNDirectILStub;
 }
