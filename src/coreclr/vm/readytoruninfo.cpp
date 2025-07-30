@@ -794,11 +794,11 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         if (pNativeMetadataSection != NULL)
         {
             pNativeMDImport = NULL;
-            IfFailThrow(GetMetaDataInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
-                                                        pNativeMetadataSection->Size,
-                                                        ofRead,
-                                                        IID_IMDInternalImport,
-                                                        (void **) &pNativeMDImport));
+            IfFailThrow(GetMDInternalInterface((void *) m_pComposite->GetLayout()->GetDirectoryData(pNativeMetadataSection),
+                                               pNativeMetadataSection->Size,
+                                               ofRead,
+                                               IID_IMDInternalImport,
+                                               (void **) &pNativeMDImport));
 
             HENUMInternal assemblyEnum;
             HRESULT hr = pNativeMDImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
@@ -2033,8 +2033,10 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
     STANDARD_VM_CONTRACT;
 
     size_t size = sizeof(StubPrecode);
-    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocAlignedMem(size, 1));
+    StubPrecode *pPrecode = (StubPrecode *)pamTracker->Track(pAllocator->GetDynamicHelpersStubHeap()->AllocStub());
     pPrecode->Init(pPrecode, DynamicHelperArg, pAllocator, PRECODE_DYNAMIC_HELPERS, DynamicHelper);
+
+    FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
 #ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);

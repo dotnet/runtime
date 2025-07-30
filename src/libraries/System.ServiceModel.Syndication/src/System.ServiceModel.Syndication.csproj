@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <IsAotCompatible>false</IsAotCompatible>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>

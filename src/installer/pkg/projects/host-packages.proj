@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
   <ItemGroup>
     <ProjectReference Include="Microsoft.NETCore.DotNetAppHost\Microsoft.NETCore.DotNetAppHost.pkgproj" />
-    <ProjectReference Include="@(ProjectReference)" AdditionalProperties="PackageTargetRuntime=$(OutputRID)" />
+    <ProjectReference Include="@(ProjectReference)" AdditionalProperties="PackageTargetRuntime=$(TargetRid)" />
   </ItemGroup>
 </Project>

@@ -46,10 +46,7 @@ internal readonly struct Thread_1 : IThread
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
 
-        // Exception tracker is a pointer when EH funclets are enabled
-        TargetPointer address = _target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0
-            ? _target.ReadPointer(thread.ExceptionTracker)
-            : thread.ExceptionTracker;
+        TargetPointer address = _target.ReadPointer(thread.ExceptionTracker);
         TargetPointer firstNestedException = TargetPointer.Null;
         if (address != TargetPointer.Null)
         {

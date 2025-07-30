@@ -317,17 +317,14 @@
     {                                                                           \
         bool __exHandled; __exHandled = false;                                  \
         DWORD __exCode; __exCode = 0;                                           \
-        SCAN_EHMARKER();                                                        \
         __try                                                                   \
-        {                                                                       \
-            SCAN_EHMARKER_TRY();
+        {
 
 #define PAL_EXCEPT_NAKED(Disposition)                                           \
         }                                                                       \
         __except(__exCode = GetExceptionCode(), Disposition)                    \
         {                                                                       \
             __exHandled = true;                                                 \
-            SCAN_EHMARKER_CATCH();                                              \
             PAL_SEH_RESTORE_GUARD_PAGE
 
 #define PAL_EXCEPT_FILTER_NAKED(pfnFilter, param)                               \
@@ -336,7 +333,6 @@
                  pfnFilter(GetExceptionInformation(), param))                   \
         {                                                                       \
             __exHandled = true;                                                 \
-            SCAN_EHMARKER_CATCH();                                              \
             PAL_SEH_RESTORE_GUARD_PAGE
 
 #define PAL_FINALLY_NAKED                                                       \
@@ -346,7 +342,6 @@
 
 #define PAL_ENDTRY_NAKED                                                        \
         }                                                                       \
-        PAL_ENDTRY_NAKED_DBG                                                    \
     }                                                                           \
 
 
@@ -366,30 +361,6 @@
         static void Run(__ParamType __paramDef)                                 \
     {                                                                           \
         PAL_TRY_HANDLER_DBG_BEGIN
-
-// PAL_TRY implementation that abstracts usage of COMPILER_INSTANCE*, which is used by
-// JIT64. On Windows, we dont need to do anything special as we dont have nested classes/methods
-// as on PAL.
-#define PAL_TRY_CI(__ParamType, __paramDef, __paramRef)                         \
-{                                                                               \
-    struct __HandlerData {                                                      \
-        __ParamType __param;                                                    \
-        COMPILER_INSTANCE *__ciPtr;                                             \
-    };                                                                          \
-    __HandlerData handlerData;                                                  \
-    handlerData.__param = __paramRef;                                           \
-    handlerData.__ciPtr = ciPtr;                                                \
-     __HandlerData* __param = &handlerData;                                     \
-    __ParamType __paramToPassToFilter = __paramRef;                             \
-    class __Body                                                                \
-    {                                                                           \
-    public:                                                                     \
-    static void Run(__HandlerData* __pHandlerData)                              \
-    {                                                                           \
-    PAL_TRY_HANDLER_DBG_BEGIN                                                   \
-        COMPILER_INSTANCE *ciPtr = __pHandlerData->__ciPtr;                     \
-        __ParamType __paramDef = __pHandlerData->__param;
-
 
 #define PAL_TRY_FOR_DLLMAIN(__ParamType, __paramDef, __paramRef, __reason)      \
 {                                                                               \
@@ -439,11 +410,6 @@
     PAL_TRY_NAKED                                                               \
     PAL_TRY_HANDLER_DBG_BEGIN
 
-// PAL_TRY implementation that abstracts usage of COMPILER_INSTANCE*, which is used by
-// JIT64. On Windows, we dont need to do anything special as we dont have nested classes/methods
-// as on PAL.
-#define PAL_TRY_CI(__ParamType, __paramDef, __paramRef) PAL_TRY(__ParamType, __paramDef, __paramRef)
-
 #define PAL_TRY_FOR_DLLMAIN(__ParamType, __paramDef, __paramRef, __reason)      \
 {                                                                               \
     __ParamType __param = __paramRef;                                           \
@@ -469,14 +435,10 @@
 
 #endif // _DEBUG
 
-// Executes the handler if the specified exception code matches
-// the one in the exception. Otherwise, returns EXCEPTION_CONTINUE_SEARCH.
-#define PAL_EXCEPT_IF_EXCEPTION_CODE(dwExceptionCode) PAL_EXCEPT((GetExceptionCode() == (dwExceptionCode))?EXCEPTION_EXECUTE_HANDLER:EXCEPTION_CONTINUE_SEARCH)
-
 #define PAL_CPP_TRY try
 #define PAL_CPP_ENDTRY
-#define PAL_CPP_THROW(type, obj) do { SCAN_THROW_MARKER; throw obj; } while (false)
-#define PAL_CPP_RETHROW do { SCAN_THROW_MARKER; throw; } while (false)
+#define PAL_CPP_THROW(type, obj) do { throw obj; } while (false)
+#define PAL_CPP_RETHROW do { throw; } while (false)
 #define PAL_CPP_CATCH_DERIVED(type, obj) catch (type * obj)
 #define PAL_CPP_CATCH_NON_DERIVED(type, obj) catch (type obj)
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) catch (type)
@@ -527,13 +489,10 @@
         }                                                                       \
     }
 
-#define PAL_ENDTRY_NAKED_DBG
-
 #else
-#define PAL_TRY_HANDLER_DBG_BEGIN                   ANNOTATION_TRY_BEGIN;
-#define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)  ANNOTATION_TRY_BEGIN;
-#define PAL_TRY_HANDLER_DBG_END                     ANNOTATION_TRY_END;
-#define PAL_ENDTRY_NAKED_DBG
+#define PAL_TRY_HANDLER_DBG_BEGIN
+#define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)
+#define PAL_TRY_HANDLER_DBG_END
 #endif // defined(ENABLE_CONTRACTS_IMPL)
 
 

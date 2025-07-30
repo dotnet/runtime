@@ -69,7 +69,6 @@ namespace System.Security.Cryptography.Xml
         private PaddingMode _padding;
         private CipherMode _mode;
         private Encoding _encoding;
-        private string? _recipient;
         private int _xmlDsigSearchDepthCounter;
         private int _xmlDsigSearchDepth;
 
@@ -172,8 +171,8 @@ namespace System.Security.Cryptography.Xml
         [AllowNull]
         public string Recipient
         {
-            get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
-            set => _recipient = value;
+            get => field ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
+            set => field = value;
         }
 
         //

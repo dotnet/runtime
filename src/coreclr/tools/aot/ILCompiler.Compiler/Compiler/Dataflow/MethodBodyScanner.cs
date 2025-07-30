@@ -207,7 +207,7 @@ namespace ILCompiler.Dataflow
                     continue;
 
                 MultiValue localValue = localVariable.Value.Value;
-                foreach (var val in localValue.AsEnumerable ())
+                foreach (var val in localValue.AsEnumerable())
                 {
                     if (val is LocalVariableReferenceValue localReference && localReference.ReferencedType.IsByRefOrPointer())
                     {
@@ -306,8 +306,8 @@ namespace ILCompiler.Dataflow
 
                 // Flow state through all methods encountered so far, as long as there
                 // are changes discovered in the hoisted local state on entry to any method.
-                Debug.Assert (!oldInterproceduralState.MethodBodies.IsUnknown ());
-                foreach (var methodBodyValue in oldInterproceduralState.MethodBodies.GetKnownValues ())
+                Debug.Assert(!oldInterproceduralState.MethodBodies.IsUnknown());
+                foreach (var methodBodyValue in oldInterproceduralState.MethodBodies.GetKnownValues())
                     Scan(methodBodyValue.MethodBody, ref interproceduralState);
             }
 
@@ -319,14 +319,14 @@ namespace ILCompiler.Dataflow
                 var calleeMethods = compilerGeneratedCallees.OfType<MethodDesc>();
                 // https://github.com/dotnet/linker/issues/2845
                 // Disabled asserts due to a bug
-                // Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
+                // Debug.Assert(interproceduralState.Count == 1 + calleeMethods.Count());
                 // foreach (var method in calleeMethods)
-                //  Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
+                //  Debug.Assert(interproceduralState.Any(kvp => kvp.Key.Method == method));
             }
             else
             {
-                Debug.Assert (!interproceduralState.MethodBodies.IsUnknown ());
-                Debug.Assert(interproceduralState.MethodBodies.GetKnownValues ().Count() == 1);
+                Debug.Assert(!interproceduralState.MethodBodies.IsUnknown());
+                Debug.Assert(interproceduralState.MethodBodies.GetKnownValues().Count() == 1);
             }
 #endif
         }
@@ -592,15 +592,20 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.conv_r8:
                     case ILOpcode.ldind_ref:
                     case ILOpcode.ldobj:
-                    case ILOpcode.mkrefany:
                     case ILOpcode.unbox:
                     case ILOpcode.unbox_any:
-                    case ILOpcode.box:
                     case ILOpcode.neg:
                     case ILOpcode.not:
                         PopUnknown(currentStack, 1, methodBody, offset);
                         PushUnknown(currentStack);
                         reader.Skip(opcode);
+                        break;
+
+                    case ILOpcode.box:
+                    case ILOpcode.mkrefany:
+                        HandleTypeTokenAccess(methodBody, offset, (TypeDesc)methodBody.GetObject(reader.ReadILToken()));
+                        PopUnknown(currentStack, 1, methodBody, offset);
+                        PushUnknown(currentStack);
                         break;
 
                     case ILOpcode.isinst:
@@ -622,6 +627,7 @@ namespace ILCompiler.Dataflow
                         {
                             StackSlot count = PopUnknown(currentStack, 1, methodBody, offset);
                             var arrayElement = (TypeDesc)methodBody.GetObject(reader.ReadILToken());
+                            HandleTypeTokenAccess(methodBody, offset, arrayElement);
                             currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElement)));
                         }
                         break;
@@ -1020,7 +1026,7 @@ namespace ILCompiler.Dataflow
         /// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
         protected void StoreInReference(MultiValue target, MultiValue source, MethodIL method, int offset, ValueBasicBlockPair?[] locals, int curBasicBlock, ref InterproceduralState ipState, int? parameterIndex)
         {
-            foreach (var value in target.AsEnumerable ())
+            foreach (var value in target.AsEnumerable())
             {
                 switch (value)
                 {
@@ -1139,7 +1145,7 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            foreach (var value in HandleGetField(methodBody, offset, field).AsEnumerable ())
+            foreach (var value in HandleGetField(methodBody, offset, field).AsEnumerable())
             {
                 // GetFieldValue may return different node types, in which case they can't be stored to.
                 // At least not yet.
@@ -1187,7 +1193,7 @@ namespace ILCompiler.Dataflow
             ref InterproceduralState interproceduralState)
         {
             MultiValue dereferencedValue = MultiValueLattice.Top;
-            foreach (var value in maybeReferenceValue.AsEnumerable ())
+            foreach (var value in maybeReferenceValue.AsEnumerable())
             {
                 switch (value)
                 {
@@ -1299,7 +1305,7 @@ namespace ILCompiler.Dataflow
 
             foreach (var param in methodArguments)
             {
-                foreach (var v in param.AsEnumerable ())
+                foreach (var v in param.AsEnumerable())
                 {
                     if (v is ArrayValue arr)
                     {
@@ -1344,7 +1350,7 @@ namespace ILCompiler.Dataflow
             StackSlot indexToStoreAt = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot arrayToStoreIn = PopUnknown(currentStack, 1, methodBody, offset);
             int? indexToStoreAtInt = indexToStoreAt.Value.AsConstInt();
-            foreach (var array in arrayToStoreIn.Value.AsEnumerable ())
+            foreach (var array in arrayToStoreIn.Value.AsEnumerable())
             {
                 if (array is ArrayValue arrValue)
                 {

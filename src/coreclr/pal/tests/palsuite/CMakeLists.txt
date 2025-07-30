@@ -48,15 +48,6 @@ add_executable_clr(paltests
   #composite/object_management/semaphore/nonshared/semaphore.cpp
   #composite/object_management/semaphore/shared/main.cpp
   #composite/object_management/semaphore/shared/semaphore.cpp
-  #composite/synchronization/criticalsection/criticalsection.cpp
-  #composite/synchronization/criticalsection/mainWrapper.cpp
-  #composite/synchronization/nativecriticalsection/mtx_critsect.cpp
-  #composite/synchronization/nativecriticalsection/pal_composite_native_cs.cpp
-  #composite/synchronization/nativecriticalsection/resultbuffer.cpp
-  #composite/synchronization/nativecs_interlocked/interlocked.cpp
-  #composite/synchronization/nativecs_interlocked/mtx_critsect.cpp
-  #composite/synchronization/nativecs_interlocked/pal_composite_native_cs.cpp
-  #composite/synchronization/nativecs_interlocked/resultbuffer.cpp
   #composite/wfmo/main.cpp
   #composite/wfmo/mutex.cpp
   c_runtime/atof/test1/test1.cpp
@@ -260,14 +251,8 @@ add_executable_clr(paltests
   file_io/CreateFileA/test1/CreateFileA.cpp
   file_io/CreateFileW/test1/CreateFileW.cpp
   file_io/errorpathnotfound/test1/test1.cpp
-  file_io/errorpathnotfound/test2/test2.cpp
   file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
   file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
-  file_io/GetConsoleOutputCP/test1/GetConsoleOutputCP.cpp
-  file_io/GetFileAttributesA/test1/GetFileAttributesA.cpp
-  file_io/GetFileAttributesExW/test1/test1.cpp
-  file_io/GetFileAttributesExW/test2/test2.cpp
-  file_io/GetFileAttributesW/test1/GetFileAttributesW.cpp
   file_io/GetFileSize/test1/GetFileSize.cpp
   file_io/GetFileSizeEx/test1/GetFileSizeEx.cpp
   file_io/GetFullPathNameA/test1/GetFullPathNameA.cpp
@@ -316,7 +301,6 @@ add_executable_clr(paltests
   loader/LoadLibraryW/test5/loadlibraryw.cpp
   #locale_info/CompareStringA/test1/test1.cpp
   #locale_info/CompareStringW/test1/test1.cpp
-  locale_info/GetACP/test1/test1.cpp
   #locale_info/GetLocaleInfoW/test1/test1.cpp
   #locale_info/GetLocaleInfoW/test2/test2.cpp
   locale_info/MultiByteToWideChar/test1/test1.cpp
@@ -407,13 +391,6 @@ add_executable_clr(paltests
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
-  threading/CriticalSectionFunctions/test1/InitializeCriticalSection.cpp
-  threading/CriticalSectionFunctions/test2/test2.cpp
-  threading/CriticalSectionFunctions/test4/test4.cpp
-  threading/CriticalSectionFunctions/test5/test5.cpp
-  threading/CriticalSectionFunctions/test6/test6.cpp
-  threading/CriticalSectionFunctions/test7/test7.cpp
-  threading/CriticalSectionFunctions/test8/test8.cpp
   threading/DuplicateHandle/test1/test1.cpp
   threading/DuplicateHandle/test10/test10.cpp
   threading/DuplicateHandle/test11/childprocess.cpp

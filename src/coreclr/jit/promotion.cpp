@@ -1126,7 +1126,7 @@ public:
 
                 if (lcl->OperIs(GT_LCL_ADDR))
                 {
-                    assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() &&
+                    assert(user->OperIs(GT_CALL) && dsc->IsDefinedViaAddress() &&
                            (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
 
                     accessType   = TYP_STRUCT;
@@ -3013,7 +3013,7 @@ PhaseStatus Promotion::Run()
         Statement* firstStmt = replacer.StartBlock(bb);
 
         JITDUMP("\nReplacing in ");
-        DBEXEC(m_compiler->verbose, bb->dspBlockHeader(m_compiler));
+        DBEXEC(m_compiler->verbose, bb->dspBlockHeader());
         JITDUMP("\n");
 
         for (Statement* stmt : StatementList(firstStmt))
@@ -3093,7 +3093,7 @@ bool Promotion::HaveCandidateLocals()
 //
 bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
 {
-    return (dsc->TypeGet() == TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed();
+    return dsc->TypeIs(TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed();
 }
 
 //------------------------------------------------------------------------

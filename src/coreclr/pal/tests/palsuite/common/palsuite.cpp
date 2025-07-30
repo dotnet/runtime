@@ -17,9 +17,8 @@
 const char* szTextFile = "text.txt";
 
 HANDLE hToken[NUM_TOKENS];
-CRITICAL_SECTION CriticalSection;
 
-WCHAR* convert(const char * aString) 
+WCHAR* convert(const char * aString)
 {
     WCHAR* wideBuffer = nullptr;
 
@@ -37,7 +36,7 @@ WCHAR* convert(const char * aString)
     return wideBuffer;
 }
 
-char* convertC(const WCHAR * wString) 
+char* convertC(const WCHAR * wString)
 {
     int size;
     char * MultiBuffer = NULL;
@@ -68,8 +67,8 @@ mkAbsoluteFilename( LPSTR dirName,
     sizeFN = strlen( fileName );
     sizeAPN = (sizeDN + 1 + sizeFN + 1);
 
-    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if( sizeAPN > _MAX_PATH )
+    /* ensure ((dirName + DELIM + fileName + \0) =< MAX_PATH ) */
+    if( sizeAPN > MAX_PATH )
     {
         return ( 0 );
     }
@@ -105,17 +104,17 @@ BOOL Cleanup(HANDLE *hArray, DWORD dwIndex)
 
     while (--dwIndex > 0)
     {
-        bCHRet = CleanupHelper(&hArray[0], dwIndex); 
+        bCHRet = CleanupHelper(&hArray[0], dwIndex);
     }
-   
+
     bCRet = CloseHandle(hArray[0]);
     if (!bCRet)
     {
         Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) during "
               "clean up.\nGetLastError returned '%u'.\n", hArray[dwIndex],
-              GetLastError());  
+              GetLastError());
     }
-    
+
     return (bCRet&&bCHRet);
 }
 
@@ -128,11 +127,11 @@ BOOL Cleanup(HANDLE *hArray, DWORD dwIndex)
  * Returns: The number of wide characters in the resulting string.
  * 0 is returned on Error.
  */
-int 
-mkAbsoluteFilenameW ( 
-    LPWSTR dirName,  
-    DWORD dwDirLength, 
-    LPCWSTR fileName, 
+int
+mkAbsoluteFilenameW (
+    LPWSTR dirName,
+    DWORD dwDirLength,
+    LPCWSTR fileName,
     DWORD dwFileLength,
     LPWSTR absPathName )
 {
@@ -144,19 +143,19 @@ mkAbsoluteFilenameW (
     sizeFN = wcslen( fileName );
     sizeAPN = (sizeDN + 1 + sizeFN + 1);
 
-    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if ( sizeAPN > _MAX_PATH )
+    /* ensure ((dirName + DELIM + fileName + \0) =< MAX_PATH ) */
+    if ( sizeAPN > MAX_PATH )
     {
 	return ( 0 );
     }
-    
+
     wcsncpy(absPathName, dirName, dwDirLength +1);
     wcsncpy(absPathName, szPathDelimW, 2);
     wcsncpy(absPathName, fileName, dwFileLength +1);
 
     return (sizeAPN);
 
-} 
+}
 
 /*
  * Take two wide strings representing file and directory names
@@ -167,11 +166,11 @@ mkAbsoluteFilenameW (
  * Returns: The number of wide characters in the resulting string.
  * 0 is returned on Error.
  */
-int 
-mkAbsoluteFilenameA ( 
-    LPSTR dirName,  
-    DWORD dwDirLength, 
-    LPCSTR fileName, 
+int
+mkAbsoluteFilenameA (
+    LPSTR dirName,
+    DWORD dwDirLength,
+    LPCSTR fileName,
     DWORD dwFileLength,
     LPSTR absPathName )
 {
@@ -180,24 +179,24 @@ mkAbsoluteFilenameA (
     DWORD sizeDN;
     DWORD sizeFN;
     DWORD sizeAPN;
-    
+
     sizeDN = strlen( dirName );
     sizeFN = strlen( fileName );
     sizeAPN = (sizeDN + 1 + sizeFN + 1);
-    
-    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if ( sizeAPN > _MAX_PATH )
+
+    /* ensure ((dirName + DELIM + fileName + \0) =< MAX_PATH ) */
+    if ( sizeAPN > MAX_PATH )
     {
         return ( 0 );
     }
-    
+
     strncpy(absPathName, dirName, dwDirLength +1);
     strcat(absPathName, szPathDelimA);
     strcat(absPathName, fileName);
-    
+
     return (sizeAPN);
-  
-} 
+
+}
 
 BOOL
 DeleteFileW(
@@ -205,7 +204,7 @@ DeleteFileW(
 {
     _ASSERTE(lpFileName != NULL);
 
-    CHAR mbFileName[ _MAX_PATH ];
+    CHAR mbFileName[ MAX_PATH ];
 
     if (WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, mbFileName, sizeof(mbFileName), NULL, NULL ) != 0 )
     {

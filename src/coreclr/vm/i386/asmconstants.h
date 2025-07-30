@@ -104,51 +104,6 @@ ASMCONSTANTS_C_ASSERT(EHContext_Esp == offsetof(EHContext,Esp))
 ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
 #endif // FEATURE_EH_FUNCLETS
 
-
-// from clr/src/fjit/helperframe.h
-#define SIZEOF_MachState          40
-ASMCONSTANTS_C_ASSERT(SIZEOF_MachState == sizeof(MachState))
-
-#define MachState__pEdi           0
-ASMCONSTANTS_C_ASSERT(MachState__pEdi == offsetof(MachState, _pEdi))
-
-#define MachState__edi            4
-ASMCONSTANTS_C_ASSERT(MachState__edi == offsetof(MachState, _edi))
-
-#define MachState__pEsi           8
-ASMCONSTANTS_C_ASSERT(MachState__pEsi == offsetof(MachState, _pEsi))
-
-#define MachState__esi            12
-ASMCONSTANTS_C_ASSERT(MachState__esi == offsetof(MachState, _esi))
-
-#define MachState__pEbx           16
-ASMCONSTANTS_C_ASSERT(MachState__pEbx == offsetof(MachState, _pEbx))
-
-#define MachState__ebx            20
-ASMCONSTANTS_C_ASSERT(MachState__ebx == offsetof(MachState, _ebx))
-
-#define MachState__pEbp           24
-ASMCONSTANTS_C_ASSERT(MachState__pEbp == offsetof(MachState, _pEbp))
-
-#define MachState__ebp            28
-ASMCONSTANTS_C_ASSERT(MachState__ebp == offsetof(MachState, _ebp))
-
-#define MachState__esp            32
-ASMCONSTANTS_C_ASSERT(MachState__esp == offsetof(MachState, _esp))
-
-#define MachState__pRetAddr       36
-ASMCONSTANTS_C_ASSERT(MachState__pRetAddr == offsetof(MachState, _pRetAddr))
-
-#define LazyMachState_captureEbp  40
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEbp == offsetof(LazyMachState, captureEbp))
-
-#define LazyMachState_captureEsp  44
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEsp == offsetof(LazyMachState, captureEsp))
-
-#define LazyMachState_captureEip  48
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEip == offsetof(LazyMachState, captureEip))
-
-
 #define VASigCookie__StubOffset 4
 ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
 
@@ -178,6 +133,19 @@ ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 ASMCONSTANTS_C_ASSERT(Thread::TS_Hijacked == TS_Hijacked_ASM)
 #endif
 
+#define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
+
+#ifdef TARGET_WINDOWS
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+#else
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x4
+#endif
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
+
+#define               OFFSETOF__ee_alloc_context__combined_limit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__combined_limit == offsetof(ee_alloc_context, m_CombinedLimit));
 
 
 // from clr/src/vm/appdomain.hpp
@@ -200,6 +168,33 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_MethodTable == sizeof(MethodTable))
 
 #define SIZEOF_InterfaceInfo_t          0x4
 ASMCONSTANTS_C_ASSERT(SIZEOF_InterfaceInfo_t == sizeof(InterfaceInfo_t))
+
+#define               OFFSETOF__MethodTable__m_dwFlags              0x00
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags
+                    == offsetof(MethodTable, m_dwFlags));
+
+#define               OFFSETOF__MethodTable__m_usComponentSize    0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_usComponentSize == offsetof(MethodTable, m_dwFlags));
+
+#define               OFFSETOF__MethodTable__m_uBaseSize    0x04
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_uBaseSize == offsetof(MethodTable, m_BaseSize));
+
+#define               OFFSETOF__Object__m_pEEType   0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Object__m_pEEType == offsetof(Object, m_pMethTab));
+
+#define               OFFSETOF__Array__m_Length     0x4
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComponents));
+
+#define               MAX_STRING_LENGTH 0x3FFFFFDF
+ASMCONSTANTS_C_ASSERT(MAX_STRING_LENGTH == CORINFO_String_MaxLength);
+
+#define               STRING_COMPONENT_SIZE 2
+
+#define               STRING_BASE_SIZE 0xE
+ASMCONSTANTS_C_ASSERT(STRING_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + sizeof(WCHAR));
+
+#define               SZARRAY_BASE_SIZE 0xC
+ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD));
 
 #ifdef FEATURE_COMINTEROP
 

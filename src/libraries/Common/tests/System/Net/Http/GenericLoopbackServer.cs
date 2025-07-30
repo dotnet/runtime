@@ -148,7 +148,7 @@ namespace System.Net.Test.Common
         /// If isFinal is false, the body is not completed and you can call SendResponseBodyAsync to send more.</summary>
         public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true);
         /// <summary>Sends response headers.</summary>
-        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
+        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false);
         /// <summary>Sends valid but incomplete headers. Once called, there is no way to continue the response past this point.</summary>
         public abstract Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null);
         /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>
@@ -199,14 +199,16 @@ namespace System.Net.Test.Common
         public string Value { get; }
         public bool HuffmanEncoded { get; }
         public byte[] Raw { get; }
+        public int RawValueStart { get; }
         public Encoding ValueEncoding { get; }
 
-        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null, Encoding valueEncoding = null)
+        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null, int rawValueStart = 0, Encoding valueEncoding = null)
         {
             Name = name;
             Value = value;
             HuffmanEncoded = huffmanEncoded;
             Raw = raw;
+            RawValueStart = rawValueStart;
             ValueEncoding = valueEncoding;
         }
 
@@ -256,6 +258,24 @@ namespace System.Net.Test.Common
             }
 
             return result;
+        }
+
+        public HttpHeaderData[] GetHeaderData(string headerName)
+        {
+            return Headers.Where(h => h.Name.Equals(headerName, StringComparison.OrdinalIgnoreCase)).ToArray();
+        }
+
+        public HttpHeaderData GetSingleHeaderData(string headerName)
+        {
+            HttpHeaderData[] data = GetHeaderData(headerName);
+            if (data.Length != 1)
+            {
+                throw new Exception(
+                    $"Expected single value for {headerName} header, actual count: {data.Length}{Environment.NewLine}" +
+                    $"{"\t"}{string.Join(Environment.NewLine + "\t", data)}");
+            }
+
+            return data[0];
         }
 
         public string[] GetHeaderValues(string headerName)

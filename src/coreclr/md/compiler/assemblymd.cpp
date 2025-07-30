@@ -15,10 +15,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
-
 //*******************************************************************************
 // Get the properties for the given Assembly token.
 //*******************************************************************************
@@ -572,7 +568,7 @@ ErrExit:
 }   // RegMeta::FindManifestResourceByName
 
 //*******************************************************************************
-// Used to find assemblies either in Fusion cache or on disk at build time.
+// Used to find assemblies either on disk at build time.
 //*******************************************************************************
 STDMETHODIMP RegMeta::FindAssembliesByName( // S_OK or error
         LPCWSTR  szAppBase,           // [IN] optional - can be NULL
@@ -582,10 +578,5 @@ STDMETHODIMP RegMeta::FindAssembliesByName( // S_OK or error
         ULONG    cMax,                // [IN] The max number to put
         ULONG    *pcAssemblies)       // [OUT] The number of assemblies returned.
 {
-#ifdef FEATURE_METADATA_IN_VM
-    return COR_E_NOTSUPPORTED;
-#else //!FEATURE_METADATA_IN_VM
-    // Calls to fusion are not supported outside VM
     return E_NOTIMPL;
-#endif //!FEATURE_METADATA_IN_VM
 } // RegMeta::FindAssembliesByName

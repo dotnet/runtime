@@ -22,9 +22,12 @@
       - $(WasmEmitSourceMap)      - Generates `dotnet.runtime.js.map` and `dotnet.js.map` files with a TypeScript source map.
       - $(WasmDedup)              - Whether to dedup generic instances when using AOT. Defaults to true.
 
-      - $(WasmPerfTracing)              - Enables diagnostic server tracing. Defaults to false.
+      - $(EnableDiagnostics)            - Enables diagnostic server tracing. Defaults to false.
       - $(EventSourceSupport)           - Enables EventSource support. Defaults to false.
-      - $(WasmPerfInstrumentation)      - Enables CPU sampling instrumentation for diagnostic server. Defaults to false.
+      - $(WasmPerformanceInstrumentation) - Enables CPU sampling instrumentation for diagnostic server.Possible values:
+                                            - all - enables all instrumentation
+                                            - none - disables all instrumentation
+                                            - N:SampleNamespace - enables instrumentation for the specified namespace
       - $(MetricsSupport)               - System.Diagnostics.Metrics support. Defaults to false.
       - $(WasmProfilers)                - Mono Profilers to use. Defaults to empty. Could be `log` and `browser`.
       - $(AOTProfilePath)               - profile data file to be used for profile-guided optimization
@@ -256,16 +259,14 @@
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
-    <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == 'true'">all</WasmPerfInstrumentation>
-    <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">browser:eventpipe,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
-    <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(_WasmProfilers);$(WasmProfilers)</_WasmProfilers>
   </PropertyGroup>
   <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
     <_MonoComponent Include="debugger" />
     <_MonoComponent Include="hot_reload" />
   </ItemGroup>
-  <ItemGroup Condition="'$(WasmPerfTracing)' == 'true'">
+  <ItemGroup Condition="'$(EnableDiagnostics)' == 'true'">
     <_MonoComponent Include="diagnostics_tracing" />
+    <WasmEnvironmentVariable Condition="'$(WasmPerformanceInstrumentation)' != ''" Include="DOTNET_WasmPerformanceInstrumentation" Value="eventpipe,callspec=$(WasmPerformanceInstrumentation)" />
   </ItemGroup>
   <!-- PUBLISH -->
 
@@ -492,9 +493,10 @@
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_ChangedPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
 
-    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfTracing)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfTracing)=$(WasmPerfTracing)"/>
-    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation)"/>
-    <Error Condition="'$(WasmPerfInstrumentation)' != '' and '$(WasmPerfTracing)' != 'true'" Text="%24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation) is only supported together with %24(WasmPerfTracing)=true"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(EnableDiagnostics)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(EnableDiagnostics)=$(EnableDiagnostics)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerformanceInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation)"/>
+    <Error Condition="$(WasmProfilers.Contains('browser')) and '$(RunAOTCompilation)' == 'true'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(RunAOTCompilation)=$(RunAOTCompilation)"/>
+    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(EnableDiagnostics)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(EnableDiagnostics)=true"/>
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
@@ -677,7 +679,7 @@
       AOTProfilePath="$(AOTProfilePath)"
       AotModulesTablePath="$(_DriverGenCPath)"
       UseLLVM="true"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"

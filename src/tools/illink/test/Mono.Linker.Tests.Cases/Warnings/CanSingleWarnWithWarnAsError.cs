@@ -5,32 +5,32 @@ using Mono.Linker.Tests.Cases.Warnings.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Warnings
 {
-	[ExpectNonZeroExitCode (1)]
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
-	[SkipKeptItemsValidation]
-	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) })]
-	[SetupLinkerArgument ("--singlewarn")]
-	[SetupLinkerArgument ("--warnaserror")]
-	[LogDoesNotContain ("IL2026")]
-	[LogContains ("error IL2104: Assembly 'test' produced trim warnings")]
-	[LogContains ("error IL2104: Assembly 'library' produced trim warnings")]
-	[NoLinkedOutput]
-	public class CanSingleWarnWithWarnAsError
-	{
-		public static void Main ()
-		{
-			CreateWarnings ();
-			TriggerWarnings_Lib.Main ();
-		}
+    [ExpectNonZeroExitCode(1)]
+    [IgnoreTestCase("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
+    [SkipKeptItemsValidation]
+    [SetupCompileBefore("library.dll", new[] { typeof(TriggerWarnings_Lib) })]
+    [SetupLinkerArgument("--singlewarn")]
+    [SetupLinkerArgument("--warnaserror")]
+    [LogDoesNotContain("IL2026")]
+    [LogContains("error IL2104: Assembly 'test' produced trim warnings")]
+    [LogContains("error IL2104: Assembly 'library' produced trim warnings")]
+    [NoLinkedOutput]
+    public class CanSingleWarnWithWarnAsError
+    {
+        public static void Main()
+        {
+            CreateWarnings();
+            TriggerWarnings_Lib.Main();
+        }
 
-		public static void CreateWarnings ()
-		{
-			RequireUnreferencedCode ();
-		}
+        public static void CreateWarnings()
+        {
+            RequireUnreferencedCode();
+        }
 
-		[RequiresUnreferencedCode ("Requires unreferenced code.")]
-		public static void RequireUnreferencedCode ()
-		{
-		}
-	}
+        [RequiresUnreferencedCode("Requires unreferenced code.")]
+        public static void RequireUnreferencedCode()
+        {
+        }
+    }
 }

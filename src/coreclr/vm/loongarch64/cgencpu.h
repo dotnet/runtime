@@ -278,7 +278,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     {
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return mem;
 }
 
@@ -386,7 +386,6 @@ class StubLinkerCPU : public StubLinker
 {
 
 private:
-    void EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Rn, int offset, BOOL isVec);
     void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Rn, int offset, BOOL isVec, int log2Size = 3);
 public:
 
@@ -413,9 +412,6 @@ public:
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-    void EmitNop() { Emit32(0x03400000); }
-    void EmitBreakPoint() { Emit32(0x002a0000); }
-
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
@@ -425,9 +421,6 @@ public:
     void EmitMovReg(IntReg dest, IntReg source);
 
     void EmitAddImm(IntReg Rd, IntReg Rn, unsigned int value);
-
-    void EmitLoadStoreRegPairImm(DWORD flags, IntReg Rt1, IntReg Rt2, IntReg Rn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
 
     void EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int offset=0, int log2Size = 3);
 };

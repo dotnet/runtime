@@ -5145,7 +5145,7 @@ ves_icall_System_Reflection_Assembly_GetEntryAssembly (MonoError *error)
 }
 
 MonoReflectionAssemblyHandle
-ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error)
+ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoStackCrawlMark *stack_mark, MonoError *error)
 {
 	MonoMethod *m;
 	MonoMethod *dest;

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -45,6 +46,27 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa65 != null ||
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa87 != null;
 
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm)
+        {
+            if (algorithm == MLDsaAlgorithm.MLDsa44)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa44 != null;
+            }
+            else if (algorithm == MLDsaAlgorithm.MLDsa65)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa65 != null;
+            }
+            else if (algorithm == MLDsaAlgorithm.MLDsa87)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa87 != null;
+            }
+            else
+            {
+                Debug.Fail($"Unexpected algorithm: {algorithm}");
+                return false;
+            }
+        }
+
         internal SafeEvpPKeyHandle DuplicateHandle()
         {
             return _key.DuplicateHandle();
@@ -56,14 +78,56 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.Crypto.MLDsaVerifyPure(_key, data, context, signature);
 
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            Helpers.MLDsaPreHash(
+                hash,
+                context,
+                hashAlgorithmOid,
+                _key,
+                destination,
+                static (key, encodedMessage, destination) =>
+                {
+                    Interop.Crypto.MLDsaSignPreEncoded(key, encodedMessage, destination);
+                    return true;
+                });
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            Helpers.MLDsaPreHash(
+                hash,
+                context,
+                hashAlgorithmOid,
+                _key,
+                signature,
+                static (key, encodedMessage, signature) => Interop.Crypto.MLDsaVerifyPreEncoded(key, encodedMessage, signature));
+
+        protected override void SignMuCore(ReadOnlySpan<byte> externalMu, Span<byte> destination) =>
+            Interop.Crypto.MLDsaSignExternalMu(_key, externalMu, destination);
+
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature) =>
+            Interop.Crypto.MLDsaVerifyExternalMu(_key, externalMu, signature);
+
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.MLDsaExportPublicKey(_key, destination);
 
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
-            Interop.Crypto.MLDsaExportSecretKey(_key, destination);
+        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        {
+            if (!_hasSecretKey)
+            {
+                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+            }
 
-        protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
+            Interop.Crypto.MLDsaExportSecretKey(_key, destination);
+        }
+
+        protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination)
+        {
+            if (!_hasSeed)
+            {
+                throw new CryptographicException(SR.Cryptography_PqcNoSeed);
+            }
+
             Interop.Crypto.MLDsaExportSeed(_key, destination);
+        }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
@@ -87,9 +151,6 @@ namespace System.Security.Cryptography
             SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: false);
             return new MLDsaImplementation(algorithm, key, hasSeed: false, hasSecretKey: false);
         }
-
-        internal static partial MLDsaImplementation ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            throw new PlatformNotSupportedException();
 
         internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {

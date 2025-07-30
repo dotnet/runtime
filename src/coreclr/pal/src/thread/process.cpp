@@ -25,7 +25,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/palinternal.h"
 #include "pal/process.h"
 #include "pal/init.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/utils.h"
 #include "pal/environ.h"
@@ -94,6 +93,9 @@ extern "C"
         }                                                                   \
     } while (false)
 
+// On macOS 26, sem_open fails if debugger and debugee are signed with different team ids.
+// Use fifos instead of semaphores to avoid this issue, https://github.com/dotnet/runtime/issues/116545
+#define ENABLE_RUNTIME_EVENTS_OVER_PIPES
 #endif // __APPLE__
 
 #ifdef __NetBSD__
@@ -158,7 +160,7 @@ IPalObject* CorUnix::g_pobjProcess;
 // Critical section that protects process data (e.g., the
 // list of active threads)/
 //
-CRITICAL_SECTION g_csProcess;
+minipal_mutex g_csProcess;
 
 //
 // List and count of active threads
@@ -1402,21 +1404,217 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 static const char *const TwoWayNamedPipePrefix = "clr-debug-pipe";
 static const char* IpcNameFormat = "%s-%d-%llu-%s";
 
-/*++
-    PAL_NotifyRuntimeStarted
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+static const char* RuntimeStartupPipeName = "st";
+static const char* RuntimeContinuePipeName = "co";
 
-    Signals the debugger waiting for runtime startup notification to continue and
-    waits until the debugger signals us to continue.
+#define PIPE_OPEN_RETRY_DELAY_NS 500000000 // 500 ms
 
-Parameters:
-    None
+typedef enum
+{
+    RuntimeEventsOverPipes_Disabled = 0,
+    RuntimeEventsOverPipes_Succeeded = 1,
+    RuntimeEventsOverPipes_Failed = 2,
+} RuntimeEventsOverPipes;
 
-Return value:
-    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
---*/
+typedef enum
+{
+    RuntimeEvent_Unknown = 0,
+    RuntimeEvent_Started = 1,
+    RuntimeEvent_Continue = 2,
+} RuntimeEvent;
+
+static
+int
+OpenPipe(const char* name, int mode)
+{
+    int fd = -1;
+    int flags = mode | O_NONBLOCK;
+
+#if defined(FD_CLOEXEC)
+    flags |= O_CLOEXEC;
+#endif
+
+    while (fd == -1)
+    {
+        fd = open(name, flags);
+        if (fd == -1)
+        {
+            if (mode == O_WRONLY && errno == ENXIO)
+            {
+                PAL_nanosleep(PIPE_OPEN_RETRY_DELAY_NS);
+                continue;
+            }
+            else if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    if (fd != -1)
+    {
+        flags = fcntl(fd, F_GETFL);
+        if (flags != -1)
+        {
+            flags &= ~O_NONBLOCK;
+            if (fcntl(fd, F_SETFL, flags) == -1)
+            {
+                close(fd);
+                fd = -1;
+            }
+        }
+        else
+        {
+            close(fd);
+            fd = -1;
+        }
+    }
+
+    return fd;
+}
+
+static
+void
+ClosePipe(int fd)
+{
+    if (fd != -1)
+    {
+        while (close(fd) < 0 && errno == EINTR);
+    }
+}
+
+static
+RuntimeEventsOverPipes
+NotifyRuntimeUsingPipes()
+{
+    RuntimeEventsOverPipes result = RuntimeEventsOverPipes_Disabled;
+    char startupPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    char continuePipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    int startupPipeFd = -1;
+    int continuePipeFd = -1;
+    size_t offset = 0;
+
+    LPCSTR applicationGroupId = PAL_GetApplicationGroupId();
+
+    PAL_GetTransportPipeName(continuePipeName, gPID, applicationGroupId, RuntimeContinuePipeName);
+    TRACE("NotifyRuntimeUsingPipes: opening continue '%s' pipe\n", continuePipeName);
+
+    continuePipeFd = OpenPipe(continuePipeName, O_RDONLY);
+    if (continuePipeFd == -1)
+    {
+        if (errno == ENOENT || errno == EACCES)
+        {
+            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", continuePipeName);
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", continuePipeName, errno, strerror(errno));
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    PAL_GetTransportPipeName(startupPipeName, gPID, applicationGroupId, RuntimeStartupPipeName);
+    TRACE("NotifyRuntimeUsingPipes: opening startup '%s' pipe\n", startupPipeName);
+
+    startupPipeFd = OpenPipe(startupPipeName, O_WRONLY);
+    if (startupPipeFd == -1)
+    {
+        if (errno == ENOENT || errno == EACCES)
+        {
+            TRACE("NotifyRuntimeUsingPipes: pipe %s not found/accessible, runtime events over pipes disabled\n", startupPipeName);
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: open(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            result = RuntimeEventsOverPipes_Failed;
+        }
+
+        goto exit;
+    }
+
+    TRACE("NotifyRuntimeUsingPipes: sending started event\n");
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Started;
+        unsigned char *buffer = &event;
+        int bytesToWrite = sizeof(event);
+        int bytesWritten = 0;
+
+        do
+        {
+            bytesWritten = write(startupPipeFd, buffer + offset, bytesToWrite - offset);
+            if (bytesWritten > 0)
+            {
+                offset += bytesWritten;
+            }
+        }
+        while ((bytesWritten > 0 && offset < bytesToWrite) || (bytesWritten == -1 && errno == EINTR));
+
+        if (offset != bytesToWrite)
+        {
+            TRACE("NotifyRuntimeUsingPipes: write(%s) failed: %d (%s)\n", startupPipeName, errno, strerror(errno));
+            goto exit;
+        }
+    }
+
+    TRACE("NotifyRuntimeUsingPipes: waiting on continue event\n");
+
+    {
+        unsigned char event = (unsigned char)RuntimeEvent_Unknown;
+        unsigned char *buffer = &event;
+        int bytesToRead = sizeof(event);
+        int bytesRead = 0;
+
+        offset = 0;
+        do
+        {
+            bytesRead = read(continuePipeFd, buffer + offset, bytesToRead - offset);
+            if (bytesRead > 0)
+            {
+                offset += bytesRead;
+            }
+        }
+        while ((bytesRead > 0 && offset < bytesToRead) || (bytesRead == -1 && errno == EINTR));
+
+        if (offset == bytesToRead && event == (unsigned char)RuntimeEvent_Continue)
+        {
+            TRACE("NotifyRuntimeUsingPipes: received continue event\n");
+        }
+        else
+        {
+            TRACE("NotifyRuntimeUsingPipes: received invalid event\n");
+            goto exit;
+        }
+    }
+
+    result = RuntimeEventsOverPipes_Succeeded;
+
+exit:
+
+    if (startupPipeFd != -1)
+    {
+        ClosePipe(startupPipeFd);
+    }
+
+    if (continuePipeFd != -1)
+    {
+        ClosePipe(continuePipeFd);
+    }
+
+    return result;
+}
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
+
+static
 BOOL
-PALAPI
-PAL_NotifyRuntimeStarted()
+NotifyRuntimeUsingSemaphores()
 {
     char startupSemName[CLR_SEM_MAX_NAMELEN];
     char continueSemName[CLR_SEM_MAX_NAMELEN];
@@ -1437,13 +1635,13 @@ PAL_NotifyRuntimeStarted()
     CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
     CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
 
-    TRACE("PAL_NotifyRuntimeStarted opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
+    TRACE("NotifyRuntimeUsingSemaphores: opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
 
     // Open the debugger startup semaphore. If it doesn't exists, then we do nothing and return
     startupSem = sem_open(startupSemName, 0);
     if (startupSem == SEM_FAILED)
     {
-        TRACE("sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
+        TRACE("NotifyRuntimeUsingSemaphores: sem_open(%s) failed: %d (%s)\n", startupSemName, errno, strerror(errno));
         goto exit;
     }
 
@@ -1466,7 +1664,7 @@ PAL_NotifyRuntimeStarted()
     {
         if (EINTR == errno)
         {
-            TRACE("sem_wait() failed with EINTR; re-waiting");
+            TRACE("NotifyRuntimeUsingSemaphores: sem_wait() failed with EINTR; re-waiting");
             continue;
         }
         ASSERT("sem_wait(continueSem) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1486,6 +1684,45 @@ exit:
         sem_close(continueSem);
     }
     return launched;
+}
+
+/*++
+    PAL_NotifyRuntimeStarted
+
+    Signals the debugger waiting for runtime startup notification to continue and
+    waits until the debugger signals us to continue.
+
+Parameters:
+    None
+
+Return value:
+    TRUE - successfully launched by debugger, FALSE - not launched or some failure in the handshake
+--*/
+BOOL
+PALAPI
+PAL_NotifyRuntimeStarted()
+{
+#ifdef ENABLE_RUNTIME_EVENTS_OVER_PIPES
+    // Test pipes as runtime event transport.
+    RuntimeEventsOverPipes result = NotifyRuntimeUsingPipes();
+    switch (result)
+    {
+    case RuntimeEventsOverPipes_Disabled:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake disabled, try semaphores\n");
+        return NotifyRuntimeUsingSemaphores();
+    case RuntimeEventsOverPipes_Failed:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake failed\n");
+        return FALSE;
+    case RuntimeEventsOverPipes_Succeeded:
+        TRACE("PAL_NotifyRuntimeStarted: pipe handshake succeeded\n");
+        return TRUE;
+    default:
+        // Unexpected result.
+        return FALSE;
+    }
+#else
+    return NotifyRuntimeUsingSemaphores();
+#endif // ENABLE_RUNTIME_EVENTS_OVER_PIPES
 }
 
 LPCSTR
@@ -2240,6 +2477,7 @@ PROCCreateCrashDump(
     else if (childpid == 0)
     {
         // Close the read end of the pipe, the child doesn't need it
+        int callbackResult = 0;
         close(parent_pipe);
 
         // Only dup the child's stderr if there is error buffer
@@ -2253,7 +2491,12 @@ PROCCreateCrashDump(
             SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
-            g_createdumpCallback(argv.size(), argv.data());
+            callbackResult = g_createdumpCallback(argv.size(), argv.data());
+            // Set the shutdown callback to nullptr and exit
+            // If we don't exit, the child's execution will continue into the diagnostic server behavior
+            // which causes all sorts of problems.
+            g_shutdownCallback = nullptr;
+            exit(callbackResult);
         }
         else
         {
@@ -2598,7 +2841,7 @@ InitializeFlushProcessWriteBuffers()
     }
 #endif
 
-#ifdef TARGET_APPLE
+#if defined(TARGET_APPLE) || defined(TARGET_WASM)
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2628,7 +2871,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_APPLE
+#endif // TARGET_APPLE || TARGET_WASM
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2652,6 +2895,7 @@ VOID
 PALAPI
 FlushProcessWriteBuffers()
 {
+#ifndef TARGET_WASM
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
@@ -2711,6 +2955,7 @@ FlushProcessWriteBuffers()
         CHECK_MACH("vm_deallocate()", machret);
     }
 #endif // TARGET_APPLE
+#endif // !TARGET_WASM
 }
 
 /*++
@@ -2787,14 +3032,14 @@ CorUnix::InitializeProcessData(
     pGThreadList = NULL;
     g_dwThreadCount = 0;
 
-    InternalInitializeCriticalSection(&g_csProcess);
+    minipal_mutex_init(&g_csProcess);
     fLockInitialized = TRUE;
 
     if (NO_ERROR != palError)
     {
         if (fLockInitialized)
         {
-            InternalDeleteCriticalSection(&g_csProcess);
+            minipal_mutex_destroy(&g_csProcess);
         }
     }
 
@@ -2840,7 +3085,7 @@ CorUnix::InitializeProcessCommandLine(
             ERROR("Invalid full path\n");
             palError = ERROR_INTERNAL_ERROR;
             goto exit;
-        }    
+        }
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 
@@ -3011,7 +3256,7 @@ PROCCleanupInitialProcess(VOID)
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     /* Free the application directory */
     free(g_lpwstrAppDir);
@@ -3019,7 +3264,7 @@ PROCCleanupInitialProcess(VOID)
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 
     //
     // Object manager shutdown will handle freeing the underlying
@@ -3047,7 +3292,7 @@ CorUnix::PROCAddThread(
 {
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     pTargetThread->SetNext(pGThreadList);
     pGThreadList = pTargetThread;
@@ -3056,7 +3301,7 @@ CorUnix::PROCAddThread(
     TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
           pTargetThread, pTargetThread->GetThreadId());
 
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3082,7 +3327,7 @@ CorUnix::PROCRemoveThread(
 
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     curThread = pGThreadList;
 
@@ -3123,7 +3368,7 @@ CorUnix::PROCRemoveThread(
     WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
 
 EXIT:
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3168,7 +3413,7 @@ PROCProcessLock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 }
 
 
@@ -3192,7 +3437,7 @@ PROCProcessUnlock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 #if USE_SYSV_SEMAPHORES

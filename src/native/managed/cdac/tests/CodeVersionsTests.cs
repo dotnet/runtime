@@ -85,7 +85,7 @@ internal static class MockExtensions
     public static void AddModule(this Mock<ILoader> mock, MockModule module)
     {
         Contracts.ModuleHandle handle = new Contracts.ModuleHandle(module.Address);
-        mock.Setup(l => l.GetModuleHandle(module.Address)).Returns(handle);
+        mock.Setup(l => l.GetModuleHandleFromModulePtr(module.Address)).Returns(handle);
         mock.Setup(l => l.GetLookupTables(handle)).Returns(new ModuleLookupTables() {
             MethodDefToILCodeVersioningState = module.MethodDefToILCodeVersioningStateAddress,
         });

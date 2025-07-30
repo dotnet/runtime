@@ -22,8 +22,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Exp10M1<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IExponentialFunctions<T> =>
+            where T : IExponentialFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, Exp10M1Operator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, Exp10M1Operator<T>>(x, destination);
+        }
 
         /// <summary>T.Exp10M1(x)</summary>
         private readonly struct Exp10M1Operator<T> : IUnaryOperator<T, T>

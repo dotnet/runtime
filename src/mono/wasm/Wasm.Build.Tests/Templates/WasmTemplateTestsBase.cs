@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -104,6 +105,17 @@ public class WasmTemplateTestsBase : BuildTestBase
             _projectDir = Path.Combine(_projectDir, asset.RunnableProjectSubPath);
         }
         string projectFilePath = Path.Combine(_projectDir, $"{asset.Name}.csproj");
+
+        if (EnvironmentVariables.UseJavascriptBundler)
+        {
+            extraProperties +=
+            """
+                <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
+                <WasmFingerprintAssets>false</WasmFingerprintAssets>
+                <CompressionEnabled>false</CompressionEnabled>
+            """;
+        }
+
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
@@ -184,6 +196,23 @@ public class WasmTemplateTestsBase : BuildTestBase
         {
             res.EnsureFailed();
             return (_projectDir, res.Output);
+        }
+
+        if (EnvironmentVariables.UseJavascriptBundler && buildOptions.IsPublish)
+        {
+            string publicWwwrootDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(configuration, forPublish: true), ".."));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "package.json"), Path.Combine(publicWwwrootDir, "package.json"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "rollup.config.mjs"), Path.Combine(publicWwwrootDir, "rollup.config.mjs"));
+
+            string npmPath = s_isWindows ? @"C:\Program Files\nodejs\npm.cmd" : "/bin/npm";
+            ToolCommand npmCommand = new ToolCommand(npmPath, _testOutput).WithWorkingDirectory(publicWwwrootDir);
+            npmCommand.Execute("install").EnsureSuccessful();
+            npmCommand.Execute("run build").EnsureSuccessful();
+
+            string publicDir = Path.Combine(publicWwwrootDir, "public");
+            File.Copy(Path.Combine(publicWwwrootDir, "index.html"), Path.Combine(publicDir, "index.html"));
+
+            buildOptions = buildOptions with { AssertAppBundle = false };
         }
 
         if (buildOptions.AssertAppBundle)
@@ -270,20 +299,28 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
         => await BrowserRun(runOptions with { Host = RunHost.WebServer });
 
-    private async Task<RunResult> BrowserRun(RunOptions runOptions) => runOptions.Host switch
+    private async Task<RunResult> BrowserRun(RunOptions runOptions)
     {
-        RunHost.DotnetRun =>
-                await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
+        if (EnvironmentVariables.UseJavascriptBundler)
+        {
+            runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };
+        }
 
-        RunHost.WebServer =>
-                await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                    string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
-                        Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
-                        runOptions.CustomBundleDir,
-                     runOptions),
+        return runOptions.Host switch
+        {
+            RunHost.DotnetRun =>
+                    await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
 
-        _ => throw new NotImplementedException(runOptions.Host.ToString())
-    };
+            RunHost.WebServer =>
+                    await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
+                        string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
+                            Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
+                            runOptions.CustomBundleDir,
+                         runOptions),
+
+            _ => throw new NotImplementedException(runOptions.Host.ToString())
+        };
+    }
 
     private async Task<RunResult> BrowserRunTest(string runArgs,
                                     string workingDirectory,
@@ -335,7 +372,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             await blazorOp.Test(page);
 
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
+        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(runOptions.TimeoutSeconds ?? 10));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
             throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}.\nconsoleOutput={string.Join("\n", consoleOutput)}");
 
