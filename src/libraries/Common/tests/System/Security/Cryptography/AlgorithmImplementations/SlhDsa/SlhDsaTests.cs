@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey);
             Assert.Equal(vector.TestPassed, publicSlhDsa.VerifyData(msg, sig, ctx));
 
-            // Test signature verification with secret key
+            // Test signature verification with private key
             using SlhDsa secretSlhDsa = ImportSlhDsaPrivateKey(vector.Algorithm, vector.PrivateKey);
             Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyData(msg, sig, ctx));
         }
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey);
             Assert.Equal(vector.TestPassed, publicSlhDsa.VerifyPreHash(hash, sig, vector.HashAlgorithm, ctx));
 
-            // Test signature verification with secret key
+            // Test signature verification with private key
             using SlhDsa secretSlhDsa = ImportSlhDsaPrivateKey(vector.Algorithm, vector.PrivateKey);
             Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyPreHash(hash, sig, vector.HashAlgorithm, ctx));
         }

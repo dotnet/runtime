@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 using (SlhDsaMockImplementation publicSlhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128s))
                 {
-                    Exception e = new Exception("no secret key");
+                    Exception e = new Exception("no private key");
                     publicSlhDsa.ExportSlhDsaPrivateKeyCoreHook = _ => throw e;
                     publicSlhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
                         SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue.CopyTo(destination);

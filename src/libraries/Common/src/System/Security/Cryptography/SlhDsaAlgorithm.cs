@@ -22,10 +22,10 @@ namespace System.Security.Cryptography
         public string Name { get; }
 
         /// <summary>
-        ///  Gets the size of the secret key in bytes for this algorithm.
+        ///  Gets the size of the private key in bytes for this algorithm.
         /// </summary>
         /// <value>
-        ///  The size of the secret key in bytes for this algorithm.
+        ///  The size of the private key in bytes for this algorithm.
         /// </value>
         public int PrivateKeySizeInBytes { get; }
 
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography
         {
             Name = name;
 
-            // The secret key and public key sizes are shown to be 4n and 2n respectively in
+            // The private key and public key sizes are shown to be 4n and 2n respectively in
             // section 9.1 "Key Generation", particularly figure 15 and 16.
             PrivateKeySizeInBytes = 4 * n;
             PublicKeySizeInBytes = 2 * n;

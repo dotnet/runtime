@@ -106,7 +106,7 @@ namespace System.Security.Cryptography
 
         internal static partial SlhDsaImplementation ImportPrivateKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(source.Length == algorithm.PrivateKeySizeInBytes, $"Secret key was expected to be {algorithm.PrivateKeySizeInBytes} bytes, but was {source.Length} bytes.");
+            Debug.Assert(source.Length == algorithm.PrivateKeySizeInBytes, $"Private key was expected to be {algorithm.PrivateKeySizeInBytes} bytes, but was {source.Length} bytes.");
             SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);
             return new SlhDsaImplementation(algorithm, key);
         }
