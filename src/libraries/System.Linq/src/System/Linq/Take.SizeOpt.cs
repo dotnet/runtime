@@ -8,6 +8,17 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        private static IEnumerable<TSource> SizeOptimizedTakeIterator<TSource>(IEnumerable<TSource> source, int count)
+        {
+            Debug.Assert(count > 0);
+
+            foreach (TSource element in source)
+            {
+                yield return element;
+                if (--count == 0) break;
+            }
+        }
+
         private static IEnumerable<TSource> SizeOptimizedTakeRangeIterator<TSource>(IEnumerable<TSource> source, int startIndex, int endIndex)
         {
             Debug.Assert(source is not null);

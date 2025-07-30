@@ -20,7 +20,7 @@ namespace System.Linq
                 return [];
             }
 
-            return SpeedOptimizedTakeIterator(source, count);
+            return IsSizeOptimized ? SizeOptimizedTakeIterator(source, count) : SpeedOptimizedTakeIterator(source, count);
         }
 
         /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
