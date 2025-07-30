@@ -150,7 +150,7 @@ namespace System.Threading
             {
                 Thread.CurrentThread.WaitInfo.NamedMutexOwnershipChain.Remove(this);
                 _lockOwnerThread = null;
-                ReleaseLockCore();
+                ReleaseLockCore(abandoning: false);
                 // Remove the refcount from the thread's wait info.
                 _processDataHeader.DecrementRefCount();
             }
@@ -193,7 +193,7 @@ namespace System.Threading
 
             Debug.Assert(_lockOwnerThread is not null);
 
-            ReleaseLockCore();
+            ReleaseLockCore(abandoning: true);
 
             chain.Remove(this);
             _lockOwnerThread = null;
@@ -205,7 +205,7 @@ namespace System.Threading
 
         protected abstract bool IsAbandoned { get; set; }
 
-        protected abstract void ReleaseLockCore();
+        protected abstract void ReleaseLockCore(bool abandoning);
 
         internal static unsafe SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
         {
@@ -367,7 +367,7 @@ namespace System.Threading
             return result;
         }
 
-        protected override void ReleaseLockCore()
+        protected override void ReleaseLockCore(bool abandoning)
         {
             Debug.Assert(_lockCount == 0);
             Interop.Sys.LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(
@@ -444,14 +444,19 @@ namespace System.Threading
             }
         }
 
-        protected override void ReleaseLockCore()
+        protected override void ReleaseLockCore(bool abandoning)
         {
             Debug.Assert(_lockCount == 0);
             _sharedData->LockOwnerProcessId = InvalidProcessId;
             _sharedData->LockOwnerThreadId = InvalidThreadId;
 
             Interop.Sys.FLock(_sharedLockFileHandle, Interop.Sys.LockOperations.LOCK_UN);
+            if (!abandoning)
+            {
+                // We're going to abandon this mutex, so don't release it.
+                // We might not be on the owning thread, so we can't be sure we can release it.
             _processLevelMutex.ReleaseMutex();
+            }
         }
 
         protected override bool IsAbandoned
