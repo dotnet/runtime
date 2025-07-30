@@ -83,6 +83,7 @@
     </Property>
 
     <Component Id="cmpSetPath" Guid="{0B910ED8-0877-473D-8658-647382324433}" Directory="DOTNETHOME">
+      <CreateFolder />
       <!-- Always set the SYSTEM PATH, unless DisableSettingHostPath is 1. -->
       <?if $(var.Platform)~=x64 ?>
       <!-- For x64 installer, only add to PATH when actually on native architecture. -->
