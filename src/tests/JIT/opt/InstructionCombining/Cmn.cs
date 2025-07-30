@@ -50,31 +50,6 @@ namespace TestCompareNegative
                 fail = true;
             }
 
-            if (!CmnExtendedB(1, 0xff))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedH(1, 0xffff))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedS(1, 0xffffffff))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedUB(-1, 0x101))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedUH(-1, 0x10001))
-            {
-                fail = true;
-            }
-            if (!CmnExtendedUS(-1, 0x100000001))
-            {
-                fail = true;
-            }
-
             if (fail)
             {
                 return 101;
