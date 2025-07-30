@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
@@ -13,8 +14,6 @@ namespace System.Text.Json.Serialization.Converters
         private const int MinimumVersionLength = 3; // 0.0
 
         private const int MaximumVersionLength = 43; // 2147483647.2147483647.2147483647.2147483647
-
-        private const int MaximumEscapedVersionLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumVersionLength;
 #endif
 
         public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -37,21 +36,45 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
 
 #if NET
-            if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
+            int bufferLength = reader.ValueLength;
+            char[]? rentedBuffer = null;
+            Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+
+            int bytesWritten = reader.CopyString(charBuffer);
+            ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
+
+            // Enforce leading and trailing whitespace rejection
+            if (source.Length > 0 && (char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1])))
+            {
+                if (rentedBuffer is not null)
+                {
+                    ArrayPool<char>.Shared.Return(rentedBuffer);
+                }
+                ThrowHelper.ThrowFormatException(DataType.Version);
+            }
+
+            bool success = Version.TryParse(source, out Version? result);
+
+            if (rentedBuffer is not null)
+            {
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+
+            if (success)
+            {
+                return result!;
+            }
+#else
+            string? versionString = reader.GetString();
+
+            // Enforce leading and trailing whitespace rejection
+            if (!string.IsNullOrEmpty(versionString) && (char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1])))
             {
                 ThrowHelper.ThrowFormatException(DataType.Version);
             }
 
-            Span<char> charBuffer = stackalloc char[MaximumEscapedVersionLength];
-            int bytesWritten = reader.CopyString(charBuffer);
-            ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
-
-            if (Version.TryParse(source, out Version? result))
-            {
-                return result;
-            }
-#else
-            string? versionString = reader.GetString();
             if (Version.TryParse(versionString, out Version? result))
             {
                 return result;
