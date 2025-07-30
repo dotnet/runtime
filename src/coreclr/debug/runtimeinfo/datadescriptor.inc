@@ -1007,7 +1007,7 @@ CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBAL_POINTER(GCDescriptor, &::g_gcDescriptors)
 CDAC_GLOBALS_END()
 
-#undef CDAC_BASELINEF
+#undef CDAC_BASELINE
 #undef CDAC_TYPES_BEGIN
 #undef CDAC_TYPE_BEGIN
 #undef CDAC_TYPE_INDETERMINATE
