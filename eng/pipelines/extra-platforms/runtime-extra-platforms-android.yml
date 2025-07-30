@@ -149,8 +149,6 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
-            targetRid: android-x64
-            runtimeFlavor: coreclr
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
