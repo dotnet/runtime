@@ -358,6 +358,13 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("   1.2.3.4")] //Valid but has leading whitespace
         [InlineData("1.2.3.4    ")] //Valid but has trailing whitespace
         [InlineData("  1.2.3.4  ")] //Valid but has trailing and leading whitespaces
+        [InlineData("1.+1")] //Plus sign in second component should be rejected
+        [InlineData("1 .1")] //Whitespace before dot should be rejected
+        [InlineData("1. 1")] //Whitespace after dot should be rejected
+        [InlineData("1 . +1")] //Whitespace around dot and plus sign should be rejected
+        [InlineData("1.+2.3")] //Plus sign in second component with more components
+        [InlineData("1.2. 3")] //Whitespace after second dot
+        [InlineData("1 .2.3")] //Whitespace before first dot
         [InlineData("{}", false)]
         [InlineData("[]", false)]
         [InlineData("true", false)]

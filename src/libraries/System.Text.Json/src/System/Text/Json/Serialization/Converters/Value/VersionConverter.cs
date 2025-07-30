@@ -17,6 +17,35 @@ namespace System.Text.Json.Serialization.Converters
         private const int MaximumEscapedVersionLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumVersionLength;
 #endif
 
+        private static bool IsValidVersionFormat(ReadOnlySpan<char> source)
+        {
+            // Check for plus signs anywhere in the string
+            if (source.IndexOf('+') >= 0)
+            {
+                return false;
+            }
+
+            // Check for whitespace adjacent to dots
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] == '.')
+                {
+                    // Check for whitespace before the dot
+                    if (i > 0 && char.IsWhiteSpace(source[i - 1]))
+                    {
+                        return false;
+                    }
+                    // Check for whitespace after the dot
+                    if (i < source.Length - 1 && char.IsWhiteSpace(source[i + 1]))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType is JsonTokenType.Null)
@@ -55,6 +84,14 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowFormatException(DataType.Version);
             }
 
+            // Additional validation to be more strict than Version.TryParse:
+            // - Reject plus signs anywhere in the string
+            // - Reject whitespace adjacent to dots
+            if (!IsValidVersionFormat(source))
+            {
+                ThrowHelper.ThrowFormatException(DataType.Version);
+            }
+
             if (Version.TryParse(source, out Version? result))
             {
                 return result;
@@ -67,6 +104,14 @@ namespace System.Text.Json.Serialization.Converters
                 // we need to make sure that our input doesn't have them,
                 // and if it has - we need to throw, to match behaviour of other converters
                 // since Version.TryParse allows them and silently parses input to Version
+                ThrowHelper.ThrowFormatException(DataType.Version);
+            }
+
+            // Additional validation to be more strict than Version.TryParse:
+            // - Reject plus signs anywhere in the string
+            // - Reject whitespace adjacent to dots
+            if (!string.IsNullOrEmpty(versionString) && !IsValidVersionFormat(versionString.AsSpan()))
+            {
                 ThrowHelper.ThrowFormatException(DataType.Version);
             }
             if (Version.TryParse(versionString, out Version? result))
