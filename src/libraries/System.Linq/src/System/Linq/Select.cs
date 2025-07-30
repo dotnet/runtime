@@ -32,11 +32,9 @@ namespace System.Linq
                 // don't need more code, just more data structures describing the new types).
                 if (IsSizeOptimized && typeof(TResult).IsValueType)
                 {
-                    if (source is IList<TSource> il)
-                    {
-                        return new SizeOptIListSelectIterator<TSource, TResult>(il, selector);
-                    }
-                    return new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
+                    return source is IList<TSource> il
+                        ? new SizeOptIListSelectIterator<TSource, TResult>(il, selector)
+                        : new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
                 }
                 else
                 {
