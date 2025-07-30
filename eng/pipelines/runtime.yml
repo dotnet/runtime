@@ -1001,7 +1001,7 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Release
+          buildConfig: Debug
           runtimeFlavor: nativeaot
           platforms:
           - android_x64
@@ -1027,6 +1027,8 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  targetRid: android-x64
+                  runtimeFlavor: coreclr
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
                   condition: >-
