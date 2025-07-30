@@ -362,7 +362,7 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
             currentPtr->codeType = managerPtr->GetCodeType();
 
             EEJitManager *eeJitManager = PTR_EEJitManager(PTR_HOST_TO_TADDR(managerPtr));
-            currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pCodeHeap);
+            currentPtr->ptrHeapList = HOST_CDADDR(eeJitManager->m_pAllCodeHeaps);
         }
     }
     else if (pNeeded)
@@ -528,7 +528,7 @@ ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, s
     SOSDacEnter();
 
     EEJitManager *pJitManager = PTR_EEJitManager(TO_TADDR(jitManager));
-    HeapList *heapList = pJitManager->m_pCodeHeap;
+    HeapList *heapList = pJitManager->m_pAllCodeHeaps;
 
     if (codeHeaps)
     {
@@ -2434,31 +2434,25 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
         if (addr != HOST_CDADDR(SystemDomain::System()))
         {
             PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-            appdomainData->DomainLocalBlock = 0;
-            appdomainData->pDomainLocalModules = 0;
 
             appdomainData->dwId = DefaultADID;
-            appdomainData->appDomainStage = (DacpAppDomainDataStage)pAppDomain->m_Stage.Load();
-            if (pAppDomain->IsActive())
+
+            AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
+                kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+            CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+            while (i.Next(pAssembly.This()))
             {
-                // The assembly list is not valid in a closed appdomain.
-                AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
-                    kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-                CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-                while (i.Next(pAssembly.This()))
+                if (pAssembly->IsLoaded())
                 {
-                    if (pAssembly->IsLoaded())
-                    {
-                        appdomainData->AssemblyCount++;
-                    }
+                    appdomainData->AssemblyCount++;
                 }
+            }
 
-                AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
-                while (j.Next())
-                {
-                    appdomainData->FailedAssemblyCount++;
-                }
+            AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
+            while (j.Next())
+            {
+                appdomainData->FailedAssemblyCount++;
             }
         }
     }
@@ -3347,6 +3341,9 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
+#if defined(FEATURE_JAVAMARSHAL)
+                            HNDTYPE_CROSSREFERENCE,
+#endif // FEATURE_JAVAMARSHAL
                             };
 
     return GetHandleEnumForTypes(types, ARRAY_SIZE(types), ppHandleEnum);

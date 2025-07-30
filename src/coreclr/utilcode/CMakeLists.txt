@@ -29,7 +29,6 @@ set(UTILCODE_COMMON_SOURCES
   interleavedloaderheap.cpp
   loaderheap_shared.cpp
   explicitcontrolloaderheap.cpp
-  allocmemtracker.cpp
   rangelist.cpp
   outstring.cpp
   ilformatter.cpp
@@ -68,6 +67,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
+  allocmemtracker.cpp
   executableallocator.cpp
 )
 

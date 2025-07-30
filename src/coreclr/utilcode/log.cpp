@@ -33,8 +33,8 @@
 
 static          DWORD        LogFlags                    = 0;
 static          CQuickWSTR   szLogFileName;
-static          FILE*        LogFileHandle               = NULL;
-static volatile HANDLE       LogFileMutex                = 0;
+static          FILE* LogFileHandle = NULL;
+static minipal_mutex* volatile LogFileMutex              = nullptr;
 static          DWORD        LogFacilityMask             = LF_ALL;
 static          DWORD        LogFacilityMask2            = 0;
 static          DWORD        LogVMLevel                  = LL_INFO100;
@@ -128,11 +128,9 @@ VOID EnterLogLock()
     // rather hard to care about this, as we LOG all over the place.
     CONTRACT_VIOLATION(TakesLockViolation);
 
-    if(LogFileMutex != 0)
+    if (LogFileMutex != nullptr)
     {
-        DWORD status;
-        status = WaitForSingleObjectEx(LogFileMutex, INFINITE, FALSE);
-        _ASSERTE(WAIT_OBJECT_0 == status);
+        minipal_mutex_enter(LogFileMutex);
     }
 }
 
@@ -141,11 +139,9 @@ VOID LeaveLogLock()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    if(LogFileMutex != 0)
+    if (LogFileMutex != nullptr)
     {
-        BOOL success;
-        success = ReleaseMutex(LogFileMutex);
-        _ASSERTE(success);
+        minipal_mutex_leave(LogFileMutex);
     }
 }
 
@@ -157,11 +153,14 @@ VOID InitializeLogging()
     if (bLoggingInitialized)
         return;
 
-    HANDLE mutex = CreateMutex(NULL, FALSE, NULL);
-    _ASSERTE(mutex != 0);
-    if (InterlockedCompareExchangeT(&LogFileMutex, mutex, 0) != 0)
+    minipal_mutex* mutex = new minipal_mutex;
+    bool success = minipal_mutex_init(mutex);
+    _ASSERTE(success);
+
+    if (InterlockedCompareExchangeT(&LogFileMutex, mutex, nullptr) != nullptr)
     {
-        CloseHandle(mutex);
+        minipal_mutex_destroy(mutex);
+        delete mutex;
     }
 
     EnterLogLock();

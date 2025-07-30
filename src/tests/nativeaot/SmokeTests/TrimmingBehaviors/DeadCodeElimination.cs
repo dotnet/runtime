@@ -34,6 +34,7 @@ class DeadCodeElimination
         TestGetMethodOptimization.Run();
         TestTypeOfCodegenBranchElimination.Run();
         TestInvisibleGenericsTrimming.Run();
+        TestTypeHandlesInGenericDictionaries.Run();
 
         return 100;
     }
@@ -1127,6 +1128,36 @@ class DeadCodeElimination
 
             IsPresentType(new PresentType<object>());
             ThrowIfNotPresent(typeof(TestInvisibleGenericsTrimming), "PresentType`1");
+        }
+    }
+
+    class TestTypeHandlesInGenericDictionaries
+    {
+        class InvisibleType1;
+        class InvisibleType2;
+        class VisibleType1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void GenericMethod<T, U, V>(object o, string expectedNameOfV)
+        {
+            if (o is T)
+                Console.WriteLine("Yes");
+
+            if (o.GetType() == typeof(U))
+                Console.WriteLine("Yes");
+
+            if (typeof(V).Name != expectedNameOfV)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            GenericMethod<InvisibleType1, InvisibleType2, VisibleType1>(new object(), nameof(VisibleType1));
+
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType1));
+#if !DEBUG
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType2));
+#endif
         }
     }
 

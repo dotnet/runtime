@@ -920,7 +920,7 @@ eventpipe_protocol_helper_collect_tracing (
 		payload->serialization_format,
 		payload->rundown_keyword,
 		payload->stackwalk_requested,
-		payload->session_type == EP_SESSION_TYPE_IPCSTREAM ? ds_ipc_stream_get_stream_ref (stream) : NULL,
+		ds_ipc_stream_get_stream_ref (stream),
 		NULL,
 		NULL,
 		user_events_data_fd);

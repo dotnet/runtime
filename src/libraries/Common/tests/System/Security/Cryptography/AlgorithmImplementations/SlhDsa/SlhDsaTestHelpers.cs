@@ -406,16 +406,5 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 _ => throw new XunitException($"Unknown algorithm: '{algorithm?.Name}'."),
             };
         }
-
-        internal const string Md5Oid = "1.2.840.113549.2.5";
-        internal const string Sha1Oid = "1.3.14.3.2.26";
-        internal const string Sha256Oid = "2.16.840.1.101.3.4.2.1";
-        internal const string Sha384Oid = "2.16.840.1.101.3.4.2.2";
-        internal const string Sha512Oid = "2.16.840.1.101.3.4.2.3";
-        internal const string Sha3_256Oid = "2.16.840.1.101.3.4.2.8";
-        internal const string Sha3_384Oid = "2.16.840.1.101.3.4.2.9";
-        internal const string Sha3_512Oid = "2.16.840.1.101.3.4.2.10";
-        internal const string Shake128Oid = "2.16.840.1.101.3.4.2.11";
-        internal const string Shake256Oid = "2.16.840.1.101.3.4.2.12";
     }
 }

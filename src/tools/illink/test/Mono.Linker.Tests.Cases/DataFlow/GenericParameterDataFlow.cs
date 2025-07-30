@@ -214,7 +214,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             new DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<TestType>();
         }
 
-        [ExpectedWarning("IL2109", nameof(BaseTypeWithOpenGenericDAMTAndRUC<T>))]
         [ExpectedWarning("IL2091", nameof(BaseTypeWithOpenGenericDAMTAndRUC<T>))]
         [ExpectedWarning("IL2091", nameof(IGenericInterfaceTypeWithRequirements<T>))]
         class DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T> : BaseTypeWithOpenGenericDAMTAndRUC<T>, IGenericInterfaceTypeWithRequirements<T>
@@ -714,7 +713,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2091",
-                [nameof (TOuter),
+                [nameof(TOuter),
                 "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
                 "TMethods",
                 "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()"], Tool.Analyzer, "")]

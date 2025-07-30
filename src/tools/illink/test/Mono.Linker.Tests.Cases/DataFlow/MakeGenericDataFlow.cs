@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [SkipKeptItemsValidation]
     [ExpectedNoWarnings]
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "These tests are not targetted at AOT scenarios")]
+    [SandboxDependency("Dependencies/TestSystemTypeBase.cs")]
     public class MakeGenericDataFlow
     {
         public static void Main()
@@ -41,6 +45,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
                 TestWithMultipleArgumentsWithRequirements();
 
+                MakeGenericWithThis.Test();
+                MakeGenericWithFields.Test();
+                MakeGenericWithObjectGetType.Test();
                 NewConstraint.Test();
                 StructConstraint.Test();
                 UnmanagedConstraint.Test();
@@ -172,6 +179,189 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TOne,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TTwo>
             {
+            }
+
+            class MakeGenericWithThis
+            {
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                static TypeDerived fieldAnnotated;
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                static TypeDerived fieldMisannotated;
+                static TypeDerived fieldUnannotated;
+
+                [ExpectedWarning("IL2065", "MakeGenericFromThis_Annotated()")]
+                [ExpectedWarning("IL2065", "MakeGenericFromThis_Misannotated()")]
+                public static void Test()
+                {
+                    new TypeDerived().MakeGenericFromThis_Annotated();
+                    new TypeDerived().MakeGenericFromThis_Unannotated();
+                    new TypeDerived().MakeGenericFromThis_Misannotated();
+                }
+
+                class TypeDerived : TestSystemTypeBase
+                {
+                    [ExpectedWarning("IL2086", "GenericWithPublicFieldsArgument", "'this'")]
+                    public void MakeGenericFromThis_Unannotated()
+                    {
+                        typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(this);
+                    }
+
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                    public void MakeGenericFromThis_Annotated()
+                    {
+                        typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(this);
+                    }
+
+                    [ExpectedWarning("IL2086", "GenericWithPublicFieldsArgument", "'this'")]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                    public void MakeGenericFromThis_Misannotated()
+                    {
+                        typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(this);
+                    }
+                }
+            }
+
+            class MakeGenericWithFields
+            {
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                static Type AnnotatedField;
+                static Type UnannotatedField;
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                static Type MisannotatedField;
+
+                public static void Test()
+                {
+                    TestAnnotated();
+                    TestUnannotated();
+                    TestMisannotated();
+                }
+
+                public static void TestAnnotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(AnnotatedField);
+                }
+
+                [ExpectedWarning("IL2081", "GenericWithPublicFieldsArgument", nameof(UnannotatedField))]
+                public static void TestUnannotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(UnannotatedField);
+                }
+
+                [ExpectedWarning("IL2081", "GenericWithPublicFieldsArgument", nameof(MisannotatedField))]
+                public static void TestMisannotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(MisannotatedField);
+                }
+            }
+
+            class MakeGenericWithObjectGetType
+            {
+                static AnnotatedType s_annotatedType = new();
+                static UnannotatedType s_unannotatedType = new();
+                static MisannotatedType s_misannotatedType = new();
+
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                class AnnotatedType
+                {
+                    public void MakeGenericFromThis()
+                    {
+                        typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(this.GetType());
+                    }
+                }
+
+                class UnannotatedType
+                {
+                    [ExpectedWarning("IL2076", "GenericWithPublicFieldsArgument", "System.Object.GetType()")]
+                    public void MakeGenericFromThis()
+                    {
+                        typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(this.GetType());
+                    }
+                }
+
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                class MisannotatedType
+                {
+                    [ExpectedWarning("IL2076", "GenericWithPublicFieldsArgument", "System.Object.GetType()")]
+                    public void MakeGenericWithThis()
+                    {
+                        typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(this.GetType());
+                    }
+                }
+
+
+                public static void Test()
+                {
+                    MakeGenericFromNewObject_Annotated();
+                    MakeGenericFromNewObject_Unannotated();
+                    MakeGenericFromNewObject_Misannotated();
+                    MakeGenericFromParameters_Annotated(new AnnotatedType());
+                    MakeGenericFromParameters_Unannotated(new UnannotatedType());
+                    MakeGenericFromParameters_Misannotated(new MisannotatedType());
+                    MakeGenericFromField_Annotated();
+                    MakeGenericFromField_Unannotated();
+                    MakeGenericFromField_Misannotated();
+                    MakeGenericFromThis_Annotated();
+                    MakeGenericFromThis_Unannotated();
+                    MakeGenericFromThis_Misannotated();
+                }
+
+                static void MakeGenericFromThis_Annotated()
+                {
+                    new AnnotatedType().MakeGenericFromThis();
+                }
+                static void MakeGenericFromThis_Unannotated()
+                {
+                    new UnannotatedType().MakeGenericFromThis();
+                }
+                static void MakeGenericFromThis_Misannotated()
+                {
+                    new MisannotatedType().MakeGenericWithThis();
+                }
+
+                static void MakeGenericFromNewObject_Annotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(new AnnotatedType().GetType());
+                }
+                [ExpectedWarning("IL2076", "GenericWithPublicFieldsArgument", "System.Object.GetType()")]
+                static void MakeGenericFromNewObject_Unannotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(new UnannotatedType().GetType());
+                }
+                [ExpectedWarning("IL2076", "GenericWithPublicFieldsArgument", "System.Object.GetType()")]
+                static void MakeGenericFromNewObject_Misannotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(new MisannotatedType().GetType());
+                }
+
+                static void MakeGenericFromParameters_Annotated(AnnotatedType annotatedType)
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(annotatedType.GetType());
+                }
+                [ExpectedWarning("IL2076", "GenericWithPublicFieldsArgument", "System.Object.GetType()")]
+                static void MakeGenericFromParameters_Unannotated(UnannotatedType unannotatedType)
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(unannotatedType.GetType());
+                }
+                [ExpectedWarning("IL2076", "GenericWithPublicFieldsArgument", "System.Object.GetType()")]
+                static void MakeGenericFromParameters_Misannotated(MisannotatedType misannotatedType)
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(misannotatedType.GetType());
+                }
+
+                static void MakeGenericFromField_Annotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(s_annotatedType.GetType());
+                }
+                [ExpectedWarning("IL2076", "GenericWithPublicFieldsArgument", "System.Object.GetType()")]
+                static void MakeGenericFromField_Unannotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(s_unannotatedType.GetType());
+                }
+                [ExpectedWarning("IL2076", "GenericWithPublicFieldsArgument", "System.Object.GetType()")]
+                static void MakeGenericFromField_Misannotated()
+                {
+                    typeof(GenericWithPublicFieldsArgument<>).MakeGenericType(s_misannotatedType.GetType());
+                }
             }
 
             class NewConstraint
