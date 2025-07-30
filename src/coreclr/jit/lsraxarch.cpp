@@ -2839,9 +2839,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
 
-                if (baseType == TYP_UINT && !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
-                    buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                    // If AVX is not supported, we need to specifically allocate XMM0 because we will eventually
+                    // generate a pblendvpd, which requires XMM0 specifically for the mask register.
+                    buildInternalFloatRegisterDefForNode(intrinsicTree,
+                                                         compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                                                             ? lowSIMDRegs()
+                                                             : SRBM_XMM0);
                 }
                 setInternalRegsDelayFree = true;
 
