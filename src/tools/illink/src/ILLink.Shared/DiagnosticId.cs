@@ -173,7 +173,7 @@ namespace ILLink.Shared
         DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings = 2106,
         MethodsAreAssociatedWithStateMachine = 2107,
         InvalidScopeInUnconditionalSuppressMessage = 2108,
-        RequiresUnreferencedCodeOnBaseClass = 2109,
+        _unused_RequiresUnreferencedCodeOnBaseClass = 2109,
         DynamicallyAccessedMembersFieldAccessedViaReflection = 2110,
         DynamicallyAccessedMembersMethodAccessedViaReflection = 2111,
         DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode = 2112,

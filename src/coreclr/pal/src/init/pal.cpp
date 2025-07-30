@@ -248,7 +248,7 @@ Abstract:
 void
 InitializeDefaultStackSize()
 {
-    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("DefaultStackSize", /*noprefix*/ false, &getenv);
+    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("Thread_DefaultStackSize", /*noprefix*/ false, &getenv);
     if (defStackSize.IsSet())
     {
         DWORD size;
