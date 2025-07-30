@@ -49,6 +49,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestNoWarningsInRUCMethod<TestType>();
             TestNoWarningsInRUCType<TestType, TestType>();
             TestGenericParameterFlowsToNestedType.Test();
+
+            TestInstanceMethodOnValueType<object>();
+            TestValueTypeBox<object>();
+            TestMkrefAny<object>();
+            TestInArray<object>();
         }
 
         static void TestSingleGenericParameterOnType()
@@ -849,6 +854,58 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             rucType.InstanceMethodRequiresPublicMethods<T>();
             rucType.VirtualMethod();
             rucType.VirtualMethodRequiresPublicMethods<T>();
+        }
+
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
+        static void TestInstanceMethodOnValueType<T>()
+        {
+            default(RequiresParameterlessCtor<T>).Do();
+        }
+
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
+        [ExpectedWarning("IL2091", "IRequireParameterlessCtor", Tool.Trimmer, "")]
+        [ExpectedWarning("IL2091", "IRequireParameterlessCtor", Tool.Trimmer, "")]
+        static void TestValueTypeBox<T>()
+        {
+            if (default(RequiresParameterlessCtor<T>) is IRequireParameterlessCtor<T> i)
+            {
+                i.Do();
+            }
+        }
+
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
+        static void TestMkrefAny<T>()
+        {
+            RequiresParameterlessCtor<T> val = default;
+            TypedReference tr = __makeref(val);
+            // This is a potential box operation, e.g. TypedReference.ToObject(tr);
+        }
+
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer, "")]
+        static void TestInArray<T>()
+        {
+            var arr = new RequiresParameterlessCtor<T>[1];
+            // This is a potential box operation, e.g. arr.GetValue(0)
+        }
+
+        interface IRequireParameterlessCtor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
+        {
+            T Do();
+        }
+
+        struct RequiresParameterlessCtor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> : IRequireParameterlessCtor<T>
+        {
+            public T Do()
+            {
+                return Activator.CreateInstance<T>();
+            }
         }
 
         class TestGenericParameterFlowsToNestedType
