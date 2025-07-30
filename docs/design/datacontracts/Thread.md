@@ -133,11 +133,11 @@ ThreadData GetThreadData(TargetPointer address)
 TargetPointer IThread.IdToThread(uint id)
 {
     TargetPointer idDispenserPointer = target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
-    TargetPointer idDispenser = target.ReadPointer(idDispenserPointer)
+    TargetPointer idDispenser = target.ReadPointer(idDispenserPointer);
     uint HighestId = target.ReadPointer(idDispenser + /* IdDispenser::HighestId offset */);
     TargetPointer threadPtr = TargetPointer.Null;
     if (id < HighestId)
-        threadPtr = target.ReadPointer(idDispenser + /* IdDispenser::IdToThread offset */);
+        threadPtr = target.ReadPointer(idDispenser + /* IdDispenser::IdToThread offset + (index into IdToThread array * size of array elements) */);
     return threadPtr;
 }
 ```
