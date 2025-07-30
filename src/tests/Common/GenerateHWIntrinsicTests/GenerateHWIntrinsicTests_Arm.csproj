@@ -12,6 +12,7 @@
     <Compile Include="Arm/SveTests.cs" />
     <Compile Include="Arm/Sve2Tests.cs" />
     <Compile Include="Arm/Templates.cs" />
+    <Compile Include="Arm/TestGroup.cs" />
   </ItemGroup>
 
 </Project>
