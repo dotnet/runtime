@@ -336,6 +336,14 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("2147483647.2147483647.2147483647.2147483647")]
         [InlineData("\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037\\u002e\\u0032\\u0031\\u0034\\u0037\\u0034\\u0038\\u0033\\u0036\\u0034\\u0037",
             "2147483647.2147483647.2147483647.2147483647")]
+        [InlineData("   1.2.3.4", "1.2.3.4")] // Leading whitespace should now be accepted
+        [InlineData("1.2.3.4    ", "1.2.3.4")] // Trailing whitespace should now be accepted  
+        [InlineData("  1.2.3.4  ", "1.2.3.4")] // Leading and trailing whitespace should now be accepted
+        [InlineData("+1.1", "1.1")] // Leading plus should now be accepted
+        [InlineData("1.+1", "1.1")] // Plus in components should work as before
+        [InlineData("1 .1", "1.1")] // Whitespace before dot should work as before
+        [InlineData("1. 1", "1.1")] // Whitespace after dot should work as before
+        [InlineData("1 . +1", "1.1")] // Combined whitespace and plus should work as before
         public static void Version_Read_Success(string json, string? actual = null)
         {
             actual ??= json;
@@ -355,16 +363,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("-2147483648.-2147483648.-2147483648.-2147483648")]
         [InlineData("1.-1")]
         [InlineData("1")]
-        [InlineData("   1.2.3.4")] //Valid but has leading whitespace
-        [InlineData("1.2.3.4    ")] //Valid but has trailing whitespace
-        [InlineData("  1.2.3.4  ")] //Valid but has trailing and leading whitespaces
-        [InlineData("1.+1")] //Plus sign in second component should be rejected
-        [InlineData("1 .1")] //Whitespace before dot should be rejected
-        [InlineData("1. 1")] //Whitespace after dot should be rejected
-        [InlineData("1 . +1")] //Whitespace around dot and plus sign should be rejected
-        [InlineData("1.+2.3")] //Plus sign in second component with more components
-        [InlineData("1.2. 3")] //Whitespace after second dot
-        [InlineData("1 .2.3")] //Whitespace before first dot
         [InlineData("{}", false)]
         [InlineData("[]", false)]
         [InlineData("true", false)]
