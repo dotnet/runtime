@@ -46,7 +46,6 @@ record struct ThreadData (
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
-TargetPointer GetManagedThreadObject(TargetPointer threadPointer);
 ```
 
 ## Version 1
@@ -127,11 +126,5 @@ ThreadData GetThreadData(TargetPointer address)
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
     );
-}
-
-TargetPointer GetManagedThreadObject(TargetPointer threadPointer)
-{
-    var runtimeThread = new Thread(Target, threadPointer);
-    return Contracts.GCHandle.GetObject(new DacGCHandle(runtimeThread.m_ExposedObject));
 }
 ```
