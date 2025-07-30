@@ -979,6 +979,160 @@ PCODE FPRegsRoutines[] =
 
 #endif // TARGET_ARM64
 
+#ifdef TARGET_ARM
+
+extern "C" void Load_X0();
+extern "C" void Load_X0_X1();
+extern "C" void Load_X0_X1_X2();
+extern "C" void Load_X0_X1_X2_X3();
+extern "C" void Load_X1();
+extern "C" void Load_X1_X2();
+extern "C" void Load_X1_X2_X3();
+extern "C" void Load_X2();
+extern "C" void Load_X2_X3();
+extern "C" void Load_X3();
+
+extern "C" void Store_X0();
+extern "C" void Store_X0_X1();
+extern "C" void Store_X0_X1_X2();
+extern "C" void Store_X0_X1_X2_X3();
+extern "C" void Store_X1();
+extern "C" void Store_X1_X2();
+extern "C" void Store_X1_X2_X3();
+extern "C" void Store_X2();
+extern "C" void Store_X2_X3();
+extern "C" void Store_X3();
+
+extern "C" void Load_Ref_X0();
+extern "C" void Load_Ref_X1();
+extern "C" void Load_Ref_X2();
+extern "C" void Load_Ref_X3();
+
+extern "C" void Store_Ref_X0();
+extern "C" void Store_Ref_X1();
+extern "C" void Store_Ref_X2();
+extern "C" void Store_Ref_X3();
+
+PCODE GPRegsRoutines[] =
+{
+    (PCODE)Load_X0,                         // 00
+    (PCODE)Load_X0_X1,                      // 01
+    (PCODE)Load_X0_X1_X2,                   // 02
+    (PCODE)Load_X0_X1_X2_X3,                // 03
+    (PCODE)0,                               // 04
+    (PCODE)Load_X1,                         // 05
+    (PCODE)Load_X1_X2,                      // 06
+    (PCODE)Load_X1_X2_X3,                   // 07
+    (PCODE)0,                               // 08
+    (PCODE)0,                               // 09
+    (PCODE)Load_X2,                         // 10
+    (PCODE)Load_X2_X3,                      // 11
+    (PCODE)0,                               // 12
+    (PCODE)0,                               // 13
+    (PCODE)0,                               // 14
+    (PCODE)Load_X3,                         // 15
+};
+
+PCODE GPRegsStoreRoutines[] =
+{
+    (PCODE)Store_X0,                         // 00
+    (PCODE)Store_X0_X1,                      // 01
+    (PCODE)Store_X0_X1_X2,                   // 02
+    (PCODE)Store_X0_X1_X2_X3,                // 03
+    (PCODE)0,                                // 04
+    (PCODE)Store_X1,                         // 05
+    (PCODE)Store_X1_X2,                      // 06
+    (PCODE)Store_X1_X2_X3,                   // 07
+    (PCODE)0,                                // 08
+    (PCODE)0,                                // 09
+    (PCODE)Store_X2,                         // 10
+    (PCODE)Store_X2_X3,                      // 11
+    (PCODE)0,                                // 12
+    (PCODE)0,                                // 13
+    (PCODE)0,                                // 14
+    (PCODE)Store_X3,                         // 15
+};
+
+PCODE GPRegsRefRoutines[] =
+{
+    (PCODE)Load_Ref_X0,        // 0
+    (PCODE)Load_Ref_X1,        // 1
+    (PCODE)Load_Ref_X2,        // 2
+    (PCODE)Load_Ref_X3,        // 3
+};
+
+PCODE GPRegsRefStoreRoutines[] =
+{
+    (PCODE)Store_Ref_X0,        // 0
+    (PCODE)Store_Ref_X1,        // 1
+    (PCODE)Store_Ref_X2,        // 2
+    (PCODE)Store_Ref_X3,        // 3
+};
+
+extern "C" void Load_F0();
+extern "C" void Load_F0_F1();
+extern "C" void Load_F0_F1_F2();
+extern "C" void Load_F0_F1_F2_F3();
+extern "C" void Load_F1();
+extern "C" void Load_F1_F2();
+extern "C" void Load_F1_F2_F3();
+extern "C" void Load_F2();
+extern "C" void Load_F2_F3();
+extern "C" void Load_F3();
+
+extern "C" void Store_F0();
+extern "C" void Store_F0_F1();
+extern "C" void Store_F0_F1_F2();
+extern "C" void Store_F0_F1_F2_F3();
+extern "C" void Store_F1();
+extern "C" void Store_F1_F2();
+extern "C" void Store_F1_F2_F3();
+extern "C" void Store_F2();
+extern "C" void Store_F2_F3();
+extern "C" void Store_F3();
+
+PCODE FPRegsStoreRoutines[] =
+{
+    (PCODE)Store_F0,                         // 00
+    (PCODE)Store_F0_F1,                      // 01
+    (PCODE)Store_F0_F1_F2,                   // 02
+    (PCODE)Store_F0_F1_F2_F3,                // 03
+    (PCODE)0,                                // 04
+    (PCODE)Store_F1,                         // 05
+    (PCODE)Store_F1_F2,                      // 06
+    (PCODE)Store_F1_F2_F3,                   // 07
+    (PCODE)0,                                // 08
+    (PCODE)0,                                // 09
+    (PCODE)Store_F2,                         // 10
+    (PCODE)Store_F2_F3,                      // 11
+    (PCODE)0,                                // 12
+    (PCODE)0,                                // 13
+    (PCODE)0,                                // 14
+    (PCODE)Store_F3,                         // 15
+};
+
+PCODE FPRegsRoutines[] =
+{
+    (PCODE)Load_F0,                         // 00
+    (PCODE)Load_F0_F1,                      // 01
+    (PCODE)Load_F0_F1_F2,                   // 02
+    (PCODE)Load_F0_F1_F2_F3,                // 03
+    (PCODE)0,                               // 04
+    (PCODE)Load_F1,                         // 05
+    (PCODE)Load_F1_F2,                      // 06
+    (PCODE)Load_F1_F2_F3,                   // 07
+    (PCODE)0,                               // 08
+    (PCODE)0,                               // 09
+    (PCODE)Load_F2,                         // 10
+    (PCODE)Load_F2_F3,                      // 11
+    (PCODE)0,                               // 12
+    (PCODE)0,                               // 13
+    (PCODE)0,                               // 14
+    (PCODE)Load_F3,                         // 15
+};
+
+#endif // TARGET_ARM
+
 #define LOG_COMPUTE_CALL_STUB 0
 
 PCODE CallStubGenerator::GetStackRoutine()
@@ -1586,7 +1740,11 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             m_r1 = argLocDesc.m_idxGenReg;
             m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
         }
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         else if (argLocDesc.m_idxGenReg == m_r2 + 1 && (!pArgIt || !pArgIt->IsArgPassedByRef()))
+#else
+        else if (argLocDesc.m_idxGenReg == m_r2 + 1)
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
         {
             // Extend an existing range, but only if the argument is not passed by reference.
             // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
@@ -1637,7 +1795,11 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
         else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8) && (!pArgIt || !pArgIt->IsArgPassedByRef()))
+#else
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8))
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
         {
             // Extend an existing range, but only if the argument is at least pointer size large.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
@@ -1683,6 +1845,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
     // So the argument loading routine needs to load the address of the argument. To avoid explosion of number of the routines,
     // we always process single argument passed by reference using single routine.
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
         int unalignedArgSize = pArgIt->GetArgSize();
@@ -1710,6 +1873,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             m_s1 = NoRange;
         }
     }
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 #endif // UNIX_AMD64_ABI
 }
 
