@@ -846,6 +846,8 @@ protected:
 
 #define _idEvexbContext  (_idCustom6 << 1) | _idCustom5 /* Evex.b: embedded broadcast, rounding, SAE */
 #define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
+#define _idEvexZuContext _idCustom5 /* bits used for the APX-EVEX.zu context for promoted legacy instructions */
+
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
 
         // We repurpose 4 bits for the default flag value bits for ccmp instructions.
@@ -1793,13 +1795,26 @@ protected:
 
         bool idIsEvexNdContextSet() const
         {
+            assert(IsApxNddCompatibleInstruction(_idIns));
             return _idEvexNdContext != 0;
+        }
+
+        bool idIsEvexZuContextSet() const
+        {
+            assert(IsApxZuCompatibleInstruction(_idIns));
+            return (_idEvexZuContext != 0);
         }
 
         void idSetEvexNdContext()
         {
             assert(!idIsEvexNdContextSet());
             _idEvexNdContext = 1;
+        }
+
+        void idSetEvexZuContext()
+        {
+            assert(!idIsEvexZuContextSet());
+            _idEvexZuContext = 1;
         }
 
         bool idIsEvexNfContextSet() const

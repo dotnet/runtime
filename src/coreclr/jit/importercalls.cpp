@@ -701,17 +701,27 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         AsyncCallInfo asyncInfo;
 
-        JITDUMP("Call is an async ");
-
         if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
         {
-            JITDUMP("task await\n");
+            JITDUMP("Call is an async task await\n");
 
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.SaveAndRestoreSynchronizationContextField = true;
+
+            if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+            {
+                asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+                JITDUMP("  Continuation continues on captured context\n");
+            }
+            else
+            {
+                asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
+                JITDUMP("  Continuation continues on thread pool\n");
+            }
         }
         else
         {
-            JITDUMP("non-task await\n");
+            JITDUMP("Call is an async non-task await\n");
             // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
             // These are awaits of custom awaitables, and they come with the behavior that the execution context
             // is captured and restored on suspension/resumption.
@@ -720,7 +730,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
         }
 
-        // For tailcalls the context does not need saving/restoring: it will be
+        // For tailcalls the contexts does not need saving/restoring: they will be
         // overwritten by the caller anyway.
         //
         // More specifically, if we can show that
@@ -729,7 +739,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // context. We do not do that optimization yet.
         if (tailCallFlags != 0)
         {
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::None;
+            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
+            asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
+            asyncInfo.SaveAndRestoreSynchronizationContextField = false;
         }
 
         call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
@@ -3626,7 +3638,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         break;
                     }
                 }
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
                 op1                   = arrLen;
 
                 // Getting the length of a null string should throw
@@ -3728,7 +3740,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     array = impCloneExpr(array, &arrayClone, CHECK_SPILL_ALL,
                                          nullptr DEBUGARG("MemoryMarshal.GetArrayDataReference array"));
 
-                    impAppendTree(gtNewNullCheck(array, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
+                    impAppendTree(gtNewNullCheck(array), CHECK_SPILL_ALL, impCurStmtDI);
                     array = arrayClone;
                 }
 
@@ -5491,6 +5503,25 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             return gtFoldExpr(tmp);
         }
 
+        case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_GE, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
         case NI_SRCS_UNSAFE_IsAddressLessThan:
         {
             assert(sig->sigInst.methInstCount == 1);
@@ -5504,6 +5535,25 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_LT, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
+        case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_LE, TYP_INT, op1, op2);
             tmp->gtFlags |= GTF_UNSIGNED;
             return gtFoldExpr(tmp);
         }
@@ -6799,7 +6849,7 @@ void Compiler::impCheckForPInvokeCall(
         }
     }
 
-    JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s\n", info.compFullName));
+    JITLOG((LL_INFO1000000, "\nInline a PINVOKE call from method %s\n", info.compFullName));
 
     call->gtFlags |= GTF_CALL_UNMANAGED;
     call->unmgdCallConv = unmanagedCallConv;
@@ -6808,7 +6858,6 @@ void Compiler::impCheckForPInvokeCall(
         info.compUnmanagedCallCountWithGCTransition++;
     }
 
-    // AMD64 convention is same for native and managed
     if (unmanagedCallConv == CorInfoCallConvExtension::C ||
         unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
     {
@@ -7881,6 +7930,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
         inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
+        return;
+    }
+
+    if (call->IsAsync() && (call->GetAsyncInfo().ContinuationContextHandling != ContinuationContextHandling::None))
+    {
+        // Cannot currently handle moving to captured context/thread pool when logically returning from inlinee.
+        //
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_CONTINUATION_HANDLING);
         return;
     }
 
@@ -10703,9 +10760,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_SRCS_UNSAFE_IsAddressGreaterThan;
                             }
+                            else if (strcmp(methodName, "IsAddressGreaterThanOrEqualTo") == 0)
+                            {
+                                result = NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo;
+                            }
                             else if (strcmp(methodName, "IsAddressLessThan") == 0)
                             {
                                 result = NI_SRCS_UNSAFE_IsAddressLessThan;
+                            }
+                            else if (strcmp(methodName, "IsAddressLessThanOrEqualTo") == 0)
+                            {
+                                result = NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo;
                             }
                             else if (strcmp(methodName, "IsNullRef") == 0)
                             {

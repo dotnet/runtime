@@ -135,7 +135,7 @@
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true' or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 

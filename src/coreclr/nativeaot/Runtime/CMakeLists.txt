@@ -20,6 +20,7 @@ set(COMMON_RUNTIME_SOURCES
     gcenv.ee.cpp
     GcStressControl.cpp
     HandleTableHelpers.cpp
+    interoplibinterface_java.cpp
     MathHelpers.cpp
     MiscHelpers.cpp
     TypeManager.cpp
@@ -38,6 +39,7 @@ set(COMMON_RUNTIME_SOURCES
     yieldprocessornormalized.cpp
 
     ${GC_DIR}/gceventstatus.cpp
+    ${GC_DIR}/gcbridge.cpp
     ${GC_DIR}/gcload.cpp
     ${GC_DIR}/gcconfig.cpp
     ${GC_DIR}/gchandletable.cpp

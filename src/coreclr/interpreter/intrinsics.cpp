@@ -11,7 +11,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
 {
     const char* className = NULL;
     const char* namespaceName = NULL;
-    const char* methodName = compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, NULL, 0);
+    const char* enclosingClassNames[2] = {nullptr};
+    const char* methodName = compHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames, ArrLen(enclosingClassNames));
 
     // Array methods don't have metadata
     if (!namespaceName)
@@ -76,6 +77,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             {
                 if (!strcmp(methodName, "IsReferenceOrContainsReferences"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                else if (!strcmp(methodName, "GetMethodTable"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
             }
         }
         else if (!strcmp(namespaceName, "System.Runtime.InteropServices"))

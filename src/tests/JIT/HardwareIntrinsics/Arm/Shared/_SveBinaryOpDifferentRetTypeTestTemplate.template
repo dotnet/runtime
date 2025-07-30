@@ -538,7 +538,7 @@ namespace JIT.HardwareIntrinsics.Arm
             if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation(string.Empty);
-                TestLibrary.TestFramework.LogInformation($"{nameof(Sve2)}.{nameof({Isa}.{Method})}<Int32>(Vector<Int16>, Vector<Int16>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sve2)}.{nameof({Isa}.{Method})}<{RetBaseType}>(Vector<{Op1BaseType}>, Vector<{Op2BaseType}>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
