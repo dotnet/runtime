@@ -114,3 +114,47 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+
+#
+# Android arm64 devices and x64 emulators
+# Build the whole product using CoreCLR and run functional tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Debug
+    runtimeFlavor: nativeaot
+    platforms:
+    - android_x64
+    - android_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: coreclrContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: NativeAOT
+      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:UseNativeAOTRuntime=true /p:RuntimeFlavor=nativeaot /p:TestNativeAOT=true
+      timeoutInMinutes: 120
+      condition: >-
+        or(
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+      # extra steps, run tests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            targetRid: android-x64
+            runtimeFlavor: coreclr
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            condition: >-
+              or(
+              eq(variables['librariesContainsChange'], true),
+              eq(variables['coreclrContainsChange'], true),
+              eq(variables['isRollingBuild'], true))
