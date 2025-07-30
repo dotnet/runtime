@@ -119,18 +119,16 @@ class GenerateHWIntrinsicTests_Arm
             {
                 foreach (var test in testGroup.GetTests())
                 {
-                    ProcessTest(testListFile, testGroup.Isa, test);
+                    ProcessTest(testListFile, test);
                 }
             }
         }
 
-        void ProcessTest(StreamWriter testListFile, string Isa, (TemplateConfig templateConfig, Dictionary<string, string> keyValuePairs) test)
+        void ProcessTest(StreamWriter testListFile, (TemplateConfig templateConfig, Dictionary<string, string> keyValuePairs) test)
         {
             var testName = test.keyValuePairs["TestName"];
             var fileName = Path.Combine(outputDirectory, $"{testName.Replace('_', '.')}.cs");
-
             var template = string.Empty;
-
             string templateFilePath = Path.Combine(templateDirectory, test.templateConfig.Filename);
             template = File.ReadAllText(templateFilePath);
 
