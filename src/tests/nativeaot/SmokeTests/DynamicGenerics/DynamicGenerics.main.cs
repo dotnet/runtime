@@ -152,6 +152,7 @@ new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWith3Dimensions", ()
 #if UNIVERSAL_GENERICS
 new CoreFXTestLibrary.Internal.TestInfo("B279085.TestB279085Repro", () => global::B279085.TestB279085Repro(), null),
 #endif
+new CoreFXTestLibrary.Internal.TestInfo("GitHub118072.RunTest", () => global::GitHub118072.RunTest(), null),
 new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestCalls", () => global::GenericVirtualMethods.TestCalls(), null),
 new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestLdFtnToGetStaticMethodOnGenericType", () => global::GenericVirtualMethods.TestLdFtnToGetStaticMethodOnGenericType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestLdFtnToInstanceGenericMethod", () => global::GenericVirtualMethods.TestLdFtnToInstanceGenericMethod(), null),
