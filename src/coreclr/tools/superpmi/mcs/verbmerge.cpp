@@ -399,7 +399,7 @@ CLEAN_UP:
         return -1;
     }
 #else  // TARGET_WINDOWS
-    if (pDir != nullptr && (closedir(pDir) != 0))
+    if (pDir != nullptr && (closedir(pDir) != 0 && errno != EINTR))
     {
         LogError("Failed to close directory. errno=%d", errno);
         delete[] retArray;
