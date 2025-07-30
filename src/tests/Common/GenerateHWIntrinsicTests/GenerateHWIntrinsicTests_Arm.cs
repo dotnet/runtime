@@ -47,7 +47,7 @@ class GenerateHWIntrinsicTests_Arm
         ProcessInputs("Sve", SveTests.SveInputs);
         ProcessInputs("Sve2", Sve2Tests.Sve2Inputs);
 
-        void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
+        void ProcessInputs(string groupName, TestGroup testGroup)
         {
             if (!projectName.Equals($"{groupName}_r") && !projectName.Equals($"{groupName}_ro"))
             {
@@ -58,13 +58,14 @@ class GenerateHWIntrinsicTests_Arm
 
             using (var testListFile = new StreamWriter(testListFileName, append: false))
             {
-                foreach (var input in inputs)
+                foreach (var test in testGroup.GetTests())
                 {
-                    ProcessInput(testListFile, groupName, input);
+                    ProcessTest(testListFile, groupName, test);
                 }
             }
         }
-        void ProcessInput(StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
+
+        void ProcessTest(StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
         {
             var testName = input.templateData["TestName"];
             var fileName = Path.Combine(outputDirectory, $"{testName.Replace('_', '.')}.cs");
