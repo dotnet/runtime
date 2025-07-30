@@ -40,11 +40,11 @@ public struct TestGroup
         var self = this;
         return Tests.Select(t =>
         {
-            var data = new Dictionary<string, string>(t.KeyValuePairs);
-            if (!string.IsNullOrEmpty(self.Isa)) data["Isa"] = self.Isa;
-            if (!string.IsNullOrEmpty(self.LoadIsa)) data["LoadIsa"] = self.LoadIsa;
-            data["Namespace"] = $"JIT.HardwareIntrinsics.Arm._{self.Isa}";
-            return (t.TemplateConfig, data);
+            var kvp = new Dictionary<string, string>(t.KeyValuePairs);
+            if (!string.IsNullOrEmpty(self.Isa)) kvp["Isa"] = self.Isa;
+            if (!string.IsNullOrEmpty(self.LoadIsa)) kvp["LoadIsa"] = self.LoadIsa;
+            kvp["Namespace"] = $"JIT.HardwareIntrinsics.Arm._{self.Isa}";
+            return (t.TemplateConfig, kvp);
         }).ToArray();
     }
 }
@@ -52,12 +52,7 @@ public struct TestGroup
 public struct TemplateConfig
 {
     public string Filename { get; }
-    public string ConfigurationName { get; }
-    public string TemplateValidationLogic { get; }
-
-    public string TemplateValidationLogicForCndSel { get; }
-    public string TemplateValidationLogicForCndSel_FalseValue { get; }
-    public string TemplateValidationLogicForCndSelMask { get; }
+    public Dictionary<string, string> KeyValuePairs { get; }
 
     public TemplateConfig(
         string filename,
@@ -68,33 +63,21 @@ public struct TemplateConfig
         string templateValidationLogicForCndSelMask = null)
     {
         Filename = filename;
-        ConfigurationName = configurationName;
-        TemplateValidationLogic = templateValidationLogic;
-        TemplateValidationLogicForCndSel = templateValidationLogicForCndSel;
-        TemplateValidationLogicForCndSel_FalseValue = templateValidationLogicForCndSel_FalseValue;
-        TemplateValidationLogicForCndSelMask = templateValidationLogicForCndSelMask;
-    }
+        KeyValuePairs = new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(configurationName))
+            KeyValuePairs["TemplateName"] = configurationName;
 
-    public Dictionary<string, string> GetKeyValuePairs()
-    {
-        var dict = new Dictionary<string, string>{};
+        if (!string.IsNullOrEmpty(templateValidationLogic))
+            KeyValuePairs["TemplateValidationLogic"] = templateValidationLogic;
 
-        if (!string.IsNullOrEmpty(ConfigurationName))
-            dict["TemplateName"] = ConfigurationName;
+        if (!string.IsNullOrEmpty(templateValidationLogicForCndSel))
+            KeyValuePairs["TemplateValidationLogicForCndSel"] = templateValidationLogicForCndSel;
 
-        if (!string.IsNullOrEmpty(TemplateValidationLogic))
-            dict["TemplateValidationLogic"] = TemplateValidationLogic;
+        if (!string.IsNullOrEmpty(templateValidationLogicForCndSel_FalseValue))
+            KeyValuePairs["TemplateValidationLogicForCndSel_FalseValue"] = templateValidationLogicForCndSel_FalseValue;
 
-        if (!string.IsNullOrEmpty(TemplateValidationLogicForCndSel))
-            dict["TemplateValidationLogicForCndSel"] = TemplateValidationLogicForCndSel;
-
-        if (!string.IsNullOrEmpty(TemplateValidationLogicForCndSel_FalseValue))
-            dict["TemplateValidationLogicForCndSel_FalseValue"] = TemplateValidationLogicForCndSel_FalseValue;
-
-        if (!string.IsNullOrEmpty(TemplateValidationLogicForCndSelMask))
-            dict["TemplateValidationLogicForCndSelMask"] = TemplateValidationLogicForCndSelMask;
-
-        return dict;
+        if (!string.IsNullOrEmpty(templateValidationLogicForCndSelMask))
+            KeyValuePairs["TemplateValidationLogicForCndSelMask"] = templateValidationLogicForCndSelMask;
     }
 }
 
@@ -141,9 +124,9 @@ class GenerateHWIntrinsicTests_Arm
             }
         }
 
-        void ProcessTest(StreamWriter testListFile, string Isa, (TemplateConfig templateConfig, Dictionary<string, string> templateData) test)
+        void ProcessTest(StreamWriter testListFile, string Isa, (TemplateConfig templateConfig, Dictionary<string, string> keyValuePairs) test)
         {
-            var testName = test.templateData["TestName"];
+            var testName = test.keyValuePairs["TestName"];
             var fileName = Path.Combine(outputDirectory, $"{testName.Replace('_', '.')}.cs");
 
             var template = string.Empty;
@@ -151,12 +134,12 @@ class GenerateHWIntrinsicTests_Arm
             string templateFilePath = Path.Combine(templateDirectory, test.templateConfig.Filename);
             template = File.ReadAllText(templateFilePath);
 
-            foreach (var kvp in test.templateConfig.GetKeyValuePairs())
+            foreach (var kvp in test.templateConfig.KeyValuePairs)
             {
                 template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
             }
 
-            foreach (var kvp in test.templateData)
+            foreach (var kvp in test.keyValuePairs)
             {
                 template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
             }
