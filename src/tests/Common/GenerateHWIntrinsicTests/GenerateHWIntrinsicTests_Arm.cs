@@ -22,6 +22,81 @@ using System.Linq;
 //    * outputDirectory   - This should be somewhere under the obj folder for the project and is where generated tests are written
 //    * testListFileName  - This should likewise be somewhere under the obj folder and is where the list of generated tests is written
 
+public struct TestGroup
+{
+    public string Isa { get; set; }
+    public string LoadIsa { get; set; }
+    public (TemplateConfig TemplateConfig, Dictionary<string, string> KeyValuePairs)[] Tests { get; set; }
+
+    public TestGroup(string Isa, string LoadIsa, (TemplateConfig, Dictionary<string, string>)[] Tests)
+    {
+        this.Isa = Isa;
+        this.LoadIsa = LoadIsa;
+        this.Tests = Tests;
+    }
+
+    public (TemplateConfig, Dictionary<string, string>)[] GetTests()
+    {
+        var self = this;
+        return Tests.Select(t =>
+        {
+            var data = new Dictionary<string, string>(t.KeyValuePairs);
+            if (!string.IsNullOrEmpty(self.Isa)) data["Isa"] = self.Isa;
+            if (!string.IsNullOrEmpty(self.LoadIsa)) data["LoadIsa"] = self.LoadIsa;
+            return (t.TemplateConfig, data);
+        }).ToArray();
+    }
+}
+
+public struct TemplateConfig
+{
+    public string Filename { get; }
+    public string ConfigurationName { get; }
+    public string TemplateValidationLogic { get; }
+
+    public string TemplateValidationLogicForCndSel { get; }
+    public string TemplateValidationLogicForCndSel_FalseValue { get; }
+    public string TemplateValidationLogicForCndSelMask { get; }
+
+    public TemplateConfig(
+        string filename,
+        string configurationName = null,
+        string templateValidationLogic = null,
+        string templateValidationLogicForCndSel = null,
+        string templateValidationLogicForCndSel_FalseValue = null,
+        string templateValidationLogicForCndSelMask = null)
+    {
+        Filename = filename;
+        ConfigurationName = configurationName;
+        TemplateValidationLogic = templateValidationLogic;
+        TemplateValidationLogicForCndSel = templateValidationLogicForCndSel;
+        TemplateValidationLogicForCndSel_FalseValue = templateValidationLogicForCndSel_FalseValue;
+        TemplateValidationLogicForCndSelMask = templateValidationLogicForCndSelMask;
+    }
+
+    public Dictionary<string, string> GetKeyValuePairs()
+    {
+        var dict = new Dictionary<string, string>{};
+
+        if (!string.IsNullOrEmpty(ConfigurationName))
+            dict["TemplateName"] = ConfigurationName;
+
+        if (!string.IsNullOrEmpty(TemplateValidationLogic))
+            dict["TemplateValidationLogic"] = TemplateValidationLogic;
+
+        if (!string.IsNullOrEmpty(TemplateValidationLogicForCndSel))
+            dict["TemplateValidationLogicForCndSel"] = TemplateValidationLogicForCndSel;
+
+        if (!string.IsNullOrEmpty(TemplateValidationLogicForCndSel_FalseValue))
+            dict["TemplateValidationLogicForCndSel_FalseValue"] = TemplateValidationLogicForCndSel_FalseValue;
+
+        if (!string.IsNullOrEmpty(TemplateValidationLogicForCndSelMask))
+            dict["TemplateValidationLogicForCndSelMask"] = TemplateValidationLogicForCndSelMask;
+
+        return dict;
+    }
+}
+
 class GenerateHWIntrinsicTests_Arm
 {
     static void Main(string[] args)
@@ -65,31 +140,22 @@ class GenerateHWIntrinsicTests_Arm
             }
         }
 
-        void ProcessTest(StreamWriter testListFile, string Isa, (string templateFileName, Dictionary<string, string> templateData) input)
+        void ProcessTest(StreamWriter testListFile, string Isa, (TemplateConfig templateConfig, Dictionary<string, string> templateData) test)
         {
-            var testName = input.templateData["TestName"];
+            var testName = test.templateData["TestName"];
             var fileName = Path.Combine(outputDirectory, $"{testName.Replace('_', '.')}.cs");
 
-            var matchingTemplate = TestTemplates.Templates.Where((t) => t.outputTemplateName.Equals(input.templateFileName)).SingleOrDefault();
             var template = string.Empty;
 
-            if (matchingTemplate.templateFileName is null)
-            {
-                string templateFileName = Path.Combine(templateDirectory, input.templateFileName);
-                template = File.ReadAllText(templateFileName);
-            }
-            else
-            {
-                string templateFileName = Path.Combine(templateDirectory, matchingTemplate.templateFileName);
-                template = File.ReadAllText(templateFileName);
+            string templateFilePath = Path.Combine(templateDirectory, test.templateConfig.Filename);
+            template = File.ReadAllText(templateFilePath);
 
-                foreach (var kvp in matchingTemplate.templateData)
-                {
-                    template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
-                }
+            foreach (var kvp in test.templateConfig.GetKeyValuePairs())
+            {
+                template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
             }
 
-            foreach (var kvp in input.templateData)
+            foreach (var kvp in test.templateData)
             {
                 template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
             }
