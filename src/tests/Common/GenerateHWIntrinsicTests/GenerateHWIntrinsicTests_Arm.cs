@@ -31,25 +31,25 @@ class GenerateHWIntrinsicTests_Arm
         string outputDirectory = args[2];
         string testListFileName = args[3];
 
-        ProcessInputs("AdvSimd", AdvSimdTests.AdvSimdInputs);
-        ProcessInputs("AdvSimd.Arm64", AdvSimdTests.AdvSimd_Arm64Inputs);
-        ProcessInputs("Aes", AdvSimdTests.AesInputs);
-        ProcessInputs("ArmBase", BaseTests.ArmBaseInputs);
-        ProcessInputs("ArmBase.Arm64", BaseTests.ArmBase_Arm64Inputs);
-        ProcessInputs("Crc32", BaseTests.Crc32Inputs);
-        ProcessInputs("Crc32.Arm64", BaseTests.Crc32_Arm64Inputs);
-        ProcessInputs("Dp", AdvSimdTests.DpInputs);
-        ProcessInputs("Rdm", AdvSimdTests.RdmInputs);
-        ProcessInputs("Rdm.Arm64", AdvSimdTests.Rdm_Arm64Inputs);
-        ProcessInputs("Sha1", AdvSimdTests.Sha1Inputs);
-        ProcessInputs("Sha256", AdvSimdTests.Sha256Inputs);
-        ProcessInputs("Sha256", AdvSimdTests.Sha256Inputs);
-        ProcessInputs("Sve", SveTests.SveInputs);
-        ProcessInputs("Sve2", Sve2Tests.Sve2Inputs);
+        ProcessInputs(AdvSimdTests.AdvSimdInputs);
+        ProcessInputs(AdvSimdTests.AdvSimd_Arm64Inputs);
+        ProcessInputs(AdvSimdTests.AesInputs);
+        ProcessInputs(BaseTests.Crc32_Arm64Inputs);
+        ProcessInputs(AdvSimdTests.DpInputs);
+        ProcessInputs(AdvSimdTests.RdmInputs);
+        ProcessInputs(AdvSimdTests.Rdm_Arm64Inputs);
+        ProcessInputs(AdvSimdTests.Sha1Inputs);
+        ProcessInputs(AdvSimdTests.Sha256Inputs);
+        ProcessInputs(AdvSimdTests.Sha256Inputs);
+        ProcessInputs(BaseTests.ArmBaseInputs);
+        ProcessInputs(BaseTests.ArmBase_Arm64Inputs);
+        ProcessInputs(BaseTests.Crc32Inputs);
+        ProcessInputs(SveTests.SveInputs);
+        ProcessInputs(Sve2Tests.Sve2Inputs);
 
-        void ProcessInputs(string groupName, TestGroup testGroup)
+        void ProcessInputs(TestGroup testGroup)
         {
-            if (!projectName.Equals($"{groupName}_r") && !projectName.Equals($"{groupName}_ro"))
+            if (!projectName.Equals($"{testGroup.Isa}_r") && !projectName.Equals($"{testGroup.Isa}_ro"))
             {
                 return;
             }
@@ -60,12 +60,12 @@ class GenerateHWIntrinsicTests_Arm
             {
                 foreach (var test in testGroup.GetTests())
                 {
-                    ProcessTest(testListFile, groupName, test);
+                    ProcessTest(testListFile, testGroup.Isa, test);
                 }
             }
         }
 
-        void ProcessTest(StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
+        void ProcessTest(StreamWriter testListFile, string Isa, (string templateFileName, Dictionary<string, string> templateData) input)
         {
             var testName = input.templateData["TestName"];
             var fileName = Path.Combine(outputDirectory, $"{testName.Replace('_', '.')}.cs");
@@ -93,7 +93,7 @@ class GenerateHWIntrinsicTests_Arm
             {
                 template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
             }
-            template = template.Replace("namespace JIT.HardwareIntrinsics.Arm", $"namespace JIT.HardwareIntrinsics.Arm._{groupName}");
+            template = template.Replace("namespace JIT.HardwareIntrinsics.Arm", $"namespace JIT.HardwareIntrinsics.Arm._{Isa}");
 
             testListFile.WriteLine(fileName);
             File.WriteAllText(fileName, template);
