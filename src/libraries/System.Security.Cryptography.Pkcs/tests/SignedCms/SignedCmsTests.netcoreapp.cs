@@ -559,7 +559,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         public static void AddSigner_SlhDsa_EphemeralKey()
         {
-            using (SlhDsa slhDsa = SlhDsa.ImportSlhDsaSecretKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
+            using (SlhDsa slhDsa = SlhDsa.ImportSlhDsaPrivateKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
             using (X509Certificate2 publicCertificate = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
             using (X509Certificate2 certificateWithKey = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey(exportable: true))
             {
@@ -738,7 +738,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms(content);
 
             SlhDsa slhDsa =
-                SlhDsa.ImportSlhDsaSecretKey(
+                SlhDsa.ImportSlhDsaPrivateKey(
                     SlhDsaAlgorithm.SlhDsaSha2_128s,
                     SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue);
 
