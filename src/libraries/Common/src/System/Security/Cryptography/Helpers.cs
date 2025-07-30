@@ -53,6 +53,14 @@ namespace Internal.Cryptography
             true;
 #endif
 
+        [SupportedOSPlatformGuard("windows")]
+        internal static bool IsOSPlatformWindows =>
+#if NETFRAMEWORK
+                true;
+#else
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#endif
+
         [return: NotNullIfNotNull(nameof(src))]
         public static byte[]? CloneByteArray(this byte[]? src)
         {

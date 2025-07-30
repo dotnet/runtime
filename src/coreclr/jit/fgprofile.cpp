@@ -4345,14 +4345,6 @@ bool Compiler::fgComputeMissingBlockWeights()
                     changed        = true;
                     modified       = true;
                     bDst->bbWeight = newWeight;
-                    if (newWeight == BB_ZERO_WEIGHT)
-                    {
-                        bDst->SetFlags(BBF_RUN_RARELY);
-                    }
-                    else
-                    {
-                        bDst->RemoveFlags(BBF_RUN_RARELY);
-                    }
                 }
             }
             else if (!bDst->hasProfileWeight() && bbIsHandlerBeg(bDst) && !bDst->isRunRarely())
