@@ -95,7 +95,7 @@ namespace System.Runtime
         internal static extern bool RhpCurrentThreadIsFinalizerThread();
 
         // Get maximum GC generation number.
-                [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMaxGcGeneration")]
         internal static extern int RhGetMaxGcGeneration();
 
