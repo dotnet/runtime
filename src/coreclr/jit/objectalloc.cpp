@@ -1324,7 +1324,8 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
     else
     {
         assert(candidate.m_onHeapReason != nullptr);
-        JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, candidate.m_onHeapReason);
+        JITDUMP("Allocating V%02u / [%06u] on the heap: %s\n", lclNum, comp->dspTreeID(candidate.m_tree),
+                candidate.m_onHeapReason);
         if ((candidate.m_allocType == OAT_NEWOBJ) || (candidate.m_allocType == OAT_NEWOBJ_HEAP))
         {
             GenTree* const stmtExpr      = candidate.m_tree;
@@ -1396,6 +1397,14 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
             continue;
         }
 
+        if (!comp->m_dfsTree->Contains(candidate.m_block))
+        {
+            // If the def block is not in the DFS tree then the allocation
+            // is not within the hammock, so it is not on the slow path.
+            //
+            continue;
+        }
+
         // This allocation candidate might be on the "slow path". Check.
         //
         // c->m_guardBlock and c->m_defBlock form a GDV hammock.
@@ -1403,8 +1412,8 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
         // So if an allocation site is dominated by c->m_guardBlock and
         // not dominated by c->m_defBlock, it is within the hammock.
         //
-        if (comp->m_domTree->Dominates(c->m_guardBlock, candidate.m_block)
-            && !comp->m_domTree->Dominates(c->m_defBlock, candidate.m_block))
+        if (comp->m_domTree->Dominates(c->m_guardBlock, candidate.m_block) &&
+            !comp->m_domTree->Dominates(c->m_defBlock, candidate.m_block))
         {
             candidate.m_onHeapReason = "[on slow path of conditional escape clone]";
             return false;
