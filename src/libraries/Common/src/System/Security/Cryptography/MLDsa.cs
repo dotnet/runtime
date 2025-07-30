@@ -494,7 +494,6 @@ namespace System.Security.Cryptography
                 new ReadOnlySpan<byte>(context));
         }
 
-
         /// <inheritdoc cref="SignMu(ReadOnlySpan{byte})"/>
         /// <exception cref="ArgumentNullException"><paramref name="externalMu"/> is <see langword="null"/>.</exception>
         public byte[] SignMu(byte[] externalMu)
