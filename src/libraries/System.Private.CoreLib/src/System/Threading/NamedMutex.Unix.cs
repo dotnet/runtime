@@ -455,7 +455,7 @@ namespace System.Threading
             {
                 // We're going to abandon this mutex, so don't release it.
                 // We might not be on the owning thread, so we can't be sure we can release it.
-            _processLevelMutex.ReleaseMutex();
+                _processLevelMutex.ReleaseMutex();
             }
         }
 
