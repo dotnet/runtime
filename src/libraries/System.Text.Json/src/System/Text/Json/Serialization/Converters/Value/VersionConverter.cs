@@ -45,8 +45,7 @@ namespace System.Text.Json.Serialization.Converters
             int bytesWritten = reader.CopyString(charBuffer);
             ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
 
-            // Enforce leading and trailing whitespace rejection
-            if (source.Length > 0 && (char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1])))
+            if (source.Length > 0 && (char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1]) || source[0] == '+'))
             {
                 if (rentedBuffer is not null)
                 {
@@ -69,8 +68,7 @@ namespace System.Text.Json.Serialization.Converters
 #else
             string? versionString = reader.GetString();
 
-            // Enforce leading and trailing whitespace rejection
-            if (!string.IsNullOrEmpty(versionString) && (char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1])))
+            if (!string.IsNullOrEmpty(versionString) && (char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1]) || versionString[0] == '+'))
             {
                 ThrowHelper.ThrowFormatException(DataType.Version);
             }
