@@ -43,6 +43,7 @@ public struct TestGroup
             var data = new Dictionary<string, string>(t.KeyValuePairs);
             if (!string.IsNullOrEmpty(self.Isa)) data["Isa"] = self.Isa;
             if (!string.IsNullOrEmpty(self.LoadIsa)) data["LoadIsa"] = self.LoadIsa;
+            data["Namespace"] = $"JIT.HardwareIntrinsics.Arm._{self.Isa}";
             return (t.TemplateConfig, data);
         }).ToArray();
     }
@@ -159,7 +160,6 @@ class GenerateHWIntrinsicTests_Arm
             {
                 template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
             }
-            template = template.Replace("namespace JIT.HardwareIntrinsics.Arm", $"namespace JIT.HardwareIntrinsics.Arm._{Isa}");
 
             testListFile.WriteLine(fileName);
             File.WriteAllText(fileName, template);
