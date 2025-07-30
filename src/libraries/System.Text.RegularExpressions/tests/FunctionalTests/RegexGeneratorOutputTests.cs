@@ -367,25 +367,8 @@ namespace System.Text.RegularExpressions.Tests
                         [MethodImpl(MethodImplOptions.AggressiveInlining)]
                         internal static bool IsWordChar(char ch)
                         {
-                            // Mask of Unicode categories that combine to form [\w]
-                            const int WordCategoriesMask =
-                                1 << (int)UnicodeCategory.UppercaseLetter |
-                                1 << (int)UnicodeCategory.LowercaseLetter |
-                                1 << (int)UnicodeCategory.TitlecaseLetter |
-                                1 << (int)UnicodeCategory.ModifierLetter |
-                                1 << (int)UnicodeCategory.OtherLetter |
-                                1 << (int)UnicodeCategory.NonSpacingMark |
-                                1 << (int)UnicodeCategory.DecimalDigitNumber |
-                                1 << (int)UnicodeCategory.ConnectorPunctuation;
-
-                            // Bitmap for whether each character 0 through 127 is in [\w]
-                            ReadOnlySpan<byte> ascii = new byte[]
-                            {
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
-                                0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
-                            };
-
                             // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
+                            ReadOnlySpan<byte> ascii = WordCharBitmap;
                             int chDiv8 = ch >> 3;
                             return (uint)chDiv8 < (uint)ascii.Length ?
                                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
@@ -454,6 +437,24 @@ namespace System.Text.RegularExpressions.Tests
                             }
                             return actual;
                         }
+
+                        /// <summary>Provides a mask of Unicode categories that combine to form [\w].</summary>
+                        private const int WordCategoriesMask =
+                            1 << (int)UnicodeCategory.UppercaseLetter |
+                            1 << (int)UnicodeCategory.LowercaseLetter |
+                            1 << (int)UnicodeCategory.TitlecaseLetter |
+                            1 << (int)UnicodeCategory.ModifierLetter |
+                            1 << (int)UnicodeCategory.OtherLetter |
+                            1 << (int)UnicodeCategory.NonSpacingMark |
+                            1 << (int)UnicodeCategory.DecimalDigitNumber |
+                            1 << (int)UnicodeCategory.ConnectorPunctuation;
+
+                        /// <summary>Gets a bitmap for whether each character 0 through 127 is in [\w]</summary>
+                        private static ReadOnlySpan<byte> WordCharBitmap => new byte[]
+                        {
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
+                            0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
+                        };
                     }
                 }
                 """

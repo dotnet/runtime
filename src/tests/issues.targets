@@ -30,9 +30,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
             <Issue>https://github.com/dotnet/runtime/issues/83658</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/115178/115178/*">
-            <Issue>https://github.com/dotnet/runtime/issues/116060</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
@@ -549,17 +546,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/GenericContextTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/109200</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/VarianceSafety/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109201</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_68278/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/BBT/Scenario4/Not-Int32/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method002/**">
-            <Issue>https://github.com/dotnet/runtime/issues/109202</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_72845/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>

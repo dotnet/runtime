@@ -1154,6 +1154,13 @@ namespace System.Data.SqlTypes
             }
         }
 
+        /// <summary>
+        /// Writes the TDS (Tabular Data Stream) representation of this <see cref="SqlDecimal" /> to the specified destination.
+        /// </summary>
+        /// <param name="destination">The destination span to write the TDS (Tabular Data Stream) value to. Must be at least 4 elements long.</param>
+        /// <returns>The number of <see langword="uint" /> values written to the destination.</returns>
+        /// <exception cref="SqlNullValueException">Thrown when the <see cref="SqlDecimal" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the destination span is too small.</exception>
         [CLSCompliant(false)]
         public int WriteTdsValue(Span<uint> destination)
         {
