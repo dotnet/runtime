@@ -1180,7 +1180,8 @@ struct HWIntrinsicInfo
                 return NI_Sve_ReverseElement_Predicates;
             case NI_Sve_ConditionalSelect:
                 return NI_Sve_ConditionalSelect_Predicates;
-
+            case NI_Sve_Not:
+                return NI_Sve_Not_Predicates;
             default:
                 unreached();
         }

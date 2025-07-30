@@ -597,6 +597,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
+                        case NI_Sve_Not_Predicates:
+                            embOpt = INS_OPTS_SCALABLE_B;
+                            break;
+
                         default:
                             break;
                     }
