@@ -32,6 +32,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     }
 
     private readonly Configuration _config;
+
     private readonly DataTargetDelegates _dataTargetDelegates;
     private readonly Dictionary<string, int> _contracts = [];
     private readonly IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
