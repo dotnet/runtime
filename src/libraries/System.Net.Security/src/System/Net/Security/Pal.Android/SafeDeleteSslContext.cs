@@ -285,8 +285,8 @@ namespace System.Net
                 throw new NotImplementedException(nameof(SafeDeleteSslContext));
             }
 
-            // Make sure the class instance is associated to the session and is provided
-            // in the Read/Write callback connection parameter
+            // Make sure the class instance is associated to the session and is provided in the Read/Write callback connection parameter
+            // Additionally, all calls should be synchronous so there's no risk of the managed object being collected while native code is executing.
             IntPtr managedContextHandle = GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Weak));
             string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
             Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, &CleanupManagedContext, InitialBufferSize, peerHost);

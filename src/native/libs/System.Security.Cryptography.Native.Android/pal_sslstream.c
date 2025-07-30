@@ -412,10 +412,7 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     ReleaseGRef(env, sslStream->netInBuffer);
     ReleaseGRef(env, sslStream->appInBuffer);
 
-    if (sslStream->managedContextHandle != 0 && sslStream->managedContextCleanup != NULL)
-    {
-        sslStream->managedContextCleanup(sslStream->managedContextHandle);
-    }
+    sslStream->managedContextCleanup(sslStream->managedContextHandle);
 
     free(sslStream);
 }
