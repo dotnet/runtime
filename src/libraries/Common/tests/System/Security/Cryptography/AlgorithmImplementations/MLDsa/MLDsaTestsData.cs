@@ -78,14 +78,14 @@ namespace System.Security.Cryptography.Tests
         public byte[] EncryptionPasswordBytes => Encoding.UTF8.GetBytes(EncryptionPassword); // Assuming UTF-8 encoding
         public byte[] Certificate => Convert.FromBase64String(CertificateBase64);
 #if !EXCLUDE_PEM_ENCODING_FROM_TEST_DATA
-        public string EncryptedPem_Seed => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Seed);
-        public string EncryptedPem_Expanded => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Expanded);
-        public string EncryptedPem_Both => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Both);
-        public string PrivateKeyPem_Seed => PemEncoding.WriteString("PRIVATE KEY", Pkcs8PrivateKey_Seed);
-        public string PrivateKeyPem_Expanded => PemEncoding.WriteString("PRIVATE KEY", Pkcs8PrivateKey_Expanded);
-        public string PrivateKeyPem_Both => PemEncoding.WriteString("PRIVATE KEY", Pkcs8PrivateKey_Both);
-        public string PublicKeyPem => PemEncoding.WriteString("PUBLIC KEY", Pkcs8PublicKey);
-        public string CertificatePem => PemEncoding.WriteString("CERTIFICATE", Certificate);
+        public string EncryptedPem_Seed => ByteUtils.PemEncode("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Seed);
+        public string EncryptedPem_Expanded => ByteUtils.PemEncode("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Expanded);
+        public string EncryptedPem_Both => ByteUtils.PemEncode("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey_Both);
+        public string PrivateKeyPem_Seed => ByteUtils.PemEncode("PRIVATE KEY", Pkcs8PrivateKey_Seed);
+        public string PrivateKeyPem_Expanded => ByteUtils.PemEncode("PRIVATE KEY", Pkcs8PrivateKey_Expanded);
+        public string PrivateKeyPem_Both => ByteUtils.PemEncode("PRIVATE KEY", Pkcs8PrivateKey_Both);
+        public string PublicKeyPem => ByteUtils.PemEncode("PUBLIC KEY", Pkcs8PublicKey);
+        public string CertificatePem => ByteUtils.PemEncode("CERTIFICATE", Certificate);
 #endif
         public byte[] Pfx_Seed => Convert.FromBase64String(Pfx_Seed_Base64);
         public byte[] Pfx_Expanded => Convert.FromBase64String(Pfx_Expanded_Base64);
