@@ -29198,6 +29198,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_AndMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_And:
+        case NI_Sve_And:
 #endif
         {
             return GT_AND;
@@ -29207,6 +29208,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_NotMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Not:
+        case NI_Sve_Not:
 #endif
         {
             return GT_NOT;
@@ -29220,6 +29222,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_XorMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Xor:
+        case NI_Sve_Xor:
 #endif
         {
             return GT_XOR;
@@ -29233,6 +29236,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_OrMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Or:
+        case NI_Sve_Or:
 #endif
         {
             return GT_OR;
@@ -29246,6 +29250,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_AndNotMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_BitwiseClear:
+        case NI_Sve_BitwiseClear:
 #endif
         {
             return GT_AND_NOT;
@@ -29259,6 +29264,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Add:
         case NI_AdvSimd_Arm64_Add:
+        case NI_Sve_Add:
 #endif
         {
             return GT_ADD;
@@ -29290,6 +29296,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_Divide:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Arm64_Divide:
+        case NI_Sve_Divide:
 #endif
         {
             return GT_DIV;
@@ -29324,6 +29331,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Multiply:
         case NI_AdvSimd_Arm64_Multiply:
+        case NI_Sve_Multiply:
 #endif
         {
             return GT_MUL;
@@ -29364,6 +29372,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #if defined(TARGET_ARM64)
         case NI_AdvSimd_Negate:
         case NI_AdvSimd_Arm64_Negate:
+        case NI_Sve_Negate:
         {
             return GT_NEG;
         }
@@ -29401,6 +29410,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_ShiftLeftLogicalVariable:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftLeftLogical:
+        case NI_Sve_ShiftLeftLogical:
 #endif
         {
             return GT_LSH;
@@ -29425,6 +29435,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_ShiftRightArithmeticVariable:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftRightArithmetic:
+        case NI_Sve_ShiftRightArithmetic:
 #endif
         {
             return GT_RSH;
@@ -29449,6 +29460,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512_ShiftRightLogicalVariable:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftRightLogical:
+        case NI_Sve_ShiftRightLogical:
 #endif
         {
             return GT_RSZ;
@@ -29473,6 +29485,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Subtract:
         case NI_AdvSimd_Arm64_Subtract:
+        case NI_Sve_Subtract:
 #endif
         {
             return GT_SUB;
@@ -29507,6 +29520,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareEqual:
         case NI_AdvSimd_Arm64_CompareEqual:
+        case NI_Sve_CompareEqual:
 #endif
         {
             return GT_EQ;
@@ -29540,6 +29554,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareGreaterThan:
         case NI_AdvSimd_Arm64_CompareGreaterThan:
+        case NI_Sve_CompareGreaterThan:
 #endif
         {
             return GT_GT;
@@ -29571,6 +29586,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareGreaterThanOrEqual:
         case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+        case NI_Sve_CompareGreaterThanOrEqual:
 #endif
         {
             return GT_GE;
@@ -29604,6 +29620,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareLessThan:
         case NI_AdvSimd_Arm64_CompareLessThan:
+        case NI_Sve_CompareLessThan:
 #endif
         {
             return GT_LT;
@@ -29635,6 +29652,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareLessThanOrEqual:
         case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+        case NI_Sve_CompareLessThanOrEqual:
 #endif
         {
             return GT_LE;
@@ -29663,10 +29681,15 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_X86Base_CompareNotEqual:
         case NI_AVX_CompareNotEqual:
         case NI_AVX512_CompareNotEqualMask:
+#elif defined(TARGET_ARM64)
+        case NI_Sve_CompareNotEqualTo:
+#endif
         {
             return GT_NE;
         }
 
+
+#if defined(TARGET_XARCH)
         case NI_X86Base_CompareScalarNotEqual:
         {
             *isScalar = true;
@@ -30593,7 +30616,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
             {
+                assert(type != TYP_MASK);
                 id = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
+            }
+            else if (type == TYP_MASK)
+            {
+                id = NI_Sve_CompareEqual;
             }
             else
             {
@@ -30632,8 +30660,13 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
             {
+                assert(type != TYP_MASK);
                 id = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar
                                      : NI_AdvSimd_Arm64_CompareGreaterThanOrEqual;
+            }
+            else if (type == TYP_MASK)
+            {
+                id = NI_Sve_CompareGreaterThanOrEqual;
             }
             else
             {
@@ -30694,7 +30727,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
             {
+                assert(type != TYP_MASK);
                 id = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareGreaterThanScalar : NI_AdvSimd_Arm64_CompareGreaterThan;
+            }
+            else if (type == TYP_MASK)
+            {
+                id = NI_Sve_CompareGreaterThan;
             }
             else
             {
@@ -30733,8 +30771,13 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
             {
+                assert(type != TYP_MASK);
                 id = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar
                                      : NI_AdvSimd_Arm64_CompareLessThanOrEqual;
+            }
+            else if (type == TYP_MASK)
+            {
+                id = NI_Sve_CompareLessThanOrEqual;
             }
             else
             {
@@ -30797,7 +30840,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 #elif defined(TARGET_ARM64)
             if (genTypeSize(simdBaseType) == 8)
             {
+                assert(type != TYP_MASK);
                 id = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareLessThanScalar : NI_AdvSimd_Arm64_CompareLessThan;
+            }
+            else if (type == TYP_MASK)
+            {
+                id = NI_Sve_CompareLessThan;
             }
             else
             {
@@ -32258,12 +32306,18 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
+#if defined(TARGET_XARCH)
     // We shouldn't find AND_NOT nodes since it should only be produced in lowering
     assert(oper != GT_AND_NOT);
+#endif //TARGET_XARCH
+
+    bool hasAllMaskVariant = true;
+#if defined(TARGET_ARM64)
+    hasAllMaskVariant = HWIntrinsicInfo::HasAllMaskVariant(ni);
+#endif // TARGET_ARM64
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-#if defined(TARGET_XARCH)
-    if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
+    if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper) && hasAllMaskVariant)
     {
         // Comparisons that produce masks lead to more verbose trees than
         // necessary in many scenarios due to requiring a CvtMaskToVector
@@ -32273,6 +32327,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         genTreeOps effectiveOper = oper;
         GenTree*   actualOp2     = op2;
+        NamedIntrinsic effectiveNi = ni;
 
         if (oper == GT_NOT)
         {
@@ -32293,6 +32348,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     // some platforms don't have direct support for ~op1
 
                     effectiveOper = GT_NOT;
+
                     op2           = op1;
                 }
             }
@@ -32312,37 +32368,31 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     NamedIntrinsic maskIntrinsicId = NI_Illegal;
 
+#if defined(TARGET_XARCH)
                     switch (effectiveOper)
                     {
                         case GT_AND:
-                        {
                             maskIntrinsicId = NI_AVX512_AndMask;
                             break;
-                        }
 
                         case GT_NOT:
-                        {
                             maskIntrinsicId = NI_AVX512_NotMask;
                             break;
-                        }
 
                         case GT_OR:
-                        {
                             maskIntrinsicId = NI_AVX512_OrMask;
                             break;
-                        }
 
                         case GT_XOR:
-                        {
                             maskIntrinsicId = NI_AVX512_XorMask;
                             break;
-                        }
 
                         default:
-                        {
                             unreached();
-                        }
                     }
+#else
+                    maskIntrinsicId = HWIntrinsicInfo::GetMaskVariant(effectiveNi);
+#endif
 
                     assert(maskIntrinsicId != NI_Illegal);
 
@@ -32380,9 +32430,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
         }
     }
-#elif defined(TARGET_ARM64)
+
+#if defined(TARGET_ARM64)
     // Check if the tree can be folded into a mask variant
-    if (HWIntrinsicInfo::HasAllMaskVariant(tree->GetHWIntrinsicId()))
+    if (hasAllMaskVariant)
     {
         NamedIntrinsic maskVariant = HWIntrinsicInfo::GetMaskVariant(tree->GetHWIntrinsicId());
 

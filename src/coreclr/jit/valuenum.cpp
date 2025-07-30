@@ -8387,8 +8387,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         bool       isScalar = false;
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
+#if !defined(TARGET_ARM64)
         // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
+        assert(oper != GT_AND_NOT);
+#endif // !TARGET_ARM64
+        assert((oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
         if (isScalar)
         {
@@ -8878,8 +8881,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
         bool       isScalar = false;
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
+
+#if !defined(TARGET_ARM64)
         // We shouldn't find AND_NOT nodes since it should only be produced in lowering
-        assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
+        assert(oper != GT_AND_NOT);
+#endif // !TARGET_ARM64
+        assert((oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
         if (isScalar)
         {
