@@ -145,8 +145,8 @@ GC_Initialize(
 
 extern "C"
 {
-    struct DotNetRuntimeContractDescriptor;
-    extern DotNetRuntimeContractDescriptor GCContractDescriptor;
+    struct ContractDescriptor;
+    extern ContractDescriptor GCContractDescriptor;
 }
 
 GC_EXPORT

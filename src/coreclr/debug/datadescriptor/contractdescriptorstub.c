@@ -10,7 +10,7 @@
 #define DLLEXPORT __attribute__((visibility("default")))
 #endif
 
-struct DotNetRuntimeContractDescriptor
+struct ContractDescriptor
 {
     uint64_t magic;
     uint32_t flags;
@@ -26,11 +26,11 @@ extern const uintptr_t POINTER_NAME[];
 // just the placeholder pointer
 const uintptr_t POINTER_NAME[] = { (uintptr_t)0 };
 
-DLLEXPORT struct DotNetRuntimeContractDescriptor CONTRACT_NAME;
+DLLEXPORT struct ContractDescriptor CONTRACT_NAME;
 
 #define STUB_DESCRIPTOR "{\"version\":0,\"baseline\":\"empty\",\"contracts\":{},\"types\":{},\"globals\":{}}"
 
-DLLEXPORT struct DotNetRuntimeContractDescriptor CONTRACT_NAME = {
+DLLEXPORT struct ContractDescriptor CONTRACT_NAME = {
     .magic = 0x0043414443434e44ull, // "DNCCDAC\0"
     .flags = 0x1u & (sizeof(void*) == 4 ? 0x02u : 0x00u),
     .descriptor_size = sizeof(STUB_DESCRIPTOR),
