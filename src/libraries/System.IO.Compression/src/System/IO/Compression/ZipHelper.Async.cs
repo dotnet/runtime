@@ -54,7 +54,7 @@ internal static partial class ZipHelper
 
             int totalBytesRead = 0;
 
-            while (!signatureFound && !outOfBytes && totalBytesRead <= maxBytesToRead)
+            while (!signatureFound && !outOfBytes && totalBytesRead < maxBytesToRead)
             {
                 int overlap = totalBytesRead == 0 ? 0 : signatureToFind.Length;
 
