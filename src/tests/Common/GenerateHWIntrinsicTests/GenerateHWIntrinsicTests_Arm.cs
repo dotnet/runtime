@@ -24,14 +24,12 @@ using System.Linq;
 
 public struct TestGroup
 {
-    public string Isa { get; set; }
-    public string LoadIsa { get; set; }
+    public Dictionary<string, string> KeyValuePairs { get; set; }
     public (TemplateConfig TemplateConfig, Dictionary<string, string> KeyValuePairs)[] Tests { get; set; }
 
-    public TestGroup(string Isa, string LoadIsa, (TemplateConfig, Dictionary<string, string>)[] Tests)
+    public TestGroup(Dictionary<string, string> KeyValuePairs, (TemplateConfig, Dictionary<string, string>)[] Tests)
     {
-        this.Isa = Isa;
-        this.LoadIsa = LoadIsa;
+        this.KeyValuePairs = KeyValuePairs;
         this.Tests = Tests;
     }
 
@@ -40,11 +38,13 @@ public struct TestGroup
         var self = this;
         return Tests.Select(t =>
         {
-            var kvp = new Dictionary<string, string>(t.KeyValuePairs);
-            if (!string.IsNullOrEmpty(self.Isa)) kvp["Isa"] = self.Isa;
-            if (!string.IsNullOrEmpty(self.LoadIsa)) kvp["LoadIsa"] = self.LoadIsa;
-            kvp["Namespace"] = $"JIT.HardwareIntrinsics.Arm._{self.Isa}";
-            return (t.TemplateConfig, kvp);
+            var dict = new Dictionary<string, string>(t.KeyValuePairs);
+            foreach (var kvp in self.KeyValuePairs)
+            {
+                dict[kvp.Key] = kvp.Value;
+            }
+            dict["Namespace"] = $"JIT.HardwareIntrinsics.Arm._{self.KeyValuePairs["Isa"]}";
+            return (t.TemplateConfig, dict);
         }).ToArray();
     }
 }
@@ -108,7 +108,7 @@ class GenerateHWIntrinsicTests_Arm
 
         void ProcessInputs(TestGroup testGroup)
         {
-            if (!projectName.Equals($"{testGroup.Isa}_r") && !projectName.Equals($"{testGroup.Isa}_ro"))
+            if (!projectName.Equals($"{testGroup.KeyValuePairs["Isa"]}_r") && !projectName.Equals($"{testGroup.KeyValuePairs["Isa"]}_ro"))
             {
                 return;
             }
