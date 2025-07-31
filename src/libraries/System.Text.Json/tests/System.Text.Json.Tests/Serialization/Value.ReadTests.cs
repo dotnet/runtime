@@ -340,6 +340,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("1 .1", "1.1")] // Whitespace before dot should work as before
         [InlineData("1. 1", "1.1")] // Whitespace after dot should work as before
         [InlineData("1 . +1", "1.1")] // Combined whitespace and plus should work as before
+        [InlineData("+1.1", "1.1")] // Leading plus should work
         public static void Version_Read_Success(string json, string? actual = null)
         {
             actual ??= json;
@@ -355,7 +356,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("   1.2.3.4")] // Leading whitespace should be rejected
         [InlineData("1.2.3.4    ")] // Trailing whitespace should be rejected  
         [InlineData("  1.2.3.4  ")] // Leading and trailing whitespace should be rejected
-        [InlineData("+1.1")] // Leading plus should be rejected
         [InlineData("2147483648.2147483648.2147483648.2147483648")] //int.MaxValue + 1
         [InlineData("2147483647.2147483647.2147483647.21474836477")] // Slightly bigger in size than max length of Version
         [InlineData("-2147483648.-2147483648")]
