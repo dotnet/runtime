@@ -39,18 +39,7 @@ namespace System
                               FormatGenericParam |
                               FormatFullInst
     }
-
-    public partial class MHTestClass 
-    {        
-        public static IntPtr RunTestArray()
-        {
-            return RuntimeType.TestArray();
-        }
-        public static IntPtr RunTestArrayRaw()
-        {
-            return RuntimeType.TestArrayRaw();
-        }
-    }
+    
     internal unsafe partial class RuntimeType
     {
         #region Definitions
