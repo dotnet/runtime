@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -210,10 +211,77 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         => _legacyProcess is not null ? _legacyProcess.SetCodeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetOtherNotificationFlags(uint* flags)
-        => _legacyProcess is not null ? _legacyProcess.GetOtherNotificationFlags(flags) : HResults.E_NOTIMPL;
-
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *flags = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.DacNotificationFlags));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            uint flagsLocal;
+            int hrLocal = _legacyProcess.GetOtherNotificationFlags(&flagsLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(*flags == flagsLocal);
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataProcess.SetOtherNotificationFlags(uint flags)
-        => _legacyProcess is not null ? _legacyProcess.SetOtherNotificationFlags(flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if ((flags & ~((uint)CLRDataOtherNotifyFlag.CLRDATA_NOTIFY_ON_MODULE_LOAD |
+                           (uint)CLRDataOtherNotifyFlag.CLRDATA_NOTIFY_ON_MODULE_UNLOAD |
+                           (uint)CLRDataOtherNotifyFlag.CLRDATA_NOTIFY_ON_EXCEPTION |
+                           (uint)CLRDataOtherNotifyFlag.CLRDATA_NOTIFY_ON_EXCEPTION_CATCH_ENTER)) != 0)
+            {
+                hr = HResults.E_INVALIDARG;
+            }
+            else
+            {
+                TargetPointer dacNotificationFlags = _target.ReadGlobalPointer(Constants.Globals.DacNotificationFlags);
+                _target.Write<uint>(dacNotificationFlags, flags);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            int hrLocal = default;
+            uint flagsLocal = default;
+            // have to read the flags like this and not with GetOtherNotificationFlags
+            // because the legacy DAC cache will not be updated when we set the flags in cDAC
+            // so we need to verify without using the legacy DAC
+            hrLocal = HResults.S_OK;
+            try
+            {
+                flagsLocal = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.DacNotificationFlags));
+            }
+            catch (System.Exception ex)
+            {
+                hrLocal = ex.HResult;
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(flags == flagsLocal);
+            }
+            // update the DAC cache
+            _legacyProcess.SetOtherNotificationFlags(flags);
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.StartEnumMethodDefinitionsByAddress(ClrDataAddress address, ulong* handle)
         => _legacyProcess is not null ? _legacyProcess.StartEnumMethodDefinitionsByAddress(address, handle) : HResults.E_NOTIMPL;

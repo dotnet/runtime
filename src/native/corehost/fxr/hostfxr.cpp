@@ -623,7 +623,12 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_confi
     const runtime_config_t::settings_t override_settings;
     app->parse_runtime_config(runtime_config, _X(""), override_settings);
 
-    const runtime_config_t app_config = app->get_runtime_config();
+    const runtime_config_t& app_config = app->get_runtime_config();
+    if (!app_config.is_valid())
+    {
+        trace::error(_X("Invalid runtimeconfig.json [%s]"), app_config.get_path().c_str());
+        return StatusCode::InvalidConfigFile;
+    }
 
     // Resolve frameworks for framework-dependent apps.
     // Self-contained apps assume the framework is next to the app, so we just treat it as success.

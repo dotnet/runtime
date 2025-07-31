@@ -18,7 +18,7 @@ extern const uintptr_t contractDescriptorPointerData[];
 const uintptr_t contractDescriptorPointerData[] = {
     (uintptr_t)0, // placeholder
 #define CDAC_GLOBAL_POINTER(name,value) (uintptr_t)(value),
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 };
 
 }

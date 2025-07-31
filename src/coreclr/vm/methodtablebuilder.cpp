@@ -2688,10 +2688,13 @@ MethodTableBuilder::EnumerateClassMethods()
         BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
 
     bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
-#ifdef FEATURE_RUNTIME_ASYNC
-    // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
-    bmtMethod->m_cMaxDeclaredMethods *= 2;
-#endif
+
+    if (g_pConfig->RuntimeAsync())
+    {
+        // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
+        bmtMethod->m_cMaxDeclaredMethods *= 2;
+    }
+
     bmtMethod->m_cDeclaredMethods = 0;
     bmtMethod->m_rgDeclaredMethods = new (GetStackingAllocator())
         bmtMDMethod *[bmtMethod->m_cMaxDeclaredMethods];
