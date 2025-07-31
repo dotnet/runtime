@@ -213,7 +213,7 @@ namespace System.Security.Cryptography
 #endif
                     if (rsa.KeySize != algorithm.KeySizeInBits)
                     {
-                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                        throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                     }
 
                     if (bytesRead != source.Length)
