@@ -284,7 +284,7 @@ inline bool SF_IsSharedStub(DWORD dwStubFlags)
         return false;
     }
 
-    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(m_dwStubFlags))
+    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
     {
         return false;
     }
