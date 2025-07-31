@@ -82,7 +82,7 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            buildArgs: -s tools.illinktests -test -c $(_BuildConfig)
+            buildArgs: -s libs+tools.illinktests -test -c $(_BuildConfig)
 
       #
       # Build Release config vertical for Windows, Linux, and OSX
