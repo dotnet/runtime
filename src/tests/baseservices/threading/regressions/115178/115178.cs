@@ -16,7 +16,7 @@ using Xunit;
 
 public class Test_wait_interrupted_user_apc
 {
-    public static bool Run115178Test => TestLibrary.Utilities.IsWindows;
+    public static bool Run115178Test => TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsNativeAot;
 
     [DllImport("kernel32.dll")]
     private static extern IntPtr GetCurrentProcess();
