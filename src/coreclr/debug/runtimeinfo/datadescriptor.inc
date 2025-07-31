@@ -1004,7 +1004,7 @@ CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionMana
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 
-CDAC_GLOBAL_POINTER(GCDescriptor, &(g_gc_dac_vars.gc_descriptors))
+CDAC_GLOBAL_POINTER(GCDescriptor, &(g_gc_dac_vars.gc_descriptor))
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

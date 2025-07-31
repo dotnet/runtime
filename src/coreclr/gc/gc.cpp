@@ -53710,7 +53710,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     }
     if (v6)
     {
-        gcDacVars->gc_descriptors = (void*)&GCContractDescriptor;
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptor;
     }
 }
 
