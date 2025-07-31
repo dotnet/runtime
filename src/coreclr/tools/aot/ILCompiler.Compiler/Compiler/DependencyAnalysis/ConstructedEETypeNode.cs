@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
             Debug.Assert(!_type.IsCanonicalSubtype(CanonicalFormKind.Any));
-            return factory.SerializedConstructedRuntimeTypeObject(_type);
+            return factory.SerializedMetadataRuntimeTypeObject(_type);
         }
 
         protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)

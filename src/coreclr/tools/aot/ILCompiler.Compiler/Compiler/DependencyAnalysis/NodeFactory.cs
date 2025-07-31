@@ -439,14 +439,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new SerializedFrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
             });
 
-            _frozenConstructedRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
+            _frozenMetadataRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
             {
-                return new FrozenRuntimeTypeNode(key, constructed: true);
+                return new FrozenRuntimeTypeNode(key, withMetadata: true);
             });
 
             _frozenNecessaryRuntimeTypeNodes = new NodeCache<TypeDesc, FrozenRuntimeTypeNode>(key =>
             {
-                return new FrozenRuntimeTypeNode(key, constructed: false);
+                return new FrozenRuntimeTypeNode(key, withMetadata: false);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -1466,18 +1466,11 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
         }
 
-        public FrozenRuntimeTypeNode SerializedMaximallyConstructableRuntimeTypeObject(TypeDesc type)
-        {
-            if (ConstructedEETypeNode.CreationAllowed(type) || type.IsGenericDefinition)
-                return SerializedConstructedRuntimeTypeObject(type);
-            return SerializedNecessaryRuntimeTypeObject(type);
-        }
+        private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenMetadataRuntimeTypeNodes;
 
-        private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenConstructedRuntimeTypeNodes;
-
-        public FrozenRuntimeTypeNode SerializedConstructedRuntimeTypeObject(TypeDesc type)
+        public FrozenRuntimeTypeNode SerializedMetadataRuntimeTypeObject(TypeDesc type)
         {
-            return _frozenConstructedRuntimeTypeNodes.GetOrAdd(type);
+            return _frozenMetadataRuntimeTypeNodes.GetOrAdd(type);
         }
 
         private NodeCache<TypeDesc, FrozenRuntimeTypeNode> _frozenNecessaryRuntimeTypeNodes;

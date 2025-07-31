@@ -493,6 +493,7 @@ namespace ILCompiler
         {
             private CompilerTypeSystemContext _context;
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _metadataMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _reflectionVisibleGenericDefinitionMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
@@ -521,6 +522,11 @@ namespace ILCompiler
                     if (node is ReflectionVisibleGenericDefinitionEETypeNode reflectionVisibleMT)
                     {
                         _reflectionVisibleGenericDefinitionMethodTables.Add(reflectionVisibleMT.Type);
+                    }
+
+                    if (node is MetadataEETypeNode metadataMT)
+                    {
+                        _metadataMethodTables.Add(metadataMT.Type);
                     }
 
                     TypeDesc type = (node as ConstructedEETypeNode)?.Type;
@@ -778,6 +784,13 @@ namespace ILCompiler
                 Debug.Assert(type.NormalizeInstantiation() == type);
                 Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
                 return _constructedMethodTables.Contains(type);
+            }
+
+            public override bool CanReferenceMetadataMethodTable(TypeDesc type)
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
+                return _metadataMethodTables.Contains(type);
             }
 
             public override bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)

@@ -278,6 +278,9 @@ namespace ILCompiler
             if (ConstructedEETypeNode.CreationAllowed(type))
             {
                 if (NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation()))
+                    return ReadyToRunHelperId.TypeHandle;
+
+                if (NodeFactory.DevirtualizationManager.CanReferenceMetadataMethodTable(type.NormalizeInstantiation()))
                     return ReadyToRunHelperId.MetadataTypeHandle;
             }
 

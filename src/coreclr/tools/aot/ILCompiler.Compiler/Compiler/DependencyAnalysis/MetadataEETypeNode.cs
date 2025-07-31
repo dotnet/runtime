@@ -84,10 +84,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
-            // TODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODO
-            // Do we need a new node for this?
-            // TODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODOTODO
-            return factory.SerializedNecessaryRuntimeTypeObject(_type);
+            return factory.SerializedMetadataRuntimeTypeObject(_type);
         }
 
         protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
