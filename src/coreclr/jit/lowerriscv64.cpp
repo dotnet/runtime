@@ -163,7 +163,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         SignExtendIfNecessary(op);
         CheckImmedAndMakeContained(jcmp, *op);
     }
-    assert(!jcmp->gtOp1->isContained() || !jcmp->gtOp2->isContained());
 
     return jcmp->gtNext;
 }
@@ -1289,7 +1288,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         MakeSrcContained(cmp, cmp->gtOp1);
 
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
-    assert(!cmp->gtOp1->isContained() || !cmp->gtOp2->isContained());
 }
 
 //------------------------------------------------------------------------

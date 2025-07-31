@@ -730,7 +730,7 @@ void emitter::emitIns_R_R_I(
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
         INS_flw == ins || INS_slli_uw == ins || INS_rori == ins || INS_roriw == ins)
     {
-        assert(isGeneralRegister(reg2));
+        assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7; // rd
         code |= reg2 << 15;         // rs1
         code |= imm << 20;          // imm

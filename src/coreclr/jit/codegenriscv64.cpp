@@ -3148,15 +3148,16 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     else
     {
         noway_assert(tree->OperIs(GT_LT));
+        assert(!op1->isContainedIntOrIImmed() || op1->IsIntegralConst(0));
+        regNumber reg1 = op1->isContainedIntOrIImmed() ? REG_ZERO : op1->GetRegNum();
         if (op2->isContainedIntOrIImmed())
         {
             instruction slti = tree->IsUnsigned() ? INS_sltiu : INS_slti;
-            emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, op1->GetRegNum(), op2->AsIntCon()->gtIconVal);
+            emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2->AsIntCon()->gtIconVal);
         }
         else
         {
-            instruction slt  = tree->IsUnsigned() ? INS_sltu : INS_slt;
-            regNumber   reg1 = op1->isContainedIntOrIImmed() ? REG_ZERO : op1->GetRegNum();
+            instruction slt = tree->IsUnsigned() ? INS_sltu : INS_slt;
             emit->emitIns_R_R_R(slt, EA_PTRSIZE, targetReg, reg1, op2->GetRegNum());
         }
     }
@@ -3215,12 +3216,11 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     GenTree* op2 = tree->gtGetOp2();
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
-    assert(op1->isContained() == op1->IsIntegralConst(0));
-    assert(op2->isContained() == op2->IsIntegralConst(0));
+    assert(!op1->isContained() || op1->IsIntegralConst(0));
+    assert(!op1->isContained() || op1->IsIntegralConst(0));
     regNumber regOp1 = op1->isContained() ? REG_ZERO : op1->GetRegNum();
     regNumber regOp2 = op2->isContained() ? REG_ZERO : op2->GetRegNum();
     int       regs   = (int)regOp1 | (((int)regOp2) << 5);
-    assert(regs != 0);
     GetEmitter()->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs);
 
     // If we cannot fall into the false target, emit a jump to it
