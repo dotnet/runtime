@@ -73,6 +73,7 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
     set(LIB_CORDBEE cordbee_wks)
     set(LIB_INTEROP interop)
     set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
+    set(LIB_CDAC_IN_PROC_GC_CONTRACT_DESCRIPTOR in_process_gc_contract_descriptor)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -104,6 +105,7 @@ set(CORECLR_LIBRARIES
     coreclrminipal
     gc_pal
     ${LIB_CDAC_CONTRACT_DESCRIPTOR}
+    ${LIB_CDAC_IN_PROC_GC_CONTRACT_DESCRIPTOR}
 )
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
