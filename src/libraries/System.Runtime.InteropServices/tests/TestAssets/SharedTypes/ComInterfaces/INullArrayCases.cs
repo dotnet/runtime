@@ -29,16 +29,6 @@ namespace SharedTypes.ComInterfaces
             int length,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), In, Out] IntStructWrapper[]? array);
 
-        // Zero-length case (should handle gracefully)
-        void ZeroLengthArray(
-            int length, // Will be 0
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), In, Out] int[]? array);
-
-        // Large length with null array (potential overflow/crash scenario)
-        void LargeLengthNullArray(
-            int length, // Will be int.MaxValue
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), In, Out] int[]? array);
-
         // Different parameter directions
         void InOnlyNullArray(
             int length,
@@ -112,30 +102,6 @@ namespace SharedTypes.ComInterfaces
                 for (int i = 0; i < length; i++)
                 {
                     array[i] = new IntStructWrapper { Value = i * 3 };
-                }
-            }
-        }
-
-        public void ZeroLengthArray(int length, int[]? array)
-        {
-            // Should handle zero length gracefully
-            if (array != null && length > 0)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    array[i] = 42;
-                }
-            }
-        }
-
-        public void LargeLengthNullArray(int length, int[]? array)
-        {
-            // Should not crash or allocate massive amounts when array is null
-            if (array != null)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    array[i] = i;
                 }
             }
         }

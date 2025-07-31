@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
 using SharedTypes;
 using Xunit;
+using System.Runtime.CompilerServices;
 
 namespace ComInterfaceGenerator.Tests
 {
@@ -26,23 +27,16 @@ namespace ComInterfaceGenerator.Tests
             return (INullArrayCases)obj;
         }
 
-        [Fact]
-        public void SingleNullArray_WithNonZeroLength_DoesNotCrash()
-        {
-            // Arrange
-            var testInterface = CreateTestInterface();
-
-            // Act & Assert - Should not throw or crash
-            testInterface.SingleNullArrayWithLength(10, null);
-        }
-
-        [Fact]
-        public void SingleNullArray_WithZeroLength_DoesNotCrash()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(int.MaxValue)]
+        public void SingleNullArray_DoesNotCrash(int length)
         {
             var testInterface = CreateTestInterface();
 
             // Should not throw or crash
-            testInterface.SingleNullArrayWithLength(0, null);
+            testInterface.SingleNullArrayWithLength(length, null);
         }
 
         [Fact]
@@ -77,12 +71,15 @@ namespace ComInterfaceGenerator.Tests
             testInterface.MultipleArraysSharedLength(5, null, null, null);
         }
 
-        [Fact]
-        public void NonBlittableArray_Null_DoesNotCrash()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(int.MaxValue)]
+        public void NonBlittableArray_Null_DoesNotCrash(int length)
         {
             var testInterface = CreateTestInterface();
 
-            testInterface.NonBlittableNullArray(10, null);
+            testInterface.NonBlittableNullArray(length, null);
         }
 
         [Fact]
@@ -98,72 +95,17 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(6, array[2].Value);
         }
 
-        [Fact]
-        public void ZeroLength_NullArray_DoesNotCrash()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(int.MaxValue)]
+        public void SpanNull_DoesNotCrash(int length)
         {
             var testInterface = CreateTestInterface();
 
-            testInterface.ZeroLengthArray(0, null);
-        }
-
-        [Fact]
-        public void LargeLength_NullArray_DoesNotCrash()
-        {
-            var testInterface = CreateTestInterface();
-
-            testInterface.LargeLengthNullArray(int.MaxValue, null);
-        }
-
-        [Fact]
-        public void SpanNull_DoesNotCrash()
-        {
-            var testInterface = CreateTestInterface();
-
-            var (__this, __vtable) = ((IUnmanagedVirtualMethodTableProvider)testInterface).GetVirtualMethodTableInfoForKey(typeof(INullArrayCases));
-            int length = 10;
-            var __target = (delegate* unmanaged[MemberFunction]<void*, int, int**, int>)__vtable[11];
-            int* __span_native = null;
-            int __invokeRetVal = __target(__this, length, &__span_native);
-            Marshal.ThrowExceptionForHR(__invokeRetVal);
-        }
-
-        [Fact]
-        public void SpanNull_WithZeroLength_DoesNotCrash()
-        {
-            var testInterface = CreateTestInterface();
-
-            var (__this, __vtable) = ((IUnmanagedVirtualMethodTableProvider)testInterface).GetVirtualMethodTableInfoForKey(typeof(INullArrayCases));
-            int length = 0;
-            var __target = (delegate* unmanaged[MemberFunction]<void*, int, int**, int>)__vtable[11];
-            int* __span_native = null;
-            int __invokeRetVal = __target(__this, length, &__span_native);
-            Marshal.ThrowExceptionForHR(__invokeRetVal);
-        }
-
-        [Fact]
-        public void SpanNull_WithLargeLength_DoesNotCrash()
-        {
-            var testInterface = CreateTestInterface();
-
-            var (__this, __vtable) = ((IUnmanagedVirtualMethodTableProvider)testInterface).GetVirtualMethodTableInfoForKey(typeof(INullArrayCases));
-            int length = int.MaxValue;
-            var __target = (delegate* unmanaged[MemberFunction]<void*, int, int**, int>)__vtable[11];
-            int* __span_native = null;
-            int __invokeRetVal = __target(__this, length, &__span_native);
-            Marshal.ThrowExceptionForHR(__invokeRetVal);
-        }
-
-        [Fact]
-        public void SpanNonBlittable_Null_DoesNotCrash()
-        {
-            var testInterface = CreateTestInterface();
-
-            var (__this, __vtable) = ((IUnmanagedVirtualMethodTableProvider)testInterface).GetVirtualMethodTableInfoForKey(typeof(INullArrayCases));
-            int length = 10;
-            var __target = (delegate* unmanaged[MemberFunction]<void*, int, IntStructWrapper**, int>)__vtable[12];
-            IntStructWrapper* __span_native = null;
-            int __invokeRetVal = __target(__this, length, &__span_native);
-            Marshal.ThrowExceptionForHR(__invokeRetVal);
+            Span<int> span = new Span<int>(null, 0);
+            testInterface.SpanNullCase(length, ref span);
+            Assert.True(default == span);
         }
 
         [Fact]
@@ -181,8 +123,20 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(20, span[4]);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(int.MaxValue)]
+        public void SpanNonBlittable_Null_DoesNotCrash(int length)
+        {
+            var testInterface = CreateTestInterface();
+            Span<IntStructWrapper> span = new Span<IntStructWrapper>(null, 0);
+            testInterface.SpanNonBlittableNullCase(length, ref span);
+            Assert.True(default == span);
+        }
+
         [Fact]
-        public void SpanNonBlittableValid_WorksNormally()
+        public void SpanNonBlittable_Valid_WorksNormally()
         {
             var testInterface = CreateTestInterface();
 
@@ -194,28 +148,48 @@ namespace ComInterfaceGenerator.Tests
             Assert.Equal(14, span[2].Value);
         }
 
-        [Fact]
-        public void InputOnlyArray_Null_DoesNotCrash()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(int.MaxValue)]
+        public void InputOnlyArray_Null_DoesNotCrash(int length)
         {
             var testInterface = CreateTestInterface();
 
-            testInterface.InOnlyNullArray(10, null);
+            testInterface.InOnlyNullArray(length, null);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(int.MaxValue)]
+        public void OutputOnlyArray_Null_DoesNotCrash(int length)
+        {
+            var testInterface = CreateTestInterface();
+
+            testInterface.OutOnlyNullArray(length, null);
         }
 
         [Fact]
-        public void OutputOnlyArray_Null_DoesNotCrash()
+        public void OutputOnlyArray_Valid_WorksNormally()
         {
             var testInterface = CreateTestInterface();
+            var array = new int[3];
 
-            testInterface.OutOnlyNullArray(10, null);
+            testInterface.OutOnlyNullArray(3, array);
+
+            Assert.Equal(new int[] { 1000, 1001, 1002 }, array);
         }
 
-        [Fact]
-        public void ReferenceArray_Null_DoesNotCrash()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(int.MaxValue)]
+        public void ReferenceArray_Null_DoesNotCrash(int length)
         {
             var testInterface = CreateTestInterface();
 
-            testInterface.ReferenceArrayNullCase(10, null);
+            testInterface.ReferenceArrayNullCase(length, null);
         }
 
         [Fact]
@@ -227,18 +201,6 @@ namespace ComInterfaceGenerator.Tests
             testInterface.ReferenceArrayNullCase(3, array);
 
             Assert.Equal(new string[] { "Item 0", "Item 1", "Item 2" }, array);
-        }
-
-        [Theory]
-        [InlineData(-1)]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(100)]
-        public void NullArray_VariousLengths_DoesNotCrash(int length)
-        {
-            var testInterface = CreateTestInterface();
-
-            testInterface.SingleNullArrayWithLength(length, null);
         }
     }
 }
