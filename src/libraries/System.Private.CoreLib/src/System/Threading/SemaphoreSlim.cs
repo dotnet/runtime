@@ -653,7 +653,7 @@ namespace System.Threading
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
-            return WaitAsync(millisecondsTimeout, cancellationToken);
+            return WaitAsync((long)millisecondsTimeout, cancellationToken);
         }
 
         /// <summary>
