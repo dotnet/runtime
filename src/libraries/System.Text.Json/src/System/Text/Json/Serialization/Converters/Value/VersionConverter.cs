@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Converters
                 int bytesWritten = reader.CopyString(charBuffer);
                 ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
 
-                if (source.Length > 0 && (char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1])))
+                if (source.IsEmpty || char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1]))
                 {
                     // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
                     // we need to make sure that our input doesn't have them,
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 #else
             string? versionString = reader.GetString();
-            if (!string.IsNullOrEmpty(versionString) && (char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1])))
+            if (string.IsNullOrEmpty(versionString) || char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1]))
             {
                 // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
                 // we need to make sure that our input doesn't have them,
