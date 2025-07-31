@@ -2900,7 +2900,20 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         pCodeHdrRW->SetDebugInfo(NULL);
         pCodeHdrRW->SetEHInfo(NULL);
         pCodeHdrRW->SetGCInfo(NULL);
-        pCodeHdrRW->SetMethodDesc(pMD);
+
+        // We want the target MethodDesc to be the same as the one in the code header.
+        MethodDesc* pMDTarget = pMD;
+        if (pMD->IsILStub())
+        {
+            DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
+
+            // If the IL Stub is a P/Invoke stub, set the CodeHeader's MethodDesc
+            // to be the real target method and not the stub.
+            if (pDMD->IsPInvokeStub())
+                pMDTarget = pDMD->GetILStubResolver()->GetStubTargetMethodDesc();
+        }
+        pCodeHdrRW->SetMethodDesc(pMDTarget);
+
 #ifdef FEATURE_EH_FUNCLETS
         if (std::is_same<TCodeHeader, CodeHeader>::value)
         {

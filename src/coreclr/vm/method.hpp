@@ -2858,6 +2858,14 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
         return HasFlags(FlagStatic)
+            && !HasFlags(FlagIsCALLI | FlagIsDelegate)
+            && GetILStubType() == StubCLRToNativeInterop;
+    }
+    bool IsFPtrToDelegateStub() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsILStub());
+        return HasFlags(FlagStatic | FlagIsDelegate)
             && !HasFlags(FlagIsCALLI)
             && GetILStubType() == StubCLRToNativeInterop;
     }
