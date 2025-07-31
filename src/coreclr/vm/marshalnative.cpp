@@ -49,7 +49,7 @@
 #endif // FEATURE_JAVAMARSHAL
 
 // Prelink
-// Does advance loading of an N/Direct library
+// Does advance loading of an PInvoke library
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
@@ -62,7 +62,7 @@ extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
     if (!pMD->IsPointingToPrestub())
         return;
 
-    // Silently ignore if not N/Direct and not runtime generated.
+    // Silently ignore if not PInvoke and not runtime generated.
     if (!(pMD->IsPInvoke()) && !(pMD->IsRuntimeSupplied()))
         return;
 

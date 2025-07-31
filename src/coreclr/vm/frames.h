@@ -2125,7 +2125,7 @@ struct ReversePInvokeFrame
 
 //------------------------------------------------------------------------
 // This frame is pushed by any JIT'ted method that contains one or more
-// inlined N/Direct calls. Note that the JIT'ted method keeps it pushed
+// inlined PInvoke calls. Note that the JIT'ted method keeps it pushed
 // the whole time to amortize the pushing cost across the entire method.
 //------------------------------------------------------------------------
 

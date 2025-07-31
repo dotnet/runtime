@@ -619,7 +619,7 @@ endif ; FEATURE_HIJACK
 ;==========================================================================
 ; This function is reached only via the embedded ImportThunkGlue code inside
 ; an PInvokeMethodDesc. It's purpose is to load the DLL associated with an
-; N/Direct method, then backpatch the DLL target into the methoddesc.
+; PInvoke method, then backpatch the DLL target into the methoddesc.
 ;
 ; Initial state:
 ;

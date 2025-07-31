@@ -3563,7 +3563,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
 }
 
 //---------------------------------------------------------
-// Creates a new stub for a N/Direct call. Return refcount is 1.
+// Creates a new stub for a PInvoke call. Return refcount is 1.
 // Note that this function may now throw if it fails to create
 // a stub.
 //---------------------------------------------------------
@@ -5477,7 +5477,7 @@ namespace
     }
 
     //---------------------------------------------------------
-    // Loads the DLL and finds the procaddress for an N/Direct call.
+    // Loads the DLL and finds the procaddress for an PInvoke call.
     //---------------------------------------------------------
     VOID PInvokeLink(PInvokeMethodDesc *pMD)
     {
