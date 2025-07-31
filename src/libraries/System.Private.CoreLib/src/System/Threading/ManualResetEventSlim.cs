@@ -508,7 +508,7 @@ namespace System.Threading
 
 
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
-                uint startTime = 0;
+                long startTime = 0;
                 bool bNeedTimeoutAdjustment = false;
                 int realMillisecondsTimeout = millisecondsTimeout; // this will be adjusted if necessary.
 
@@ -520,7 +520,7 @@ namespace System.Threading
                     // period of time.  The timeout adjustments only take effect when and if we actually
                     // decide to block in the kernel below.
 
-                    startTime = (uint)Environment.TickCount;
+                    startTime = Environment.TickCount64;
                     bNeedTimeoutAdjustment = true;
                 }
 
