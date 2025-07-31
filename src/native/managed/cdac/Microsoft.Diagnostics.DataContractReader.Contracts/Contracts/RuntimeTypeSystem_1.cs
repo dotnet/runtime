@@ -33,6 +33,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal TargetPointer EEClassOrCanonMT { get; }
         internal TargetPointer PerInstInfo { get; }
         internal TargetPointer AuxiliaryData { get; }
+        internal TargetPointer DynamicStaticsInfoSize { get; }
         internal MethodTable(Data.MethodTable data)
         {
             Flags = new MethodTableFlags_1
@@ -393,8 +394,33 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public ushort GetNumStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumStaticFields;
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+    public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
 
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        if (!methodTable.Flags.IsDynamicStatics)
+            return TargetPointer.Null;
+        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>(Constants.Globals.DynamicStaticsInfoSize);
 
+        Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(methodTable.AuxiliaryData - dynamicStaticsInfoSize);
+        return dynamicStaticsInfo.GCStatics;
+    }
+
+    public TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
+
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        if (!methodTable.Flags.IsDynamicStatics)
+            return TargetPointer.Null;
+        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>(Constants.Globals.DynamicStaticsInfoSize);
+
+        Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(methodTable.AuxiliaryData - dynamicStaticsInfoSize);
+        return dynamicStaticsInfo.NonGCStatics;
+    }
     public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())

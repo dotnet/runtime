@@ -41,6 +41,7 @@ public enum DataType
     CGrowableSymbolStream,
     ProbeExtensionResult,
     MethodTable,
+    DynamicStaticsInfo,
     EEClass,
     ArrayClass,
     MethodTableAuxiliaryData,
