@@ -419,6 +419,7 @@ class CodeHeapRequestInfo final
 
 public:
     CodeHeapRequestInfo(MethodDesc* pMD);
+    CodeHeapRequestInfo(LoaderAllocator* pAllocator);
     CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllocator, BYTE* loAddr, BYTE* hiAddr);
 
     LoaderAllocator* GetAllocator()             { return m_pAllocator;         }

@@ -2447,6 +2447,12 @@ CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD)
     LIMITED_METHOD_CONTRACT;
 }
 
+CodeHeapRequestInfo::CodeHeapRequestInfo(LoaderAllocator* pAllocator)
+    : CodeHeapRequestInfo{ NULL, pAllocator, NULL, NULL }
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
 CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllocator, BYTE* loAddr, BYTE* hiAddr)
     : m_pAllocator{ pAllocator }
     , m_loAddr{ loAddr }
@@ -3142,20 +3148,22 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
                                                         LoaderAllocator *pLoaderAllocator,
                                                         bool throwOnOutOfMemoryWithinRange)
 {
-    CONTRACT(JumpStubBlockHeader *) {
+    CONTRACT(JumpStubBlockHeader *)
+    {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(loAddr < hiAddr);
         PRECONDITION(pLoaderAllocator != NULL);
         POSTCONDITION((RETVAL != NULL) || !throwOnOutOfMemoryWithinRange);
-    } CONTRACT_END;
+    }
+    CONTRACT_END;
 
     _ASSERTE((sizeof(JumpStubBlockHeader) % CODE_SIZE_ALIGN) == 0);
 
     size_t blockSize = sizeof(JumpStubBlockHeader) + (size_t) numJumps * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
 
     HeapList *pCodeHeap = NULL;
-    CodeHeapRequestInfo    requestInfo(pMD, pLoaderAllocator, loAddr, hiAddr);
+    CodeHeapRequestInfo requestInfo(pMD, pLoaderAllocator, loAddr, hiAddr);
     requestInfo.SetThrowOnOutOfMemoryWithinRange(throwOnOutOfMemoryWithinRange);
 
     TADDR                  mem;
@@ -3202,15 +3210,17 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
 
 void * EEJitManager::AllocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind)
 {
-    CONTRACT(void *) {
+    CONTRACT(void *)
+    {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(pLoaderAllocator != NULL);
         POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    }
+    CONTRACT_END;
 
     HeapList *pCodeHeap = NULL;
-    CodeHeapRequestInfo    requestInfo(NULL, pLoaderAllocator, NULL, NULL);
+    CodeHeapRequestInfo requestInfo(pLoaderAllocator);
 
 #ifdef TARGET_AMD64
     // CodeFragments are pretty much always Precodes that may need to be patched with jump stubs at some point in future
