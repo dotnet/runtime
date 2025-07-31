@@ -46,6 +46,27 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa65 != null ||
             Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa87 != null;
 
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm)
+        {
+            if (algorithm == MLDsaAlgorithm.MLDsa44)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa44 != null;
+            }
+            else if (algorithm == MLDsaAlgorithm.MLDsa65)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa65 != null;
+            }
+            else if (algorithm == MLDsaAlgorithm.MLDsa87)
+            {
+                return Interop.Crypto.EvpPKeyMLDsaAlgs.MLDsa87 != null;
+            }
+            else
+            {
+                Debug.Fail($"Unexpected algorithm: {algorithm}");
+                return false;
+            }
+        }
+
         internal SafeEvpPKeyHandle DuplicateHandle()
         {
             return _key.DuplicateHandle();
@@ -78,6 +99,12 @@ namespace System.Security.Cryptography
                 _key,
                 signature,
                 static (key, encodedMessage, signature) => Interop.Crypto.MLDsaVerifyPreEncoded(key, encodedMessage, signature));
+
+        protected override void SignMuCore(ReadOnlySpan<byte> externalMu, Span<byte> destination) =>
+            Interop.Crypto.MLDsaSignExternalMu(_key, externalMu, destination);
+
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature) =>
+            Interop.Crypto.MLDsaVerifyExternalMu(_key, externalMu, signature);
 
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.MLDsaExportPublicKey(_key, destination);

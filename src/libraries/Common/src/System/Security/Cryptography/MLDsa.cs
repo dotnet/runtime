@@ -120,14 +120,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void SignData(ReadOnlySpan<byte> data, Span<byte> destination, ReadOnlySpan<byte> context = default)
         {
-            int signatureSizeInBytes = Algorithm.SignatureSizeInBytes;
-
-            if (destination.Length != signatureSizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, signatureSizeInBytes),
-                    nameof(destination));
-            }
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SignatureSizeInBytes);
 
             if (context.Length > MaxContextLength)
             {
@@ -309,13 +302,7 @@ namespace System.Security.Cryptography
         public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
             ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
-
-            if (destination.Length != Algorithm.SignatureSizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SignatureSizeInBytes),
-                    nameof(destination));
-            }
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SignatureSizeInBytes);
 
             if (context.Length > MaxContextLength)
             {
@@ -325,7 +312,29 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            if (hashAlgorithmIdentifier is null)
+            {
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmOid));
+            }
+
+            if (insufficientCollisionResistance)
+            {
+                throw new CryptographicException(SR.Format(
+                    SR.Cryptography_HashMLDsaAlgorithmMismatch,
+                    Algorithm.Name,
+                    hashAlgorithmIdentifier));
+            }
+
+            if (hashLengthInBytes != hash.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
+            }
+
             ThrowIfDisposed();
 
             SignPreHashCore(hash, context, hashAlgorithmOid, destination);
@@ -413,13 +422,23 @@ namespace System.Security.Cryptography
                     SR.Argument_SignatureContextTooLong255);
             }
 
-            Helpers.ValidateHashLength(hash, hashAlgorithmOid);
-            ThrowIfDisposed();
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
 
-            if (signature.Length != Algorithm.SignatureSizeInBytes)
+            if (hashAlgorithmIdentifier is null || insufficientCollisionResistance ||
+                signature.Length != Algorithm.SignatureSizeInBytes)
             {
                 return false;
             }
+
+            if (hashLengthInBytes != hash.Length)
+            {
+                throw new CryptographicException(SR.Cryptography_HashLengthMismatch);
+            }
+
+            ThrowIfDisposed();
 
             return VerifyPreHashCore(hash, context, hashAlgorithmOid, signature);
         }
@@ -474,6 +493,155 @@ namespace System.Security.Cryptography
                 hashAlgorithmOid,
                 new ReadOnlySpan<byte>(context));
         }
+
+        /// <inheritdoc cref="SignMu(ReadOnlySpan{byte})"/>
+        /// <exception cref="ArgumentNullException"><paramref name="externalMu"/> is <see langword="null"/>.</exception>
+        public byte[] SignMu(byte[] externalMu)
+        {
+            ArgumentNullException.ThrowIfNull(externalMu);
+
+            return SignMu(new ReadOnlySpan<byte>(externalMu));
+        }
+
+        /// <summary>
+        ///   Signs the specified externally computed signature mu (&#x3BC;) value.
+        /// </summary>
+        /// <param name="externalMu">
+        ///   The signature mu value to sign.
+        /// </param>
+        /// <returns>
+        ///   ML-DSA signature for the specified mu value.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="externalMu"/> is the incorrect length for the signature mu value.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The current platform does not support signing with an externally computed mu value.
+        /// </exception>
+        /// <seealso cref="VerifyMu(byte[], byte[])"/>
+        public byte[] SignMu(ReadOnlySpan<byte> externalMu)
+        {
+            byte[] destination = new byte[Algorithm.SignatureSizeInBytes];
+            SignMu(externalMu, destination.AsSpan());
+            return destination;
+        }
+
+        /// <summary>
+        ///   Signs the specified externally computed signature mu (&#x3BC;) value,
+        ///   writing the signature into the provided buffer.
+        /// </summary>
+        /// <param name="externalMu">
+        ///   The signature mu value to sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.SignatureSizeInBytes"/>.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     The buffer in <paramref name="externalMu"/> is the incorrect length for the signature mu value.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The buffer in <paramref name="destination"/> is the incorrect length to receive the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The instance represents only a public key.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred while signing the hash.</para>
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The current platform does not support signing with an externally computed mu value.
+        /// </exception>
+        /// <seealso cref="VerifyMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        public void SignMu(ReadOnlySpan<byte> externalMu, Span<byte> destination)
+        {
+            if (externalMu.Length != Algorithm.MuSizeInBytes)
+                throw new ArgumentException(SR.Argument_MLDsaMuInvalidLength, nameof(externalMu));
+
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SignatureSizeInBytes);
+            ThrowIfDisposed();
+
+            SignMuCore(externalMu, destination);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, computes the remainder of the signature from the
+        ///   precomputed mu (&#x3BC;) value, writing it into the provided buffer.
+        /// </summary>
+        /// <param name="externalMu">
+        ///   The signature mu value to sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred while computing the signature.
+        /// </exception>
+        protected abstract void SignMuCore(ReadOnlySpan<byte> externalMu, Span<byte> destination);
+
+        /// <inheritdoc cref="VerifyMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="externalMu"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
+        public bool VerifyMu(byte[] externalMu, byte[] signature)
+        {
+            ArgumentNullException.ThrowIfNull(externalMu);
+            ArgumentNullException.ThrowIfNull(signature);
+
+            return VerifyMu(new ReadOnlySpan<byte>(externalMu), new ReadOnlySpan<byte>(signature));
+        }
+
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided externally computed signature mu (&#x3BC;) value.
+        /// </summary>
+        /// <param name="externalMu">The signature mu value.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided mu value;
+        ///   otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        ///   This instance has been disposed.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error occurred while verifying the mu value.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The current platform does not support verification with an externally computed mu value.
+        /// </exception>
+        public bool VerifyMu(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature)
+        {
+            if (externalMu.Length != Algorithm.MuSizeInBytes || signature.Length != Algorithm.SignatureSizeInBytes)
+            {
+                return false;
+            }
+
+            ThrowIfDisposed();
+
+            return VerifyMuCore(externalMu, signature);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class,
+        ///   verifies that a digital signature is valid for the provided externally computed signature mu (&#x3BC;) value.
+        /// </summary>
+        /// <param name="externalMu">The signature mu value.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the mu value is valid; otherwise, <see langword="false"/>.
+        /// </returns>
+        protected abstract bool VerifyMuCore(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature);
 
         /// <summary>
         ///   Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
@@ -1031,15 +1199,7 @@ namespace System.Security.Cryptography
         /// </remarks>
         public void ExportMLDsaPublicKey(Span<byte> destination)
         {
-            int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
-
-            if (destination.Length != publicKeySizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, publicKeySizeInBytes),
-                    nameof(destination));
-            }
-
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.PublicKeySizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaPublicKeyCore(destination);
@@ -1081,15 +1241,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void ExportMLDsaSecretKey(Span<byte> destination)
         {
-            int secretKeySizeInBytes = Algorithm.SecretKeySizeInBytes;
-
-            if (destination.Length != secretKeySizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, secretKeySizeInBytes),
-                    nameof(destination));
-            }
-
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SecretKeySizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaSecretKeyCore(destination);
@@ -1129,14 +1281,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void ExportMLDsaPrivateSeed(Span<byte> destination)
         {
-            int privateSeedSizeInBytes = Algorithm.PrivateSeedSizeInBytes;
-            if (destination.Length != privateSeedSizeInBytes)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_DestinationImprecise, privateSeedSizeInBytes),
-                    nameof(destination));
-            }
-
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.PrivateSeedSizeInBytes);
             ThrowIfDisposed();
 
             ExportMLDsaPrivateSeedCore(destination);
@@ -2114,7 +2259,76 @@ namespace System.Security.Cryptography
             }
         }
 
+        // Returns a hash algorithm identifier for an OID.
+        // insufficientCollisionResistance is true if the hash algorithm is known, but does not meet the required
+        // collision resistance from FIPS 204.
+        private protected string? MapHashOidToAlgorithm(
+            string hashOid,
+            out int hashLengthInBytes,
+            out bool insufficientCollisionResistance)
+        {
+            int hashLambda;
+            string hashAlgorithmIdentifier;
 
+            switch (hashOid)
+            {
+                case Oids.Md5:
+                    hashLengthInBytes = 128 / 8;
+                    insufficientCollisionResistance = true;
+                    return HashAlgorithmNames.MD5;
+                case Oids.Sha1:
+                    hashLengthInBytes = 160 / 8;
+                    insufficientCollisionResistance = true;
+                    return HashAlgorithmNames.SHA1;
+                case Oids.Sha256:
+                    hashLengthInBytes = 256 / 8;
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA256;
+                    break;
+                case Oids.Sha3_256:
+                    hashLengthInBytes = 256 / 8;
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_256;
+                    break;
+                case Oids.Sha384:
+                    hashLengthInBytes = 384 / 8;
+                    hashLambda = 384 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA384;
+                    break;
+                case Oids.Sha3_384:
+                    hashLengthInBytes = 384 / 8;
+                    hashLambda = 384 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_384;
+                    break;
+                case Oids.Sha512:
+                    hashLengthInBytes = 512 / 8;
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA512;
+                    break;
+                case Oids.Sha3_512:
+                    hashLengthInBytes = 512 / 8;
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHA3_512;
+                    break;
+                case Oids.Shake128: // SHAKE-128 with 256-bits of output
+                    hashLengthInBytes = 256 / 8;
+                    hashLambda = 256 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE128;
+                    break;
+                case Oids.Shake256: // SHAKE-256 with 512-bits of output
+                    hashLengthInBytes = 512 / 8;
+                    hashLambda = 512 / 2;
+                    hashAlgorithmIdentifier = HashAlgorithmNames.SHAKE256;
+                    break;
+                default:
+                    hashLengthInBytes = 0;
+                    insufficientCollisionResistance = false;
+                    return null;
+            }
+
+            insufficientCollisionResistance = hashLambda < Algorithm.LambdaCollisionStrength;
+            return hashAlgorithmIdentifier;
+        }
 
         private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
     }

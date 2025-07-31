@@ -2138,18 +2138,8 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 
     if (IsFCall())
     {
-        // Call FCalls directly when possible
-        if (!IsInterface() && !GetMethodTable()->ContainsGenericVariables())
-        {
-            BOOL fSharedOrDynamicFCallImpl;
-            PCODE pFCallImpl = ECall::GetFCallImpl(this, &fSharedOrDynamicFCallImpl);
-
-            if (!fSharedOrDynamicFCallImpl)
-                return pFCallImpl;
-
-            // Fake ctors share one implementation that has to be wrapped by prestub
-            GetOrCreatePrecode();
-        }
+        // FCalls need stable entrypoint that can be mapped back to MethodDesc
+        return GetStableEntryPoint();
     }
     else
     {
@@ -2234,13 +2224,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS == NULL)
     {
-        // Is it an FCALL?
-        MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
-        if (pFCallMD != NULL)
-        {
-            return pFCallMD;
-        }
-
         return NULL;
     }
 
@@ -2316,9 +2299,13 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
 
 MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
 {
-    // Without FEATURE_RUNTIME_ASYNC every declared method is classified as a NormalMethod.
+    // Without runtime async, every declared method is classified as a NormalMethod.
     // Thus code that handles runtime async scenarios becomes unreachable.
-#ifdef FEATURE_RUNTIME_ASYNC
+    if (!g_pConfig->RuntimeAsync())
+    {
+        return MethodReturnKind::NormalMethod;
+    }
+
     PCCOR_SIGNATURE initialSig = sig.GetPtr();
     uint32_t data;
     IfFailThrow(sig.GetCallingConvInfo(&data));
@@ -2376,7 +2363,6 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
                 return MethodReturnKind::NonGenericTaskReturningMethod;
         }
     }
-#endif // FEATURE_RUNTIME_ASYNC
 
     return MethodReturnKind::NormalMethod;
 }
@@ -2551,6 +2537,10 @@ BOOL MethodDesc::RequiresStableEntryPointCore(BOOL fEstimateForChunk)
 
         // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
         if ((IsInterface() && !IsStatic() && IsVirtual()) || IsCLRToCOMCall())
+            return TRUE;
+
+        // FCalls need stable entrypoint that can be mapped back to MethodDesc
+        if (IsFCall())
             return TRUE;
     }
 

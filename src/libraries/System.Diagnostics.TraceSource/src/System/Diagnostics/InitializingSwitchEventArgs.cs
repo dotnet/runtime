@@ -8,11 +8,18 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class InitializingSwitchEventArgs : EventArgs
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InitializingSwitchEventArgs"/> class.
+        /// </summary>
+        /// <param name="switch">The switch that is being initialized.</param>
         public InitializingSwitchEventArgs(Switch @switch)
         {
             Switch = @switch;
         }
 
+        /// <summary>
+        /// Gets the <see cref="Switch" /> that is being initialized.
+        /// </summary>
         public Switch Switch { get; }
     }
 }

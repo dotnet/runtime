@@ -1475,11 +1475,13 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetGuid(MethodTable* pMT, GUID* r
  * doesn't guarantee that a ctor will succeed, only that the VM is able
  * to support an instance of this type on the heap.
  * ==========
+ * The 'allowByRefLike' parameter controls whether the type should be validated as not ByRefLike.
  * The 'fForGetUninitializedInstance' parameter controls the type of
  * exception that is thrown if a check fails.
  */
-void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
+static void ValidateTypeAbleToBeInstantiated(
     TypeHandle typeHandle,
+    bool allowByRefLike,
     bool fGetUninitializedObject)
 {
     STANDARD_VM_CONTRACT;
@@ -1535,14 +1537,14 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
     }
 
     // Don't allow ref structs
-    if (pMT->IsByRefLike())
+    if (!allowByRefLike && pMT->IsByRefLike())
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike"));
     }
 }
 
 /*
- * Given a RuntimeType, queries info on how to instantiate the object.
+ * Given a RuntimeType, queries info on how to instantiate the type.
  * pRuntimeType - [required] the RuntimeType object
  * ppfnAllocator - [required, null-init] fnptr to the allocator
  *                 mgd sig: void* -> object
@@ -1593,7 +1595,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
         typeHandle = ((REFLECTCLASSBASEREF)pRuntimeType.Get())->GetType();
     }
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(typeHandle, false /* fGetUninitializedObject */);
+    ValidateTypeAbleToBeInstantiated(typeHandle, true /* allowByRefLike */, false /* fGetUninitializedObject */);
 
     MethodTable* pMT = typeHandle.AsMethodTable();
     _ASSERTE(pMT != NULL);
@@ -1746,7 +1748,8 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
 
     TypeHandle type = pType.AsTypeHandle();
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+    // ByRefLike types can't be boxed (allocated as an uninitialized object).
+    ValidateTypeAbleToBeInstantiated(type, false /* allowRefLike */, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
 
@@ -1919,7 +1922,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     TypeHandle type = pType.AsTypeHandle();
 
-    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+    // ByRefLike types can't be boxed.
+    ValidateTypeAbleToBeInstantiated(type, false /* allowRefLike */, true /* fForGetUninitializedInstance */);
 
     MethodTable* pMT = type.AsMethodTable();
 
