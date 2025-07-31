@@ -2391,6 +2391,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 			
 			if (opcode != 0) {
+				// Skip intrinsic for single->int64 conversions in AOT scenarios where OP_RCONV_TO_I8 emulation is problematic
+				if (!isDouble && (tto_type == MONO_TYPE_I8 || tto_type == MONO_TYPE_U8) && cfg->compile_aot)
+					return NULL;
+				
 				int ireg = mono_alloc_ireg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, opcode, ireg, args [0]->dreg);
 				ins->type = tto_stack;
