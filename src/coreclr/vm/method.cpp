@@ -3469,7 +3469,7 @@ void PInvokeMethodDesc::EnsureStackArgumentSize()
         if (MarshalingRequired())
         {
             // Generating interop stub sets the stack size as side-effect in all cases
-            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES);
+            GetStubForInteropMethod(this, PINVOKESTUB_FL_FOR_NUMPARAMBYTES);
         }
     }
 }

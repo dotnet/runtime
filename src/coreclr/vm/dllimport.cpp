@@ -1014,7 +1014,7 @@ public:
         // Native Signature
         //
         SString strNativeSignature;
-        if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
+        if (m_dwStubFlags & PINVOKESTUB_FL_REVERSE_INTEROP)
         {
             // Reverse interop. Use StubSignature
             strNativeSignature = stubMethodSignature;
@@ -1068,19 +1068,19 @@ public:
         // Fire the event
         //
         DWORD dwFlags = 0;
-        if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
+        if (m_dwStubFlags & PINVOKESTUB_FL_REVERSE_INTEROP)
             dwFlags |= ETW_IL_STUB_FLAGS_REVERSE_INTEROP;
 #ifdef FEATURE_COMINTEROP
-        if (m_dwStubFlags & NDIRECTSTUB_FL_COM)
+        if (m_dwStubFlags & PINVOKESTUB_FL_COM)
             dwFlags |= ETW_IL_STUB_FLAGS_COM_INTEROP;
 #endif // FEATURE_COMINTEROP
-        if (m_dwStubFlags & NDIRECTSTUB_FL_DELEGATE)
+        if (m_dwStubFlags & PINVOKESTUB_FL_DELEGATE)
             dwFlags |= ETW_IL_STUB_FLAGS_DELEGATE;
-        if (m_dwStubFlags & NDIRECTSTUB_FL_CONVSIGASVARARG)
+        if (m_dwStubFlags & PINVOKESTUB_FL_CONVSIGASVARARG)
             dwFlags |= ETW_IL_STUB_FLAGS_VARARG;
-        if (m_dwStubFlags & NDIRECTSTUB_FL_UNMANAGED_CALLI)
+        if (m_dwStubFlags & PINVOKESTUB_FL_UNMANAGED_CALLI)
             dwFlags |= ETW_IL_STUB_FLAGS_UNMANAGED_CALLI;
-        if (m_dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)
+        if (m_dwStubFlags & PINVOKESTUB_FL_STRUCT_MARSHAL)
             dwFlags |= ETW_IL_STUB_FLAGS_STRUCT_MARSHAL;
 
         DWORD dwToken = 0;
@@ -1137,22 +1137,22 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         LOG((facility, level, "dwStubFlags: 0x%08x\n", dwStubFlags));
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_CONVSIGASVARARG,         "   NDIRECTSTUB_FL_CONVSIGASVARARG\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_BESTFIT,                 "   NDIRECTSTUB_FL_BESTFIT\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR,   "   NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_SKIP_TRANSITION_NOTIFY,  "   NDIRECTSTUB_FL_SKIP_TRANSITION_NOTIFY\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_DELEGATE,                "   NDIRECTSTUB_FL_DELEGATE\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_DOHRESULTSWAPPING,       "   NDIRECTSTUB_FL_DOHRESULTSWAPPING\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_REVERSE_INTEROP,         "   NDIRECTSTUB_FL_REVERSE_INTEROP\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_STRUCT_MARSHAL,          "   NDIRECTSTUB_FL_STRUCT_MARSHAL\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_CONVSIGASVARARG,         "   PINVOKESTUB_FL_CONVSIGASVARARG\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_BESTFIT,                 "   PINVOKESTUB_FL_BESTFIT\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_THROWONUNMAPPABLECHAR,   "   PINVOKESTUB_FL_THROWONUNMAPPABLECHAR\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_SKIP_TRANSITION_NOTIFY,  "   PINVOKESTUB_FL_SKIP_TRANSITION_NOTIFY\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_DELEGATE,                "   PINVOKESTUB_FL_DELEGATE\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_DOHRESULTSWAPPING,       "   PINVOKESTUB_FL_DOHRESULTSWAPPING\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_REVERSE_INTEROP,         "   PINVOKESTUB_FL_REVERSE_INTEROP\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_STRUCT_MARSHAL,          "   PINVOKESTUB_FL_STRUCT_MARSHAL\n", facility, level);
 #ifdef FEATURE_COMINTEROP
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_COM,                     "   NDIRECTSTUB_FL_COM\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_COM,                     "   PINVOKESTUB_FL_COM\n", facility, level);
 #endif // FEATURE_COMINTEROP
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL,    "   NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_UNMANAGED_CALLI,         "   NDIRECTSTUB_FL_UNMANAGED_CALLI\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_GENERATEDEBUGGABLEIL,    "   PINVOKESTUB_FL_GENERATEDEBUGGABLEIL\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_UNMANAGED_CALLI,         "   PINVOKESTUB_FL_UNMANAGED_CALLI\n", facility, level);
 #ifdef FEATURE_COMINTEROP
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDGETTER,             "   NDIRECTSTUB_FL_FIELDGETTER\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDSETTER,             "   NDIRECTSTUB_FL_FIELDSETTER\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_FIELDGETTER,             "   PINVOKESTUB_FL_FIELDGETTER\n", facility, level);
+        LogOneFlag(dwStubFlags, PINVOKESTUB_FL_FIELDSETTER,             "   PINVOKESTUB_FL_FIELDSETTER\n", facility, level);
 #endif // FEATURE_COMINTEROP
 
         //
@@ -1162,22 +1162,22 @@ public:
         CONSISTENCY_CHECK(!SF_IsCOMEventCallStub(dwStubFlags));
 
         DWORD dwKnownMask =
-            NDIRECTSTUB_FL_CONVSIGASVARARG          |
-            NDIRECTSTUB_FL_BESTFIT                  |
-            NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR    |
-            NDIRECTSTUB_FL_SKIP_TRANSITION_NOTIFY   |
-            NDIRECTSTUB_FL_DELEGATE                 |
-            NDIRECTSTUB_FL_DOHRESULTSWAPPING        |
-            NDIRECTSTUB_FL_REVERSE_INTEROP          |
-            NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL     |
-            NDIRECTSTUB_FL_UNMANAGED_CALLI          |
-            NDIRECTSTUB_FL_STRUCT_MARSHAL           |
+            PINVOKESTUB_FL_CONVSIGASVARARG          |
+            PINVOKESTUB_FL_BESTFIT                  |
+            PINVOKESTUB_FL_THROWONUNMAPPABLECHAR    |
+            PINVOKESTUB_FL_SKIP_TRANSITION_NOTIFY   |
+            PINVOKESTUB_FL_DELEGATE                 |
+            PINVOKESTUB_FL_DOHRESULTSWAPPING        |
+            PINVOKESTUB_FL_REVERSE_INTEROP          |
+            PINVOKESTUB_FL_GENERATEDEBUGGABLEIL     |
+            PINVOKESTUB_FL_UNMANAGED_CALLI          |
+            PINVOKESTUB_FL_STRUCT_MARSHAL           |
 #ifdef FEATURE_COMINTEROP
-            NDIRECTSTUB_FL_COM                      |
-            NDIRECTSTUB_FL_COMLATEBOUND             |   // internal
-            NDIRECTSTUB_FL_COMEVENTCALL             |   // internal
-            NDIRECTSTUB_FL_FIELDGETTER              |
-            NDIRECTSTUB_FL_FIELDSETTER              |
+            PINVOKESTUB_FL_COM                      |
+            PINVOKESTUB_FL_COMLATEBOUND             |   // internal
+            PINVOKESTUB_FL_COMEVENTCALL             |   // internal
+            PINVOKESTUB_FL_FIELDGETTER              |
+            PINVOKESTUB_FL_FIELDSETTER              |
 #endif // FEATURE_COMINTEROP
             0;
 
@@ -1390,20 +1390,20 @@ private:
     {
         if (TargetHasThis(dwStubFlags))
         {
-            dwStubFlags |= NDIRECTSTUB_FL_TARGET_HAS_THIS;
+            dwStubFlags |= PINVOKESTUB_FL_TARGET_HAS_THIS;
         }
         if (StubHasThis(dwStubFlags))
         {
-            dwStubFlags |= NDIRECTSTUB_FL_STUB_HAS_THIS;
+            dwStubFlags |= PINVOKESTUB_FL_STUB_HAS_THIS;
         }
-        if ((dwStubFlags & NDIRECTSTUB_FL_SUPPRESSGCTRANSITION) == 0
+        if ((dwStubFlags & PINVOKESTUB_FL_SUPPRESSGCTRANSITION) == 0
             && TargetSuppressGCTransition(dwStubFlags, pTargetMD))
         {
-            dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
+            dwStubFlags |= PINVOKESTUB_FL_SUPPRESSGCTRANSITION;
         }
         if (HasCheckForPendingException(pTargetMD))
         {
-            dwStubFlags |= NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION;
+            dwStubFlags |= PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION;
         }
         return dwStubFlags;
     }
@@ -1456,7 +1456,7 @@ public:
                 pStubModule,
                 signature,
                 pTypeContext,
-                dwStubFlags | NDIRECTSTUB_FL_STUB_HAS_THIS | NDIRECTSTUB_FL_TARGET_HAS_THIS,
+                dwStubFlags | PINVOKESTUB_FL_STUB_HAS_THIS | PINVOKESTUB_FL_TARGET_HAS_THIS,
                 iLCIDParamIdx,
                 pTargetMD)
     {
@@ -1522,7 +1522,7 @@ public:
                 pStubModule,
                 signature,
                 pTypeContext,
-                dwStubFlags | NDIRECTSTUB_FL_STUB_HAS_THIS | NDIRECTSTUB_FL_TARGET_HAS_THIS,
+                dwStubFlags | PINVOKESTUB_FL_STUB_HAS_THIS | PINVOKESTUB_FL_TARGET_HAS_THIS,
                 iLCIDParamIdx,
                 pTargetMD)
     {
@@ -1592,15 +1592,15 @@ ILStubLinkerFlags GetILStubLinkerFlagsForPInvokeStubFlags(PInvokeStubFlags flags
     {
         result |= ILSTUB_LINKER_FLAG_REVERSE;
     }
-    if (flags & NDIRECTSTUB_FL_SUPPRESSGCTRANSITION)
+    if (flags & PINVOKESTUB_FL_SUPPRESSGCTRANSITION)
     {
         result |= ILSTUB_LINKER_FLAG_SUPPRESSGCTRANSITION;
     }
-    if (flags & NDIRECTSTUB_FL_STUB_HAS_THIS)
+    if (flags & PINVOKESTUB_FL_STUB_HAS_THIS)
     {
         result |= ILSTUB_LINKER_FLAG_STUB_HAS_THIS;
     }
-    if (flags & NDIRECTSTUB_FL_TARGET_HAS_THIS)
+    if (flags & PINVOKESTUB_FL_TARGET_HAS_THIS)
     {
         result |= ILSTUB_LINKER_FLAG_TARGET_HAS_THIS;
     }
@@ -1621,7 +1621,7 @@ PInvokeStubLinker::PInvokeStubLinker(
     m_fHasCleanupCode(FALSE),
     m_fHasExceptionCleanupCode(FALSE),
     m_fCleanupWorkListIsSetup(FALSE),
-    m_targetHasThis((dwStubFlags & NDIRECTSTUB_FL_TARGET_HAS_THIS) != 0),
+    m_targetHasThis((dwStubFlags & PINVOKESTUB_FL_TARGET_HAS_THIS) != 0),
     m_dwCleanupWorkListLocalNum(-1),
     m_dwRetValLocalNum(-1),
     m_ErrorResID(-1),
@@ -4281,7 +4281,7 @@ static void CreatePInvokeStubAccessMetadata(
             // only COM-to-CLR call supports hresult swapping in the reverse direction
             if (SF_IsCOMStub(*pdwStubFlags) && !IsMiPreserveSig(dwImplFlags))
             {
-                (*pdwStubFlags) |= NDIRECTSTUB_FL_DOHRESULTSWAPPING;
+                (*pdwStubFlags) |= PINVOKESTUB_FL_DOHRESULTSWAPPING;
             }
         }
         else
@@ -4290,7 +4290,7 @@ static void CreatePInvokeStubAccessMetadata(
             // delegate to an unmanaged method does not.
             if (!IsMiPreserveSig(dwImplFlags) && !SF_IsDelegateStub(*pdwStubFlags))
             {
-                (*pdwStubFlags) |= NDIRECTSTUB_FL_DOHRESULTSWAPPING;
+                (*pdwStubFlags) |= PINVOKESTUB_FL_DOHRESULTSWAPPING;
             }
         }
     }
@@ -4321,7 +4321,7 @@ static void CreatePInvokeStubAccessMetadata(
         // Do not notify the profiler about QCalls
         // See ProfilerManagedToUnmanagedTransitionMD()
         if (pMD->IsQCall())
-            *pdwStubFlags |= NDIRECTSTUB_FL_SKIP_TRANSITION_NOTIFY;
+            *pdwStubFlags |= PINVOKESTUB_FL_SKIP_TRANSITION_NOTIFY;
     }
 
     (*piLCIDArg) = lcidArg;
@@ -5240,7 +5240,7 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
     pParamTokenArray[numArgs] = (mdParamDef)fd;
 
     // fields are never preserve-sig
-    dwStubFlags |= NDIRECTSTUB_FL_DOHRESULTSWAPPING;
+    dwStubFlags |= PINVOKESTUB_FL_DOHRESULTSWAPPING;
 
     // convert field signature to getter/setter signature
     SigBuilder sigBuilder;
@@ -5305,7 +5305,7 @@ MethodDesc* PInvoke::CreateStructMarshalILStub(MethodTable* pMT)
     if (pCachedStubMD != NULL)
         RETURN pCachedStubMD;
 
-    DWORD dwStubFlags = NDIRECTSTUB_FL_STRUCT_MARSHAL;
+    DWORD dwStubFlags = PINVOKESTUB_FL_STRUCT_MARSHAL;
 
     BOOL bestFit, throwOnUnmappableChar;
 
@@ -5313,11 +5313,11 @@ MethodDesc* PInvoke::CreateStructMarshalILStub(MethodTable* pMT)
 
     if (bestFit == TRUE)
     {
-        dwStubFlags |= NDIRECTSTUB_FL_BESTFIT;
+        dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
     }
     if (throwOnUnmappableChar == TRUE)
     {
-        dwStubFlags |= NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR;
+        dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
     }
 
     // ValueClass signature:
@@ -5454,7 +5454,7 @@ namespace
         {
             pStubMD = PInvoke::CreateCLRToNativeILStub(
                 pSigInfo,
-                dwStubFlags & ~NDIRECTSTUB_FL_FOR_NUMPARAMBYTES,
+                dwStubFlags & ~PINVOKESTUB_FL_FOR_NUMPARAMBYTES,
                 pNMD);
         }
 
@@ -5772,7 +5772,7 @@ void CreateCLRToDispatchCOMStub(
                             (CorNativeLinkType)0,
                             (CorNativeLinkFlags)0,
                             CallConv::GetDefaultUnmanagedCallingConvention(),
-                            dwStubFlags | NDIRECTSTUB_FL_COM,
+                            dwStubFlags | PINVOKESTUB_FL_COM,
                             pMD,
                             pParamTokenArray,
                             iLCIDArg);
@@ -5994,13 +5994,13 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     Signature signature = pVASigCookie->signature;
     CorInfoCallConvExtension unmgdCallConv = CorInfoCallConvExtension::Managed;
 
-    DWORD dwStubFlags = NDIRECTSTUB_FL_BESTFIT;
+    DWORD dwStubFlags = PINVOKESTUB_FL_BESTFIT;
 
     // The MethodDesc pointer may in fact be the unmanaged target, see PInvokeStubs.asm.
     if (pMD == NULL || (UINT_PTR)pMD & 0x1)
     {
         pMD = NULL;
-        dwStubFlags |= NDIRECTSTUB_FL_UNMANAGED_CALLI;
+        dwStubFlags |= PINVOKESTUB_FL_UNMANAGED_CALLI;
 
         // need to convert the CALLI signature to stub signature with managed calling convention
         BYTE callConv = MetaSig::GetCallingConvention(signature);
@@ -6026,7 +6026,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
             if (builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION))
             {
-                dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
+                dwStubFlags |= PINVOKESTUB_FL_SUPPRESSGCTRANSITION;
             }
         }
 
@@ -6043,7 +6043,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     else
     {
         _ASSERTE(pMD->IsPInvoke());
-        dwStubFlags |= NDIRECTSTUB_FL_CONVSIGASVARARG;
+        dwStubFlags |= PINVOKESTUB_FL_CONVSIGASVARARG;
 
         // vararg P/Invoke must be cdecl
         unmgdCallConv = CorInfoCallConvExtension::C;

@@ -1541,7 +1541,7 @@ PCODE COMDelegate::GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** 
 
     ValidateDelegatePInvoke(pDelegateMD);
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
     RETURN PInvoke::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
 }
@@ -1555,7 +1555,7 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     MethodTable *pMT = pDelegateMD->GetMethodTable();
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
     return PInvoke::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
