@@ -72,7 +72,6 @@ namespace System.Text.Json.Serialization.Converters
             }
 #else
             string? versionString = reader.GetString();
-
             if (!string.IsNullOrEmpty(versionString) && (char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1])))
             {
                 // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
