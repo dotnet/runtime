@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             result.Should()
                 .InitializeContextForConfig(component.RuntimeConfigJson)
-                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, TestContext.BuiltDotNet.DotnetExecutablePath); ;
+                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, TestContext.BuiltDotNet.DotnetExecutablePath);
 
             // This should fail even with the valid type and valid method,
             // because the type is not resolvable from the default AssemblyLoadContext.

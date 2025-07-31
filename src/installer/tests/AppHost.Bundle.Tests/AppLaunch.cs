@@ -37,7 +37,7 @@ namespace AppHost.Bundle.Tests
             }
             else
             {
-                result.Should().HaveProperty(Constants.RuntimeProperty.DotnetHostPath, TestContext.BuiltDotNet.BinPath);
+                result.Should().HaveProperty(Constants.RuntimeProperty.DotnetHostPath, TestContext.BuiltDotNet.DotnetExecutablePath);
             }
         }
 
