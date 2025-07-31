@@ -349,7 +349,7 @@ MethodDesc* UMThunkMarshInfo::GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvoke
     }
 #endif // DEBUGGING_SUPPORTED
 
-    pStubMD = NDirect::CreateCLRToNativeILStub(
+    pStubMD = PInvoke::CreateCLRToNativeILStub(
         pSigInfo,
         dwStubFlags,
         pInvokeMD // may be NULL

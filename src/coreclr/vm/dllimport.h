@@ -70,9 +70,9 @@ public:
 };
 
 //=======================================================================
-// Collects code and data pertaining to the NDirect interface.
+// Collects code and data pertaining to the PInvoke interface.
 //=======================================================================
-class NDirect
+class PInvoke
 {
 public:
     // Get the calling convention and whether to suppress GC transition for a method by checking:
@@ -95,7 +95,7 @@ public:
     static HRESULT HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken token, DWORD dwMemberAttrs);
 
     // Either MD or signature & module must be given.
-    // Note: This method can be called at a time when the associated NDirectMethodDesc
+    // Note: This method can be called at a time when the associated PInvokeMethodDesc
     // has not been fully populated. This means the optimized path for this call is to rely
     // on the most basic P/Invoke metadata. An example when this can happen is when the JIT
     // is compiling a method containing a P/Invoke that is being considered for inlining.
@@ -106,15 +106,15 @@ public:
         _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
 
-    static void PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD);
-    static void InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo);
+    static void PopulatePInvokeMethodDesc(_Inout_ PInvokeMethodDesc* pNMD);
+    static void InitializeSigInfoAndPopulatePInvokeMethodDesc(_Inout_ PInvokeMethodDesc* pNMD, _Inout_ PInvokeStaticSigInfo* pSigInfo);
 
     static MethodDesc* CreateCLRToNativeILStub(
                     StubSigDesc*             pSigDesc,
                     CorNativeLinkType        nlType,
                     CorNativeLinkFlags       nlFlags,
                     CorInfoCallConvExtension unmgdCallConv,
-                    DWORD                    dwStubFlags); // NDirectStubFlags
+                    DWORD                    dwStubFlags); // PInvokeStubFlags
 
 #ifdef FEATURE_COMINTEROP
     static MethodDesc* CreateFieldAccessILStub(
@@ -122,7 +122,7 @@ public:
                     DWORD              cbMetaSigSize,
                     Module*            pModule,
                     mdFieldDef         fd,
-                    DWORD              dwStubFlags, // NDirectStubFlags
+                    DWORD              dwStubFlags, // PInvokeStubFlags
                     FieldDesc*         pFD);
 #endif // FEATURE_COMINTEROP
 
@@ -133,17 +133,17 @@ public:
                              DWORD dwStubFlags,
                              MethodDesc* pMD);
 
-    static PCODE            GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
+    static PCODE            GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
 
 private:
-    NDirect() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
+    PInvoke() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
 };
 
 //----------------------------------------------------------------
-// Flags passed to CreateNDirectStub that control stub generation
+// Flags passed to CreatePInvokeStub that control stub generation
 //----------------------------------------------------------------
-enum NDirectStubFlags
+enum PInvokeStubFlags
 {
     NDIRECTSTUB_FL_CONVSIGASVARARG          = 0x00000001,
     NDIRECTSTUB_FL_BESTFIT                  = 0x00000002,
@@ -174,7 +174,7 @@ enum NDirectStubFlags
     // unused                               = 0x00400000,
     // unused                               = 0x00800000,
 
-    // internal flags -- these won't ever show up in an NDirectStubHashBlob
+    // internal flags -- these won't ever show up in an PInvokeStubHashBlob
     NDIRECTSTUB_FL_FOR_NUMPARAMBYTES        = 0x10000000,   // do just enough to return the right value from Marshal.NumParamBytes
 
 #ifdef FEATURE_COMINTEROP
@@ -328,7 +328,7 @@ enum ETW_IL_STUB_FLAGS
 // each flavor supports roughly the same switches. Those switches which can be
 // statically determined via CAs (DllImport, UnmanagedFunctionPointer,
 // BestFitMappingAttribute, etc) or via MetaSig are parsed and unified by this
-// class. There are two flavors of constructor, one for NDirectMethodDescs and one
+// class. There are two flavors of constructor, one for PInvokeMethodDescs and one
 // for Delegates.
 //---------------------------------------------------------
 struct PInvokeStaticSigInfo
@@ -461,10 +461,10 @@ private:
 #include "stubgen.h"
 
 #ifndef DACCESS_COMPILE
-class NDirectStubLinker : public ILStubLinker
+class PInvokeStubLinker : public ILStubLinker
 {
 public:
-    NDirectStubLinker(
+    PInvokeStubLinker(
                 DWORD dwStubFlags,
                 Module* pModule,
                 const Signature &signature,
@@ -476,7 +476,7 @@ public:
 
     void    Begin(DWORD dwStubFlags);
     void    End(DWORD dwStubFlags);
-    void    DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD);
+    void    DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD);
     void    EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwPinnedLocal);
     void    LoadCleanupWorkList(ILCodeStream* pcsEmit);
 #ifdef PROFILING_SUPPORTED

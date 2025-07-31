@@ -63,7 +63,7 @@ extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
         return;
 
     // Silently ignore if not N/Direct and not runtime generated.
-    if (!(pMD->IsNDirect()) && !(pMD->IsRuntimeSupplied()))
+    if (!(pMD->IsPInvoke()) && !(pMD->IsRuntimeSupplied()))
         return;
 
     BEGIN_QCALL;
@@ -126,7 +126,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
 
         if (structMarshalStub == NULL)
         {
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
+            structMarshalStub = PInvoke::CreateStructMarshalILStub(pMT);
         }
 
         *pStructMarshalStub = structMarshalStub->GetSingleCallableAddrOfCode();

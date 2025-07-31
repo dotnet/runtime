@@ -69,7 +69,7 @@ SIZE_T Precode::SizeOf(PrecodeType t)
         return sizeof(StubPrecode);
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     case PRECODE_NDIRECT_IMPORT:
-        return sizeof(NDirectImportPrecode);
+        return sizeof(PInvokeImportPrecode);
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
@@ -144,7 +144,7 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
         break;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     case PRECODE_NDIRECT_IMPORT:
-        pMD = AsNDirectImportPrecode()->GetMethodDesc();
+        pMD = AsPInvokeImportPrecode()->GetMethodDesc();
         break;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
@@ -332,7 +332,7 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
         break;
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     case PRECODE_NDIRECT_IMPORT:
-        ((NDirectImportPrecode*)this)->Init((NDirectImportPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
+        ((PInvokeImportPrecode*)this)->Init((PInvokeImportPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
         break;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
@@ -648,10 +648,10 @@ void InterpreterPrecode::Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
 
-void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+void PInvokeImportPrecode::Init(PInvokeImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
-    StubPrecode::Init(pPrecodeRX, (TADDR)pMD, pLoaderAllocator, NDirectImportPrecode::Type, GetEEFuncEntryPoint(NDirectImportThunk));
+    StubPrecode::Init(pPrecodeRX, (TADDR)pMD, pLoaderAllocator, PInvokeImportPrecode::Type, GetEEFuncEntryPoint(PInvokeImportThunk));
 }
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE

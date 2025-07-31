@@ -28,7 +28,7 @@
 class Stub;
 class FCallMethodDesc;
 class FieldDesc;
-class NDirect;
+class PInvoke;
 class MethodDescChunk;
 class InstantiatedMethodDesc;
 class DictionaryLayout;
@@ -53,7 +53,7 @@ GVAL_DECL(DWORD, g_MiniMetaDataBuffMaxSize);
 GVAL_DECL(TADDR, g_MiniMetaDataBuffAddress);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-EXTERN_C VOID STDCALL NDirectImportThunk();
+EXTERN_C VOID STDCALL PInvokeImportThunk();
 
 #define METHOD_TOKEN_REMAINDER_BIT_COUNT 12
 #define METHOD_TOKEN_REMAINDER_MASK ((1 << METHOD_TOKEN_REMAINDER_BIT_COUNT) - 1)
@@ -194,7 +194,7 @@ enum MethodDescFlags
     // Has local slot (vs. has real slot in MethodTable)
     mdfHasNonVtableSlot                 = 0x0008,
 
-    // Method is a body for a method impl (MI_MethodDesc, MI_NDirectMethodDesc, etc)
+    // Method is a body for a method impl (MI_MethodDesc, MI_PInvokeMethodDesc, etc)
     // where the function explicitly implements IInterface.foo() instead of foo().
     mdfMethodImpl                       = 0x0010,
 
@@ -726,7 +726,7 @@ public:
     inline bool IsILStub();
     inline bool IsLCGMethod();
 
-    inline DWORD IsNDirect()
+    inline DWORD IsPInvoke()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return mcPInvoke == GetClassification();
@@ -2952,10 +2952,10 @@ public:
 };
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-typedef NDirectImportPrecode NDirectImportThunkGlue;
+typedef PInvokeImportPrecode PInvokeImportThunkGlue;
 #else // HAS_NDIRECT_IMPORT_PRECODE
 
-class NDirectImportThunkGlue
+class PInvokeImportThunkGlue
 {
     PVOID m_dummy; // Dummy field to make the alignment right
 
@@ -2973,15 +2973,15 @@ public:
 
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
-typedef DPTR(NDirectImportThunkGlue)      PTR_NDirectImportThunkGlue;
+typedef DPTR(PInvokeImportThunkGlue)      PTR_PInvokeImportThunkGlue;
 
 
 //-----------------------------------------------------------------------
-// Operations specific to NDirect methods. We use a derived class to get
+// Operations specific to PInvoke methods. We use a derived class to get
 // the compiler involved in enforcing proper method type usage.
 // DO NOT ADD FIELDS TO THIS CLASS.
 //-----------------------------------------------------------------------
-class NDirectMethodDesc : public MethodDesc
+class PInvokeMethodDesc : public MethodDesc
 {
 public:
     struct temp1
@@ -2996,14 +2996,14 @@ public:
         };
 
         // The JIT generates an indirect call through this location in some cases.
-        // Initialized to NDirectImportThunkGlue. Patched to the true target or
+        // Initialized to PInvokeImportThunkGlue. Patched to the true target or
         // host interceptor stub or alignment thunk after linking.
-        LPVOID      m_pNDirectTarget;
+        LPVOID      m_pPInvokeTarget;
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-        PTR_NDirectImportThunkGlue  m_pImportThunkGlue;
+        PTR_PInvokeImportThunkGlue  m_pImportThunkGlue;
 #else // HAS_NDIRECT_IMPORT_PRECODE
-        NDirectImportThunkGlue      m_ImportThunkGlue;
+        PInvokeImportThunkGlue      m_ImportThunkGlue;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
         ULONG       m_DefaultDllImportSearchPathsAttributeValue; // DefaultDllImportSearchPathsAttribute is saved.
@@ -3060,15 +3060,15 @@ public:
 
         kDefaultDllImportSearchPathsStatus = 0x2000, // either method has custom attribute or not.
 
-        kNDirectPopulated               = 0x8000, // Indicate if the NDirect has been fully populated.
+        kPInvokePopulated               = 0x8000, // Indicate if the PInvoke has been fully populated.
     };
 
-    // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
-    static void* ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD);
+    // Resolve the import to the PInvoke target and set it on the PInvokeMethodDesc.
+    static void* ResolveAndSetPInvokeTarget(_In_ PInvokeMethodDesc* pMD);
 
-    // Attempt to get a resolved NDirect target. This will return true for already resolved
+    // Attempt to get a resolved PInvoke target. This will return true for already resolved
     // targets and methods that are resolved at JIT time, such as those marked SuppressGCTransition
-    static BOOL TryGetResolvedNDirectTarget(_In_ NDirectMethodDesc* pMD, _Out_ void** ndirectTarget);
+    static BOOL TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD, _Out_ void** ndirectTarget);
 
     // Retrieves the cached result of marshaling required computation, or performs the computation
     // if the result is not cached yet.
@@ -3079,7 +3079,7 @@ public:
         if ((ndirect.m_wFlags & kIsMarshalingRequiredCached) == 0)
         {
             // Compute the flag and cache the result
-            InterlockedSetNDirectFlags(kIsMarshalingRequiredCached |
+            InterlockedSetPInvokeFlags(kIsMarshalingRequiredCached |
                 (ComputeMarshalingRequired() ? kCachedMarshalingRequired : 0));
         }
         _ASSERTE((ndirect.m_wFlags & kIsMarshalingRequiredCached) != 0);
@@ -3089,7 +3089,7 @@ public:
     BOOL ComputeMarshalingRequired();
 
     // Atomically set specified flags. Only setting of the bits is supported.
-    void InterlockedSetNDirectFlags(WORD wFlags);
+    void InterlockedSetPInvokeFlags(WORD wFlags);
 
     void SetIsEarlyBound()
     {
@@ -3180,7 +3180,7 @@ public:
     BOOL IsPopulated()
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&ndirect.m_wFlags) & kNDirectPopulated) != 0;
+        return (VolatileLoad(&ndirect.m_wFlags) & kPInvokePopulated) != 0;
     }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
@@ -3195,36 +3195,36 @@ public:
         return (ndirect.m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
 
-    PTR_NDirectImportThunkGlue GetNDirectImportThunkGlue()
+    PTR_PInvokeImportThunkGlue GetPInvokeImportThunkGlue()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return ndirect.m_pImportThunkGlue;
     }
 
-    LPVOID GetNDirectTarget()
+    LPVOID GetPInvokeTarget()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(IsNDirect());
-        return ndirect.m_pNDirectTarget;
+        _ASSERTE(IsPInvoke());
+        return ndirect.m_pPInvokeTarget;
     }
 
-    VOID SetNDirectTarget(LPVOID pTarget);
+    VOID SetPInvokeTarget(LPVOID pTarget);
 
 #ifndef DACCESS_COMPILE
-    BOOL NDirectTargetIsImportThunk()
+    BOOL PInvokeTargetIsImportThunk()
     {
         WRAPPER_NO_CONTRACT;
 
-        _ASSERTE(IsNDirect());
+        _ASSERTE(IsPInvoke());
 
-        return (GetNDirectTarget() == GetNDirectImportThunkGlue()->GetEntrypoint());
+        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntrypoint());
     }
 #endif // !DACCESS_COMPILE
 
     //  Find the entry point name and function address
-    //  based on the module and data from NDirectMethodDesc
+    //  based on the module and data from PInvokeMethodDesc
     //
     LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod);
 
@@ -3274,10 +3274,10 @@ public:
     }
 #endif // defined(TARGET_X86)
 
-    VOID InitEarlyBoundNDirectTarget();
+    VOID InitEarlyBoundPInvokeTarget();
 
     // In AppDomains, we can trigger declarer's cctor when we link the P/Invoke,
-    // which takes care of inlined calls as well. See code:NDirect.NDirectLink.
+    // which takes care of inlined calls as well. See code:PInvoke.PInvokeLink.
     // Although the cctor is guaranteed to run in the shared domain before the
     // target is invoked, we will trigger it at link time as well because linking
     // may depend on it - cctor may change the target DLL, DLL search path etc.
@@ -3290,7 +3290,7 @@ public:
             return FALSE;
         return !pMT->GetClass()->IsBeforeFieldInit();
     }
-};  //class NDirectMethodDesc
+};  //class PInvokeMethodDesc
 
 //-----------------------------------------------------------------------
 // Operations specific to EEImplCall methods. We use a derived class to get

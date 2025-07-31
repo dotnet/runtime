@@ -2680,7 +2680,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
     STANDARD_VM_CONTRACT;
     // Turn everything into blittable primitives. The reason this method is needed are
     // byrefs which are OK only when they ref stack data or are pinned. This condition
-    // cannot be verified by code:NDirect.MarshalingRequired so we explicitly get rid
+    // cannot be verified by code:PInvoke.MarshalingRequired so we explicitly get rid
     // of them here.
     bool again;
     BYTE* elementType = pLoc->ElementType;

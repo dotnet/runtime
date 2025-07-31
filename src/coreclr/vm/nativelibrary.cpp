@@ -227,7 +227,7 @@ namespace
     // If a pInvoke has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
     // Otherwise, if the containing assembly has the DefaultDllImportSearchPathsAttribute, get DllImportSearchPathFlags from it, and returns true.
     // Otherwise, get CoreCLR's default value for DllImportSearchPathFlags, and return false.
-    BOOL GetDllImportSearchPathFlags(NDirectMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
+    BOOL GetDllImportSearchPathFlags(PInvokeMethodDesc * pMD, DWORD *dllImportSearchPathFlags, BOOL *searchAssemblyDirectory)
     {
         STANDARD_VM_CONTRACT;
 
@@ -423,7 +423,7 @@ namespace
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(PInvokeMethodDesc * pMD, LPCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
@@ -756,7 +756,7 @@ namespace
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(NDirectMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(PInvokeMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
@@ -828,7 +828,7 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
 
 namespace
 {
-    NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibrary(PInvokeMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
     {
         CONTRACTL
         {
@@ -883,7 +883,7 @@ namespace
     }
 }
 
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(NDirectMethodDesc * pMD)
+NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromMethodDesc(PInvokeMethodDesc * pMD)
 {
     CONTRACT(NATIVE_LIBRARY_HANDLE)
     {

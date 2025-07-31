@@ -35,7 +35,7 @@
 // dllimport.cpp
 void CreateCLRToDispatchCOMStub(
             MethodDesc * pMD,
-            DWORD        dwStubFlags             // NDirectStubFlags
+            DWORD        dwStubFlags             // PInvokeStubFlags
             );
 
 
@@ -108,7 +108,7 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
         return pComInfo;
 
     //
-    // Compute NDirectStubFlags
+    // Compute PInvokeStubFlags
     //
 
     DWORD dwStubFlags = NDIRECTSTUB_FL_COM;
@@ -154,7 +154,7 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
     // Get the call signature information
     StubSigDesc sigDesc(pMD);
 
-    return NDirect::CreateCLRToNativeILStub(
+    return PInvoke::CreateCLRToNativeILStub(
                     &sigDesc,
                     (CorNativeLinkType)0,
                     (CorNativeLinkFlags)0,

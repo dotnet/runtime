@@ -51,7 +51,7 @@ public:
     MethodDesc* GetStubMethodDesc(
         MethodDesc *pTargetMD,
         ILStubHashBlob* pHashBlob,
-        DWORD dwStubFlags,      // bitmask of NDirectStubFlags
+        DWORD dwStubFlags,      // bitmask of PInvokeStubFlags
         Module* pSigModule,
         Module* pSigLoaderModule,
         PCCOR_SIGNATURE pSig,
@@ -68,7 +68,7 @@ public:
     static MethodDesc* CreateAndLinkNewILStubMethodDesc(
         LoaderAllocator* pAllocator,
         MethodTable* pMT,
-        DWORD dwStubFlags,      // bitmask of NDirectStubFlags
+        DWORD dwStubFlags,      // bitmask of PInvokeStubFlags
         Module* pSigModule,
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
@@ -93,7 +93,7 @@ private: // static
     static MethodDesc* CreateNewMethodDesc(
         LoaderHeap* pCreationHeap,
         MethodTable* pMT,
-        DWORD dwStubFlags,      // bitmask of NDirectStubFlags
+        DWORD dwStubFlags,      // bitmask of PInvokeStubFlags
         Module* pSigModule,
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,

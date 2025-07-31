@@ -511,7 +511,7 @@ CDAC_TYPE_SIZE(sizeof(FCallMethodDesc))
 CDAC_TYPE_END(FCallMethodDesc)
 
 CDAC_TYPE_BEGIN(PInvokeMethodDesc)
-CDAC_TYPE_SIZE(sizeof(NDirectMethodDesc))
+CDAC_TYPE_SIZE(sizeof(PInvokeMethodDesc))
 CDAC_TYPE_END(PInvokeMethodDesc)
 
 CDAC_TYPE_BEGIN(EEImplMethodDesc)

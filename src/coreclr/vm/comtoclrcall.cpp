@@ -1305,7 +1305,7 @@ MethodDesc* ComCall::GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
     // Get the call signature information
     StubSigDesc sigDesc(pCallMD);
 
-    return NDirect::CreateCLRToNativeILStub(&sigDesc,
+    return PInvoke::CreateCLRToNativeILStub(&sigDesc,
                                             (CorNativeLinkType)0,
                                             (CorNativeLinkFlags)0,
                                             CallConv::GetDefaultUnmanagedCallingConvention(),
@@ -1332,7 +1332,7 @@ MethodDesc* ComCall::GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags)
     // Get the field signature information
     pFD->GetSig(&pSig, &cSig);
 
-    return NDirect::CreateFieldAccessILStub(pSig,
+    return PInvoke::CreateFieldAccessILStub(pSig,
                                             cSig,
                                             pFD->GetModule(),
                                             pFD->GetMemberDef(),
