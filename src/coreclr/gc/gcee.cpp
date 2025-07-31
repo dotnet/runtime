@@ -15,6 +15,18 @@
 #include "gchandletableimpl.h"
 #include "gceventstatus.h"
 
+#ifdef TARGET_WINDOWS
+#include "windows.h"
+#include "psapi.h"
+#elif defined(__linux__)
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#elif defined(__APPLE__)
+#include <mach/mach.h>
+#include <mach/task.h>
+#endif // TARGET_WINDOWS
+
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)
 
@@ -164,6 +176,52 @@ void GCHeap::UpdatePostGCCounters()
     ReportGenerationBounds();
 
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
+
+    // Fire custom event for process private memory at GC end
+    uint64_t processPrivateMemory = 0;
+
+#ifdef TARGET_WINDOWS
+    // Get process private memory using GetProcessMemoryInfo
+    PROCESS_MEMORY_COUNTERS_EX memCounters = {};
+    memCounters.cb = sizeof(memCounters);
+    if (GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&memCounters), sizeof(memCounters)))
+    {
+        processPrivateMemory = static_cast<uint64_t>(memCounters.PrivateUsage);
+    }
+#elif defined(__linux__)
+    // Get process private memory from /proc/self/status
+    FILE* statusFile = fopen("/proc/self/status", "r");
+    if (statusFile != nullptr)
+    {
+        char line[256];
+        while (fgets(line, sizeof(line), statusFile))
+        {
+            if (strncmp(line, "VmRSS:", 6) == 0)
+            {
+                // VmRSS is in kB, convert to bytes
+                unsigned long vmrss_kb = 0;
+                if (sscanf(line, "VmRSS: %lu kB", &vmrss_kb) == 1)
+                {
+                    processPrivateMemory = static_cast<uint64_t>(vmrss_kb * 1024);
+                }
+                break;
+            }
+        }
+        fclose(statusFile);
+    }
+#elif defined(__APPLE__)
+    // Get process private memory using task_info
+    task_vm_info_data_t vmInfo;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, reinterpret_cast<task_info_t>(&vmInfo), &count) == KERN_SUCCESS)
+    {
+        // phys_footprint represents the physical memory currently used by the process
+        processPrivateMemory = static_cast<uint64_t>(vmInfo.phys_footprint);
+    }
+#endif // TARGET_WINDOWS
+    GCEventFireProcessPrivateMemoryOnGCEnd_V1(
+        (uint32_t)pSettings->gc_index,
+        processPrivateMemory);
 
 #ifdef SIMPLE_DPRINTF
     dprintf (2, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
