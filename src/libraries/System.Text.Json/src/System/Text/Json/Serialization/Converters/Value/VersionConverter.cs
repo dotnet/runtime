@@ -49,6 +49,10 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (source.Length > 0 && (char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1]) || source[0] == '+'))
                 {
+                    // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
+                    // we need to make sure that our input doesn't have them,
+                    // and if it has - we need to throw, to match behaviour of other converters
+                    // since Version.TryParse allows them and silently parses input to Version
                     ThrowHelper.ThrowFormatException(DataType.Version);
                 }
 
@@ -71,6 +75,10 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!string.IsNullOrEmpty(versionString) && (char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1]) || versionString[0] == '+'))
             {
+                // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
+                // we need to make sure that our input doesn't have them,
+                // and if it has - we need to throw, to match behaviour of other converters
+                // since Version.TryParse allows them and silently parses input to Version
                 ThrowHelper.ThrowFormatException(DataType.Version);
             }
 
