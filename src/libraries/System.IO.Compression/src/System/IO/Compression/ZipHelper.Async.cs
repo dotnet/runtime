@@ -58,10 +58,10 @@ internal static partial class ZipHelper
             {
                 int overlap = totalBytesRead == 0 ? 0 : signatureToFind.Length;
 
-                if (maxBytesToRead - totalBytesRead + overlap < bufferSpan.Length)
+                if (maxBytesToRead - totalBytesRead + overlap < bufferMemory.Length)
                 {
                     // If we have less than a full buffer left to read, we adjust the buffer size.
-                    bufferSpan = bufferSpan.Slice(0, maxBytesToRead - totalBytesRead + overlap);
+                    bufferMemory = bufferMemory.Slice(0, maxBytesToRead - totalBytesRead + overlap);
                 }
 
                 int bytesRead = await SeekBackwardsAndReadAsync(stream, bufferMemory, overlap, cancellationToken).ConfigureAwait(false);
