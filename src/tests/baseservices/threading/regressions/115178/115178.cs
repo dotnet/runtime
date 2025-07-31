@@ -16,8 +16,6 @@ using Xunit;
 
 public class Test_wait_interrupted_user_apc
 {
-    public static bool Run115178Test => TestLibrary.Utilities.IsWindows;
-
     [DllImport("kernel32.dll")]
     private static extern IntPtr GetCurrentProcess();
 
@@ -285,7 +283,8 @@ public class Test_wait_interrupted_user_apc
         GC.KeepAlive(callback);
     }
 
-    [ConditionalFact(nameof(Run115178Test))]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsWindows))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/118233", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         RunTestUsingInfiniteWait();
