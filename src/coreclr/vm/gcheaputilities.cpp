@@ -34,8 +34,6 @@ GPTR_IMPL(IGCHeap, g_pGCHeap);
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
-void* g_gcDescriptors = nullptr;
-
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 uint8_t* g_write_watch_table = nullptr;
@@ -79,7 +77,6 @@ extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
     /* Out */ IGCHandleManager** gcHandleManager,
     /* Out */ GcDacVars* gcDacVars
 );
-extern "C" HRESULT LOCALGC_CALLCONV GC_GetDescriptors(/* Out */ TADDR* gcDescriptors);
 
 #ifndef DACCESS_COMPILE
 
@@ -346,7 +343,6 @@ HRESULT InitializeDefaultGC()
 
     IGCHeap* heap;
     IGCHandleManager* manager;
-    GC_GetDescriptors((TADDR*)&g_gcDescriptors);
     HRESULT initResult = GC_Initialize(nullptr, &heap, &manager, &g_gc_dac_vars);
     if (initResult == S_OK)
     {

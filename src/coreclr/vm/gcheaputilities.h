@@ -186,10 +186,6 @@ extern GcDacVars g_gc_dac_vars;
 typedef DPTR(GcDacVars) PTR_GcDacVars;
 GPTR_DECL(GcDacVars, g_gcDacGlobals);
 
-// Global pointer to the cDAC GC descriptors. This is used to provide
-// the cDAC with a method of obtaining the currently in use GC's descriptors.
-extern void* g_gcDescriptors;
-
 // GCHeapUtilities provides a number of static methods
 // that operate on the global heap instance. It can't be
 // instantiated.
