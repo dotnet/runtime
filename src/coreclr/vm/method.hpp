@@ -2951,9 +2951,9 @@ public:
     DWORD GetAttrs();
 };
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
 typedef PInvokeImportPrecode PInvokeImportThunkGlue;
-#else // HAS_NDIRECT_IMPORT_PRECODE
+#else // HAS_PINVOKE_IMPORT_PRECODE
 
 class PInvokeImportThunkGlue
 {
@@ -2971,7 +2971,7 @@ public:
     }
 };
 
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 typedef DPTR(PInvokeImportThunkGlue)      PTR_PInvokeImportThunkGlue;
 
@@ -2998,11 +2998,11 @@ public:
     // host interceptor stub or alignment thunk after linking.
     LPVOID      m_pPInvokeTarget;
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
     PTR_PInvokeImportThunkGlue  m_pImportThunkGlue;
-#else // HAS_NDIRECT_IMPORT_PRECODE
+#else // HAS_PINVOKE_IMPORT_PRECODE
     PInvokeImportThunkGlue      m_ImportThunkGlue;
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
     ULONG       m_DefaultDllImportSearchPathsAttributeValue; // DefaultDllImportSearchPathsAttribute is saved.
 

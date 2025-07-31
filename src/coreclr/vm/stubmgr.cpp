@@ -1013,7 +1013,7 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
         switch (pPrecode->GetType())
         {
             case PRECODE_STUB:
-            case PRECODE_NDIRECT_IMPORT:
+            case PRECODE_PINVOKE_IMPORT:
             case PRECODE_UMENTRY_THUNK:
 #ifdef HAS_THISPTR_RETBUF_PRECODE
             case PRECODE_THISPTR_RETBUF:
@@ -1073,8 +1073,8 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
         case PRECODE_STUB:
             break;
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-        case PRECODE_NDIRECT_IMPORT:
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+        case PRECODE_PINVOKE_IMPORT:
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_ARM64) && defined(__APPLE__)
             // On ARM64 Mac, we cannot put a breakpoint inside of PInvokeImportThunk
@@ -1088,7 +1088,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 #endif
             LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - PInvoke import");
             return TRUE;
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
         case PRECODE_FIXUP:

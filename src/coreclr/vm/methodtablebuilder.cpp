@@ -6175,12 +6175,12 @@ MethodTableBuilder::InitMethodDesc(
             // PInvoke specific initialization.
             PInvokeMethodDesc *pNewNMD = (PInvokeMethodDesc*)pNewMD;
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-            pNewNMD->m_pImportThunkGlue = Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+            pNewNMD->m_pImportThunkGlue = Precode::Allocate(PRECODE_PINVOKE_IMPORT, pNewMD,
                 GetLoaderAllocator(), GetMemTracker())->AsPInvokeImportPrecode();
-#else // !HAS_NDIRECT_IMPORT_PRECODE
+#else // !HAS_PINVOKE_IMPORT_PRECODE
             pNewNMD->GetPInvokeImportThunkGlue()->Init(pNewNMD);
-#endif // !HAS_NDIRECT_IMPORT_PRECODE
+#endif // !HAS_PINVOKE_IMPORT_PRECODE
 
 #if defined(TARGET_X86)
             pNewNMD->m_cbStackArgumentSize = 0xFFFF;

@@ -200,7 +200,7 @@ struct StubPrecode
 typedef DPTR(StubPrecode) PTR_StubPrecode;
 
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
 
 // PInvoke import precode
 // (This is fake precode. VTable slot does not point to it.)
@@ -218,7 +218,7 @@ struct PInvokeImportPrecode : StubPrecode
 };
 typedef DPTR(PInvokeImportPrecode) PTR_PInvokeImportPrecode;
 
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 
@@ -485,9 +485,9 @@ enum PrecodeType {
 #ifdef FEATURE_INTERPRETER
     PRECODE_INTERPRETER     = InterpreterPrecode::Type, // 0x6
 #endif // FEATURE_INTERPRETER
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    PRECODE_NDIRECT_IMPORT  = PInvokeImportPrecode::Type, // 0x5
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+    PRECODE_PINVOKE_IMPORT  = PInvokeImportPrecode::Type, // 0x5
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     PRECODE_FIXUP           = FixupPrecode::Type,
 #endif // HAS_FIXUP_PRECODE
@@ -507,7 +507,7 @@ inline TADDR StubPrecode::GetMethodDesc()
     switch (GetType())
     {
         case PRECODE_STUB:
-        case PRECODE_NDIRECT_IMPORT:
+        case PRECODE_PINVOKE_IMPORT:
             return GetSecretParam();
 
         case PRECODE_UMENTRY_THUNK:
@@ -543,7 +543,7 @@ inline BYTE StubPrecode::GetType()
     {
         case PRECODE_UMENTRY_THUNK:
         case PRECODE_STUB:
-        case PRECODE_NDIRECT_IMPORT:
+        case PRECODE_PINVOKE_IMPORT:
         case PRECODE_THISPTR_RETBUF:
 #ifdef FEATURE_INTERPRETER
         case PRECODE_INTERPRETER:
@@ -571,7 +571,7 @@ public:
     }
 private:
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
 public:
     // Fake precodes has to be exposed
     PInvokeImportPrecode* AsPInvokeImportPrecode()
@@ -583,7 +583,7 @@ public:
     }
 
 private:
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
     PTR_FixupPrecode AsFixupPrecode()
@@ -829,7 +829,7 @@ struct PrecodeMachineDescriptor
 {
     uint32_t StubCodePageSize;
     uint8_t InvalidPrecodeType;
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
     uint8_t PInvokeImportPrecodeType;
 #endif
 
