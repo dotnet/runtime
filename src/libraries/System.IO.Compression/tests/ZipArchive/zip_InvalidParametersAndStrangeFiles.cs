@@ -2161,5 +2161,30 @@ namespace System.IO.Compression.Tests
             // comment length
             0x00, 0x00
         };
+
+        /// <summary>
+        /// Test case for fuzzer-discovered assertion failure.
+        /// The crash input contains malformed ZIP data where a Zip64 EOCD Locator signature
+        /// is present but insufficient data follows to read the complete block.
+        /// Previously this would trigger an assertion failure, now it should handle gracefully.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZipArchive_FuzzerCrashInput_Zip64EOCDLocatorInsufficientData(bool async)
+        {
+            // Base64 crash input from the fuzzer: UFBLBQYAAAAA//////9YaQRhAAAAAAAAAFBLBgcAAEsFBv//BQ==
+            byte[] crashInput = [
+                0x50, 0x50, 0x4B, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x58, 0x69,
+                0x04, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x4B, 0x06, 0x07, 0x00, 0x00,
+                0x4B, 0x05, 0x06, 0xFF, 0xFF, 0x05
+            ];
+
+            using (var stream = new MemoryStream(crashInput))
+            {
+                // This should not crash with an assertion failure, but instead should throw
+                // an appropriate exception (like InvalidDataException)
+                await Assert.ThrowsAsync<InvalidDataException>(() => CreateZipArchive(async, stream, ZipArchiveMode.Read));
+            }
+        }
     }
 }

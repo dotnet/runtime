@@ -63,7 +63,10 @@ internal sealed partial class Zip64EndOfCentralDirectoryLocator
         int bytesRead = await stream.ReadAtLeastAsync(blockContents, blockContents.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
         bool zip64eocdLocatorProper = TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator);
 
-        Debug.Assert(zip64eocdLocatorProper && zip64EOCDLocator != null); // we just found this using the signature finder, so it should be okay
+        if (!zip64eocdLocatorProper || zip64EOCDLocator is null)
+        {
+            throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+        }
 
         return zip64EOCDLocator;
     }
