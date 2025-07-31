@@ -24,13 +24,21 @@ namespace AppHost.Bundle.Tests
 
         private void RunTheApp(string path, bool selfContained)
         {
-            Command.Create(path)
-                .CaptureStdErr()
-                .CaptureStdOut()
+            var result = Command.Create(path)
+                .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
-                .Execute()
-                .Should().Pass()
+                .Execute();
+            result.Should().Pass()
                 .And.HaveStdOutContaining("Hello World!");
+
+            if (selfContained)
+            {
+                result.Should().NotHaveProperty(Constants.RuntimeProperty.DotnetHostPath);
+            }
+            else
+            {
+                result.Should().HaveProperty(Constants.RuntimeProperty.DotnetHostPath, TestContext.BuiltDotNet.BinPath);
+            }
         }
 
         private string MakeUniversalBinary(string path, Architecture architecture)

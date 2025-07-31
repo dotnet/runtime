@@ -8,7 +8,7 @@ using System;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
-    public static class CommandResultExtensions
+    public static partial class CommandResultExtensions
     {
         public static CommandResultAssertions Should(this CommandResult commandResult)
         {

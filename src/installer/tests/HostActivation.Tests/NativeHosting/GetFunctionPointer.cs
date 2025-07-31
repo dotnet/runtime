@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using HostActivation.Tests;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
 
@@ -40,7 +41,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should()
-                .InitializeContextForApp(app.AppDll);
+                .InitializeContextForApp(app.AppDll)
+                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, TestContext.BuiltDotNet.DotnetExecutablePath);
 
             if (validType && validMethod)
             {
@@ -73,7 +75,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should()
-                .InitializeContextForConfig(component.RuntimeConfigJson);
+                .InitializeContextForConfig(component.RuntimeConfigJson)
+                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, TestContext.BuiltDotNet.DotnetExecutablePath); ;
 
             // This should fail even with the valid type and valid method,
             // because the type is not resolvable from the default AssemblyLoadContext.
@@ -96,6 +99,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
+                .And.NotHaveProperty(Constants.RuntimeProperty.DotnetHostPath)
                 .And.InitializeContextForApp(app.AppDll)
                 .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1)
                 .And.ExecuteInDefaultContext(app.AssemblyName);
