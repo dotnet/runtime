@@ -2475,12 +2475,13 @@ CodeHeapRequestInfo::CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllo
     }
     CONTRACTL_END;
 
-    if (m_pAllocator == NULL)
+    if (m_pAllocator == NULL && pMD != NULL)
     {
-        _ASSERTE(pMD != NULL);
         m_pAllocator = pMD->GetLoaderAllocator();
     }
-    m_isCollectible = m_pAllocator->IsCollectible();
+
+    if (m_pAllocator != NULL)
+        m_isCollectible = m_pAllocator->IsCollectible();
 }
 
 #ifdef FEATURE_EH_FUNCLETS
