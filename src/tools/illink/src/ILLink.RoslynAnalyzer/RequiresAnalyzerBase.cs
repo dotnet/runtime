@@ -390,5 +390,38 @@ namespace ILLink.RoslynAnalyzer
         {
             return false;
         }
+
+        protected void CheckReferencedAssemblies(
+            CompilationAnalysisContext context,
+            string msbuildPropertyName,
+            string assemblyMetadataName,
+            DiagnosticDescriptor diagnosticDescriptor)
+        {
+            var options = context.Options;
+            if (!IsAnalyzerEnabled(options))
+                return;
+
+            if (!options.IsMSBuildPropertyValueTrue(msbuildPropertyName))
+                return;
+
+            foreach (var reference in context.Compilation.References)
+            {
+                var refAssembly = context.Compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
+                if (refAssembly is null)
+                    continue;
+
+                var assemblyMetadata = refAssembly.GetAttributes().FirstOrDefault(attr =>
+                    attr.AttributeClass?.Name == "AssemblyMetadataAttribute" &&
+                    attr.ConstructorArguments.Length == 2 &&
+                    attr.ConstructorArguments[0].Value?.ToString() == assemblyMetadataName &&
+                    string.Equals(attr.ConstructorArguments[1].Value?.ToString(), "True", StringComparison.OrdinalIgnoreCase));
+
+                if (assemblyMetadata is null)
+                {
+                    var diag = Diagnostic.Create(diagnosticDescriptor, Location.None, refAssembly.Name);
+                    context.ReportDiagnostic(diag);
+                }
+            }
+        }
     }
 }

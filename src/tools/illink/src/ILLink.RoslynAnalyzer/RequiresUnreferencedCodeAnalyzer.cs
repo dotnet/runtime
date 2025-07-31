@@ -49,37 +49,6 @@ namespace ILLink.RoslynAnalyzer
         internal override bool IsAnalyzerEnabled(AnalyzerOptions options) =>
             options.IsMSBuildPropertyValueTrue(MSBuildPropertyOptionNames.EnableTrimAnalyzer);
 
-        private void CheckReferencedAssembliesForTrimmable(CompilationAnalysisContext context)
-        {
-            var options = context.Options;
-            if (!IsAnalyzerEnabled(options))
-                return;
-
-            if (!options.IsMSBuildPropertyValueTrue(MSBuildPropertyOptionNames.VerifyReferenceTrimCompatibility))
-                return;
-
-            foreach (var reference in context.Compilation.References)
-            {
-                var refAssembly = context.Compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
-                if (refAssembly is null)
-                    continue;
-
-                var isTrimmable = refAssembly.GetAttributes().FirstOrDefault(attr =>
-                    attr.AttributeClass?.Name == "AssemblyMetadataAttribute" &&
-                    attr.ConstructorArguments.Length == 2 &&
-                    attr.ConstructorArguments[0].Value?.ToString() == "IsTrimmable" &&
-                    string.Equals(attr.ConstructorArguments[1].Value?.ToString(), "True", StringComparison.OrdinalIgnoreCase));
-
-                if (isTrimmable is null)
-                {
-                    var diag = Diagnostic.Create(s_referenceNotMarkedIsTrimmableRule,
-                        Location.None,
-                        refAssembly.Name);
-                    context.ReportDiagnostic(diag);
-                }
-            }
-        }
-
         private protected override bool IsRequiresCheck(IPropertySymbol propertySymbol, Compilation compilation)
         {
             // "IsUnreferencedCodeSupported" is treated as a requires check for testing purposes only, and
@@ -110,7 +79,14 @@ namespace ILLink.RoslynAnalyzer
         }
 
         private protected override ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions =>
-            ImmutableArray.Create<Action<CompilationAnalysisContext>>(CheckReferencedAssembliesForTrimmable);
+            ImmutableArray.Create<Action<CompilationAnalysisContext>>((context) =>
+            {
+                CheckReferencedAssemblies(
+                    context,
+                    MSBuildPropertyOptionNames.VerifyReferenceTrimCompatibility,
+                    "IsTrimmable",
+                    s_referenceNotMarkedIsTrimmableRule);
+            });
 
         protected override bool VerifyAttributeArguments(AttributeData attribute) =>
             RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments(attribute);

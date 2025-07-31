@@ -28,37 +28,6 @@ namespace ILLink.RoslynAnalyzer
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(s_requiresDynamicCodeRule, s_requiresDynamicCodeAttributeMismatch, s_requiresDynamicCodeOnStaticCtor, s_requiresDynamicCodeOnEntryPoint, s_referenceNotMarkedIsAotCompatibleRule);
 
-        private void CheckReferencedAssembliesForAotCompatible(CompilationAnalysisContext context)
-        {
-            var options = context.Options;
-            if (!IsAnalyzerEnabled(options))
-                return;
-
-            if (!options.IsMSBuildPropertyValueTrue(MSBuildPropertyOptionNames.VerifyReferenceAotCompatibility))
-                return;
-
-            foreach (var reference in context.Compilation.References)
-            {
-                var refAssembly = context.Compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
-                if (refAssembly is null)
-                    continue;
-
-                var isAotCompatible = refAssembly.GetAttributes().FirstOrDefault(attr =>
-                    attr.AttributeClass?.Name == "AssemblyMetadataAttribute" &&
-                    attr.ConstructorArguments.Length == 2 &&
-                    attr.ConstructorArguments[0].Value?.ToString() == "IsAotCompatible" &&
-                    string.Equals(attr.ConstructorArguments[1].Value?.ToString(), "True", StringComparison.OrdinalIgnoreCase));
-
-                if (isAotCompatible is null)
-                {
-                    var diag = Diagnostic.Create(s_referenceNotMarkedIsAotCompatibleRule,
-                        Location.None,
-                        refAssembly.Name);
-                    context.ReportDiagnostic(diag);
-                }
-            }
-        }
-
         private protected override string RequiresAttributeName => RequiresDynamicCodeAttribute;
 
         internal override string RequiresAttributeFullyQualifiedName => FullyQualifiedRequiresDynamicCodeAttribute;
@@ -196,7 +165,14 @@ namespace ILLink.RoslynAnalyzer
         }
 
         private protected override ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions =>
-            ImmutableArray.Create<Action<CompilationAnalysisContext>>(CheckReferencedAssembliesForAotCompatible);
+            ImmutableArray.Create<Action<CompilationAnalysisContext>>((context) =>
+            {
+                CheckReferencedAssemblies(
+                    context,
+                    MSBuildPropertyOptionNames.VerifyReferenceAotCompatibility,
+                    "IsAotCompatible",
+                    s_referenceNotMarkedIsAotCompatibleRule);
+            });
 
         protected override bool VerifyAttributeArguments(AttributeData attribute) =>
             attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments is [{ Type.SpecialType: SpecialType.System_String }, ..];
