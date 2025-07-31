@@ -123,7 +123,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Debug
+    buildConfig: Release
     runtimeFlavor: nativeaot
     platforms:
     - android_x64
