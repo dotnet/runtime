@@ -60,14 +60,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         Reader reader = new Reader(readFromTarget, getThreadContext);
-        if (TryReadContractDescriptor(
+        if (TryReadAllContractDescriptors(
             contractDescriptor,
             reader,
-            out Configuration config,
-            out ContractDescriptorParser.ContractDescriptor? descriptor,
-            out TargetPointer[] pointerData))
+            out Descriptor[] descriptors))
         {
-            target = new ContractDescriptorTarget(config, descriptor!, pointerData, reader);
+            target = new ContractDescriptorTarget(descriptors, reader);
             return true;
         }
 
@@ -94,82 +92,111 @@ public sealed unsafe class ContractDescriptorTarget : Target
         int pointerSize)
     {
         return new ContractDescriptorTarget(
-            new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize },
-            contractDescriptor,
-            globalPointerValues,
+            [
+                new Descriptor
+                {
+                    Config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize },
+                    ContractDescriptor = contractDescriptor,
+                    PointerData = globalPointerValues
+                }
+            ],
             new Reader(readFromTarget, getThreadContext));
     }
 
-    private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
+    private ContractDescriptorTarget(Descriptor[] descriptors, Reader reader)
     {
         Contracts = new CachingContractRegistry(this, this.TryGetContractVersion);
         ProcessedData = new DataCache(this);
-        _config = config;
         _reader = reader;
 
-        _contracts = descriptor.Contracts ?? [];
+        _config = descriptors[0].Config;
+        _contracts = [];
 
         // Set pointer type size
         _knownTypes[DataType.pointer] = new TypeInfo { Size = (uint)_config.PointerSize };
 
-        // Read types and map to known data types
-        if (descriptor.Types is not null)
+        HashSet<string> seenTypeNames = new HashSet<string>();
+        HashSet<string> seenGlobalNames = new HashSet<string>();
+
+        Dictionary<string, GlobalValue> globalValues = [];
+
+
+        foreach (Descriptor descriptor in descriptors)
         {
-            foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.Types)
+            if (descriptor.Config.IsLittleEndian != _config.IsLittleEndian ||
+                descriptor.Config.PointerSize != _config.PointerSize)
+                throw new InvalidOperationException("All descriptors must have the same endianness and pointer size.");
+
+            // Read types and map to known data types
+            if (descriptor.ContractDescriptor.Types is not null)
             {
-                Dictionary<string, Target.FieldInfo> fieldInfos = [];
-                if (type.Fields is not null)
+                foreach ((string name, ContractDescriptorParser.TypeDescriptor type) in descriptor.ContractDescriptor.Types)
                 {
-                    foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
+                    Dictionary<string, Target.FieldInfo> fieldInfos = [];
+                    if (type.Fields is not null)
                     {
-                        fieldInfos[fieldName] = new Target.FieldInfo()
+                        foreach ((string fieldName, ContractDescriptorParser.FieldDescriptor field) in type.Fields)
                         {
-                            Offset = field.Offset,
-                            Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
-                            TypeName = field.Type
-                        };
+                            fieldInfos[fieldName] = new Target.FieldInfo()
+                            {
+                                Offset = field.Offset,
+                                Type = field.Type is null ? DataType.Unknown : GetDataType(field.Type),
+                                TypeName = field.Type
+                            };
+                        }
+                    }
+                    Target.TypeInfo typeInfo = new() { Size = type.Size, Fields = fieldInfos };
+
+                    if (seenTypeNames.Contains(name))
+                    {
+                        throw new InvalidOperationException($"Duplicate type name '{name}' found in contract descriptor.");
+                    }
+                    seenTypeNames.Add(name);
+
+                    DataType dataType = GetDataType(name);
+                    if (dataType is not DataType.Unknown)
+                    {
+                        _knownTypes[dataType] = typeInfo;
+                    }
+                    else
+                    {
+                        _types[name] = typeInfo;
                     }
                 }
-                Target.TypeInfo typeInfo = new() { Size = type.Size, Fields = fieldInfos };
-
-                DataType dataType = GetDataType(name);
-                if (dataType is not DataType.Unknown)
-                {
-                    _knownTypes[dataType] = typeInfo;
-                }
-                else
-                {
-                    _types[name] = typeInfo;
-                }
             }
-        }
 
-        // Read globals and map indirect values to pointer data
-        if (descriptor.Globals is not null)
-        {
-            Dictionary<string, GlobalValue> globalValues = new(descriptor.Globals.Count);
-            foreach ((string name, ContractDescriptorParser.GlobalDescriptor global) in descriptor.Globals)
+            // Read globals and map indirect values to pointer data
+            if (descriptor.ContractDescriptor.Globals is not null)
             {
-                if (global.Indirect)
+                foreach ((string name, ContractDescriptorParser.GlobalDescriptor global) in descriptor.ContractDescriptor.Globals)
                 {
-                    if (global.NumericValue.Value >= (ulong)pointerData.Length)
-                        throw new InvalidOperationException($"Invalid pointer data index {global.NumericValue.Value}.");
+                    if (seenGlobalNames.Contains(name))
+                    {
+                        throw new InvalidOperationException($"Duplicate global name '{name}' found in contract descriptor.");
+                    }
+                    seenGlobalNames.Add(name);
 
-                    globalValues[name] = new GlobalValue
+                    if (global.Indirect)
                     {
-                        NumericValue = pointerData[global.NumericValue.Value].Value,
-                        StringValue = global.StringValue,
-                        Type = global.Type
-                    };
-                }
-                else // direct
-                {
-                    globalValues[name] = new GlobalValue
+                        if (global.NumericValue.Value >= (ulong)descriptor.PointerData.Length)
+                            throw new InvalidOperationException($"Invalid pointer data index {global.NumericValue.Value}.");
+
+                        globalValues[name] = new GlobalValue
+                        {
+                            NumericValue = descriptor.PointerData[global.NumericValue.Value].Value,
+                            StringValue = global.StringValue,
+                            Type = global.Type
+                        };
+                    }
+                    else // direct
                     {
-                        NumericValue = global.NumericValue,
-                        StringValue = global.StringValue,
-                        Type = global.Type
-                    };
+                        globalValues[name] = new GlobalValue
+                        {
+                            NumericValue = global.NumericValue,
+                            StringValue = global.StringValue,
+                            Type = global.Type
+                        };
+                    }
                 }
             }
 
@@ -184,17 +211,68 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public string? Type;
     }
 
+    private struct Descriptor
+    {
+        public Configuration Config { get; init; }
+        public ContractDescriptorParser.ContractDescriptor ContractDescriptor { get; init; }
+        public TargetPointer[] PointerData { get; init; }
+    }
+
+    private static IEnumerable<TargetPointer> GetValidSubDescriptors(Descriptor descriptor)
+    {
+        const string descriptorName = "GCDescriptor";
+        foreach (KeyValuePair<string, ContractDescriptorParser.GlobalDescriptor> global in descriptor.ContractDescriptor?.Globals ?? [])
+        {
+            if (global.Key == descriptorName)
+            {
+                yield return descriptor.PointerData[(int)global.Value.NumericValue!];
+            }
+        }
+    }
+
+    private static bool TryReadAllContractDescriptors(
+        ulong address,
+        Reader reader,
+        out Descriptor[] descriptors)
+    {
+        if (!TryReadContractDescriptor(address, reader, out Descriptor mainDescriptor))
+        {
+            descriptors = [];
+            return false;
+        }
+
+        List<Descriptor> allDescriptors = [mainDescriptor];
+
+        foreach (TargetPointer pSubDescriptor in GetValidSubDescriptors(mainDescriptor))
+        {
+            if (pSubDescriptor == TargetPointer.Null)
+                continue;
+
+            if (!TryReadPointer(pSubDescriptor.Value, mainDescriptor.Config, reader, out TargetPointer subDescriptorAddress))
+                continue;
+
+            if (subDescriptorAddress == TargetPointer.Null)
+                continue;
+
+            TryReadAllContractDescriptors(
+                subDescriptorAddress.Value,
+                reader,
+                out Descriptor[] subDescriptors);
+
+            allDescriptors.AddRange(subDescriptors);
+        }
+
+        descriptors = [.. allDescriptors];
+        return true;
+    }
+
     // See docs/design/datacontracts/contract-descriptor.md
     private static bool TryReadContractDescriptor(
         ulong address,
         Reader reader,
-        out Configuration config,
-        out ContractDescriptorParser.ContractDescriptor? descriptor,
-        out TargetPointer[] pointerData)
+        out Descriptor descriptor)
     {
-        config = default;
-        descriptor = null;
-        pointerData = [];
+        descriptor = default;
 
         // Magic - uint64_t
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
@@ -217,7 +295,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         // Bit 1 represents the pointer size. 0 = 64-bit, 1 = 32-bit.
         int pointerSize = (int)(flags & 0x2) == 0 ? sizeof(ulong) : sizeof(uint);
 
-        config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize };
+        Configuration config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize };
 
         // Descriptor size - uint32_t
         if (!TryRead(address, config.IsLittleEndian, reader, out uint descriptorSize))
@@ -251,17 +329,24 @@ public sealed unsafe class ContractDescriptorTarget : Target
         if (reader.ReadFromTarget(descriptorAddr.Value, descriptorBuffer) < 0)
             return false;
 
-        descriptor = ContractDescriptorParser.ParseCompact(descriptorBuffer);
-        if (descriptor is null)
+        ContractDescriptorParser.ContractDescriptor? contractDescriptor = ContractDescriptorParser.ParseCompact(descriptorBuffer);
+        if (contractDescriptor is null)
             return false;
 
         // Read pointer data
-        pointerData = new TargetPointer[pointerDataCount];
+        TargetPointer[] pointerData = new TargetPointer[pointerDataCount];
         for (int i = 0; i < pointerDataCount; i++)
         {
             if (!TryReadPointer(pointerDataAddr.Value + (uint)(i * pointerSize), config, reader, out pointerData[i]))
                 return false;
         }
+
+        descriptor = new Descriptor
+        {
+            Config = config,
+            ContractDescriptor = contractDescriptor,
+            PointerData = pointerData
+        };
 
         return true;
     }
