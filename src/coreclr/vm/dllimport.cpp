@@ -2107,38 +2107,32 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             pcsEmit->EmitLoadThis();
             pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 1, 1);
         }
-        else // direct invocation
+#ifdef FEATURE_COMINTEROP
+        else if (SF_IsCOMStub(dwStubFlags))
         {
-            if (SF_IsCALLIStub(dwStubFlags)) // unmanaged CALLI
-            {
-                // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
-                // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
-                EmitLoadStubContext(pcsEmit, dwStubFlags);
+            // this is a CLR -> COM call
+            // the target has been computed by StubHelpers::GetCOMIPFromRCW
+            pcsEmit->EmitLDLOC(m_dwTargetEntryPointLocalNum);
+        }
+#endif // FEATURE_COMINTEROP
+        else if (SF_IsCALLIStub(dwStubFlags)) // unmanaged CALLI
+        {
+            // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
+            // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
+            EmitLoadStubContext(pcsEmit, dwStubFlags);
 #ifdef TARGET_64BIT
-                // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
-                pcsEmit->EmitLDC(1);
-                pcsEmit->EmitSHR_UN();
-#endif
-            }
-            else
-#ifdef FEATURE_COMINTEROP
-            if (!SF_IsCOMStub(dwStubFlags)) // forward P/Invoke
-#endif // FEATURE_COMINTEROP
-            {
-                _ASSERTE(pMD->IsNDirect());
-                NDirectMethodDesc* pTargetMD = (NDirectMethodDesc*)pMD;
-                pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->ndirect.m_pNDirectTarget);
-                pcsEmit->EmitCONV_I();
-                pcsEmit->EmitLDIND_I();
-            }
-#ifdef FEATURE_COMINTEROP
-            else
-            {
-                // this is a CLR -> COM call
-                // the target has been computed by StubHelpers::GetCOMIPFromRCW
-                pcsEmit->EmitLDLOC(m_dwTargetEntryPointLocalNum);
-            }
-#endif // FEATURE_COMINTEROP
+            // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
+            pcsEmit->EmitLDC(1);
+            pcsEmit->EmitSHR_UN();
+#endif // TARGET_64BIT
+        }
+        else  // forward P/Invoke
+        {
+            _ASSERTE(pMD->IsNDirect());
+            NDirectMethodDesc* pTargetMD = (NDirectMethodDesc*)pMD;
+            pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->ndirect.m_pNDirectTarget);
+            pcsEmit->EmitCONV_I();
+            pcsEmit->EmitLDIND_I();
         }
     }
     else // native-to-managed
@@ -2182,7 +2176,7 @@ void NDirectStubLinker::EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwP
 {
     STANDARD_VM_CONTRACT;
 
-    if (SF_IsForwardPInvokeStub(m_dwStubFlags) && !SF_IsForwardDelegateStub(m_dwStubFlags))
+    if (SF_IsCALLIStub(m_dwStubFlags))
     {
         // get the secret argument via intrinsic
         pslILEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
@@ -2239,21 +2233,23 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
 {
     STANDARD_VM_CONTRACT;
 
-    if (!SF_IsForwardDelegateStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
-    {
-        // COM interop or the pinvoke case, should have a non-null 'secret argument'.
-        EmitLoadStubContext(pcsEmit, dwStubFlags);
-    }
-    else if (SF_IsDelegateStub(dwStubFlags))
+    if (SF_IsDelegateStub(dwStubFlags))
     {
         // In the unmanaged delegate case, we use the "this" object to retrieve the MD
         _ASSERTE(SF_IsForwardStub(dwStubFlags));
         pcsEmit->EmitLoadThis();
         pcsEmit->EmitCALL(METHOD__DELEGATE__GET_INVOKE_METHOD, 1, 1);
     }
+#ifdef FEATURE_COMINTEROP
+    else if (SF_IsCOMStub(dwStubFlags))
+    {
+        // COM interop should have a non-null 'secret argument'.
+        EmitLoadStubContext(pcsEmit, dwStubFlags);
+    }
+#endif // FEATURE_COMINTEROP
     else
     {
-        // It is the calli pinvoke case, so pass null.
+        // Some other stub without the MD as the secret parameter, so pass null.
         pcsEmit->EmitLoadNullPtr();
     }
 
@@ -2287,14 +2283,15 @@ void NDirectStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNu
         pcsEmit->EmitLoadThis();
         pcsEmit->EmitCALL(METHOD__DELEGATE__GET_INVOKE_METHOD, 1, 1);
     }
-    else if (SF_IsCALLIStub(dwStubFlags))
+#ifdef FEATURE_COMINTEROP
+    else if (SF_IsCOMStub(dwStubFlags))
     {
-        pcsEmit->EmitLoadNullPtr();
+        EmitLoadStubContext(pcsEmit, dwStubFlags);
     }
+#endif // FEATURE_COMINTEROP
     else
     {
-        // P/Invoke, CLR->COM
-        EmitLoadStubContext(pcsEmit, dwStubFlags);
+        pcsEmit->EmitLoadNullPtr();
     }
 
     if (fIsByref)

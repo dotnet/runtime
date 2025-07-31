@@ -207,12 +207,6 @@ enum ILStubTypes
     ILSTUB_ASYNC_RESUME                  = 0x8000000D,
 };
 
-#ifdef FEATURE_COMINTEROP
-#define COM_ONLY(x) (x)
-#else // FEATURE_COMINTEROP
-#define COM_ONLY(x) false
-#endif // FEATURE_COMINTEROP
-
 inline bool SF_IsVarArgStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CONVSIGASVARARG)); }
 inline bool SF_IsBestFit               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_BESTFIT)); }
 inline bool SF_IsThrowOnUnmappableChar (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR)); }
@@ -239,20 +233,29 @@ inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CON
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 inline bool SF_IsUnboxingILStub         (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_UNBOXINGILSTUB); }
 inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_INSTANTIATINGSTUB); }
-#endif
+#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
 inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_STOREARGS); }
 inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_CALLTARGET); }
 inline bool SF_IsDelegateShuffleThunk (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_SHUFFLE_THUNK); }
 inline bool SF_IsAsyncResumeStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_ASYNC_RESUME); }
 
-inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COM)); }
-inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMLATEBOUND)); }
-inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMEVENTCALL)); }
-inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDGETTER)); }
-inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDSETTER)); }
+#ifdef FEATURE_COMINTEROP
+inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COM)); }
+inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMLATEBOUND)); }
+inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMEVENTCALL)); }
+inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDGETTER)); }
+inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FIELDSETTER)); }
+#else // FEATURE_COMINTEROP
+inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+inline bool SF_IsCOMEventCallStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+inline bool SF_IsFieldGetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+inline bool SF_IsFieldSetterStub       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return false; }
+#endif // FEATURE_COMINTEROP
 
 inline bool SF_IsForwardStub             (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return !SF_IsReverseStub(dwStubFlags); }
 
+// Forward PInvoke stub check will include CALLI.
 inline bool SF_IsForwardPInvokeStub      (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (!SF_IsCOMStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags)); }
 inline bool SF_IsReversePInvokeStub      (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (!SF_IsCOMStub(dwStubFlags) && SF_IsReverseStub(dwStubFlags)); }
 
@@ -281,15 +284,13 @@ inline bool SF_IsSharedStub(DWORD dwStubFlags)
         return false;
     }
 
-    if (SF_IsForwardPInvokeStub(dwStubFlags))
+    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(m_dwStubFlags))
     {
         return false;
     }
 
     return true;
 }
-
-#undef COM_ONLY
 
 inline void SF_ConsistencyCheck(DWORD dwStubFlags)
 {
