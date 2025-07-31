@@ -343,6 +343,25 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str());
     }
 
+    // Path to dotnet corresponding to the runtime used to run the application (if it exists)
+    // Only for framework-dependent applications, as there is no corresponding dotnet for self-contained.
+#if !defined(NATIVE_LIBS_EMBEDDED)
+    if (hostpolicy_init.is_framework_dependent)
+    {
+        pal::string_t dotnet_host_path = hostpolicy_init.host_info.dotnet_root;
+        append_path(&dotnet_host_path, _X("dotnet"));
+        dotnet_host_path.append(_STRINGIFY(EXE_FILE_EXT));
+        if (pal::file_exists(dotnet_host_path))
+        {
+            if (!coreclr_properties.add(common_property::DotNetHostPath, dotnet_host_path.c_str()))
+            {
+                log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::DotNetHostPath));
+                return StatusCode::LibHostDuplicateProperty;
+            }
+        }
+    }
+#endif
+
     {
         host_contract = { sizeof(host_runtime_contract), this };
         if (bundle::info_t::is_single_file_bundle())
