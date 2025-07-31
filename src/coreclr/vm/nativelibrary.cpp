@@ -356,13 +356,13 @@ namespace
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
+        INT_PTR ptrAssemblyLoadContext = pCurrentBinder->GetAssemblyLoadContext();
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
         DECLARE_ARGHOLDER_ARRAY(args, 2);
         args[ARGNUM_0]  = STRINGREF_TO_ARGHOLDER(pUnmanagedDllName);
-        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
+        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(ptrAssemblyLoadContext);
 
         // Make the call
         CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);
@@ -373,20 +373,20 @@ namespace
     }
 
     // Return the AssemblyLoadContext for an assembly
-    INT_PTR GetManagedAssemblyLoadContext(Assembly* pAssembly)
+    INT_PTR GetAssemblyLoadContext(Assembly* pAssembly)
     {
         STANDARD_VM_CONTRACT;
 
         PTR_AssemblyBinder pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
-        return pBinder->GetManagedAssemblyLoadContext();
+        return pBinder->GetAssemblyLoadContext();
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
-        INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
-        if (ptrManagedAssemblyLoadContext == 0)
+        INT_PTR ptrAssemblyLoadContext = GetAssemblyLoadContext(pAssembly);
+        if (ptrAssemblyLoadContext == 0)
         {
             return NULL;
         }
@@ -413,7 +413,7 @@ namespace
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(gc.DllName);
         args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(gc.AssemblyRef);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrManagedAssemblyLoadContext);
+        args[ARGNUM_2] = PTR_TO_ARGHOLDER(ptrAssemblyLoadContext);
 
         // Make the call
         CALL_MANAGED_METHOD(hmod, NATIVE_LIBRARY_HANDLE, args);

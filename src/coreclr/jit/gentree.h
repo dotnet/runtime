@@ -333,7 +333,18 @@ class GenTreeOperandIterator;
 
 struct Statement;
 
-/*****************************************************************************/
+enum HandleKindFlag
+{
+    HKF_INVARIANT = 1, // Points to invariant data.
+    HKF_NONNULL   = 2, // Points to non-null data.
+};
+
+enum class HandleKindIndex : unsigned
+{
+#define HANDLE_KIND(name, description, flags) name,
+#include "handlekinds.h"
+    COUNT
+};
 
 // Forward declarations of the subtypes
 #define GTSTRUCT_0(fn, en)                   struct GenTree##fn;
@@ -354,7 +365,7 @@ struct Statement;
 //------------------------------------------------------------------------
 // GenTreeFlags: a bitmask of flags for GenTree stored in gtFlags
 //
-enum GenTreeFlags : unsigned int
+enum GenTreeFlags : unsigned
 {
     GTF_EMPTY         = 0,
 
@@ -507,28 +518,10 @@ enum GenTreeFlags : unsigned int
 
     GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
 
-    GTF_ICON_HDL_MASK           = 0xFF000000, // Bits used by handle types below
-    GTF_ICON_SCOPE_HDL          = 0x01000000, // GT_CNS_INT -- constant is a scope handle
-    GTF_ICON_CLASS_HDL          = 0x02000000, // GT_CNS_INT -- constant is a class handle
-    GTF_ICON_METHOD_HDL         = 0x03000000, // GT_CNS_INT -- constant is a method handle
-    GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
-    GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
-    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
-    GTF_ICON_OBJ_HDL            = 0x07000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
-    GTF_ICON_CONST_PTR          = 0x08000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
-    GTF_ICON_GLOBAL_PTR         = 0x09000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
-    GTF_ICON_VARG_HDL           = 0x0A000000, // GT_CNS_INT -- constant is a var arg cookie handle
-    GTF_ICON_PINVKI_HDL         = 0x0B000000, // GT_CNS_INT -- constant is a pinvoke calli handle
-    GTF_ICON_TOKEN_HDL          = 0x0C000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
-    GTF_ICON_TLS_HDL            = 0x0D000000, // GT_CNS_INT -- constant is a TLS ref with offset
-    GTF_ICON_FTN_ADDR           = 0x0E000000, // GT_CNS_INT -- constant is a function address
-    GTF_ICON_CIDMID_HDL         = 0x0F000000, // GT_CNS_INT -- constant is a class ID or a module ID
-    GTF_ICON_BBC_PTR            = 0x10000000, // GT_CNS_INT -- constant is a basic block count pointer
-    GTF_ICON_STATIC_BOX_PTR     = 0x11000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
-    GTF_ICON_FIELD_SEQ          = 0x12000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
-    GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
-    GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
-    GTF_ICON_TLSGD_OFFSET       = 0x15000000, // GT_CNS_INT -- constant is an argument to tls_get_addr.
+#define HANDLE_KIND_INDEX_SHIFT 24
+    GTF_ICON_HDL_MASK           = (~0u) << HANDLE_KIND_INDEX_SHIFT, // 0xFF000000, bits used by the handle types.
+#define HANDLE_KIND(name, description, flags) name = (static_cast<unsigned>(HandleKindIndex::name) + 1) << HANDLE_KIND_INDEX_SHIFT,
+#include "handlekinds.h"
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
@@ -596,6 +589,14 @@ inline GenTreeFlags& operator ^=(GenTreeFlags& a, GenTreeFlags b)
 // region. In such cases, even stores to locals will have to be restricted.
 #define GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags) \
     (((flags) & (GTF_CALL | GTF_EXCEPT)) || (((flags) & (GTF_ASG | GTF_GLOB_REF)) == (GTF_ASG | GTF_GLOB_REF)))
+
+inline unsigned HandleKindToHandleKindIndex(GenTreeFlags kind)
+{
+    assert((kind & GTF_ICON_HDL_MASK) != 0);
+    unsigned index = (kind >> HANDLE_KIND_INDEX_SHIFT) - 1;
+    assert(index < static_cast<unsigned>(HandleKindIndex::COUNT));
+    return index;
+}
 
 #if defined(DEBUG)
 
@@ -2323,6 +2324,7 @@ public:
 #endif // FEATURE_HW_INTRINSICS
 
     static bool HandleKindDataIsInvariant(GenTreeFlags flags);
+    static bool HandleKindDataIsNotNull(GenTreeFlags flags);
 
     bool IsCall() const
     {
