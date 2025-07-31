@@ -187,7 +187,7 @@ int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
 	VallocInfo *info = (VallocInfo*)(valloc_hash ? g_hash_table_lookup (valloc_hash, addr) : NULL);
-
+	ssize_t count = (ssize_t)length;
 	if (info) {
 		/*
 		 * We are passed the aligned address in the middle of the mapping allocated by
@@ -199,6 +199,7 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 		else
 			munmap (info->addr, info->size);
 		END_CRITICAL_SECTION;
+		count = info->size;
 		g_free (info);
 		g_hash_table_remove (valloc_hash, addr);
 	} else {
@@ -213,7 +214,7 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 		END_CRITICAL_SECTION;
 	}
 
-	mono_account_mem (type, -(ssize_t)length);
+	mono_account_mem (type, -count);
 
 	return 0;
 }
