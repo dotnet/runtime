@@ -2030,6 +2030,54 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> MultiplyBySelectedScalarWideningOddAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) => MultiplyBySelectedScalarWideningOddAndSubtract(minuend, left, right, rightIndex);
 
 
+        // Saturating doubling multiply high with index
+
+        /// <summary>
+        /// svint16_t svqdmulh_lane[_s16](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.H, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// svint32_t svqdmulh_lane[_s32](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.S, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqdmulh_lane[_s64](svint64_t op1, svint64_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.D, Zop1.D, Zop2.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+
+        // Saturating doubling multiply high
+
+        /// <summary>
+        /// svint8_t svqdmulh[_s8](svint8_t op1, svint8_t op2)
+        ///   SQDMULH Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyDoublingSaturateHigh(Vector<sbyte> left, Vector<sbyte> right) => MultiplyDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint16_t svqdmulh[_s16](svint16_t op1, svint16_t op2)
+        ///   SQDMULH Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MultiplyDoublingSaturateHigh(Vector<short> left, Vector<short> right) => MultiplyDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint32_t svqdmulh[_s32](svint32_t op1, svint32_t op2)
+        ///   SQDMULH Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MultiplyDoublingSaturateHigh(Vector<int> left, Vector<int> right) => MultiplyDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint64_t svqdmulh[_s64](svint64_t op1, svint64_t op2)
+        ///   SQDMULH Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MultiplyDoublingSaturateHigh(Vector<long> left, Vector<long> right) => MultiplyDoublingSaturateHigh(left, right);
+
+
         // Multiply long (bottom)
 
         /// <summary>
