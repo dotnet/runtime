@@ -5250,15 +5250,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     // n * n bytes will store n bytes result
                     emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
 
-                    if ((dst->gtFlags & GTF_UNSIGNED) != 0)
-                    {
-                        if (attr == EA_4BYTE)
-                        {
-                            emitIns_R_R_I(INS_slli, EA_8BYTE, dstReg, dstReg, 32);
-                            emitIns_R_R_I(INS_srli, EA_8BYTE, dstReg, dstReg, 32);
-                        }
-                    }
-
                     if (needCheckOv)
                     {
                         assert(tempReg != dstReg);
