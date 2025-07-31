@@ -7218,13 +7218,16 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
     {
         assert(varTypeIsStruct(callType));
 
+        CORINFO_SIG_INFO callSig;
+        info.compCompHnd->getMethodSig(call->gtCallMethHnd, &callSig);
+
         structPassingKind callRetKind;
         structPassingKind gdvRetKind;
-        getReturnTypeForStruct(call->gtRetClsHnd, call->GetUnmanagedCallConv(), &callRetKind);
+        getReturnTypeForStruct(callSig.retTypeClass, call->GetUnmanagedCallConv(), &callRetKind);
         getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &gdvRetKind);
 
         if ((callRetKind != gdvRetKind) ||
-            !ClassLayout::AreCompatible(typGetObjLayout(call->gtRetClsHnd), typGetObjLayout(sig.retTypeClass)))
+            !ClassLayout::AreCompatible(typGetObjLayout(callSig.retTypeClass), typGetObjLayout(sig.retTypeClass)))
         {
             JITDUMP("Incompatible method GDV: Return struct types do not match - bail out.\n");
             return false;
