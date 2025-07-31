@@ -815,9 +815,9 @@ public:
             // Forward delegate stubs get all the context they need in 'this' so they
             // don't use the secret parameter.
         }
-        else if (SF_IsForwardPInvokeStub(m_dwStubFlags))
+        else if (SF_IsForwardPInvokeStub(m_dwStubFlags) && !SF_IsCALLIStub(m_dwStubFlags))
         {
-            // Forward stubs (i.e., NDirects) don't use the secret parameter
+            // Forward stubs (i.e., PInvokes) don't use the secret parameter
         }
         else
         {
