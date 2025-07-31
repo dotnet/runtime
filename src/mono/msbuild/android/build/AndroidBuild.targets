@@ -34,7 +34,7 @@
 
     <PropertyGroup>
       <AndroidBuildDir Condition="'$(AndroidBuildDir)' == ''">$([MSBuild]::NormalizeDirectory($(PublishDir)))</AndroidBuildDir>
-      <AndroidBundleDir Condition="'$(AndroidBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AndroidBundleDir>
+      <AndroidBundleDir Condition="'$(AndroidBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</AndroidBundleDir>
 
       <BundleDir>$(AndroidBundleDir)</BundleDir>
     </PropertyGroup>
