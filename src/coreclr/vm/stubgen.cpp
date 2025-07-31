@@ -2517,7 +2517,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
 
         if ((flags & (ILSTUB_LINKER_FLAG_TARGET_HAS_THIS | ILSTUB_LINKER_FLAG_NDIRECT)) == ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
         {
-            // ndirect native sig never has a 'this' pointer
+            // PInvoke native sig never has a 'this' pointer
             uNativeCallingConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
         }
 

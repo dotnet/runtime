@@ -153,10 +153,10 @@ BOOL PInvokeMethodDesc::HasDefaultDllImportSearchPathsAttribute()
 
     if(IsDefaultDllImportSearchPathsAttributeCached())
     {
-        return (ndirect.m_wFlags  & kDefaultDllImportSearchPathsStatus) != 0;
+        return (m_wPInvokeFlags  & kDefaultDllImportSearchPathsStatus) != 0;
     }
 
-    BOOL attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(GetModule(),GetMemberDef(),&ndirect.m_DefaultDllImportSearchPathsAttributeValue);
+    BOOL attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(GetModule(),GetMemberDef(),&m_DefaultDllImportSearchPathsAttributeValue);
 
     if(attributeIsFound )
     {
@@ -167,7 +167,7 @@ BOOL PInvokeMethodDesc::HasDefaultDllImportSearchPathsAttribute()
         InterlockedSetPInvokeFlags(kDefaultDllImportSearchPathsIsCached);
     }
 
-    return (ndirect.m_wFlags  & kDefaultDllImportSearchPathsStatus) != 0;
+    return (m_wPInvokeFlags  & kDefaultDllImportSearchPathsStatus) != 0;
 }
 #endif //!DACCESS_COMPILE
 
@@ -3328,7 +3328,7 @@ void PInvokeMethodDesc::InterlockedSetPInvokeFlags(WORD wFlags)
     // Since InterlockedCompareExchange only works on ULONGs,
     // we'll have to operate on the entire ULONG. Ugh.
 
-    WORD *pFlags = &ndirect.m_wFlags;
+    WORD *pFlags = &m_wPInvokeFlags;
 
     // Make sure that m_flags is aligned on a 4 byte boundry
     _ASSERTE( ( ((size_t) pFlags) & (sizeof(ULONG)-1) ) == 0);
@@ -3463,7 +3463,7 @@ void PInvokeMethodDesc::EnsureStackArgumentSize()
 {
     STANDARD_VM_CONTRACT;
 
-    if (ndirect.m_cbStackArgumentSize == 0xFFFF)
+    if (m_cbStackArgumentSize == 0xFFFF)
     {
         // Marshalling required check sets the stack size as side-effect when marshalling is not required.
         if (MarshalingRequired())

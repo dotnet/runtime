@@ -96,7 +96,7 @@
     LEAF_END
 
 ; ------------------------------------------------------------------
-; The call in ndirect import precode points to this function.
+; The call in PInvokeImportPrecode points to this function.
         NESTED_ENTRY PInvokeImportThunk
 
         PROLOG_SAVE_REG_PAIR           fp, lr, #-224!

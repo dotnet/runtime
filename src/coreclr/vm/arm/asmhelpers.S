@@ -187,7 +187,7 @@ ThePreStubPatchLabel:
         LEAF_END ThePreStubPatch, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
+// The call in PInvokeImportPrecode points to this function.
         NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
         PROLOG_PUSH "{r0-r4,r7,r8,lr}"                  // Spill general argument registers, return address and

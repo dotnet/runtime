@@ -359,7 +359,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
+// The call in PInvokeImportPrecode points to this function.
 NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     //                            $fp,$ra

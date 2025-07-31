@@ -2984,39 +2984,35 @@ typedef DPTR(PInvokeImportThunkGlue)      PTR_PInvokeImportThunkGlue;
 class PInvokeMethodDesc : public MethodDesc
 {
 public:
-    struct temp1
+    // Information about the entrypoint
+    PTR_CUTF8   m_pszEntrypointName;
+
+    union
     {
-        // Information about the entrypoint
-        PTR_CUTF8   m_pszEntrypointName;
+        PTR_CUTF8   m_pszLibName;
+        DWORD       m_dwECallID;    // ECallID for QCalls
+    };
 
-        union
-        {
-            PTR_CUTF8   m_pszLibName;
-            DWORD       m_dwECallID;    // ECallID for QCalls
-        };
-
-        // The JIT generates an indirect call through this location in some cases.
-        // Initialized to PInvokeImportThunkGlue. Patched to the true target or
-        // host interceptor stub or alignment thunk after linking.
-        LPVOID      m_pPInvokeTarget;
+    // The JIT generates an indirect call through this location in some cases.
+    // Initialized to PInvokeImportThunkGlue. Patched to the true target or
+    // host interceptor stub or alignment thunk after linking.
+    LPVOID      m_pPInvokeTarget;
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-        PTR_PInvokeImportThunkGlue  m_pImportThunkGlue;
+    PTR_PInvokeImportThunkGlue  m_pImportThunkGlue;
 #else // HAS_NDIRECT_IMPORT_PRECODE
-        PInvokeImportThunkGlue      m_ImportThunkGlue;
+    PInvokeImportThunkGlue      m_ImportThunkGlue;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
-        ULONG       m_DefaultDllImportSearchPathsAttributeValue; // DefaultDllImportSearchPathsAttribute is saved.
+    ULONG       m_DefaultDllImportSearchPathsAttributeValue; // DefaultDllImportSearchPathsAttribute is saved.
 
-        // Various attributes needed at runtime.
-        WORD        m_wFlags;
+    // Various attributes needed at runtime.
+    WORD        m_wPInvokeFlags;
 
 #if defined(TARGET_X86)
-        // Size of outgoing arguments (on stack). Note that in order to get the @n stdcall name decoration,
-        WORD        m_cbStackArgumentSize;
+    // Size of outgoing arguments (on stack). Note that in order to get the @n stdcall name decoration,
+    WORD        m_cbStackArgumentSize;
 #endif // defined(TARGET_X86)
-
-    } ndirect;
 
     enum Flags
     {
@@ -3076,14 +3072,14 @@ public:
     {
         STANDARD_VM_CONTRACT;
 
-        if ((ndirect.m_wFlags & kIsMarshalingRequiredCached) == 0)
+        if ((m_wPInvokeFlags & kIsMarshalingRequiredCached) == 0)
         {
             // Compute the flag and cache the result
             InterlockedSetPInvokeFlags(kIsMarshalingRequiredCached |
                 (ComputeMarshalingRequired() ? kCachedMarshalingRequired : 0));
         }
-        _ASSERTE((ndirect.m_wFlags & kIsMarshalingRequiredCached) != 0);
-        return (ndirect.m_wFlags & kCachedMarshalingRequired) != 0;
+        _ASSERTE((m_wPInvokeFlags & kIsMarshalingRequiredCached) != 0);
+        return (m_wPInvokeFlags & kCachedMarshalingRequired) != 0;
     }
 
     BOOL ComputeMarshalingRequired();
@@ -3094,34 +3090,34 @@ public:
     void SetIsEarlyBound()
     {
         LIMITED_METHOD_CONTRACT;
-        ndirect.m_wFlags |= kEarlyBound;
+        m_wPInvokeFlags |= kEarlyBound;
     }
 
     BOOL IsEarlyBound()
     {
         LIMITED_METHOD_CONTRACT;
-        return (ndirect.m_wFlags & kEarlyBound) != 0;
+        return (m_wPInvokeFlags & kEarlyBound) != 0;
     }
 
     BOOL IsNativeAnsi() const
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (ndirect.m_wFlags & kNativeAnsi) != 0;
+        return (m_wPInvokeFlags & kNativeAnsi) != 0;
     }
 
     BOOL IsNativeNoMangled() const
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (ndirect.m_wFlags & kNativeNoMangle) != 0;
+        return (m_wPInvokeFlags & kNativeNoMangle) != 0;
     }
 
     PTR_CUTF8 GetLibNameRaw()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ndirect.m_pszLibName;
+        return m_pszLibName;
     }
 
 #ifndef DACCESS_COMPILE
@@ -3129,7 +3125,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return IsQCall() ? "QCall" : ndirect.m_pszLibName;
+        return IsQCall() ? "QCall" : m_pszLibName;
     }
 #endif // !DACCESS_COMPILE
 
@@ -3137,28 +3133,28 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ndirect.m_pszEntrypointName;
+        return m_pszEntrypointName;
     }
 
     BOOL IsVarArgs() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (ndirect.m_wFlags & kVarArgs) != 0;
+        return (m_wPInvokeFlags & kVarArgs) != 0;
     }
 
     BOOL IsStdCall() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (ndirect.m_wFlags & kStdCall) != 0;
+        return (m_wPInvokeFlags & kStdCall) != 0;
     }
 
     BOOL IsThisCall() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (ndirect.m_wFlags & kThisCall) != 0;
+        return (m_wPInvokeFlags & kThisCall) != 0;
     }
 
     // Returns TRUE if this MethodDesc is internal call from CoreLib to VM
@@ -3166,7 +3162,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (ndirect.m_wFlags & kIsQCall) != 0;
+        return (m_wPInvokeFlags & kIsQCall) != 0;
     }
 
     BOOL HasDefaultDllImportSearchPathsAttribute();
@@ -3174,32 +3170,32 @@ public:
     BOOL IsDefaultDllImportSearchPathsAttributeCached()
     {
         LIMITED_METHOD_CONTRACT;
-        return (ndirect.m_wFlags & kDefaultDllImportSearchPathsIsCached) != 0;
+        return (m_wPInvokeFlags & kDefaultDllImportSearchPathsIsCached) != 0;
     }
 
     BOOL IsPopulated()
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&ndirect.m_wFlags) & kPInvokePopulated) != 0;
+        return (VolatileLoad(&m_wPInvokeFlags) & kPInvokePopulated) != 0;
     }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
     {
         LIMITED_METHOD_CONTRACT;
-        return ndirect.m_DefaultDllImportSearchPathsAttributeValue & 0xFFFFFFFD;
+        return m_DefaultDllImportSearchPathsAttributeValue & 0xFFFFFFFD;
     }
 
     BOOL DllImportSearchAssemblyDirectory()
     {
         LIMITED_METHOD_CONTRACT;
-        return (ndirect.m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
+        return (m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
     }
 
     PTR_PInvokeImportThunkGlue GetPInvokeImportThunkGlue()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return ndirect.m_pImportThunkGlue;
+        return m_pImportThunkGlue;
     }
 
     LPVOID GetPInvokeTarget()
@@ -3207,7 +3203,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(IsPInvoke());
-        return ndirect.m_pPInvokeTarget;
+        return m_pPInvokeTarget;
     }
 
     VOID SetPInvokeTarget(LPVOID pTarget);
@@ -3248,13 +3244,13 @@ public:
         }
 
         // Don't write to the field if it's already initialized to avoid creating private pages (NGEN)
-        if (ndirect.m_cbStackArgumentSize == 0xFFFF)
+        if (m_cbStackArgumentSize == 0xFFFF)
         {
-            ndirect.m_cbStackArgumentSize = cbDstBuffer;
+            m_cbStackArgumentSize = cbDstBuffer;
         }
         else
         {
-            _ASSERTE(ndirect.m_cbStackArgumentSize == cbDstBuffer);
+            _ASSERTE(m_cbStackArgumentSize == cbDstBuffer);
         }
 #endif // defined(TARGET_X86)
     }
@@ -3266,11 +3262,11 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        _ASSERTE(ndirect.m_cbStackArgumentSize != 0xFFFF);
+        _ASSERTE(m_cbStackArgumentSize != 0xFFFF);
 
         // If we have a methoddesc, stackArgSize is the number of bytes of
         // the outgoing marshalling buffer.
-        return ndirect.m_cbStackArgumentSize;
+        return m_cbStackArgumentSize;
     }
 #endif // defined(TARGET_X86)
 

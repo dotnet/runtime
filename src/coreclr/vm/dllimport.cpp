@@ -2123,7 +2123,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
 
-                pcsEmit->EmitLDC(offsetof(PInvokeMethodDesc, ndirect.m_pPInvokeTarget));
+                pcsEmit->EmitLDC(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
                 pcsEmit->EmitADD();
                 pcsEmit->EmitLDIND_I();
             }
@@ -2699,7 +2699,7 @@ void PInvokeStaticSigInfo::DllImportInit(
         PRECONDITION(CheckPointer(pMD));
 
         // These preconditions to prevent multithreaded regression
-        // where pMD->ndirect.m_szLibName was passed in directly, cleared
+        // where pMD->m_szLibName was passed in directly, cleared
         // by this API, then accessed on another thread before being reset here.
         PRECONDITION(CheckPointer(ppLibName, NULL_OK) && (!ppLibName || *ppLibName == NULL));
         PRECONDITION(CheckPointer(ppEntryPointName, NULL_OK) && (!ppEntryPointName || *ppEntryPointName == NULL));
@@ -4379,10 +4379,10 @@ namespace
         }
         else
         {
-            pNMD->ndirect.m_pszLibName = libName;
+            pNMD->m_pszLibName = libName;
         }
 
-        pNMD->ndirect.m_pszEntrypointName = entryPointName;
+        pNMD->m_pszEntrypointName = entryPointName;
 
         // Do not publish incomplete prestub flags or you will introduce a race condition.
         pNMD->InterlockedSetPInvokeFlags(ndirectflags | PInvokeMethodDesc::kPInvokePopulated);
@@ -5799,7 +5799,7 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    ndirect.m_pPInvokeTarget = pTarget;
+    m_pPInvokeTarget = pTarget;
 }
 
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)

@@ -10089,7 +10089,7 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     else
     {
         pLookup->accessType = IAT_PVALUE;
-        pLookup->addr = (LPVOID)&(pNMD->ndirect.m_pPInvokeTarget);
+        pLookup->addr = (LPVOID)&(pNMD->m_pPInvokeTarget);
     }
 
     EE_TO_JIT_TRANSITION();
@@ -13815,7 +13815,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             _ASSERTE(pMethod->IsPInvoke());
             PInvokeMethodDesc *pMD = (PInvokeMethodDesc*)pMethod;
-            result = (size_t)(LPVOID)&(pMD->ndirect.m_pPInvokeTarget);
+            result = (size_t)(LPVOID)&(pMD->m_pPInvokeTarget);
         }
         break;
 

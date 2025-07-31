@@ -3985,7 +3985,7 @@ BOOL ILNativeArrayMarshaler::CheckSizeParamIndexArg(
     Module *pModule = m_pargs->m_pMarshalInfo->GetModule();
     _ASSERT(pModule);
 
-    SigTypeContext emptyTypeContext;  // this is an empty type context: ndirect and COM calls are guaranteed to not be generics.
+    SigTypeContext emptyTypeContext;  // this is an empty type context: PInvoke and COM calls are guaranteed to not be generics.
     MetaSig msig(pMD->GetSignature(),
                  pModule,
                  &emptyTypeContext);

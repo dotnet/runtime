@@ -6176,14 +6176,14 @@ MethodTableBuilder::InitMethodDesc(
             PInvokeMethodDesc *pNewNMD = (PInvokeMethodDesc*)pNewMD;
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
-            pNewNMD->ndirect.m_pImportThunkGlue = Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
+            pNewNMD->m_pImportThunkGlue = Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
                 GetLoaderAllocator(), GetMemTracker())->AsPInvokeImportPrecode();
 #else // !HAS_NDIRECT_IMPORT_PRECODE
             pNewNMD->GetPInvokeImportThunkGlue()->Init(pNewNMD);
 #endif // !HAS_NDIRECT_IMPORT_PRECODE
 
 #if defined(TARGET_X86)
-            pNewNMD->ndirect.m_cbStackArgumentSize = 0xFFFF;
+            pNewNMD->m_cbStackArgumentSize = 0xFFFF;
 #endif // defined(TARGET_X86)
 
             // If the RVA of a native method is set, this is an early-bound IJW call
@@ -6194,7 +6194,7 @@ MethodTableBuilder::InitMethodDesc(
                 pNewNMD->SetIsEarlyBound();
             }
 
-            pNewNMD->ndirect.m_pPInvokeTarget = pNewNMD->GetPInvokeImportThunkGlue()->GetEntrypoint();
+            pNewNMD->m_pPInvokeTarget = pNewNMD->GetPInvokeImportThunkGlue()->GetEntrypoint();
         }
         break;
 

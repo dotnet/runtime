@@ -31,7 +31,7 @@ LEAF_END GetDataCacheZeroIDReg, _TEXT
     LEAF_END GetSveLengthFromOS, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
+// The call in PInvokeImportPrecode points to this function.
 NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
