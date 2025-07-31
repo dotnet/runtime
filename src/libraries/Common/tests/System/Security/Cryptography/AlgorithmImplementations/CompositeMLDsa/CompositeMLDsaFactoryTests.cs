@@ -59,6 +59,50 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ImportBadPrivateKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
+        {
+            byte[] key = vector.SecretKey;
+            Array.Resize(ref key, key.Length + 1);
+
+            AssertImportBadPrivateKey(vector.Algorithm, key);
+        }
+
+        [Fact]
+        public static void ImportBadPrivateKey_Rsa_WrongAlgorithm()
+        {
+            // Get vector for MLDsa65WithRSA3072Pss
+            CompositeMLDsaTestData.CompositeMLDsaTestVector differentTradKey =
+                CompositeMLDsaTestData.AllIetfVectors.Single(vector => vector.Algorithm == CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss);
+
+            // But use MLDsa65WithRSA4096Pss
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss, differentTradKey.SecretKey);
+
+            // And flip
+            differentTradKey =
+                CompositeMLDsaTestData.AllIetfVectors.Single(vector => vector.Algorithm == CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss);
+
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss, differentTradKey.SecretKey);
+        }
+
+        [Fact]
+        public static void ImportBadPrivateKey_ECDsa_WrongAlgorithm()
+        {
+            // Get vector for MLDsa65WithECDsaP256
+            CompositeMLDsaTestData.CompositeMLDsaTestVector differentTradKey =
+                CompositeMLDsaTestData.AllIetfVectors.Single(vector => vector.Algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256);
+
+            // But use MLDsa65WithECDsaP384
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384, differentTradKey.SecretKey);
+
+            // And flip
+            differentTradKey =
+                CompositeMLDsaTestData.AllIetfVectors.Single(vector => vector.Algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384);
+
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, differentTradKey.SecretKey);
+        }
+
+        [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportPrivateKey_LowerBound(CompositeMLDsaAlgorithm algorithm)
         {
@@ -129,6 +173,78 @@ namespace System.Security.Cryptography.Tests
             Array.Resize(ref shortTradKey, shortTradKey.Length + 1);
 
             AssertImportBadPublicKey(algorithm, shortTradKey);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ImportBadPublicKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
+        {
+            byte[] key = vector.PublicKey;
+            Array.Resize(ref key, key.Length + 1);
+
+            AssertImportBadPublicKey(vector.Algorithm, key);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ImportBadPublicKey_ECDsa_Uncompressed(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
+        {
+            if (CompositeMLDsaTestHelpers.ExecuteComponentFunc(vector.Algorithm, _ => true, ecdsa => false, _ => true))
+            {
+                return;
+            }
+
+            byte[] key = vector.PublicKey.AsSpan().ToArray();
+            int formatIndex = CompositeMLDsaTestHelpers.MLDsaAlgorithms[vector.Algorithm].PublicKeySizeInBytes;
+
+            // Uncompressed
+            Assert.Equal(4, key[formatIndex]);
+
+            key[formatIndex] = 0;
+            AssertImportBadPublicKey(vector.Algorithm, key);
+
+            key[formatIndex] = 1;
+            AssertImportBadPublicKey(vector.Algorithm, key);
+
+            key[formatIndex] = 2;
+            AssertImportBadPublicKey(vector.Algorithm, key);
+
+            key[formatIndex] = 3;
+            AssertImportBadPublicKey(vector.Algorithm, key);
+        }
+
+        [Fact]
+        public static void ImportBadPublicKey_Rsa_WrongAlgorithm()
+        {
+            // Get vector for MLDsa65WithRSA3072Pss
+            CompositeMLDsaTestData.CompositeMLDsaTestVector differentTradKey =
+                CompositeMLDsaTestData.AllIetfVectors.Single(vector => vector.Algorithm == CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss);
+
+            // But use MLDsa65WithRSA4096Pss
+            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss, differentTradKey.PublicKey);
+
+            // And flip
+            differentTradKey =
+                CompositeMLDsaTestData.AllIetfVectors.Single(vector => vector.Algorithm == CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss);
+
+            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss, differentTradKey.PublicKey);
+        }
+
+        [Fact]
+        public static void ImportBadPublicKey_ECDsa_WrongAlgorithm()
+        {
+            // Get vector for MLDsa65WithECDsaP256
+            CompositeMLDsaTestData.CompositeMLDsaTestVector differentTradKey =
+                CompositeMLDsaTestData.AllIetfVectors.Single(vector => vector.Algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256);
+
+            // But use MLDsa65WithECDsaP384
+            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384, differentTradKey.PublicKey);
+
+            // And flip
+            differentTradKey =
+                CompositeMLDsaTestData.AllIetfVectors.Single(vector => vector.Algorithm == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384);
+
+            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, differentTradKey.PublicKey);
         }
 
         [Theory]
@@ -208,7 +324,11 @@ namespace System.Security.Cryptography.Tests
             bool supported = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                 algorithm,
                 _ => MLDsa.IsSupported,
+#if NET
+                ecdsa => ecdsa.IsSec && MLDsa.IsSupported,
+#else
                 _ => false,
+#endif
                 _ => false);
 
             Assert.Equal(
