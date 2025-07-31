@@ -11,9 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class VersionConverter : JsonPrimitiveConverter<Version?>
     {
 #if NET
-        private const int MinimumVersionLength = 3; // 0.0
-
-        private const int MaximumVersionLength = 43; // 2147483647.2147483647.2147483647.2147483647
+        private const int MaximumFormattedVersionLength = 43; // 2147483647.2147483647.2147483647.2147483647
 #endif
 
         public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -100,12 +98,11 @@ namespace System.Text.Json.Serialization.Converters
 
 #if NET
 #if NET8_0_OR_GREATER
-            Span<byte> span = stackalloc byte[MaximumVersionLength];
+            Span<byte> span = stackalloc byte[MaximumFormattedVersionLength];
 #else
-            Span<char> span = stackalloc char[MaximumVersionLength];
+            Span<char> span = stackalloc char[MaximumFormattedVersionLength];
 #endif
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
-            Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
             writer.WriteStringValue(span.Slice(0, charsWritten));
 #else
             writer.WriteStringValue(value.ToString());
@@ -123,12 +120,11 @@ namespace System.Text.Json.Serialization.Converters
 
 #if NET
 #if NET8_0_OR_GREATER
-            Span<byte> span = stackalloc byte[MaximumVersionLength];
+            Span<byte> span = stackalloc byte[MaximumFormattedVersionLength];
 #else
-            Span<char> span = stackalloc char[MaximumVersionLength];
+            Span<char> span = stackalloc char[MaximumFormattedVersionLength];
 #endif
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
-            Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
             writer.WritePropertyName(span.Slice(0, charsWritten));
 #else
             writer.WritePropertyName(value.ToString());
