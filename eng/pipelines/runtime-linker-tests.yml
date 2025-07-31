@@ -62,6 +62,27 @@ extends:
 
     - stage: Build
       jobs:
+
+      #
+      # Build Release libs subset so that Roslyn analyzer tests can use live ref pack
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          - osx_x64
+          - linux_x64
+          jobParameters:
+            nameSuffix: Libraries_Release
+            condition:
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+            buildArgs: -s libs -c $(_BuildConfig)
+
       #
       # Build and Test ILLink in Release config vertical for Windows, Linux and OSX
       #
@@ -82,7 +103,7 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            buildArgs: -s libs+tools.illinktests -test -c $(_BuildConfig)
+            buildArgs: -s tools.illinktests -test -c $(_BuildConfig)
 
       #
       # Build Release config vertical for Windows, Linux, and OSX
@@ -103,7 +124,7 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            buildArgs: -s clr+libs+tools.illink+host.native -c $(_BuildConfig)
+            buildArgs: -s clr+tools.illink+host.native -c $(_BuildConfig)
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
 
