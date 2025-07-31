@@ -76,11 +76,11 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Disconnect_NotConnected_ThrowsInvalidOperationException(bool reuseSocket)
+        public async Task Disconnect_NotConnected_ThrowsInvalidOperationException(bool reuseSocket)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.ThrowsAsync<InvalidOperationException>(async () => await DisconnectAsync(s, reuseSocket));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await DisconnectAsync(s, reuseSocket));
             }
         }
 
