@@ -587,10 +587,8 @@ namespace System.IO.Compression
             }
         }
 
-        private void ReadEndOfCentralDirectoryInnerWork(ZipEndOfCentralDirectoryBlock eocd, out long eocdStart)
+        private void ReadEndOfCentralDirectoryInnerWork(ZipEndOfCentralDirectoryBlock eocd)
         {
-            eocdStart = _archiveStream.Position;
-
             if (eocd.NumberOfThisDisk != eocd.NumberOfTheDiskWithTheStartOfTheCentralDirectory)
                 throw new InvalidDataException(SR.SplitSpanned);
 
@@ -624,10 +622,11 @@ namespace System.IO.Compression
                         ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.FieldLengths.Signature))
                     throw new InvalidDataException(SR.EOCDNotFound);
 
+                long eocdStart = _archiveStream.Position;
+
                 // read the EOCD
                 ZipEndOfCentralDirectoryBlock eocd = ZipEndOfCentralDirectoryBlock.ReadBlock(_archiveStream);
-
-                ReadEndOfCentralDirectoryInnerWork(eocd, out long eocdStart);
+                ReadEndOfCentralDirectoryInnerWork(eocd);
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 
@@ -686,6 +685,12 @@ namespace System.IO.Compression
             {
                 // Read Zip64 End of Central Directory Locator
 
+                // Check if there's enough space before the EOCD to look for the Zip64 EOCDL
+                if (eocdStart < Zip64EndOfCentralDirectoryLocator.TotalSize)
+                {
+                    throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+                }
+
                 // This seeks forwards almost to the beginning of the Zip64-EOCDL, one byte after where the signature would be located
                 _archiveStream.Seek(eocdStart - Zip64EndOfCentralDirectoryLocator.SizeOfBlockWithoutSignature, SeekOrigin.Begin);
 
@@ -701,7 +706,6 @@ namespace System.IO.Compression
 
                     // Read Zip64 End of Central Directory Record
                     Zip64EndOfCentralDirectoryRecord record = Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveStream);
-
                     TryReadZip64EndOfCentralDirectoryInnerFinalWork(record);
                 }
             }
