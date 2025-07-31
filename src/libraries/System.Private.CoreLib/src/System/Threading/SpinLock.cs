@@ -290,7 +290,7 @@ namespace System.Threading
             uint startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout != 0)
             {
-                startTime = TimeoutHelper.GetTime();
+                startTime = (uint)Environment.TickCount;
             }
 
             if (IsThreadOwnerTrackingEnabled)
