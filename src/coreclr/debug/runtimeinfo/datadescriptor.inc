@@ -274,7 +274,7 @@ CDAC_TYPE_END(PEAssembly)
 
 CDAC_TYPE_BEGIN(AssemblyBinder)
 CDAC_TYPE_INDETERMINATE(AssemblyBinder)
-CDAC_TYPE_FIELD(AssemblyBinder, /*pointer*/, ManagedAssemblyLoadContext, cdac_data<AssemblyBinder>::ManagedAssemblyLoadContext)
+CDAC_TYPE_FIELD(AssemblyBinder, /*pointer*/, AssemblyLoadContext, cdac_data<AssemblyBinder>::AssemblyLoadContext)
 CDAC_TYPE_END(AssemblyBinder)
 
 CDAC_TYPE_BEGIN(PEImage)

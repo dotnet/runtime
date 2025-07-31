@@ -574,7 +574,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         // (Also debugging NULL AVs if someone uses it accidentally is so much easier)
         pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete = NULL;
 
-        pDomainLoaderAllocatorDestroyIterator->ReleaseManagedAssemblyLoadContext();
+        pDomainLoaderAllocatorDestroyIterator->ReleaseAssemblyLoadContext();
 
         // The native objects in dependent handles may refer to the virtual call stub manager's heaps, so clear the dependent
         // handles first
@@ -2068,7 +2068,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     }
 }
 
-void AssemblyLoaderAllocator::ReleaseManagedAssemblyLoadContext()
+void AssemblyLoaderAllocator::ReleaseAssemblyLoadContext()
 {
     CONTRACTL
     {
