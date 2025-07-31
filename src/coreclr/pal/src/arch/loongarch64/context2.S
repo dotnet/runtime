@@ -37,19 +37,10 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     andi $t1, $r21, (1 << CONTEXT_FLOATING_POINT_BIT)
     beqz $t1, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
 
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32
-    st.d  $a0, $fp, 16
-    st.d  $a1, $fp, 24
-    bl  C_FUNC(minipal_getcpufeatures)
-    ori  $t1, $a0, 0
-    ld.d  $a0, $fp, 16
-    ld.d  $a1, $fp, 24
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
-
-    andi $t3, $t1, CONTEXT_HWCAP_LOONGARCH_LASX_BIT
-    bnez $t3, LOCAL_LABEL(Restore_CONTEXT_LASX)
-    andi $t3, $t1, CONTEXT_HWCAP_LOONGARCH_LSX_BIT
-    bnez $t3, LOCAL_LABEL(Restore_CONTEXT_LSX)
+    andi $t1, $r21, CONTEXT_HWCAP_LASX
+    bnez $t1, LOCAL_LABEL(Restore_CONTEXT_LASX)
+    andi $t1, $r21, CONTEXT_HWCAP_LSX
+    bnez $t1, LOCAL_LABEL(Restore_CONTEXT_LSX)
 
     // Neither LSX or LASX is supported.
     fld.d  $f0 , $a0, CONTEXT_FPU_OFFSET
@@ -233,15 +224,19 @@ LEAF_END RtlRestoreContext, _TEXT
 // Incoming:
 //  a0: Context*
 
-LEAF_ENTRY RtlCaptureContext, _TEXT
-    PROLOG_STACK_ALLOC 16
-    st.d  $r21, $sp, 0
+NESTED_ENTRY RtlCaptureContext, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32
+    st.d  $a0, $sp, 16
+    st.d  $r21, $sp, 24
     li.w  $r21, CONTEXT_FULL
+    bl  C_FUNC(minipal_getcpufeatures)
+    or  $r21, $r21, $a0
+    ld.d  $a0, $fp, 16
     st.w  $r21, $a0, CONTEXT_ContextFlags
-    ld.d  $r21, $sp, 0
-    EPILOG_STACK_FREE 16
+    ld.d  $r21, $fp, 24
+    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
     b  C_FUNC(CONTEXT_CaptureContext)
-LEAF_END RtlCaptureContext, _TEXT
+NESTED_END RtlCaptureContext, _TEXT
 
 // Incoming:
 //  a0: Context*
@@ -305,16 +300,9 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     andi  $t3, $t1, (1 << CONTEXT_FLOATING_POINT_BIT)
     beqz  $t3, LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT)
 
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32
-    st.d  $a0, $fp, 16
-    bl  C_FUNC(minipal_getcpufeatures)
-    ori  $t1, $a0, 0
-    ld.d  $a0, $fp, 16
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
-
-    andi $t3, $t1, CONTEXT_HWCAP_LOONGARCH_LASX_BIT
+    andi $t3, $t1, CONTEXT_HWCAP_LASX
     bnez $t3, LOCAL_LABEL(Store_CONTEXT_LASX)
-    andi $t3, $t1, CONTEXT_HWCAP_LOONGARCH_LSX_BIT
+    andi $t3, $t1, CONTEXT_HWCAP_LSX
     bnez $t3, LOCAL_LABEL(Store_CONTEXT_LSX)
 
     // Neither LSX or LASX is supported.

@@ -73,6 +73,8 @@
 
 #if defined(HOST_AMD64) || defined(HOST_X86)
 #include <xmmintrin.h>
+#elif defined(HOST_LOONGARCH64)
+#include <minipal/cpufeatures.h>
 #endif
 
 using std::max;
