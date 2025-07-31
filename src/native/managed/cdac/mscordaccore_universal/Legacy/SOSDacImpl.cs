@@ -2354,27 +2354,29 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         if (objAddr == 0 || isTrackedType == null || hasTaggedMemory == null)
             hr = HResults.E_INVALIDARG;
-
-        try
+        else
         {
-            Contracts.IObject objectContract = _target.Contracts.Object;
-            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            TargetPointer objPtr = objAddr.ToTargetPointer(_target);
-            TargetPointer mt = objectContract.GetMethodTableAddress(objPtr);
-            if (mt == TargetPointer.Null)
-                hr = HResults.E_INVALIDARG;
-            else
+            try
             {
-                TypeHandle mtHandle = rtsContract.GetTypeHandle(mt);
-                *isTrackedType = rtsContract.IsTrackedReferenceWithFinalizer(mtHandle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-                hr = (*isTrackedType == Interop.BOOL.TRUE) ? HResults.S_OK : HResults.S_FALSE;
-                TargetPointer? taggedMemory = objectContract.TaggedMemory(objPtr);
-                *hasTaggedMemory = (taggedMemory != null && taggedMemory != TargetPointer.Null) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                Contracts.IObject objectContract = _target.Contracts.Object;
+                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+                TargetPointer objPtr = objAddr.ToTargetPointer(_target);
+                TargetPointer mt = objectContract.GetMethodTableAddress(objPtr);
+                if (mt == TargetPointer.Null)
+                    hr = HResults.E_INVALIDARG;
+                else
+                {
+                    TypeHandle mtHandle = rtsContract.GetTypeHandle(mt);
+                    *isTrackedType = rtsContract.IsTrackedReferenceWithFinalizer(mtHandle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    hr = (*isTrackedType == Interop.BOOL.TRUE) ? HResults.S_OK : HResults.S_FALSE;
+                    TargetPointer? taggedMemory = objectContract.TaggedMemory(objPtr);
+                    *hasTaggedMemory = (taggedMemory != null && taggedMemory != TargetPointer.Null) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                }
             }
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
         }
 #if DEBUG
         if (_legacyImpl11 is not null)
@@ -2397,27 +2399,29 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         if (objAddr == 0 || taggedMemory == null || taggedMemorySizeInBytes == null)
             hr = HResults.E_INVALIDARG;
-
-        *taggedMemory = 0;
-        *taggedMemorySizeInBytes = 0;
-        try
+        else
         {
-            Contracts.IObject objectContract = _target.Contracts.Object;
-            TargetPointer objPtr = objAddr.ToTargetPointer(_target);
-            TargetPointer? taggedMemoryPtr = objectContract.TaggedMemory(objPtr);
-            if (taggedMemoryPtr != null)
+            *taggedMemory = 0;
+            *taggedMemorySizeInBytes = 0;
+            try
             {
-                *taggedMemory = taggedMemoryPtr.Value.ToClrDataAddress(_target);
-                *taggedMemorySizeInBytes = 2 * (nuint)_target.PointerSize;
+                Contracts.IObject objectContract = _target.Contracts.Object;
+                TargetPointer objPtr = objAddr.ToTargetPointer(_target);
+                TargetPointer? taggedMemoryPtr = objectContract.TaggedMemory(objPtr);
+                if (taggedMemoryPtr != null)
+                {
+                    *taggedMemory = taggedMemoryPtr.Value.ToClrDataAddress(_target);
+                    *taggedMemorySizeInBytes = 2 * (nuint)_target.PointerSize;
+                }
+                else
+                {
+                    hr = HResults.S_FALSE;
+                }
             }
-            else
+            catch (System.Exception ex)
             {
-                hr = HResults.S_FALSE;
+                hr = ex.HResult;
             }
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl11 is not null)
