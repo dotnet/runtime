@@ -1145,7 +1145,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     ISymbolNode compositionNode;
 
-                    if (IsReflectionVisible //this == factory.MaximallyConstructableType(_type)
+                    if (IsReflectionVisible
                         && factory.MetadataManager.IsTypeInstantiationReflectionVisible(_type))
                     {
                         compositionNode = _type.Instantiation.Length > 1
