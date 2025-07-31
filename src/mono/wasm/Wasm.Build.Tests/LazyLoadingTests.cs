@@ -51,11 +51,12 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     }
 
     [Fact]
+    // WasmStripILAfterAOT=false is necessary to make Lazy+AOT work
     public async Task LoadLazyAssemblyBeforeItIsNeededPublishAot()
     {
         Configuration config = Configuration.Release;
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LazyLoadingTests");
-        PublishProject(info, config, new PublishOptions(AOT: true, ExtraMSBuildArgs: $"-p:LazyLoadingTestExtension=wasm -p:TestLazyLoading=true"));
+        PublishProject(info, config, new PublishOptions(AOT: true, ExtraMSBuildArgs: $"-p:WasmStripILAfterAOT=false -p:LazyLoadingTestExtension=wasm -p:TestLazyLoading=true"));
 
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
             config,
