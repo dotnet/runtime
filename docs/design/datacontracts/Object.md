@@ -16,6 +16,9 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
 
 // Get built-in COM data for the object if available. Returns false, if address does not represent a COM object using built-in COM
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
+
+// Get the object's tagged memory (if it exists).
+public TargetPointer? TaggedMemory(TargetPointer address);
 ```
 
 ## Version 1
@@ -26,6 +29,7 @@ Data descriptors used:
 | `Array` | `m_NumComponents` | Number of items in the array |
 | `InteropSyncBlockInfo` | `RCW` | Pointer to the RCW for the object (if it exists) |
 | `InteropSyncBlockInfo` | `CCW` | Pointer to the CCW for the object (if it exists) |
+| `InteropSyncBlockInfo` | `TaggedMemory` | Pointer to the tagged memory for the object (if it exists) |
 | `Object` | `m_pMethTab` | Method table for the object |
 | `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
@@ -124,5 +128,28 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     rcw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::RCW offset */);
     ccw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCW offset */);
     return rcw != TargetPointer.Null && ccw != TargetPointer.Null;
+}
+
+TargetPointer? TaggedMemory(TargetPointer address)
+{
+    uint syncBlockValue = target.Read<uint>(address - _target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
+
+    // Check if the sync block value represents a sync block index
+    if ((syncBlockValue & (uint)(SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex | SyncBlockValue.Bits.IsHashCode)) != (uint)SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex)
+        return null;
+
+    // Get the offset into the sync table entries
+    uint index = syncBlockValue & SyncBlockValue.SyncBlockIndexMask;
+    ulong offsetInSyncTableEntries = index * /* SyncTableEntry size */;
+
+    TargetPointer syncBlock = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
+    if (syncBlock == TargetPointer.Null)
+        return null;
+
+    TargetPointer interopInfo = target.ReadPointer(syncBlock + /* SyncTableEntry::InteropInfo offset */);
+    if (interopInfo == TargetPointer.Null)
+        return null;
+
+    return target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::TaggedMemory offset */);
 }
 ```

@@ -115,6 +115,12 @@ internal readonly struct Object_1 : IObject
         return rcw != TargetPointer.Null || ccw != TargetPointer.Null;
     }
 
+    public TargetPointer? TaggedMemory(TargetPointer address)
+    {
+        Data.SyncBlock? syncBlock = GetSyncBlock(address);
+        return syncBlock?.InteropInfo?.TaggedMemory;
+    }
+
     private Data.SyncBlock? GetSyncBlock(TargetPointer address)
     {
         uint syncBlockValue = _target.Read<uint>(address - _target.ReadGlobal<ushort>(Constants.Globals.SyncBlockValueToObjectOffset));

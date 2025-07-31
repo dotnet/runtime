@@ -201,6 +201,9 @@ CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCW, cdac_data<InteropSyncBlockInfo>::CCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_OBJCMARSHAL
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, TaggedMemory, cdac_data<InteropSyncBlockInfo>::TaggedMemory)
+#endif // FEATURE_OBJCMARSHAL
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)

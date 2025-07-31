@@ -46,7 +46,8 @@ internal struct MethodTableFlags_1
         Category_Interface = 0x000C0000,
         ContainsGCPointers = 0x01000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
-                                        // otherwise the lower bits are used for WFLAGS_LOW
+                                       // otherwise the lower bits are used for WFLAGS_LOW
+        IsTrackedReferenceWithFinalizer = 0x04000000
     }
 
     [Flags]

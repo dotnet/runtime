@@ -18,8 +18,12 @@ internal sealed class InteropSyncBlockInfo : IData<InteropSyncBlockInfo>
         CCW = type.Fields.TryGetValue(nameof(CCW), out Target.FieldInfo ccwField)
             ? target.ReadPointer(address + (ulong)ccwField.Offset)
             : TargetPointer.Null;
+        TaggedMemory = type.Fields.TryGetValue(nameof(TaggedMemory), out Target.FieldInfo taggedMemoryField)
+            ? target.ReadPointer(address + (ulong)taggedMemoryField.Offset)
+            : TargetPointer.Null;
     }
 
     public TargetPointer RCW { get; init; }
     public TargetPointer CCW { get; init; }
+    public TargetPointer TaggedMemory { get; init; }
 }
