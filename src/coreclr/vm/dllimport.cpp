@@ -2247,6 +2247,13 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
         EmitLoadStubContext(pcsEmit, dwStubFlags);
     }
 #endif // FEATURE_COMINTEROP
+    else if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
+    {
+        MethodDesc* pMD = GetTargetMD();
+        _ASSERTE(pMD != NULL && pMD->IsNDirect());
+        pcsEmit->EmitLDC((DWORD_PTR)pMD);
+        pcsEmit->EmitCONV_I();
+    }
     else
     {
         // Some other stub without the MD as the secret parameter, so pass null.
