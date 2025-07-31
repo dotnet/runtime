@@ -66,6 +66,7 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (unmanaged == null)
                 return [];
+
             return new Span<TUnmanagedElement>(unmanaged, numElements);
         }
 
@@ -101,6 +102,7 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (unmanaged == null)
                 return [];
+
             return new ReadOnlySpan<TUnmanagedElement>(unmanaged, numElements);
         }
 

@@ -208,6 +208,7 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 if (_unmanagedArray is null)
                     return [];
+
                 return new ReadOnlySpan<TUnmanagedElement>(_unmanagedArray, numElements);
             }
 
