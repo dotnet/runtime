@@ -2524,6 +2524,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long MultiplyDoublingWideningUpperAndSubtractSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static long MultiplyDoublingSaturateHigh(long op1, long op2)
+        {
+            return MultiplyDoublingSaturate(op1, op2, rounding: false, 0, subOp: false);
+        }
+
         public static long MultiplyRoundedDoublingSaturateHigh(long op1, long op2)
         {
             return MultiplyDoublingSaturate(op1, op2, rounding: true, 0, subOp: false);
