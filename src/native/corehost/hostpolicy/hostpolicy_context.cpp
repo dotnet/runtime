@@ -351,13 +351,10 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         pal::string_t dotnet_host_path = hostpolicy_init.host_info.dotnet_root;
         append_path(&dotnet_host_path, _X("dotnet"));
         dotnet_host_path.append(_STRINGIFY(EXE_FILE_EXT));
-        if (pal::file_exists(dotnet_host_path))
+        if (!coreclr_properties.add(common_property::DotNetHostPath, dotnet_host_path.c_str()))
         {
-            if (!coreclr_properties.add(common_property::DotNetHostPath, dotnet_host_path.c_str()))
-            {
-                log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::DotNetHostPath));
-                return StatusCode::LibHostDuplicateProperty;
-            }
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::DotNetHostPath));
+            return StatusCode::LibHostDuplicateProperty;
         }
     }
 #endif
