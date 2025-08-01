@@ -59,7 +59,7 @@ bool FixupSignatureContainingInternalTypes(
 static_assert_no_msg((sizeof(MethodDescChunk)       & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(MethodDesc)            & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(NDirectMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert_no_msg((sizeof(PInvokeMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
@@ -68,7 +68,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
 #define METHOD_DESC_SIZES(adjustment)                                       \
     adjustment + sizeof(MethodDesc),                 /* mcIL            */  \
     adjustment + sizeof(FCallMethodDesc),            /* mcFCall         */  \
-    adjustment + sizeof(NDirectMethodDesc),          /* mcPInvoke       */  \
+    adjustment + sizeof(PInvokeMethodDesc),          /* mcPInvoke       */  \
     adjustment + sizeof(EEImplMethodDesc),           /* mcEEImpl        */  \
     adjustment + sizeof(ArrayMethodDesc),            /* mcArray         */  \
     adjustment + sizeof(InstantiatedMethodDesc),     /* mcInstantiated  */  \
@@ -141,7 +141,7 @@ SIZE_T MethodDesc::SizeOf()
 
 /*********************************************************************/
 #ifndef DACCESS_COMPILE
-BOOL NDirectMethodDesc::HasDefaultDllImportSearchPathsAttribute()
+BOOL PInvokeMethodDesc::HasDefaultDllImportSearchPathsAttribute()
 {
     CONTRACTL
     {
@@ -153,21 +153,21 @@ BOOL NDirectMethodDesc::HasDefaultDllImportSearchPathsAttribute()
 
     if(IsDefaultDllImportSearchPathsAttributeCached())
     {
-        return (ndirect.m_wFlags  & kDefaultDllImportSearchPathsStatus) != 0;
+        return (m_wPInvokeFlags  & kDefaultDllImportSearchPathsStatus) != 0;
     }
 
-    BOOL attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(GetModule(),GetMemberDef(),&ndirect.m_DefaultDllImportSearchPathsAttributeValue);
+    BOOL attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(GetModule(),GetMemberDef(),&m_DefaultDllImportSearchPathsAttributeValue);
 
     if(attributeIsFound )
     {
-        InterlockedSetNDirectFlags(kDefaultDllImportSearchPathsIsCached | kDefaultDllImportSearchPathsStatus);
+        InterlockedSetPInvokeFlags(kDefaultDllImportSearchPathsIsCached | kDefaultDllImportSearchPathsStatus);
     }
     else
     {
-        InterlockedSetNDirectFlags(kDefaultDllImportSearchPathsIsCached);
+        InterlockedSetPInvokeFlags(kDefaultDllImportSearchPathsIsCached);
     }
 
-    return (ndirect.m_wFlags  & kDefaultDllImportSearchPathsStatus) != 0;
+    return (m_wPInvokeFlags  & kDefaultDllImportSearchPathsStatus) != 0;
 }
 #endif //!DACCESS_COMPILE
 
@@ -1017,7 +1017,7 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 // Returns the address of the native code.
 //
 // Methods which have no native code are either implemented by stubs or not jitted yet.
-// For example, NDirectMethodDesc's have no native code.  They are treated as
+// For example, PInvokeMethodDesc's have no native code.  They are treated as
 // implemented by stubs.  On WIN64, these stubs are IL stubs, which DO have native code.
 //
 // This function returns null if the method has no native code.
@@ -1123,8 +1123,10 @@ BOOL MethodDesc::HasRetBuffArg()
 }
 
 //*******************************************************************************
-// This returns the offset of the IL.
-// The offset is relative to the base of the IL image.
+// This typically returns the offset of the IL.
+// Another case when a method may have an RVA is earlybound IJW PInvokes,
+// in which case the RVA is referring to native code.
+// The offset is relative to the base of the image.
 ULONG MethodDesc::GetRVA()
 {
     CONTRACTL
@@ -1133,26 +1135,10 @@ ULONG MethodDesc::GetRVA()
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
+        PRECONDITION((IsIL() && MayHaveILHeader()) ||
+            (IsPInvoke() && ((PInvokeMethodDesc*)this)->IsEarlyBound()));
     }
     CONTRACTL_END
-
-    if (IsRuntimeSupplied())
-    {
-        return 0;
-    }
-
-    // Methods without metadata don't have an RVA.  Examples are IL stubs and LCG methods.
-    if (IsNoMetadata())
-    {
-        return 0;
-    }
-
-    // Between two Async variants of the same method only one represents the actual IL.
-    // It is the variant that is not a thunk.
-    if (IsAsyncThunkMethod())
-    {
-        return 0;
-    }
 
     if (GetMemberDef() & 0x00FFFFFF)
     {
@@ -1167,7 +1153,7 @@ ULONG MethodDesc::GetRVA()
             _ASSERTE(!"If this ever fires, then this method should return HRESULT");
             return 0;
         }
-        BAD_FORMAT_NOTHROW_ASSERT(IsNDirect() || IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || dwDescrOffset == 0);
+        BAD_FORMAT_NOTHROW_ASSERT(IsPInvoke() || IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || dwDescrOffset == 0);
         return dwDescrOffset;
     }
 
@@ -1198,8 +1184,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     {
         THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(IsIL());
-        PRECONDITION(!IsUnboxingStub());
+        PRECONDITION(MayHaveILHeader());
     }
     CONTRACTL_END
 
@@ -2481,7 +2466,7 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
-    if (IsNDirect() || IsCLRToCOMCall())
+    if (IsPInvoke() || IsCLRToCOMCall())
         return TRUE;
 
 
@@ -2568,7 +2553,7 @@ BOOL MethodDesc::MayHaveNativeCode()
         break;
     case mcFCall:           // FCalls do not have real native code.
         return FALSE;
-    case mcPInvoke:         // NDirect never have native code (note that the NDirect method
+    case mcPInvoke:         // PInvoke never have native code (note that the PInvoke method
         return FALSE;       //  does not appear as having a native code even for stubs as IL)
     case mcEEImpl:          // Runtime provided implementation. No native code.
         return FALSE;
@@ -3258,17 +3243,17 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     return fResult;
 }
 
-BOOL NDirectMethodDesc::ComputeMarshalingRequired()
+BOOL PInvokeMethodDesc::ComputeMarshalingRequired()
 {
     WRAPPER_NO_CONTRACT;
 
-    return NDirect::MarshalingRequired(this);
+    return PInvoke::MarshalingRequired(this);
 }
 
 /**********************************************************************************/
-// Forward declare the NDirectImportWorker function - See dllimport.cpp
-EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc*);
-void *NDirectMethodDesc::ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD)
+// Forward declare the PInvokeImportWorker function - See dllimport.cpp
+EXTERN_C LPVOID STDCALL PInvokeImportWorker(PInvokeMethodDesc*);
+void *PInvokeMethodDesc::ResolveAndSetPInvokeTarget(_In_ PInvokeMethodDesc* pMD)
 {
     CONTRACTL
     {
@@ -3281,14 +3266,14 @@ void *NDirectMethodDesc::ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD)
 
 // This build conditional is here due to dllimport.cpp
 // not being relevant during the crossgen build.
-    LPVOID targetMaybe = NDirectImportWorker(pMD);
+    LPVOID targetMaybe = PInvokeImportWorker(pMD);
     _ASSERTE(targetMaybe != nullptr);
-    pMD->SetNDirectTarget(targetMaybe);
+    pMD->SetPInvokeTarget(targetMaybe);
     return targetMaybe;
 
 }
 
-BOOL NDirectMethodDesc::TryGetResolvedNDirectTarget(_In_ NDirectMethodDesc* pMD, _Out_ void** ndirectTarget)
+BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD, _Out_ void** ndirectTarget)
 {
     CONTRACTL
     {
@@ -3300,23 +3285,23 @@ BOOL NDirectMethodDesc::TryGetResolvedNDirectTarget(_In_ NDirectMethodDesc* pMD,
     }
     CONTRACTL_END
 
-    if (!pMD->NDirectTargetIsImportThunk())
+    if (!pMD->PInvokeTargetIsImportThunk())
     {
         // This is an early out to handle already resolved targets
-        *ndirectTarget = pMD->GetNDirectTarget();
+        *ndirectTarget = pMD->GetPInvokeTarget();
         return TRUE;
     }
 
     if (!pMD->ShouldSuppressGCTransition())
         return FALSE;
 
-    *ndirectTarget = ResolveAndSetNDirectTarget(pMD);
+    *ndirectTarget = ResolveAndSetPInvokeTarget(pMD);
     return TRUE;
 
 }
 
 //*******************************************************************************
-void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
+void PInvokeMethodDesc::InterlockedSetPInvokeFlags(WORD wFlags)
 {
     CONTRACTL
     {
@@ -3328,12 +3313,12 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
     // Since InterlockedCompareExchange only works on ULONGs,
     // we'll have to operate on the entire ULONG. Ugh.
 
-    WORD *pFlags = &ndirect.m_wFlags;
+    WORD *pFlags = &m_wPInvokeFlags;
 
     // Make sure that m_flags is aligned on a 4 byte boundry
     _ASSERTE( ( ((size_t) pFlags) & (sizeof(ULONG)-1) ) == 0);
 
-    // Ensure we won't be reading or writing outside the bounds of the NDirectMethodDesc.
+    // Ensure we won't be reading or writing outside the bounds of the PInvokeMethodDesc.
     _ASSERTE((BYTE*)pFlags >= (BYTE*)this);
     _ASSERTE((BYTE*)pFlags+sizeof(ULONG) <= (BYTE*)(this+1));
 
@@ -3348,7 +3333,7 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
 
 
 #ifdef TARGET_WINDOWS
-FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName)
+FARPROC PInvokeMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName)
 {
     CONTRACTL
     {
@@ -3389,7 +3374,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
     return pFunc;
 }
 
-FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName, char suffix)
+FARPROC PInvokeMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName, char suffix)
 {
     // Allocate space for a copy of the entry point name.
     DWORD entryPointWithSuffixLen = (DWORD)(strlen(entryPointName) + 1); // +1 for charset decorations
@@ -3408,7 +3393,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, 
 #endif
 
 //*******************************************************************************
-LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod)
+LPVOID PInvokeMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod)
 {
     CONTRACTL
     {
@@ -3459,17 +3444,17 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod)
 
 #if defined(TARGET_X86)
 //*******************************************************************************
-void NDirectMethodDesc::EnsureStackArgumentSize()
+void PInvokeMethodDesc::EnsureStackArgumentSize()
 {
     STANDARD_VM_CONTRACT;
 
-    if (ndirect.m_cbStackArgumentSize == 0xFFFF)
+    if (m_cbStackArgumentSize == 0xFFFF)
     {
         // Marshalling required check sets the stack size as side-effect when marshalling is not required.
         if (MarshalingRequired())
         {
             // Generating interop stub sets the stack size as side-effect in all cases
-            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES);
+            GetStubForInteropMethod(this, PINVOKESTUB_FL_FOR_NUMPARAMBYTES);
         }
     }
 }
@@ -3477,7 +3462,7 @@ void NDirectMethodDesc::EnsureStackArgumentSize()
 
 
 //*******************************************************************************
-void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
+void PInvokeMethodDesc::InitEarlyBoundPInvokeTarget()
 {
     CONTRACTL
     {
@@ -3502,10 +3487,10 @@ void NDirectMethodDesc::InitEarlyBoundNDirectTarget()
         target = (BYTE*)FalseGetLastError;
 #endif
 
-    // As long as we've set the NDirect target field we don't need to backpatch the import thunk glue.
-    // All NDirect calls all through the NDirect target, so if it's updated, then we won't go into
-    // NDirectImportThunk().  In fact, backpatching the import thunk glue leads to race conditions.
-    SetNDirectTarget((LPVOID)target);
+    // As long as we've set the PInvoke target field we don't need to backpatch the import thunk glue.
+    // All PInvoke calls all through the PInvoke target, so if it's updated, then we won't go into
+    // PInvokeImportThunk().  In fact, backpatching the import thunk glue leads to race conditions.
+    SetPInvokeTarget((LPVOID)target);
 }
 
 //*******************************************************************************
@@ -3546,7 +3531,7 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     CONTRACTL_END;
 
     MethodDesc* tgt = nullptr;
-    if (IsNDirect())
+    if (IsPInvoke())
     {
         tgt = this;
     }
@@ -3570,7 +3555,7 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 
     _ASSERTE(tgt != nullptr);
     bool suppressGCTransition;
-    NDirect::GetCallingConvention_IgnoreErrors(tgt, NULL /*callConv*/, &suppressGCTransition);
+    PInvoke::GetCallingConvention_IgnoreErrors(tgt, NULL /*callConv*/, &suppressGCTransition);
     return suppressGCTransition ? TRUE : FALSE;
 }
 

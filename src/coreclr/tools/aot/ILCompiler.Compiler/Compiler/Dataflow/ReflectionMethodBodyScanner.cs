@@ -60,6 +60,14 @@ namespace ILCompiler.Dataflow
                 field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
         }
 
+        public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, TypeDesc type)
+        {
+            return GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, type) ||
+                type.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                type.DoesTypeRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _) ||
+                type.DoesTypeRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
+        }
+
         internal static void CheckAndReportAllRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember)
         {
             CheckAndReportRequires(diagnosticContext, calledMember, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
@@ -429,10 +437,10 @@ namespace ILCompiler.Dataflow
 
         private void ProcessGenericArgumentDataFlow(MethodDesc method)
         {
-            // We only need to validate static methods and then all generic methods
-            // Instance non-generic methods don't need validation because the creation of the instance
-            // is the place where the validation will happen.
-            if (!method.Signature.IsStatic && !method.HasInstantiation && !method.IsConstructor)
+            // We mostly need to validate static methods and generic methods
+            // Instance non-generic methods on reference types don't need validation
+            // because the creation of the instance is the place where the validation will happen.
+            if (!method.Signature.IsStatic && !method.HasInstantiation && !method.IsConstructor && !method.OwningType.IsValueType)
                 return;
 
             if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_annotations, method))

@@ -141,6 +141,9 @@
   <data name="Argument_KemInvalidSeedLength" xml:space="preserve">
     <value>The specified private seed is not the correct length for the ML-KEM algorithm.</value>
   </data>
+  <data name="Argument_MLDsaMuInvalidLength" xml:space="preserve">
+    <value>The specified mu value is not the correct length for the ML-DSA algorithm.</value>
+  </data>
   <data name="Argument_PrivateKeyWrongSizeForAlgorithm" xml:space="preserve">
     <value>The private key is not the correct size for the indicated algorithm.</value>
   </data>

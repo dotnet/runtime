@@ -16,8 +16,6 @@ using Xunit;
 
 public class Test_wait_interrupted_user_apc
 {
-    public static bool Run115178Test => TestLibrary.Utilities.IsWindows;
-
     [DllImport("kernel32.dll")]
     private static extern IntPtr GetCurrentProcess();
 
@@ -165,9 +163,11 @@ public class Test_wait_interrupted_user_apc
 
             stopwatch.Stop();
 
-            if (stopwatch.ElapsedMilliseconds < 2000)
+            long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+            if (elapsedMilliseconds < 1980)
             {
-                Console.WriteLine($"Error waiting on event, wait returned too early.");
+                // Wait uses low resolution timer, test includes a margin of 20ms to account for timer resolution differences.
+                Console.WriteLine($"Error waiting on event, wait returned too early. Waited {elapsedMilliseconds} ms, expected at least 1980 ms.");
                 result = 5;
             }
 
@@ -283,7 +283,8 @@ public class Test_wait_interrupted_user_apc
         GC.KeepAlive(callback);
     }
 
-    [ConditionalFact(nameof(Run115178Test))]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsWindows))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/118233", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         RunTestUsingInfiniteWait();
