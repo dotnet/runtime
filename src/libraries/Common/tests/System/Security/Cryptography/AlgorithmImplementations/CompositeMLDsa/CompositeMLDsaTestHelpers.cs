@@ -154,6 +154,8 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        internal static bool IsECDsa(CompositeMLDsaAlgorithm algorithm) => ExecuteComponentFunc(algorithm, rsa => false, ecdsa => true, eddsa => false);
+
         internal static void AssertExportPublicKey(Action<Func<CompositeMLDsa, byte[]>> callback)
         {
             callback(dsa => dsa.ExportCompositeMLDsaPublicKey());

@@ -5,7 +5,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class EccKeyFormatHelper
     {
-        internal static ECPoint GetECPointFromUncompressedPublicKey(ReadOnlySpan<byte> publicKey, int fieldWidthInBytes)
+        internal static void GetECPointFromUncompressedPublicKey(ReadOnlySpan<byte> publicKey, int fieldWidthInBytes, out byte[] x, out byte[] y)
         {
             if (publicKey.Length == 0)
             {
@@ -25,11 +25,8 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            return new ECPoint
-            {
-                X = publicKey.Slice(1, fieldWidthInBytes).ToArray(),
-                Y = publicKey.Slice(1 + fieldWidthInBytes).ToArray(),
-            };
+            x = publicKey.Slice(1, fieldWidthInBytes).ToArray();
+            y = publicKey.Slice(1 + fieldWidthInBytes).ToArray();
         }
     }
 }

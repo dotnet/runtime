@@ -396,16 +396,6 @@
              Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\EccKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\EccKeyFormatHelper.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCurve.cs"
-             Link="Common\System\Security\Cryptography\ECCurve.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCurve.ECCurveType.cs"
-             Link="Common\System\Security\Cryptography\ECCurve.ECCurveType.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCurve.NamedCurves.cs"
-             Link="Common\System\Security\Cryptography\ECCurve.NamedCurves.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECParameters.cs"
-             Link="Common\System\Security\Cryptography\ECParameters.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECPoint.cs"
-             Link="Common\System\Security\Cryptography\ECPoint.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
              Link="Common\System\Security\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
@@ -582,6 +572,9 @@
     <Compile Include="System\Security\Cryptography\DSASignatureFormatter.cs" />
     <Compile Include="System\Security\Cryptography\ECAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\EccKeyFormatHelper.cs" />
+    <Compile Include="System\Security\Cryptography\ECCurve.cs" />
+    <Compile Include="System\Security\Cryptography\ECCurve.ECCurveType.cs" />
+    <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Xml.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanKeyDerivationFunction.cs" />
@@ -590,6 +583,8 @@
     <Compile Include="System\Security\Cryptography\ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Xml.cs" />
     <Compile Include="System\Security\Cryptography\ECKeyXmlFormat.cs" />
+    <Compile Include="System\Security\Cryptography\ECParameters.cs" />
+    <Compile Include="System\Security\Cryptography\ECPoint.cs" />
     <Compile Include="System\Security\Cryptography\FixedMemoryKeyBox.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />

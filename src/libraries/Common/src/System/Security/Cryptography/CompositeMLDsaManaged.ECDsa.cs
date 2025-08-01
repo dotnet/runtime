@@ -84,15 +84,13 @@ namespace System.Security.Cryptography
                                 }
                             }
 
-                            ECParameters parameters = new ECParameters
-                            {
-                                Curve = algorithm.Curve,
-                            };
+                            byte[]? x = null;
+                            byte[]? y = null;
 
                             // If public key is present, add it to the parameters.
                             if (ecPrivateKey.PublicKey is ReadOnlyMemory<byte> publicKey)
                             {
-                                parameters.Q = EccKeyFormatHelper.GetECPointFromUncompressedPublicKey(publicKey.Span, algorithm.KeySizeInBytes);
+                                EccKeyFormatHelper.GetECPointFromUncompressedPublicKey(publicKey.Span, algorithm.KeySizeInBytes, out x, out y);
                             }
 
                             byte[] d = new byte[ecPrivateKey.PrivateKey.Length];
@@ -100,11 +98,21 @@ namespace System.Security.Cryptography
                             using (PinAndClear.Track(d))
                             {
                                 ecPrivateKey.PrivateKey.CopyTo(d);
-                                parameters.D = d;
+
+#if NET
+                                ECParameters parameters = new ECParameters
+                                {
+                                    Curve = algorithm.Curve,
+                                    Q = new ECPoint
+                                    {
+                                        X = x,
+                                        Y = y,
+                                    },
+                                    D = d
+                                };
 
                                 parameters.Validate();
 
-#if NET
                                 return new ECDsaComponent(ECDsa.Create(parameters), algorithm);
 #else
                                 throw new PlatformNotSupportedException();
@@ -137,6 +145,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
                 }
 
+#if NET
                 ECParameters parameters = new ECParameters()
                 {
                     Curve = ECCurve.CreateFromValue(algorithm.CurveOid),
@@ -147,19 +156,7 @@ namespace System.Security.Cryptography
                     }
                 };
 
-#if NET
-                ECDsa? ecdsa = null;
-
-                try
-                {
-                    ecdsa = ECDsa.Create(parameters);
-                    return new ECDsaComponent(ecdsa, algorithm);
-                }
-                catch (CryptographicException)
-                {
-                    ecdsa?.Dispose();
-                    throw;
-                }
+                return new ECDsaComponent(ECDsa.Create(parameters), algorithm);
 #else
                 throw new PlatformNotSupportedException();
 #endif

@@ -186,14 +186,9 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        [MemberData(nameof(CompositeMLDsaTestData.SupportedECDsaAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportBadPublicKey_ECDsa_Uncompressed(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
-            if (CompositeMLDsaTestHelpers.ExecuteComponentFunc(vector.Algorithm, _ => true, ecdsa => false, _ => true))
-            {
-                return;
-            }
-
             byte[] key = vector.PublicKey.AsSpan().ToArray();
             int formatIndex = CompositeMLDsaTestHelpers.MLDsaAlgorithms[vector.Algorithm].PublicKeySizeInBytes;
 
@@ -323,13 +318,13 @@ namespace System.Security.Cryptography.Tests
         {
             bool supported = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                 algorithm,
-                _ => MLDsa.IsSupported,
+                rsa => MLDsa.IsSupported,
 #if NET
                 ecdsa => ecdsa.IsSec && MLDsa.IsSupported,
 #else
-                _ => false,
+                ecdsa => false,
 #endif
-                _ => false);
+                eddsa => false);
 
             Assert.Equal(
                 supported,

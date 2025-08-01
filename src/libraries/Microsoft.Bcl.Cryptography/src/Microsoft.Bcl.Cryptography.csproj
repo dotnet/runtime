@@ -370,16 +370,6 @@
              Link="Common\System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\AuthenticationTagMismatchException.cs"
              Link="Common\System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCurve.cs"
-             Link="Common\System\Security\Cryptography\ECCurve.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCurve.ECCurveType.cs"
-             Link="Common\System\Security\Cryptography\ECCurve.ECCurveType.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCurve.NamedCurves.cs"
-             Link="Common\System\Security\Cryptography\ECCurve.NamedCurves.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECParameters.cs"
-             Link="Common\System\Security\Cryptography\ECParameters.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\ECPoint.cs"
-             Link="Common\System\Security\Cryptography\ECPoint.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">

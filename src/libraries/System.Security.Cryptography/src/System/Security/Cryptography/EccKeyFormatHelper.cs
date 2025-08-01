@@ -124,9 +124,13 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            ECPoint publicKey = key.PublicKey is not null
-                ? GetECPointFromUncompressedPublicKey(key.PublicKey.Value.Span, key.PrivateKey.Length)
-                : default(ECPoint);
+            byte[]? x = null;
+            byte[]? y = null;
+
+            if (key.PublicKey is not null)
+            {
+                GetECPointFromUncompressedPublicKey(key.PublicKey.Value.Span, key.PrivateKey.Length, out x, out y);
+            }
 
             ECDomainParameters domainParameters;
 
@@ -139,10 +143,16 @@ namespace System.Security.Cryptography
                 domainParameters = ECDomainParameters.Decode(algId.Parameters!.Value, AsnEncodingRules.DER);
             }
 
+            Debug.Assert((x == null) == (y == null));
+
             ret = new ECParameters
             {
                 Curve = GetCurve(domainParameters),
-                Q = publicKey,
+                Q = new ECPoint
+                {
+                    X = x,
+                    Y = y,
+                },
                 D = key.PrivateKey.ToArray(),
             };
 

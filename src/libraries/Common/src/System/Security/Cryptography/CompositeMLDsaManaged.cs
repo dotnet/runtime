@@ -730,6 +730,7 @@ namespace System.Security.Cryptography
 
             internal int KeySizeInBytes => (KeySizeInBits + 7) / 8;
 
+#if NET
             internal ECCurve Curve
             {
                 get
@@ -749,6 +750,7 @@ namespace System.Security.Cryptography
                     }
                 }
             }
+#endif
         }
 
         private sealed class EdDsaAlgorithm
