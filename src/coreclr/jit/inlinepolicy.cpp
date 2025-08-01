@@ -1044,6 +1044,7 @@ bool DefaultPolicy::PropagateNeverToRuntime() const
         // registers across the call.
         // TODO-Throughput: We should persist the "no return" information in the runtime
         // so we don't need to re-analyze the inlinee all the time.
+        //
         return false;
     }
 
@@ -1053,24 +1054,26 @@ bool DefaultPolicy::PropagateNeverToRuntime() const
     if ((target == InlineTarget::CALLEE) && (impact == InlineImpact::FATAL))
     {
         // This callee will never inline.
+        //
         return true;
     }
 
     if (m_InsideThrowBlock)
     {
         // We inline only trivial methods inside BBJ_THROW call-sites - no need to record that.
+        //
         return false;
     }
 
-    // If dynamic pgo is active, only propagate noinline back to metadata
-    // when there is a CALLEE FATAL observation. We want to make sure
-    // not to block future inlines based on performance or throughput considerations.
-    //
-    // Note fgPgoDynamic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
-    // In particular this value does not depend on the root method having PGO data.
-    //
     if (m_RootCompiler->fgPgoDynamic)
     {
+        // If dynamic pgo is active, only propagate noinline back to metadata
+        // when there is a CALLEE FATAL observation. We want to make sure
+        // not to block future inlines based on performance or throughput considerations.
+        //
+        // Note fgPgoDynamic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
+        // In particular this value does not depend on the root method having PGO data.
+        //
         return false;
     }
 
