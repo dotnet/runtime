@@ -3208,7 +3208,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             ins = INS_bltu;
             break;
         default:
-            NO_WAY("unexpected condition type-regs");
+            NO_WAY("unexpected branch condition");
             break;
     }
 
