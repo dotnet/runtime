@@ -26,7 +26,7 @@ To run the benchmark with blazor startup measurements, set `BlazorStartup` prope
 
     > dotnet build /t:RunSample /p:BlazorStartup=true
 
-### How to check that the startup patches are up-to-date
+### How to check that the startup patches are up to date
 
 To check that the startup measurements work, build the repo first like
 
