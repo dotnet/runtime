@@ -56,7 +56,7 @@ namespace System.Threading
             }
 
             int result;
-            do
+            while (true)
             {
 #if NATIVEAOT
                 if (reentrantWait)
@@ -72,25 +72,25 @@ namespace System.Threading
                 result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 #endif
 
-                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    break;
+
+                // Handle APC completion by adjusting timeout and retrying
+                if (millisecondsTimeout != -1)
                 {
-                    // Handle APC completion by adjusting timeout and retrying
-                    if (millisecondsTimeout != -1)
+                    ulong currentTime = Interop.Kernel32.GetTickCount64();
+                    ulong elapsed = currentTime - startTime;
+                        
+                    if (elapsed >= (ulong)millisecondsTimeout)
                     {
-                        ulong currentTime = Interop.Kernel32.GetTickCount64();
-                        ulong elapsed = currentTime - startTime;
-                        
-                        if (elapsed >= (ulong)millisecondsTimeout)
-                        {
-                            result = Interop.Kernel32.WAIT_TIMEOUT;
-                            break;
-                        }
-                        
-                        millisecondsTimeout -= (int)elapsed;
-                        startTime = currentTime;
+                        result = Interop.Kernel32.WAIT_TIMEOUT;
+                        break;
                     }
+                        
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
                 }
-            } while (result == Interop.Kernel32.WAIT_IO_COMPLETION);
+            }
             currentThread.ClearWaitSleepJoinState();
 
             if (result == Interop.Kernel32.WAIT_FAILED)
@@ -137,29 +137,29 @@ namespace System.Threading
             }
 
             int ret;
-            do
+            while (true)
             {
                 ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 
-                if (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
+                if (ret != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    break;
+
+                // Handle APC completion by adjusting timeout and retrying
+                if (millisecondsTimeout != -1)
                 {
-                    // Handle APC completion by adjusting timeout and retrying
-                    if (millisecondsTimeout != -1)
+                    ulong currentTime = Interop.Kernel32.GetTickCount64();
+                    ulong elapsed = currentTime - startTime;
+
+                    if (elapsed >= (ulong)millisecondsTimeout)
                     {
-                        ulong currentTime = Interop.Kernel32.GetTickCount64();
-                        ulong elapsed = currentTime - startTime;
-                        
-                        if (elapsed >= (ulong)millisecondsTimeout)
-                        {
-                            ret = Interop.Kernel32.WAIT_TIMEOUT;
-                            break;
-                        }
-                        
-                        millisecondsTimeout -= (int)elapsed;
-                        startTime = currentTime;
+                        ret = Interop.Kernel32.WAIT_TIMEOUT;
+                         break;
                     }
+                        
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
                 }
-            } while (ret == Interop.Kernel32.WAIT_IO_COMPLETION);
+            }
             if (ret == Interop.Kernel32.WAIT_FAILED)
             {
                 ThrowWaitFailedException(Interop.Kernel32.GetLastError());
