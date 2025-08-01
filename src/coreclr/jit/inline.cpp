@@ -804,8 +804,7 @@ void InlineResult::Report()
         }
         else
         {
-            JITDUMP("\nINLINER: Not marking %s NOINLINE because it's already marked as NOINLINE (observation %s)\n",
-                    callee, InlGetObservationString(obs));
+            JITDUMP("\nINLINER: Not marking %s NOINLINE because it's already marked as such\n", callee);
         }
     }
 
