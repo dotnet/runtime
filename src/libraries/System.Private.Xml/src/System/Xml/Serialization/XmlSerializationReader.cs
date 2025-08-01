@@ -893,15 +893,35 @@ namespace System.Xml.Serialization
             if (wrapped)
             {
                 if (ReadNull()) return null;
+                
+                // Store element information before consuming it
+                string localName = _r.LocalName;
+                string namespaceURI = _r.NamespaceURI;
+                bool isEmpty = _r.IsEmptyElement;
+                
                 _r.ReadStartElement();
-                _r.MoveToContent();
-                if (_r.NodeType != XmlNodeType.EndElement)
-                    node = Document.ReadNode(_r);
-                while (_r.NodeType != XmlNodeType.EndElement)
+                
+                if (isEmpty)
                 {
-                    UnknownNode(null);
+                    // For empty elements, create an empty XmlElement
+                    node = Document.CreateElement(localName, namespaceURI);
                 }
-                _r.ReadEndElement();
+                else
+                {
+                    _r.MoveToContent();
+                    if (_r.NodeType != XmlNodeType.EndElement)
+                        node = Document.ReadNode(_r);
+                    else
+                    {
+                        // Element is empty (no content between start and end tags)
+                        node = Document.CreateElement(localName, namespaceURI);
+                    }
+                    while (_r.NodeType != XmlNodeType.EndElement)
+                    {
+                        UnknownNode(null);
+                    }
+                    _r.ReadEndElement();
+                }
             }
             else
             {
