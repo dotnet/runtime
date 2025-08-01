@@ -23,9 +23,10 @@ struct ContractDescriptor
 
 extern const uintptr_t POINTER_NAME[];
 
-DLLEXPORT struct ContractDescriptor CONTRACT_NAME;
-
-DLLEXPORT struct ContractDescriptor CONTRACT_NAME = {
+#if EXPORT_CONTRACT
+DLLEXPORT
+#endif // EXPORT_CONTRACT
+struct ContractDescriptor CONTRACT_NAME = {
     .magic = 0x0043414443434e44ull, // "DNCCDAC\0"
     .flags = %%platformFlags%%,
     .descriptor_size = %%jsonDescriptorSize%%,

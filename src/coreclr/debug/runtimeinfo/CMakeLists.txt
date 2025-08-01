@@ -49,8 +49,8 @@ configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
 generate_data_descriptors(
    LIBRARY_NAME cdac_contract_descriptor
    CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
-   POINTER_DATA_NAME "contractDescriptorPointerData"
    CONTRACT_NAME "DotNetRuntimeContractDescriptor"
+   DLLEXPORT
    INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}" "${VM_DIR}" "${VM_DIR}/${ARCH_SOURCES_DIR}" "${CLR_DIR}/interop/inc"
    DEPENDENCIES cee_wks_core)
 
@@ -58,7 +58,6 @@ set(GC_DESCRIPTOR_DIR "${CLR_DIR}/gc/gcdatadescriptors")
 generate_data_descriptors(
    LIBRARY_NAME in_process_gc_contract_descriptor
    CONTRACT_FILE "${GC_DESCRIPTOR_DIR}/contracts.jsonc"
-   POINTER_DATA_NAME "GContractPointerData"
    CONTRACT_NAME "GCContractDescriptor"
    INCLUDE_DIRS "${GC_DESCRIPTOR_DIR}" "${CLR_DIR}/gc"
    DEPENDENCIES cee_wks_core)
