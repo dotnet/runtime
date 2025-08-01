@@ -171,7 +171,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public override TValue VisitLocalReference(ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
-            return GetLocal(operation, state);
+            return GetLocal(operation.Local, state);
         }
 
         private TValue ProcessBinderCall(IOperation operation, string methodName, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -199,7 +199,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         public override TValue VisitDynamicIndexerAccess(IDynamicIndexerAccessOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
             => ProcessBinderCall(operation, operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Write) ? "SetIndex" : "GetIndex", state);
 
-        private bool IsReferenceToCapturedVariable(ILocalSymbol local)
+        private bool IsCapturedVariable(ILocalSymbol local)
         {
             if (local.IsConst)
                 return false;
@@ -208,10 +208,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return !ReferenceEquals(local.ContainingSymbol, OwningSymbol);
         }
 
-        private TValue GetLocal(ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        private TValue GetLocal(ILocalSymbol symbol, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
-            var local = new LocalKey(operation.Local);
-            if (IsReferenceToCapturedVariable(operation.Local))
+            var local = new LocalKey(symbol);
+            if (IsCapturedVariable(symbol))
                 InterproceduralState.TrackHoistedLocal(local);
 
             // Get the value from the hoisted locals, if it's tracked there.
@@ -224,7 +224,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         private void SetLocal(ILocalSymbol localSymbol, TValue value, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge = false)
         {
             var local = new LocalKey(localSymbol);
-            if (IsReferenceToCapturedVariable(localSymbol))
+            if (IsCapturedVariable(localSymbol))
                 InterproceduralState.TrackHoistedLocal(local);
 
             // Update the value stored in the hoisted locals, if it's tracked there.
@@ -358,10 +358,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 }
                 case IDeclarationPatternOperation declPattern:
                 {
-                    if (declPattern.DeclaredSymbol is not { } declaredSymbol)
+                    if (declPattern.DeclaredSymbol is not ILocalSymbol declaredSymbol)
                         break;
                     var value = Visit(valueOperation, state);
-                    SetLocal((ILocalSymbol)declaredSymbol, value, state, merge);
+                    SetLocal(declaredSymbol, value, state, merge);
                     return value;
                 }
                 case IArrayElementReferenceOperation arrayElementRef:
@@ -442,7 +442,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 return ProcessSingleTargetAssignment(
                     declPattern,
                     propPattern.Member,
-                    propPattern.Pattern,
+                    propPattern,
                     state,
                     merge: false
                 );
