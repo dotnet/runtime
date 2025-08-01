@@ -6057,9 +6057,9 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         unmgdCallConv = CorInfoCallConvExtension::C;
     }
 
-    mdMethodDef md;
-    CorNativeLinkFlags nlFlags;
-    CorNativeLinkType  nlType;
+    mdMethodDef md = mdMethodDefNil;
+    CorNativeLinkFlags nlFlags = nlfNone;
+    CorNativeLinkType nlType = nltAnsi;
 
     if (pMD != NULL)
     {
@@ -6072,12 +6072,6 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         md = pMD->GetMemberDef();
         nlFlags = sigInfo.GetLinkFlags();
         nlType  = sigInfo.GetCharSet();
-    }
-    else
-    {
-        md = mdMethodDefNil;
-        nlFlags = nlfNone;
-        nlType  = nltAnsi;
     }
 
     StubSigDesc sigDesc(pMD, signature, pVASigCookie->pModule, pVASigCookie->pLoaderModule);
