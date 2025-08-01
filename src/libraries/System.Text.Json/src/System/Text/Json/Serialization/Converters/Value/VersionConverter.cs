@@ -40,7 +40,9 @@ namespace System.Text.Json.Serialization.Converters
             {
                 ReadOnlySpan<byte> utf8Source = reader.ValueSpan;
 
-                if (utf8Source.IsEmpty || utf8Source[0] == (byte)' ' || utf8Source[^1] == (byte)' ')
+                if (utf8Source.IsEmpty ||
+                    (utf8Source[0] <= 127 && char.IsWhiteSpace((char)utf8Source[0])) ||
+                    (utf8Source[^1] <= 127 && char.IsWhiteSpace((char)utf8Source[^1])))
                 {
                     // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
                     // we need to make sure that our input doesn't have them,
