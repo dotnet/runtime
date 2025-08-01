@@ -95,7 +95,7 @@ StressLogData GetStressLogData()
         return default;
     }
 
-    StressLog stressLog = new StressLog(Target, Target.ReadGlobalPointer(Constants.Globals.StressLog));
+    StressLog stressLog = new StressLog(Target, Target.ReadGlobalPointer("StressLog"));
     return new StressLogData(
         stressLog.LoggedFacilities,
         stressLog.Level,
@@ -210,15 +210,15 @@ bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
 // This method is a helper for the various specific versions.
 protected TargetPointer GetFormatPointer(ulong formatOffset)
 {
-    if (Target.ReadGlobal<byte>(Constants.Globals.StressLogHasModuleTable) == 0)
+    if (Target.ReadGlobal<byte>("StressLogHasModuleTable") == 0)
     {
-        StressLog stressLog = new(Target, target.ReadGlobalPointer(Constants.Globals.StressLog));
+        StressLog stressLog = new(Target, target.ReadGlobalPointer("StressLog"));
         return new TargetPointer(stressLog.ModuleOffset + formatOffset);
     }
 
-    TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
+    TargetPointer moduleTable = target.ReadGlobalPointer("StressLogModuleTable");
     uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
-    uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
+    uint maxModules = target.ReadGlobal<uint>("StressLogMaxModules");
     for (uint i = 0; i < maxModules; ++i)
     {
         StressLogModuleDesc module = new(Target, moduleTable + i * moduleEntrySize);
@@ -313,7 +313,7 @@ The format offset refers to the cummulative offset into a module referred to in 
 ```csharp
 StressMsgData GetStressMsgData(StressMsg msg)
 {
-    StressLog stressLog = new(Target, target.ReadGlobalPointer(Constants.Globals.StressLog));
+    StressLog stressLog = new(Target, target.ReadGlobalPointer("StressLog"));
     uint pointerSize = Target.GetTypeInfo(DataType.pointer).Size!.Value;
 
     ulong payload1 = target.Read<ulong>(msg.Header);

@@ -393,31 +393,30 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public ushort GetNumStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumStaticFields;
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
-    public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle)
+    private TargetPointer GetDynamicStaticsInfo(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
-            return TargetPointer.Null;
+            return default;
 
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.IsDynamicStatics)
-            return TargetPointer.Null;
-        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>(Constants.Globals.DynamicStaticsInfoSize);
+            return default;
 
-        Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(methodTable.AuxiliaryData - dynamicStaticsInfoSize);
+        TargetPointer dynamicStaticsInfoSize = _target.ReadGlobalPointer(Constants.Globals.DynamicStaticsInfoSize);
+        TargetPointer dynamicStaticsInfoAddr = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
+        return dynamicStaticsInfoAddr;
+    }
+    public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle)
+    {
+        TargetPointer dynamicStaticsInfoAddr = GetDynamicStaticsInfo(typeHandle);
+        Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(dynamicStaticsInfoAddr);
         return dynamicStaticsInfo.GCStatics;
     }
 
     public TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle)
     {
-        if (!typeHandle.IsMethodTable())
-            return TargetPointer.Null;
-
-        MethodTable methodTable = _methodTables[typeHandle.Address];
-        if (!methodTable.Flags.IsDynamicStatics)
-            return TargetPointer.Null;
-        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>(Constants.Globals.DynamicStaticsInfoSize);
-
-        Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(methodTable.AuxiliaryData - dynamicStaticsInfoSize);
+        TargetPointer dynamicStaticsInfoAddr = GetDynamicStaticsInfo(typeHandle);
+        Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(dynamicStaticsInfoAddr);
         return dynamicStaticsInfo.NonGCStatics;
     }
     public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle)

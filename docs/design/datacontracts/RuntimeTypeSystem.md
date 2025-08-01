@@ -337,6 +337,7 @@ The contract depends on the following globals
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `DynamicStaticsInfoSize` | The size of a DynamicStaticsInfo object
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
+
 The contract additionally depends on these data descriptors
 
 | Data Descriptor Name | Field | Meaning |
@@ -474,8 +475,8 @@ The contract additionally depends on these data descriptors
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.IsDynamicStatics)
             return TargetPointer.Null;
-        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>(Constants.Globals.DynamicStaticsInfoSize);
-        nuint mask = target.ReadGlobal<nuint>(Constants.Globals.StaticsPointerMask);
+        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>("DynamicStaticsInfoSize");
+        nuint mask = target.ReadGlobal<nuint>("StaticsPointerMask");
 
         TargetPointer dynamicStaticsInfo = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
         return (target.ReadPointer(dynamicStaticsInfo + /* DynamicStaticsInfo::GCStatics offset */) & (ulong)mask);
@@ -489,8 +490,8 @@ The contract additionally depends on these data descriptors
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.IsDynamicStatics)
             return TargetPointer.Null;
-        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>(Constants.Globals.DynamicStaticsInfoSize);
-        nuint mask = target.ReadGlobal<nuint>(Constants.Globals.StaticsPointerMask);
+        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>("DynamicStaticsInfoSize");
+        nuint mask = target.ReadGlobal<nuint>("StaticsPointerMask");
 
         TargetPointer dynamicStaticsInfo = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
         return (target.ReadPointer(dynamicStaticsInfo + /* DynamicStaticsInfo::NonGCStatics offset */) & (ulong)mask);
@@ -825,7 +826,7 @@ internal struct MethodDesc
         get
         {
             ulong typeSize = _target.GetTypeInfo(DataType.MethodDescChunk).Size;
-            ulong chunkSize = (ulong)(_chunk.Size + 1) * _target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
+            ulong chunkSize = (ulong)(_chunk.Size + 1) * _target.ReadGlobal<ulong>("MethodDescAlignment");
             ulong extra = IsLoaderModuleAttachedToChunk ? (ulong)_target.PointerSize : 0;
             return typeSize + chunkSize + extra;
         }
@@ -911,7 +912,7 @@ And the various apis are implemented with the following algorithms
 
         ushort FlagsAndTokenRange = // Read FlagsAndTokenRange field from MethodDescChunk contract using address methodDescChunk
 
-        int tokenRemainderBitCount = _target.ReadGlobal<byte>(Constants.Globals.MethodDescTokenRemainderBitCount);
+        int tokenRemainderBitCount = _target.ReadGlobal<byte>("MethodDescTokenRemainderBitCount");
         int tokenRangeBitCount = 24 - tokenRemainderBitCount;
         uint allRidBitsSet = 0xFFFFFF;
         uint tokenRemainderMask = allRidBitsSet >> tokenRangeBitCount;

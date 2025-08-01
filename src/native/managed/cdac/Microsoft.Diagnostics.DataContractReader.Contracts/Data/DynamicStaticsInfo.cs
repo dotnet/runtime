@@ -11,9 +11,9 @@ internal sealed class DynamicStaticsInfo : IData<DynamicStaticsInfo>
     public DynamicStaticsInfo(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicStaticsInfo);
-        nuint mask = target.ReadGlobal<nuint>(Constants.Globals.StaticsPointerMask);
-        GCStatics = target.ReadPointer(address + (ulong)type.Fields[nameof(GCStatics)].Offset) & (ulong)mask;
-        NonGCStatics = target.ReadPointer(address + (ulong)type.Fields[nameof(NonGCStatics)].Offset) & (ulong)mask;
+        TargetPointer mask = target.ReadGlobalPointer(Constants.Globals.StaticsPointerMask);
+        GCStatics = target.ReadPointer(address + (ulong)type.Fields[nameof(GCStatics)].Offset) & mask;
+        NonGCStatics = target.ReadPointer(address + (ulong)type.Fields[nameof(NonGCStatics)].Offset) & mask;
     }
     public TargetPointer GCStatics { get; init; }
     public TargetPointer NonGCStatics { get; init; }
