@@ -152,11 +152,14 @@ namespace System
 
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
         {
-            if (!Enum.IsDefined(folder))
-                throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
+            // We don't need to check if folder is defined here, as GetFolderPathCore will do it.
 
-            if (option != SpecialFolderOption.None && !Enum.IsDefined(option))
-                throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
+            if (option is not SpecialFolderOption.None and not SpecialFolderOption.Create and not SpecialFolderOption.DoNotVerify)
+            {
+                Throw(folder, option);
+                static void Throw(SpecialFolder _, SpecialFolderOption option) =>
+                    throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
+            }
 
             return GetFolderPathCore(folder, option);
         }

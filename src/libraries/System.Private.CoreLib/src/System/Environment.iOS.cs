@@ -20,6 +20,8 @@ namespace System
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption _ /*option*/)
         {
+            // We don't need to check if the folder is defined here, as GetSpecialFolder will do it.
+
             if (s_specialFolders == null)
             {
                 Interlocked.CompareExchange(ref s_specialFolders, new Dictionary<SpecialFolder, string>(), null);
@@ -91,7 +93,9 @@ namespace System
                     return "/usr/share";
 
                 default:
-                    return string.Empty;
+                    if (!Enum.IsDefined(folder))
+                        throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
+                    return null;
             }
 
             static string CombineSearchPath(NSSearchPathDirectory searchPath, string subdirectory)
