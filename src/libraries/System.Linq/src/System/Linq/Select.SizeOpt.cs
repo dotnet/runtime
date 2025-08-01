@@ -12,7 +12,29 @@ namespace System.Linq
         private sealed class SizeOptIListSelectIterator<TSource, TResult>(IList<TSource> _source, Func<TSource, TResult> _selector)
             : Iterator<TResult>
         {
-            public override int GetCount(bool onlyIfCheap) => _source.Count;
+            public override int GetCount(bool onlyIfCheap)
+            {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
+                if (onlyIfCheap)
+                {
+                    return -1;
+                }
+
+                int count = 0;
+
+                foreach (TSource item in _source)
+                {
+                    _selector(item);
+                    checked
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
 
             public override Iterator<TResult> Skip(int count)
             {
@@ -40,6 +62,7 @@ namespace System.Linq
                 Dispose();
                 return false;
             }
+
             public override TResult[] ToArray()
             {
                 TResult[] array = new TResult[_source.Count];
@@ -49,6 +72,7 @@ namespace System.Linq
                 }
                 return array;
             }
+
             public override List<TResult> ToList()
             {
                 List<TResult> list = new List<TResult>(_source.Count);
@@ -58,6 +82,7 @@ namespace System.Linq
                 }
                 return list;
             }
+
             private protected override Iterator<TResult> Clone()
                 => new SizeOptIListSelectIterator<TSource, TResult>(_source, _selector);
         }
