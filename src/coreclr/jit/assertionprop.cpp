@@ -5113,8 +5113,19 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
     {
         return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
     }
+
     if (type != TYP_BYREF)
     {
+        VNFuncApp funcApp;
+        if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
+        {
+            // Check for known stack allocation functions
+            if ((funcApp.m_func == VNF_JitNewLclArr) || (funcApp.m_func == VNF_JitReadyToRunNewLclArr))
+            {
+                return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+            }
+        }
+
         return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
     }
 
