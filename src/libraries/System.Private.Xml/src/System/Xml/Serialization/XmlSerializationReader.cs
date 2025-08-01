@@ -899,12 +899,28 @@ namespace System.Xml.Serialization
                 string namespaceURI = _r.NamespaceURI;
                 bool isEmpty = _r.IsEmptyElement;
                 
+                // Store attributes if present
+                var attributes = new List<(string name, string namespaceUri, string value)>();
+                if (_r.HasAttributes)
+                {
+                    while (_r.MoveToNextAttribute())
+                    {
+                        attributes.Add((_r.Name, _r.NamespaceURI, _r.Value));
+                    }
+                    _r.MoveToElement();
+                }
+                
                 _r.ReadStartElement();
                 
                 if (isEmpty)
                 {
-                    // For empty elements, create an empty XmlElement
-                    node = Document.CreateElement(localName, namespaceURI);
+                    // For empty elements, create an empty XmlElement with attributes
+                    var element = Document.CreateElement(localName, namespaceURI);
+                    foreach (var (name, nsUri, value) in attributes)
+                    {
+                        element.SetAttribute(name, nsUri, value);
+                    }
+                    node = element;
                 }
                 else
                 {
@@ -914,7 +930,12 @@ namespace System.Xml.Serialization
                     else
                     {
                         // Element is empty (no content between start and end tags)
-                        node = Document.CreateElement(localName, namespaceURI);
+                        var element = Document.CreateElement(localName, namespaceURI);
+                        foreach (var (name, nsUri, value) in attributes)
+                        {
+                            element.SetAttribute(name, nsUri, value);
+                        }
+                        node = element;
                     }
                     while (_r.NodeType != XmlNodeType.EndElement)
                     {

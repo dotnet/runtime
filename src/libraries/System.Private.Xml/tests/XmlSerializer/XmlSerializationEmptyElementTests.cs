@@ -65,6 +65,30 @@ namespace System.Private.Xml.Tests
             Assert.Equal(result1.Name, result2.Name);
             Assert.Equal("Test", result1.Name);
             Assert.Equal("Test", result2.Name);
+            
+            // Both should have empty description elements
+            Assert.NotNull(result1.Description);
+            Assert.NotNull(result2.Description);
+            Assert.Equal("description", result1.Description.LocalName);
+            Assert.Equal("description", result2.Description.LocalName);
+            Assert.True(string.IsNullOrEmpty(result1.Description.InnerXml));
+            Assert.True(string.IsNullOrEmpty(result2.Description.InnerXml));
+        }
+
+        [Fact]  
+        public static void XmlElement_EmptyElement_ShouldNotBeNull()
+        {
+            var serializer = new XmlSerializer(typeof(RootWithXmlElement));
+
+            // Test that empty elements create XmlElement objects, not null
+            var xml = @"<root><description></description><name>Test</name></root>";
+            var result = (RootWithXmlElement)serializer.Deserialize(new StringReader(xml));
+
+            // Description should not be null - it should be an empty XmlElement
+            Assert.NotNull(result.Description);
+            Assert.Equal("description", result.Description.LocalName);
+            Assert.Equal("", result.Description.InnerXml);
+            Assert.Equal("Test", result.Name);
         }
 
         public class RootWithXmlElement
