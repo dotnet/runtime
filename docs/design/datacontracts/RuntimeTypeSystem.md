@@ -475,8 +475,8 @@ The contract additionally depends on these data descriptors
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.IsDynamicStatics)
             return TargetPointer.Null;
-        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>("DynamicStaticsInfoSize");
-        nuint mask = target.ReadGlobal<nuint>("StaticsPointerMask");
+        TargetPointer dynamicStaticsInfoSize = _target.ReadGlobalPointer("DynamicStaticsInfoSize");
+        TargetPointer mask = target.ReadGlobalPointer("StaticsPointerMask");
 
         TargetPointer dynamicStaticsInfo = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
         return (target.ReadPointer(dynamicStaticsInfo + /* DynamicStaticsInfo::GCStatics offset */) & (ulong)mask);
@@ -490,8 +490,8 @@ The contract additionally depends on these data descriptors
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.IsDynamicStatics)
             return TargetPointer.Null;
-        nuint dynamicStaticsInfoSize = _target.ReadGlobal<nuint>("DynamicStaticsInfoSize");
-        nuint mask = target.ReadGlobal<nuint>("StaticsPointerMask");
+        TargetPointer dynamicStaticsInfoSize = _target.ReadGlobalPointer("DynamicStaticsInfoSize");
+        TargetPointer mask = target.ReadGlobalPointer("StaticsPointerMask");
 
         TargetPointer dynamicStaticsInfo = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
         return (target.ReadPointer(dynamicStaticsInfo + /* DynamicStaticsInfo::NonGCStatics offset */) & (ulong)mask);
