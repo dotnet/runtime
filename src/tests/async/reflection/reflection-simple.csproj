@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestPriority>0</CLRTestPriority>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
