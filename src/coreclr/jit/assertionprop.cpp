@@ -5122,6 +5122,8 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
             // Check for known stack allocation functions
             if ((funcApp.m_func == VNF_JitNewLclArr) || (funcApp.m_func == VNF_JitReadyToRunNewLclArr))
             {
+                // NOTE: this relies on fgExpandStackArrayAllocations phase to always expand these allocators
+                // TODO: add some debug checks for that.
                 return GCInfo::WriteBarrierForm::WBF_NoBarrier;
             }
         }
