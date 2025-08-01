@@ -44,7 +44,7 @@ namespace
                 // Extract the version information that occurs after '/'
                 pal::string_t version = lib_name.substr(utils::strlen(prefix));
                 trace::verbose(_X("Resolved version %s from dependency manifest file [%s]"), version.c_str(), deps_json.c_str());
-                break;
+                return version;
             }
         }
 
