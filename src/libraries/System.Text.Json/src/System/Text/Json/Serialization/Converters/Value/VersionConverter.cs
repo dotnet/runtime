@@ -34,43 +34,6 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
 
 #if NET
-#if NET10_0_OR_GREATER
-            // .NET 10+ optimization: parse directly from UTF8 bytes for all inputs
-            int bufferLength = reader.ValueLength;
-            byte[]? rentedBuffer = null;
-            try
-            {
-                Span<byte> utf8Buffer = bufferLength <= JsonConstants.StackallocByteThreshold
-                    ? stackalloc byte[JsonConstants.StackallocByteThreshold]
-                    : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
-
-                int bytesWritten = reader.CopyString(utf8Buffer);
-                ReadOnlySpan<byte> utf8Source = utf8Buffer.Slice(0, bytesWritten);
-
-                if (utf8Source.IsEmpty ||
-                    (utf8Source[0] <= 127 && char.IsWhiteSpace((char)utf8Source[0])) ||
-                    (utf8Source[^1] <= 127 && char.IsWhiteSpace((char)utf8Source[^1])))
-                {
-                    // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
-                    // we need to make sure that our input doesn't have them,
-                    // and if it has - we need to throw, to match behaviour of other converters
-                    // since Version.TryParse allows them and silently parses input to Version
-                    ThrowHelper.ThrowFormatException(DataType.Version);
-                }
-
-                if (Version.TryParse(utf8Source, out Version? result))
-                {
-                    return result!;
-                }
-            }
-            finally
-            {
-                if (rentedBuffer is not null)
-                {
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
-                }
-            }
-#else
             int bufferLength = reader.ValueLength;
             char[]? rentedBuffer = null;
             try
@@ -105,7 +68,6 @@ namespace System.Text.Json.Serialization.Converters
                     ArrayPool<char>.Shared.Return(rentedBuffer);
                 }
             }
-#endif
 #else
             string? versionString = reader.GetString();
             if (string.IsNullOrEmpty(versionString) || char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1]))
