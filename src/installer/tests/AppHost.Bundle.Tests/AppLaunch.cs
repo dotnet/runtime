@@ -86,7 +86,7 @@ namespace AppHost.Bundle.Tests
         private void NonAsciiCharacterSelfContainedApp()
         {
             // Bundle to a single-file
-            bool selfContained = false;
+            bool selfContained = true;
             string singleFile = sharedTestState.SpecialCharacterSelfContainedApp.Bundle();
 
             // Run the bundled app
