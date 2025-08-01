@@ -358,6 +358,43 @@ namespace System.IO
             return n;
         }
 
+        public int Read(long position, Span<byte> buffer)
+        {
+            if (!_isOpen)
+            {
+                throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
+            }
+            if (!_canRead)
+            {
+                throw new NotSupportedException(SR.NotSupported_Reading);
+            }
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
+
+            if (position >= _capacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
+            }
+
+            int n = buffer.Length;
+            long spaceLeft = _capacity - position;
+            if (spaceLeft < 0)
+            {
+                n = 0;
+            }
+            else
+            {
+                ulong spaceNeeded = (ulong)(n);
+                if ((ulong)spaceLeft < spaceNeeded)
+                {
+                    n = (int)(spaceLeft);
+                }
+            }
+
+            _buffer.ReadSpan((ulong)(_offset + position), buffer.Slice(0, n));
+
+            return n;
+        }
+
         // ************** Write Methods ****************/
 
         public void Write(long position, bool value) => Write(position, (byte)(value ? 1 : 0));
@@ -562,6 +599,26 @@ namespace System.IO
             }
 
             _buffer.WriteArray((ulong)(_offset + position), array, offset, count);
+        }
+
+        public void Write(long position, ReadOnlySpan<byte> buffer)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
+            if (position >= Capacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
+            }
+
+            if (!_isOpen)
+            {
+                throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
+            }
+            if (!_canWrite)
+            {
+                throw new NotSupportedException(SR.NotSupported_Writing);
+            }
+
+            _buffer.WriteSpan((ulong)(_offset + position), buffer);
         }
 
         private void EnsureSafeToRead(long position, int sizeOfType)
