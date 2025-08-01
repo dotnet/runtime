@@ -55,43 +55,42 @@ namespace System.Threading
                 startTime = Interop.Kernel32.GetTickCount64();
             }
 
-        retry:
-#if NATIVEAOT
             int result;
-            if (reentrantWait)
+            do
             {
-                Debug.Assert(!waitAll);
-                result = RuntimeImports.RhCompatibleReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles);
-            }
-            else
-            {
-                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
-            }
+#if NATIVEAOT
+                if (reentrantWait)
+                {
+                    Debug.Assert(!waitAll);
+                    result = RuntimeImports.RhCompatibleReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles);
+                }
+                else
+                {
+                    result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                }
 #else
-            int result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 #endif
 
-            if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
-            {
-                // Handle APC completion by adjusting timeout and retrying
-                if (millisecondsTimeout != -1)
+                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
                 {
-                    ulong currentTime = Interop.Kernel32.GetTickCount64();
-                    ulong elapsed = currentTime - startTime;
-                    
-                    if (elapsed >= (ulong)millisecondsTimeout)
+                    // Handle APC completion by adjusting timeout and retrying
+                    if (millisecondsTimeout != -1)
                     {
-                        result = Interop.Kernel32.WAIT_TIMEOUT;
-                        goto WaitCompleted;
+                        ulong currentTime = Interop.Kernel32.GetTickCount64();
+                        ulong elapsed = currentTime - startTime;
+                        
+                        if (elapsed >= (ulong)millisecondsTimeout)
+                        {
+                            result = Interop.Kernel32.WAIT_TIMEOUT;
+                            break;
+                        }
+                        
+                        millisecondsTimeout -= (int)elapsed;
+                        startTime = currentTime;
                     }
-                    
-                    millisecondsTimeout -= (int)elapsed;
-                    startTime = currentTime;
                 }
-                goto retry;
-            }
-
-        WaitCompleted:
+            } while (result == Interop.Kernel32.WAIT_IO_COMPLETION);
             currentThread.ClearWaitSleepJoinState();
 
             if (result == Interop.Kernel32.WAIT_FAILED)
@@ -137,30 +136,30 @@ namespace System.Threading
                 startTime = Interop.Kernel32.GetTickCount64();
             }
 
-        retry:
-            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
-
-            if (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
+            int ret;
+            do
             {
-                // Handle APC completion by adjusting timeout and retrying
-                if (millisecondsTimeout != -1)
-                {
-                    ulong currentTime = Interop.Kernel32.GetTickCount64();
-                    ulong elapsed = currentTime - startTime;
-                    
-                    if (elapsed >= (ulong)millisecondsTimeout)
-                    {
-                        ret = Interop.Kernel32.WAIT_TIMEOUT;
-                        goto WaitCompleted;
-                    }
-                    
-                    millisecondsTimeout -= (int)elapsed;
-                    startTime = currentTime;
-                }
-                goto retry;
-            }
+                ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 
-        WaitCompleted:
+                if (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
+                {
+                    // Handle APC completion by adjusting timeout and retrying
+                    if (millisecondsTimeout != -1)
+                    {
+                        ulong currentTime = Interop.Kernel32.GetTickCount64();
+                        ulong elapsed = currentTime - startTime;
+                        
+                        if (elapsed >= (ulong)millisecondsTimeout)
+                        {
+                            ret = Interop.Kernel32.WAIT_TIMEOUT;
+                            break;
+                        }
+                        
+                        millisecondsTimeout -= (int)elapsed;
+                        startTime = currentTime;
+                    }
+                }
+            } while (ret == Interop.Kernel32.WAIT_IO_COMPLETION);
             if (ret == Interop.Kernel32.WAIT_FAILED)
             {
                 ThrowWaitFailedException(Interop.Kernel32.GetLastError());
