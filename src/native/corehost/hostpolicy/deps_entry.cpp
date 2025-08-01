@@ -143,32 +143,35 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, ui
     if (relative_path.empty())
     {
         relative_path = normalize_dir_separator(asset.relative_path);
-        pal::string_t file_name = get_filename(relative_path);
-
-        // Compute the expected relative path for this asset.
-        //   resource: <ietf-code>/<asset_file_name>
-        //   runtime/native: <asset_file_name>
-        if (asset_type == asset_types::resources)
+        if (library_type != _X("runtimepack")) // runtimepack assets set the path to the local path
         {
-            // Resources are represented as "lib/<netstandrd_ver>/<ietf-code>/<ResourceAssemblyName.dll>" in the deps.json.
-            // The <ietf-code> is the "directory" in the relative_path below, so extract it.
-            pal::string_t ietf_dir = get_directory(relative_path);
+            pal::string_t file_name = get_filename(relative_path);
 
-            // get_directory returns with DIR_SEPARATOR appended that we need to remove.
-            remove_trailing_dir_separator(&ietf_dir);
+            // Compute the expected relative path for this asset.
+            //   resource: <ietf-code>/<asset_file_name>
+            //   runtime/native: <asset_file_name>
+            if (asset_type == asset_types::resources)
+            {
+                // Resources are represented as "lib/<netstandrd_ver>/<ietf-code>/<ResourceAssemblyName.dll>" in the deps.json.
+                // The <ietf-code> is the "directory" in the relative_path below, so extract it.
+                pal::string_t ietf_dir = get_directory(relative_path);
 
-            // Extract IETF code from "lib/<netstandrd_ver>/<ietf-code>"
-            ietf_dir = get_filename(ietf_dir);
+                // get_directory returns with DIR_SEPARATOR appended that we need to remove.
+                remove_trailing_dir_separator(&ietf_dir);
 
-            trace::verbose(_X("  Detected a resource asset, will query <base>/<ietf>/<file_name> base: %s ietf: %s asset: %s"),
-                base.c_str(), ietf_dir.c_str(), asset.name.c_str());
+                // Extract IETF code from "lib/<netstandrd_ver>/<ietf-code>"
+                ietf_dir = get_filename(ietf_dir);
 
-            relative_path = ietf_dir;
-            append_path(&relative_path, file_name.c_str());
-        }
-        else
-        {
-            relative_path = file_name;
+                trace::verbose(_X("  Detected a resource asset, will query <base>/<ietf>/<file_name> base: %s ietf: %s asset: %s"),
+                    base.c_str(), ietf_dir.c_str(), asset.name.c_str());
+
+                relative_path = ietf_dir;
+                append_path(&relative_path, file_name.c_str());
+            }
+            else
+            {
+                relative_path = file_name;
+            }
         }
 
         trace::verbose(_X("  Computed relative path: %s"), relative_path.c_str());
