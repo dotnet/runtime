@@ -200,15 +200,15 @@ struct StubPrecode
 typedef DPTR(StubPrecode) PTR_StubPrecode;
 
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
 
-// NDirect import precode
+// PInvoke import precode
 // (This is fake precode. VTable slot does not point to it.)
-struct NDirectImportPrecode : StubPrecode
+struct PInvokeImportPrecode : StubPrecode
 {
     static const int Type = 0x05;
 
-    void Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(PInvokeImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
     LPVOID GetEntrypoint()
     {
@@ -216,9 +216,9 @@ struct NDirectImportPrecode : StubPrecode
         return (LPVOID)PINSTRToPCODE(dac_cast<TADDR>(this));
     }
 };
-typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
+typedef DPTR(PInvokeImportPrecode) PTR_PInvokeImportPrecode;
 
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 
@@ -485,9 +485,9 @@ enum PrecodeType {
 #ifdef FEATURE_INTERPRETER
     PRECODE_INTERPRETER     = InterpreterPrecode::Type, // 0x6
 #endif // FEATURE_INTERPRETER
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type, // 0x5
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+    PRECODE_PINVOKE_IMPORT  = PInvokeImportPrecode::Type, // 0x5
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     PRECODE_FIXUP           = FixupPrecode::Type,
 #endif // HAS_FIXUP_PRECODE
@@ -507,7 +507,7 @@ inline TADDR StubPrecode::GetMethodDesc()
     switch (GetType())
     {
         case PRECODE_STUB:
-        case PRECODE_NDIRECT_IMPORT:
+        case PRECODE_PINVOKE_IMPORT:
             return GetSecretParam();
 
         case PRECODE_UMENTRY_THUNK:
@@ -543,7 +543,7 @@ inline BYTE StubPrecode::GetType()
     {
         case PRECODE_UMENTRY_THUNK:
         case PRECODE_STUB:
-        case PRECODE_NDIRECT_IMPORT:
+        case PRECODE_PINVOKE_IMPORT:
         case PRECODE_THISPTR_RETBUF:
 #ifdef FEATURE_INTERPRETER
         case PRECODE_INTERPRETER:
@@ -571,19 +571,19 @@ public:
     }
 private:
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
 public:
     // Fake precodes has to be exposed
-    NDirectImportPrecode* AsNDirectImportPrecode()
+    PInvokeImportPrecode* AsPInvokeImportPrecode()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return dac_cast<PTR_NDirectImportPrecode>(this);
+        return dac_cast<PTR_PInvokeImportPrecode>(this);
     }
 
 private:
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
     PTR_FixupPrecode AsFixupPrecode()
@@ -655,7 +655,7 @@ public:
 
         if (basicPrecodeType == PRECODE_STUB)
         {
-            // StubPrecode code is used for both StubPrecode, NDirectImportPrecode, InterpreterPrecode, and ThisPtrRetBufPrecode,
+            // StubPrecode code is used for both StubPrecode, PInvokeImportPrecode, InterpreterPrecode, and ThisPtrRetBufPrecode,
             // so we need to get the real type
             return (PrecodeType)AsStubPrecode()->GetType();
         }
@@ -805,15 +805,15 @@ public:
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);
 
 // Verify that the type for each precode is different
-static_assert_no_msg(StubPrecode::Type != NDirectImportPrecode::Type);
+static_assert_no_msg(StubPrecode::Type != PInvokeImportPrecode::Type);
 static_assert_no_msg(StubPrecode::Type != FixupPrecode::Type);
 static_assert_no_msg(StubPrecode::Type != ThisPtrRetBufPrecode::Type);
-static_assert_no_msg(FixupPrecode::Type != NDirectImportPrecode::Type);
+static_assert_no_msg(FixupPrecode::Type != PInvokeImportPrecode::Type);
 static_assert_no_msg(FixupPrecode::Type != ThisPtrRetBufPrecode::Type);
-static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
+static_assert_no_msg(PInvokeImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 
 // Verify that the base type for each precode fits into each specific precode type
-static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
+static_assert_no_msg(sizeof(Precode) <= sizeof(PInvokeImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 
@@ -829,7 +829,7 @@ struct PrecodeMachineDescriptor
 {
     uint32_t StubCodePageSize;
     uint8_t InvalidPrecodeType;
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
     uint8_t PInvokeImportPrecodeType;
 #endif
 

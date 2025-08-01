@@ -384,7 +384,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
     if (childNode->OperIs(GT_NEG))
     {
         // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a EQ or NE.
-        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_CAST))
+        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ))
         {
             // Cannot contain if the childs op1 is already contained
             return false;
@@ -403,31 +403,6 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             {
                 return false;
             }
-
-            if (childNode->gtGetOp1()->OperIs(GT_CAST))
-            {
-                // Grab the cast as well, we can contain this with cmn (extended-register).
-                GenTreeCast* cast   = childNode->gtGetOp1()->AsCast();
-                GenTree*     castOp = cast->CastOp();
-
-                // Cannot contain the cast from floating point.
-                if (!varTypeIsIntegral(castOp))
-                {
-                    return false;
-                }
-
-                // Cannot contain the cast if it already contains it's CastOp.
-                if (castOp->isContained())
-                {
-                    return false;
-                }
-
-                assert(!cast->gtOverflow());
-                assert(varTypeIsIntegral(cast) && varTypeIsIntegral(cast->CastToType()));
-
-                MakeSrcContained(childNode, cast);
-            }
-
             return true;
         }
 

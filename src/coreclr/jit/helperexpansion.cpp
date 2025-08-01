@@ -1441,7 +1441,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     {
         assert(isInitOffset == 0);
 
-        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
         isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;
         isInitedActualValueNode->SetHasOrderingSideEffect();
 
@@ -1479,8 +1479,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         else
         {
             assert(staticBaseAddr.accessType == IAT_PVALUE);
-            replacementNode =
-                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+            replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR);
         }
     }
 
