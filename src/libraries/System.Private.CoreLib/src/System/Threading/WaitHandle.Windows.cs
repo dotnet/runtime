@@ -80,13 +80,11 @@ namespace System.Threading
                 {
                     long currentTime = Environment.TickCount64;
                     long elapsed = currentTime - startTime;
-                        
                     if (elapsed >= millisecondsTimeout)
                     {
                         result = Interop.Kernel32.WAIT_TIMEOUT;
                         break;
                     }
-                        
                     millisecondsTimeout -= (int)elapsed;
                     startTime = currentTime;
                 }
@@ -155,7 +153,6 @@ namespace System.Threading
                         ret = Interop.Kernel32.WAIT_TIMEOUT;
                         break;
                     }
-                        
                     millisecondsTimeout -= (int)elapsed;
                     startTime = currentTime;
                 }
