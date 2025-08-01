@@ -1136,7 +1136,7 @@ ULONG MethodDesc::GetRVA()
         FORBID_FAULT;
         SUPPORTS_DAC;
         PRECONDITION((IsIL() && MayHaveILHeader()) ||
-            (IsNDirect() && ((NDirectMethodDesc*)this)->IsEarlyBound()));
+            (IsPInvoke() && ((PInvokeMethodDesc*)this)->IsEarlyBound()));
     }
     CONTRACTL_END
 
