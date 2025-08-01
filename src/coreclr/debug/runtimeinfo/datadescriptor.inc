@@ -511,7 +511,7 @@ CDAC_TYPE_SIZE(sizeof(FCallMethodDesc))
 CDAC_TYPE_END(FCallMethodDesc)
 
 CDAC_TYPE_BEGIN(PInvokeMethodDesc)
-CDAC_TYPE_SIZE(sizeof(NDirectMethodDesc))
+CDAC_TYPE_SIZE(sizeof(PInvokeMethodDesc))
 CDAC_TYPE_END(PInvokeMethodDesc)
 
 CDAC_TYPE_BEGIN(EEImplMethodDesc)
@@ -543,7 +543,7 @@ CDAC_TYPE_END(MethodDescVersioningState)
 CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
 CDAC_TYPE_INDETERMINATE(PrecodeMachineDescriptor)
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
 #endif
 

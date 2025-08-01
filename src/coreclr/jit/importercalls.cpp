@@ -618,7 +618,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
          * to the arg list next after we pop them */
     }
 
-    //--------------------------- Inline NDirect ------------------------------
+    //--------------------------- Inline PInvoke ------------------------------
     // If this is a call to a PInvoke method, we may be able to inline the invocation frame.
     //
     impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, compCurBB);

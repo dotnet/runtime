@@ -944,7 +944,7 @@ namespace System.StubHelpers
                     }
 
                 default:
-                    throw new ArgumentException(SR.Arg_NDirectBadObject);
+                    throw new ArgumentException(SR.Arg_PInvokeBadObject);
             }
 
             // marshal the object as C-style array (UnmanagedType.LPArray)
@@ -1151,7 +1151,7 @@ namespace System.StubHelpers
                 else
                 {
                     // this type is not supported for AsAny marshaling
-                    throw new ArgumentException(SR.Arg_NDirectBadObject);
+                    throw new ArgumentException(SR.Arg_PInvokeBadObject);
                 }
             }
 
