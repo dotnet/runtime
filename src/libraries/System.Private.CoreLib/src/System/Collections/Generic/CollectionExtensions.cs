@@ -8,6 +8,19 @@ namespace System.Collections.Generic
 {
     public static class CollectionExtensions
     {
+        public static TValue GetValueOrNew<TKey, TValue>(this IDictionary<TKey,TValue> dictionary,TKey key) where TValue : new()
+        {
+            if (dictionary is null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
+            
+            if(dictionary.TryGetValue(key,out var value))
+                return value;
+
+            value = new();
+            dictionary.Add(key,value);
+            return value;
+        }
+
         public static TValue? GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) =>
             dictionary.GetValueOrDefault(key, default!);
 
