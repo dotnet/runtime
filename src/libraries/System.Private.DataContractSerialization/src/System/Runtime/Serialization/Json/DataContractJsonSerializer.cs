@@ -105,7 +105,12 @@ namespace System.Runtime.Serialization.Json
         internal ISerializationSurrogateProvider? SerializationSurrogateProvider
         {
             get { return _serializationSurrogateProvider; }
-            set { _serializationSurrogateProvider = value; }
+            set
+            {
+                _serializationSurrogateProvider = value;
+                // Reset _rootContract when surrogate provider changes so it gets recalculated
+                _rootContract = null;
+            }
         }
 
         public bool IgnoreExtensionDataObject
@@ -188,7 +193,12 @@ namespace System.Runtime.Serialization.Json
             {
                 if (_rootContract == null)
                 {
-                    _rootContract = DataContract.GetDataContract(_rootType);
+                    Type contractType = _rootType;
+                    if (_serializationSurrogateProvider != null)
+                    {
+                        contractType = DataContractSurrogateCaller.GetDataContractType(_serializationSurrogateProvider, _rootType);
+                    }
+                    _rootContract = DataContract.GetDataContract(contractType);
                     CheckIfTypeIsReference(_rootContract);
                 }
                 return _rootContract;
@@ -615,6 +625,9 @@ namespace System.Runtime.Serialization.Json
             _serializeReadOnlyTypes = serializeReadOnlyTypes;
             _dateTimeFormat = dateTimeFormat;
             _useSimpleDictionaryFormat = useSimpleDictionaryFormat;
+
+            // Reset _rootContract when parameters change so it gets recalculated with surrogate
+            _rootContract = null;
         }
 
         [MemberNotNull(nameof(_rootType))]
