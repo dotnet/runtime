@@ -101,6 +101,9 @@
 #ifndef CDAC_GLOBAL_STRING
 #define CDAC_GLOBAL_STRING(globalname,stringval)
 #endif
+#ifndef CDAC_GLOBAL_SUB_DESCRIPTOR
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(globalname,addr)
+#endif
 #ifndef CDAC_GLOBALS_END
 #define CDAC_GLOBALS_END()
 #endif
@@ -1004,7 +1007,7 @@ CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionMana
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 
-CDAC_GLOBAL_POINTER(GCDescriptor, &(g_gc_dac_vars.gc_descriptor))
+CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE
@@ -1019,4 +1022,5 @@ CDAC_GLOBALS_END()
 #undef CDAC_GLOBAL
 #undef CDAC_GLOBAL_POINTER
 #undef CDAC_GLOBAL_STRING
+#undef CDAC_GLOBAL_SUB_DESCRIPTOR
 #undef CDAC_GLOBALS_END

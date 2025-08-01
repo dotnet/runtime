@@ -228,14 +228,13 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public TargetPointer[] PointerData { get; init; }
     }
 
-    private static IEnumerable<TargetPointer> GetValidSubDescriptors(Descriptor descriptor)
+    private static IEnumerable<TargetPointer> GetSubDescriptors(Descriptor descriptor)
     {
-        const string descriptorName = "GCDescriptor";
-        foreach (KeyValuePair<string, ContractDescriptorParser.GlobalDescriptor> global in descriptor.ContractDescriptor?.Globals ?? [])
+        foreach (KeyValuePair<string, ContractDescriptorParser.GlobalDescriptor> subDescriptor in descriptor.ContractDescriptor?.SubDescriptors ?? [])
         {
-            if (global.Key == descriptorName)
+            if (subDescriptor.Value.Indirect)
             {
-                yield return descriptor.PointerData[(int)global.Value.NumericValue!];
+                yield return descriptor.PointerData[(int)subDescriptor.Value.NumericValue];
             }
         }
     }
@@ -253,7 +252,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         List<Descriptor> allDescriptors = [mainDescriptor];
 
-        foreach (TargetPointer pSubDescriptor in GetValidSubDescriptors(mainDescriptor))
+        foreach (TargetPointer pSubDescriptor in GetSubDescriptors(mainDescriptor))
         {
             if (pSubDescriptor == TargetPointer.Null)
                 continue;

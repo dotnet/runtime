@@ -32,6 +32,7 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
         private IReadOnlyCollection<string> _contracts;
         private IDictionary<DataType, Target.TypeInfo> _types;
         private IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)> _globals;
+        private IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)> _subDescriptors;
         private IReadOnlyCollection<ulong> _indirectValues;
 
         public DescriptorBuilder SetContracts(IReadOnlyCollection<string> contracts)
@@ -51,7 +52,6 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             if (_globals != null)
                 throw new InvalidOperationException("Globals already set");
             _globals = globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, (string?)null, g.TypeName)).ToArray();
-            _indirectValues = null;
             return this;
         }
 
@@ -60,18 +60,40 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             if (_globals != null)
                 throw new InvalidOperationException("Globals already set");
             _globals = globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.StringValue, g.TypeName)).ToArray();
-            _indirectValues = null;
+            return this;
+        }
+
+        public DescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)> globals)
+        {
+            if (_globals != null)
+                throw new InvalidOperationException("Globals already set");
+            _globals = globals;
             return this;
         }
 
         public DescriptorBuilder SetGlobals(IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)> globals, IReadOnlyCollection<ulong> indirectValues)
         {
-            if (_globals != null)
-                throw new InvalidOperationException("Globals already set");
-            _globals = globals;
+            SetGlobals(globals);
+            SetIndirectValues(indirectValues);
+            return this;
+        }
+
+        public DescriptorBuilder SetSubDescriptors(IReadOnlyCollection<(string Name, uint IndirectIndex)> subDescriptors)
+        {
+            if (_subDescriptors != null)
+                throw new InvalidOperationException("Sub descriptors already set");
+            _subDescriptors = subDescriptors.Select<(string Name, uint IndirectIndex), (string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)>(s => (s.Name, null, s.IndirectIndex, null, null)).ToList();
+            return this;
+        }
+
+        public DescriptorBuilder SetIndirectValues(IReadOnlyCollection<ulong> indirectValues)
+        {
+            if (_indirectValues != null)
+                throw new InvalidOperationException("Indirect values already set");
             _indirectValues = indirectValues;
             return this;
         }
+
 
         public ulong CreateSubDescriptor(uint contractDescriptorAddress, uint jsonAddress, uint pointerDataAddress)
         {
@@ -126,6 +148,7 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
         {
             string metadataTypesJson = _types is not null ? ContractDescriptorHelpers.MakeTypesJson(_types) : string.Empty;
             string metadataGlobalsJson = _globals is not null ? ContractDescriptorHelpers.MakeGlobalsJson(_globals) : string.Empty;
+            string metadataSubDescriptorJson = _subDescriptors is not null ? ContractDescriptorHelpers.MakeGlobalsJson(_subDescriptors) : string.Empty;
             string interpolatedContracts = _contracts is not null ? MakeContractsJson() : string.Empty;
             byte[] jsonBytes = Encoding.UTF8.GetBytes($$"""
             {
@@ -133,7 +156,8 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
                 "baseline": "empty",
                 "contracts": { {{interpolatedContracts}} },
                 "types": { {{metadataTypesJson}} },
-                "globals": { {{metadataGlobalsJson}} }
+                "globals": { {{metadataGlobalsJson}} },
+                "subDescriptors": { {{metadataSubDescriptorJson}} },
             }
             """);
             MockMemorySpace.HeapFragment json = new()
