@@ -3982,7 +3982,6 @@ struct SpinConstants
     DWORD dwMaximumDuration;
     DWORD dwBackoffFactor;
     DWORD dwRepetitions;
-    DWORD dwMonitorSpinCount;
 };
 
 extern SpinConstants g_SpinConstants;

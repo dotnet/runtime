@@ -13,8 +13,6 @@ namespace System.Threading
     // Notes:
     // - The type, some fields, and some other members may be used by debuggers (noted specifically below), so take care when
     //   renaming them
-    // - There is a native version of this struct in CoreCLR, used by Monitor to fold in its blocking info here. The struct is
-    //   blittable with sequential layout to support that.
     //
     // Debuggers may use this info by evaluating expressions to enumerate the blocking infos for a thread. For example:
     // - Evaluate "System.Threading.ThreadBlockingInfo.t_first" to obtain the first pointer to a blocking info for the current
@@ -30,17 +28,6 @@ namespace System.Threading
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct ThreadBlockingInfo
     {
-#if CORECLR
-        // In CoreCLR, for the Monitor object kinds, the object ptr will be a pointer to a native AwareLock object. This
-        // relative offset indicates the location of the field holding the lock owner OS thread ID (the field is of type
-        // size_t), and is used to get that info by the LockOwnerOSThreadId property. The offset is not zero currently, so zero
-        // is used to determine if the static field has been initialized.
-        //
-        // This mechanism is used instead of using an FCall in the property getter such that the property can be more easily
-        // evaluated by a debugger.
-        private static int s_monitorObjectOffsetOfLockOwnerOSThreadId;
-#endif
-
         // Points to the first (most recent) blocking info for the thread. The _next field points to the next-most-recent
         // blocking info for the thread, or null if there are no more. Blocking can be reentrant in some cases, such as on UI
         // threads where reentrant waits are used, or if a SynchronizationContext wait override is set.
@@ -96,27 +83,16 @@ namespace System.Threading
 
                 switch (_objectKind)
                 {
-                    case ObjectKind.MonitorLock:
-                    case ObjectKind.MonitorWait:
-                        // The Monitor object kinds are only used by CoreCLR, and only the OS thread ID is reported
-#if CORECLR
-                        if (s_monitorObjectOffsetOfLockOwnerOSThreadId != 0)
-                        {
-                            return *(nuint*)((nint)_objectPtr + s_monitorObjectOffsetOfLockOwnerOSThreadId);
-                        }
-#endif
-                        return 0;
 
                     case ObjectKind.Lock:
                         return ((Lock)Unsafe.AsRef<object>(_objectPtr)).OwningOSThreadId;
 
-                    default:
+                    case ObjectKind.Condition:
                         Debug.Assert(_objectKind == ObjectKind.Condition);
-#if NATIVEAOT
                         return ((Condition)Unsafe.AsRef<object>(_objectPtr)).AssociatedLock.OwningOSThreadId;
-#else
-                        return 0;
-#endif
+
+                    default:
+                        throw new UnreachableException();
                 }
             }
         }
@@ -135,21 +111,15 @@ namespace System.Threading
 
                 switch (_objectKind)
                 {
-                    case ObjectKind.MonitorLock:
-                    case ObjectKind.MonitorWait:
-                        // The Monitor object kinds are only used by CoreCLR, and only the OS thread ID is reported
-                        return 0;
-
                     case ObjectKind.Lock:
                         return ((Lock)Unsafe.AsRef<object>(_objectPtr)).OwningManagedThreadId;
 
-                    default:
+                    case ObjectKind.Condition:
                         Debug.Assert(_objectKind == ObjectKind.Condition);
-#if NATIVEAOT
                         return ((Condition)Unsafe.AsRef<object>(_objectPtr)).AssociatedLock.OwningManagedThreadId;
-#else
-                        return 0;
-#endif
+
+                    default:
+                        throw new UnreachableException();
                 }
             }
         }
@@ -163,9 +133,7 @@ namespace System.Threading
             public Scope(Lock lockObj, int timeoutMs) : this(lockObj, ObjectKind.Lock, timeoutMs) { }
 #pragma warning restore CS9216
 
-#if NATIVEAOT
             public Scope(Condition condition, int timeoutMs) : this(condition, ObjectKind.Condition, timeoutMs) { }
-#endif
 
             private Scope(object obj, ObjectKind objectKind, int timeoutMs)
             {
@@ -185,8 +153,10 @@ namespace System.Threading
 
         public enum ObjectKind // may be used by debuggers
         {
-            MonitorLock, // maps to DebugBlockingItemType::DebugBlock_MonitorCriticalSection in coreclr
-            MonitorWait, // maps to DebugBlockingItemType::DebugBlock_MonitorEvent in coreclr
+            [Obsolete("Represents native Monitor locks, which have been removed", error: true)]
+            MonitorLock, // maps to DebugBlockingItemType::Legacy_DebugBlock_MonitorCriticalSection in coreclr
+            [Obsolete("Represents native Monitor waits, which have been removed", error: true)]
+            MonitorWait, // maps to DebugBlockingItemType::Legacy_DebugBlock_MonitorEvent in coreclr
             Lock,
             Condition
         }

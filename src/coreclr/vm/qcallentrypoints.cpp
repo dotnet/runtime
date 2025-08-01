@@ -303,6 +303,8 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
+    DllImportEntry(SyncTable_AssignEntry)
+    DllImportEntry(SyncTable_GetLockHandle)
     DllImportEntry(WaitHandle_WaitOneCore)
     DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
     DllImportEntry(WaitHandle_SignalAndWait)
@@ -405,13 +407,6 @@ static const Entry s_QCall[] =
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
-    DllImportEntry(Monitor_Wait)
-    DllImportEntry(Monitor_Pulse)
-    DllImportEntry(Monitor_PulseAll)
-    DllImportEntry(Monitor_GetLockContentionCount)
-    DllImportEntry(Monitor_Enter_Slowpath)
-    DllImportEntry(Monitor_TryEnter_Slowpath)
-    DllImportEntry(Monitor_Exit_Slowpath)
     DllImportEntry(MetadataImport_Enum)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)

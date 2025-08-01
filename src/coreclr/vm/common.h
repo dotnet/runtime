@@ -270,7 +270,6 @@ namespace Loader
 #include "eehash.h"
 
 #include "vars.hpp"
-#include "eventstore.hpp"
 
 #include "synch.h"
 #include "regdisp.h"
@@ -373,7 +372,6 @@ extern DummyGlobalContract ___contract;
 #include "object.inl"
 #include "clsload.inl"
 #include "method.inl"
-#include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
 #include "eventtrace.inl"

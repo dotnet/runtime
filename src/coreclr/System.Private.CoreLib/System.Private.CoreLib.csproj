@@ -252,6 +252,10 @@
     <Compile Include="src\System\RuntimeType.BoxCache.cs" />
     <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />
     <Compile Include="src\System\RuntimeType.GenericCache.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Condition.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SyncTable.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.CoreCLR.cs" />
