@@ -24,13 +24,27 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\HexConverter.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameFormatter.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\AssemblyNameParser.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\AssemblyNameInfo.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeName.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParseOptions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParser.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParserHelpers.cs" />
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.Reflection.Metadata.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' == 'true'" Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
     </PackageReference>
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />

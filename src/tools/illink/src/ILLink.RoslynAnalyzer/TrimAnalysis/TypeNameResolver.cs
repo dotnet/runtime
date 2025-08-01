@@ -113,7 +113,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         private static ITypeSymbol? GetSimpleTypeFromModule(TypeName typeName, IAssemblySymbol module)
         {
-            string fullName = TypeNameHelpers.Unescape(typeName.FullName);
+            string fullName = TypeName.Unescape(typeName.FullName);
             return module.GetTypeByMetadataName(fullName);
         }
 
