@@ -135,12 +135,9 @@ void FixContext(PCONTEXT pContextRecord)
         pContextRecord->reg = (value);                                                      \
     } while (0)
 
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
     size_t resumeSp = EECodeManager::GetResumeSp(pContextRecord);
     FIXUPREG(Esp, resumeSp);
-#elif defined(TARGET_LOONGARCH64)
-    int cpuFeatures = minipal_getcpufeatures();
-    pContextRecord->ContextFlags |= cpuFeatures;
 #endif // TARGET_X86
 
 #undef FIXUPREG

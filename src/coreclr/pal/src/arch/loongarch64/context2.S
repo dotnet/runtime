@@ -37,9 +37,9 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     andi $t1, $r21, (1 << CONTEXT_FLOATING_POINT_BIT)
     beqz $t1, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
 
-    andi $t1, $r21, CONTEXT_HWCAP_LASX
+    andi $t1, $r21, CONTEXT_LASX
     bnez $t1, LOCAL_LABEL(Restore_CONTEXT_LASX)
-    andi $t1, $r21, CONTEXT_HWCAP_LSX
+    andi $t1, $r21, CONTEXT_LSX
     bnez $t1, LOCAL_LABEL(Restore_CONTEXT_LSX)
 
     // Neither LSX or LASX is supported.
@@ -223,20 +223,15 @@ LEAF_END RtlRestoreContext, _TEXT
 
 // Incoming:
 //  a0: Context*
-
-NESTED_ENTRY RtlCaptureContext, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 32
-    st.d  $a0, $sp, 16
-    st.d  $r21, $sp, 24
+LEAF_ENTRY RtlCaptureContext, _TEXT
+    PROLOG_STACK_ALLOC 16
+    st.d  $r21, $sp, 0
     li.w  $r21, CONTEXT_FULL
-    bl  C_FUNC(minipal_getcpufeatures)
-    or  $r21, $r21, $a0
-    ld.d  $a0, $fp, 16
     st.w  $r21, $a0, CONTEXT_ContextFlags
-    ld.d  $r21, $fp, 24
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 32
+    ld.d  $r21, $sp, 0
+    EPILOG_STACK_FREE 16
     b  C_FUNC(CONTEXT_CaptureContext)
-NESTED_END RtlCaptureContext, _TEXT
+LEAF_END RtlCaptureContext, _TEXT
 
 // Incoming:
 //  a0: Context*
@@ -300,9 +295,9 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     andi  $t3, $t1, (1 << CONTEXT_FLOATING_POINT_BIT)
     beqz  $t3, LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT)
 
-    andi $t3, $t1, CONTEXT_HWCAP_LASX
+    andi $t3, $t1, CONTEXT_LASX
     bnez $t3, LOCAL_LABEL(Store_CONTEXT_LASX)
-    andi $t3, $t1, CONTEXT_HWCAP_LSX
+    andi $t3, $t1, CONTEXT_LSX
     bnez $t3, LOCAL_LABEL(Store_CONTEXT_LSX)
 
     // Neither LSX or LASX is supported.

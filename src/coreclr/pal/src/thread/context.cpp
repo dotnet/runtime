@@ -1183,7 +1183,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
-            lpContext->ContextFlags |= CONTEXT_HWCAP_LSX;
+            lpContext->ContextFlags |= CONTEXT_LSX;
         }
         else if (LASX_CTX_MAGIC == info->magic)
         {
@@ -1191,7 +1191,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
-            lpContext->ContextFlags |= CONTEXT_HWCAP_LASX;
+            lpContext->ContextFlags |= CONTEXT_LASX;
         }
         else
         {
