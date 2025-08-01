@@ -178,7 +178,7 @@ namespace System.Threading
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
             // Call wait with infinite timeout
-            Wait(Timeout.Infinite, CancellationToken.None);
+            WaitCore(Timeout.Infinite, CancellationToken.None);
         }
 
         /// <summary>
@@ -198,7 +198,7 @@ namespace System.Threading
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
             // Call wait with infinite timeout
-            Wait(Timeout.Infinite, cancellationToken);
+            WaitCore(Timeout.Infinite, cancellationToken);
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace System.Threading
             }
 
             // Call wait with the timeout milliseconds
-            return Wait(totalMilliseconds, CancellationToken.None);
+            return WaitCore(totalMilliseconds, CancellationToken.None);
         }
 
         /// <summary>
@@ -260,7 +260,7 @@ namespace System.Threading
             }
 
             // Call wait with the timeout milliseconds
-            return Wait(totalMilliseconds, cancellationToken);
+            return WaitCore(totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -279,7 +279,7 @@ namespace System.Threading
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
-            return Wait(millisecondsTimeout, CancellationToken.None);
+            return WaitCore(millisecondsTimeout, CancellationToken.None);
         }
 
         /// <summary>
@@ -307,7 +307,7 @@ namespace System.Threading
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
-            return Wait(millisecondsTimeout, cancellationToken);
+            return WaitCore(millisecondsTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -321,7 +321,7 @@ namespace System.Threading
         /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>; otherwise, false.</returns>
         /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
         [UnsupportedOSPlatform("browser")]
-        private bool Wait(long millisecondsTimeout, CancellationToken cancellationToken)
+        private bool WaitCore(long millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
 #if FEATURE_WASM_MANAGED_THREADS
@@ -382,7 +382,7 @@ namespace System.Threading
                 if (m_asyncHead is not null)
                 {
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't");
-                    asyncWaitTask = WaitAsync(millisecondsTimeout, cancellationToken);
+                    asyncWaitTask = WaitAsyncCore(millisecondsTimeout, cancellationToken);
                 }
                 // There are no async waiters, so we can proceed with normal synchronous waiting.
                 else
@@ -529,7 +529,7 @@ namespace System.Threading
         /// <returns>A task that will complete when the semaphore has been entered.</returns>
         public Task WaitAsync()
         {
-            return WaitAsync(Timeout.Infinite, default);
+            return WaitAsyncCore(Timeout.Infinite, default);
         }
 
         /// <summary>
@@ -545,7 +545,7 @@ namespace System.Threading
         /// </exception>
         public Task WaitAsync(CancellationToken cancellationToken)
         {
-            return WaitAsync(Timeout.Infinite, cancellationToken);
+            return WaitAsyncCore(Timeout.Infinite, cancellationToken);
         }
 
         /// <summary>
@@ -566,7 +566,7 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(int millisecondsTimeout)
         {
-            return WaitAsync(millisecondsTimeout, default);
+            return WaitAsyncCore(millisecondsTimeout, default);
         }
 
         /// <summary>
@@ -591,7 +591,16 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout)
         {
-            return WaitAsync(timeout, default);
+            // Validate the timeout
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(timeout), timeout, SR.SemaphoreSlim_Wait_TimeSpanTimeoutWrong);
+            }
+
+            // Call wait with the timeout milliseconds
+            return WaitAsyncCore(totalMilliseconds, default);
         }
 
         /// <summary>
@@ -624,7 +633,7 @@ namespace System.Threading
             }
 
             // Call wait with the timeout milliseconds
-            return WaitAsync(totalMilliseconds, cancellationToken);
+            return WaitAsyncCore(totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -653,7 +662,7 @@ namespace System.Threading
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
 
-            return WaitAsync((long)millisecondsTimeout, cancellationToken);
+            return WaitAsyncCore(millisecondsTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -671,7 +680,7 @@ namespace System.Threading
         /// </returns>
         /// <exception cref="ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
-        private Task<bool> WaitAsync(long millisecondsTimeout, CancellationToken cancellationToken)
+        private Task<bool> WaitAsyncCore(long millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
 
