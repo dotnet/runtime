@@ -35,10 +35,17 @@ namespace System.Text.Json.Serialization.Converters
 
 #if NET
 #if NET10_0_OR_GREATER
-            // .NET 10+ optimization: parse directly from UTF8 bytes when the value is in a single span
-            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+            // .NET 10+ optimization: parse directly from UTF8 bytes for all inputs
+            int bufferLength = reader.ValueLength;
+            byte[]? rentedBuffer = null;
+            try
             {
-                ReadOnlySpan<byte> utf8Source = reader.ValueSpan;
+                Span<byte> utf8Buffer = bufferLength <= JsonConstants.StackallocByteThreshold
+                    ? stackalloc byte[JsonConstants.StackallocByteThreshold]
+                    : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
+
+                int bytesWritten = reader.CopyString(utf8Buffer);
+                ReadOnlySpan<byte> utf8Source = utf8Buffer.Slice(0, bytesWritten);
 
                 if (utf8Source.IsEmpty ||
                     (utf8Source[0] <= 127 && char.IsWhiteSpace((char)utf8Source[0])) ||
@@ -56,44 +63,49 @@ namespace System.Text.Json.Serialization.Converters
                     return result!;
                 }
             }
-            else
-#endif
+            finally
             {
-                int bufferLength = reader.ValueLength;
-                char[]? rentedBuffer = null;
-                try
+                if (rentedBuffer is not null)
                 {
-                    Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
-                        ? stackalloc char[JsonConstants.StackallocCharThreshold]
-                        : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
-
-                    int bytesWritten = reader.CopyString(charBuffer);
-                    ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
-
-                    if (source.IsEmpty || char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1]))
-                    {
-                        // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
-                        // we need to make sure that our input doesn't have them,
-                        // and if it has - we need to throw, to match behaviour of other converters
-                        // since Version.TryParse allows them and silently parses input to Version
-                        ThrowHelper.ThrowFormatException(DataType.Version);
-                    }
-
-                    bool success = Version.TryParse(source, out Version? result);
-
-                    if (success)
-                    {
-                        return result!;
-                    }
-                }
-                finally
-                {
-                    if (rentedBuffer is not null)
-                    {
-                        ArrayPool<char>.Shared.Return(rentedBuffer);
-                    }
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
                 }
             }
+#else
+            int bufferLength = reader.ValueLength;
+            char[]? rentedBuffer = null;
+            try
+            {
+                Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                    ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                    : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+
+                int bytesWritten = reader.CopyString(charBuffer);
+                ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
+
+                if (source.IsEmpty || char.IsWhiteSpace(source[0]) || char.IsWhiteSpace(source[^1]))
+                {
+                    // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
+                    // we need to make sure that our input doesn't have them,
+                    // and if it has - we need to throw, to match behaviour of other converters
+                    // since Version.TryParse allows them and silently parses input to Version
+                    ThrowHelper.ThrowFormatException(DataType.Version);
+                }
+
+                bool success = Version.TryParse(source, out Version? result);
+
+                if (success)
+                {
+                    return result!;
+                }
+            }
+            finally
+            {
+                if (rentedBuffer is not null)
+                {
+                    ArrayPool<char>.Shared.Return(rentedBuffer);
+                }
+            }
+#endif
 #else
             string? versionString = reader.GetString();
             if (string.IsNullOrEmpty(versionString) || char.IsWhiteSpace(versionString[0]) || char.IsWhiteSpace(versionString[versionString.Length - 1]))
