@@ -74,8 +74,8 @@ namespace System.Tests
         private static Action GreaterThanOrEqualHelper<T>(T value, T other) where T : IComparable<T> => () => ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, other);
         private static Action LessThanHelper<T>(T value, T other) where T : IComparable<T> => () => ArgumentOutOfRangeException.ThrowIfLessThan(value, other);
         private static Action LessThanOrEqualHelper<T>(T value, T other) where T : IComparable<T> => () => ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, other);
-        private static Action EqualHelper<T>(T value, T other) where T : IEquatable<T> => () => ArgumentOutOfRangeException.ThrowIfEqual(value, other);
-        private static Action NotEqualHelper<T>(T value, T other) where T : IEquatable<T> => () => ArgumentOutOfRangeException.ThrowIfNotEqual(value, other);
+        private static Action EqualHelper<T>(T value, T other) => () => ArgumentOutOfRangeException.ThrowIfEqual(value, other);
+        private static Action NotEqualHelper<T>(T value, T other) => () => ArgumentOutOfRangeException.ThrowIfNotEqual(value, other);
 
         [Fact]
         public static void GenericHelpers_ThrowIfZero_Throws()
