@@ -111,7 +111,9 @@ namespace Test.Cryptography
 #else
             StringBuilder sb = new StringBuilder();
 
-            sb.Append("-----BEGIN "); sb.Append(label); sb.Append("-----\n");
+            sb.Append("-----BEGIN ");
+            sb.Append(label);
+            sb.Append("-----\n");
 
             string base64 = Convert.ToBase64String(data);
 
@@ -122,7 +124,9 @@ namespace Test.Cryptography
                 sb.Append('\n');
             }
 
-            sb.Append("-----END "); sb.Append(label); sb.Append("-----");
+            sb.Append("-----END ");
+            sb.Append(label);
+            sb.Append("-----");
 
             return sb.ToString();
 #endif
