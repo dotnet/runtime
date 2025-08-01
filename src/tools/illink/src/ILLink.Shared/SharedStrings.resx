@@ -1243,12 +1243,12 @@
     <value>Referenced assembly is not marked as trimmable.</value>
   </data>
   <data name="ReferenceNotMarkedIsTrimmableMessage" xml:space="preserve">
-    <value>Referenced assembly '{0}' is not marked with AssemblyMetadataAttribute IsTrimmable=True and may not be compatible with trimming.</value>
+    <value>Referenced assembly '{0}' is not built with `<IsTrimmable>true</IsTrimmable>` and may not be compatible with trimming.</value>
   </data>
   <data name="ReferenceNotMarkedIsAotCompatibleTitle" xml:space="preserve">
     <value>Referenced assembly is not marked as AOT-compatible.</value>
   </data>
   <data name="ReferenceNotMarkedIsAotCompatibleMessage" xml:space="preserve">
-    <value>Referenced assembly '{0}' is not marked with AssemblyMetadataAttribute IsAotCompatible=True and may not be compatible with AOT.</value>
+    <value>Referenced assembly '{0}' is not built with `<IsAotCompatible>true</IsAotCompatible>` and may not be compatible with AOT.</value>
   </data>
 </root>
