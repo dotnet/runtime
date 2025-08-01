@@ -159,9 +159,6 @@
   <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
     <value>Composite signature generation failed due to an error in one or both of the components.</value>
   </data>
-  <data name="Cryptography_CurveNotSupported" xml:space="preserve">
-    <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
-  </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>
   </data>
@@ -176,21 +173,6 @@
   </data>
   <data name="Cryptography_IncorrectTagLength" xml:space="preserve">
     <value>The size of the specified tag does not match the expected size of {0}.</value>
-  </data>
-  <data name="Cryptography_InvalidCurveKeyParameters" xml:space="preserve">
-    <value>The specified key parameters are not valid. Q.X and Q.Y, or D, must be specified. Q.X, Q.Y must be the same length. If D is specified it must be the same length as Q.X and Q.Y if also specified for named curves or the same length as Order for explicit curves.</value>
-  </data>
-  <data name="Cryptography_InvalidCurveOid" xml:space="preserve">
-    <value>The specified Oid ({0}) is not valid. The Oid.FriendlyName or Oid.Value property must be set.</value>
-  </data>
-  <data name="Cryptography_InvalidECCharacteristic2Curve" xml:space="preserve">
-    <value>The specified Characteristic2 curve parameters are not valid. Polynomial, A, B, G.X, G.Y, and Order are required. A, B, G.X, G.Y must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Cofactor is required. Seed and Hash are optional. Other parameters are not allowed.</value>
-  </data>
-  <data name="Cryptography_InvalidECNamedCurve" xml:space="preserve">
-    <value>The specified named curve parameters are not valid. Only the Oid parameter must be set.</value>
-  </data>
-  <data name="Cryptography_InvalidECPrimeCurve" xml:space="preserve">
-    <value>The specified prime curve parameters are not valid. Prime, A, B, G.X, G.Y and Order are required and must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Cofactor is required. Seed and Hash are optional. Other parameters are not allowed.</value>
   </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>

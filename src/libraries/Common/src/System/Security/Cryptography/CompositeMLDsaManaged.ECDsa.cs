@@ -30,7 +30,9 @@ namespace System.Security.Cryptography
                 _algorithm = algorithm;
             }
 
-            // OpenSSL supports the brainpool curves so this can be relaxed on a per-platform basis in the future if desired.
+            // While some of our OSes support the brainpool curves, not all do.
+            // Limit this implementation to the NIST curves until we have a better understanding
+            // of where native implementations of composite are aligning.
             public static bool IsAlgorithmSupported(ECDsaAlgorithm algorithm) =>
 #if NET
                 algorithm.CurveOid is Oids.secp256r1 or Oids.secp384r1 or Oids.secp521r1;
@@ -148,7 +150,7 @@ namespace System.Security.Cryptography
 #if NET
                 ECParameters parameters = new ECParameters()
                 {
-                    Curve = ECCurve.CreateFromValue(algorithm.CurveOid),
+                    Curve = algorithm.Curve,
                     Q = new ECPoint()
                     {
                         X = source.Slice(1, fieldWidth).ToArray(),
@@ -165,10 +167,78 @@ namespace System.Security.Cryptography
             internal override bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten)
             {
 #if NET
-                return _ecdsa.TryExportECPrivateKey(destination, out bytesWritten);
+                ECParameters ecParameters = _ecdsa.ExportParameters(includePrivateParameters: true);
+
+                Debug.Assert(ecParameters.D != null);
+
+                using (PinAndClear.Track(ecParameters.D))
+                {
+                    ecParameters.Validate();
+
+                    if (ecParameters.D.Length != _algorithm.KeySizeInBytes)
+                    {
+                        Debug.Fail("Unexpected key size.");
+                        throw new CryptographicException();
+                    }
+
+                    // The curve OID must match the composite ML-DSA algorithm.
+                    if (!ecParameters.Curve.IsNamed ||
+                        (ecParameters.Curve.Oid.Value != _algorithm.Curve.Oid.Value && ecParameters.Curve.Oid.FriendlyName != _algorithm.Curve.Oid.FriendlyName))
+                    {
+                        Debug.Fail("Unexpected curve OID.");
+                        throw new CryptographicException();
+                    }
+
+                    return TryWriteKey(ecParameters.D, ecParameters.Q.X, ecParameters.Q.Y, _algorithm.CurveOid, destination, out bytesWritten);
+                }
 #else
-                throw new PlatformNotSupportedException();
+                return TryWriteKey(d: [], x: [], y: [], curveOid: null, destination, out bytesWritten);
 #endif
+
+                static bool TryWriteKey(byte[] d, byte[]? x, byte[]? y, string curveOid, Span<byte> destination, out int bytesWritten)
+                {
+#if NET
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+                    try
+                    {
+                        // ECPrivateKey
+                        using (writer.PushSequence())
+                        {
+                            // version 1
+                            writer.WriteInteger(1);
+
+                            // privateKey
+                            writer.WriteOctetString(d);
+
+                            // domainParameters
+                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true)))
+                            {
+                                writer.WriteObjectIdentifier(curveOid);
+                            }
+
+                            // publicKey
+                            if (x != null)
+                            {
+                                Debug.Assert(y != null);
+
+                                using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true)))
+                                {
+                                    EccKeyFormatHelper.WriteUncompressedPublicKey(x, y, writer);
+                                }
+                            }
+                        }
+
+                        return writer.TryEncode(destination, out bytesWritten);
+                    }
+                    finally
+                    {
+                        writer.Reset();
+                    }
+#else
+                    throw new PlatformNotSupportedException();
+#endif
+                }
             }
 
             internal override bool TryExportPublicKey(Span<byte> destination, out int bytesWritten)
@@ -184,21 +254,21 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                ECParameters parameters = _ecdsa.ExportParameters(includePrivateParameters: false);
+                ECParameters ecParameters = _ecdsa.ExportParameters(includePrivateParameters: false);
 
-                if (parameters.Q.X is not byte[] x ||
-                    parameters.Q.Y is not byte[] y ||
-                    x.Length != fieldWidth ||
-                    y.Length != fieldWidth)
+                ecParameters.Validate();
+
+                if (ecParameters.Q.X?.Length != fieldWidth)
                 {
+                    Debug.Fail("Unexpected key size.");
                     throw new CryptographicException();
                 }
 
                 // Uncompressed ECPoint format
                 destination[0] = 0x04;
 
-                x.CopyTo(destination.Slice(1, fieldWidth));
-                y.CopyTo(destination.Slice(1 + fieldWidth));
+                ecParameters.Q.X.CopyTo(destination.Slice(1, fieldWidth));
+                ecParameters.Q.Y.CopyTo(destination.Slice(1 + fieldWidth));
 
                 bytesWritten = 1 + 2 * fieldWidth;
                 return true;

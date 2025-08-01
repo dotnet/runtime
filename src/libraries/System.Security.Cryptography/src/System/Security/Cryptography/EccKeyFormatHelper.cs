@@ -771,30 +771,7 @@ namespace System.Security.Cryptography
 
         private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
-            int publicKeyLength = ecParameters.Q.X!.Length * 2 + 1;
-
-            // A NIST P-521 Q will encode to 133 bytes: (521 + 7)/8 * 2 + 1.
-            // 256 should be plenty for all but very atypical uses.
-            const int MaxStackAllocSize = 256;
-            Span<byte> publicKeyBytes = stackalloc byte[MaxStackAllocSize];
-            byte[]? rented = null;
-
-            if (publicKeyLength > MaxStackAllocSize)
-            {
-                publicKeyBytes = rented = CryptoPool.Rent(publicKeyLength);
-            }
-
-            publicKeyBytes[0] = 0x04;
-            ecParameters.Q.X.CopyTo(publicKeyBytes.Slice(1));
-            ecParameters.Q.Y.CopyTo(publicKeyBytes.Slice(1 + ecParameters.Q.X!.Length));
-
-            writer.WriteBitString(publicKeyBytes.Slice(0, publicKeyLength));
-
-            if (rented is not null)
-            {
-                // Q contains public EC parameters that are not sensitive.
-                CryptoPool.Return(rented, clearSize: 0);
-            }
+            WriteUncompressedPublicKey(ecParameters.Q.X!, ecParameters.Q.Y!, writer);
         }
 
         internal static AsnWriter WriteECPrivateKey(in ECParameters ecParameters)
