@@ -493,7 +493,7 @@ public:
     {
         STANDARD_VM_CONTRACT;
 
-        m_slIL.DoPInvoke(m_slIL.GetDispatchCodeStream(), m_dwStubFlags, pStubMD);
+        m_slIL.DoPInvoke(m_slIL.GetDispatchCodeStream(), m_dwStubFlags, pTargetMD);
     }
 
     virtual void EmitExceptionHandler(LocalDesc* pNativeReturnType, LocalDesc* pManagedReturnType,
