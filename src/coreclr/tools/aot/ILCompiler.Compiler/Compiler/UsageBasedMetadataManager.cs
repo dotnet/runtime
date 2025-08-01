@@ -405,13 +405,13 @@ namespace ILCompiler
             return false;
         }
 
-        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public override void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type, bool allocated)
         {
             // Check to see if we have any dataflow annotations on the type.
             // The check below also covers flow annotations inherited through base classes and implemented interfaces.
-            bool hasFlowAnnotations = type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
+            bool allocatedWithFlowAnnotations = allocated && type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
 
-            if (hasFlowAnnotations)
+            if (allocatedWithFlowAnnotations)
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
@@ -420,7 +420,7 @@ namespace ILCompiler
                     "Type exists and GetType called on it"));
             }
 
-            if (hasFlowAnnotations
+            if (allocatedWithFlowAnnotations
                 && !type.IsInterface /* "IFoo x; x.GetType();" -> this doesn't actually return an interface type */)
             {
                 // We have some flow annotations on this type.

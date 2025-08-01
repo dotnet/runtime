@@ -323,7 +323,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (IsReflectionVisible)
             {
-                factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(ref result, factory, _type);
+                factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(ref result, factory, _type, allocated: EmitVirtualSlots);
 
                 if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
