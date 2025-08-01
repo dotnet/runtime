@@ -2088,7 +2088,7 @@ void PInvokeStubLinker::End(DWORD dwStubFlags)
     }
 }
 
-void NDirectStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc* pMD)
+void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc* pMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2128,7 +2128,7 @@ void NDirectStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         }
         else  // forward P/Invoke
         {
-            _ASSERTE(pMD->IsNDirect());
+            _ASSERTE(pMD->IsPInvoke());
             PInvokeMethodDesc* pTargetMD = (PInvokeMethodDesc*)pMD;
             pcsEmit->EmitLDC((DWORD_PTR)&pTargetMD->m_pPInvokeTarget);
             pcsEmit->EmitCONV_I();
@@ -2250,7 +2250,7 @@ DWORD PInvokeStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
     else if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
     {
         MethodDesc* pMD = GetTargetMD();
-        _ASSERTE(pMD != NULL && pMD->IsNDirect());
+        _ASSERTE(pMD != NULL && pMD->IsPInvoke());
         pcsEmit->EmitLDC((DWORD_PTR)pMD);
         pcsEmit->EmitCONV_I();
     }
