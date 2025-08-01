@@ -3217,10 +3217,11 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
     assert(!op1->isContained() || op1->IsIntegralConst(0));
-    assert(!op1->isContained() || op1->IsIntegralConst(0));
-    regNumber regOp1 = op1->isContained() ? REG_ZERO : op1->GetRegNum();
-    regNumber regOp2 = op2->isContained() ? REG_ZERO : op2->GetRegNum();
-    int       regs   = (int)regOp1 | (((int)regOp2) << 5);
+    assert(!op2->isContained() || op2->IsIntegralConst(0));
+    regNumber reg1 = op1->isContained() ? REG_ZERO : op1->GetRegNum();
+    regNumber reg2 = op2->isContained() ? REG_ZERO : op2->GetRegNum();
+    assert(emitter::isGeneralRegisterOrR0(reg1) && emitter::isGeneralRegisterOrR0(reg2));
+    int regs = (int)reg1 | (((int)reg2) << 5);
     GetEmitter()->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs);
 
     // If we cannot fall into the false target, emit a jump to it
