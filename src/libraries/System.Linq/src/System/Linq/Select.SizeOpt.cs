@@ -43,7 +43,7 @@ namespace System.Linq
             public override TResult[] ToArray()
             {
                 TResult[] array = new TResult[_source.Count];
-                for (int i = 0; i < _source.Count; i++)
+                for (int i = 0; i < array.Length; i++)
                 {
                     array[i] = _selector(_source[i]);
                 }
