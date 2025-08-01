@@ -91,7 +91,9 @@ internal readonly struct MemberTypeInfo
         const AllowedRecordTypes SystemClass = Classes | AllowedRecordTypes.SystemClassWithMembersAndTypes
             // All primitive types can be stored by using one of the interfaces they implement.
             // Example: `new IEnumerable[1] { "hello" }` or `new IComparable[1] { int.MaxValue }`.
-            | AllowedRecordTypes.BinaryObjectString | AllowedRecordTypes.MemberPrimitiveTyped;
+            | AllowedRecordTypes.BinaryObjectString | AllowedRecordTypes.MemberPrimitiveTyped
+            // System.Nullable<UserStruct> is a special case of SystemClassWithMembersAndTypes
+            | AllowedRecordTypes.ClassWithMembersAndTypes;
         const AllowedRecordTypes NonSystemClass = Classes | AllowedRecordTypes.ClassWithMembersAndTypes;
 
         return binaryType switch
@@ -102,29 +104,10 @@ internal readonly struct MemberTypeInfo
             BinaryType.StringArray => (StringArray, default),
             BinaryType.PrimitiveArray => (PrimitiveArray, default),
             BinaryType.Class => (NonSystemClass, default),
-            BinaryType.SystemClass when IsNullableUserTypeRepresentedAsSystemType((TypeName)additionalInfo!) => (SystemClass | AllowedRecordTypes.ClassWithMembersAndTypes, default),
             BinaryType.SystemClass => (SystemClass, default),
             BinaryType.ObjectArray => (ObjectArray, default),
             _ => throw new InvalidOperationException()
         };
-
-        static bool IsNullableUserTypeRepresentedAsSystemType(TypeName typeName)
-        {
-            if (!typeName.IsConstructedGenericType || typeName.Name != typeof(Nullable<>).Name)
-            {
-                return false;
-            }
-
-            var genericArgs = typeName.GetGenericArguments();
-            if (genericArgs.Length != 1)
-            {
-                return false;
-            }
-
-            // If the generic argument is not from CoreLib, then it is a user type.
-            var assemblyName = genericArgs[0].AssemblyName;
-            return assemblyName is not null && !assemblyName.FullName.Equals(TypeNameHelpers.CoreLibAssemblyName.FullName, StringComparison.Ordinal);
-        }
     }
 
     internal TypeName GetArrayTypeName(ArrayInfo arrayInfo)
