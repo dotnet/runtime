@@ -49,10 +49,10 @@ namespace System.Threading
             Thread currentThread = Thread.CurrentThread;
             currentThread.SetWaitSleepJoinState();
 
-            ulong startTime = 0;
+            long startTime = 0;
             if (millisecondsTimeout != -1)
             {
-                startTime = Interop.Kernel32.GetTickCount64();
+                startTime = Environment.TickCount64;
             }
 
             int result;
@@ -78,10 +78,10 @@ namespace System.Threading
                 // Handle APC completion by adjusting timeout and retrying
                 if (millisecondsTimeout != -1)
                 {
-                    ulong currentTime = Interop.Kernel32.GetTickCount64();
-                    ulong elapsed = currentTime - startTime;
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
                         
-                    if (elapsed >= (ulong)millisecondsTimeout)
+                    if (elapsed >= millisecondsTimeout)
                     {
                         result = Interop.Kernel32.WAIT_TIMEOUT;
                         break;
@@ -130,10 +130,10 @@ namespace System.Threading
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            ulong startTime = 0;
+            long startTime = 0;
             if (millisecondsTimeout != -1)
             {
-                startTime = Interop.Kernel32.GetTickCount64();
+                startTime = Environment.TickCount64;
             }
 
             int ret;
@@ -147,10 +147,10 @@ namespace System.Threading
                 // Handle APC completion by adjusting timeout and retrying
                 if (millisecondsTimeout != -1)
                 {
-                    ulong currentTime = Interop.Kernel32.GetTickCount64();
-                    ulong elapsed = currentTime - startTime;
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
 
-                    if (elapsed >= (ulong)millisecondsTimeout)
+                    if (elapsed >= millisecondsTimeout)
                     {
                         ret = Interop.Kernel32.WAIT_TIMEOUT;
                         break;
