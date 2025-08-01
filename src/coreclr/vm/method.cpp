@@ -1123,8 +1123,10 @@ BOOL MethodDesc::HasRetBuffArg()
 }
 
 //*******************************************************************************
-// This returns the offset of the IL.
-// The offset is relative to the base of the IL image.
+// This typically returns the offset of the IL.
+// Another case when a method may have an RVA is earlybound IJW PInvokes,
+// in which case the RVA is referring to native code.
+// The offset is relative to the base of the image.
 ULONG MethodDesc::GetRVA()
 {
     CONTRACTL
@@ -1133,26 +1135,10 @@ ULONG MethodDesc::GetRVA()
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
+        PRECONDITION((IsIL() && MayHaveILHeader()) ||
+            (IsPInvoke() && ((PInvokeMethodDesc*)this)->IsEarlyBound()));
     }
     CONTRACTL_END
-
-    if (IsRuntimeSupplied())
-    {
-        return 0;
-    }
-
-    // Methods without metadata don't have an RVA.  Examples are IL stubs and LCG methods.
-    if (IsNoMetadata())
-    {
-        return 0;
-    }
-
-    // Between two Async variants of the same method only one represents the actual IL.
-    // It is the variant that is not a thunk.
-    if (IsAsyncThunkMethod())
-    {
-        return 0;
-    }
 
     if (GetMemberDef() & 0x00FFFFFF)
     {
@@ -1198,8 +1184,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     {
         THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(IsIL());
-        PRECONDITION(!IsUnboxingStub());
+        PRECONDITION(MayHaveILHeader());
     }
     CONTRACTL_END
 
