@@ -340,7 +340,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         calls. Necessary for all applications as this is how the main method is
         called.
 
-    2.  `NDirectImportThunk` – Needed to support saving off a set of arguments to
+    2.  `PInvokeImportThunk` – Needed to support saving off a set of arguments to
         a p/invoke so that the runtime can find the actual target. Also uses one
         of the secret arguments (Used by all p/invoke methods)
 
