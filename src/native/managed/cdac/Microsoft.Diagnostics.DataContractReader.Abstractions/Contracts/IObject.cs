@@ -12,7 +12,8 @@ public interface IObject : IContract
     string GetStringValue(TargetPointer address) => throw new NotImplementedException();
     TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds) => throw new NotImplementedException();
     bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw) => throw new NotImplementedException();
-    TargetPointer? TaggedMemory(TargetPointer address) => throw new NotImplementedException();
+    TargetPointer TaggedMemory(TargetPointer address) => throw new NotImplementedException();
+    nuint GetTaggedMemorySize() => throw new NotImplementedException();
 }
 
 public readonly struct Object : IObject

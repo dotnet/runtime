@@ -18,7 +18,10 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
 
 // Get the object's tagged memory (if it exists).
-public TargetPointer? TaggedMemory(TargetPointer address);
+TargetPointer TaggedMemory(TargetPointer address);
+
+// Get the tagged memory size (if applicable).
+nuint GetTaggedMemorySize();
 ```
 
 ## Version 1
@@ -97,17 +100,17 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
     {
         // Single-dimensional, zero-based - doesn't have bounds
         boundsStart = address + /* Array::m_NumComponents offset */;
-        lowerBounds = _target.ReadGlobalPointer("ArrayBoundsZero");
+        lowerBounds = target.ReadGlobalPointer("ArrayBoundsZero");
     }
 
     // Sync block is before `this` pointer, so substract the object header size
-    ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.ReadGlobal<uint>("ObjectHeaderSize");
+    ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - target.ReadGlobal<uint>("ObjectHeaderSize");
     return address + dataOffset;
 }
 
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
 {
-    uint syncBlockValue = target.Read<uint>(address - _target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
+    uint syncBlockValue = target.Read<uint>(address - target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
 
     // Check if the sync block value represents a sync block index
     if ((syncBlockValue & (uint)(SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex | SyncBlockValue.Bits.IsHashCode)) != (uint)SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex)
@@ -130,13 +133,13 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     return rcw != TargetPointer.Null && ccw != TargetPointer.Null;
 }
 
-TargetPointer? TaggedMemory(TargetPointer address)
+TargetPointer TaggedMemory(TargetPointer address)
 {
-    uint syncBlockValue = target.Read<uint>(address - _target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
+    uint syncBlockValue = target.Read<uint>(address - target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
 
     // Check if the sync block value represents a sync block index
     if ((syncBlockValue & (uint)(SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex | SyncBlockValue.Bits.IsHashCode)) != (uint)SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex)
-        return null;
+        return TargetPointer.Null;
 
     // Get the offset into the sync table entries
     uint index = syncBlockValue & SyncBlockValue.SyncBlockIndexMask;
@@ -144,12 +147,17 @@ TargetPointer? TaggedMemory(TargetPointer address)
 
     TargetPointer syncBlock = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
     if (syncBlock == TargetPointer.Null)
-        return null;
+        return TargetPointer.Null;
 
     TargetPointer interopInfo = target.ReadPointer(syncBlock + /* SyncTableEntry::InteropInfo offset */);
     if (interopInfo == TargetPointer.Null)
-        return null;
+        return TargetPointer.Null;
 
     return target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::TaggedMemory offset */);
+}
+
+nuint GetTaggedMemorySize()
+{
+    return 2 * (nuint)target.PointerSize;
 }
 ```

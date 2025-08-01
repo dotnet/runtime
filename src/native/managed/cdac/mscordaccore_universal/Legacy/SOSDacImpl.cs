@@ -2358,6 +2358,8 @@ internal sealed unsafe partial class SOSDacImpl
         {
             try
             {
+                *isTrackedType = Interop.BOOL.FALSE;
+                *hasTaggedMemory = Interop.BOOL.FALSE;
                 Contracts.IObject objectContract = _target.Contracts.Object;
                 Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer objPtr = objAddr.ToTargetPointer(_target);
@@ -2367,10 +2369,12 @@ internal sealed unsafe partial class SOSDacImpl
                 else
                 {
                     TypeHandle mtHandle = rtsContract.GetTypeHandle(mt);
-                    *isTrackedType = rtsContract.IsTrackedReferenceWithFinalizer(mtHandle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    if (rtsContract.IsTrackedReferenceWithFinalizer(mtHandle))
+                        *isTrackedType = Interop.BOOL.TRUE;
                     hr = (*isTrackedType == Interop.BOOL.TRUE) ? HResults.S_OK : HResults.S_FALSE;
-                    TargetPointer? taggedMemory = objectContract.TaggedMemory(objPtr);
-                    *hasTaggedMemory = (taggedMemory != null && taggedMemory != TargetPointer.Null) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    TargetPointer taggedMemory = objectContract.TaggedMemory(objPtr);
+                    if (taggedMemory != TargetPointer.Null)
+                        *hasTaggedMemory = Interop.BOOL.TRUE;
                 }
             }
             catch (System.Exception ex)
@@ -2407,11 +2411,11 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 Contracts.IObject objectContract = _target.Contracts.Object;
                 TargetPointer objPtr = objAddr.ToTargetPointer(_target);
-                TargetPointer? taggedMemoryPtr = objectContract.TaggedMemory(objPtr);
-                if (taggedMemoryPtr != null)
+                TargetPointer taggedMemoryPtr = objectContract.TaggedMemory(objPtr);
+                if (taggedMemoryPtr != TargetPointer.Null)
                 {
-                    *taggedMemory = taggedMemoryPtr.Value.ToClrDataAddress(_target);
-                    *taggedMemorySizeInBytes = 2 * (nuint)_target.PointerSize;
+                    *taggedMemory = taggedMemoryPtr.ToClrDataAddress(_target);
+                    *taggedMemorySizeInBytes = objectContract.GetTaggedMemorySize();
                 }
                 else
                 {

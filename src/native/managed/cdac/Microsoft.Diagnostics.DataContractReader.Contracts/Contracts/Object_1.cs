@@ -14,6 +14,7 @@ internal readonly struct Object_1 : IObject
     private readonly byte _objectToMethodTableUnmask;
     private readonly TargetPointer _stringMethodTable;
     private readonly TargetPointer _syncTableEntries;
+    private readonly nuint _taggedMemorySize;
 
     private static class SyncBlockValue
     {
@@ -37,6 +38,7 @@ internal readonly struct Object_1 : IObject
         _stringMethodTable = stringMethodTable;
         _objectToMethodTableUnmask = objectToMethodTableUnmask;
         _syncTableEntries = syncTableEntries;
+        _taggedMemorySize = 2 * (nuint)target.PointerSize;
     }
 
     public TargetPointer GetMethodTableAddress(TargetPointer address)
@@ -115,10 +117,15 @@ internal readonly struct Object_1 : IObject
         return rcw != TargetPointer.Null || ccw != TargetPointer.Null;
     }
 
-    public TargetPointer? TaggedMemory(TargetPointer address)
+    public TargetPointer TaggedMemory(TargetPointer address)
     {
         Data.SyncBlock? syncBlock = GetSyncBlock(address);
-        return syncBlock?.InteropInfo?.TaggedMemory;
+        return syncBlock?.InteropInfo?.TaggedMemory ?? TargetPointer.Null;
+    }
+
+    public nuint GetTaggedMemorySize()
+    {
+        return _taggedMemorySize;
     }
 
     private Data.SyncBlock? GetSyncBlock(TargetPointer address)
