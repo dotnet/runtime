@@ -21,6 +21,9 @@ internal static class TypeNameHelpers
     private static readonly TypeName?[] s_primitiveSZArrayTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
     private static AssemblyNameInfo? s_coreLibAssemblyName;
 
+    internal static AssemblyNameInfo CoreLibAssemblyName
+        => s_coreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan());
+
     internal static TypeName GetPrimitiveTypeName(PrimitiveType primitiveType)
     {
         TypeName? typeName = s_primitiveTypeNames[(int)primitiveType];
@@ -155,7 +158,7 @@ internal static class TypeNameHelpers
                 .WithCoreLibAssemblyName(); // We know it's a System Record, so we set the LibraryName to CoreLib
 
     internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
-        => systemType.With(s_coreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan()));
+        => systemType.With(CoreLibAssemblyName);
 
     private static TypeName With(this TypeName typeName, AssemblyNameInfo assemblyName)
     {
