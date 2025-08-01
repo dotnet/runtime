@@ -93,7 +93,7 @@ namespace ILCompiler
             {
                 string suffix = _target.IsApplePlatform ? ".dylib" : ".so";
                 bool hasSharedLibraryExtension = name.EndsWith(suffix, StringComparison.Ordinal);
-                bool hasLibPrefix = name.StartsWith("lib");
+                bool hasLibPrefix = name.StartsWith("lib", StringComparison.Ordinal);
 
                 if (hasSharedLibraryExtension)
                     yield return name.Substring(0, name.Length - suffix.Length);
