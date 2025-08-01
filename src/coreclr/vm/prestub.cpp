@@ -2210,7 +2210,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
         pCode = PrepareInitialCode(callerGCMode);
     } // end else if (IsIL() || IsNoMetadata())
-    else if (IsNDirect())
+    else if (IsPInvoke())
     {
         if (GetModule()->IsReadyToRun() && MayUsePrecompiledILStub())
         {
@@ -2359,7 +2359,7 @@ PCODE TheUMThunkPreStub()
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
 }
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
