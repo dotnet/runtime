@@ -72,5 +72,8 @@ extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP
 
+extern "C" int QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack obj);
+extern "C" OBJECTHANDLE QCALLTYPE SyncTable_GetLockHandle(int index);
+
 #endif // _COMSYNCHRONIZABLE_H
 

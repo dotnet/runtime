@@ -513,6 +513,20 @@ namespace System.Threading
             static void PollGCWorker() => PollGCInternal();
         }
 
+        private void PulseThreadObject()
+        {
+            try
+            {
+                Monitor.Enter(this);
+                Monitor.PulseAll(this);
+                Monitor.Exit(this);
+            }
+            catch (Exception)
+            {
+                // Just keep going
+            }
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct NativeThreadClass
         {

@@ -323,14 +323,6 @@ FCFuncStart(gJitInfoFuncs)
     FCFuncElement("GetCompilationTimeInTicks", GetCompilationTimeInTicks)
 FCFuncEnd()
 
-FCFuncStart(gMonitorFuncs)
-    FCFuncElement("IsEnteredNative", ObjectNative::IsLockHeld)
-
-    FCFuncElement("TryEnter_FastPath", ObjectNative::Monitor_TryEnter_FastPath)
-    FCFuncElement("TryEnter_FastPath_WithTimeout", ObjectNative::Monitor_TryEnter_FastPath_WithTimeout)
-    FCFuncElement("Exit_FastPath", ObjectNative::Monitor_Exit_FastPath)
-FCFuncEnd()
-
 FCFuncStart(gRuntimeHelpers)
     FCFuncElement("TryGetHashCode", ObjectNative::TryGetHashCode)
     FCFuncElement("ContentEquals", ObjectNative::ContentEquals)
@@ -398,7 +390,6 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
-FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)

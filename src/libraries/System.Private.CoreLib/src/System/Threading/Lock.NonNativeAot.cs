@@ -22,20 +22,63 @@ namespace System.Threading
         internal int OwningManagedThreadId => 0;
 #pragma warning restore CA1822
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryEnterOneShot(int currentManagedThreadId)
+        {
+            Debug.Assert(currentManagedThreadId != 0);
+
+            if (State.TryLock(this))
+            {
+                Debug.Assert(_owningThreadId == 0);
+                Debug.Assert(_recursionCount == 0);
+                _owningThreadId = (uint)currentManagedThreadId;
+                return true;
+            }
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryEnterSlow(int timeoutMs, int currentManagedThreadId) =>
+            TryEnterSlow(timeoutMs, new ThreadId((uint)currentManagedThreadId)).IsInitialized;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void Exit(int currentManagedThreadId)
+        {
+            Debug.Assert(currentManagedThreadId != 0);
+
+            if (_owningThreadId != (uint)currentManagedThreadId)
+            {
+                ThrowHelper.ThrowSynchronizationLockException_LockExit();
+            }
+
+            ExitImpl();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool GetIsHeldByCurrentThread(int currentManagedThreadId)
+        {
+            Debug.Assert(currentManagedThreadId != 0);
+
+            bool isHeld = _owningThreadId == (uint)currentManagedThreadId;
+            Debug.Assert(!isHeld || new State(this).IsLocked);
+            return isHeld;
+        }
+
+        internal void InitializeToLockedWithNoWaiters(int currentManagedThreadId, uint recursionLevel)
+        {
+            Debug.Assert(currentManagedThreadId != 0);
+
+            _owningThreadId = (uint)currentManagedThreadId;
+            _recursionCount = recursionLevel;
+            _state = State.LockedStateValue;
+        }
+
         private static TryLockResult LazyInitializeOrEnter() => TryLockResult.Spin;
-        private static bool IsSingleProcessor => Environment.IsSingleProcessor;
+        internal static bool IsSingleProcessor => Environment.IsSingleProcessor;
 
         internal partial struct ThreadId
         {
-#if TARGET_OSX
-            [ThreadStatic]
-            private static ulong t_threadId;
-
-            private ulong _id;
-
-            public ThreadId(ulong id) => _id = id;
-            public ulong Id => _id;
-#else
             [ThreadStatic]
             private static uint t_threadId;
 
@@ -43,7 +86,6 @@ namespace System.Threading
 
             public ThreadId(uint id) => _id = id;
             public uint Id => _id;
-#endif
 
             public bool IsInitialized => _id != 0;
             public static ThreadId Current_NoInitialize => new ThreadId(t_threadId);
@@ -53,26 +95,7 @@ namespace System.Threading
                 Debug.Assert(!IsInitialized);
                 Debug.Assert(t_threadId == 0);
 
-#if TARGET_WINDOWS
-                uint id = (uint)Interop.Kernel32.GetCurrentThreadId();
-#elif TARGET_OSX
-                ulong id = Interop.Sys.GetUInt64OSThreadId();
-#else
-                uint id = Interop.Sys.TryGetUInt32OSThreadId();
-                if (id == unchecked((uint)-1))
-                {
-                    id = (uint)Environment.CurrentManagedThreadId;
-                    Debug.Assert(id != 0);
-                }
-                else
-#endif
-
-                if (id == 0)
-                {
-                    id--;
-                }
-
-                t_threadId = _id = id;
+                t_threadId = _id = (uint)Environment.CurrentManagedThreadId;
                 Debug.Assert(IsInitialized);
             }
         }
