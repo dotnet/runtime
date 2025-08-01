@@ -5,7 +5,12 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    public partial struct ECCurve
+#if NETFRAMEWORK
+    internal
+#else
+    public
+#endif
+    partial struct ECCurve
     {
         /// <summary>
         /// Represents the type of elliptic curve.

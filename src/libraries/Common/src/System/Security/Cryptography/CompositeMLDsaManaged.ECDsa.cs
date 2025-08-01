@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
@@ -37,79 +41,88 @@ namespace System.Security.Cryptography
             public static ECDsaComponent GenerateKey(ECDsaAlgorithm algorithm)
             {
 #if NET
-                ECDsa? ecdsa = null;
-
-                try
-                {
-                    ecdsa = algorithm.CurveOid switch
-                    {
-                        Oids.secp256r1 => ECDsa.Create(ECCurve.NamedCurves.nistP256),
-                        Oids.secp384r1 => ECDsa.Create(ECCurve.NamedCurves.nistP384),
-                        Oids.secp521r1 => ECDsa.Create(ECCurve.NamedCurves.nistP521),
-                        string oid => FailAndThrow<ECDsa>(oid)
-                    };
-
-                    static T FailAndThrow<T>(string oid)
-                    {
-                        Debug.Fail($"EC-DSA curve not supported ({oid})");
-                        throw new CryptographicException();
-                    }
-
-                    // DSA key generation is lazy, so we need to force it to happen eagerly.
-                    ecdsa.ExportParameters(includePrivateParameters: false);
-
-                    return new ECDsaComponent(ecdsa, algorithm);
-                }
-                catch (CryptographicException)
-                {
-                    ecdsa?.Dispose();
-                    throw;
-                }
+                return new ECDsaComponent(ECDsa.Create(algorithm.Curve), algorithm);
 #else
                 throw new PlatformNotSupportedException();
 #endif
             }
 
-            public static ECDsaComponent ImportPrivateKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+            public static unsafe ECDsaComponent ImportPrivateKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
-#if NET
-                ECDsa? ecdsa = null;
-
                 try
                 {
-                    ecdsa = ECDsa.Create();
-                    ecdsa.ImportECPrivateKey(source, out int bytesRead);
+                    AsnDecoder.ReadEncodedValue(
+                        source,
+                        AsnEncodingRules.BER,
+                        out _,
+                        out _,
+                        out int firstValueLength);
 
-                    if (bytesRead != source.Length)
+                    if (firstValueLength != source.Length)
                     {
-                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
-                    }
-
-                    ECParameters parameters = ecdsa.ExportParameters(includePrivateParameters: false);
-
-                    if (!parameters.Curve.IsNamed || parameters.Curve.Oid.Value != algorithm.CurveOid)
-                    {
-                        // The curve specified in ECDomainParameters of ECPrivateKey do not match the required curve for
-                        // the Composite ML-DSA algorithm.
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
 
-                    return new ECDsaComponent(ecdsa, algorithm);
-                }
-                catch (CryptographicException)
-                {
-                    ecdsa?.Dispose();
-                    throw;
-                }
+                    fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+                    {
+                        using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, firstValueLength))
+                        {
+                            ECPrivateKey ecPrivateKey = ECPrivateKey.Decode(manager.Memory, AsnEncodingRules.BER);
+
+                            if (ecPrivateKey.Version != 1)
+                            {
+                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                            }
+
+                            // If domain parameters are present, validate that they match the composite ML-DSA algorithm.
+                            if (ecPrivateKey.Parameters is ECDomainParameters domainParameters)
+                            {
+                                if (domainParameters.Named is not string curveOid || curveOid != algorithm.CurveOid)
+                                {
+                                    // The curve specified must be named and match the required curve for the composite ML-DSA algorithm.
+                                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                                }
+                            }
+
+                            ECParameters parameters = new ECParameters
+                            {
+                                Curve = algorithm.Curve,
+                            };
+
+                            // If public key is present, add it to the parameters.
+                            if (ecPrivateKey.PublicKey is ReadOnlyMemory<byte> publicKey)
+                            {
+                                parameters.Q = EccKeyFormatHelper.GetECPointFromUncompressedPublicKey(publicKey.Span, algorithm.KeySizeInBytes);
+                            }
+
+                            byte[] d = new byte[ecPrivateKey.PrivateKey.Length];
+
+                            using (PinAndClear.Track(d))
+                            {
+                                ecPrivateKey.PrivateKey.CopyTo(d);
+                                parameters.D = d;
+
+                                parameters.Validate();
+
+#if NET
+                                return new ECDsaComponent(ECDsa.Create(parameters), algorithm);
 #else
-                throw new PlatformNotSupportedException();
+                                throw new PlatformNotSupportedException();
 #endif
+                            }
+                        }
+                    }
+                }
+                catch (AsnContentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+
             }
 
             public static unsafe ECDsaComponent ImportPublicKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
-#if NET
-                int fieldWidth = (algorithm.KeySizeInBits + 7) / 8;
+                int fieldWidth = algorithm.KeySizeInBytes;
 
                 if (source.Length != 1 + fieldWidth * 2)
                 {
@@ -134,6 +147,7 @@ namespace System.Security.Cryptography
                     }
                 };
 
+#if NET
                 ECDsa? ecdsa = null;
 
                 try
@@ -163,7 +177,7 @@ namespace System.Security.Cryptography
             internal override bool TryExportPublicKey(Span<byte> destination, out int bytesWritten)
             {
 #if NET
-                int fieldWidth = (_algorithm.KeySizeInBits + 7) / 8;
+                int fieldWidth = _algorithm.KeySizeInBytes;
 
                 if (destination.Length < 1 + 2 * fieldWidth)
                 {

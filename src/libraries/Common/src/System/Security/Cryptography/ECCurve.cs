@@ -14,7 +14,13 @@ namespace System.Security.Cryptography
     /// which is either a prime curve or a characteristic-2 curve.
     /// </remarks>
     [DebuggerDisplay("ECCurve = {Oid}")]
-    public partial struct ECCurve
+#if NETFRAMEWORK
+#pragma warning disable CS0649 // Field 'ECCurve.G' is never assigned to, and will always have its default value
+    internal
+#else
+    public
+#endif
+    partial struct ECCurve
     {
         /// <summary>
         /// Coefficient A. Applies only to Explicit curves.

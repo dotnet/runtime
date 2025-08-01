@@ -727,6 +727,28 @@ namespace System.Security.Cryptography
             internal int KeySizeInBits { get; } = keySizeInBits;
             internal HashAlgorithmName HashAlgorithmName { get; } = hashAlgorithmName;
             internal string CurveOid { get; } = curveOid;
+
+            internal int KeySizeInBytes => (KeySizeInBits + 7) / 8;
+
+            internal ECCurve Curve
+            {
+                get
+                {
+                    return CurveOid switch
+                    {
+                        Oids.secp256r1 => ECCurve.NamedCurves.nistP256,
+                        Oids.secp384r1 => ECCurve.NamedCurves.nistP384,
+                        Oids.secp521r1 => ECCurve.NamedCurves.nistP521,
+                        string oid => FailAndThrow(oid)
+                    };
+
+                    static ECCurve FailAndThrow(string oid)
+                    {
+                        Debug.Fail($"EC-DSA curve not supported ({oid})");
+                        throw new CryptographicException();
+                    }
+                }
+            }
         }
 
         private sealed class EdDsaAlgorithm

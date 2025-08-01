@@ -6,7 +6,12 @@ namespace System.Security.Cryptography
     /// <summary>
     /// Represents the public and private key of the specified elliptic curve.
     /// </summary>
-    public struct ECParameters
+#if NETFRAMEWORK
+    internal
+#else
+    public
+#endif
+    struct ECParameters
     {
         /// <summary>
         /// Public point.

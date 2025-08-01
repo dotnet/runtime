@@ -6,7 +6,12 @@ namespace System.Security.Cryptography
     /// <summary>
     /// Represents a point on an elliptic curve.
     /// </summary>
-    public struct ECPoint
+#if NETFRAMEWORK
+    internal
+#else
+    public
+#endif
+    struct ECPoint
     {
         public byte[]? X;
         public byte[]? Y;
