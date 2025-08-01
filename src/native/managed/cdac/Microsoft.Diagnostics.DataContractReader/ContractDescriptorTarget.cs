@@ -127,6 +127,16 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 descriptor.Config.PointerSize != _config.PointerSize)
                 throw new InvalidOperationException("All descriptors must have the same endianness and pointer size.");
 
+            // Read contracts and add to map
+            foreach ((string name, int version) in descriptor.ContractDescriptor.Contracts ?? [])
+            {
+                if (_contracts.ContainsKey(name))
+                {
+                    throw new InvalidOperationException($"Duplicate contract name '{name}' found in contract descriptor.");
+                }
+                _contracts[name] = version;
+            }
+
             // Read types and map to known data types
             if (descriptor.ContractDescriptor.Types is not null)
             {
