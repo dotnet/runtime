@@ -52,7 +52,7 @@ namespace System.Linq
             public override List<TResult> ToList()
             {
                 List<TResult> list = new List<TResult>(_source.Count);
-                for (int i = 0; i < _source.Count; i++)
+                for (int i = 0; i < list.Count; i++)
                 {
                     list.Add(_selector(_source[i]));
                 }
