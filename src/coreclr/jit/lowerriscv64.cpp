@@ -131,7 +131,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenTreeOpCC* jcmp = jtrue->AsOpCC();
     if (cmp->OperIsCompare() && !varTypeIsFloating(cmp->gtGetOp1()))
     {
-        // Branch instructions are fused with a full range of integer comparisons so just remove the comparison
         jcmp->gtCondition = GenCondition::FromIntegralRelop(cmp);
         jcmp->gtOp1       = cmp->gtGetOp1();
         jcmp->gtOp2       = cmp->gtGetOp2();

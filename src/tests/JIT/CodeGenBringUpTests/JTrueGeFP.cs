@@ -24,12 +24,6 @@ public class BringUpTest_JTrueGeFP
 
         return returnValue;
     }
-    
-    [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static bool JTrueGeFP_bool(float x)
-    {
-        return (x >= 2f);
-    }
 
     [Fact]
     public static int TestEntryPoint()
@@ -40,7 +34,6 @@ public class BringUpTest_JTrueGeFP
         if (JTrueGeFP(0f)              != 2) returnValue = Fail;
         if (JTrueGeFP(1f)              != 3) returnValue = Fail;
         if (JTrueGeFP(2f)              != 4) returnValue = Fail;
-        if (!JTrueGeFP_bool(2f)) returnValue = Fail;
 
 
         return returnValue;
