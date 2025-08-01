@@ -33,7 +33,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal TargetPointer EEClassOrCanonMT { get; }
         internal TargetPointer PerInstInfo { get; }
         internal TargetPointer AuxiliaryData { get; }
-        internal TargetPointer DynamicStaticsInfoSize { get; }
         internal MethodTable(Data.MethodTable data)
         {
             Flags = new MethodTableFlags_1
