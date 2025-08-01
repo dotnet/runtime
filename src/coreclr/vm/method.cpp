@@ -2484,6 +2484,10 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention()
     if (IsCLRToCOMCall())
         return TRUE;
 
+    // Interop marshalling of vararg needs MethodDesc calling convention
+    if (IsPInvoke() && IsVarArg())
+        return TRUE;
+
     return FALSE;
 }
 
