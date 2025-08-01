@@ -9040,9 +9040,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
         if (lastNode->OperIs(GT_JTRUE, GT_JCMP, GT_JTEST))
         {
-            assert(lastNode->OperIs(GT_JTRUE)
-                       ? !lastNode->gtGetOp1()->isContained()
-                       : (!lastNode->gtGetOp1()->isContained() || !lastNode->gtGetOp2()->isContained()));
+            assert(!lastNode->OperIs(GT_JTRUE) || !lastNode->gtGetOp1()->isContained());
             if (!lastNode->gtGetOp1()->isContained())
             {
                 GenTree* op = lastNode->gtGetOp1();
