@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-class BaseTests
+static class BaseTests
 {
     public static (string templateFileName, Dictionary<string, string> templateData)[] ArmBaseInputs =
     {

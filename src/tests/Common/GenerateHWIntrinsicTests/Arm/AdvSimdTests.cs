@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-class AdvSimdTests
+static class AdvSimdTests
 {
 
     public static (string templateFileName, Dictionary<string, string> templateData)[] AdvSimdInputs =

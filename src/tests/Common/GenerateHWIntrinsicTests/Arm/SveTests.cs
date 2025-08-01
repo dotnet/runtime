@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-class SveTests
+static class SveTests
 {
     public static (string templateFileName, Dictionary<string, string> templateData)[] SveInputs =
     {
