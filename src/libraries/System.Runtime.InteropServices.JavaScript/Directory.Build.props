@@ -3,5 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 </Project>

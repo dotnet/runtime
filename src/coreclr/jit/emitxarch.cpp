@@ -5195,7 +5195,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
         {
             ssize_t compressedDsp;
 
-            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
+            // Only the scaling factor of the original EVEX instructions can be changed by embedded broadcast.
+            // If the instruction does not have tuple type info, say extended EVEX from APX, the scaling factor is
+            // constantly 1, then this optimization cannot be performed, and whether disp8 or disp32 should be applied
+            // only depends dspInByte.
+            if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
             {
                 SetEvexCompressedDisplacement(id);
             }
@@ -5368,7 +5372,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     {
         ssize_t compressedDsp;
 
-        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte))
+        if (TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins))
         {
             SetEvexCompressedDisplacement(id);
         }
@@ -14672,13 +14676,16 @@ GOT_DSP:
             assert(isCompressed && dspInByte);
             dsp = compressedDsp;
         }
-        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins))
         {
-            assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
+            assert(!(TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte) && hasTupleTypeInfo(ins)));
             dspInByte = false;
         }
         else
         {
+            // TODO-XArch-APX: for now, Extended Evex instruction will not have compressed displacement, or more
+            // accurately, extended evex may not have compressed displacement optimization as the scaling factor is
+            // constantly 1.
             dspInByte = ((signed char)dsp == (ssize_t)dsp);
         }
         dspIsZero = (dsp == 0);
@@ -15556,7 +15563,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             assert(isCompressed && dspInByte);
             dsp = (int)compressedDsp;
         }
-        else if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
+        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins))
         {
 #if FEATURE_FIXED_OUT_ARGS
             // TODO-AMD64-CQ: We should be able to accurately predict this when FEATURE_FIXED_OUT_ARGS
@@ -17904,6 +17911,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             idAmd->idCodeSize(sz);
 
             code = insCodeRM(ins);
+            code = AddX86PrefixIfNeeded(id, code, id->idOpSize());
             code |= (insEncodeReg345(id, id->idReg1(), EA_PTRSIZE, &code) << 8);
 
             dst = emitOutputAM(dst, idAmd, code, nullptr);
