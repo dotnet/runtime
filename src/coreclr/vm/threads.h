@@ -126,7 +126,7 @@ class     ThreadStore;
 class     MethodDesc;
 struct    PendingSync;
 class     AppDomain;
-class     NDirect;
+class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;

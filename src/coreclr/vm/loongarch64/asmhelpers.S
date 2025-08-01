@@ -359,8 +359,8 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     //                            $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0xa0
@@ -369,7 +369,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     SAVE_FLOAT_ARGUMENT_REGISTERS  $sp, 0x60
 
     ori  $a0, $t2, 0
-    bl C_FUNC(NDirectImportWorker)
+    bl C_FUNC(PInvokeImportWorker)
     ori  $t4,$a0,0
 
     // pop the stack and restore original register state
@@ -379,10 +379,10 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     //                              $fp,$ra
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0xa0
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  $t4
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 #ifdef FEATURE_PREJIT
 //------------------------------------------------
