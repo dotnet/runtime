@@ -20,7 +20,7 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
 
 static void InheritFlags(BasicBlock* dst, const BasicBlock* flagSrc)
 {
-    // Currently, all of our "new block" helpers set BBF_INTERNAL block by default.
+    // Currently, all of our "new block" helpers set BBF_INTERNAL flag by default.
     if (!flagSrc->HasFlag(BBF_INTERNAL))
     {
         dst->RemoveFlags(BBF_INTERNAL);
