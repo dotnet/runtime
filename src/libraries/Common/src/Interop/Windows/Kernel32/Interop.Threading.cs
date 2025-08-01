@@ -19,6 +19,9 @@ internal static partial class Interop
         internal static partial uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
         [LibraryImport(Libraries.Kernel32)]
+        internal static partial uint WaitForSingleObjectEx(IntPtr hHandle, uint dwMilliseconds, BOOL bAlertable);
+
+        [LibraryImport(Libraries.Kernel32)]
         internal static partial uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, BOOL bAlertable);
 
         internal const uint CREATE_SUSPENDED = 0x00000004;

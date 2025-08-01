@@ -134,15 +134,12 @@ namespace System.Threading
                 startTime = Environment.TickCount64;
             }
 
-            int ret;
-            while (true)
+            // Signal the object and wait for the first time
+            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+
+            // Handle APC completion by retrying with WaitForSingleObjectEx (without signaling again)
+            while (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
             {
-                ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
-
-                if (ret != Interop.Kernel32.WAIT_IO_COMPLETION)
-                    break;
-
-                // Handle APC completion by adjusting timeout and retrying
                 if (millisecondsTimeout != -1)
                 {
                     long currentTime = Environment.TickCount64;
@@ -156,6 +153,9 @@ namespace System.Threading
                     millisecondsTimeout -= (int)elapsed;
                     startTime = currentTime;
                 }
+
+                // For retries, only wait on the handle (don't signal again)
+                ret = (int)Interop.Kernel32.WaitForSingleObjectEx(handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
             }
             if (ret == Interop.Kernel32.WAIT_FAILED)
             {
