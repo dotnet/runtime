@@ -49,20 +49,49 @@ namespace System.Threading
             Thread currentThread = Thread.CurrentThread;
             currentThread.SetWaitSleepJoinState();
 
+            ulong startTime = 0;
+            if (millisecondsTimeout != -1)
+            {
+                startTime = Interop.Kernel32.GetTickCount64();
+            }
+
+        retry:
 #if NATIVEAOT
             int result;
             if (reentrantWait)
             {
                 Debug.Assert(!waitAll);
-                result = RuntimeImports.RhCompatibleReentrantWaitAny(false, millisecondsTimeout, numHandles, pHandles);
+                result = RuntimeImports.RhCompatibleReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles);
             }
             else
             {
-                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
             }
 #else
-            int result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+            int result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 #endif
+
+            if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+            {
+                // Handle APC completion by adjusting timeout and retrying
+                if (millisecondsTimeout != -1)
+                {
+                    ulong currentTime = Interop.Kernel32.GetTickCount64();
+                    ulong elapsed = currentTime - startTime;
+                    
+                    if (elapsed >= (ulong)millisecondsTimeout)
+                    {
+                        result = Interop.Kernel32.WAIT_TIMEOUT;
+                        goto WaitCompleted;
+                    }
+                    
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+                goto retry;
+            }
+
+        WaitCompleted:
             currentThread.ClearWaitSleepJoinState();
 
             if (result == Interop.Kernel32.WAIT_FAILED)
@@ -102,8 +131,36 @@ namespace System.Threading
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+            ulong startTime = 0;
+            if (millisecondsTimeout != -1)
+            {
+                startTime = Interop.Kernel32.GetTickCount64();
+            }
 
+        retry:
+            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+
+            if (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
+            {
+                // Handle APC completion by adjusting timeout and retrying
+                if (millisecondsTimeout != -1)
+                {
+                    ulong currentTime = Interop.Kernel32.GetTickCount64();
+                    ulong elapsed = currentTime - startTime;
+                    
+                    if (elapsed >= (ulong)millisecondsTimeout)
+                    {
+                        ret = Interop.Kernel32.WAIT_TIMEOUT;
+                        goto WaitCompleted;
+                    }
+                    
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+                goto retry;
+            }
+
+        WaitCompleted:
             if (ret == Interop.Kernel32.WAIT_FAILED)
             {
                 ThrowWaitFailedException(Interop.Kernel32.GetLastError());

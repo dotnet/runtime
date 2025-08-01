@@ -10,6 +10,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         internal const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
+        internal const int WAIT_IO_COMPLETION = 0x000000C0;
 
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, BOOL bWaitAll, uint dwMilliseconds, BOOL bAlertable);
