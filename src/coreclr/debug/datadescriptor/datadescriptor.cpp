@@ -223,11 +223,12 @@ struct BinaryBlobDataDescriptor
     } Directory;
     uint32_t PlatformFlags;
     uint32_t BaselineName;
-    struct TypeSpec Types[CDacBlobTypesCount];
-    struct FieldSpec FieldsPool[CDacBlobFieldsPoolCount];
-    struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount];
-    struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount];
-    struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount];
+    // cpp does not allow zero-length arrays, so we add one extra element to allow having zero of a given type of descriptor
+    struct TypeSpec Types[CDacBlobTypesCount + 1];
+    struct FieldSpec FieldsPool[CDacBlobFieldsPoolCount + 1];
+    struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount + 1];
+    struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount + 1];
+    struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount + 1];
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
     uint8_t EndMagic[4];
 };
