@@ -373,7 +373,7 @@ namespace System
                     fallbackEnv = "windir";
                     break;
                 default:
-                    Debug.Assert(Enum.IsDefined(folder), $"Unexpected SpecialFolder value: {folder}. Please ensure all SpecialFolder enum values are handled in the switch statement.");
+                    Debug.Assert(!Enum.IsDefined(folder), $"Unexpected SpecialFolder value: {folder}. Please ensure all SpecialFolder enum values are handled in the switch statement.");
                     throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
             }
 
