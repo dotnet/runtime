@@ -71,12 +71,10 @@
     <Compile Include="System\Linq\Single.cs" />
     <Compile Include="System\Linq\SingleLinkedNode.cs" />
     <Compile Include="System\Linq\Skip.cs" />
-    <Compile Include="System\Linq\Skip.SizeOpt.cs" />
     <Compile Include="System\Linq\Skip.SpeedOpt.cs" />
     <Compile Include="System\Linq\SkipTake.SpeedOpt.cs" />
     <Compile Include="System\Linq\Sum.cs" />
     <Compile Include="System\Linq\Take.cs" />
-    <Compile Include="System\Linq\Take.SizeOpt.cs" />
     <Compile Include="System\Linq\Take.SpeedOpt.cs" />
     <Compile Include="System\Linq\ThrowHelper.cs" />
     <Compile Include="System\Linq\ToCollection.cs" />
