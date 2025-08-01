@@ -1473,7 +1473,7 @@ mono_get_frame_info (gint32 skip,
 
 	g_assert (skip >= 0);
 
-	if (mono_llvm_only) {
+	if (mono_llvm_only && !mono_use_interpreter) {
 		GSList *l, *ips;
 		guint8 *frame_ip = NULL;
 
@@ -1522,6 +1522,7 @@ mono_get_frame_info (gint32 skip,
 			case FRAME_TYPE_INTERP_ENTRY:
 			case FRAME_TYPE_JIT_ENTRY:
 				continue;
+			case FRAME_TYPE_IL_STATE:
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
 				ji = frame.ji;
