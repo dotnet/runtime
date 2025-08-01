@@ -758,10 +758,11 @@ public static partial class XmlSerializerTests
 
         var actual = SerializeAndDeserialize<TypeWithXmlTextAttributeOnArray>(original,
 @"<?xml version=""1.0""?>
-<TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1val2</TypeWithXmlTextAttributeOnArray>");
+<TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1 val2</TypeWithXmlTextAttributeOnArray>");
         Assert.NotNull(actual.Text);
-        Assert.StrictEqual(1, actual.Text.Length);
-        Assert.Equal("val1val2", actual.Text[0]);
+        Assert.StrictEqual(2, actual.Text.Length);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val2", actual.Text[1]);
     }
 
     [Fact]

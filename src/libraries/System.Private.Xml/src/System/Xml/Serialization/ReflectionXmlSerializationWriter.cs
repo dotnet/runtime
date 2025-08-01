@@ -360,7 +360,12 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    if (!WritePrimitiveValue(primitiveMapping.TypeDesc!, o, out stringValue))
+                    // Handle string arrays as space-separated lists for XML Schema list types
+                    if (o is string[] stringArray)
+                    {
+                        stringValue = string.Join(" ", stringArray);
+                    }
+                    else if (!WritePrimitiveValue(primitiveMapping.TypeDesc!, o, out stringValue))
                     {
                         Debug.Assert(o is byte[]);
                     }
