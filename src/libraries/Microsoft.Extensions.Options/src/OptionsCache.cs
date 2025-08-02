@@ -16,11 +16,16 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
+        private Lazy<TOptions>? _defaultOptions = null;
 
         /// <summary>
         /// Clears all options instances from the cache.
         /// </summary>
-        public void Clear() => _cache.Clear();
+        public void Clear()
+        {
+            _defaultOptions = null;
+            _cache.Clear();
+        }
 
         /// <summary>
         /// Gets a named options instance, or adds a new instance created with <paramref name="createOptions"/>.
@@ -34,6 +39,21 @@ namespace Microsoft.Extensions.Options
 
             name ??= Options.DefaultName;
             Lazy<TOptions> value;
+
+            if (name == Options.DefaultName)
+            {
+                if (_defaultOptions is null)
+                {
+                    // We need a reference to the new instance to be able to return it. Usage of `return _defaultOptions.Value`
+                    // could technically save us some allocations but it would have a risk of sneaky race condition of .Clear
+                    // being called between the Interlocked.CompareExchange call assigning new value and the return, leading to NRE.
+                    var newDefaultOptions = new Lazy<TOptions>(createOptions);
+                    var result = Interlocked.CompareExchange(ref _defaultOptions, newDefaultOptions, null);
+
+                    return result is not null ? result.Value : newDefaultOptions.Value;
+                }
+                return _defaultOptions.Value;
+            }
 
 #if NET || NETSTANDARD2_1
             value = _cache.GetOrAdd(name, static (name, createOptions) => new Lazy<TOptions>(createOptions), createOptions);
@@ -51,6 +71,22 @@ namespace Microsoft.Extensions.Options
         {
             // For compatibility, fall back to public GetOrAdd() if we're in a derived class.
             // For simplicity, we do the same for older frameworks that don't support the factoryArgument overload of GetOrAdd().
+            name ??= Options.DefaultName;
+            if (name == Options.DefaultName)
+            {
+                if (_defaultOptions is null)
+                {
+                    // We need a reference to the new instance to be able to return it. Usage of `return _defaultOptions.Value`
+                    // could technically save us some allocations but it would have a risk of sneaky race condition of .Clear
+                    // being called between the Interlocked.CompareExchange call assigning new value and the return, leading to NRE.
+                    var newDefaultOptions = new Lazy<TOptions>(() => createOptions(Options.DefaultName, factoryArgument));
+                    var result = Interlocked.CompareExchange(ref _defaultOptions, newDefaultOptions, null);
+
+                    return result is not null ? result.Value : newDefaultOptions.Value;
+                }
+                return _defaultOptions.Value;
+            }
+
 #if NET || NETSTANDARD2_1
             if (GetType() != typeof(OptionsCache<TOptions>))
 #endif
@@ -59,7 +95,7 @@ namespace Microsoft.Extensions.Options
                 string? localName = name;
                 Func<string, TArg, TOptions> localCreateOptions = createOptions;
                 TArg localFactoryArgument = factoryArgument;
-                return GetOrAdd(name, () => localCreateOptions(localName ?? Options.DefaultName, localFactoryArgument));
+                return GetOrAdd(name, () => localCreateOptions(localName, localFactoryArgument));
             }
 
 #if NET || NETSTANDARD2_1
@@ -77,7 +113,19 @@ namespace Microsoft.Extensions.Options
         /// <returns><see langword="true"/> if the options were retrieved; otherwise, <see langword="false"/>.</returns>
         internal bool TryGetValue(string? name, [MaybeNullWhen(false)] out TOptions options)
         {
-            if (_cache.TryGetValue(name ?? Options.DefaultName, out Lazy<TOptions>? lazy))
+            name ??= Options.DefaultName;
+            if (name == Options.DefaultName)
+            {
+                if (_defaultOptions is { } defaultOptions)
+                {
+                    options = defaultOptions.Value;
+                    return true;
+                }
+                options = default;
+                return false;
+            }
+
+            if (_cache.TryGetValue(name, out Lazy<TOptions>? lazy))
             {
                 options = lazy.Value;
                 return true;
@@ -97,7 +145,18 @@ namespace Microsoft.Extensions.Options
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            return _cache.TryAdd(name ?? Options.DefaultName, new Lazy<TOptions>(
+            name ??= Options.DefaultName;
+            if (name == Options.DefaultName)
+            {
+                if (_defaultOptions is not null)
+                {
+                    return false; // Default options already exist
+                }
+                var result = Interlocked.CompareExchange(ref _defaultOptions, new Lazy<TOptions>(() => options), null);
+                return result is null;
+            }
+
+            return _cache.TryAdd(name, new Lazy<TOptions>(
 #if !(NET || NETSTANDARD2_1)
                 () =>
 #endif
@@ -109,7 +168,20 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <returns><see langword="true"/> if anything was removed; otherwise, <see langword="false"/>.</returns>
-        public virtual bool TryRemove(string? name) =>
-            _cache.TryRemove(name ?? Options.DefaultName, out _);
+        public virtual bool TryRemove(string? name)
+        {
+            name ??= Options.DefaultName;
+            if (name == Options.DefaultName)
+            {
+                if (_defaultOptions is not null)
+                {
+                    var result = Interlocked.Exchange(ref _defaultOptions, null);
+                    return result is not null;
+                }
+                return false;
+            }
+
+            return _cache.TryRemove(name, out _);
+        }
     }
 }
