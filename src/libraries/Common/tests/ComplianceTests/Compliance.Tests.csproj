@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="GB18030\TestHelper.cs" />
+    <Compile Include="GB18030\Tests\ConsoleTests.cs" />
+    <Compile Include="GB18030\Tests\DirectoryInfoTests.cs" />
+    <Compile Include="GB18030\Tests\DirectoryTestBase.cs" />
+    <Compile Include="GB18030\Tests\DirectoryTests.cs" />
+    <Compile Include="GB18030\Tests\EncodingTests.cs" />
+    <Compile Include="GB18030\Tests\FileInfoTests.cs" />
+    <Compile Include="GB18030\Tests\FileTestBase.cs" />
+    <Compile Include="GB18030\Tests\FileTests.cs" />
+    <Compile Include="GB18030\Tests\StringTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="GB18030\Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
