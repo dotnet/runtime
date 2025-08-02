@@ -611,7 +611,7 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new ApplicationException();
             }
 
-            if (!RuntimeImports.AreTypesAssignable(pMarshallerType.ToMethodTable(), MethodTable.Of<ICustomMarshaler>()))
+            if (!RuntimeImports.AreTypesAssignable(pMarshallerType.ToMethodTable(), MethodTable.ForCastingOf<ICustomMarshaler>()))
             {
                 throw new ApplicationException();
             }
@@ -622,7 +622,7 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new ApplicationException();
             }
 
-            if (!RuntimeImports.AreTypesAssignable(marshaller.GetMethodTable(), MethodTable.Of<ICustomMarshaler>()))
+            if (!RuntimeImports.AreTypesAssignable(marshaller.GetMethodTable(), MethodTable.ForCastingOf<ICustomMarshaler>()))
             {
                 throw new ApplicationException();
             }

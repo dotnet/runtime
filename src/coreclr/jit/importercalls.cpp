@@ -3518,6 +3518,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // Intrinsics that we should always expand for NativeAOT. These are
             // required to be expanded due to ILScanner assumptions.
             case NI_Internal_Runtime_MethodTable_Of:
+            case NI_Internal_Runtime_MethodTable_ForCastingOf:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
@@ -3753,6 +3754,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
             case NI_Internal_Runtime_MethodTable_Of:
+            case NI_Internal_Runtime_MethodTable_ForCastingOf:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
             {
@@ -11084,6 +11086,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "Of") == 0)
             {
                 result = NI_Internal_Runtime_MethodTable_Of;
+            }
+            else if (strcmp(methodName, "ForCastingOf") == 0)
+            {
+                result = NI_Internal_Runtime_MethodTable_ForCastingOf;
             }
         }
     }
