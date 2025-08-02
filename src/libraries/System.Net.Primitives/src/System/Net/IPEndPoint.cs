@@ -4,13 +4,14 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Sockets;
+using System.Text.Unicode;
 
 namespace System.Net
 {
     /// <summary>
     /// Provides an IP address.
     /// </summary>
-    public class IPEndPoint : EndPoint
+    public class IPEndPoint : EndPoint, ISpanFormattable, ISpanParsable<IPEndPoint>, IUtf8SpanFormattable, IUtf8SpanParsable<IPEndPoint>
     {
         /// <summary>
         /// Specifies the minimum acceptable value for the <see cref='System.Net.IPEndPoint.Port'/> property.
@@ -178,5 +179,89 @@ namespace System.Net
         {
             return _address.GetHashCode() ^ _port;
         }
+
+        public static IPEndPoint Parse(ReadOnlySpan<byte> utf8Text)
+        {
+            if (TryParse(utf8Text, out IPEndPoint? result))
+            {
+                return result;
+            }
+
+            throw new FormatException(SR.bad_endpoint_string);
+        }
+
+        static IPEndPoint ISpanParsable<IPEndPoint>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+
+        static IPEndPoint IParsable<IPEndPoint>.Parse(string s, IFormatProvider? provider) => Parse(s);
+
+        static IPEndPoint IUtf8SpanParsable<IPEndPoint>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text);
+
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out IPEndPoint? result)
+        {
+            int addressLength = utf8Text.Length;  // If there's no port then send the entire string to the address parser
+            int lastColonPos = utf8Text.LastIndexOf((byte)':');
+
+            // Look to see if this is an IPv6 address with a port.
+            if (lastColonPos > 0)
+            {
+                if (utf8Text[lastColonPos - 1] == ']')
+                {
+                    addressLength = lastColonPos;
+                }
+                // Look to see if this is IPv4 with a port (IPv6 will have another colon)
+                else if (utf8Text.Slice(0, lastColonPos).LastIndexOf((byte)':') == -1)
+                {
+                    addressLength = lastColonPos;
+                }
+            }
+
+            if (IPAddress.TryParse(utf8Text.Slice(0, addressLength), out IPAddress? address))
+            {
+                uint port = 0;
+                if (addressLength == utf8Text.Length ||
+                    (uint.TryParse(utf8Text.Slice(addressLength + 1), NumberStyles.None, CultureInfo.InvariantCulture, out port) && port <= MaxPort))
+
+                {
+                    result = new IPEndPoint(address, (int)port);
+                    return true;
+                }
+            }
+
+            result = null;
+            return false;
+        }
+
+        static bool ISpanParsable<IPEndPoint>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out IPEndPoint? result) => TryParse(s, out result);
+
+        static bool IParsable<IPEndPoint>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out IPEndPoint? result)
+        {
+            if (s is null)
+            {
+                result = default;
+                return false;
+            }
+
+            return TryParse(s, out result);
+        }
+
+        static bool IUtf8SpanParsable<IPEndPoint>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out IPEndPoint? result) => TryParse(utf8Text, out result);
+
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
+
+        public bool TryFormat(Span<char> destination, out int charsWritten) =>
+            _address.AddressFamily == AddressFamily.InterNetworkV6 ?
+                destination.TryWrite(CultureInfo.InvariantCulture, $"[{_address}]:{_port}", out charsWritten) :
+                destination.TryWrite(CultureInfo.InvariantCulture, $"{_address}:{_port}", out charsWritten);
+
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
+            _address.AddressFamily == AddressFamily.InterNetworkV6 ?
+                Utf8.TryWrite(utf8Destination, CultureInfo.InvariantCulture, $"[{_address}]:{_port}", out bytesWritten) :
+                Utf8.TryWrite(utf8Destination, CultureInfo.InvariantCulture, $"{_address}:{_port}", out bytesWritten);
+
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryFormat(destination, out charsWritten);
+
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryFormat(utf8Destination, out bytesWritten);
     }
 }
