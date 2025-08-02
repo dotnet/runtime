@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -129,6 +130,151 @@ namespace System.Security.Cryptography.Tests
 
             if (bound.HasValue)
                 AssertImportBadPrivateKey(algorithm, new byte[bound.Value + 1]);
+        }
+
+        [Fact]
+        public static void ImportBadPrivateKey_ECDsa_InvalidVersion()
+        {
+            CompositeMLDsaAlgorithm algorithm = CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256;
+
+            // No version
+            AssertImportBadPrivateKey(algorithm, CreateKeyWithVersion(null));
+
+            // Unsupported version
+            AssertImportBadPrivateKey(algorithm, CreateKeyWithVersion(0));
+            AssertImportBadPrivateKey(algorithm, CreateKeyWithVersion(2));
+
+            // Correct version, don't throw (unless platform does not support Composite ML-DSA)
+            CompositeMLDsaTestHelpers.AssertImportPrivateKey(
+                import => AssertThrowIfNotSupported(() => import(), algorithm),
+                algorithm,
+                CreateKeyWithVersion(1));
+
+            static byte[] CreateKeyWithVersion(int? version)
+            {
+                ECParameters ecdsaKey = EccTestData.GetNistP256ReferenceKey();
+
+                return ComposeKeys(
+                    MLDsaTestsData.IetfMLDsa65.PrivateSeed,
+                    WriteECPrivateKey(version, ecdsaKey.D, ecdsaKey.Curve.Oid.Value, ecdsaKey.Q));
+            }
+        }
+
+        [Fact]
+        public static void ImportBadPrivateKey_ECDsa_NoPrivateKey()
+        {
+            ECParameters ecdsaKey = EccTestData.GetNistP256ReferenceKey();
+
+            // no private key
+            byte[] compositeKey = ComposeKeys(
+                MLDsaTestsData.IetfMLDsa65.PrivateSeed,
+                WriteECPrivateKey(version: 1, d: null, ecdsaKey.Curve.Oid.Value, point: ecdsaKey.Q));
+
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, compositeKey);
+        }
+
+        [Fact]
+        public static void ImportBadPrivateKey_ECDsa_WrongCurve()
+        {
+            CompositeMLDsaAlgorithm algorithm = CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256;
+
+            // Wrong curve OID
+            AssertImportBadPrivateKey(
+                algorithm,
+                CreateKeyWithCurveOid(ECCurve.NamedCurves.nistP521.Oid.Value));
+
+            AssertImportBadPrivateKey(
+                algorithm,
+                CreateKeyWithCurveOid(ECCurve.NamedCurves.brainpoolP256r1.Oid.Value));
+
+            // Domain parameters are optional, don't throw (unless platform does not support Composite ML-DSA)
+            CompositeMLDsaTestHelpers.AssertImportPrivateKey(
+                import => AssertThrowIfNotSupported(() => import(), algorithm),
+                algorithm,
+                CreateKeyWithCurveOid(ECCurve.NamedCurves.nistP256.Oid.Value));
+
+            static byte[] CreateKeyWithCurveOid(string? oid)
+            {
+                ECParameters ecdsaKey = EccTestData.GetNistP256ReferenceKey();
+
+                return ComposeKeys(
+                    MLDsaTestsData.IetfMLDsa65.PrivateSeed,
+                    WriteECPrivateKey(version: 1, ecdsaKey.D, oid, ecdsaKey.Q));
+            }
+        }
+
+        [Fact]
+        public static void ImportPrivateKey_ECDsa_NoPublicKey()
+        {
+            CompositeMLDsaAlgorithm algorithm = CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256;
+            ECParameters ecdsaKey = EccTestData.GetNistP256ReferenceKey();
+
+            // no public key
+            byte[] compositeKey = ComposeKeys(
+                MLDsaTestsData.IetfMLDsa65.PrivateSeed,
+                WriteECPrivateKey(version: 1, ecdsaKey.D, ecdsaKey.Curve.Oid.Value, point: null));
+
+            // Public key is optional, don't throw (unless platform does not support Composite ML-DSA)
+            CompositeMLDsaTestHelpers.AssertImportPrivateKey(
+                import => AssertThrowIfNotSupported(() => import(), algorithm),
+                algorithm,
+                compositeKey);
+        }
+
+        static byte[] ComposeKeys(byte[] mldsaKey, AsnWriter tradKey)
+        {
+            byte[] compositeKey = new byte[mldsaKey.Length + tradKey.GetEncodedLength()];
+            mldsaKey.CopyTo(compositeKey, 0);
+            tradKey.Encode(compositeKey.AsSpan(mldsaKey.Length));
+            return compositeKey;
+        }
+
+        private static AsnWriter WriteECPrivateKey(int? version, byte[]? d, string? oid, ECPoint? point)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // ECPrivateKey
+            using (writer.PushSequence())
+            {
+                // version
+                if (version is int v)
+                {
+                    writer.WriteInteger(v);
+                }
+
+                // privateKey
+                if (d is not null)
+                {
+                    writer.WriteOctetString(d);
+                }
+
+                // domainParameters
+                if (oid is not null)
+                {
+                    using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true)))
+                    {
+                        writer.WriteObjectIdentifier(oid);
+                    }
+                }
+
+                // publicKey
+                if (point is ECPoint q)
+                {
+                    using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true)))
+                    {
+                        int publicKeyLength = 1 + q.X.Length + q.Y.Length;
+                        byte[] publicKeyBytes = new byte[publicKeyLength];
+
+                        publicKeyBytes[0] = 0x04;
+                        q.X.CopyTo(publicKeyBytes.AsSpan(1));
+                        q.Y.CopyTo(publicKeyBytes.AsSpan(1 + q.X.Length));
+
+                        writer.WriteBitString(publicKeyBytes);
+                    }
+                }
+            }
+
+            return writer;
         }
 
         private static void AssertImportBadPrivateKey(CompositeMLDsaAlgorithm algorithm, byte[] key)
@@ -285,24 +431,28 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void AlgorithmMatches_GenerateKey(CompositeMLDsaAlgorithm algorithm)
         {
-            AssertThrowIfNotSupported(() =>
-            {
-                using CompositeMLDsa dsa = CompositeMLDsa.GenerateKey(algorithm);
-                Assert.Equal(algorithm, dsa.Algorithm);
-            });
+            AssertThrowIfNotSupported(
+                () =>
+                {
+                    using CompositeMLDsa dsa = CompositeMLDsa.GenerateKey(algorithm);
+                    Assert.Equal(algorithm, dsa.Algorithm);
+                },
+                algorithm);
         }
 
         [Theory]
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void AlgorithmMatches_Import(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
-            CompositeMLDsaTestHelpers.AssertImportPublicKey(import =>
-                AssertThrowIfNotSupported(() =>
-                    Assert.Equal(vector.Algorithm, import().Algorithm)), vector.Algorithm, vector.PublicKey);
+            CompositeMLDsaTestHelpers.AssertImportPublicKey(
+                import => AssertThrowIfNotSupported(() => Assert.Equal(vector.Algorithm, import().Algorithm), vector.Algorithm),
+                vector.Algorithm,
+                vector.PublicKey);
 
-            CompositeMLDsaTestHelpers.AssertImportPrivateKey(import =>
-                AssertThrowIfNotSupported(() =>
-                    Assert.Equal(vector.Algorithm, import().Algorithm)), vector.Algorithm, vector.SecretKey);
+            CompositeMLDsaTestHelpers.AssertImportPrivateKey(
+                import => AssertThrowIfNotSupported(() => Assert.Equal(vector.Algorithm, import().Algorithm), vector.Algorithm),
+                vector.Algorithm,
+                vector.SecretKey);
         }
 
         [Fact]
@@ -346,14 +496,11 @@ namespace System.Security.Cryptography.Tests
             }, arg).Dispose();
         }
 
-        /// <summary>
-        /// Asserts that on platforms that do not support Composite ML-DSA, the input test throws PlatformNotSupportedException.
-        /// If the test does pass, it implies that the test is validating code after the platform check.
-        /// </summary>
-        /// <param name="test">The test to run.</param>
-        private static void AssertThrowIfNotSupported(Action test, CompositeMLDsaAlgorithm? algorithm = null)
+        // Asserts the test throws PlatformNotSupportedException if Composite ML-DSA is supported;
+        // otherwise runs the test normally.
+        private static void AssertThrowIfNotSupported(Action test, CompositeMLDsaAlgorithm algorithm)
         {
-            if (algorithm == null ? CompositeMLDsa.IsSupported : CompositeMLDsa.IsAlgorithmSupported(algorithm))
+            if (CompositeMLDsa.IsAlgorithmSupported(algorithm))
             {
                 test();
             }

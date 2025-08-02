@@ -740,12 +740,14 @@ namespace System.Security.Cryptography
                         Oids.secp256r1 => ECCurve.NamedCurves.nistP256,
                         Oids.secp384r1 => ECCurve.NamedCurves.nistP384,
                         Oids.secp521r1 => ECCurve.NamedCurves.nistP521,
+                        "1.3.36.3.3.2.8.1.1.7" => ECCurve.NamedCurves.brainpoolP256r1,
+                        "1.3.36.3.3.2.8.1.1.11" => ECCurve.NamedCurves.brainpoolP384r1,
                         string oid => FailAndThrow(oid)
                     };
 
                     static ECCurve FailAndThrow(string oid)
                     {
-                        Debug.Fail($"EC-DSA curve not supported ({oid})");
+                        Debug.Fail($"'{oid}' is not a valid ECDSA curve for Composite ML-DSA.");
                         throw new CryptographicException();
                     }
                 }
