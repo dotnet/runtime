@@ -647,15 +647,16 @@ namespace System.DirectoryServices.AccountManagement
                 // The SAMQuerySet will use this to restrict the types of DirectoryEntry objects returned.
                 List<string> schemaTypes = GetSchemaFilter(typeof(GroupPrincipal));
 
-                SecurityIdentifier principalSid = p.Sid;
-                byte[] SidB = new byte[principalSid.BinaryLength];
-                principalSid.GetBinaryForm(SidB, 0);
+                SecurityIdentifier principalSid = p.Sid;                
 
                 if (principalSid == null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOf: bad SID IC");
                     throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
                 }
+
+                byte[] SidB = new byte[principalSid.BinaryLength];
+                principalSid.GetBinaryForm(SidB, 0);
 
                 // Create the ResultSet that will perform the client-side filtering
                 SAMQuerySet resultSet = new SAMQuerySet(
