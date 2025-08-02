@@ -235,6 +235,15 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(version, attr.Version);
         }
 
+        [Theory]
+        [InlineData("1")]
+        [InlineData("2")]
+        public static void ExtensionMarkerNameAttributeTests(string name)
+        {
+            var attr = new ExtensionMarkerNameAttribute(name);
+            Assert.Equal(name, attr.Name);
+        }
+
         [Fact]
         public static void ReferenceAssemblyAttributeTests()
         {
