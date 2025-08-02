@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.NotNull(certKey);
                 byte[] expectedKey = SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue;
-                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportSlhDsaSecretKey());
+                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportSlhDsaPrivateKey());
             }
         }
 

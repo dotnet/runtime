@@ -109,7 +109,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `Assembly` | `Level` | File load level of the assembly |
 | `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
 | `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
-| `AssemblyBinder` | `ManagedAssemblyLoadContext` | Pointer to the AssemblyBinder's ManagedAssemblyLoadContext |
+| `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
 | `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
 | `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
 | `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |

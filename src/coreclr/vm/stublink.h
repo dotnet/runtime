@@ -821,7 +821,7 @@ class InstructionFormat
 
 #define CPUSTUBLINKER StubLinkerCPU
 
-class NDirectStubLinker;
+class PInvokeStubLinker;
 class CPUSTUBLINKER;
 
 #endif // __stublink_h__

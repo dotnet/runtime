@@ -450,7 +450,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     Assert.NotNull(slhDsa);
                     Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaPrivateKey());
                 }
             }
         }
@@ -479,7 +479,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     Assert.NotNull(slhDsa);
                     Assert.Equal(info.Algorithm, slhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(info.SecretKey, slhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(info.PrivateKey, slhDsa.ExportSlhDsaPrivateKey());
                     AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
                 }
             }

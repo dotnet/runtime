@@ -342,6 +342,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
 
+    if (pMeth->IsAsyncMethod())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Async"));
+    }
+
 #ifdef _DEBUG
     if (g_pConfig->ShouldInvokeHalt(pMeth))
     {
