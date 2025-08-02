@@ -16,6 +16,7 @@
 #include "pal_log.h"
 #include "pal_memory.h"
 #include "pal_mount.h"
+#include "pal_crossprocessmutex.h"
 #include "pal_networkchange.h"
 #include "pal_networking.h"
 #include "pal_networkstatistics.h"
@@ -221,6 +222,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SchedSetAffinity)
     DllImportEntry(SystemNative_SchedGetAffinity)
     DllImportEntry(SystemNative_GetProcessPath)
+    DllImportEntry(SystemNative_GetPageSize)
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetUnixRelease)
@@ -285,6 +287,15 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetGroupName)
     DllImportEntry(SystemNative_GetUInt64OSThreadId)
     DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Size)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Init)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Acquire)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Release)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Destroy)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_IsAbandoned)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetAbandoned)
     DllImportEntry(SystemNative_Select)
 };
 

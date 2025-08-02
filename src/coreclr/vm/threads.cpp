@@ -2727,6 +2727,15 @@ void Thread::CooperativeCleanup()
 
     GCX_COOP();
 
+    if (!IsGCSpecial())
+    {
+        // Allow managed subsystems to clean up on thread exit.
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
+        DECLARE_ARGHOLDER_ARRAY(args, 1);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(GetExposedObject());
+        CALL_MANAGED_METHOD_NORET(args);
+    }
+
     // Clear any outstanding stale EH state that maybe still active on the thread.
 #ifdef FEATURE_EH_FUNCLETS
     ExInfo::PopTrackers((void*)-1);
@@ -3351,7 +3360,6 @@ retry:
         goto retry;
     }
     _ASSERTE((ret >= WAIT_OBJECT_0  && ret < (WAIT_OBJECT_0  + (DWORD)countHandles)) ||
-             (ret >= WAIT_ABANDONED && ret < (WAIT_ABANDONED + (DWORD)countHandles)) ||
              (ret == WAIT_TIMEOUT) || (ret == WAIT_FAILED));
     // countHandles is used as an unsigned -- it should never be negative.
     _ASSERTE(countHandles >= 0);
@@ -3449,11 +3457,13 @@ retry:
                 DWORD subRet = WaitForSingleObject (handles[i], 0);
                 if ((subRet == WAIT_OBJECT_0) || (subRet == WAIT_FAILED))
                     break;
+#ifdef HOST_WINDOWS
                 if (subRet == WAIT_ABANDONED)
                 {
                     ret = (ret - WAIT_OBJECT_0) + WAIT_ABANDONED;
                     break;
                 }
+#endif // HOST_WINDOWS
                 // If we get alerted it just masks the real state of the current
                 // handle, so retry the wait.
                 if (subRet == WAIT_IO_COMPLETION)
@@ -3609,11 +3619,18 @@ retry:
 WaitCompleted:
 
     //Check that the return state is valid
+#ifdef HOST_WINDOWS
     _ASSERTE(WAIT_OBJECT_0 == ret  ||
          WAIT_ABANDONED == ret ||
          WAIT_TIMEOUT == ret ||
          WAIT_FAILED == ret  ||
          ERROR_TOO_MANY_POSTS == ret);
+#else
+    _ASSERTE(WAIT_OBJECT_0 == ret  ||
+         WAIT_TIMEOUT == ret ||
+         WAIT_FAILED == ret  ||
+         ERROR_TOO_MANY_POSTS == ret);
+#endif // HOST_WINDOWS
 
     //Wrong to time out if the wait was infinite
     _ASSERTE((WAIT_TIMEOUT != ret) || (INFINITE != millis));

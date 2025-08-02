@@ -351,6 +351,9 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SetPriority(Thread thread, int priority);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern bool CurrentThreadIsFinalizerThread();
+
         internal int GetSmallId() => small_id;
 
         internal bool HasExternalEventLoop

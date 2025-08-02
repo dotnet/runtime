@@ -55,6 +55,8 @@ extern "C" void QCALLTYPE ThreadNative_PollGC();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t);
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread);
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnStack t);
@@ -70,6 +72,8 @@ extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP
+
+extern "C" BOOL QCALLTYPE ThreadNative_CurrentThreadIsFinalizerThread();
 
 #endif // _COMSYNCHRONIZABLE_H
 

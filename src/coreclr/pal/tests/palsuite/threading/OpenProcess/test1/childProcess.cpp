@@ -23,8 +23,6 @@
 
 PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1_child, "threading/OpenProcess/test1/paltest_openprocess_test1_child")
 {
-    HANDLE hMutex;
-    WCHAR wszMutexName[] = { 'T','E','S','T','1','\0' };
     DWORD dwRet;
     int i;
 
@@ -34,37 +32,9 @@ PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1_child, "threading/
 	    return( FAIL );
     }
 
-    /* open a mutex to synchronize with the parent process */
-    hMutex = CreateMutexW( NULL, FALSE, wszMutexName );
-    if( hMutex == NULL )
-    {
-        Fail( "ERROR:%lu:CreateMutex() call failed\r\n", GetLastError() );
-    }
-
-    /* acquire the mutex lock */
-    dwRet = WaitForSingleObject( hMutex, 10000 );
-    if( dwRet != WAIT_OBJECT_0 )
-    {
-        Trace( "ERROR:WaitForSingleObject() returned %lu, "
-                "expected WAIT_OBJECT_0",
-                dwRet );
-        if( ! CloseHandle( hMutex ) )
-        {
-            Trace( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
-        }
-        Fail( "test failed\n" );
-    }
-
-
     /* simulate some activity  */
     for( i=0; i<50000; i++ )
         ;
-
-    /* close our mutex handle */
-    if( ! CloseHandle( hMutex ) )
-    {
-        Fail( "ERROR:%lu:CloseHandle() call failed\n", GetLastError() );
-    }
 
     /* terminate the PAL */
     PAL_Terminate();

@@ -24,7 +24,6 @@ Revision History:
 #include "pal/synchobjects.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/event.hpp"
-#include "pal/mutex.hpp"
 #include "pal/semaphore.hpp"
 #include "pal/dbgmsg.h"
 #include <new>
@@ -39,8 +38,6 @@ static PalObjectTypeId sg_rgWaitObjectsIds[] =
     {
         otiAutoResetEvent,
         otiManualResetEvent,
-        otiMutex,
-        otiNamedMutex,
         otiSemaphore,
         otiProcess,
         otiThread
@@ -52,8 +49,6 @@ static PalObjectTypeId sg_rgSignalableObjectIds[] =
 {
     otiAutoResetEvent,
     otiManualResetEvent,
-    otiMutex,
-    otiNamedMutex,
     otiSemaphore
 };
 static CAllowedObjectTypes sg_aotSignalableObject(sg_rgSignalableObjectIds, ARRAY_SIZE(sg_rgSignalableObjectIds));
@@ -84,36 +79,6 @@ WaitForSingleObject(IN HANDLE hHandle,
     PERF_EXIT(WaitForSingleObject);
     return dwRet;
 }
-
-
-/*++
-Function:
-  WaitForSingleObjectPrioritized
-
-Similar to WaitForSingleObject, except uses a LIFO release policy for waiting threads by prioritizing new waiters (registering
-them at the beginning of the wait queue rather than at the end).
---*/
-DWORD
-PALAPI
-PAL_WaitForSingleObjectPrioritized(IN HANDLE hHandle,
-                                   IN DWORD dwMilliseconds)
-{
-    DWORD dwRet;
-
-    PERF_ENTRY(PAL_WaitForSingleObjectPrioritized);
-    ENTRY("PAL_WaitForSingleObjectPrioritized(hHandle=%p, dwMilliseconds=%u)\n",
-          hHandle, dwMilliseconds);
-
-    CPalThread * pThread = InternalGetCurrentThread();
-
-    dwRet = InternalWaitForMultipleObjectsEx(pThread, 1, &hHandle, FALSE,
-                                             dwMilliseconds, FALSE, TRUE /* bPrioritize */);
-
-    LOGEXIT("PAL_WaitForSingleObjectPrioritized returns DWORD %u\n", dwRet);
-    PERF_EXIT(PAL_WaitForSingleObjectPrioritized);
-    return dwRet;
-}
-
 
 /*++
 Function:
@@ -356,14 +321,12 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
     CONST HANDLE *lpHandles,
     BOOL bWaitAll,
     DWORD dwMilliseconds,
-    BOOL bAlertable,
-    BOOL bPrioritize)
+    BOOL bAlertable)
 {
     DWORD dwRet = WAIT_FAILED;
     PAL_ERROR palErr = NO_ERROR;
     int i, iSignaledObjCount, iSignaledObjIndex = -1;
     bool fWAll = (bool)bWaitAll, fNeedToBlock  = false;
-    bool fAbandoned = false;
     WaitType wtWaitType;
 
     IPalObject            * pIPalObjStackArray[MAXIMUM_STACK_WAITOBJ_ARRAY_SIZE] = { NULL };
@@ -415,55 +378,6 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
         else
             pThread->SetLastError(ERROR_INTERNAL_ERROR);
         goto WFMOExIntExit;
-    }
-
-    if (nCount > 1)
-    {
-        // Check for any cross-process sync objects. "Wait for any" and "wait for all" operations are not supported on
-        // cross-process sync objects in the PAL.
-        for (DWORD i = 0; i < nCount; ++i)
-        {
-            if (ppIPalObjs[i]->GetObjectType()->GetId() == otiNamedMutex)
-            {
-                ERROR("Attempt to wait for any or all handles including a cross-process sync object", ERROR_NOT_SUPPORTED);
-                pThread->SetLastError(ERROR_NOT_SUPPORTED);
-                goto WFMOExIntCleanup;
-            }
-        }
-    }
-    else if (ppIPalObjs[0]->GetObjectType()->GetId() == otiNamedMutex)
-    {
-        SharedMemoryProcessDataHeader *processDataHeader =
-            SharedMemoryProcessDataHeader::PalObject_GetProcessDataHeader(ppIPalObjs[0]);
-        _ASSERTE(processDataHeader != nullptr);
-        try
-        {
-            MutexTryAcquireLockResult tryAcquireLockResult =
-                static_cast<NamedMutexProcessData *>(processDataHeader->GetData())->TryAcquireLock(nullptr, dwMilliseconds);
-            switch (tryAcquireLockResult)
-            {
-                case MutexTryAcquireLockResult::AcquiredLock:
-                    dwRet = WAIT_OBJECT_0;
-                    break;
-
-                case MutexTryAcquireLockResult::AcquiredLockButMutexWasAbandoned:
-                    dwRet = WAIT_ABANDONED_0;
-                    break;
-
-                case MutexTryAcquireLockResult::TimedOut:
-                    dwRet = WAIT_TIMEOUT;
-                    break;
-
-                default:
-                    _ASSERTE(false);
-                    break;
-            }
-        }
-        catch (SharedMemoryException ex)
-        {
-            pThread->SetLastError(ex.GetErrorCode());
-        }
-        goto WFMOExIntCleanup;
     }
 
     if (fWAll)
@@ -528,18 +442,14 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
     iSignaledObjIndex = -1;
     for (i=0;i<(int)nCount;i++)
     {
-        bool fValue, fWaitObjectAbandoned = false;
-        palErr = ppISyncWaitCtrlrs[i]->CanThreadWaitWithoutBlocking(&fValue, &fWaitObjectAbandoned);
+        bool fValue;
+        palErr = ppISyncWaitCtrlrs[i]->CanThreadWaitWithoutBlocking(&fValue);
         if (NO_ERROR != palErr)
         {
             ERROR("ISynchWaitController::CanThreadWaitWithoutBlocking() failed for "
                   "%d-th object [handle=%p error=%u]\n", i, lpHandles[i], palErr);
             pThread->SetLastError(ERROR_INTERNAL_ERROR);
             goto WFMOExIntReleaseControllers;
-        }
-        if (fWaitObjectAbandoned)
-        {
-            fAbandoned = true;
         }
         if (fValue)
         {
@@ -589,7 +499,7 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
             }
         }
 
-        dwRet = (fAbandoned ? WAIT_ABANDONED_0 : WAIT_OBJECT_0);
+        dwRet = WAIT_OBJECT_0;
     }
     else if (0 == dwMilliseconds)
     {
@@ -605,8 +515,7 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
             palErr = ppISyncWaitCtrlrs[i]->RegisterWaitingThread(
                                                         wtWaitType,
                                                         i,
-                                                        (TRUE == bAlertable),
-                                                        bPrioritize != FALSE);
+                                                        (TRUE == bAlertable));
             if (NO_ERROR != palErr)
             {
                 ERROR("RegisterWaitingThread() failed for %d-th object "
@@ -655,9 +564,6 @@ WFMOExIntReleaseControllers:
         case WaitSucceeded:
             dwRet = WAIT_OBJECT_0; // offset added later
             break;
-        case MutexAbandoned:
-            dwRet =  WAIT_ABANDONED_0; // offset added later
-            break;
         case WaitTimeout:
             dwRet = WAIT_TIMEOUT;
             break;
@@ -679,14 +585,14 @@ WFMOExIntReleaseControllers:
         }
     }
 
-    if (!fWAll && ((WAIT_OBJECT_0 == dwRet) || (WAIT_ABANDONED_0 == dwRet)))
+    if (!fWAll && (WAIT_OBJECT_0 == dwRet))
     {
         _ASSERT_MSG(0 <= iSignaledObjIndex,
-                    "Failed to identify signaled/abandoned object\n");
+                    "Failed to identify signaled object\n");
         _ASSERT_MSG(iSignaledObjIndex >= 0 && nCount > static_cast<DWORD>(iSignaledObjIndex),
                     "SignaledObjIndex object out of range "
                     "[index=%d obj_count=%u\n",
-                    iSignaledObjCount, nCount);
+                    iSignaledObjIndex, nCount);
 
         if (iSignaledObjIndex < 0)
         {
@@ -758,11 +664,6 @@ DWORD CorUnix::InternalSignalObjectAndWait(
         case otiAutoResetEvent:
         case otiManualResetEvent:
             palError = InternalSetEvent(thread, hObjectToSignal, true /* fSetEvent */);
-            break;
-
-        case otiMutex:
-        case otiNamedMutex:
-            palError = InternalReleaseMutex(thread, hObjectToSignal);
             break;
 
         case otiSemaphore:
@@ -873,9 +774,6 @@ DWORD CorUnix::InternalSleepEx (
             palErr = g_pSynchronizationManager->DispatchPendingAPCs(pThread);
             _ASSERT_MSG(NO_ERROR == palErr, "Awakened for APC, but no APC is pending\n");
 
-            break;
-        case MutexAbandoned:
-            ASSERT("Thread %p awakened with reason=MutexAbandoned from a SleepEx\n", pThread);
             break;
         case WaitFailed:
         default:
