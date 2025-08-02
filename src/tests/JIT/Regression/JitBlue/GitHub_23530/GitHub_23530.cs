@@ -25,7 +25,7 @@ namespace GitHub_23530
         static unsafe float fmaTest()
         {
             vec a;
-            var b = Vector128.Create(1f);
+            var b = Vector128<float>.One;
             var c = Vector128.Create(2f);
             var d = Vector128.Create(3f);
 
