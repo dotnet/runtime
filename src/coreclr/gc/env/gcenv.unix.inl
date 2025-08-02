@@ -5,16 +5,8 @@
 #define __GCENV_UNIX_INL__
 
 #include "gcenv.os.h"
+#include <minipal/memory.h>
 
-extern uint32_t g_pageSizeUnixInl;
-
-#define OS_PAGE_SIZE GCToOSInterface::GetPageSize()
-
-#ifndef DACCESS_COMPILE
-__forceinline size_t GCToOSInterface::GetPageSize()
-{
-    return g_pageSizeUnixInl;
-}
-#endif // DACCESS_COMPILE
+#define OS_PAGE_SIZE minipal_get_page_size()
 
 #endif // __GCENV_UNIX_INL__

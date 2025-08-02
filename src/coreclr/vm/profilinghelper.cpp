@@ -85,7 +85,7 @@
 // these actions:
 // * (a) Set the profiler's status to a non-active state like kProfStatusDetaching or
 //     kProfStatusNone
-// * (b) Call FlushProcessWriteBuffers()
+// * (b) Call minipal_flush_process_write_buffers()
 // * (c) Grab thread store lock, iterate through all threads, and verify each per-thread
 //     evacuation counter is zero.
 //
@@ -110,7 +110,7 @@
 #include "proftoeeinterfaceimpl.inl"
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
-
+#include <minipal/memory.h>
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 #include "profdetach.h"
@@ -208,7 +208,7 @@ void CurrentProfilerStatus::Set(ProfilerStatus newProfStatus)
         //         can safely perform catchup at that time (see
         //         code:#ProfCatchUpSynchronization).
         //
-        ::FlushProcessWriteBuffers();
+        minipal_flush_process_write_buffers();
     }
 #endif // !defined(DACCESS_COMPILE)
 }
