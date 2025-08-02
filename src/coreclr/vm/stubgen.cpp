@@ -1673,6 +1673,12 @@ void ILCodeStream::EmitNOP(LPCSTR pszNopComment)
     Emit(CEE_NOP, 0, (UINT_PTR)pszNopComment);
 }
 
+void ILCodeStream::EmitTAIL()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_TAILCALL, 0, 0);
+}
+
 void ILCodeStream::EmitPOP()
 {
     WRAPPER_NO_CONTRACT;
