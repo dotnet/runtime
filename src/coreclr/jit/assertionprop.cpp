@@ -5114,8 +5114,14 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
         return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
     }
 
+    if ((type != TYP_I_IMPL) && (type != TYP_BYREF))
+    {
+        return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
+    }
+
     target_ssize_t offset;
     vnStore->PeelOffsets(&vn, &offset);
+    // Ignore the accumulated offset, it can't convert heap pointer to non-heap or vice versa anyway (it's UB).
 
     VNFuncApp funcApp;
     if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
