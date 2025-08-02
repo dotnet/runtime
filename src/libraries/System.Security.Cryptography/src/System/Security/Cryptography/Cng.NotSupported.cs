@@ -405,7 +405,7 @@ namespace System.Security.Cryptography
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>

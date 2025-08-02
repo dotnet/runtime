@@ -771,7 +771,7 @@ namespace System.Security.Cryptography
                 3 + // Version Integer
                 2 + // AlgorithmIdentifier Sequence
                 3 + // AlgorithmIdentifier OID value, undervalued to be safe
-                2 + // Secret key Octet String prefix, undervalued to be safe
+                2 + // Private key Octet String prefix, undervalued to be safe
                 Algorithm.PrivateSeedSizeInBytes;
 
             if (destination.Length < minimumPossiblePkcs8MLDsaKey)
@@ -1206,45 +1206,45 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in the FIPS 204 secret key format.
+        ///   Exports the current key in the FIPS 204 private key format.
         /// </summary>
         /// <returns>
-        ///   The FIPS 204 secret key.
+        ///   The FIPS 204 private key.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   <para>The current instance cannot export a secret key.</para>
+        ///   <para>The current instance cannot export a private key.</para>
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] ExportMLDsaSecretKey()
+        public byte[] ExportMLDsaPrivateKey()
         {
             ThrowIfDisposed();
 
-            byte[] destination = new byte[Algorithm.SecretKeySizeInBytes];
-            ExportMLDsaSecretKeyCore(destination);
+            byte[] destination = new byte[Algorithm.PrivateKeySizeInBytes];
+            ExportMLDsaPrivateKeyCore(destination);
             return destination;
         }
 
         /// <summary>
-        ///   Exports the current key in the FIPS 204 secret key format.
+        ///   Exports the current key in the FIPS 204 private key format.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the secret key. Its length must be exactly
-        ///   <see cref="MLDsaAlgorithm.SecretKeySizeInBytes"/>.
+        ///   The buffer to receive the private key. Its length must be exactly
+        ///   <see cref="MLDsaAlgorithm.PrivateKeySizeInBytes"/>.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="destination"/> is the incorrect length to receive the secret key.
+        ///   <paramref name="destination"/> is the incorrect length to receive the private key.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public void ExportMLDsaSecretKey(Span<byte> destination)
+        public void ExportMLDsaPrivateKey(Span<byte> destination)
         {
-            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.SecretKeySizeInBytes);
+            Helpers.ThrowIfDestinationWrongLength(destination, Algorithm.PrivateKeySizeInBytes);
             ThrowIfDisposed();
 
-            ExportMLDsaSecretKeyCore(destination);
+            ExportMLDsaPrivateKeyCore(destination);
         }
 
         /// <summary>
@@ -1820,13 +1820,13 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports an ML-DSA private key in the FIPS 204 secret key format.
+        ///   Imports an ML-DSA private key in the FIPS 204 private key format.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific ML-DSA algorithm for this key.
         /// </param>
         /// <param name="source">
-        ///   The bytes of a FIPS 204 secret key.
+        ///   The bytes of a FIPS 204 private key.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -1844,29 +1844,29 @@ namespace System.Security.Cryptography
         ///     An error occurred while importing the key.
         ///   </para>
         /// </exception>
-        public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        public static MLDsa ImportMLDsaPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
 
-            if (source.Length != algorithm.SecretKeySizeInBytes)
+            if (source.Length != algorithm.PrivateKeySizeInBytes)
             {
-                throw new ArgumentException(SR.Cryptography_KeyWrongSizeForAlgorithm, nameof(source));
+                throw new ArgumentException(SR.Argument_PrivateKeyWrongSizeForAlgorithm, nameof(source));
             }
 
             ThrowIfNotSupported();
-            return MLDsaImplementation.ImportSecretKey(algorithm, source);
+            return MLDsaImplementation.ImportPrivateKey(algorithm, source);
         }
 
-        /// <inheritdoc cref="ImportMLDsaSecretKey(MLDsaAlgorithm, ReadOnlySpan{byte})" />
+        /// <inheritdoc cref="ImportMLDsaPrivateKey(MLDsaAlgorithm, ReadOnlySpan{byte})" />
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="algorithm"/> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        public static MLDsa ImportMLDsaSecretKey(MLDsaAlgorithm algorithm, byte[] source)
+        public static MLDsa ImportMLDsaPrivateKey(MLDsaAlgorithm algorithm, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
             ArgumentNullException.ThrowIfNull(source);
 
-            return ImportMLDsaSecretKey(algorithm, new ReadOnlySpan<byte>(source));
+            return ImportMLDsaPrivateKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
         /// <summary>
@@ -2022,12 +2022,12 @@ namespace System.Security.Cryptography
         protected abstract void ExportMLDsaPublicKeyCore(Span<byte> destination);
 
         /// <summary>
-        ///   When overridden in a derived class, exports the FIPS 204 secret key to the specified buffer.
+        ///   When overridden in a derived class, exports the FIPS 204 private key to the specified buffer.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the secret key.
+        ///   The buffer to receive the private key.
         /// </param>
-        protected abstract void ExportMLDsaSecretKeyCore(Span<byte> destination);
+        protected abstract void ExportMLDsaPrivateKeyCore(Span<byte> destination);
 
         /// <summary>
         ///   When overridden in a derived class, exports the private seed to the specified buffer.
@@ -2133,10 +2133,10 @@ namespace System.Security.Cryptography
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
         {
-            // A PKCS#8 ML-DSA secret key has an ASN.1 overhead of 28 bytes, assuming no attributes.
+            // A PKCS#8 ML-DSA private key has an ASN.1 overhead of 28 bytes, assuming no attributes.
             // Make it an even 32 and that should give a good starting point for a buffer size.
-            // The secret key is always larger than the seed so this buffer size can accommodate both.
-            int size = Algorithm.SecretKeySizeInBytes + 32;
+            // The private key is always larger than the seed so this buffer size can accommodate both.
+            int size = Algorithm.PrivateKeySizeInBytes + 32;
             // The buffer is only being passed out as a span, so the derived type can't meaningfully
             // hold on to it without being malicious.
             byte[] buffer = CryptoPool.Rent(size);
@@ -2185,30 +2185,30 @@ namespace System.Security.Cryptography
             }
             else if (dsaKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
             {
-                if (expandedKey.Length != algorithm.SecretKeySizeInBytes)
+                if (expandedKey.Length != algorithm.PrivateKeySizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                dsa = MLDsaImplementation.ImportSecretKey(algorithm, expandedKey.Span);
+                dsa = MLDsaImplementation.ImportPrivateKey(algorithm, expandedKey.Span);
             }
             else if (dsaKey.Both is MLDsaPrivateKeyBothAsn both)
             {
-                int secretKeySize = algorithm.SecretKeySizeInBytes;
+                int privateKeySize = algorithm.PrivateKeySizeInBytes;
 
                 if (both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
-                    both.ExpandedKey.Length != secretKeySize)
+                    both.ExpandedKey.Length != privateKeySize)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
                 MLDsa key = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, both.Seed.Span);
-                byte[] rent = CryptoPool.Rent(secretKeySize);
-                Span<byte> buffer = rent.AsSpan(0, secretKeySize);
+                byte[] rent = CryptoPool.Rent(privateKeySize);
+                Span<byte> buffer = rent.AsSpan(0, privateKeySize);
 
                 try
                 {
-                    key.ExportMLDsaSecretKey(buffer);
+                    key.ExportMLDsaPrivateKey(buffer);
 
                     if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
                     {
@@ -2226,7 +2226,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    CryptoPool.Return(rent, secretKeySize);
+                    CryptoPool.Return(rent, privateKeySize);
                 }
             }
             else

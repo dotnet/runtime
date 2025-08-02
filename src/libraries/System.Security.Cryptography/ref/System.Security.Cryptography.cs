@@ -1933,9 +1933,9 @@ namespace System.Security.Cryptography
         public byte[] ExportMLDsaPublicKey() { throw null; }
         public void ExportMLDsaPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportMLDsaPublicKeyCore(System.Span<byte> destination);
-        public byte[] ExportMLDsaSecretKey() { throw null; }
-        public void ExportMLDsaSecretKey(System.Span<byte> destination) { }
-        protected abstract void ExportMLDsaSecretKeyCore(System.Span<byte> destination);
+        public byte[] ExportMLDsaPrivateKey() { throw null; }
+        public void ExportMLDsaPrivateKey(System.Span<byte> destination) { }
+        protected abstract void ExportMLDsaPrivateKeyCore(System.Span<byte> destination);
         public byte[] ExportPkcs8PrivateKey() { throw null; }
         public string ExportPkcs8PrivateKeyPem() { throw null; }
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
@@ -1950,12 +1950,12 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLDsa ImportFromEncryptedPem(string source, string password) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportFromPem(System.ReadOnlySpan<char> source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportFromPem(string source) { throw null; }
+        public static System.Security.Cryptography.MLDsa ImportMLDsaPrivateKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, byte[] source) { throw null; }
+        public static System.Security.Cryptography.MLDsa ImportMLDsaPrivateKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportMLDsaPrivateSeed(System.Security.Cryptography.MLDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportMLDsaPrivateSeed(System.Security.Cryptography.MLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportMLDsaPublicKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportMLDsaPublicKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
-        public static System.Security.Cryptography.MLDsa ImportMLDsaSecretKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, byte[] source) { throw null; }
-        public static System.Security.Cryptography.MLDsa ImportMLDsaSecretKey(System.Security.Cryptography.MLDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportPkcs8PrivateKey(byte[] source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.MLDsa ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
@@ -1995,9 +1995,9 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.MLDsaAlgorithm MLDsa87 { get { throw null; } }
         public int MuSizeInBytes { get { throw null; } }
         public string Name { get { throw null; } }
+        public int PrivateKeySizeInBytes { get { throw null; } }
         public int PrivateSeedSizeInBytes { get { throw null; } }
         public int PublicKeySizeInBytes { get { throw null; } }
-        public int SecretKeySizeInBytes { get { throw null; } }
         public int SignatureSizeInBytes { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.MLDsaAlgorithm? other) { throw null; }
@@ -2012,9 +2012,9 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public MLDsaCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.MLDsaAlgorithm)) { }
         protected override void Dispose(bool disposing) { }
+        protected override void ExportMLDsaPrivateKeyCore(System.Span<byte> destination) { }
         protected override void ExportMLDsaPrivateSeedCore(System.Span<byte> destination) { }
         protected override void ExportMLDsaPublicKeyCore(System.Span<byte> destination) { }
-        protected override void ExportMLDsaSecretKeyCore(System.Span<byte> destination) { }
         public System.Security.Cryptography.CngKey GetKey() { throw null; }
         protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
         protected override void SignMuCore(System.ReadOnlySpan<byte> externalMu, System.Span<byte> destination) { }
@@ -2036,9 +2036,9 @@ namespace System.Security.Cryptography
         public MLDsaOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) : base (default(System.Security.Cryptography.MLDsaAlgorithm)) { }
         protected override void Dispose(bool disposing) { }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
+        protected override void ExportMLDsaPrivateKeyCore(System.Span<byte> destination) { }
         protected override void ExportMLDsaPrivateSeedCore(System.Span<byte> destination) { }
         protected override void ExportMLDsaPublicKeyCore(System.Span<byte> destination) { }
-        protected override void ExportMLDsaSecretKeyCore(System.Span<byte> destination) { }
         protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
         protected override void SignMuCore(System.ReadOnlySpan<byte> externalMu, System.Span<byte> destination) { }
         protected override void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination) { }

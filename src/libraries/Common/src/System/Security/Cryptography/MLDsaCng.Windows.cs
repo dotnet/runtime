@@ -149,7 +149,7 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc/>
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination)
         {
             bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(_key);
 
@@ -161,16 +161,16 @@ namespace System.Security.Cryptography
 
                     if (expandedKey is ReadOnlyMemory<byte> expandedKeyValue)
                     {
-                        if (expandedKeyValue.Length != algorithm.SecretKeySizeInBytes)
+                        if (expandedKeyValue.Length != algorithm.PrivateKeySizeInBytes)
                         {
-                            throw new CryptographicException(SR.Argument_SecretKeyWrongSizeForAlgorithm);
+                            throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                         }
 
                         expandedKeyValue.Span.CopyTo(destination);
                         return;
                     }
 
-                    // If PKCS#8 only has seed, then we can calculate the secret key
+                    // If PKCS#8 only has seed, then we can calculate the private key
                     ReadOnlyMemory<byte>? seed = mldsaPrivateKeyAsn.Seed;
 
                     if (seed is ReadOnlyMemory<byte> seedValue)
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography
 
                         using (MLDsa cloned = MLDsaImplementation.ImportSeed(algorithm, seedValue.Span))
                         {
-                            cloned.ExportMLDsaSecretKey(destination);
+                            cloned.ExportMLDsaPrivateKey(destination);
                             return;
                         }
                     }
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                ExportKey(CngKeyBlobFormat.PQDsaPrivateBlob, Algorithm.SecretKeySizeInBytes, destination);
+                ExportKey(CngKeyBlobFormat.PQDsaPrivateBlob, Algorithm.PrivateKeySizeInBytes, destination);
             }
         }
 

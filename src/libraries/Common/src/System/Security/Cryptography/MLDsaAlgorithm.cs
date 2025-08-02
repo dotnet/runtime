@@ -22,12 +22,12 @@ namespace System.Security.Cryptography
         public string Name { get; }
 
         /// <summary>
-        ///   Gets the size, in bytes, of the ML-DSA secret key for the current ML-DSA algorithm.
+        ///   Gets the size, in bytes, of the ML-DSA private key for the current ML-DSA algorithm.
         /// </summary>
         /// <value>
-        ///   The size, in bytes, of the ML-DSA secret key for the current ML-DSA algorithm.
+        ///   The size, in bytes, of the ML-DSA private key for the current ML-DSA algorithm.
         /// </value>
-        public int SecretKeySizeInBytes { get; }
+        public int PrivateKeySizeInBytes { get; }
 
         /// <summary>
         ///   Gets the size, in bytes, of the ML-DSA private seed for the current ML-DSA algorithm.
@@ -66,14 +66,14 @@ namespace System.Security.Cryptography
 
         private MLDsaAlgorithm(
             string name,
-            int secretKeySizeInBytes,
+            int privateKeySizeInBytes,
             int publicKeySizeInBytes,
             int signatureSizeInBytes,
             int lambdaCollisionStrength,
             string oid)
         {
             Name = name;
-            SecretKeySizeInBytes = secretKeySizeInBytes;
+            PrivateKeySizeInBytes = privateKeySizeInBytes;
             PublicKeySizeInBytes = publicKeySizeInBytes;
             SignatureSizeInBytes = signatureSizeInBytes;
             LambdaCollisionStrength = lambdaCollisionStrength;
