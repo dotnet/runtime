@@ -20,11 +20,21 @@ namespace System.Threading
         [ThreadStatic]
         private static ComState t_comState;
 
+        [ThreadStatic]
+        private static bool t_interruptRequested;
+
+        [ThreadStatic]
+        private static bool t_inAlertableWait;
+
         private SafeWaitHandle _osHandle;
 
         private ApartmentState _initialApartmentState = ApartmentState.Unknown;
 
+        private volatile bool _pendingInterrupt;
+
         partial void PlatformSpecificInitialize();
+
+        partial void CheckForPendingInterrupt();
 
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
@@ -162,7 +172,43 @@ namespace System.Threading
                 }
                 else
                 {
-                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits: false);
+                    Thread? currentThread = t_currentThread;
+                    
+                    // Check for pending interrupt from before thread started
+                    if (currentThread != null && currentThread._pendingInterrupt)
+                    {
+                        currentThread._pendingInterrupt = false;
+                        throw new ThreadInterruptedException();
+                    }
+
+                    if (currentThread != null)
+                    {
+                        currentThread.SetWaitSleepJoinState();
+                    }
+
+                    try
+                    {
+                        t_inAlertableWait = true;
+                        
+                        // Use alertable wait so we can be interrupted by APC
+                        result = (int)Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), 
+                            (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                        
+                        // Check if we were interrupted by an APC
+                        if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                        {
+                            CheckForInterrupt();
+                            return false; // Interrupted, so join did not complete
+                        }
+                    }
+                    finally
+                    {
+                        t_inAlertableWait = false;
+                        if (currentThread != null)
+                        {
+                            currentThread.ClearWaitSleepJoinState();
+                        }
+                    }
                 }
 
                 return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
@@ -224,6 +270,21 @@ namespace System.Threading
         {
             StartThread(parameter);
             return 0;
+        }
+
+        private static void CheckPendingInterrupt()
+        {
+            Thread? currentThread = t_currentThread;
+            if (currentThread != null && currentThread._pendingInterrupt)
+            {
+                currentThread._pendingInterrupt = false;
+                throw new ThreadInterruptedException();
+            }
+        }
+
+        partial void CheckForPendingInterrupt()
+        {
+            CheckPendingInterrupt();
         }
 
         public ApartmentState GetApartmentState()
@@ -386,7 +447,88 @@ namespace System.Threading
             return InitializeExistingThreadPoolThread();
         }
 
-        public void Interrupt() { throw new PlatformNotSupportedException(); }
+        [UnmanagedCallersOnly]
+        private static void InterruptApcCallback(nint parameter)
+        {
+            // This is the native APC callback that sets the interrupt flag
+            // It runs in native code to avoid managed reentrancy issues
+            t_interruptRequested = true;
+        }
+
+        private static void CheckForInterrupt()
+        {
+            if (t_interruptRequested)
+            {
+                t_interruptRequested = false;
+                throw new ThreadInterruptedException();
+            }
+        }
+
+        internal static void SleepInternal(int millisecondsTimeout)
+        {
+            Debug.Assert(millisecondsTimeout >= -1);
+            
+            Thread? currentThread = t_currentThread;
+            bool wasInterrupted = false;
+            
+            // Check for pending interrupt from before thread started
+            if (currentThread != null && currentThread._pendingInterrupt)
+            {
+                currentThread._pendingInterrupt = false;
+                throw new ThreadInterruptedException();
+            }
+
+            if (currentThread != null)
+            {
+                currentThread.SetWaitSleepJoinState();
+            }
+
+            try
+            {
+                t_inAlertableWait = true;
+                
+                uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                
+                // Check if we were interrupted by an APC
+                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                {
+                    CheckForInterrupt();
+                }
+            }
+            finally
+            {
+                t_inAlertableWait = false;
+                if (currentThread != null)
+                {
+                    currentThread.ClearWaitSleepJoinState();
+                }
+            }
+        }
+
+        public void Interrupt() 
+        { 
+            using (_lock.EnterScope())
+            {
+                // If thread is dead, do nothing
+                if (GetThreadStateBit(ThreadState.Stopped))
+                    return;
+
+                // If thread hasn't started yet, set pending interrupt flag
+                if (GetThreadStateBit(ThreadState.Unstarted))
+                {
+                    _pendingInterrupt = true;
+                    return;
+                }
+
+                // Queue APC to interrupt the thread
+                SafeWaitHandle osHandle = _osHandle;
+                if (osHandle != null && !osHandle.IsInvalid && !osHandle.IsClosed)
+                {
+                    nint callbackPtr = (nint)(delegate* unmanaged<nint, void>)&InterruptApcCallback;
+                    Interop.Kernel32.QueueUserAPC(callbackPtr, osHandle.DangerousGetHandle(), IntPtr.Zero);
+                }
+            }
+        }
 
         internal static bool ReentrantWaitsEnabled =>
             GetCurrentApartmentType() == ApartmentType.STA;
