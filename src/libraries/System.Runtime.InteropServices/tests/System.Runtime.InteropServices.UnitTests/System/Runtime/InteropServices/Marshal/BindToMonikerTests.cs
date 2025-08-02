@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("invalidName")]
-        public void BindToMoniker_InvalidArgument_ThrowsAnyException(string monikerName)
+        public void BindToMoniker_InvalidArgument_ThrowsAnyException(string? monikerName)
         {
             Assert.ThrowsAny<Exception>(() => Marshal.BindToMoniker(monikerName));
         }

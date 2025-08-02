@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Compile Include="**\*.cs" />
+    <Compile Include="$(CommonTestPath)Tests\TheoryDataExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

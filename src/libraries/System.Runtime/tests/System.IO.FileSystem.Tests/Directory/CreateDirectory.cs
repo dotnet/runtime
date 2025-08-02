@@ -3,14 +3,13 @@
 
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
 {
     public class Directory_CreateDirectory : FileSystemTest
     {
-        public static TheoryData ReservedDeviceNames = IOInputs.GetReservedDeviceNames().ToTheoryData();
+        public static TheoryData<string> ReservedDeviceNames = IOInputs.GetReservedDeviceNames().ToTheoryData();
         #region Utilities
 
         public virtual DirectoryInfo Create(string path)

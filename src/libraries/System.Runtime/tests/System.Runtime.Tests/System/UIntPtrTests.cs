@@ -109,7 +109,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void EqualsTest(nuint value, object obj, bool expected)
+        public static void EqualsTest(nuint value, object? obj, bool expected)
         {
             if (obj is nuint other)
             {
@@ -232,7 +232,7 @@ namespace System.Tests
         [InlineData(234u, 456u, -1)]
         [InlineData(234u, uint.MaxValue, -1)]
         [InlineData(234u, null, 1)]
-        public static void CompareTo_Other_ReturnsExpected(uint i0, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(uint i0, object? value, int expected)
         {
             nuint i = i0;
             if (value is uint uintValue)

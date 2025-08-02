@@ -26,7 +26,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
         [Theory]
         [InlineData(null, "")]
         [InlineData("attr", null)]
-        public void PassNull_LocalName_Namespace__Invalid(string localName, string nameSpace)
+        public void PassNull_LocalName_Namespace__Invalid(string? localName, string? nameSpace)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
             XmlSchemaInfo info = new XmlSchemaInfo();

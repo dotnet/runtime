@@ -423,8 +423,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.Equal(matchingImplementationTypes, enumerableCall.ServiceCallSites.Select(scs => scs.ImplementationType).ToArray());
         }
 
-        public static TheoryData CreateCallSite_PicksConstructorWithTheMostNumberOfResolvedParametersData =>
-            new TheoryData<Type, Func<Type, ServiceCallSite>, Type[]>
+        public static TheoryData<Type, Func<Type, object>, Type[]> CreateCallSite_PicksConstructorWithTheMostNumberOfResolvedParametersData =>
+            new TheoryData<Type, Func<Type, object>, Type[]>
             {
                 {
                     typeof(TypeWithSupersetConstructors),
@@ -508,11 +508,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         [MemberData(nameof(CreateCallSite_PicksConstructorWithTheMostNumberOfResolvedParametersData))]
         private void CreateCallSite_PicksConstructorWithTheMostNumberOfResolvedParameters(
             Type type,
-            Func<Type, ServiceCallSite> callSiteFactory,
+            Func<Type, object> callSiteFactory,
             Type[] expectedConstructorParameters)
         {
             // Act
-            var callSite = callSiteFactory(type);
+            var callSite = (ServiceCallSite)callSiteFactory(type);
 
             // Assert
             Assert.Equal(CallSiteResultCacheLocation.Dispose, callSite.Cache.Location);
@@ -520,7 +520,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.Equal(expectedConstructorParameters, GetParameters(constructorCallSite));
         }
 
-        public static TheoryData CreateCallSite_ConsidersConstructorsWithDefaultValuesData =>
+        public static TheoryData<Func<Type, object>, Type[]> CreateCallSite_ConsidersConstructorsWithDefaultValuesData =>
             new TheoryData<Func<Type, object>, Type[]>
             {
                 {
@@ -550,14 +550,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         [Theory]
         [MemberData(nameof(CreateCallSite_ConsidersConstructorsWithDefaultValuesData))]
         private void CreateCallSite_ConsidersConstructorsWithDefaultValues(
-            Func<Type, ServiceCallSite> callSiteFactory,
+            Func<Type, object> callSiteFactory,
             Type[] expectedConstructorParameters)
         {
             // Arrange
             var type = typeof(TypeWithDefaultConstructorParameters);
 
             // Act
-            var callSite = callSiteFactory(type);
+            var callSite = (ServiceCallSite)callSiteFactory(type);
 
             // Assert
             Assert.Equal(CallSiteResultCacheLocation.Dispose, callSite.Cache.Location);
@@ -636,7 +636,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ex.Message);
         }
 
-        public static TheoryData CreateCallSite_ThrowsIfMultipleNonOverlappingConstructorsCanBeResolvedData =>
+        public static TheoryData<Type, Func<Type, object>, Type[][]> CreateCallSite_ThrowsIfMultipleNonOverlappingConstructorsCanBeResolvedData =>
             new TheoryData<Type, Func<Type, object>, Type[][]>
             {
                 {
