@@ -505,8 +505,8 @@ namespace System.Collections.Generic
             private readonly LinkedList<T> _list;
             private LinkedListNode<T>? _node;
             private readonly int _version;
+            private bool _valid;
             private T? _current;
-            private int _index;
 
             internal Enumerator(LinkedList<T> list)
             {
@@ -514,7 +514,7 @@ namespace System.Collections.Generic
                 _version = list.version;
                 _node = list.head;
                 _current = default;
-                _index = 0;
+                _valid = false;
             }
 
             public T Current => _current!;
@@ -523,7 +523,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || (_index == _list.Count + 1))
+                    if (!_valid)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -541,11 +541,11 @@ namespace System.Collections.Generic
 
                 if (_node == null)
                 {
-                    _index = _list.Count + 1;
+                    _valid = false;
                     return false;
                 }
 
-                ++_index;
+                _valid = true;
                 _current = _node.item;
                 _node = _node.next;
                 if (_node == _list.head)
@@ -564,7 +564,7 @@ namespace System.Collections.Generic
 
                 _current = default;
                 _node = _list.head;
-                _index = 0;
+                _valid = false;
             }
 
             public void Dispose()

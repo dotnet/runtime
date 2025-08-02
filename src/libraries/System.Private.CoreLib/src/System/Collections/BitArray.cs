@@ -983,7 +983,7 @@ namespace System.Collections
             private readonly BitArray _bitArray;
             private readonly int _version;
             private int _index;
-            private object _currentElement = s_boxedFalse;
+            private bool _current;
 
             internal BitArrayEnumeratorSimple(BitArray bitArray)
             {
@@ -998,17 +998,18 @@ namespace System.Collections
             {
                 if (_version != _bitArray._version)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                if (_index < (_bitArray._bitLength - 1))
+                int index = _index + 1;
+                if ((uint)index < (uint)_bitArray._bitLength)
                 {
-                    _index++;
-                    _currentElement = _bitArray.Get(_index) ? s_boxedTrue : s_boxedFalse;
+                    _index = index;
+                    _current = _bitArray.Get(index);
                     return true;
                 }
 
-                _index = _bitArray._bitLength;
+                _index = -2;
                 return false;
             }
 
@@ -1016,12 +1017,12 @@ namespace System.Collections
             {
                 get
                 {
-                    if ((uint)_index >= (uint)_bitArray._bitLength)
+                    if (_index < 0)
                     {
-                        throw GetInvalidOperationException(_index);
+                        ThrowHelper.ThrowInvalidOperationException_EnumCurrent(_index);
                     }
 
-                    return _currentElement;
+                    return _current ? s_boxedTrue : s_boxedFalse;
                 }
             }
 
@@ -1029,23 +1030,10 @@ namespace System.Collections
             {
                 if (_version != _bitArray._version)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
                 _index = -1;
-            }
-
-            private InvalidOperationException GetInvalidOperationException(int index)
-            {
-                if (index == -1)
-                {
-                    return new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                }
-                else
-                {
-                    Debug.Assert(index >= _bitArray._bitLength);
-                    return new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-                }
             }
         }
     }

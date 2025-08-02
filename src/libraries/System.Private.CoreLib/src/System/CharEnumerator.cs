@@ -19,15 +19,13 @@ namespace System
         public bool MoveNext()
         {
             int index = _index + 1;
-            int length = _str.Length;
-
-            if (index < length)
+            if ((uint)index < (uint)_str.Length)
             {
                 _index = index;
                 return true;
             }
 
-            _index = length;
+            _index = -2;
             return false;
         }
 
@@ -43,7 +41,7 @@ namespace System
                 string s = _str;
                 if ((uint)index >= (uint)s.Length)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_EnumCurrent(_index);
+                    ThrowHelper.ThrowInvalidOperationException_EnumCurrent(index);
                 }
 
                 return s[index];
