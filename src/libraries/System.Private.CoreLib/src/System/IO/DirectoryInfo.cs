@@ -88,7 +88,9 @@ namespace System.IO
             // We want to make sure the requested directory is actually under the subdirectory.
             if (trimmedNewPath.StartsWith(trimmedCurrentPath, PathInternal.StringComparison)
                 // Allow the exact same path, but prevent allowing "..\FooBar" through when the directory is "Foo"
-                && ((trimmedNewPath.Length == trimmedCurrentPath.Length) || PathInternal.IsDirectorySeparator(newPath[trimmedCurrentPath.Length])))
+                && ((trimmedNewPath.Length == trimmedCurrentPath.Length)
+                    || PathInternal.IsDirectorySeparator(newPath[trimmedCurrentPath.Length])
+                    || PathInternal.IsRoot(trimmedCurrentPath)))
             {
                 FileSystem.CreateDirectory(newPath);
                 return new DirectoryInfo(newPath);
