@@ -5114,6 +5114,7 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
         return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
     }
 
+    VNFuncApp funcApp;
     if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
     {
         if ((funcApp.m_func == VNF_JitNewLclArr) || (funcApp.m_func == VNF_JitReadyToRunNewLclArr))
