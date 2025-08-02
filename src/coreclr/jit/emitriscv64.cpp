@@ -650,7 +650,7 @@ void emitter::emitIns_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (INS_mov == ins || INS_sext_w == ins || (INS_clz <= ins && ins <= INS_rev8))
+    if (INS_mov == ins || INS_sext_w == ins || INS_not == ins || (INS_clz <= ins && ins <= INS_rev8))
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
