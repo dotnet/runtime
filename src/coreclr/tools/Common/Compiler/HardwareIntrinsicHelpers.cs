@@ -306,6 +306,7 @@ namespace ILCompiler
         {
             public const int Zba = (1 << 0);
             public const int Zbb = (1 << 1);
+            public const int Zbs = (1 << 2);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -313,6 +314,8 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("zba");
                 if ((flags & Zbb) != 0)
                     builder.AddSupportedInstructionSet("zbb");
+                if ((flags & Zbs) != 0)
+                    builder.AddSupportedInstructionSet("zbs");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -325,6 +328,7 @@ namespace ILCompiler
                     // Optional ISAs - only available via opt-in or opportunistic light-up
                     InstructionSet.RiscV64_Zba => Zba,
                     InstructionSet.RiscV64_Zbb => Zbb,
+                    InstructionSet.RiscV64_Zbs => Zbs,
 
                     _ => throw new NotSupportedException(((InstructionSet_RiscV64)instructionSet).ToString())
                 };
