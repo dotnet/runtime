@@ -34,7 +34,8 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
+                .And.NotHaveProperty(Constants.RuntimeProperty.DotnetHostPath);
 
             if (OperatingSystem.IsWindows())
             {

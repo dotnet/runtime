@@ -134,5 +134,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const int COMPlusException = unchecked((int)0xe0434352);
             public const int SIGABRT = 134;
         }
+
+        public static class RuntimeProperty
+        {
+            public const string DotnetHostPath = "DOTNET_HOST_PATH";
+        }
     }
 }

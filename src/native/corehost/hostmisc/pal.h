@@ -71,12 +71,15 @@
 #if defined(TARGET_WINDOWS)
 #define LIB_PREFIX ""
 #define LIB_FILE_EXT ".dll"
+#define EXE_FILE_EXT ".exe"
 #elif defined(TARGET_OSX)
 #define LIB_PREFIX "lib"
 #define LIB_FILE_EXT ".dylib"
+#define EXE_FILE_EXT ""
 #else
 #define LIB_PREFIX "lib"
 #define LIB_FILE_EXT ".so"
+#define EXE_FILE_EXT ""
 #endif
 
 #define _STRINGIFY(s) _X(s)
@@ -138,8 +141,6 @@ namespace pal
     private:
         CRITICAL_SECTION _impl;
     };
-
-    inline const pal::char_t* exe_suffix() { return _X(".exe"); }
 
     inline int cstrcasecmp(const char* str1, const char* str2) { return ::_stricmp(str1, str2); }
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::wcscmp(str1, str2); }
@@ -212,8 +213,6 @@ namespace pal
     typedef void* dll_t;
     typedef void* proc_t;
     typedef std::mutex mutex_t;
-
-    inline const pal::char_t* exe_suffix() { return nullptr; }
 
     inline int cstrcasecmp(const char* str1, const char* str2) { return ::strcasecmp(str1, str2); }
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }

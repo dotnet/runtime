@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using HostActivation.Tests;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
@@ -37,6 +38,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute()
                 .Should().Pass()
                 .And.InitializeContextForApp(app.AppDll)
+                .And.HaveProperty(Constants.RuntimeProperty.DotnetHostPath, TestContext.BuiltDotNet.DotnetExecutablePath)
                 .And.ExecuteApplication(sharedState.NativeHostPath, app.AppDll);
         }
 
