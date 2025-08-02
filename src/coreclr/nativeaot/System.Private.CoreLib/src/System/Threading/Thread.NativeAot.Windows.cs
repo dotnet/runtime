@@ -464,47 +464,6 @@ namespace System.Threading
             }
         }
 
-        internal static void SleepInternal(int millisecondsTimeout)
-        {
-            Debug.Assert(millisecondsTimeout >= -1);
-            
-            Thread? currentThread = t_currentThread;
-            bool wasInterrupted = false;
-            
-            // Check for pending interrupt from before thread started
-            if (currentThread != null && currentThread._pendingInterrupt)
-            {
-                currentThread._pendingInterrupt = false;
-                throw new ThreadInterruptedException();
-            }
-
-            if (currentThread != null)
-            {
-                currentThread.SetWaitSleepJoinState();
-            }
-
-            try
-            {
-                t_inAlertableWait = true;
-                
-                uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, Interop.BOOL.TRUE);
-                
-                // Check if we were interrupted by an APC
-                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
-                {
-                    CheckForInterrupt();
-                }
-            }
-            finally
-            {
-                t_inAlertableWait = false;
-                if (currentThread != null)
-                {
-                    currentThread.ClearWaitSleepJoinState();
-                }
-            }
-        }
-
         public void Interrupt() 
         { 
             using (_lock.EnterScope())
