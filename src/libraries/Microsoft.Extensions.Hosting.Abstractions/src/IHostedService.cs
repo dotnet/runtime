@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.Hosting
     /// <summary>
     /// Defines methods for objects that are managed by the host.
     /// </summary>
+    /// <related type="Article" href="https://learn.microsoft.com/dotnet/core/extensions/timer-service">Implement the IHostedService interface</related>
     public interface IHostedService
     {
         /// <summary>
