@@ -148,16 +148,18 @@ namespace System
             return ExpandEnvironmentVariablesCore(name);
         }
 
-        public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
+        public static string GetFolderPath(SpecialFolder folder) => GetFolderPathCore(folder, SpecialFolderOption.None);
 
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
         {
-            // We don't need to check if folder is defined here, as GetFolderPathCore will do it.
+            // No need to validate if 'folder' is defined; GetFolderPathCore handles this check.
 
             if (option is not SpecialFolderOption.None and not SpecialFolderOption.Create and not SpecialFolderOption.DoNotVerify)
             {
-                Throw(folder, option);
-                static void Throw(SpecialFolder _, SpecialFolderOption option) =>
+                // Use a throw helper so that if 'option' is a constant,
+                // the JIT can inline this method and remove the validation check entirely.
+                Throw(option);
+                static void Throw(SpecialFolderOption option) =>
                     throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
             }
 

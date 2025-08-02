@@ -19,7 +19,7 @@ namespace System
     {
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
-            // We don't need to check if the folder is defined here, as GetSpecialFolder will do it.
+            // No need to validate if 'folder' is defined; GetSpecialFolder handles this check.
 
             string path = GetSpecialFolder(folder) ?? string.Empty;
 
