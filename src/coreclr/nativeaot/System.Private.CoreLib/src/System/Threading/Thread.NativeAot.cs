@@ -46,6 +46,9 @@ namespace System.Threading
 
         private static int s_foregroundRunningCount;
 
+        // Platform-specific method to check for pending interrupts when thread starts
+        partial void CheckForPendingInterrupt();
+
         private Thread()
         {
             _managedThreadId = System.Threading.ManagedThreadId.GetCurrentThreadId();
@@ -449,6 +452,9 @@ namespace System.Threading
             {
                 IncrementRunningForeground();
             }
+
+            // Check for any pending interrupt that was queued before the thread started
+            thread.CheckForPendingInterrupt();
 
             try
             {
