@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
             }
             catch (ArgumentException exception)
             {
-                throw XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTimeOffset", exception);
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(null), "DateTimeOffset", exception);
             }
         }
 
@@ -64,11 +64,9 @@ namespace System.Runtime.Serialization
             return new DateTimeOffsetAdapter(value.UtcDateTime, (short)value.Offset.TotalMinutes);
         }
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/runtime/issues/76012
-        public string ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider? provider)
         {
-            return "DateTime: " + UtcDateTime + ", Offset: " + OffsetMinutes;
+            return "DateTime: " + UtcDateTime.ToString(provider) + ", Offset: " + OffsetMinutes;
         }
-#pragma warning restore IDE0060
     }
 }
