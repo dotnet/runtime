@@ -284,6 +284,12 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\Kernel32\Interop.DynamicLoad.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.QueueUserAPC.cs">
+      <Link>Interop\Windows\Kernel32\Interop.QueueUserAPC.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Threading.cs">
+      <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>
+    </Compile>
     <Compile Include="System\Threading\Thread.NativeAot.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">

@@ -23,9 +23,6 @@ namespace System.Threading
         [ThreadStatic]
         private static bool t_interruptRequested;
 
-        [ThreadStatic]
-        private static bool t_inAlertableWait;
-
         private SafeWaitHandle _osHandle;
 
         private ApartmentState _initialApartmentState = ApartmentState.Unknown;
@@ -171,27 +168,25 @@ namespace System.Threading
                 else
                 {
                     Thread? currentThread = t_currentThread;
-                    
+
                     // Check for pending interrupt from before thread started
-                    if (currentThread != null && currentThread._pendingInterrupt)
+                    if (currentThread is not null && currentThread._pendingInterrupt)
                     {
                         currentThread._pendingInterrupt = false;
                         throw new ThreadInterruptedException();
                     }
 
-                    if (currentThread != null)
+                    if (currentThread is not null)
                     {
                         currentThread.SetWaitSleepJoinState();
                     }
 
                     try
                     {
-                        t_inAlertableWait = true;
-                        
                         // Use alertable wait so we can be interrupted by APC
-                        result = (int)Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), 
+                        result = (int)Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(),
                             (uint)millisecondsTimeout, Interop.BOOL.TRUE);
-                        
+
                         // Check if we were interrupted by an APC
                         if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
                         {
@@ -201,8 +196,7 @@ namespace System.Threading
                     }
                     finally
                     {
-                        t_inAlertableWait = false;
-                        if (currentThread != null)
+                        if (currentThread is not null)
                         {
                             currentThread.ClearWaitSleepJoinState();
                         }
@@ -273,14 +267,14 @@ namespace System.Threading
         private static void CheckPendingInterrupt()
         {
             Thread? currentThread = t_currentThread;
-            if (currentThread != null && currentThread._pendingInterrupt)
+            if (currentThread is not null && currentThread._pendingInterrupt)
             {
                 currentThread._pendingInterrupt = false;
                 throw new ThreadInterruptedException();
             }
         }
 
-        partial void CheckForPendingInterrupt()
+        private static void CheckForPendingInterrupt()
         {
             CheckPendingInterrupt();
         }
@@ -462,8 +456,8 @@ namespace System.Threading
             }
         }
 
-        public void Interrupt() 
-        { 
+        public void Interrupt()
+        {
             using (_lock.EnterScope())
             {
                 // If thread is dead, do nothing
@@ -479,7 +473,7 @@ namespace System.Threading
 
                 // Queue APC to interrupt the thread
                 SafeWaitHandle osHandle = _osHandle;
-                if (osHandle != null && !osHandle.IsInvalid && !osHandle.IsClosed)
+                if (osHandle is not null && !osHandle.IsInvalid && !osHandle.IsClosed)
                 {
                     nint callbackPtr;
                     unsafe
