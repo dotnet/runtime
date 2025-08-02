@@ -696,13 +696,24 @@ namespace System.Xml.Serialization
                 {
                     if (anyTextMapping.TypeDesc!.IsArrayLike)
                     {
+                        string textValue;
                         if (text.Mapping!.TypeDesc!.CollapseWhitespace)
                         {
-                            value = CollapseWhitespace(Reader.ReadString());
+                            textValue = CollapseWhitespace(Reader.ReadString());
                         }
                         else
                         {
-                            value = Reader.ReadString();
+                            textValue = Reader.ReadString();
+                        }
+                        // For string arrays with XmlText, split on whitespace to support XML Schema list types
+                        if (anyTextMapping.TypeDesc.Type == typeof(string[]))
+                        {
+                            string[] vals = textValue.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                            value = vals;
+                        }
+                        else
+                        {
+                            value = textValue;
                         }
                     }
                     else
