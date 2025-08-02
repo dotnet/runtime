@@ -3749,6 +3749,14 @@ static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExIn
     END_PROFILER_CALLBACK();
 }
 
+static bool IsInternalFrameCatchingExceptions(Frame* frame)
+{
+    return frame != FRAME_TOP &&
+        // func eval catches exceptions in GCProtectArgsAndDoNormalFuncEval (funceval.cpp)
+        (frame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame ||
+        (frame -> GetFrameIdentifier() == FrameIdentifier::DebuggerU2MCatchHandlerFrame && ((DebuggerU2MCatchHandlerFrame*)frame)->CatchesAllExceptions()));
+}
+
 extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
@@ -3756,7 +3764,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     CLR_BOOL result = FALSE;
     Thread* pThread = GET_THREAD();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
+    bool internalCatchingFrameAboveManaged = false;
     pThread->ResetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
 
     BEGIN_QCALL;
@@ -3829,49 +3837,68 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
                 }
             }
         }
+
+        if (IsInternalFrameCatchingExceptions(pThis -> m_crawl.GetFrame()))
+        {
+            // If an internal native frame above managed ones wants to handle an exception we don't need to unwind anymore, otherwise the native frame will be missed
+            internalCatchingFrameAboveManaged = true;
+            break;
+        }
+
         StackWalkAction retVal = pThis->Next();
         result = (retVal != SWA_FAILED);
     }
 
-    NotifyFunctionEnter(pThis, pThread, pExInfo);
+    // if we haven't reached any managed frame no need to report function enter
+    if (!internalCatchingFrameAboveManaged) {
+        NotifyFunctionEnter(pThis, pThread, pExInfo);
+    }
 
     pExInfo->m_ScannedStackRange.ExtendLowerBound(GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()));
 
     pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
 
-    _ASSERTE(!result || pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
+    _ASSERTE(!result || pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD || internalCatchingFrameAboveManaged);
 
     END_QCALL;
 
     if (result)
     {
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-        // Get the SSP for the first managed frame. It is incremented during the stack walk so that
-        // when we reach the handling frame, it contains correct SSP to set when resuming after
-        // the catch handler.
-        // For hardware exceptions and thread abort exceptions propagated from ThrowControlForThread,
-        // the SSP is already known. For other cases, find it by scanning the shadow stack.
-        if ((pExInfo->m_passNumber == 2) && (pThis->m_crawl.GetRegisterSet()->SSP == 0))
-        {
-            pThis->m_crawl.GetCodeInfo()->GetCodeManager()->UpdateSSP(pThis->m_crawl.GetRegisterSet());
+        if (internalCatchingFrameAboveManaged) {
+            // Exception is going to be handled in native code, setting pfIsExceptionIntercepted to let the exception handling know that there is no need in unwinding the exception
+            *pfIsExceptionIntercepted = TRUE;
+            EH_LOG((LL_INFO100, "SfiInit (pass %d): Exception stack walking starting at IP=%p, SP=%p. Exception is going to be handled by runtime\n",
+                pExInfo->m_passNumber, controlPC, GetRegdisplaySP(pThis->m_crawl.GetRegisterSet())));
         }
+        else {
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+            // Get the SSP for the first managed frame. It is incremented during the stack walk so that
+            // when we reach the handling frame, it contains correct SSP to set when resuming after
+            // the catch handler.
+            // For hardware exceptions and thread abort exceptions propagated from ThrowControlForThread,
+            // the SSP is already known. For other cases, find it by scanning the shadow stack.
+            if ((pExInfo->m_passNumber == 2) && (pThis->m_crawl.GetRegisterSet()->SSP == 0))
+            {
+                pThis->m_crawl.GetCodeInfo()->GetCodeManager()->UpdateSSP(pThis->m_crawl.GetRegisterSet());
+            }
 #endif
 
-        if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
-        {
-            controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-        }
-        pThis->SetAdjustedControlPC(controlPC);
+            if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
+            {
+                controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            }
+            pThis->SetAdjustedControlPC(controlPC);
 
-        *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
-        EH_LOG((LL_INFO100, "SfiInit (pass %d): Exception stack walking starting at IP=%p, SP=%p, method %s::%s\n",
-            pExInfo->m_passNumber, controlPC, GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()),
-            pThis->m_crawl.GetFunction()->m_pszDebugClassName, pThis->m_crawl.GetFunction()->m_pszDebugMethodName));
+            *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
+            EH_LOG((LL_INFO100, "SfiInit (pass %d): Exception stack walking starting at IP=%p, SP=%p, method %s::%s\n",
+                pExInfo->m_passNumber, controlPC, GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()),
+                pThis->m_crawl.GetFunction()->m_pszDebugClassName, pThis->m_crawl.GetFunction()->m_pszDebugMethodName));
+        }
     }
     else
     {
+        _ASSERTE(!internalCatchingFrameAboveManaged);
         EH_LOG((LL_INFO100, "SfiInit: No more managed frames found on stack\n"));
         // There are no managed frames on the stack, fail fast and report unhandled exception
         LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
