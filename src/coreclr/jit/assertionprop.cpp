@@ -5147,6 +5147,7 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
                     // Boxed static - always on the heap
                     return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
                 }
+                break;
 
             default:
                 break;
