@@ -34,8 +34,6 @@ namespace System.Threading
 
         partial void PlatformSpecificInitialize();
 
-        partial void CheckForPendingInterrupt();
-
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
         {

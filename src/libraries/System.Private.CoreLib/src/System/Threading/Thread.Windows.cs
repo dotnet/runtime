@@ -16,63 +16,13 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
-#if NATIVEAOT
-        [ThreadStatic]
-        private static bool t_interruptRequested;
-
-        [ThreadStatic]
-        private static bool t_inAlertableWait;
-
-        private volatile bool _pendingInterrupt;
-#endif
         internal static void UninterruptibleSleep0() => Interop.Kernel32.Sleep(0);
 
 #if !CORECLR
         private static void SleepInternal(int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
-#if NATIVEAOT
-            Thread? currentThread = t_currentThread;
-            
-            // Check for pending interrupt from before thread started
-            if (currentThread != null && currentThread._pendingInterrupt)
-            {
-                currentThread._pendingInterrupt = false;
-                throw new ThreadInterruptedException();
-            }
-
-            if (currentThread != null)
-            {
-                currentThread.SetWaitSleepJoinState();
-            }
-
-            try
-            {
-                t_inAlertableWait = true;
-                
-                uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, Interop.BOOL.TRUE);
-                
-                // Check if we were interrupted by an APC
-                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
-                {
-                    if (t_interruptRequested)
-                    {
-                        t_interruptRequested = false;
-                        throw new ThreadInterruptedException();
-                    }
-                }
-            }
-            finally
-            {
-                t_inAlertableWait = false;
-                if (currentThread != null)
-                {
-                    currentThread.ClearWaitSleepJoinState();
-                }
-            }
-#else
             Interop.Kernel32.Sleep((uint)millisecondsTimeout);
-#endif
         }
 #endif
 
