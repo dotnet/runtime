@@ -11,39 +11,9 @@ namespace ILLink.RoslynAnalyzer.Tests.Interop
         protected override string TestSuiteName => "Interop/InternalCalls";
 
         [Fact]
-        public Task UnusedDefaultConstructorIsRemoved()
+        public Task NoSpecialMarking ()
         {
-            return RunTest();
-        }
-
-        [Fact]
-        public Task UnusedFieldsOfTypesAreNotRemoved()
-        {
-            return RunTest();
-        }
-
-        [Fact]
-        public Task UnusedFieldsOfTypesWhenHasThisAreNotRemoved()
-        {
-            return RunTest();
-        }
-
-        [Fact]
-        public Task DefaultConstructorOfReturnTypeIsNotRemoved()
-        {
-            return RunTest();
-        }
-
-        [Fact]
-        public Task UnusedDefaultConstructorOfTypePassedByRefIsNotRemoved()
-        {
-            return RunTest();
-        }
-
-        [Fact]
-        public Task UnusedFieldsOfTypesPassedByRefAreNotRemoved()
-        {
-            return RunTest();
+            return RunTest ();
         }
     }
 }

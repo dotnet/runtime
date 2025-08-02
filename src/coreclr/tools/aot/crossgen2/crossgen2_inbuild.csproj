@@ -5,7 +5,8 @@
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)$(BuildArchitecture)/crossgen2/</PublishDir>
     <SelfContained>true</SelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
+    <!-- Re-enable once we pickup toolchain with https://github.com/dotnet/runtime/pull/113704 -->
+    <!-- <PublishTrimmed>true</PublishTrimmed> -->
     <!--
       Publish with AOT on Windows as Single file doesn't work well when an app has to include DiaSymReader.Native.
       Publish single-file elsewhere so we don't need to adjust our "AOT in build" logic to handle targeting the SDK RID.
