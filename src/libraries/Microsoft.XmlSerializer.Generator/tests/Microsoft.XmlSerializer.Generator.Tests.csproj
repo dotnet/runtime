@@ -19,7 +19,7 @@
     </None>
     <Content Include="$(GeneratorRuntimeConfig)">
       <!-- Rename it to match the Generator application name -->
-      <Link>dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</Link>
+      <Link>Microsoft.XmlSerializer.Generator.runtimeconfig.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
