@@ -27,15 +27,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
             // derived types to access annotated methods without any warnings:
             derivedFromSuppressed.GetType().GetMethod("RUCDerivedMethod");
 
+            _ = new Unsuppressed();
+            _ = new Suppressed();
             _ = new AnnotatedAllSuppressed();
+            _ = new DerivedFromUnsuppressed1();
+            _ = new DerivedFromSuppressed1();
+            _ = new SuppressedOnDerived1();
+            _ = new SuppressedBaseWarningsOnDerived();
         }
 
         [Kept]
         static void UseDerivedTypes()
         {
-            var t = typeof(DerivedFromUnsuppressed2);
-            var t2 = typeof(DerivedFromSuppressed2);
-            var t3 = typeof(SuppressedOnDerived2);
+            _ = new DerivedFromUnsuppressed2();
+            _ = new DerivedFromSuppressed2();
+            _ = new SuppressedOnDerived2();
         }
 
         [Kept]
@@ -63,6 +69,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [KeptMember(".ctor()")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         class Unsuppressed
         {
@@ -74,6 +81,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         }
 
         [Kept]
+        [KeptMember(".ctor()")]
         [KeptBaseType(typeof(Unsuppressed))]
         class DerivedFromUnsuppressed1 : Unsuppressed
         {
@@ -85,6 +93,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         }
 
         [Kept]
+        [KeptMember(".ctor()")]
         [KeptBaseType(typeof(Unsuppressed))]
         class DerivedFromUnsuppressed2 : Unsuppressed
         {
@@ -98,6 +107,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
         [Kept]
         [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
         [KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
+        [KeptMember(".ctor()")]
         [UnconditionalSuppressMessage("TrimAnalysis", "IL2112")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         class Suppressed
@@ -110,6 +120,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         [KeptBaseType(typeof(Suppressed))]
+        [KeptMember(".ctor()")]
         class DerivedFromSuppressed1 : Suppressed
         {
             [Kept]
@@ -121,6 +132,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         [KeptBaseType(typeof(Suppressed))]
+        [KeptMember(".ctor()")]
         class DerivedFromSuppressed2 : Suppressed
         {
             [Kept]
@@ -132,6 +144,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         [KeptBaseType(typeof(Unsuppressed))]
+        [KeptMember(".ctor()")]
         class SuppressedOnDerived1 : Unsuppressed
         {
             [Kept]
@@ -144,6 +157,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         [KeptBaseType(typeof(Unsuppressed))]
+        [KeptMember(".ctor()")]
         class SuppressedOnDerived2 : Unsuppressed
         {
             [Kept]
@@ -156,6 +170,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
         [Kept]
         [KeptBaseType(typeof(Unsuppressed))]
+        [KeptMember(".ctor()")]
         class SuppressedBaseWarningsOnDerived : Unsuppressed
         {
             [Kept]

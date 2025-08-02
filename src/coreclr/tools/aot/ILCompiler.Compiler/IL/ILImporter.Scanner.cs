@@ -945,7 +945,7 @@ namespace Internal.IL
             if (obj is TypeDesc type)
             {
                 // We might also be able to optimize this a little if this is a ldtoken/GetTypeFromHandle/Equals sequence.
-                bool isTypeEquals = false;
+                var helperId = ReadyToRunHelperId.MetadataTypeHandle;
                 TypeEqualityPatternAnalyzer analyzer = _typeEqualityPatternAnalyzer;
                 ILReader reader = new ILReader(_ilBytes, _currentOffset);
                 while (!analyzer.IsDefault)
@@ -956,7 +956,7 @@ namespace Internal.IL
 
                     if (analyzer.IsTypeEqualityCheck)
                     {
-                        isTypeEquals = true;
+                        helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                         break;
                     }
                 }
@@ -969,13 +969,17 @@ namespace Internal.IL
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
                 {
-                    reference = GetGenericLookupHelper(
-                        isTypeEquals ? ReadyToRunHelperId.NecessaryTypeHandle : ReadyToRunHelperId.TypeHandle, type);
+                    reference = GetGenericLookupHelper(helperId, type);
                 }
                 else
                 {
-                    reference = _compilation.ComputeConstantLookup(
-                        isTypeEquals ? ReadyToRunHelperId.NecessaryTypeHandle : _compilation.GetLdTokenHelperForType(type), type);
+                    if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        Debug.Assert(_methodIL.OwningMethod.Name == "GetCanonType");
+                        helperId = ReadyToRunHelperId.NecessaryTypeHandle;
+                    }
+
+                    reference = _compilation.ComputeConstantLookup(helperId, type);
                 }
                 _dependencies.Add(reference, "ldtoken");
             }

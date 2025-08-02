@@ -75,8 +75,11 @@ namespace Internal.JitInterface
                 // https://github.com/dotnet/runtimelab/issues/1128
                 for (int i = 0; i < _codeRelocs.Count; i++)
                 {
-                    Debug.Assert(_codeRelocs[i].Target.GetType() != typeof(EETypeNode)
-                        || _compilation.NecessaryTypeSymbolIfPossible(((EETypeNode)_codeRelocs[i].Target).Type) == _codeRelocs[i].Target);
+                    if (_codeRelocs[i].Target is EETypeNode eetype)
+                    {
+                        IEETypeNode expectedeetype = _compilation.NecessaryTypeSymbolIfPossible(eetype.Type);
+                        Debug.Assert(expectedeetype == eetype);
+                    }
                 }
 #endif
 

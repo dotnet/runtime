@@ -571,7 +571,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [KeptInterface(typeof(ITest))]
             class BaseType : ITest
             {
-                [Kept]
+                [Kept(By = Tool.Trimmer)]
                 public void Method() { }
             }
 
@@ -580,7 +580,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [KeptInterface(typeof(ITest))]
             class DerivedType : BaseType, ITest
             {
-                [Kept]
+                [Kept(By = Tool.Trimmer)]
                 public void Method() { }
             }
 

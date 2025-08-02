@@ -12,13 +12,13 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class FrozenRuntimeTypeNode : FrozenObjectNode
     {
         private readonly TypeDesc _type;
-        private readonly bool _constructed;
+        private readonly bool _withMetadata;
 
-        public FrozenRuntimeTypeNode(TypeDesc type, bool constructed)
+        public FrozenRuntimeTypeNode(TypeDesc type, bool withMetadata)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
             _type = type;
-            _constructed = constructed;
+            _withMetadata = withMetadata;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -30,8 +30,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeContents(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            IEETypeNode typeSymbol = _constructed
-                ? factory.ConstructedTypeSymbol(_type)
+            IEETypeNode typeSymbol = _withMetadata
+                ? factory.MetadataTypeSymbol(_type)
                 : factory.NecessaryTypeSymbol(_type);
 
             dataBuilder.EmitPointerReloc(factory.ConstructedTypeSymbol(ObjectType));
