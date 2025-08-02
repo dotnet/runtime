@@ -498,6 +498,35 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
     return &physRegs[regNum];
 }
 
+//------------------------------------------------------------------------
+// getAvailableGPRsForType: Returns available general-purpose registers for the given type,
+// with platform-specific restrictions applied.
+//
+// Arguments:
+//     candidates - The candidate register mask to be filtered
+//     regType    - The register type for which we need available registers
+//
+// Return Value:
+//     A filtered register mask with platform-specific restrictions applied.
+//     For AMD64: GC types and long types are restricted to low GPRs only.
+//     For other platforms: Returns the original candidates unchanged.
+//
+// Notes:
+//     On AMD64, we don't use extended GPRs (R16-R31) for GC types to ensure
+//     proper GC tracking and code generation compatibility.
+//
+SingleTypeRegSet LinearScan::getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType)
+{
+#ifdef TARGET_AMD64
+    if (varTypeIsGC(regType) || varTypeIsLong(regType))
+    {
+        // For AMD64, we don't use eGPR for GC types.
+        candidates &= (SingleTypeRegSet)RBM_LOWINT.getLow();
+    }
+#endif // TARGET_AMD64
+    return candidates;
+}
+
 #ifdef DEBUG
 
 //----------------------------------------------------------------------------
@@ -8694,6 +8723,9 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     }
 #else  // !TARGET_ARM
     SingleTypeRegSet freeRegs = allRegs(type);
+    // We call getTempRegForResolution() with only either TYP_INT or TYP_FLOAT.
+    // We are being conservative with eGPR usage when type is TYP_INT since it could be a reference type.
+    freeRegs = getAvailableGPRsForType(freeRegs, (type == TYP_INT) ? TYP_REF : type);
 #endif // !TARGET_ARM
 
 #ifdef DEBUG
@@ -13466,7 +13498,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
     {
         preferences = candidates;
     }
-
+    candidates = linearScan->getAvailableGPRsForType(candidates, regType);
 #ifdef DEBUG
     candidates = linearScan->stressLimitRegs(refPosition, regType, candidates);
 #endif
@@ -13934,7 +13966,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
             }
         }
     }
-
+    candidates = linearScan->getAvailableGPRsForType(candidates, regType);
 #ifdef DEBUG
     candidates = linearScan->stressLimitRegs(refPosition, regType, candidates);
 #endif
