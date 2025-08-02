@@ -63,6 +63,7 @@ partial interface IRuntimeTypeSystem : IContract
     public ushort GetNumStaticFields(TypeHandle typeHandle);
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle);
     public TargetPointer GetFieldDescList(TypeHandle typeHandle);
+    public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle);
     public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
@@ -459,6 +460,8 @@ The contract additionally depends on these data descriptors
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
 
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+    public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
+
 
     public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle TypeHandle)
     {

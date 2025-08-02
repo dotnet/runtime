@@ -832,6 +832,9 @@ struct cdac_data<InteropSyncBlockInfo>
 #ifdef FEATURE_COMINTEROP
     static constexpr size_t CCW = offsetof(InteropSyncBlockInfo, m_pCCW);
     static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
+#endif
+#ifdef FEATURE_OBJCMARSHAL
+    static constexpr size_t TaggedMemory = offsetof(InteropSyncBlockInfo, m_taggedMemory);
 #endif // FEATURE_COMINTEROP
 };
 
