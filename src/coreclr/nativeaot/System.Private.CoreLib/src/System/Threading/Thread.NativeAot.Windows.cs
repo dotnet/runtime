@@ -481,7 +481,11 @@ namespace System.Threading
                 SafeWaitHandle osHandle = _osHandle;
                 if (osHandle != null && !osHandle.IsInvalid && !osHandle.IsClosed)
                 {
-                    nint callbackPtr = (nint)(delegate* unmanaged<nint, void>)&InterruptApcCallback;
+                    nint callbackPtr;
+                    unsafe
+                    {
+                        callbackPtr = (nint)(delegate* unmanaged<nint, void>)&InterruptApcCallback;
+                    }
                     Interop.Kernel32.QueueUserAPC(callbackPtr, osHandle.DangerousGetHandle(), IntPtr.Zero);
                 }
             }
