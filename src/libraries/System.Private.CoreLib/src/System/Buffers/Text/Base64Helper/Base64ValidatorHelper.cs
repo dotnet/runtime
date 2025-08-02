@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Buffers.Text
 {
@@ -11,6 +12,8 @@ namespace System.Buffers.Text
             where TBase64Validatable : IBase64Validatable<T>
             where T : struct
         {
+            if (!base64Text.IsEmpty && Unsafe.IsNullRef(ref MemoryMarshal.GetReference(base64Text))) throw new InvalidOperationException("Base64Helper1: Span is empty or not initialized properly. " + base64Text.Length);
+
             int length = 0, paddingCount = 0;
             T lastChar = default;
 
@@ -139,9 +142,16 @@ namespace System.Buffers.Text
             bool IsEncodingPad(T value);
             bool ValidateAndDecodeLength(T lastChar, int length, int paddingCount, out int decodedLength);
         }
-
+#pragma warning disable CS0414
         internal readonly struct Base64CharValidatable : IBase64Validatable<char>
         {
+            // to make structure size 4 instead of 1 as workaround for WASM AOT problem with empty structs
+            private readonly int dummy;
+            public Base64CharValidatable()
+            {
+                dummy = 0;
+            }
+
 #if NET
             private static readonly SearchValues<char> s_validBase64Chars = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
@@ -167,6 +177,13 @@ namespace System.Buffers.Text
 
         internal readonly struct Base64ByteValidatable : IBase64Validatable<byte>
         {
+            // to make structure size 4 instead of 1 as workaround for WASM AOT problem with empty structs
+            private readonly int dummy;
+            public Base64ByteValidatable()
+            {
+                dummy = 0;
+            }
+
 #if NET
             private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(default(Base64EncoderByte).EncodingMap);
 
