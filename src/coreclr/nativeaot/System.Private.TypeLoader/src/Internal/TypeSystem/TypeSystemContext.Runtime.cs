@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
@@ -175,13 +176,13 @@ namespace Internal.TypeSystem
         }
 
         // This dictionary is in every scenario - create it eagerly
-        private LowLevelDictionary<RuntimeTypeHandle, TypeDesc> _runtimeTypeHandleResolutionCache =
-             new LowLevelDictionary<RuntimeTypeHandle, TypeDesc>();
+        private Dictionary<IntPtr, TypeDesc> _runtimeTypeHandleResolutionCache =
+             new Dictionary<IntPtr, TypeDesc>();
 
         public TypeDesc ResolveRuntimeTypeHandle(RuntimeTypeHandle rtth)
         {
             TypeDesc returnedType;
-            if (_runtimeTypeHandleResolutionCache.TryGetValue(rtth, out returnedType))
+            if (_runtimeTypeHandleResolutionCache.TryGetValue(rtth.Value, out returnedType))
                 return returnedType;
 
             if (rtth.Equals(CanonType.RuntimeTypeHandle))
@@ -271,7 +272,7 @@ namespace Internal.TypeSystem
                     returnedType.SetRuntimeTypeHandleUnsafe(rtth);
             }
 
-            _runtimeTypeHandleResolutionCache.Add(rtth, returnedType);
+            _runtimeTypeHandleResolutionCache.Add(rtth.Value, returnedType);
 
             return returnedType.WithDebugName();
         }
@@ -436,7 +437,7 @@ namespace Internal.TypeSystem
             return _runtimeMethods.GetOrCreateValue(new RuntimeMethodKey(unboxingStub, owningType, nameAndSignature));
         }
 
-        private LowLevelDictionary<GenericTypeInstanceKey, DefType> _genericTypeInstances;
+        private Dictionary<GenericTypeInstanceKey, DefType> _genericTypeInstances;
 
         /// <summary>
         /// Get a DefType that is the generic instantiation of an open generic type over instantiation arguments
@@ -447,18 +448,16 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(typeDef.Instantiation.IsNull || typeDef.Instantiation.Length == arguments.Length);
 
-            _genericTypeInstances ??= new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
+            _genericTypeInstances ??= new Dictionary<GenericTypeInstanceKey, DefType>();
 
             GenericTypeInstanceKey key = new GenericTypeInstanceKey(typeDef, arguments);
 
-            DefType result;
-            if (!_genericTypeInstances.TryGetValue(key, out result))
+            ref DefType? result = ref CollectionsMarshal.GetValueRefOrAddDefault(_genericTypeInstances, key, out bool exists);
+            if (!exists)
             {
                 NoMetadataType nmTypeDef = (NoMetadataType)typeDef;
                 Debug.Assert(RuntimeAugments.IsGenericTypeDefinition(nmTypeDef.RuntimeTypeHandle));
                 result = new NoMetadataType(this, nmTypeDef.RuntimeTypeHandle, nmTypeDef, arguments, key.GetHashCode());
-
-                _genericTypeInstances.Add(key, result);
             }
 
             return result.WithDebugName();
