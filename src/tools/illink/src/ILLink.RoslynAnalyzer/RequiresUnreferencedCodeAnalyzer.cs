@@ -25,8 +25,10 @@ namespace ILLink.RoslynAnalyzer
         private static readonly DiagnosticDescriptor s_requiresUnreferencedCodeOnStaticCtor = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor);
         private static readonly DiagnosticDescriptor s_requiresUnreferencedCodeOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnreferencedCodeOnEntryPoint);
 
+        private static readonly DiagnosticDescriptor s_referenceNotMarkedIsTrimmableRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReferenceNotMarkedIsTrimmable);
+
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint);
+            ImmutableArray.Create(s_makeGenericMethodRule, s_makeGenericTypeRule, s_requiresUnreferencedCodeRule, s_requiresUnreferencedCodeAttributeMismatch, s_requiresUnreferencedCodeOnStaticCtor, s_requiresUnreferencedCodeOnEntryPoint, s_referenceNotMarkedIsTrimmableRule);
 
         private protected override string RequiresAttributeName => RequiresUnreferencedCodeAttribute;
 
@@ -75,6 +77,16 @@ namespace ILLink.RoslynAnalyzer
 
             return false;
         }
+
+        private protected override ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions =>
+            ImmutableArray.Create<Action<CompilationAnalysisContext>>((context) =>
+            {
+                CheckReferencedAssemblies(
+                    context,
+                    MSBuildPropertyOptionNames.VerifyReferenceTrimCompatibility,
+                    "IsTrimmable",
+                    s_referenceNotMarkedIsTrimmableRule);
+            });
 
         protected override bool VerifyAttributeArguments(AttributeData attribute) =>
             RequiresUnreferencedCodeUtils.VerifyRequiresUnreferencedCodeAttributeArguments(attribute);
