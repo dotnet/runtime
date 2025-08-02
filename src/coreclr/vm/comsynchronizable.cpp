@@ -899,3 +899,18 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
         pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
     }
 }
+
+extern "C" BOOL QCALLTYPE ThreadNative_CurrentThreadIsFinalizerThread()
+{
+    QCALL_CONTRACT;
+
+    BOOL retval = FALSE;
+
+    BEGIN_QCALL;
+
+    retval = IsFinalizerThread() ? TRUE : FALSE;
+
+    END_QCALL;
+
+    return retval;
+}
