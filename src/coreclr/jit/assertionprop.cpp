@@ -5114,26 +5114,14 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
         return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
     }
 
-    if (type != TYP_BYREF)
-    {
-        VNFuncApp funcApp;
-        if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
-        {
-            // Check for known stack allocation functions
-            if ((funcApp.m_func == VNF_JitNewLclArr) || (funcApp.m_func == VNF_JitReadyToRunNewLclArr))
-            {
-                // NOTE: this relies on fgExpandStackArrayAllocations phase to always expand these allocators
-                // TODO: add some debug checks for that.
-                return GCInfo::WriteBarrierForm::WBF_NoBarrier;
-            }
-        }
-
-        return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
-    }
-
-    VNFuncApp funcApp;
     if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
     {
+        if ((funcApp.m_func == VNF_JitNewLclArr) || (funcApp.m_func == VNF_JitReadyToRunNewLclArr))
+        {
+            // NOTE: this relies on fgExpandStackArrayAllocations phase to always expand these allocators
+            // TODO: add some debug checks for that.
+            return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+        }
         if (funcApp.m_func == VNF_PtrToArrElem)
         {
             // Check whether the array is on the heap
