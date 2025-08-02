@@ -40,8 +40,8 @@ For AOT compilation, the situation is far more complex. This is due to the follo
 
 ## Crossgen2 model of hardware intrinsic usage
 There are 2 sets of instruction sets known to the compiler.
-- The baseline instruction set which defaults to (Sse, Sse2), but may be adjusted via compiler option.
-- The optimistic instruction set which defaults to (Sse3, Ssse3, Sse41, Sse42, Popcnt, Pclmulqdq, and Lzcnt).
+- The baseline instruction set which defaults to x86-64-v2 (SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, and POPCNT), but may be adjusted via compiler option.
+- The optimistic instruction set which defaults to (AES, GFNI, SHA, WAITPKG, and X86SERIALIZE).
 
 Code will be compiled using the optimistic instruction set to drive compilation, but any use of an instruction set beyond the baseline instruction set will be recorded, as will any attempt to use an instruction set beyond the optimistic set if that attempted use has a semantic effect. If the baseline instruction set includes `Avx2` then the size and characteristics of of `Vector<T>` is known. Any other decisions about ABI may also be encoded. For instance, it is likely that the ABI of `Vector256<T>` and `Vector512<T>` will vary based on the presence/absence of `Avx` support.
 

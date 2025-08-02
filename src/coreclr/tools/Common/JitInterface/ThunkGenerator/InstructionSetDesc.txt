@@ -32,11 +32,11 @@ instructionset     ,X86   ,X86Base              ,                   ,22 ,X86Base
 instructionset     ,X86   ,Sse                  ,                   ,1  ,X86Base               ,base
 instructionset     ,X86   ,Sse2                 ,                   ,2  ,X86Base               ,base
 
-instructionset     ,X86   ,Sse42                ,                   ,6  ,SSE42                 ,sse4.2
-instructionset     ,X86   ,Sse3                 ,                   ,3  ,SSE42                 ,sse4.2
-instructionset     ,X86   ,Ssse3                ,                   ,4  ,SSE42                 ,sse4.2
-instructionset     ,X86   ,Sse41                ,                   ,5  ,SSE42                 ,sse4.2
-instructionset     ,X86   ,Popcnt               ,                   ,15 ,SSE42                 ,sse4.2
+instructionset     ,X86   ,Sse42                ,                   ,6  ,X86Base               ,base
+instructionset     ,X86   ,Sse3                 ,                   ,3  ,X86Base               ,base
+instructionset     ,X86   ,Ssse3                ,                   ,4  ,X86Base               ,base
+instructionset     ,X86   ,Sse41                ,                   ,5  ,X86Base               ,base
+instructionset     ,X86   ,Popcnt               ,                   ,15 ,X86Base               ,base
 
 instructionset     ,X86   ,Avx                  ,                   ,7  ,AVX                   ,avx
 
@@ -122,7 +122,6 @@ instructionset     ,X86   ,AvxVnniInt16_V512    ,                   ,63 ,AVXVNNI
 ; 64-bit Instruction Sets
 
 instructionset64bit,X86   ,X86Base
-instructionset64bit,X86   ,SSE42
 
 instructionset64bit,X86   ,AVX
 instructionset64bit,X86   ,AVX2
@@ -153,9 +152,7 @@ vectorinstructionset,X86  ,Vector512
 
 ; Implications
 
-implication        ,X86   ,SSE42                ,X86Base
-
-implication        ,X86   ,AVX                  ,SSE42
+implication        ,X86   ,AVX                  ,X86Base
 implication        ,X86   ,AVX2                 ,AVX
 
 implication        ,X86   ,AVX512               ,AVX2
@@ -175,7 +172,7 @@ implication        ,X86   ,AVX512VP2INTERSECT   ,AVX512
 implication        ,X86   ,AVXIFMA              ,AVX2
 implication        ,X86   ,AVXVNNI              ,AVX2
 
-implication        ,X86   ,GFNI                 ,SSE42
+implication        ,X86   ,GFNI                 ,X86Base
 implication        ,X86   ,GFNI_V256            ,GFNI
 implication        ,X86   ,GFNI_V256            ,AVX
 implication        ,X86   ,GFNI_V512            ,GFNI_V256
@@ -264,8 +261,7 @@ implication        ,RiscV64 ,Zbb                 ,RiscV64Base
 implication        ,RiscV64 ,Zba                 ,RiscV64Base
 
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
-instructionsetgroup  ,x86-64                     ,X64 X86  ,base
-instructionsetgroup  ,x86-64-v2                  ,X64 X86  ,x86-64 sse4.2
+instructionsetgroup  ,x86-64-v2                  ,X64 X86  ,base
 instructionsetgroup  ,x86-64-v3                  ,X64 X86  ,x86-64-v2 avx2
 instructionsetgroup  ,x86-64-v4                  ,X64 X86  ,x86-64-v3 avx512
 
