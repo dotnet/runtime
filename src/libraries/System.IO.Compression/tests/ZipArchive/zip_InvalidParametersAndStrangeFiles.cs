@@ -1659,6 +1659,18 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ReadArchive_FrontTruncatedFile_Throws(bool async)
+        {
+            for (int i = 1; i < s_slightlyIncorrectZip64.Length - 1; i++)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(
+                    // The archive is truncated, so it should throw an exception
+                    () => CreateZipArchive(async, new MemoryStream(s_slightlyIncorrectZip64, i, s_slightlyIncorrectZip64.Length - i), ZipArchiveMode.Read));
+            }
+        }
+
         // Generates a copy of s_invalidExtraFieldData with a variable number of bytes as extra field data.
         private static byte[] GenerateInvalidExtraFieldData(byte modifiedVersionToExtract, ushort extraFieldDataLength,
             out int lhVersionToExtractOffset,
