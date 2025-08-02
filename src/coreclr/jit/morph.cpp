@@ -6608,8 +6608,7 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
                                             &isRelative);
 
     // Dereference the this pointer to obtain the method table, it is called vtab below
-    assert(VPTR_OFFS == 0); // We have to add this value to the thisPtr to get the methodTable
-    GenTree* vtab = gtNewIndir(TYP_I_IMPL, thisPtr, GTF_IND_INVARIANT);
+    GenTree* vtab = gtNewMethodTableLookup(thisPtr);
 
     if (fgGlobalMorph)
     {
