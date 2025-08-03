@@ -73,6 +73,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118314")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
