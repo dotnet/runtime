@@ -111,7 +111,7 @@ namespace System.Numerics.Tensors
             /// <param name="left">The scalar from which to subtract <paramref name="right" />.</param>
             /// <param name="right">The tensor to subtract from <paramref name="left" />.</param>
             /// <returns>A new tensor containing the result of <paramref name="left" /> - <paramref name="right" />.</returns>
-            public static Tensor<TScalar> operator -(TScalar left, in ReadOnlyTensorSpan<TScalar> right) => Subtract(right, left);
+            public static Tensor<TScalar> operator -(TScalar left, in ReadOnlyTensorSpan<TScalar> right) => Subtract(left, right);
         }
 
         /// <typeparam name="TScalar">The type of the elements in the tensor.</typeparam>
@@ -125,7 +125,7 @@ namespace System.Numerics.Tensors
             public static Tensor<TScalar> operator -(Tensor<TScalar> left, TScalar right) => Subtract(left, right);
 
             /// <inheritdoc cref="op_Subtraction{T}(T, in ReadOnlyTensorSpan{T})" />
-            public static Tensor<TScalar> operator -(TScalar left, Tensor<TScalar> right) => Subtract(right, left);
+            public static Tensor<TScalar> operator -(TScalar left, Tensor<TScalar> right) => Subtract(left, right);
 
             /// <inheritdoc cref="op_SubtractionAssignment{T}(ref TensorSpan{T}, in ReadOnlyTensorSpan{T})" />
             public void operator -=(in ReadOnlyTensorSpan<TScalar> other) => Subtract(tensor, other, tensor);
@@ -146,7 +146,7 @@ namespace System.Numerics.Tensors
             public static Tensor<TScalar> operator -(in TensorSpan<TScalar> left, TScalar right) => Subtract(left, right);
 
             /// <inheritdoc cref="op_Subtraction{T}(T, in ReadOnlyTensorSpan{T})" />
-            public static Tensor<TScalar> operator -(TScalar left, in TensorSpan<TScalar> right) => Subtract(right, left);
+            public static Tensor<TScalar> operator -(TScalar left, in TensorSpan<TScalar> right) => Subtract(left, right);
 
             /// <summary>Performs in-place element-wise subtraction between two tensors.</summary>
             /// <param name="other">The tensor to subtract from the tensor being operated on.</param>

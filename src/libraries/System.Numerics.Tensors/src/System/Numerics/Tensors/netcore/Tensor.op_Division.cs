@@ -110,7 +110,7 @@ namespace System.Numerics.Tensors
             /// <param name="left">The scalar dividend.</param>
             /// <param name="right">The tensor divisor.</param>
             /// <returns>A new tensor containing the result of <paramref name="left" /> / <paramref name="right" />.</returns>
-            public static Tensor<TScalar> operator /(TScalar left, in ReadOnlyTensorSpan<TScalar> right) => Divide(right, left);
+            public static Tensor<TScalar> operator /(TScalar left, in ReadOnlyTensorSpan<TScalar> right) => Divide(left, right);
         }
 
         /// <typeparam name="TScalar">The type of the elements in the tensor.</typeparam>
@@ -124,7 +124,7 @@ namespace System.Numerics.Tensors
             public static Tensor<TScalar> operator /(Tensor<TScalar> left, TScalar right) => Divide(left, right);
 
             /// <inheritdoc cref="op_Division{T}(T, in ReadOnlyTensorSpan{T})" />
-            public static Tensor<TScalar> operator /(TScalar left, Tensor<TScalar> right) => Divide(right, left);
+            public static Tensor<TScalar> operator /(TScalar left, Tensor<TScalar> right) => Divide(left, right);
 
             /// <inheritdoc cref="op_DivisionAssignment{T}(ref TensorSpan{T}, in ReadOnlyTensorSpan{T})" />
             public void operator /=(in ReadOnlyTensorSpan<TScalar> other) => Divide(tensor, other, tensor);
@@ -145,7 +145,7 @@ namespace System.Numerics.Tensors
             public static Tensor<TScalar> operator /(in TensorSpan<TScalar> left, TScalar right) => Divide(left, right);
 
             /// <inheritdoc cref="op_Division{T}(T, in ReadOnlyTensorSpan{T})" />
-            public static Tensor<TScalar> operator /(TScalar left, in TensorSpan<TScalar> right) => Divide(right, left);
+            public static Tensor<TScalar> operator /(TScalar left, in TensorSpan<TScalar> right) => Divide(left, right);
 
             /// <summary>Performs in-place element-wise division between two tensors.</summary>
             /// <param name="other">The tensor divisor.</param>

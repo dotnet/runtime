@@ -8,7 +8,7 @@ namespace System.Numerics.Tensors
         /// <summary>Performs an decrement on a tensor.</summary>
         /// <typeparam name="T">The type of the elements in the tensor.</typeparam>
         /// <param name="x">The tensor to decrement.</param>
-        /// <returns>A new tensor containing the result of ~<paramref name="x" />.</returns>
+        /// <returns>A new tensor containing the result of --<paramref name="x" />.</returns>
         public static Tensor<T> Decrement<T>(in ReadOnlyTensorSpan<T> x)
             where T : IDecrementOperators<T>
         {
@@ -20,7 +20,7 @@ namespace System.Numerics.Tensors
         /// <summary>Performs an decrement on a tensor.</summary>
         /// <typeparam name="T">The type of the elements in the tensor.</typeparam>
         /// <param name="x">The tensor to decrement.</param>
-        /// <param name="destination">The destination where the result of ~<paramref name="x" /> is written.</param>
+        /// <param name="destination">The destination where the result of --<paramref name="x" /> is written.</param>
         /// <returns>A reference to <paramref name="destination" />.</returns>
         /// <exception cref="ArgumentException">The shapes of <paramref name="x" /> and <paramref name="destination" /> are not compatible.</exception>
         public static ref readonly TensorSpan<T> Decrement<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
