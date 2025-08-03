@@ -211,6 +211,14 @@ namespace System.Runtime.Serialization.DataContracts
 {
     public abstract partial class DataContract
     {
+        internal const System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes DataContractPreserveMemberTypes =
+            System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods |
+            System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods |
+            System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors |
+            System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields |
+            System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties;
+
         internal DataContract() { }
         public virtual System.Runtime.Serialization.DataContracts.DataContract? BaseContract { [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed."), System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")] get { throw null; } }
         public virtual string? ContractType { get { throw null; } }
@@ -223,7 +231,7 @@ namespace System.Runtime.Serialization.DataContracts
         public virtual System.Type OriginalUnderlyingType { get { throw null; } }
         public virtual System.Xml.XmlDictionaryString? TopLevelElementName { get { throw null; } }
         public virtual System.Xml.XmlDictionaryString? TopLevelElementNamespace { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(575)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(DataContractPreserveMemberTypes)]
         public virtual System.Type UnderlyingType { get { throw null; } }
         public virtual System.Xml.XmlQualifiedName XmlName { get { throw null; } }
         public sealed override bool Equals(object? obj) { throw null; }
