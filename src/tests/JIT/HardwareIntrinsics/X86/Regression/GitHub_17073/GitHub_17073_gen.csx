@@ -174,7 +174,7 @@ static string CreateVector(int vectorSize, string vectorElementType, double valu
                (value == -1.0f) ? $"Vector{vectorSize}<float>.NegativeOne" :
                $"Vector{vectorSize}.Create({value:F1}f)";
     if (vectorElementType == "Double")
-        return double.IsNaN(value) ? $"Vector{vectorSize}<double>.NaN"
+        return double.IsNaN(value) ? $"Vector{vectorSize}<double>.NaN" :
                (value == 0.0) && double.IsPositive(value) ? $"Vector{vectorSize}<double>.Zero" :
                (value == 1.0) ? $"Vector{vectorSize}<double>.One" :
                (value == -1.0) ? $"Vector{vectorSize}<double>.NegativeOne" :
