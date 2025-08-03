@@ -174,8 +174,7 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
     ARG_SLOT retVal = 0;
     PCODE pStubEntryPoint = pCMD->GetILStub();
 
-    INT_PTR dangerousThis;
-    *(OBJECTREF *)&dangerousThis = orThis;
+    INT_PTR dangerousThis = (INT_PTR)OBJECTREFToObject(orThis);
 
     DWORD dwStackSlots = pCMD->GetNumStackBytes() / TARGET_POINTER_SIZE;
 
