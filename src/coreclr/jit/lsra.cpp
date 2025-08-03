@@ -138,20 +138,13 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
     }
 #endif // TARGET_64BIT
 #if FEATURE_MULTIREG_RET
-    else if (tree->OperGet() == GT_COPY)
+    else if (tree->OperIs(GT_COPY))
     {
         assert(regIdx == 1);
         GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
         copy->gtOtherRegs[0]      = (regNumberSmall)reg;
     }
 #endif // FEATURE_MULTIREG_RET
-#if FEATURE_ARG_SPLIT
-    else if (tree->OperIsPutArgSplit())
-    {
-        GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
-        putArg->SetRegNumByIdx(reg, regIdx);
-    }
-#endif // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HW_INTRINSICS
     else if (tree->OperIs(GT_HWINTRINSIC))
     {
@@ -830,14 +823,18 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableRegCount       = ACTUAL_REG_COUNT;
     needNonIntegerRegisters = false;
 
+#if defined(TARGET_XARCH)
+    evexIsSupported = compiler->canUseEvexEncoding();
+
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
     rbmAllInt         = compiler->rbmAllInt;
     rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
     regIntLast        = compiler->regIntLast;
-    isApxSupported    = compiler->canUseApxEncoding();
-    if (isApxSupported)
+    apxIsSupported    = compiler->canUseApxEncoding();
+
+    if (apxIsSupported)
     {
         int size   = (int)ACTUAL_REG_COUNT + 1;
         regIndices = theCompiler->getAllocator(CMK_LSRA).allocate<regNumber>(size);
@@ -860,12 +857,11 @@ LinearScan::LinearScan(Compiler* theCompiler)
     }
 #endif // TARGET_AMD64
 
-#if defined(TARGET_XARCH)
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
     memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
-    if (!compiler->canUseEvexEncoding())
+    if (!evexIsSupported)
     {
         availableRegCount -= (CNT_HIGHFLOAT + CNT_MASK_REGS);
     }
@@ -960,7 +956,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_AMD64 || TARGET_ARM64
 
 #if defined(TARGET_AMD64)
-    if (compiler->canUseEvexEncoding())
+    if (evexIsSupported)
     {
         availableFloatRegs |= RBM_HIGHFLOAT.GetFloatRegSet();
         availableDoubleRegs |= RBM_HIGHFLOAT.GetFloatRegSet();
@@ -1105,7 +1101,7 @@ void LinearScan::setBlockSequence()
         {
             if (!hasUniquePred)
             {
-                if (predBlock->NumSucc(compiler) > 1)
+                if (predBlock->NumSucc() > 1)
                 {
                     blockInfo[block->bbNum].hasCriticalInEdge = true;
                     hasCriticalEdges                          = true;
@@ -1135,14 +1131,14 @@ void LinearScan::setBlockSequence()
 
         // First, update the NORMAL successors of the current block, adding them to the worklist
         // according to the desired order.  We will handle the EH successors below.
-        const unsigned numSuccs                = block->NumSucc(compiler);
+        const unsigned numSuccs                = block->NumSucc();
         bool           checkForCriticalOutEdge = (numSuccs > 1);
         if (!checkForCriticalOutEdge && block->KindIs(BBJ_SWITCH))
         {
             assert(!"Switch with single successor");
         }
 
-        for (BasicBlock* const succ : block->Succs(compiler))
+        for (BasicBlock* const succ : block->Succs())
         {
             if (checkForCriticalOutEdge && (succ->GetUniquePred(compiler) == nullptr))
             {
@@ -7672,8 +7668,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
             noway_assert(!blockRange.IsEmpty());
 
             GenTree* branch = blockRange.LastNode();
-            assert(branch->OperIsConditionalJump() || branch->OperGet() == GT_SWITCH_TABLE ||
-                   branch->OperGet() == GT_SWITCH);
+            assert(branch->OperIsConditionalJump() || branch->OperIs(GT_SWITCH_TABLE) || branch->OperIs(GT_SWITCH));
 
             blockRange.InsertBefore(branch, LIR::SeqTree(compiler, simdUpperRestore));
         }
@@ -8644,8 +8639,7 @@ void LinearScan::insertSwap(
             noway_assert(!blockRange.IsEmpty());
 
             GenTree* branch = blockRange.LastNode();
-            assert(branch->OperIsConditionalJump() || branch->OperGet() == GT_SWITCH_TABLE ||
-                   branch->OperGet() == GT_SWITCH);
+            assert(branch->OperIsConditionalJump() || branch->OperIs(GT_SWITCH_TABLE) || branch->OperIs(GT_SWITCH));
 
             blockRange.InsertBefore(branch, std::move(swapRange));
         }
@@ -8959,7 +8953,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
     // Get the outVarToRegMap for this block
     VarToRegMap outVarToRegMap = getOutVarToRegMap(block->bbNum);
-    unsigned    succCount      = block->NumSucc(compiler);
+    unsigned    succCount      = block->NumSucc();
     assert(succCount > 1);
 
     // First, determine the live regs at the end of this block so that we know what regs are
@@ -8991,7 +8985,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         // At this point, Lowering has transformed any non-switch-table blocks into
         // cascading ifs.
         GenTree* switchTable = LIR::AsRange(block).LastNode();
-        assert(switchTable != nullptr && switchTable->OperGet() == GT_SWITCH_TABLE);
+        assert(switchTable != nullptr && switchTable->OperIs(GT_SWITCH_TABLE));
 
         consumedRegs = compiler->codeGen->internalRegisters.GetAll(switchTable).GetRegSetForType(IntRegisterType);
         GenTree* op1 = switchTable->gtGetOp1();
@@ -9102,7 +9096,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         regNumber sameToReg           = REG_NA;
         for (unsigned succIndex = 0; succIndex < succCount; succIndex++)
         {
-            BasicBlock* succBlock = block->GetSucc(succIndex, compiler);
+            BasicBlock* succBlock = block->GetSucc(succIndex);
             if (!VarSetOps::IsMember(compiler, succBlock->bbLiveIn, outResolutionSetVarIndex))
             {
                 maybeSameLivePaths = true;
@@ -9221,7 +9215,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     {
         for (unsigned succIndex = 0; succIndex < succCount; succIndex++)
         {
-            BasicBlock* succBlock = block->GetSucc(succIndex, compiler);
+            BasicBlock* succBlock = block->GetSucc(succIndex);
 
             // Any "diffResolutionSet" resolution for a block with no other predecessors will be handled later
             // as split resolution.
@@ -9339,7 +9333,7 @@ void LinearScan::resolveEdges()
             continue;
         }
 
-        unsigned    succCount       = block->NumSucc(compiler);
+        unsigned    succCount       = block->NumSucc();
         BasicBlock* uniquePredBlock = block->GetUniquePred(compiler);
 
         // First, if this block has a single predecessor,
@@ -9372,7 +9366,7 @@ void LinearScan::resolveEdges()
 
         if (succCount == 1)
         {
-            BasicBlock* succBlock = block->GetSucc(0, compiler);
+            BasicBlock* succBlock = block->GetSucc(0);
             if (succBlock->GetUniquePred(compiler) == nullptr)
             {
                 VARSET_TP outResolutionSet(
@@ -10964,7 +10958,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                             continueLoop = false;
                             break;
                         }
-                        block->dspBlockHeader(compiler);
+                        block->dspBlockHeader();
                         printedBlockHeader = true;
                         printf("=====\n");
                         break;
@@ -10981,7 +10975,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         }
         else
         {
-            block->dspBlockHeader(compiler);
+            block->dspBlockHeader();
             printf("=====\n");
         }
         if (enregisterLocalVars && mode == LSRA_DUMP_POST && block != compiler->fgFirstBB &&
@@ -11805,7 +11799,7 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
             return true;
         }
 
-        if (!IsLsraAdded(node) || (node->OperGet() != GT_LCL_VAR))
+        if (!IsLsraAdded(node) || !node->OperIs(GT_LCL_VAR))
         {
             return false;
         }
@@ -12464,7 +12458,7 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
     GenTree* dst = resolutionMove;
     assert(IsResolutionMove(dst));
 
-    if (dst->OperGet() == GT_SWAP)
+    if (dst->OperIs(GT_SWAP))
     {
         GenTreeLclVarCommon* left          = dst->gtGetOp1()->AsLclVarCommon();
         GenTreeLclVarCommon* right         = dst->gtGetOp2()->AsLclVarCommon();
@@ -12499,7 +12493,7 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
     regNumber            dstRegNum = dst->GetRegNum();
     regNumber            srcRegNum;
     GenTreeLclVarCommon* lcl;
-    if (dst->OperGet() == GT_COPY)
+    if (dst->OperIs(GT_COPY))
     {
         lcl       = dst->gtGetOp1()->AsLclVarCommon();
         srcRegNum = lcl->GetRegNum();

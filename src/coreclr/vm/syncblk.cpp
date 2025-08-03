@@ -28,6 +28,7 @@
 #include "corhost.h"
 #include "comdelegate.h"
 #include "finalizerthread.h"
+#include "minipal/time.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -77,15 +78,12 @@ void InteropSyncBlockInfo::FreeUMEntryThunk()
     }
     CONTRACTL_END
 
-    if (!g_fEEShutDown)
+    UMEntryThunkData *pUMEntryThunk = m_pUMEntryThunk;
+    if (pUMEntryThunk != NULL)
     {
-        void *pUMEntryThunk = GetUMEntryThunk();
-        if (pUMEntryThunk != NULL)
-        {
-            UMEntryThunk::FreeUMEntryThunk((UMEntryThunk *)pUMEntryThunk);
-        }
+        UMEntryThunkData::FreeUMEntryThunk(pUMEntryThunk);
+        m_pUMEntryThunk = NULL;
     }
-    m_pUMEntryThunk = NULL;
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -512,7 +510,7 @@ void SyncBlockCache::CleanupSyncBlocks()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    _ASSERTE(GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
     // Set the flag indicating sync block cleanup is in progress.
     // IMPORTANT: This must be set before the sync block cleanup bit is reset on the thread.
@@ -589,13 +587,6 @@ void SyncBlockCache::CleanupSyncBlocks()
         if (param.psb)
             DeleteSyncBlock(param.psb);
     } EE_END_FINALLY;
-}
-
-// create the sync block cache
-/* static */
-void SyncBlockCache::Attach()
-{
-    LIMITED_METHOD_CONTRACT;
 }
 
 // create the sync block cache
@@ -1821,7 +1812,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     // NOTE: This function cannot have a dynamic contract.  If it does, the contract's
     // destructor will reset the CLR debug state to what it was before entering the
     // function, which will undo the BeginNoTriggerGC() call below.
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
 #ifdef _DEBUG
@@ -1875,7 +1865,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 #else
 DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
 #ifdef _DEBUG
@@ -1912,7 +1901,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 
 DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
 {
-    SCAN_SCOPE_END;
     LIMITED_METHOD_CONTRACT;
 
     INCONTRACT(Thread* pThread = GetThreadNULLOk());
@@ -2477,15 +2465,15 @@ inline void LogContention()
 #define LogContention()
 #endif
 
-double ComputeElapsedTimeInNanosecond(LARGE_INTEGER startTicks, LARGE_INTEGER endTicks)
+double ComputeElapsedTimeInNanosecond(int64_t startTicks, int64_t endTicks)
 {
-    static LARGE_INTEGER freq;
-    if (freq.QuadPart == 0)
-        QueryPerformanceFrequency(&freq);
+    static int64_t freq;
+    if (freq == 0)
+        freq = minipal_hires_tick_frequency();
 
     const double NsPerSecond = 1000 * 1000 * 1000;
-    LONGLONG elapsedTicks = endTicks.QuadPart - startTicks.QuadPart;
-    return (elapsedTicks * NsPerSecond) / freq.QuadPart;
+    LONGLONG elapsedTicks = endTicks - startTicks;
+    return (elapsedTicks * NsPerSecond) / freq;
 }
 
 BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
@@ -2510,12 +2498,12 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     OBJECTREF obj = GetOwningObject();
 
-    LARGE_INTEGER startTicks = { {0} };
+    int64_t startTicks = 0;
     bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
 
     if (isContentionKeywordEnabled)
     {
-        QueryPerformanceCounter(&startTicks);
+        startTicks = minipal_hires_ticks();
 
         if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
         {
@@ -2550,7 +2538,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             // Measure the time we wait so that, in the case where we wake up
             // and fail to acquire the mutex, we can adjust remaining timeout
             // accordingly.
-            ULONGLONG start = CLRGetTickCount64();
+            int64_t start = minipal_lowres_ticks();
 
             // It is likely the case that An APC threw an exception, for instance Thread.Interrupt(). The wait subsystem
             // guarantees that if a signal to the event being waited upon is observed by the woken thread, that thread's
@@ -2638,8 +2626,8 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             // case is taken care of by 32-bit modulo arithmetic automatically.
             if (timeOut != (INT32)INFINITE)
             {
-                ULONGLONG end = CLRGetTickCount64();
-                ULONGLONG duration;
+                int64_t end = minipal_lowres_ticks();
+                int64_t duration;
                 if (end == start)
                 {
                     duration = 1;
@@ -2648,7 +2636,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
                 {
                     duration = end - start;
                 }
-                duration = min(duration, (ULONGLONG)timeOut);
+                duration = min(duration, (int64_t)timeOut);
                 timeOut -= (INT32)duration;
             }
         }
@@ -2660,8 +2648,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     if (isContentionKeywordEnabled)
     {
-        LARGE_INTEGER endTicks;
-        QueryPerformanceCounter(&endTicks);
+        int64_t endTicks = minipal_hires_ticks();
 
         double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
 

@@ -5,10 +5,10 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include "rhassert.h"
 
 
@@ -100,13 +100,15 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 }
 FCIMPLEND
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
 #ifdef WIN32
 
     void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
-        return NULL;
+    {
+        return E_OUTOFMEMORY;
+    }
 
     void * pThunksSection = pNewMapping;
     void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
@@ -120,7 +122,9 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     // changed anymore.
     void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
-        return NULL;
+    {
+        return E_OUTOFMEMORY;
+    }
 
     void * pThunksSection = pNewMapping;
     void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
@@ -129,7 +133,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
         !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
-        return NULL;
+        return E_FAIL;
     }
 
 #if defined(HOST_APPLE) && defined(HOST_ARM64)
@@ -306,13 +310,14 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
-        return NULL;
+        return E_FAIL;
     }
 #endif
 
     PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
 
-    return pThunksSection;
+    *ppThunksSection = pThunksSection;
+    return S_OK;
 }
 
 // FEATURE_RX_THUNKS
@@ -327,7 +332,7 @@ FCDECL0(int, RhpGetThunkBlockSize);
 FCDECL1(void*, RhpGetThunkDataBlockAddress, void* addr);
 FCDECL1(void*, RhpGetThunkStubsBlockAddress, void* addr);
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     static int nextThunkDataMapping = 0;
 
@@ -342,7 +347,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
     if (nextThunkDataMapping == thunkDataMappingCount)
     {
-        return NULL;
+        return E_FAIL;
     }
 
     if (g_pThunkStubData == NULL)
@@ -353,7 +358,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
         if (g_pThunkStubData == NULL)
         {
-            return NULL;
+            return E_OUTOFMEMORY;
         }
     }
 
@@ -361,7 +366,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
     if (VirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
     {
-        return NULL;
+        return E_OUTOFMEMORY;
     }
 
     nextThunkDataMapping++;
@@ -369,7 +374,8 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     void* pThunks = RhpGetThunkStubsBlockAddress(pThunkDataBlock);
     ASSERT(RhpGetThunkDataBlockAddress(pThunks) == pThunkDataBlock);
 
-    return pThunks;
+    *ppThunksSection = pThunks;
+    return S_OK;
 }
 
 #else // FEATURE_FIXED_POOL_THUNKS
@@ -380,7 +386,7 @@ FCDECL0(int, RhpGetNumThunksPerBlock);
 FCDECL0(int, RhpGetThunkSize);
 FCDECL0(int, RhpGetThunkBlockSize);
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     static void* pThunksTemplateAddress = NULL;
 
@@ -409,7 +415,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
         int templateRva = (int)((uint8_t*)RhpGetThunksBase() - pModuleBase);
 
         if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
-            return NULL;
+            return E_OUTOFMEMORY;
     }
 
     if (!PalMarkThunksAsValidCallTargets(
@@ -422,10 +428,11 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
         if (pThunkMap != pThunksTemplateAddress)
             PalFreeThunksFromTemplate(pThunkMap, templateSize);
 
-        return NULL;
+        return E_FAIL;
     }
 
-    return pThunkMap;
+    *ppThunksSection = pThunkMap;
+    return S_OK;
 }
 
 #endif // FEATURE_RX_THUNKS

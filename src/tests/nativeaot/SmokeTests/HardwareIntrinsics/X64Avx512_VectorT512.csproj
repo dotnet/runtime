@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <IlcArg Include="--instruction-set:avx512f,avx512f_vl,avx512bw,avx512bw_vl,avx512cd,avx512cd_vl,avx512dq,avx512dq_vl" />
+    <IlcArg Include="--instruction-set:avx512" />
     <IlcArg Include="--max-vectort-bitwidth:512" />
   </ItemGroup>
 

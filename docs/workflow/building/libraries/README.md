@@ -12,7 +12,7 @@ git pull upstream main & git push origin main
 build.cmd clr+libs -rc Release
 :: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-:: If you use Visual Studio, you might open System.Collections.Concurrent.sln here.
+:: If you use Visual Studio, you might open System.Collections.Concurrent.slnx here.
 build.cmd -vs System.Collections.Concurrent
 
 :: Switch to working on a given library (System.Collections.Concurrent in this case)
@@ -147,7 +147,7 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 - Build all projects for a given library (e.g.: System.Collections) including running the tests
 
 ```bash
- ./build.sh -projects src/libraries/*/System.Collections.sln
+ ./build.sh -projects src/libraries/*/System.Collections.slnx
 ```
 
 - Build just the tests for a library project
@@ -157,7 +157,7 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 
 - All the options listed above like framework and configuration are also supported (note they must be after the directory)
 ```bash
- ./build.sh -projects src/libraries/*/System.Collections.sln -f net472 -c Release
+ ./build.sh -projects src/libraries/*/System.Collections.slnx -f net472 -c Release
 ```
 
 As `dotnet build` works on both Unix and Windows and calls the restore target implicitly, we will use it throughout this guide.

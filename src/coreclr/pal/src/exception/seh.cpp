@@ -21,7 +21,6 @@ Abstract:
 #include "pal/handleapi.hpp"
 #include "pal/seh.hpp"
 #include "pal/dbgmsg.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/process.h"
@@ -249,7 +248,7 @@ Return value:
 BOOL
 SEHProcessException(PAL_SEHException* exception)
 {
-    g_SEHProcessExceptionReturnAddress = __builtin_return_address(0);
+    g_SEHProcessExceptionReturnAddress = _ReturnAddress();
 
     CONTEXT* contextRecord = exception->GetContextRecord();
     EXCEPTION_RECORD* exceptionRecord = exception->GetExceptionRecord();

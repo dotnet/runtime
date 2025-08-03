@@ -90,8 +90,6 @@
              Link="ProductionCode\MimeBasePart.cs" />
     <Compile Include="..\..\src\System\Net\Mime\SmtpDateTime.cs"
              Link="ProductionCode\SmtpDateTime.cs" />
-    <Compile Include="..\..\src\System\Net\Mime\MultiAsyncResult.cs"
-             Link="ProductionCode\MultiAsyncResult.cs" />
     <Compile Include="..\..\src\System\Net\Mime\ByteEncoder.cs"
              Link="ProductionCode\ByteEncoder.cs" />
     <Compile Include="..\..\src\System\Net\Mime\Base64Encoder.cs"
@@ -110,26 +108,14 @@
              Link="ProductionCode\MailHeaderInfo.cs" />
     <Compile Include="..\..\src\System\Net\BufferBuilder.cs"
              Link="ProductionCode\BufferBuilder.cs" />
-    <Compile Include="..\..\src\System\Net\Mail\ReadWriteAdapter.cs"
-             Link="ProductionCode\ReadWriteAdapter.cs" />
+    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
+             Link="Common\System\Net\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
-             Link="Common\System\Net\InternalException.cs" />
-    <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
-             Link="Common\System\Net\LazyAsyncResult.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
-             Link="Common\System\Net\DebugSafeHandle.cs" />
-    <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
-             Link="Common\System\Net\ExceptionCheck.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
-             Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
@@ -143,15 +129,8 @@
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
-             Link="Common\System\Net\ContextAwareResult.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
-  </ItemGroup>
-  <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
-             Link="Common\System\Net\ContextAwareResult.Windows.cs" />
   </ItemGroup>
 
   <!-- Non Browser specific files - internal and security -->
@@ -162,8 +141,6 @@
              Link="ProductionCode\SmtpNegotiateAuthenticationModule.cs" />
     <Compile Include="..\..\src\System\Net\Mail\SmtpNtlmAuthenticationModule.cs"
              Link="ProductionCode\SmtpNtlmAuthenticationModule.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
-             Link="Common\System\Net\ContextAwareResult.cs" />
     <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs"
              Link="ProductionCode\SmtpConnection.Auth.cs" />
   </ItemGroup>

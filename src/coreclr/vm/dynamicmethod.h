@@ -13,20 +13,16 @@
 #include <daccess.h>
 
 //---------------------------------------------------------------------------------------
-//
 // This links together a set of news and release in one object.
 // The idea is to have a predefined size allocated up front and used by different calls to new.
-// All the allocation will be released at the same time releaseing an instance of this class
+// All the allocation will be released at the same time releasing an instance of this class
 // Here is how the object is laid out
 // | ptr_to_next_chunk | size_left_in_chunk | data | ... | data
 // This is not a particularly efficient allocator but it works well for a small number of allocation
 // needed while jitting a method
 //
-class ChunkAllocator
+class ChunkAllocator final
 {
-private:
-    #define CHUNK_SIZE 64
-
     BYTE *m_pData;
 
 public:
@@ -107,16 +103,19 @@ public:
     virtual MethodDesc * GetDynamicMethod() = 0;
 };  // class DynamicResolver
 
-//---------------------------------------------------------------------------------------
-//
+// Forward declaration
 class StringLiteralEntry;
 
-//---------------------------------------------------------------------------------------
-//
-struct DynamicStringLiteral
+struct DynamicStringLiteral final
 {
-    DynamicStringLiteral *  m_pNext;
-    StringLiteralEntry *    m_pEntry;
+    DynamicStringLiteral*  m_pNext;
+    StringLiteralEntry*    m_pEntry;
+};
+
+struct DynamicCodePointer final
+{
+    DynamicCodePointer*  m_pNext;
+    void*                m_pEntry;
 };
 
 //---------------------------------------------------------------------------------------
@@ -125,20 +124,27 @@ struct DynamicStringLiteral
 //
 //  a jit resolver for managed dynamic methods
 //
-class LCGMethodResolver : public DynamicResolver
+class LCGMethodResolver final : public DynamicResolver
 {
     friend class DynamicMethodDesc;
     friend class DynamicMethodTable;
-    // review this to see whether the EEJitManageris the only thing to worry about
     friend class ExecutionManager;
     friend class EECodeGenManager;
     friend class EEJitManager;
     friend class InterpreterJitManager;
     friend class HostCodeHeap;
-    friend struct ExecutionManager::JumpStubCache;
+
+    // We clean-up in stages due to how locks are structured.
+    bool TryDestroyCodeHeapMemory();
+    void DestroyResolver();
 
 public:
-    void Destroy();
+    LCGMethodResolver(DynamicMethodDesc* pDynamicMethod, DynamicMethodTable* pDynamicMethodTable)
+        : m_pDynamicMethod{ pDynamicMethod }
+        , m_pDynamicMethodTable{ pDynamicMethodTable }
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 
     void FreeCompileTimeState();
     void GetJitContext(SecurityControlFlags * securityControlFlags,
@@ -160,7 +166,31 @@ public:
     MethodDesc* GetDynamicMethod() { LIMITED_METHOD_CONTRACT; return m_pDynamicMethod; }
     OBJECTREF GetManagedResolver();
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
-    void * GetRecordCodePointer()  { LIMITED_METHOD_CONTRACT; return m_recordCodePointer; }
+    void** AllocateRecordCodePointer();
+
+private:
+    DynamicMethodDesc* GetNextFreeDynamicMethodDesc() { LIMITED_METHOD_CONTRACT; return m_next; }
+    void SetNextFreeDynamicMethod(DynamicMethodDesc* next)
+    {
+        LIMITED_METHOD_CONTRACT;
+        // In this path, we permit the case where next is NULL or m_next is not NULL.
+        // This is because this method is used to set the next pointer when we are
+        // working with the free list of DynamicMethodDescs and the field may have been
+        // used to hold the next DynamicMethodDesc for delay clean-up.
+        m_next = next;
+    }
+
+public:
+    DynamicMethodDesc* GetNextDynamicMethodForDelayCleanup() { LIMITED_METHOD_CONTRACT; return m_next; }
+    void SetNextDynamicMethodForDelayCleanup(DynamicMethodDesc* next)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(next != NULL && m_next == NULL);
+
+        // We shouldn't be overriding an existing next pointer.
+        // See declaration of the field for its uses.
+        m_next = next;
+    }
 
     STRINGREF GetStringLiteral(mdToken metaTok);
     STRINGREF * GetOrInternString(STRINGREF *pString);
@@ -176,26 +206,31 @@ private:
 
     struct IndCellList
     {
-        BYTE * indcell;
-        IndCellList * pNext;
+        BYTE* indcell;
+        IndCellList* pNext;
     };
 
     DynamicMethodDesc* m_pDynamicMethod;
+    DynamicMethodTable* m_pDynamicMethodTable;
     OBJECTHANDLE m_managedResolver;
-    BYTE *m_Code;
+    BYTE* m_Code;
     DWORD m_CodeSize;
     SigPointer m_LocalSig;
     unsigned short m_StackSize;
     CorInfoOptions m_Options;
     unsigned m_EHSize;
-    DynamicMethodTable *m_DynamicMethodTable;
-    DynamicMethodDesc *m_next;
-    void *m_recordCodePointer;
+
+    // The next field is currently used for clean-up purposes.
+    // It holds the next free DynamicMethodDesc that is available for reuse
+    // or it holds the next DynamicMethodDesc that is scheduled for delayed
+    // destruction.
+    DynamicMethodDesc* m_next;
     ChunkAllocator m_jitMetaHeap;
     ChunkAllocator m_jitTempData;
+    DynamicCodePointer* m_DynamicCodePointers;
     DynamicStringLiteral* m_DynamicStringLiterals;
-    IndCellList * m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code
-    ExecutionManager::JumpStubCache * m_pJumpStubCache;
+    IndCellList* m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code
+    ExecutionManager::JumpStubCache* m_pJumpStubCache;
 
 #ifdef FEATURE_PGO
     Volatile<PgoManager*> m_pgoManager;
@@ -242,9 +277,9 @@ private:
 public:
     void Destroy();
     DynamicMethodDesc* GetDynamicMethod(BYTE *psig, DWORD sigSize, PTR_CUTF8 name);
-    void LinkMethod(DynamicMethodDesc *pMethod);
+    void AddToFreeList(DynamicMethodDesc *pMethod);
 
-#endif
+#endif // !DACCESS_COMPILE
 
 #ifdef _DEBUG
 public:
@@ -265,7 +300,7 @@ public:
 // for reclamation of generated code
 // (Check the base class - CodeHeap in codeman.h - for comments on the functions)
 //
-class HostCodeHeap : CodeHeap
+class HostCodeHeap final : public CodeHeap
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
@@ -316,6 +351,7 @@ private:
     void AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocation *pBlockToInsertRW);
 
     TrackAllocation* AllocMemory_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
+    void FreeMemForCode(void* codeStart);
 
 public:
     // Space for header is reserved immediately before. It is not included in size.
@@ -334,17 +370,7 @@ public:
 
     void DestroyCodeHeap();
 
-protected:
-    friend class DynamicMethodDesc;
-    friend class LCGMethodResolver;
-
-    void FreeMemForCode(void * codeStart);
-
-#if defined(FEATURE_JIT_PITCHING)
-public:
-    PTR_EEJitManager GetJitManager() { return m_pJitManager; }
-#endif
-
+    PTR_EECodeGenManager GetJitManager() { return m_pJitManager; }
 }; // class HostCodeHeap
 
 //---------------------------------------------------------------------------------------

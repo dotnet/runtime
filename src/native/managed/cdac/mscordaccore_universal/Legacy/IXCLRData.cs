@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 internal struct CLRDataModuleExtent
 {
-    public ulong /* CLRDATA_ADDRESS */ baseAddress;
+    public ClrDataAddress baseAddress;
     public uint length;
     public uint /* CLRDataModuleExtentType */ type;
 }
@@ -22,10 +22,10 @@ internal struct DacpGetModuleData
     public uint IsDynamic;
     public uint IsInMemory;
     public uint IsFileLayout;
-    public ulong /* CLRDATA_ADDRESS */ PEAssembly; // Actually the module address in .NET 9+
-    public ulong /* CLRDATA_ADDRESS */ LoadedPEAddress;
+    public ClrDataAddress PEAssembly; // Actually the module address in .NET 9+
+    public ClrDataAddress LoadedPEAddress;
     public ulong LoadedPESize;
-    public ulong /* CLRDATA_ADDRESS */ InMemoryPdbAddress;
+    public ClrDataAddress InMemoryPdbAddress;
     public ulong InMemoryPdbSize;
 }
 
@@ -169,16 +169,16 @@ internal unsafe partial interface IXCLRDataProcess
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int GetAddressType(ulong address, /*CLRDataAddressType*/ uint* type);
+    int GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type);
 
     [PreserveSig]
     int GetRuntimeNameByAddress(
-        ulong address,
+        ClrDataAddress address,
         uint flags,
         uint bufLen,
         uint* nameLen,
         char* nameBuf,
-        ulong* displacement);
+        ClrDataAddress* displacement);
 
     [PreserveSig]
     int StartEnumAppDomains(ulong* handle);
@@ -203,7 +203,7 @@ internal unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int EndEnumModules(ulong handle);
     [PreserveSig]
-    int GetModuleByAddress(ulong address, /*IXCLRDataModule*/ void** mod);
+    int GetModuleByAddress(ClrDataAddress address, /*IXCLRDataModule*/ void** mod);
 
     [PreserveSig]
     int StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
@@ -214,7 +214,7 @@ internal unsafe partial interface IXCLRDataProcess
 
     [PreserveSig]
     int GetDataByAddress(
-        ulong address,
+        ClrDataAddress address,
         uint flags,
         /*IXCLRDataAppDomain*/ void* appDomain,
         /*IXCLRDataTask*/ void* tlsTask,
@@ -222,7 +222,7 @@ internal unsafe partial interface IXCLRDataProcess
         uint* nameLen,
         char* nameBuf,
         /*IXCLRDataValue*/ void** value,
-        ulong* displacement);
+        ClrDataAddress* displacement);
 
     [PreserveSig]
     int GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState);
@@ -237,7 +237,7 @@ internal unsafe partial interface IXCLRDataProcess
         /*IXCLRDataAppDomain*/ void* appDomain,
         /*IXCLRDataTask*/ void* tlsTask,
         /*IXCLRDataTypeInstance*/ void* type,
-        ulong addr,
+        ClrDataAddress addr,
         /*IXCLRDataValue*/ void** value);
 
     [PreserveSig]
@@ -280,7 +280,7 @@ internal unsafe partial interface IXCLRDataProcess
     int SetOtherNotificationFlags(uint flags);
 
     [PreserveSig]
-    int StartEnumMethodDefinitionsByAddress(ulong address, ulong* handle);
+    int StartEnumMethodDefinitionsByAddress(ClrDataAddress address, ulong* handle);
     [PreserveSig]
     int EnumMethodDefinitionByAddress(ulong* handle, /*IXCLRDataMethodDefinition*/ void** method);
     [PreserveSig]
@@ -289,24 +289,24 @@ internal unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int FollowStub(
         uint inFlags,
-        ulong inAddr,
+        ClrDataAddress inAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
-        ulong* outAddr,
+        ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags);
     [PreserveSig]
     int FollowStub2(
         /*IXCLRDataTask*/ void* task,
         uint inFlags,
-        ulong inAddr,
+        ClrDataAddress inAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
-        ulong* outAddr,
+        ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags);
 
     [PreserveSig]
     int DumpNativeImage(
-        ulong loadedBase,
+        ClrDataAddress loadedBase,
         char* name,
         /*IXCLRDataDisplay*/ void* display,
         /*IXCLRLibrarySupport*/ void* libSupport,

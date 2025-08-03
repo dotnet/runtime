@@ -4,8 +4,8 @@
   <ItemGroup>
     <Project Include="Microsoft.DotNet.ILCompiler\Microsoft.DotNet.ILCompiler.pkgproj" />
     <ProjectReference Include="@(Project)" />
-    <ProjectReference Include="@(Project)" AdditionalProperties="PackageTargetRuntime=$(OutputRID)" />
-    <ProjectReference Condition="'$(BuildHostTools)' == 'true'" Include="@(Project)" AdditionalProperties="PackageTargetRuntime=$(NETCoreSdkRuntimeIdentifier);PackHostILCompiler=true" />
+    <ProjectReference Include="@(Project)" AdditionalProperties="PackageTargetRuntime=$(TargetRid)" />
+    <ProjectReference Condition="'$(BuildHostTools)' == 'true'" Include="@(Project)" AdditionalProperties="PackageTargetRuntime=$(NETCoreSdkRuntimeIdentifier)" />
   </ItemGroup>
 
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />

@@ -151,8 +151,7 @@
 #define FEATURE_64BIT_ALIGNMENT
 #endif
 
-// Prefer double alignment for structs and arrays with doubles. Put arrays of doubles more agressively
-// into large object heap for performance because large object heap is 8 byte aligned
+// Prefer double alignment for structs with doubles on the stack.
 #if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(HOST_64BIT)
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif
@@ -166,3 +165,7 @@
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
+
+#ifdef TARGET_WASM
+#define PEIMAGE_FLAT_LAYOUT_ONLY
+#endif // !TARGET_WASM

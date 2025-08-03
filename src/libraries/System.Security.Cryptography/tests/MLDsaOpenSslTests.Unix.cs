@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -94,33 +95,33 @@ namespace System.Security.Cryptography.Tests
             {
                 byte[] data = [ 1, 1, 2, 3, 5, 8 ];
                 byte[] context = [ 13, 21 ];
-                byte[] oneSignature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
+                byte[] oneSignature;
 
                 using (one)
                 {
-                    Assert.Equal(oneSignature.Length, one.SignData(data, oneSignature, context));
+                    oneSignature = one.SignData(data, context);
                     VerifyInstanceIsUsable(one);
                     VerifyInstanceIsUsable(two);
                 }
 
-                VerifyDisposed(one);
+                MLDsaTestHelpers.VerifyDisposed(one);
                 Assert.Throws<ObjectDisposedException>(() => one.DuplicateKeyHandle());
 
                 VerifyInstanceIsUsable(two);
                 ExerciseSuccessfulVerify(two, data, oneSignature, context);
             }
 
-            VerifyDisposed(two);
+            MLDsaTestHelpers.VerifyDisposed(two);
             Assert.Throws<ObjectDisposedException>(() => two.DuplicateKeyHandle());
         }
 
         private static void VerifyInstanceIsUsable(MLDsaOpenSsl mldsa)
         {
-            byte[] seed = new byte[mldsa.Algorithm.PrivateSeedSizeInBytes];
-            Assert.Equal(mldsa.Algorithm.PrivateSeedSizeInBytes, mldsa.ExportMLDsaPrivateSeed(seed)); // does not throw
+            byte[] seed = mldsa.ExportMLDsaPrivateSeed();
+            Assert.Equal(mldsa.Algorithm.PrivateSeedSizeInBytes, seed.Length);
 
-            byte[] secretKey = new byte[mldsa.Algorithm.SecretKeySizeInBytes];
-            Assert.Equal(mldsa.Algorithm.SecretKeySizeInBytes, mldsa.ExportMLDsaSecretKey(secretKey)); // does not throw
+            byte[] secretKey = mldsa.ExportMLDsaSecretKey();
+            Assert.Equal(mldsa.Algorithm.SecretKeySizeInBytes, secretKey.Length);
 
             // usable
             byte[] data = [ 1, 2, 3 ];
@@ -128,6 +129,11 @@ namespace System.Security.Cryptography.Tests
             byte[] signature = new byte[MLDsaAlgorithm.MLDsa44.SignatureSizeInBytes];
             mldsa.SignData(data, signature, context);
             ExerciseSuccessfulVerify(mldsa, data, signature, context);
+
+            byte[] hash = HashInfo.Sha256.GetHash(data);
+            signature.AsSpan().Fill(0);
+            mldsa.SignPreHash(hash.AsSpan(), signature, HashInfo.Sha256.Oid, context);
+            ExerciseSuccessfulVerifyPreHash(mldsa, HashInfo.Sha256.Oid, hash, signature, context);
         }
     }
 }

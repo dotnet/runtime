@@ -21,8 +21,8 @@
   <Target Name="GetTestConsoleApps">
     <ItemGroup>
       <TestConsoleAppSourceFiles>
-        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(OutputRID)'))</ProjectDir>
-        <TestRuntimeIdentifier>$(OutputRID)</TestRuntimeIdentifier>
+        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(TargetRid)'))</ProjectDir>
+        <TestRuntimeIdentifier>$(TargetRid)</TestRuntimeIdentifier>
         <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
         <TargetFramework Condition="'%(TestConsoleAppSourceFiles.TargetOS)' != ''">$(NetCoreAppCurrent)-%(TestConsoleAppSourceFiles.TargetOS)</TargetFramework>
       </TestConsoleAppSourceFiles>
@@ -36,10 +36,11 @@
       </TestConsoleAppSourceFiles>
     </ItemGroup>
 
-    <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(OutputRID)'))">
-      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(OutputRID)'))" />
+    <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(TargetRid)'))">
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(TargetRid)'))" />
 
       <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="'$(RunNativeAotTestApps)' == 'true' and '%(TestConsoleAppSourceFiles.NativeAotIncompatible)' == 'true'" />
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="'$(RunNativeAotTestApps)' != 'true' and '%(TestConsoleAppSourceFiles.NativeAotOnly)' == 'true'" />
 
       <_AppSourceFiles Include="@(TestConsoleAppSourceFiles)" Exclude="@(_SkippedAppSourceFiles)" />
 
@@ -165,7 +166,7 @@
     </Exec>
 
     <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems). The Command %(TestConsoleApps.TestCommand) return a non-success exit code $(ExecutionExitCode)." ContinueOnError="ErrorAndContinue" />
- 
+
     <!-- Remove test projects dir to save disk space if the test was successful. Ignore failures as this is best effort.
          Don't use Removedir as ContinueOnError on it doesn't work when using warnaserror/TreatWarningsAsErrors. -->
     <PropertyGroup>

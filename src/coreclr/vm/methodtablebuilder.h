@@ -62,6 +62,23 @@ public:
 #endif //_DEBUG
     };  // struct bmtGenericsInfo
 
+
+    struct bmtLayoutInfo
+    {
+        bmtLayoutInfo()
+            : nlFlags(nltNone),
+              packingSize(0),
+              layoutType(EEClassLayoutInfo::LayoutType::Auto)
+        {
+            LIMITED_METHOD_CONTRACT;
+        }
+
+        CorNativeLinkType nlFlags;
+        BYTE packingSize;
+        ULONG classSize;
+        EEClassLayoutInfo::LayoutType layoutType;
+    };
+
     MethodTableBuilder(
         MethodTable *       pHalfBakedMT,
         EEClass *           pHalfBakedClass,
@@ -101,7 +118,7 @@ public:
         Module *                   pModule,
         mdToken                    cl,
         BuildingInterfaceInfo_t *  pBuildingInterfaceList,
-        const LayoutRawFieldInfo * pLayoutRawFieldInfos,
+        const bmtLayoutInfo *      initialLayoutInfo,
         MethodTable *              pParentMethodTable,
         const bmtGenericsInfo *    bmtGenericsInfo,
         SigPointer                 parentInst,
@@ -2269,6 +2286,7 @@ private:
     bmtMethodImplInfo *bmtMethodImpl;
     const bmtGenericsInfo *bmtGenerics;
     bmtEnumFieldInfo *bmtEnumFields;
+    bmtLayoutInfo* bmtLayout;
 
     void SetBMTData(
         LoaderAllocator *bmtAllocator = NULL,
@@ -2285,7 +2303,8 @@ private:
         bmtGCSeriesInfo *bmtGCSeries = NULL,
         bmtMethodImplInfo *bmtMethodImpl = NULL,
         const bmtGenericsInfo *bmtGenerics = NULL,
-        bmtEnumFieldInfo *bmtEnumFields = NULL);
+        bmtEnumFieldInfo *bmtEnumFields = NULL,
+        bmtLayoutInfo *bmtLayout = NULL);
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.
@@ -2641,7 +2660,6 @@ private:
     VOID
     InitializeFieldDescs(
         FieldDesc *,
-        const LayoutRawFieldInfo*,
         bmtInternalInfo*,
         const bmtGenericsInfo*,
         bmtMetaDataInfo*,
@@ -2683,8 +2701,8 @@ private:
         DWORD               dwImplFlags,
         DWORD               dwMemberAttrs,
         BOOL                fEnC,
-        DWORD               RVA,          // Only needed for NDirect case
-        IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
+        DWORD               RVA,          // Only needed for PInvoke case
+        IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the Async thunk case
         AsyncMethodKind     asyncKind
@@ -2900,9 +2918,7 @@ private:
     VOID
     PlaceThreadStaticFields();
 
-    VOID
-    PlaceInstanceFields(
-        MethodTable **);
+    VOID PlaceInstanceFields(MethodTable** pByValueClassCache);
 
     BOOL
     CheckForVtsEventMethod(
@@ -2951,7 +2967,17 @@ private:
 
     VOID SetFinalizationSemantics();
 
+    VOID
+    HandleAutoLayout(
+        MethodTable **);
+
+    VOID HandleSequentialLayout(
+        MethodTable **);
+
     VOID HandleExplicitLayout(
+        MethodTable **);
+
+    VOID ValidateExplicitLayout(
         MethodTable **pByValueClassCache);
 
     static ExplicitFieldTrust::TrustLevel CheckValueClassLayout(
@@ -3010,11 +3036,6 @@ private:
     VOID TestMethodImpl(
         bmtMethodHandle hDeclMethod,
         bmtMethodHandle hImplMethod);
-
-    // Heuristic to detemine if we would like instances of this class 8 byte aligned
-    BOOL ShouldAlign8(
-        DWORD dwR8Fields,
-        DWORD dwTotalFields);
 
     MethodTable * AllocateNewMT(Module *pLoaderModule,
                                 DWORD dwVtableSlots,

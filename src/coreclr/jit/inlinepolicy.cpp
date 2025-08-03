@@ -1372,13 +1372,38 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             // TODO: Enable for PgoSource::Static as well if it's not the generic profile we bundle.
             if (m_HasProfileWeights && (m_RootCompiler->fgHaveTrustedProfileWeights()))
             {
+                JITDUMP("Callee and root has trusted profile\n");
                 maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
+            }
+            else if (m_RootCompiler->fgHaveSufficientProfileWeights())
+            {
+                // For now we want to inline somewhat less aggressively in Tier1+Instr and OSR. We can reconsider
+                // when we have inlinee instrumentation. Otherwise we may lose profile data for key inlinees.
+                //
+                const bool isTier1Instr = m_RootCompiler->opts.IsInstrumentedAndOptimized();
+                const bool isOSR        = m_RootCompiler->opts.IsOSR();
+
+                if (isTier1Instr || isOSR)
+                {
+                    JITDUMP("Root has sufficient profile. Leaving max IL size at %u for Tier1+Instr or OSR\n",
+                            maxCodeSize);
+                }
+                else
+                {
+                    maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILRoot());
+                    JITDUMP("Root has sufficient profile. Boosting max IL size to %u\n", maxCodeSize);
+                }
+            }
+            else
+            {
+                JITDUMP("Callee has %s profile\n", m_HasProfileWeights ? "untrusted" : "no");
             }
 
             unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
             if (m_InsideThrowBlock)
             {
                 // Inline only small code in BBJ_THROW blocks, e.g. <= 8 bytes of IL
+                JITDUMP("Call site in throw block\n");
                 alwaysInlineSize /= 2;
                 maxCodeSize = min(alwaysInlineSize + 1, maxCodeSize);
             }
@@ -1401,6 +1426,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             else
             {
                 // Callee too big, not a candidate
+                JITDUMP("Callee IL size %u exceeds maxCodeSize %u\n", m_CodeSize, maxCodeSize);
                 SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
             }
             break;
@@ -1425,6 +1451,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
 
                 if ((unsigned)value > bbLimit)
                 {
+                    JITDUMP("Callee BB count %u exceeds bbLimit %u\n", value, bbLimit);
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
                 }
             }

@@ -89,6 +89,11 @@ bool Compiler::fgHaveSufficientProfileWeights()
         case ICorJitInfo::PgoSource::Blend:
             return true;
 
+        case ICorJitInfo::PgoSource::Synthesis:
+            // Single-edge methods always have sufficient profile data.
+            // Assuming we don't synthesize value and class profile data (which we don't currently).
+            return fgPgoSingleEdge;
+
         case ICorJitInfo::PgoSource::Static:
         {
             // We sometimes call this very early, eg evaluating the prejit root.
@@ -134,6 +139,12 @@ bool Compiler::fgHaveTrustedProfileWeights()
         case ICorJitInfo::PgoSource::Blend:
         case ICorJitInfo::PgoSource::Text:
             return true;
+
+        case ICorJitInfo::PgoSource::Synthesis:
+            // Single-edge methods with synthetic profile are trustful.
+            // Assuming we don't synthesize value and class profile data (which we don't currently).
+            return fgPgoSingleEdge;
+
         default:
             return false;
     }
@@ -752,7 +763,7 @@ GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t*
 
     // Read Basic-Block count value
     GenTree* valueNode =
-        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
+        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
 
     // Increment value by 1
     GenTree* incValueNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
@@ -1009,13 +1020,13 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // things will just work for switches either way, but it
                 // might work a bit better using the root compiler.
                 //
-                const unsigned numSucc = block->NumSucc(this);
+                const unsigned numSucc = block->NumSucc();
 
                 if (numSucc == 1)
                 {
                     // Not a fork. Just visit the sole successor.
                     //
-                    BasicBlock* const target = block->GetSucc(0, this);
+                    BasicBlock* const target = block->GetSucc(0);
                     if (BitVecOps::IsMember(&traits, marked, target->bbID))
                     {
                         // We can't instrument in the call finally pair tail block
@@ -1050,7 +1061,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
                     for (unsigned i = 0; i < numSucc; i++)
                     {
-                        BasicBlock* const succ = block->GetSucc(i, this);
+                        BasicBlock* const succ = block->GetSucc(i);
                         scratch.Push(succ);
                     }
 
@@ -1472,7 +1483,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                     // See if the edge still exists.
                     //
                     bool found = false;
-                    for (BasicBlock* const succ : block->Succs(m_comp))
+                    for (BasicBlock* const succ : block->Succs())
                     {
                         if (target == succ)
                         {
@@ -3771,7 +3782,7 @@ void EfficientEdgeCountReconstructor::Propagate()
         assert(info->m_weightKnown);
         block->setBBProfileWeight(info->m_weight);
 
-        const unsigned nSucc = block->NumSucc(m_comp);
+        const unsigned nSucc = block->NumSucc();
         if (nSucc == 0)
         {
             // No edges to worry about.
@@ -3972,7 +3983,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 
         weight_t equalLikelihood = 1.0 / nSucc;
 
-        for (FlowEdge* const succEdge : block->SuccEdges(m_comp))
+        for (FlowEdge* const succEdge : block->SuccEdges())
         {
             BasicBlock* const succBlock = succEdge->getDestinationBlock();
             JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum,
@@ -4125,8 +4136,8 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned   caseCount    = block->GetSwitchTargets()->bbsCount;
-    FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
+    const unsigned   caseCount    = block->GetSwitchTargets()->GetCaseCount();
+    FlowEdge** const jumpTab      = block->GetSwitchTargets()->GetCases();
     unsigned         dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
@@ -4153,7 +4164,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
         return;
     }
 
-    if (block->GetSwitchTargets()->bbsHasDefault && (dominantCase == caseCount - 1))
+    if (block->GetSwitchTargets()->HasDefaultCase() && (dominantCase == caseCount - 1))
     {
         // Dominant case is the default case.
         // This effectively gets peeled already, so defer.
@@ -4167,9 +4178,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
             "; marking for peeling\n",
             dominantCase, dominantEdge->m_targetBlock->bbNum, fraction);
 
-    block->GetSwitchTargets()->bbsHasDominantCase  = true;
-    block->GetSwitchTargets()->bbsDominantCase     = dominantCase;
-    block->GetSwitchTargets()->bbsDominantFraction = fraction;
+    block->GetSwitchTargets()->SetDominantCase(dominantCase);
 }
 
 //------------------------------------------------------------------------
@@ -4336,14 +4345,6 @@ bool Compiler::fgComputeMissingBlockWeights()
                     changed        = true;
                     modified       = true;
                     bDst->bbWeight = newWeight;
-                    if (newWeight == BB_ZERO_WEIGHT)
-                    {
-                        bDst->SetFlags(BBF_RUN_RARELY);
-                    }
-                    else
-                    {
-                        bDst->RemoveFlags(BBF_RUN_RARELY);
-                    }
                 }
             }
             else if (!bDst->hasProfileWeight() && bbIsHandlerBeg(bDst) && !bDst->isRunRarely())
@@ -4862,7 +4863,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 
     // We want switch targets unified, but not EH edges.
     //
-    const unsigned numSuccs = block->NumSucc(this);
+    const unsigned numSuccs = block->NumSucc();
 
     if ((numSuccs > 0) && !block->KindIs(BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
@@ -4874,7 +4875,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
         unsigned missingEdges      = 0;
         unsigned missingLikelihood = 0;
 
-        for (FlowEdge* succEdge : block->SuccEdges(this))
+        for (FlowEdge* succEdge : block->SuccEdges())
         {
             assert(succEdge != nullptr);
             BasicBlock* succBlock = succEdge->getDestinationBlock();
@@ -4926,7 +4927,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 #ifdef DEBUG
                     if (verbose)
                     {
-                        for (const FlowEdge* succEdge : block->SuccEdges(this))
+                        for (const FlowEdge* succEdge : block->SuccEdges())
                         {
                             const BasicBlock* succBlock = succEdge->getDestinationBlock();
                             if (succEdge->hasLikelihood())
@@ -5009,7 +5010,7 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
     //
     weight_t const weight = removedEdge->getLikelyWeight();
 
-    if (weight == 0.0)
+    if (weight == BB_ZERO_WEIGHT)
     {
         return;
     }
@@ -5046,30 +5047,28 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
 
     if (alternate->hasProfileWeight())
     {
-        weight_t const alternateNewWeight = alternate->bbWeight - weight;
-
-        // If profile weights are consistent, expect at worst a slight underflow.
-        //
-        const bool checkProfileConsistency = hasFlag(activePhaseChecks, PhaseChecks::CHECK_PROFILE);
-        if (checkProfileConsistency && fgPgoConsistent && (alternateNewWeight < 0.0))
-        {
-            assert(fgProfileWeightsEqual(alternateNewWeight, 0.0));
-        }
-        alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
+        alternate->decreaseBBProfileWeight(weight);
     }
     else
     {
         missingProfileData = true;
     }
 
-    // Check for the special case where the block's postdominator
-    // is target's target (simple if/then/else/join).
+    // Check for the special cases where both successors are leaves,
+    // or the block's postdominator is target's target (simple if/then/else/join).
     //
     // TODO: try a bit harder to find a postdominator, if it's "nearby"
     //
-    if (!missingProfileData && target->KindIs(BBJ_ALWAYS))
+    if (!missingProfileData)
     {
-        repairWasComplete = alternate->KindIs(BBJ_ALWAYS) && (alternate->GetTarget() == target->GetTarget());
+        if ((target->NumSucc() == 0) && (alternate->NumSucc() == 0))
+        {
+            repairWasComplete = true;
+        }
+        else if (target->KindIs(BBJ_ALWAYS))
+        {
+            repairWasComplete = target->TargetIs(alternate->GetUniqueSucc());
+        }
     }
 
     if (missingProfileData)

@@ -535,9 +535,10 @@ uint32_t getThreadTLSIndex(
 int32_t* getAddrOfCaptureThreadGlobal(
           void** ppIndirection) override;
 
-void* getHelperFtn(
+void getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection) override;
+          CORINFO_CONST_LOOKUP* pNativeEntrypoint,
+          CORINFO_METHOD_HANDLE* pMethod) override;
 
 void getFunctionEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
@@ -548,10 +549,6 @@ void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
-
-void* getMethodSync(
-          CORINFO_METHOD_HANDLE ftn,
-          void** ppIndirection) override;
 
 CorInfoHelpFunc getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle) override;
@@ -589,6 +586,9 @@ void getAddressOfPInvokeTarget(
 void* GetCookieForPInvokeCalliSig(
           CORINFO_SIG_INFO* szMetaSig,
           void** ppIndirection) override;
+
+void* GetCookieForInterpreterCalliSig(
+          CORINFO_SIG_INFO* szMetaSig) override;
 
 bool canGetCookieForPInvokeCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;

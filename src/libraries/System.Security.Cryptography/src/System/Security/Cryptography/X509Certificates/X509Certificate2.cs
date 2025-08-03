@@ -865,12 +865,16 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                byte[] pk1 = publicKey.ExportEncapsulationKey();
-                byte[] pk2 = privateKey.ExportEncapsulationKey();
-
-                if (!pk1.AsSpan().SequenceEqual(pk2))
+                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.EncapsulationKeySizeInBytes, skipClear: true))
+                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.EncapsulationKeySizeInBytes, skipClear: true))
                 {
-                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    publicKey.ExportEncapsulationKey(pk1.Span);
+                    privateKey.ExportEncapsulationKey(pk2.Span);
+
+                    if (!pk1.Span.SequenceEqual(pk2.Span))
+                    {
+                        throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    }
                 }
             }
 
@@ -966,15 +970,16 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                byte[] pk1 = new byte[publicKey.Algorithm.PublicKeySizeInBytes];
-                byte[] pk2 = new byte[pk1.Length];
-
-                int w1 = publicKey.ExportMLDsaPublicKey(pk1);
-                int w2 = privateKey.ExportMLDsaPublicKey(pk2);
-
-                if (w1 != w2 || !pk1.AsSpan().SequenceEqual(pk2))
+                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: true))
+                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: true))
                 {
-                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    publicKey.ExportMLDsaPublicKey(pk1.Span);
+                    privateKey.ExportMLDsaPublicKey(pk2.Span);
+
+                    if (!pk1.Span.SequenceEqual(pk2.Span))
+                    {
+                        throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    }
                 }
             }
 
@@ -1061,10 +1066,17 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                byte[] pk1 = publicKey.ExportSlhDsaPublicKey();
-                byte[] pk2 = privateKey.ExportSlhDsaPublicKey();
+                const int MaxPublicKeySize = 64;
+                Debug.Assert(publicKey.Algorithm.PublicKeySizeInBytes <= MaxPublicKeySize);
 
-                if (!pk1.AsSpan().SequenceEqual(pk2))
+                Span<byte> publicKeysBuffer = stackalloc byte[MaxPublicKeySize * 2];
+                Span<byte> pk1 = publicKeysBuffer.Slice(0, publicKey.Algorithm.PublicKeySizeInBytes);
+                Span<byte> pk2 = publicKeysBuffer.Slice(pk1.Length, publicKey.Algorithm.PublicKeySizeInBytes);
+
+                publicKey.ExportSlhDsaPublicKey(pk1);
+                privateKey.ExportSlhDsaPublicKey(pk2);
+
+                if (!pk1.SequenceEqual(pk2))
                 {
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
@@ -1282,6 +1294,12 @@ namespace System.Security.Cryptography.X509Certificates
                             [PemLabels.Pkcs8PrivateKey],
                             MLKem.ImportFromPem,
                             certificate.CopyWithPrivateKey),
+                    Oids.MLDsa44 or Oids.MLDsa65 or Oids.MLDsa87 =>
+                        ExtractKeyFromPem<MLDsa>(
+                            keyPem,
+                            [PemLabels.Pkcs8PrivateKey],
+                            MLDsa.ImportFromPem,
+                            certificate.CopyWithPrivateKey),
                     _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
                         ExtractKeyFromPem<SlhDsa>(
                             keyPem,
@@ -1374,6 +1392,12 @@ namespace System.Security.Cryptography.X509Certificates
                             keyPem,
                             password,
                             MLKem.ImportFromEncryptedPem,
+                            certificate.CopyWithPrivateKey),
+                    Oids.MLDsa44 or Oids.MLDsa65 or Oids.MLDsa87 =>
+                        ExtractKeyFromEncryptedPem<MLDsa>(
+                            keyPem,
+                            password,
+                            MLDsa.ImportFromEncryptedPem,
                             certificate.CopyWithPrivateKey),
                     _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
                         ExtractKeyFromEncryptedPem<SlhDsa>(

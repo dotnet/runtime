@@ -46,10 +46,7 @@ internal readonly struct Thread_1 : IThread
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
 
-        // Exception tracker is a pointer when EH funclets are enabled
-        TargetPointer address = _target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0
-            ? _target.ReadPointer(thread.ExceptionTracker)
-            : thread.ExceptionTracker;
+        TargetPointer address = _target.ReadPointer(thread.ExceptionTracker);
         TargetPointer firstNestedException = TargetPointer.Null;
         if (address != TargetPointer.Null)
         {
@@ -69,6 +66,18 @@ internal readonly struct Thread_1 : IThread
             thread.TEB,
             thread.LastThrownObject.Handle,
             GetThreadFromLink(thread.LinkNext));
+    }
+
+    // happens inside critical section
+    TargetPointer IThread.IdToThread(uint id)
+    {
+        TargetPointer idDispenserPtr = _target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
+        TargetPointer idDispenser = _target.ReadPointer(idDispenserPtr);
+        Data.IdDispenser idDispenserObj = _target.ProcessedData.GetOrAdd<Data.IdDispenser>(idDispenser);
+        TargetPointer threadPtr = TargetPointer.Null;
+        if (id < idDispenserObj.HighestId)
+            threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
+        return threadPtr;
     }
 
     private TargetPointer GetThreadFromLink(TargetPointer threadLink)

@@ -108,21 +108,5 @@ namespace System
 
         // Used by VM
         internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);
-
-        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
-        /// <value>A 32-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
-        public static extern int TickCount
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
-
-        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
-        /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
-        public static extern long TickCount64
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
     }
 }

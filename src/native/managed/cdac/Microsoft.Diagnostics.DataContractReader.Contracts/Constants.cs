@@ -15,7 +15,6 @@ public static class Constants
         public const string GCThread = nameof(GCThread);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
-        public const string FeatureEHFunclets = nameof(FeatureEHFunclets);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
@@ -28,6 +27,10 @@ public static class Constants
 
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
         public const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
+        public const string DacNotificationFlags = nameof(DacNotificationFlags);
+        public const string OffsetOfCurrentThreadInfo = nameof(OffsetOfCurrentThreadInfo);
+        public const string TlsIndexBase = nameof(TlsIndexBase);
+        public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
@@ -52,6 +55,9 @@ public static class Constants
 
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
+        public const string DefaultADID = nameof(DefaultADID);
+        public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
+        public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
@@ -60,6 +66,8 @@ public static class Constants
 
         public const string Architecture = nameof(Architecture);
         public const string OperatingSystem = nameof(OperatingSystem);
+
+        public const string GCInfoVersion = nameof(GCInfoVersion);
     }
     public static class FieldNames
     {

@@ -11,7 +11,7 @@
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -141,8 +141,8 @@
       <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
-      <AotCompiler>$(MonoBinDir)/cross/$(OutputRID)/mono-aot-cross</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)/cross/$(OutputRID)</MonoLlvmPath>
+      <AotCompiler>$(MonoBinDir)/cross/$(TargetRid)/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross/$(TargetRid)</MonoLlvmPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -211,9 +211,8 @@
       <BuildDir>$(IntermediateOutputPath)\AndroidApps\$(Category)</BuildDir>
       <AppDir>$(BuildDir)\apk</AppDir>
       <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
-      <StripDebugSymbols>False</StripDebugSymbols>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
-      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(StripDebugSymbols)' == '' and '$(Configuration)' == 'Release'">true</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
@@ -264,6 +263,7 @@
     <AndroidAppBuilderTask
         AppDir="$(BuildDir)"
         DiagnosticPorts="$(DiagnosticPorts)"
+        EnvironmentVariables="@(AndroidEnv)"
         ForceInterpreter="$(MonoInterp)"
         RuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         OutputDir="$(AppDir)"
