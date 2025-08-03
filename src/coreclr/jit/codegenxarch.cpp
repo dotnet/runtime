@@ -1807,19 +1807,29 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
     assert(varTypeIsIntegral(type));
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
 
-    const GenConditionDesc& desc = GenConditionDesc::Get(condition);
+    const GenConditionDesc& desc        = GenConditionDesc::Get(condition);
+    insOpts                 instOptions = INS_OPTS_NONE;
 
-    inst_SET(desc.jumpKind1, dstReg);
+    bool needsMovzx = !varTypeIsByte(type);
+    if (needsMovzx && compiler->canUseApxEvexEncoding() && JitConfig.EnableApxZU())
+    {
+        instOptions = INS_OPTS_EVEX_zu;
+        needsMovzx  = false;
+    }
+
+    inst_SET(desc.jumpKind1, dstReg, instOptions);
 
     if (desc.oper != GT_NONE)
     {
         BasicBlock* labelNext = genCreateTempLabel();
         inst_JMP((desc.oper == GT_OR) ? desc.jumpKind1 : emitter::emitReverseJumpKind(desc.jumpKind1), labelNext);
-        inst_SET(desc.jumpKind2, dstReg);
+        inst_SET(desc.jumpKind2, dstReg, instOptions);
         genDefineTempLabel(labelNext);
     }
 
-    if (!varTypeIsByte(type))
+    // we can apply EVEX.ZU to avoid this movzx.
+    // TODO-XArch-apx: evaluate setcc + movzx and xor + set
+    if (needsMovzx)
     {
         GetEmitter()->emitIns_Mov(INS_movzx, EA_1BYTE, dstReg, dstReg, /* canSkip */ false);
     }
@@ -9478,6 +9488,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM0, false);
     theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM16, false);
+
+    theEmitter->emitIns_R(INS_seto_apx, EA_1BYTE, REG_R11, INS_OPTS_EVEX_zu);
 }
 
 void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
@@ -10379,7 +10391,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // DEBUG
 
 #ifdef TARGET_AMD64
-    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX())
     {
         genPushCalleeSavedRegistersFromMaskAPX(rsPushRegs);
         return;
@@ -10505,7 +10517,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         return;
     }
 
-    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    if (compiler->canUseApxEvexEncoding() && JitConfig.EnableApxPPX())
     {
         regMaskTP      rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
         const unsigned popCount  = genPopCalleeSavedRegistersFromMaskAPX(rsPopRegs);

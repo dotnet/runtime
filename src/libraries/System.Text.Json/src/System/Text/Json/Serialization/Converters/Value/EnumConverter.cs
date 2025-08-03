@@ -676,44 +676,40 @@ namespace System.Text.Json.Serialization.Converters
                 return enumFields;
             }
 
-            var indices = new int[enumFields.Length];
+            var indices = new (int negativePopCount, int index)[enumFields.Length];
             for (int i = 0; i < enumFields.Length; i++)
             {
-                indices[i] = i;
+                // We want values with more bits set to come first so negate the pop count.
+                // Keep the index as a second comparand so that sorting stability is preserved.
+                indices[i] = (-PopCount(enumFields[i].Key), i);
             }
 
-            Array.Sort(indices, (i, j) => GetComparisonKey(i).CompareTo(GetComparisonKey(j)));
+            Array.Sort(indices);
 
             var sortedFields = new EnumFieldInfo[enumFields.Length];
             for (int i = 0; i < indices.Length; i++)
             {
-                sortedFields[i] = enumFields[indices[i]];
+                // extract the index from the sorted tuple
+                int index = indices[i].index;
+                sortedFields[i] = enumFields[index];
             }
 
             return sortedFields;
+        }
 
-            (int PopCount, int Index) GetComparisonKey(int i)
-            {
-                // Sort by descending pop count of the enum value.
-                // Since Array.Sort isn't a stable algorithm
-                // append the current index to the comparison key.
-                return (-PopCount(enumFields[i].Key), i);
-            }
-
-            static int PopCount(ulong value)
-            {
+        private static int PopCount(ulong value)
+        {
 #if NET
-                return (int)ulong.PopCount(value);
+            return (int)ulong.PopCount(value);
 #else
-                int count = 0;
-                while (value != 0)
-                {
-                    value &= value - 1;
-                    count++;
-                }
-                return count;
-#endif
+            int count = 0;
+            while (value != 0)
+            {
+                value &= value - 1;
+                count++;
             }
+            return count;
+#endif
         }
 
         private enum EnumFieldNameKind
