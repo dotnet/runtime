@@ -111,7 +111,7 @@ namespace Wasm.Build.Tests
             // sanity check, in case we change file extensions
             Assert.Contains($"{info.ProjectName}.dll.bc", bitCodeFileNames);
 
-            Assert.Empty(bitCodeFileNames.Where(file => file.EndsWith(".resources.dll.bc")));
+            Assert.DoesNotContain(bitCodeFileNames, file => file.EndsWith(".resources.dll.bc"));
         }
 #pragma warning restore xUnit1026
 
