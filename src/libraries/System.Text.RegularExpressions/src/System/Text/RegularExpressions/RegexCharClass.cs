@@ -51,10 +51,13 @@ namespace System.Text.RegularExpressions
 
         internal const string SpaceClass = "\u0000\u0000\u0001\u0064"; // \s
         internal const string NotSpaceClass = "\u0000\u0000\u0001\uFF9C"; // \S
+        internal const string NegatedSpaceClass = "\u0001\0\u0001d"; // [^\s]
         internal const string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000"; // \w
         internal const string NotWordClass = "\u0000\u0000\u000A\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000"; // \W
+        internal const string NegatedWordClass = "\u0001\0\n\0\u0002\u0004\u0005\u0003\u0001\u0006\t\u0013\0"; // [^\w]
         internal const string DigitClass = "\u0000\u0000\u0001\u0009"; // \d
         internal const string NotDigitClass = "\u0000\u0000\u0001\uFFF7"; // \D
+        internal const string NegatedDigitClass = "\u0001\0\u0001\t"; // [^\d]
         internal const string ControlClass = "\0\0\u0001\u000f"; // \p{Cc}
         internal const string NotControlClass = "\0\0\u0001\ufff1"; // \P{Cc}
         internal const string LetterClass = "\0\0\a\0\u0002\u0004\u0005\u0003\u0001\0"; // \p{L}
@@ -362,6 +365,23 @@ namespace System.Text.RegularExpressions
         }
 
         public void AddChar(char c) => AddRange(c, c);
+
+        public void AddNotChar(char c)
+        {
+            if (c == 0)
+            {
+                AddRange((char)1, LastChar);
+            }
+            else if (c == LastChar)
+            {
+                AddRange((char)0, (char)(LastChar - 1));
+            }
+            else
+            {
+                AddRange((char)0, (char)(c - 1));
+                AddRange((char)(c + 1), LastChar);
+            }
+        }
 
         /// <summary>
         /// Adds a regex char class
@@ -1272,6 +1292,55 @@ namespace System.Text.RegularExpressions
                 (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
         }
 
+        /// <summary>Determines whether the characters that match the specified set are known to all be word characters.</summary>
+        public static bool IsKnownWordClassSubset(string set)
+        {
+            // Check for common sets that we know to be subsets of \w.
+            if (set is
+                WordClass or DigitClass or LetterClass or LetterOrDigitClass or
+                AsciiLetterClass or AsciiLetterOrDigitClass or
+                HexDigitClass or HexDigitUpperClass or HexDigitLowerClass)
+            {
+                return true;
+            }
+
+            // Check for sets composed of Unicode categories that are part of \w.
+            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[16];
+            if (TryGetOnlyCategories(set, categories, out int numCategories, out bool negated) && !negated)
+            {
+                foreach (UnicodeCategory cat in categories.Slice(0, numCategories))
+                {
+                    if (!IsWordCategory(cat))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            // If we can enumerate every character in the set quickly, do so, checking to see whether they're all in \w.
+            if (CanEasilyEnumerateSetContents(set))
+            {
+                for (int i = SetStartIndex; i < SetStartIndex + set[SetLengthIndex]; i += 2)
+                {
+                    int curSetEnd = set[i + 1];
+                    for (int c = set[i]; c < curSetEnd; c++)
+                    {
+                        if (!CharInClass((char)c, WordClass))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            // Unlikely to be a subset of \w, and we don't know for sure.
+            return false;
+        }
+
         /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>
         public static bool IsBoundaryWordChar(char ch)
         {
@@ -1288,9 +1357,12 @@ namespace System.Text.RegularExpressions
             int chDiv8 = ch >> 3;
             return (uint)chDiv8 < (uint)ascii.Length ?
                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
-                ((WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0 ||
+                (IsWordCategory(CharUnicodeInfo.GetUnicodeCategory(ch)) ||
                  (ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner));
         }
+
+        private static bool IsWordCategory(UnicodeCategory category) =>
+            (WordCategoriesMask & (1 << (int)category)) != 0;
 
         /// <summary>Determines whether the 'a' and 'b' values differ by only a single bit, setting that bit in 'mask'.</summary>
         /// <remarks>This isn't specific to RegexCharClass; it's just a convenient place to host it.</remarks>
@@ -2083,6 +2155,7 @@ namespace System.Text.RegularExpressions
                 '\f' => "\\f",
                 '\n' => "\\n",
                 '\\' => "\\\\",
+                '-'  => "\\-",
                 >= ' ' and <= '~' => ch.ToString(),
                 _ => $"\\u{(uint)ch:X4}"
             };
