@@ -654,7 +654,7 @@ namespace System.Text.Json
             return indexOfFirstMismatch;
         }
 
-        private JsonException GetInvalidLiteralMultiSegment(scoped Span<byte> span)
+        private JsonException GetInvalidLiteralMultiSegment(scoped ReadOnlySpan<byte> span)
         {
             byte firstByte = span[0];
 

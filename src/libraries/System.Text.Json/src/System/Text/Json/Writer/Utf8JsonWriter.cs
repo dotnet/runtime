@@ -113,12 +113,7 @@ namespace System.Text.Json
         /// Tracks the recursive depth of the nested objects / arrays within the JSON text
         /// written so far. This provides the depth of the current token.
         /// </summary>
-        public int CurrentDepth
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-
-            get => _currentDepth & JsonConstants.RemoveFlagsBitMask;
-        }
+        public int CurrentDepth => _currentDepth & JsonConstants.RemoveFlagsBitMask;
 
         /// <summary>
         /// The partial UTF-8 code point.

@@ -1161,7 +1161,7 @@ namespace System.Text.Json
                     if (span[i] != literal[i])
                     {
                         _bytePositionInLine += i;
-                        throw GetInvalidLiteral(span);
+                        ThrowInvalidLiteral(span);
                     }
                 }
                 else
@@ -1176,10 +1176,12 @@ namespace System.Text.Json
             if (IsLastSpan)
             {
                 _bytePositionInLine += indexOfFirstMismatch;
-                throw GetInvalidLiteral(span);
+                ThrowInvalidLiteral(span);
             }
             return false;
         }
+
+        private void ThrowInvalidLiteral(ReadOnlySpan<byte> span) => throw GetInvalidLiteral(span);
 
         private JsonException GetInvalidLiteral(ReadOnlySpan<byte> span)
         {
