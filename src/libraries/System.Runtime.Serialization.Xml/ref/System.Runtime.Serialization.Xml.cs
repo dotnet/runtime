@@ -105,15 +105,6 @@ namespace System.Runtime.Serialization
     {
         System.Runtime.Serialization.ExtensionDataObject? ExtensionData { get; set; }
     }
-    public partial class InvalidDataContractException : System.Exception
-    {
-        public InvalidDataContractException() { }
-        [System.ComponentModel.EditorBrowsableAttribute(1)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-        protected InvalidDataContractException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public InvalidDataContractException(string? message) { }
-        public InvalidDataContractException(string? message, System.Exception? innerException) { }
-    }
     public abstract partial class XmlObjectSerializer
     {
         protected XmlObjectSerializer() { }
