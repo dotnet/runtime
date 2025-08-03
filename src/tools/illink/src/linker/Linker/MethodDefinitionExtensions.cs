@@ -93,24 +93,6 @@ namespace Mono.Linker
             return method.IsConstructor && method.IsStatic;
         }
 
-        public static bool IsExtensionMarkerMethod(this MethodDefinition method)
-        {
-            TypeDefinition declaringType = method.DeclaringType;
-
-            if (!declaringType.IsSpecialName ||
-                !declaringType.IsSealed ||
-                !declaringType.IsNestedPublic ||
-                declaringType.HasInterfaces)
-            {
-                return false;
-            }
-
-            return method.IsSpecialName &&
-                   method.IsStatic &&
-                   method.IsPrivate &&
-                   method.Name.Equals("<Extension>$");
-        }
-
         public static void ClearDebugInformation(this MethodDefinition method)
         {
             // TODO: This always allocates, update when Cecil catches up
