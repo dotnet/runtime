@@ -87,12 +87,12 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Disconnect_ObjectDisposed_ThrowsObjectDisposedException(bool reuseSocket)
+        public async Task Disconnect_ObjectDisposed_ThrowsObjectDisposedException(bool reuseSocket)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 s.Dispose();
-                Assert.ThrowsAsync<ObjectDisposedException>(async () => await DisconnectAsync(s, reuseSocket));
+                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await DisconnectAsync(s, reuseSocket));
             }
         }
     }
