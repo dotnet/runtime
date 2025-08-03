@@ -201,7 +201,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
         {
-#pragma warning disable CA2020 // Prevent from behavioral change
+#pragma warning disable CA2020 // Prevent behavioral change
 #if TARGET_64BIT
             return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value);
 #else
@@ -451,7 +451,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
         {
-#pragma warning disable CA2020 // Prevent from behavioral change
+#pragma warning disable CA2020 // Prevent behavioral change
 #if TARGET_64BIT
             return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
 #else
