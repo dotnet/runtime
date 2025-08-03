@@ -7680,10 +7680,11 @@ CEEInfo::getMethodInfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
-    if (ftn->HasILHeader())
+    COR_ILMETHOD* pILHeader;
+    if (ftn->MayHaveILHeader() && (pILHeader = ftn->GetILHeader()) != NULL)
     {
         // Get the IL header and set it.
-        COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, ftn->GetMDImport(), NULL);
         getMethodInfoWorker(ftn, &header, methInfo, context);
         result = true;
     }
@@ -7861,9 +7862,10 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
         if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
         {
-            if (pCallee->HasILHeader())
+            COR_ILMETHOD* pILHeader;
+            if (pCallee->MayHaveILHeader() && (pILHeader = pCallee->GetILHeader()) != NULL)
             {
-                COR_ILMETHOD_DECODER header(pCallee->GetILHeader(), pCallee->GetMDImport(), NULL);
+                COR_ILMETHOD_DECODER header(pILHeader, pCallee->GetMDImport(), NULL);
                 if (header.EHCount() > 0)
                 {
                     result = INLINE_FAIL;
@@ -12771,6 +12773,8 @@ void CEECodeGenInfo::getEHinfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* pMD = GetMethod(ftn);
+
+    COR_ILMETHOD* pILHeader;
     if (IsDynamicMethodHandle(ftn))
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
@@ -12779,9 +12783,9 @@ void CEECodeGenInfo::getEHinfo(
     {
         getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
     }
-    else if (pMD->HasILHeader())
+    else if (pMD->MayHaveILHeader() && (pILHeader = pMD->GetILHeader()) != NULL)
     {
-        COR_ILMETHOD_DECODER header(pMD->GetILHeader(), pMD->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
         getEHinfoHelper(ftn, EHnumber, clause, &header);
     }
     else if (pMD->IsIL())
