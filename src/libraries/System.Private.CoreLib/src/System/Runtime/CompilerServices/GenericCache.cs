@@ -141,7 +141,6 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGet(TKey key, out TValue? value)
         {
-            // table is always initialized and is not null.
             Entry[] table = _table;
             int hash = key.GetHashCode();
             int index = HashToBucket(table, hash);

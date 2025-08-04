@@ -408,7 +408,7 @@ namespace ILLink.Shared.DataFlow
                             // Filters can't contain try/catch/filters.
                             Debug.Assert(enclosingTryOrCatch.Kind != RegionKind.Filter);
                             Box<TValue> tryOrCatchExceptionState = cfgState.GetExceptionState(enclosingTryOrCatch);
-                            tryOrCatchExceptionState.Value = lattice.Meet(tryOrCatchExceptionState.Value, exceptionState.Value);
+                            tryOrCatchExceptionState.Value = lattice.Meet(tryOrCatchExceptionState.Value, exceptionState!.Value);
                             tryOrCatchOrFilterRegion = enclosingTryOrCatch;
                         }
                     }
