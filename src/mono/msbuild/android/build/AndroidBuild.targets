@@ -184,10 +184,10 @@
       a list of direct pinvokes otherwise the runtime will crash
     -->
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <DirectPInvokes Include="libSystem.Native" />
-      <DirectPInvokes Include="libSystem.IO.Compression.Native" />
-      <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
-      <DirectPInvokes Include="libbrotlienc;libbrotlidec" />
+      <DirectPInvoke Include="libSystem.Native" />
+      <DirectPInvoke Include="libSystem.IO.Compression.Native" />
+      <DirectPInvoke Include="libSystem.Security.Cryptography.Native.Android" />
+      <DirectPInvoke Include="libbrotlienc;libbrotlidec" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -202,8 +202,8 @@
         AsOptions="$(_AsOptions)"
         Assemblies="@(_AotInputAssemblies)"
         CompilerBinaryPath="$(_CompilerBinaryPath)"
-        DirectPInvokes="@(DirectPInvokes)"
-        DirectPInvokeLists="@(DirectPInvokeLists)"
+        DirectPInvokes="@(DirectPInvoke)"
+        DirectPInvokeLists="@(DirectPInvokeList)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LdName="$(_LdName)"
