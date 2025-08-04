@@ -493,7 +493,7 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
     // takes over.
     pCode->EmitLDARG(ARG_ARG_BUFFER);
     pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_ABANDONED);
-    pCode->EmitSTIND_I();
+    pCode->EmitSTIND_I4();
 
     int numRetVals = info.CallSiteSig->IsReturnTypeVoid() ? 0 : 1;
     // Normally there will not be any target and we just emit a normal
