@@ -79,6 +79,8 @@ extern "C" {
 #define __inline        inline
 #endif
 
+#define __forceinline   inline
+
 #define PALIMPORT
 
 #ifndef DLLEXPORT

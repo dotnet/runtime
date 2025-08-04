@@ -19,6 +19,19 @@
 #define _alloca alloca
 #endif //_MSC_VER
 
+#ifndef _MSC_VER
+#define __stdcall
+#ifdef __GNUC__
+#define __forceinline __attribute__((always_inline)) inline
+#else // __GNUC__
+#define __forceinline inline
+#endif // __GNUC__
+// [LOCALGC TODO] is there a better place for this?
+#define NOINLINE __attribute__((noinline))
+#else // !_MSC_VER
+#define NOINLINE __declspec(noinline)
+#endif // _MSC_VER
+
 #ifdef _MSC_VER
 #define __UNREACHABLE() __assume(0)
 #else

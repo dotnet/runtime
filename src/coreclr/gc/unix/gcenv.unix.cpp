@@ -120,6 +120,8 @@ bool GetPhysicalMemoryUsed(size_t* val);
 
 static size_t g_RestrictedPhysicalMemoryLimit = 0;
 
+uint32_t g_pageSizeUnixInl = 0;
+
 AffinitySet g_processAffinitySet;
 
 extern "C" int g_highestNumaNode;
@@ -137,6 +139,10 @@ static size_t g_kern_memorystatus_level_mib_length = 0;
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
+    int pageSize = sysconf( _SC_PAGE_SIZE );
+
+    g_pageSizeUnixInl = uint32_t((pageSize > 0) ? pageSize : 0x1000);
+
     // Calculate and cache the number of processors on this machine
     int cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
     if (cpuCount == -1)
@@ -213,7 +219,7 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
-    g_totalPhysicalMemSize = (uint64_t)pages * (uint64_t)minipal_get_page_size();
+    g_totalPhysicalMemSize = (uint64_t)pages * (uint64_t)g_pageSizeUnixInl;
 #elif HAVE_SYSCTL
     int mib[2];
     mib[0] = CTL_HW;
