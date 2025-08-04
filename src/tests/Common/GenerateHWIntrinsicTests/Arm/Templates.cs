@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 
-class TestTemplates
+static class TestTemplates
 {
-    const string SimpleOpTest_ValidationLogic = @"if ({ValidateFirstResult})
+    static const string SimpleOpTest_ValidationLogic = @"if ({ValidateFirstResult})
                 {
                     succeeded = false;
                 }
@@ -22,7 +22,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleVecOpTest_ValidationLogic = @"for (var i = 0; i < RetElementCount; i++)
+    static const string SimpleVecOpTest_ValidationLogic = @"for (var i = 0; i < RetElementCount; i++)
                 {
                     if ({ValidateIterResult})
                     {
@@ -31,7 +31,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleVecOpTest_ValidationLogicForNarrowing = @"for (var i = 0; i < Op1ElementCount; i++)
+    static const string SimpleVecOpTest_ValidationLogicForNarrowing = @"for (var i = 0; i < Op1ElementCount; i++)
                 {
                     if ({ValidateIterResult})
                     {
@@ -40,11 +40,11 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleVecOpTest_VectorValidationLogic = @"succeeded = !({ValidateVectorResult});";
+    static const string SimpleVecOpTest_VectorValidationLogic = @"succeeded = !({ValidateVectorResult});";
 
-    const string SimpleScalarOpTest_ValidationLogic = @"succeeded = !({ValidateScalarResult});";
+    static const string SimpleScalarOpTest_ValidationLogic = @"succeeded = !({ValidateScalarResult});";
 
-    const string SimpleTernVecOpTest_ValidationLogic = @"for (var i = 0; i < RetElementCount; i++)
+    static const string SimpleTernVecOpTest_ValidationLogic = @"for (var i = 0; i < RetElementCount; i++)
                 {
                     if ({ValidateIterResult})
                     {
@@ -54,7 +54,7 @@ class TestTemplates
                 }";
 
 
-    const string SimpleVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
+    static const string SimpleVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
                 {
                     {RetBaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
                     if (iterResult != result[i])
@@ -64,7 +64,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleVecOpTest_ValidationLogicForCndSelMask = @"for (var i = 0; i < RetElementCount; i++)
+    static const string SimpleVecOpTest_ValidationLogicForCndSelMask = @"for (var i = 0; i < RetElementCount; i++)
                 {
                     {RetBaseType} iterResult = ({GetIterResult} != 0) ? trueVal[i] : falseVal[i];
                     if (iterResult != result[i])
@@ -74,7 +74,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
+    static const string SimpleVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
                 {
                     {RetBaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
                     if (mask[i] != 0)
@@ -93,7 +93,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i = 0; i < Op1ElementCount; i++)
+    static const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i = 0; i < Op1ElementCount; i++)
                 {
                     {RetBaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
                     if ({ConvertFunc}(iterResult) != {ConvertFunc}(result[i]))
@@ -103,7 +103,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing_FalseValue = @"for (var i = 0; i < Op1ElementCount; i++)
+    static const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing_FalseValue = @"for (var i = 0; i < Op1ElementCount; i++)
                 {
                     {RetBaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
                     if (mask[i] != 0)
@@ -123,7 +123,7 @@ class TestTemplates
                 }";
 
 
-    const string SimpleVecOpTest_VectorValidationLogicForCndSel = @"
+    static const string SimpleVecOpTest_VectorValidationLogicForCndSel = @"
                 
                     {RetBaseType}[] vectorResult = {GetVectorResult};
                     {RetBaseType}[] maskedVectorResult = new {RetBaseType}[vectorResult.Length];
@@ -139,7 +139,7 @@ class TestTemplates
                     }
                 ";
 
-    const string SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue = @"
+    static const string SimpleVecOpTest_VectorValidationLogicForCndSel_FalseValue = @"
                 {
                     {RetBaseType}[] vectorResult = {GetVectorResult};
                     {RetBaseType}[] maskedVectorResult = new {RetBaseType}[vectorResult.Length];
@@ -164,7 +164,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleTernVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
+    static const string SimpleTernVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
                 {
                     {RetBaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
                     if ({ConvertFunc}(iterResult) != {ConvertFunc}(result[i]))
@@ -174,7 +174,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
+    static const string SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
                 {
                     {RetBaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
                     if (mask[i] != 0)
@@ -193,7 +193,7 @@ class TestTemplates
                     }
                 }";
 
-    const string VecPairBinOpTest_ValidationLogic = @"
+    static const string VecPairBinOpTest_ValidationLogic = @"
                 int index = 0;
                 int half  = RetElementCount / 2;
                 for (var i = 0; i < RetElementCount; i+=2, index++)
@@ -205,7 +205,7 @@ class TestTemplates
                         }
                 }";
 
-    const string SveValidateForEachRetElementCount_ValidationLogic = @"
+    static const string SveValidateForEachRetElementCount_ValidationLogic = @"
                 for (var i = 0; i < RetElementCount; i++)
                 {
                     if ({ValidateEntry})
@@ -215,7 +215,7 @@ class TestTemplates
                     }
                 }";
 
-    const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
+    static const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
                 {
                     var hasFailed = (mask[0] != 0) ? ({ValidateReduceOpResult}): (falseVal[0] != result[0]);
 
@@ -237,7 +237,7 @@ class TestTemplates
                     }
                 }";
 
-    const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
+    static const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
                 {
                     var hasFailed = (mask[0] != 0) ? (trueVal[0] != result[0]): ({ValidateReduceOpResult});
                     if (hasFailed)
@@ -258,7 +258,7 @@ class TestTemplates
                     }
                 }";
 
-    const string VecReduceOpTest_ValidationLogic = @"if ({ValidateReduceOpResult})
+    static const string VecReduceOpTest_ValidationLogic = @"if ({ValidateReduceOpResult})
                 {
                     succeeded = false;
                 }
@@ -274,7 +274,7 @@ class TestTemplates
                     }
                 }";
 
-    const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult = new {RetBaseType}[]{ExpectedResult};
+    static const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult = new {RetBaseType}[]{ExpectedResult};
 
                 for (int i = 0; i < RetElementCount; i++)
                 {
