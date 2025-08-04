@@ -11,9 +11,9 @@ extern "C"
 {
 #endif // __cplusplus
 
-    bool minipal_initialize_flush_process_write_buffers();
-    void minipal_shutdown_flush_process_write_buffers();
-    void minipal_flush_process_write_buffers();
+    bool minipal_initialize_flush_process_write_buffers(void);
+    void minipal_shutdown_flush_process_write_buffers(void);
+    void minipal_flush_process_write_buffers(void);
 
 #ifndef TARGET_WINDOWS
     extern size_t g_pageSizeUnixInl;
