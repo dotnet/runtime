@@ -5573,14 +5573,7 @@ bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned lim
                                                                     : BasicBlockVisit::Continue;
     });
 
-    if (result == BasicBlockVisit::Abort)
-    {
-        JITDUMP("Loop " FMT_LP ": exceeds complexity limit %u\n", loop->GetIndex(), limit);
-        return true;
-    }
-
-    JITDUMP("Loop " FMT_LP ": complexity %u does not exceed limit %u\n", loop->GetIndex(), loopComplexity, limit);
-    return false;
+    return (result == BasicBlockVisit::Abort);
 }
 
 /*****************************************************************************/

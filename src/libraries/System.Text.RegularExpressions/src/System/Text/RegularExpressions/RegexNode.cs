@@ -2287,10 +2287,23 @@ namespace System.Text.RegularExpressions
                 {
                     switch (subsequent.Kind)
                     {
+                        // Concatenate, capture, and atomic do not impact what comes at the beginning of their children,
+                        // so we can skip down to the first child.
                         case RegexNodeKind.Concatenate:
                         case RegexNodeKind.Capture:
                         case RegexNodeKind.Atomic:
+
+                        // Similarly, as long as a loop is guaranteed to iterate at least once, we can skip down to the child,
+                        // as whatever starts it is guaranteed to come after the predecessor.
                         case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when subsequent.M > 0:
+
+                        // Positive lookaheads can also be skipped through. The lookahead logically comes after the predecessor,
+                        // and even though it's zero width, we don't need to look at whatever comes after the lookahead, because
+                        // the lookahead ends up overlapping with its successor. If the node is disjoint from the lookahead, then
+                        // it's also disjoint from the intersection of the lookahead and the lookahead's successor, since the
+                        // intersection can only narrow the possible set of characters that need to be considered for overlap with
+                        // the predecessor node.
+                        case RegexNodeKind.PositiveLookaround when (subsequent.Options & RegexOptions.RightToLeft) == 0:
                             subsequent = subsequent.Child(0);
                             continue;
                     }
@@ -2326,9 +2339,8 @@ namespace System.Text.RegularExpressions
                         return true;
                 }
 
-                // If this node is a {one/notone/set}loop, see if it overlaps with its successor in the concatenation.
-                // If it doesn't, then we can upgrade it to being a {one/notone/set}loopatomic.
-                // Doing so avoids unnecessary backtracking.
+                // If this node is a loop, see if it overlaps with its successor in the concatenation.
+                // If it doesn't, then we can upgrade it to being atomic to avoid unnecessary backtracking.
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Oneloop:
@@ -2344,15 +2356,15 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when node.Ch != subsequent.Str![0]:
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when node.Ch != '\n':
+                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.NonBoundary when node.M > 0 && !RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.ECMABoundary when node.M > 0 && RegexCharClass.IsECMAWordChar(node.Ch):
+                            case RegexNodeKind.NonECMABoundary when node.M > 0 && !RegexCharClass.IsECMAWordChar(node.Ch):
                                 return true;
 
                             case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && node.Ch != subsequent.Ch:
                             case RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic when subsequent.M == 0 && node.Ch == subsequent.Ch:
                             case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.NonBoundary when node.M > 0 && !RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.ECMABoundary when node.M > 0 && RegexCharClass.IsECMAWordChar(node.Ch):
-                            case RegexNodeKind.NonECMABoundary when node.M > 0 && !RegexCharClass.IsECMAWordChar(node.Ch):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2391,14 +2403,14 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when !RegexCharClass.CharInClass('\n', node.Str!):
-                                return true;
-
-                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                             case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsKnownWordClassSubset(node.Str!):
                             case RegexNodeKind.NonBoundary when node.M > 0 && node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
                             case RegexNodeKind.ECMABoundary when node.M > 0 && node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
                             case RegexNodeKind.NonECMABoundary when node.M > 0 && node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
+                                return true;
+
+                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2438,14 +2450,14 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when !CharInStartingOrEndingSet(subsequent.Str![0]):
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when !CharInStartingOrEndingSet('\n'):
-                                return true;
-
-                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !CharInStartingOrEndingSet(subsequent.Ch):
-                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !MayOverlapStartingOrEndingSet(subsequent.Str!):
                             case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsKnownWordClassSubset(loopStartingSet) && RegexCharClass.IsKnownWordClassSubset(loopEndingSet):
                             case RegexNodeKind.NonBoundary when node.M > 0 && (loopStartingSet is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass) && (loopEndingSet is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass):
                             case RegexNodeKind.ECMABoundary when node.M > 0 && (loopStartingSet is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass) && (loopEndingSet is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass):
                             case RegexNodeKind.NonECMABoundary when node.M > 0 && (loopStartingSet is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass) && (loopEndingSet is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass):
+                                return true;
+
+                            case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !CharInStartingOrEndingSet(subsequent.Ch):
+                            case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !MayOverlapStartingOrEndingSet(subsequent.Str!):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
