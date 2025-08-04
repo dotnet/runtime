@@ -168,6 +168,10 @@ c_static_assert(EVP_PKEY_PUBLIC_KEY == 134);
 #define OSSL_SIGNATURE_PARAM_CONTEXT_STRING "context-string"
 #endif
 
+#ifndef OSSL_SIGNATURE_PARAM_MU
+#define OSSL_SIGNATURE_PARAM_MU "mu"
+#endif
+
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include "apibridge_30_rev.h"
 #endif

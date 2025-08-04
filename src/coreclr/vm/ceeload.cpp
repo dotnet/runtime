@@ -2104,7 +2104,7 @@ PTR_READYTORUN_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
     return GetReadyToRunInfo()->GetImportSectionForRVA(rva);
 }
 
-TADDR Module::GetIL(DWORD target)
+TADDR Module::GetIL(RVA target)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -3355,11 +3355,11 @@ void Module::FixupVTables()
                     iCurMethod++;
 
 #ifdef _DEBUG
-                    if (pMD->IsNDirect())
+                    if (pMD->IsPInvoke())
                     {
                         LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
-                            (size_t)(((NDirectMethodDesc*)pMD)->GetNDirectTarget())));
+                            (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
 #endif // _DEBUG
 
@@ -3388,14 +3388,14 @@ void Module::FixupVTables()
                     LOG((LF_INTEROP, LL_INFO10, "[0x%p] <-- VTable  thunk for \"%s\" (pMD = 0x%p)\n",
                         (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
 
-                    UMEntryThunk *pUMEntryThunk = UMEntryThunk::CreateUMEntryThunk();
+                    UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
                     UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
 
                     pUMThunkMarshInfo->LoadTimeInit(pMD);
-                    pUMEntryThunk->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
+                    pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
-                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
+                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
                 }
@@ -3619,7 +3619,7 @@ void Module::RunEagerFixupsUnlocked()
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
@@ -3635,7 +3635,7 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
     {
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods))
             return FALSE;
 
         _ASSERTE(*fixupCell != 0);
@@ -4047,9 +4047,9 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-
     BYTE* pByte = NULL;
-    m_pCeeFileGen->GetMethodBuffer(il, &pByte);
+    if (il != 0)
+        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
     return TADDR(pByte);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
@@ -4348,7 +4348,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
-            pCookie->pNDirectILStub = 0;
+            pCookie->pPInvokeILStub = 0;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;
@@ -4608,8 +4608,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
             asmRefIter.GetElement()->GetAssembly()->EnumMemoryRegions(flags);
         }
     }
-
-    ECall::EnumFCallMethods();
 
 #ifdef FEATURE_METADATA_UPDATER
     m_ClassList.EnumMemoryRegions();

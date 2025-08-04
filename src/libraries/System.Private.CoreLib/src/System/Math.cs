@@ -909,7 +909,7 @@ namespace System
                 }
 
                 Debug.Assert(double.IsSubnormal(x));
-                return double.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - double.BiasedExponentLength);
+                return double.MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - double.BiasedExponentLength);
             }
 
             return x.Exponent;

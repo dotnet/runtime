@@ -4,9 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 using BCRYPT_RSAKEY_BLOB = Interop.BCrypt.BCRYPT_RSAKEY_BLOB;
@@ -15,14 +13,9 @@ using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
 
 namespace System.Security.Cryptography
 {
-    internal static class CngHelpers
+    internal static partial class CngHelpers
     {
         private static readonly CngKeyBlobFormat s_cipherKeyBlobFormat = new CngKeyBlobFormat(Interop.NCrypt.NCRYPT_CIPHER_KEY_BLOB);
-
-        internal static CryptographicException ToCryptographicException(this Interop.NCrypt.ErrorCode errorCode)
-        {
-            return ((int)errorCode).ToCryptographicException();
-        }
 
         internal static SafeNCryptProviderHandle OpenStorageProvider(this CngProvider provider)
         {
@@ -37,114 +30,6 @@ namespace System.Security.Cryptography
             }
 
             return providerHandle;
-        }
-
-        public static void SetExportPolicy(this SafeNCryptKeyHandle keyHandle, CngExportPolicies exportPolicy)
-        {
-            unsafe
-            {
-                ErrorCode errorCode = Interop.NCrypt.NCryptSetProperty(
-                    keyHandle,
-                    KeyPropertyName.ExportPolicy,
-                    &exportPolicy,
-                    sizeof(CngExportPolicies),
-                    CngPropertyOptions.Persist);
-
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
-                {
-                    throw errorCode.ToCryptographicException();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns a CNG key property.
-        /// </summary>
-        /// <returns>
-        /// null - if property not defined on key.
-        /// throws - for any other type of error.
-        /// </returns>
-        internal static byte[]? GetProperty(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
-        {
-            Debug.Assert(!ncryptHandle.IsInvalid);
-            unsafe
-            {
-                ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(
-                    ncryptHandle,
-                    propertyName,
-                    null,
-                    0,
-                    out int numBytesNeeded,
-                    options);
-
-                if (errorCode == ErrorCode.NTE_NOT_FOUND)
-                {
-                    return null;
-                }
-
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
-                {
-                    throw errorCode.ToCryptographicException();
-                }
-
-                byte[] propertyValue = new byte[numBytesNeeded];
-
-                fixed (byte* pPropertyValue = propertyValue)
-                {
-                    errorCode = Interop.NCrypt.NCryptGetProperty(
-                        ncryptHandle,
-                        propertyName,
-                        pPropertyValue,
-                        propertyValue.Length,
-                        out numBytesNeeded,
-                        options);
-                }
-
-                if (errorCode == ErrorCode.NTE_NOT_FOUND)
-                {
-                    return null;
-                }
-
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
-                {
-                    throw errorCode.ToCryptographicException();
-                }
-
-                Array.Resize(ref propertyValue, numBytesNeeded);
-                return propertyValue;
-            }
-        }
-
-        /// <summary>
-        /// Retrieve a well-known CNG string property. (Note: .NET Framework compat: this helper likes to return special
-        /// values rather than throw exceptions for missing or ill-formatted property values. Only use it for well-known
-        /// properties that are unlikely to be ill-formatted.)
-        /// </summary>
-        internal static string? GetPropertyAsString(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
-        {
-            Debug.Assert(!ncryptHandle.IsInvalid);
-            byte[]? value = GetProperty(ncryptHandle, propertyName, options);
-
-            if (value == null)
-            {
-                // .NET Framework compat: return null if key not present.
-                return null;
-            }
-
-            if (value.Length == 0)
-            {
-                // .NET Framework compat: return empty if property value is 0-length.
-                return string.Empty;
-            }
-
-            unsafe
-            {
-                fixed (byte* pValue = &value[0])
-                {
-                    string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue)!;
-                    return valueAsString;
-                }
-            }
         }
 
         /// <summary>

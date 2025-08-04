@@ -11,6 +11,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // See src/coreclr/inc/sospriv.idl
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+
+internal enum CLRDataOtherNotifyFlag
+{
+    CLRDATA_NOTIFY_ON_MODULE_LOAD = 0x1,
+    CLRDATA_NOTIFY_ON_MODULE_UNLOAD = 0x2,
+    CLRDATA_NOTIFY_ON_EXCEPTION = 0x4,
+    CLRDATA_NOTIFY_ON_EXCEPTION_CATCH_ENTER = 0x8
+}
+
 internal struct DacpThreadStoreData
 {
     public int threadCount;
@@ -24,6 +33,47 @@ internal struct DacpThreadStoreData
     public int fHostConfig; // Uses hosting flags defined above
 };
 
+internal enum DacpAppDomainDataStage : uint
+{
+    STAGE_CREATING,
+    STAGE_READYFORMANAGEDCODE,
+    STAGE_ACTIVE,
+    STAGE_OPEN,
+    STAGE_UNLOAD_REQUESTED,
+    STAGE_EXITING,
+    STAGE_EXITED,
+    STAGE_FINALIZING,
+    STAGE_FINALIZED,
+    STAGE_HANDLETABLE_NOACCESS,
+    STAGE_CLEARED,
+    STAGE_COLLECTED,
+    STAGE_CLOSED
+};
+
+internal struct DacpAppDomainData
+{
+    // The pointer to the AppDomain or SystemDomain.
+    // It's useful to keep this around in the structure
+    public ClrDataAddress AppDomainPtr;
+    public ClrDataAddress AppSecDesc;
+    public ClrDataAddress pLowFrequencyHeap;
+    public ClrDataAddress pHighFrequencyHeap;
+    public ClrDataAddress pStubHeap;
+    public ClrDataAddress DomainLocalBlock;
+    public ClrDataAddress pDomainLocalModules;
+    // The creation sequence number of this app domain (starting from 1)
+    public uint dwId;
+    public int AssemblyCount;
+    public int FailedAssemblyCount;
+    public DacpAppDomainDataStage appDomainStage;
+};
+
+internal struct DacpAppDomainStoreData
+{
+    public ClrDataAddress sharedDomain;
+    public ClrDataAddress systemDomain;
+    public int DomainCount;
+};
 internal struct DacpThreadData
 {
     public int corThreadId;
@@ -128,6 +178,16 @@ internal struct DacpUsefulGlobalsData
 }
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
+internal struct DacpMethodTableFieldData
+{
+    public ushort wNumInstanceFields;
+    public ushort wNumStaticFields;
+    public ushort wNumThreadStaticFields;
+    public ClrDataAddress FirstField;
+    public ushort wContextStaticOffset;
+    public ushort wContextStaticsSize;
+};
+
 internal struct DacpReJitData
 {
     // FIXME[cdac]: the C++ definition enum doesn't have an explicit underlying type or constant values for the flags
@@ -194,7 +254,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetAppDomainList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
     [PreserveSig]
-    int GetAppDomainData(ClrDataAddress addr, /*struct DacpAppDomainData*/ void* data);
+    int GetAppDomainData(ClrDataAddress addr, DacpAppDomainData* data);
     [PreserveSig]
     int GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded);
     [PreserveSig]
@@ -276,7 +336,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodTableSlot(ClrDataAddress mt, uint slot, ClrDataAddress* value);
     [PreserveSig]
-    int GetMethodTableFieldData(ClrDataAddress mt, /*struct DacpMethodTableFieldData*/ void* data);
+    int GetMethodTableFieldData(ClrDataAddress mt, DacpMethodTableFieldData* data);
     [PreserveSig]
     int GetMethodTableTransparencyData(ClrDataAddress mt, /*struct DacpMethodTableTransparencyData*/ void* data);
 
@@ -596,4 +656,12 @@ internal unsafe partial interface ISOSDacInterface15
 {
     [PreserveSig]
     int GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator);
+}
+
+[GeneratedComInterface]
+[Guid("4ba12ff8-daac-4e43-ac56-98cf8d5c595d")]
+internal unsafe partial interface ISOSDacInterface16
+{
+    [PreserveSig]
+    int GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
 }

@@ -523,7 +523,7 @@ int ManagedReferencesSum(int[] buffer)
 
     Vector128<int> sum = Vector128<int>.Zero;
 
-    while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd))
+    while (Unsafe.IsAddressLessThanOrEqualTo(ref current, ref oneVectorAwayFromEnd))
     {
         sum += Vector128.LoadUnsafe(ref current);
 
@@ -561,7 +561,7 @@ do
 
     return ...;
 }
-while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
+while (Unsafe.IsAddressGreaterThanOrEqualTo(ref currentSearchSpace, ref searchSpace));
 ```
 
 It was part of `LastIndexOf` implementation, where we were iterating from the end to the beginning of the buffer. In the last iteration of the loop, `currentSearchSpace` could become a pointer to unknown memory that lied before the beginning of the buffer:
@@ -573,7 +573,7 @@ currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<TValu
 And it was fine until GC kicked right after that, moved objects in memory, updated all valid managed references and resumed the execution, which run following condition:
 
 ```csharp
-while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
+while (Unsafe.IsAddressGreaterThanOrEqualTo(ref currentSearchSpace, ref searchSpace));
 ```
 
 Which could return true because `currentSearchSpace` was invalid and not updated. If you are interested in more details, you can check the [issue](https://github.com/dotnet/runtime/issues/75792#issuecomment-1249973858) and the [fix](https://github.com/dotnet/runtime/pull/75857).

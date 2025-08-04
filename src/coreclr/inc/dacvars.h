@@ -115,6 +115,7 @@ DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_p
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
+DEFINE_DACVAR(DWORD, dac__g_offsetOfCurrentThreadInfo, g_offsetOfCurrentThreadInfo)
 
 #ifdef FEATURE_EH_FUNCLETS
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
@@ -180,7 +181,7 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pIDynamicInterfaceCastableInterface, 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjectFinalizerMD)
 
 DEFINE_DACVAR(bool, dac__g_fProcessDetach, ::g_fProcessDetach)
-DEFINE_DACVAR(DWORD, dac__g_fEEShutDown, ::g_fEEShutDown)
+DEFINE_DACVAR_VOLATILE(DWORD, dac__g_fEEShutDown, ::g_fEEShutDown)
 
 DEFINE_DACVAR(ULONG, dac__g_CORDebuggerControlFlags, ::g_CORDebuggerControlFlags)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pDebugger, ::g_pDebugger)
@@ -193,10 +194,6 @@ DEFINE_DACVAR(BOOL, Debugger__s_fCanChangeNgenFlags, Debugger::s_fCanChangeNgenF
 
 DEFINE_DACVAR(PTR_DebuggerPatchTable, DebuggerController__g_patches, DebuggerController::g_patches)
 DEFINE_DACVAR(BOOL, DebuggerController__g_patchTableValid, DebuggerController::g_patchTableValid)
-
-DEFINE_DACVAR(SIZE_T, dac__gLowestFCall, ::gLowestFCall)
-DEFINE_DACVAR(SIZE_T, dac__gHighestFCall, ::gHighestFCall)
-DEFINE_DACVAR(SIZE_T, dac__gFCallMethods, ::gFCallMethods)
 
 DEFINE_DACVAR(PTR_SyncTableEntry, dac__g_pSyncTable, ::g_pSyncTable)
 #ifdef FEATURE_COMINTEROP
@@ -235,6 +232,8 @@ DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
 
 DEFINE_DACVAR(PTR_WSTR, dac__g_EntryAssemblyPath, ::g_EntryAssemblyPath)
+
+DEFINE_DACVAR(CDacPlatformMetadata, dac__g_cdacPlatformMetadata, ::g_cdacPlatformMetadata)
 
 #undef DEFINE_DACVAR
 #undef DEFINE_DACVAR_NO_DUMP

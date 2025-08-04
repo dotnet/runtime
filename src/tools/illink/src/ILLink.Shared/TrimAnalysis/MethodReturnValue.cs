@@ -8,8 +8,10 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal sealed partial record class MethodReturnValue : ValueWithDynamicallyAccessedMembers, IValueWithStaticType
-	{
-		public TypeProxy? StaticType { get; }
-	}
+    internal sealed partial record class MethodReturnValue : ValueWithDynamicallyAccessedMembers, IValueWithStaticType
+    {
+        public TypeProxy? StaticType { get; }
+
+        public MethodProxy Method { get; }
+    }
 }

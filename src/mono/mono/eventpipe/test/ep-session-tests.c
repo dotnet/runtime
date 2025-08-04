@@ -51,7 +51,8 @@ test_create_delete_session (void)
 			current_provider_config,
 			1,
 			NULL,
-			NULL);
+			NULL,
+			0);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
@@ -93,7 +94,8 @@ test_add_session_providers (void)
 			current_provider_config,
 			1,
 			NULL,
-			NULL);
+			NULL,
+			0);
 
 		ep_raise_error_if_nok_holding_lock (test_session != NULL, section1);
 
@@ -111,7 +113,7 @@ test_add_session_providers (void)
 
 	test_location = 3;
 
-	test_session_provider = ep_session_provider_alloc (TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
+	test_session_provider = ep_session_provider_alloc (TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "", NULL, NULL);
 	ep_raise_error_if_nok (test_session_provider != NULL);
 
 	test_location = 4;
@@ -176,7 +178,8 @@ test_session_special_get_set (void)
 			current_provider_config,
 			1,
 			NULL,
-			NULL);
+			NULL,
+			0);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
