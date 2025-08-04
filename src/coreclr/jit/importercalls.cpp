@@ -618,7 +618,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
          * to the arg list next after we pop them */
     }
 
-    //--------------------------- Inline NDirect ------------------------------
+    //--------------------------- Inline PInvoke ------------------------------
     // If this is a call to a PInvoke method, we may be able to inline the invocation frame.
     //
     impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, compCurBB);
@@ -5503,6 +5503,25 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             return gtFoldExpr(tmp);
         }
 
+        case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_GE, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
         case NI_SRCS_UNSAFE_IsAddressLessThan:
         {
             assert(sig->sigInst.methInstCount == 1);
@@ -5516,6 +5535,25 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_LT, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
+        case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_LE, TYP_INT, op1, op2);
             tmp->gtFlags |= GTF_UNSIGNED;
             return gtFoldExpr(tmp);
         }
@@ -7205,6 +7243,38 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
     CORINFO_ARG_LIST_HANDLE sigParam  = sig.args;
     unsigned                numParams = sig.numArgs;
     unsigned                numArgs   = 0;
+
+    var_types gdvType  = JITtype2varType(sig.retType);
+    var_types callType = call->gtReturnType;
+
+    const bool sameRetTypes =
+        (genActualType(callType) == genActualType(gdvType)) || (varTypeIsStruct(callType) && varTypeIsStruct(gdvType));
+    if (!sameRetTypes)
+    {
+        JITDUMP("Incompatible method GDV: Return types do not match - bail out.\n");
+        return false;
+    }
+
+    if (varTypeIsStruct(gdvType))
+    {
+        assert(varTypeIsStruct(callType));
+
+        CORINFO_SIG_INFO callSig;
+        info.compCompHnd->getMethodSig(call->gtCallMethHnd, &callSig);
+
+        structPassingKind callRetKind;
+        structPassingKind gdvRetKind;
+        getReturnTypeForStruct(callSig.retTypeClass, call->GetUnmanagedCallConv(), &callRetKind);
+        getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &gdvRetKind);
+
+        if ((callRetKind != gdvRetKind) ||
+            !ClassLayout::AreCompatible(typGetObjLayout(callSig.retTypeClass), typGetObjLayout(sig.retTypeClass)))
+        {
+            JITDUMP("Incompatible method GDV: Return struct types do not match - bail out.\n");
+            return false;
+        }
+    }
+
     for (CallArg& arg : call->gtArgs.Args())
     {
         switch (arg.GetWellKnownArg())
@@ -10722,9 +10792,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_SRCS_UNSAFE_IsAddressGreaterThan;
                             }
+                            else if (strcmp(methodName, "IsAddressGreaterThanOrEqualTo") == 0)
+                            {
+                                result = NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo;
+                            }
                             else if (strcmp(methodName, "IsAddressLessThan") == 0)
                             {
                                 result = NI_SRCS_UNSAFE_IsAddressLessThan;
+                            }
+                            else if (strcmp(methodName, "IsAddressLessThanOrEqualTo") == 0)
+                            {
+                                result = NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo;
                             }
                             else if (strcmp(methodName, "IsNullRef") == 0)
                             {
