@@ -85,7 +85,6 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void Constructor_MissingFiles_Handler()
         {
             HostFileChangeMonitor monitor;
@@ -133,7 +132,6 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Constructor_Duplicates()
         {
             HostFileChangeMonitor monitor;
@@ -202,7 +200,6 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void UniqueId()
         {
             Tuple<string, string, string, IList<string>> setup = null;
@@ -249,9 +246,8 @@ namespace MonoTests.System.Runtime.Caching
             }
         }
 
+        [OuterLoop]
         [Fact]
-//        [OuterLoop]   // TODO - make this outter loop before merging
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Reasonable_Delay()
         {
             Tuple<string, string, string, IList<string>> setup = null;
