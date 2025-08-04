@@ -11,7 +11,7 @@ namespace ILLink.Shared
         public static string FormatRequiresAttributeMessageArg(string? message)
         {
             if (!string.IsNullOrEmpty(message))
-                return $" {message}{(message!.TrimEnd().EndsWith(".") ? "" : ".")}";
+                return $" {message}{(message.TrimEnd().EndsWith(".") ? "" : ".")}";
 
             return string.Empty;
         }
