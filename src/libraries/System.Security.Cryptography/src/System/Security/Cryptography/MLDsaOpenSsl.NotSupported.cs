@@ -52,6 +52,18 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
+        protected override void SignMuCore(ReadOnlySpan<byte> externalMu, Span<byte> destination)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");

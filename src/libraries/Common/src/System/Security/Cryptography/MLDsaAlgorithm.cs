@@ -53,6 +53,14 @@ namespace System.Security.Cryptography
         /// </value>
         public int SignatureSizeInBytes { get; }
 
+        /// <summary>
+        ///   Gets the size, in bytes, of the mu (&#x3BC;) value for the current ML-DSA algorithm.
+        /// </summary>
+        /// <value>
+        ///   The size, in bytes, of the mu (&#x3BC;) value for the current ML-DSA algorithm.
+        /// </value>
+        public int MuSizeInBytes => 64;
+
         internal string Oid { get; }
         internal int LambdaCollisionStrength { get; }
 
