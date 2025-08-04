@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "pal_errors_internal.h"
 #include "pal_locale_internal.h"
