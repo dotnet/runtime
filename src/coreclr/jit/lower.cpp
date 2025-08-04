@@ -5315,8 +5315,8 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
         if ((i == numRegs - 1) && varTypeUsesIntReg(regType))
         {
             GenTree* node = regEntry->GetNode();
-            // If this is a cast cast that affects only bits after the return
-            // size then it can be removed. Those bits are UB in all our ABIs
+            // If this is a cast that affects only bits after the return size
+            // then it can be removed. Those bits are undefined in all our ABIs
             // for structs.
             while (node->OperIs(GT_CAST) && !node->gtOverflow() && varTypeUsesIntReg(node->CastToType()) &&
                    (genTypeSize(regType) <= genTypeSize(node->CastToType())))
