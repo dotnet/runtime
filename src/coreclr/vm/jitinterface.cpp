@@ -11928,6 +11928,19 @@ void CEEJitInfo::recordRelocation(void * location,
 
 #endif // TARGET_LOONGARCH64
 
+
+#ifdef TARGET_RISCV64
+    case IMAGE_REL_RISCV64_PC:
+        {
+            _ASSERTE(addlDelta == 0);
+
+            INT64 offset = (INT64)target - (INT64)location;
+            PutRiscV64AuipcItype((UINT32 *)locationRW, offset);
+        }
+        break;
+
+#endif // TARGET_RISCV64
+
     default:
         _ASSERTE(!"Unknown reloc type");
         break;

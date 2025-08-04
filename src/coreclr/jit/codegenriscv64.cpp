@@ -6520,12 +6520,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             params.addr     = helperFunction.addr;
             params.callType = EC_FUNC_TOKEN;
 
-            ssize_t imm = 9 << 2;
-            if (compiler->opts.compReloc)
-            {
-                imm = 3 << 2;
-            }
-
+            ssize_t imm = 3 * sizeof(emitter::code_t);
             emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
         }
         else
