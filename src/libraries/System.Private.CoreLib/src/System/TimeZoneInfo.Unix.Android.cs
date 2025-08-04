@@ -308,6 +308,23 @@ namespace System
                 return tzLookupIDs;
             }
 
+            private static unsafe bool IsLegacyTimeZoneId(string timeZoneId)
+            {
+                const int TimeZoneIdLength = 64; // Arbitrarily large, to be safe.
+                char* buffer = stackalloc char[TimeZoneIdLength];
+
+                int canonicalIdLength = Interop.Globalization.GetCanonicalTimeZoneId(timeZoneId, buffer, TimeZoneIdLength);
+
+                if (canonicalIdLength <= 0)
+                {
+                    return false; // If we can't get canonical ID, assume it's not legacy
+
+                }
+
+                ReadOnlySpan<char> canonicalIdSpan = new ReadOnlySpan<char>(buffer, canonicalIdLength);
+                return !timeZoneId.AsSpan().SequenceEqual(canonicalIdSpan);
+            }
+
             [MemberNotNullWhen(true, nameof(_ids))]
             [MemberNotNullWhen(true, nameof(_byteOffsets))]
             [MemberNotNullWhen(true, nameof(_lengths))]
@@ -391,7 +408,13 @@ namespace System
                     _ids[i] = id;
                     _lengths[i] = length;
                     if (tzLookupIDs != null)
+                    {
                         _isBackwards[i] = !tzLookupIDs.Contains(id);
+                    }
+                    else
+                    {
+                        _isBackwards[i] = IsLegacyTimeZoneId(id);
+                    }
 
                     if (length < 24) // Header Size
                     {
