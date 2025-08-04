@@ -790,7 +790,7 @@ namespace System.Text.RegularExpressions.Tests
                     /// <code>[A-Za-z]+</code><br/>
                     /// Explanation:<br/>
                     /// <code>
-                    /// ○ Match a character in the set [A-Za-z] atomically at least once.<br/>
+                    /// ○ Match an ASCII letter atomically at least once.<br/>
                     /// </code>
                     /// </remarks>
                     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
@@ -864,7 +864,7 @@ namespace System.Text.RegularExpressions.Tests
                                     // Empty matches aren't possible.
                                     if ((uint)pos < (uint)inputSpan.Length)
                                     {
-                                        // The pattern begins with a character in the set [A-Za-z].
+                                        // The pattern begins with an ASCII letter.
                                         // Find the next occurrence. If it can't be found, there's no match.
                                         int i = inputSpan.Slice(pos).IndexOfAny(Utilities.s_asciiLetters);
                                         if (i >= 0)
@@ -888,7 +888,7 @@ namespace System.Text.RegularExpressions.Tests
                                     int matchStart = pos;
                                     ReadOnlySpan<char> slice = inputSpan.Slice(pos);
 
-                                    // Match a character in the set [A-Za-z] atomically at least once.
+                                    // Match an ASCII letter atomically at least once.
                                     {
                                         int iteration = slice.IndexOfAnyExcept(Utilities.s_asciiLetters);
                                         if (iteration < 0)

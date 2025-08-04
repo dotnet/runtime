@@ -112,6 +112,33 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_duplicate_int_ptr_array")]
             [return: MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]
             public static unsafe partial int*[] ReturnDuplicate(int*[] values, int numValues);
+
+            // Null array edge case methods
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "null_array_blittable_byval")]
+            public static partial int NullArrayBlittableByVal(int[] array, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "null_array_blittable_in")]
+            public static partial int NullArrayBlittableIn(in int[] array, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "null_array_blittable_ref")]
+            public static partial int NullArrayBlittableRef([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref int[] array, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "null_array_blittable_out")]
+            public static partial int NullArrayBlittableOut(int length, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] out int[] array);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "null_array_nonblittable_byval")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool NullArrayNonBlittableByVal(BoolStruct[] array, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "null_array_nonblittable_in")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool NullArrayNonBlittableIn(in BoolStruct[] array, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "null_array_nonblittable_ref")]
+            public static partial void NullArrayNonBlittableRef([MarshalUsing(CountElementName = "length")] ref BoolStruct[] array, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "null_array_nonblittable_out")]
+            public static partial void NullArrayNonBlittableOut(int length, [MarshalUsing(CountElementName = "length")] out BoolStruct[] array);
         }
     }
 
@@ -835,6 +862,199 @@ namespace LibraryImportGenerator.IntegrationTests
             var chars = value.ToCharArray();
             Array.Reverse(chars);
             return new string(chars);
+        }
+
+        [Fact]
+        public void NullArrayBlittable_ByVal_WithNonZeroLength()
+        {
+            // Test null array with non-zero length parameter - should not crash
+            int[] nullArray = null;
+            int result = NativeExportsNE.Arrays.NullArrayBlittableByVal(nullArray, 5);
+            Assert.Equal(-1, result); // Native method should return -1 for null array
+        }
+
+        [Fact]
+        public void NullArrayBlittable_ByVal_WithZeroLength()
+        {
+            // Test null array with zero length parameter - should work normally
+            int[] nullArray = null;
+            int result = NativeExportsNE.Arrays.NullArrayBlittableByVal(nullArray, 0);
+            Assert.Equal(-1, result); // Native method should return -1 for null array
+        }
+
+        [Fact]
+        public void NullArrayBlittable_In_WithNonZeroLength()
+        {
+            // Test null array with 'in' parameter and non-zero length
+            int[] nullArray = null;
+            int result = NativeExportsNE.Arrays.NullArrayBlittableIn(nullArray, 3);
+            Assert.Equal(-1, result); // Native method should return -1 for null array
+        }
+
+        [Fact]
+        public void NullArrayBlittable_In_WithZeroLength()
+        {
+            // Test null array with 'in' parameter and zero length
+            int[] nullArray = null;
+            int result = NativeExportsNE.Arrays.NullArrayBlittableIn(nullArray, 0);
+            Assert.Equal(-1, result); // Native method should return -1 for null array
+        }
+
+        [Fact]
+        public void NullArrayBlittable_Ref_WithNonZeroLength()
+        {
+            // Test null array with 'ref' parameter and non-zero length
+            int[] nullArray = null;
+            int result = NativeExportsNE.Arrays.NullArrayBlittableRef(ref nullArray, 4);
+            Assert.Equal(-1, result); // Native method should return -1 for null array
+            Assert.Null(nullArray); // Array should remain null
+        }
+
+        [Fact]
+        public void NullArrayBlittable_Ref_WithZeroLength()
+        {
+            // Test null array with 'ref' parameter and zero length
+            int[] nullArray = null;
+            int result = NativeExportsNE.Arrays.NullArrayBlittableRef(ref nullArray, 0);
+            Assert.Equal(-1, result); // Native method should return -1 for null array
+            Assert.Null(nullArray); // Array should remain null
+        }
+
+        [Fact]
+        public void NullArrayBlittable_Out_WithNonZeroLength()
+        {
+            // Test 'out' parameter that should set array to null with non-zero length
+            int result = NativeExportsNE.Arrays.NullArrayBlittableOut(3, out int[] array);
+            Assert.Equal(0, result); // Native method should return 0 when setting null
+            Assert.Null(array); // Array should be null
+        }
+
+        [Fact]
+        public void NullArrayBlittable_Out_WithZeroLength()
+        {
+            // Test 'out' parameter that should set array to null with zero length
+            int result = NativeExportsNE.Arrays.NullArrayBlittableOut(0, out int[] array);
+            Assert.Equal(0, result); // Native method should return 0 when setting null
+            Assert.Null(array); // Array should be null
+        }
+
+        [Fact]
+        public void NullArrayNonBlittable_ByVal_WithNonZeroLength()
+        {
+            // Test null array with non-blittable elements and non-zero length
+            BoolStruct[] nullArray = null;
+            bool result = NativeExportsNE.Arrays.NullArrayNonBlittableByVal(nullArray, 2);
+            Assert.False(result); // Native method should return false for null array
+        }
+
+        [Fact]
+        public void NullArrayNonBlittable_ByVal_WithZeroLength()
+        {
+            // Test null array with non-blittable elements and zero length
+            BoolStruct[] nullArray = null;
+            bool result = NativeExportsNE.Arrays.NullArrayNonBlittableByVal(nullArray, 0);
+            Assert.False(result); // Native method should return false for null array
+        }
+
+        [Fact]
+        public void NullArrayNonBlittable_In_WithNonZeroLength()
+        {
+            // Test null array with 'in' parameter, non-blittable elements, and non-zero length
+            BoolStruct[] nullArray = null;
+            bool result = NativeExportsNE.Arrays.NullArrayNonBlittableIn(nullArray, 1);
+            Assert.False(result); // Native method should return false for null array
+        }
+
+        [Fact]
+        public void NullArrayNonBlittable_In_WithZeroLength()
+        {
+            // Test null array with 'in' parameter, non-blittable elements, and zero length
+            BoolStruct[] nullArray = null;
+            bool result = NativeExportsNE.Arrays.NullArrayNonBlittableIn(nullArray, 0);
+            Assert.False(result); // Native method should return false for null array
+        }
+
+        [Fact]
+        public void NullArrayNonBlittable_Ref_WithNonZeroLength()
+        {
+            // Test null array with 'ref' parameter, non-blittable elements, and non-zero length
+            BoolStruct[] nullArray = null;
+            NativeExportsNE.Arrays.NullArrayNonBlittableRef(ref nullArray, 2);
+            Assert.Null(nullArray); // Array should remain null
+        }
+
+        [Fact]
+        public void NullArrayNonBlittable_Ref_WithZeroLength()
+        {
+            // Test null array with 'ref' parameter, non-blittable elements, and zero length
+            BoolStruct[] nullArray = null;
+            NativeExportsNE.Arrays.NullArrayNonBlittableRef(ref nullArray, 0);
+            Assert.Null(nullArray); // Array should remain null
+        }
+
+        [Fact]
+        public void NullArrayNonBlittable_Out_WithNonZeroLength()
+        {
+            // Test 'out' parameter that should set array to null with non-zero length
+            NativeExportsNE.Arrays.NullArrayNonBlittableOut(1, out BoolStruct[] array);
+            Assert.Null(array); // Array should be null
+        }
+
+        [Fact]
+        public void NullArrayNonBlittable_Out_WithZeroLength()
+        {
+            // Test 'out' parameter that should set array to null with zero length
+            NativeExportsNE.Arrays.NullArrayNonBlittableOut(0, out BoolStruct[] array);
+            Assert.Null(array); // Array should be null
+        }
+
+        [Fact]
+        public void ValidArrayBlittable_WithNullArrayMethods()
+        {
+            // Test that valid arrays work correctly with our null array methods
+            int[] validArray = new[] { 1, 2, 3, 4, 5 };
+
+            // Test ByVal with valid array
+            int result = NativeExportsNE.Arrays.NullArrayBlittableByVal(validArray, validArray.Length);
+            Assert.Equal(15, result); // Sum should be 1+2+3+4+5 = 15
+
+            // Test In with valid array
+            result = NativeExportsNE.Arrays.NullArrayBlittableIn(validArray, validArray.Length);
+            Assert.Equal(15, result); // Sum should be 1+2+3+4+5 = 15
+
+            // Test Ref with valid array
+            result = NativeExportsNE.Arrays.NullArrayBlittableRef(ref validArray, validArray.Length);
+            Assert.Equal(15, result); // Sum should be 1+2+3+4+5 = 15
+            Assert.NotNull(validArray); // Array should still be valid
+        }
+
+        [Fact]
+        public void ValidArrayNonBlittable_WithNullArrayMethods()
+        {
+            // Test that valid arrays work correctly with our null array non-blittable methods
+            BoolStruct[] validArray = new[]
+            {
+                new BoolStruct { b1 = true, b2 = true, b3 = true },
+                new BoolStruct { b1 = true, b2 = true, b3 = true }
+            };
+
+            // Test ByVal with valid array - should return true since all fields are true
+            bool result = NativeExportsNE.Arrays.NullArrayNonBlittableByVal(validArray, validArray.Length);
+            Assert.True(result);
+
+            // Test In with valid array - should return true since all fields are true
+            result = NativeExportsNE.Arrays.NullArrayNonBlittableIn(validArray, validArray.Length);
+            Assert.True(result);
+
+            // Test with array containing false values
+            BoolStruct[] mixedArray = new[]
+            {
+                new BoolStruct { b1 = true, b2 = true, b3 = true },
+                new BoolStruct { b1 = true, b2 = false, b3 = true } // b2 is false
+            };
+
+            result = NativeExportsNE.Arrays.NullArrayNonBlittableByVal(mixedArray, mixedArray.Length);
+            Assert.False(result); // Should return false due to b2 being false
         }
     }
 }

@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.Equal(excluded, FileSystemInfoHelper.IsExcluded(dirInfo, filters));
         }
 
-        public static TheoryData Combinations
+        public static TheoryData<string, FileAttributes, ExclusionFilters, bool> Combinations
         {
             get
             {

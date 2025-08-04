@@ -64,7 +64,7 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("name")]
-        public void PathToAssembly_Set_GetReturnsExpected(string value)
+        public void PathToAssembly_Set_GetReturnsExpected(string? value)
         {
             var results = new CompilerResults(null) { PathToAssembly = value };
             Assert.Same(value, results.PathToAssembly);
