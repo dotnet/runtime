@@ -633,8 +633,8 @@
   <data name="Arg_NamedParamTooBig" xml:space="preserve">
     <value>Named parameter array cannot be bigger than argument array.</value>
   </data>
-  <data name="Arg_NDirectBadObject" xml:space="preserve">
-    <value>No PInvoke conversion exists for value passed to Object-typed parameter.</value>
+  <data name="Arg_PInvokeBadObject" xml:space="preserve">
+    <value>No PInvoke conversion exists for the value passed to an Object-typed parameter.</value>
   </data>
   <data name="Arg_Need1DArray" xml:space="preserve">
     <value>Array was not a one-dimensional array.</value>
@@ -2987,6 +2987,9 @@
   <data name="NotSupported_ByRefToVoidReturn" xml:space="preserve">
     <value>ByRef to void return values are not supported in reflection invocation.</value>
   </data>
+  <data name="NotSupported_Async" xml:space="preserve">
+    <value>Async infrastructure methods are not supported in reflection invocation.</value>
+  </data>
   <data name="NotSupported_CallToVarArg" xml:space="preserve">
     <value>Vararg calling convention not supported.</value>
   </data>
@@ -3914,6 +3917,12 @@
   <data name="InvalidOperation_ObjectiveCTypeNoFinalizer" xml:space="preserve">
     <value>Attempt to track an Objective-C Type without a finalizer.</value>
   </data>
+  <data name="InvalidOperation_ReinitializeJavaMarshal" xml:space="preserve">
+    <value>Attempt to reinitialize JavaMarshal.</value>
+  </data>
+  <data name="InvalidOperation_IncorrectGCHandleType" xml:space="preserve">
+    <value>Attempt to get context from an unsupport GCHandle type.</value>
+  </data>
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
@@ -4195,6 +4204,9 @@
   </data>
   <data name="ClassLoad_InlineArrayExplicit" xml:space="preserve">
     <value>InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '{0}'.  Assembly: '{1}'.</value>
+  </data>
+  <data name="ClassLoad_InlineArrayExplicitSize" xml:space="preserve">
+    <value>InlineArrayAttribute cannot be applied to a type with explicit size. Type: '{0}'.  Assembly: '{1}'.</value>
   </data>
   <data name="ClassLoad_ExplicitGeneric" xml:space="preserve">
     <value>Could not load type '{0}' from assembly '{1}' because generic types cannot have explicit layout.</value>

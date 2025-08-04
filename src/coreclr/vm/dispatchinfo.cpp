@@ -2169,6 +2169,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         // which may swallow managed exceptions.  The debugger needs this in order to send a
         // CatchHandlerFound (CHF) notification.
         DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
+
         EX_TRY
         {
             InvokeMemberDebuggerWrapper(pDispMemberInfo,
@@ -2339,7 +2340,7 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         if (ElementVt == VT_RECORD && pElementMT->IsBlittable())
         {
             GCX_PREEMP();
-            pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElementMT);
+            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElementMT);
         }
         GCPROTECT_END();
 

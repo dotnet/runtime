@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -17,6 +19,21 @@ namespace System
                 int charsWritten = span.ToLowerInvariant(buffer);
                 Debug.Assert(charsWritten == buffer.Length);
             });
+        }
+
+        public static string NormalizeAndConcat(string? start, ReadOnlySpan<char> toNormalize)
+        {
+            var vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
+
+            int charsWritten;
+            while (!toNormalize.TryNormalize(vsb.RawChars, out charsWritten, NormalizationForm.FormC))
+            {
+                vsb.EnsureCapacity(vsb.Capacity + 1);
+            }
+
+            string result = string.Concat(start, vsb.RawChars.Slice(0, charsWritten));
+            vsb.Dispose();
+            return result;
         }
 
         // http://host/Path/Path/File?Query is the base of
@@ -591,10 +608,20 @@ namespace System
             char.IsBetween(ch, '\u200E', '\u202E') && !char.IsBetween(ch, '\u2010', '\u2029');
 
         // Strip Bidirectional control characters from this string
-        internal static string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
+        public static string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
             Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 
+            if (StripBidiControlCharacters(strToClean, out string? stripped))
+            {
+                return stripped;
+            }
+
+            return backingString ?? strToClean.ToString();
+        }
+
+        public static bool StripBidiControlCharacters(ReadOnlySpan<char> strToClean, [NotNullWhen(true)] out string? stripped)
+        {
             int charsToRemove = 0;
 
             int indexOfPossibleCharToRemove = strToClean.IndexOfAnyInRange('\u200E', '\u202E');
@@ -613,10 +640,11 @@ namespace System
             if (charsToRemove == 0)
             {
                 // Hot path
-                return backingString ?? new string(strToClean);
+                stripped = null;
+                return false;
             }
 
-            return string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
+            stripped = string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
             {
                 int destIndex = 0;
                 foreach (char c in strToClean)
@@ -628,6 +656,164 @@ namespace System
                 }
                 Debug.Assert(buffer.Length == destIndex);
             });
+            return true;
+        }
+
+        // This will compress any "\" "/../" "/./" "///" "/..../" /XXX.../, etc found in the input
+        //
+        // The passed options control whether to use aggressive compression or the one specified in RFC 2396
+        public static int Compress(Span<char> span, bool convertPathSlashes, bool canonicalizeAsFilePath)
+        {
+            if (span.IsEmpty)
+            {
+                return 0;
+            }
+
+            if (convertPathSlashes)
+            {
+                span.Replace('\\', '/');
+            }
+
+            ValueListBuilder<(int Start, int Length)> removedSegments = default;
+
+            int slashCount = 0;
+            int lastSlash = 0;
+            int dotCount = 0;
+            int removeSegments = 0;
+
+            for (int i = span.Length - 1; i >= 0; i--)
+            {
+                char ch = span[i];
+
+                // compress multiple '/' for file URI
+                if (ch == '/')
+                {
+                    ++slashCount;
+                }
+                else
+                {
+                    if (slashCount > 1)
+                    {
+                        // else preserve repeated slashes
+                        lastSlash = i + 1;
+                    }
+                    slashCount = 0;
+                }
+
+                if (ch == '.')
+                {
+                    ++dotCount;
+                    continue;
+                }
+                else if (dotCount != 0)
+                {
+                    bool skipSegment = canonicalizeAsFilePath && (dotCount > 2 || ch != '/');
+
+                    // Cases:
+                    // /./                  = remove this segment
+                    // /../                 = remove this segment, mark next for removal
+                    // /....x               = DO NOT TOUCH, leave as is
+                    // x.../                = DO NOT TOUCH, leave as is, except for V2 legacy mode
+                    if (!skipSegment && ch == '/')
+                    {
+                        if ((lastSlash == i + dotCount + 1 // "/..../"
+                                || (lastSlash == 0 && i + dotCount + 1 == span.Length)) // "/..."
+                            && (dotCount <= 2))
+                        {
+                            //  /./ or /.<eos> or /../ or /..<eos>
+                            removedSegments.Append((i + 1, dotCount + (lastSlash == 0 ? 0 : 1)));
+
+                            lastSlash = i;
+                            if (dotCount == 2)
+                            {
+                                // We have 2 dots in between like /../ or /..<eos>,
+                                // Mark next segment for removal and remove this /../ or /..
+                                ++removeSegments;
+                            }
+                            dotCount = 0;
+                            continue;
+                        }
+                    }
+                    // .NET 4.5 no longer removes trailing dots in a path segment x.../  or  x...<eos>
+                    dotCount = 0;
+
+                    // Here all other cases go such as
+                    // x.[..]y or /.[..]x or (/x.[...][/] && removeSegments !=0)
+                }
+
+                // Now we may want to remove a segment because of previous /../
+                if (ch == '/')
+                {
+                    if (removeSegments != 0)
+                    {
+                        removeSegments--;
+                        removedSegments.Append((i + 1, lastSlash - i));
+                    }
+
+                    lastSlash = i;
+                }
+            }
+
+            if (canonicalizeAsFilePath)
+            {
+                if (slashCount <= 1)
+                {
+                    if (removeSegments != 0 && span[0] != '/')
+                    {
+                        // remove first not rooted segment
+                        removedSegments.Append((0, lastSlash + 1));
+                    }
+                    else if (dotCount != 0)
+                    {
+                        // If final string starts with a segment looking like .[...]/ or .[...]<eos>
+                        // then we remove this first segment
+                        if (lastSlash == dotCount || (lastSlash == 0 && dotCount == span.Length))
+                        {
+                            removedSegments.Append((0, dotCount + (lastSlash == 0 ? 0 : 1)));
+                        }
+                    }
+                }
+            }
+
+            if (removedSegments.Length == 0)
+            {
+                return span.Length;
+            }
+
+            // Merge any remaining segments.
+            // Write and read offsets are only ever the same for the first segment.
+            // Copying the first section would no-op anyway, so we start with the first removed segment.
+            int writeOffset = removedSegments[^1].Start;
+            int readOffset = writeOffset;
+
+            for (int i = removedSegments.Length - 1; i >= 0; i--)
+            {
+                (int start, int length) = removedSegments[i];
+
+                Debug.Assert(start >= readOffset && length > 0 && start + length <= span.Length);
+
+                if (readOffset != start)
+                {
+                    Debug.Assert(readOffset > writeOffset);
+
+                    int segmentLength = start - readOffset;
+                    span.Slice(readOffset, segmentLength).CopyTo(span.Slice(writeOffset));
+                    writeOffset += segmentLength;
+                }
+
+                readOffset = start + length;
+            }
+
+            if (readOffset != span.Length)
+            {
+                Debug.Assert(readOffset > writeOffset);
+
+                span.Slice(readOffset).CopyTo(span.Slice(writeOffset));
+                writeOffset += span.Length - readOffset;
+            }
+
+            removedSegments.Dispose();
+            return writeOffset;
         }
     }
 }

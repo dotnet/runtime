@@ -1578,6 +1578,8 @@ public:
 
 private:
 
+    PER_HEAP_ISOLATED_METHOD const char* get_str_gc_type();
+
 #ifdef TRACE_GC
     PER_HEAP_METHOD void print_free_list (int gen, heap_segment* seg);
 #endif // TRACE_GC
@@ -3740,6 +3742,11 @@ private:
     // settings.loh_compaction is TRUE this may not be TRUE.
     PER_HEAP_FIELD_SINGLE_GC BOOL loh_compacted_p;
 #endif //FEATURE_LOH_COMPACTION
+
+#ifdef FEATURE_JAVAMARSHAL
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint8_t** global_bridge_list;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t num_global_bridge_objs;
+#endif //FEATURE_JAVAMARSHAL
 
     /*****************************************/
     // PER_HEAP_FIELD_SINGLE_GC_ALLOC fields //

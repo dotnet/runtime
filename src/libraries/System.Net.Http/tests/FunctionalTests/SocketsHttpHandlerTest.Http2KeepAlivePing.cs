@@ -8,6 +8,7 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -94,11 +95,70 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
+        [Fact]
+        public async Task KeepAliveConfigured_KeepAlivePingsAreSentEvenWith0ConnectionLifetime()
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
+                handler.PooledConnectionLifetime = TimeSpan.Zero;
+
+                // The connection will get recycled with lifetime == 0 after the first request.
+                // So use a long response to wait for the PINGs.
+                using HttpClient client = new HttpClient(handler);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+                client.Timeout = TestHelper.PassingTestTimeout;
+
+                using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Slowly read from the response stream.
+                var responseStream = response.Content.ReadAsStream();
+                var buffer = new byte[64];
+                int bytes;
+                while ((bytes = await responseStream.ReadAsync(buffer)) > 0) ;
+            },
+            async server =>
+            {
+                await EstablishConnectionAsync(server);
+
+                int streamId = await ReadRequestHeaderAsync();
+                await GuardConnectionWriteAsync(() => _connection.SendResponseHeadersAsync(streamId, endStream: false));
+
+                for (int i = 0; i <= 2; ++i)
+                {
+                    // Wait for the PINGs to be sent.
+                    await Task.Delay(2_500);
+
+                    // Send some data.
+                    await GuardConnectionWriteAsync(() => _connection.SendResponseBodyAsync(streamId, new byte[64], i == 2));
+                }
+
+                // Check received PINGs via the counter.
+                int pingCounter = Interlocked.Exchange(ref _pingCounter, 0);
+                Assert.True(pingCounter > 0);
+
+                await TerminateLoopbackConnectionAsync();
+
+                List<Frame> unexpectedFrames = new List<Frame>();
+                while (_framesChannel.Reader.Count > 0)
+                {
+                    Frame unexpectedFrame = await _framesChannel.Reader.ReadAsync();
+                    unexpectedFrames.Add(unexpectedFrame);
+                }
+
+                Assert.False(unexpectedFrames.Any(), "Received unexpected frames: \n" + string.Join('\n', unexpectedFrames.Select(f => f.ToString()).ToArray()));
+            }, NoAutoPingResponseHttp2Options);
+        }
+
+        [OuterLoop("Runs long")]
         [Theory]
-        [InlineData(HttpKeepAlivePingPolicy.Always, -1)]
-        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests, -1)]
-        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests, 0)]
-        public async Task KeepAliveConfigured_KeepAlivePingsAreSentAccordingToPolicy(HttpKeepAlivePingPolicy policy, int connectionLifetimeMilliseconds)
+        [InlineData(HttpKeepAlivePingPolicy.Always)]
+        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
+        public async Task KeepAliveConfigured_KeepAlivePingsAreSentAccordingToPolicy(HttpKeepAlivePingPolicy policy)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -106,7 +166,6 @@ namespace System.Net.Http.Functional.Tests
                 handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
                 handler.KeepAlivePingPolicy = policy;
                 handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
-                handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(connectionLifetimeMilliseconds);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -280,7 +339,11 @@ namespace System.Net.Http.Functional.Tests
                         else
                         {
                             _output?.WriteLine($"Received PING ({pingFrame.Data})");
-                            Interlocked.Increment(ref _pingCounter);
+                            if (pingFrame.Data >= 0)
+                            {
+                                // Increment only for real PINGs, not for RTT PINGs.
+                                Interlocked.Increment(ref _pingCounter);
+                            }
 
                             if (_sendPingResponse)
                             {

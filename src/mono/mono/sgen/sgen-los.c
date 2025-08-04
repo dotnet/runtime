@@ -125,6 +125,12 @@ mword sgen_los_memory_usage = 0;
 /* Total memory used by the LOS allocator */
 mword sgen_los_memory_usage_total = 0;
 
+#ifdef HOST_WASM
+const gboolean sgen_los_enable_sections_allocator = 0;
+#else
+const gboolean sgen_los_enable_sections_allocator = 1;
+#endif
+
 static LOSSection *los_sections = NULL;
 static LOSFreeChunks *los_fast_free_lists [LOS_NUM_FAST_SIZES]; /* 0 is for larger sizes */
 static mword los_num_objects = 0;
@@ -155,6 +161,9 @@ los_consistency_check (void)
 	LOSObject *obj;
 	int i;
 	mword memory_usage = 0;
+
+	if (!sgen_los_enable_sections_allocator)
+		return;
 
 	FOREACH_LOS_OBJECT_NO_LOCK (obj) {
 		mword obj_size = sgen_los_object_size (obj);
@@ -400,6 +409,11 @@ sgen_los_free_object (LOSObject *obj)
 		sgen_free_os_memory ((gpointer)SGEN_ALIGN_DOWN_TO ((mword)obj, pagesize), size, SGEN_ALLOC_HEAP, MONO_MEM_ACCOUNT_SGEN_LOS);
 		sgen_los_memory_usage_total -= size;
 		sgen_memgov_release_space (size, SPACE_LOS);
+	} else if (!sgen_los_enable_sections_allocator) {
+		size += sizeof (LOSObject);
+		sgen_free_os_memory (obj, size, SGEN_ALLOC_HEAP, MONO_MEM_ACCOUNT_SGEN_LOS);
+		sgen_los_memory_usage_total -= size;
+		sgen_memgov_release_space (size, SPACE_LOS);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
 #ifdef LOS_CONSISTENCY_CHECKS
@@ -460,6 +474,27 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 				sgen_los_memory_usage_total += alloc_size;
 				obj = randomize_los_object_start (obj, obj_size, alloc_size, pagesize);
 			}
+		}
+	} else if (!sgen_los_enable_sections_allocator) {
+		size_t alloc_size = size + sizeof (LOSObject);
+#ifndef SGEN_HAVE_OVERLAPPING_CARDS
+		// While other objects can't be allocated after the los object (in a memory sharing a card with the los object),
+		// we could still have wbarrier roots allocated there, since they don't have alignment requirement. This means that
+		// clearing a card from this object would prevent scanning of refs in the wbarrier roots.
+		alloc_size = SGEN_ALIGN_UP_TO (alloc_size, CARD_SIZE_IN_BYTES);
+#endif
+		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
+#ifndef SGEN_HAVE_OVERLAPPING_CARDS
+			// If we don't use the shadow card table, having a card map to 2 different los objects is invalid
+			// because once we scan the first object we could clear the card, leading to failure to detect refs
+			// in the second object. We prevent this by aligning the los object to the card size.
+			int alignment = CARD_SIZE_IN_BYTES;
+#else
+			int alignment = SGEN_ALLOC_ALIGN;
+#endif
+			obj = (LOSObject *)sgen_alloc_os_memory_aligned (alloc_size, alignment, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL, MONO_MEM_ACCOUNT_SGEN_LOS);
+			if (obj)
+				sgen_los_memory_usage_total += alloc_size;
 		}
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));

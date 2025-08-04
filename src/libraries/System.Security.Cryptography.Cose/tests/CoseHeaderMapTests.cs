@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Cose.Tests
         public void SetValue_GetValue_KnownCoseHeaderLabel(SetValueMethod setMethod, GetValueMethod getMethod)
         {
             var map = new CoseHeaderMap();
-            SetValue(map, CoseHeaderLabel.Algorithm, (int)ECDsaAlgorithm.ES256, setMethod);
+            SetValue(map, CoseHeaderLabel.Algorithm, (int)CoseAlgorithm.ES256, setMethod);
 
             if (setMethod != SetValueMethod.AddShortcut)
             {
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Cose.Tests
             SetValue(map, CoseHeaderLabel.ContentType, ContentTypeDummyValue, setMethod);
             SetValue(map, CoseHeaderLabel.KeyIdentifier, s_sampleContent, setMethod);
 
-            Assert.Equal((int)ECDsaAlgorithm.ES256, GetValue<int>(map, CoseHeaderLabel.Algorithm, getMethod));
+            Assert.Equal((int)CoseAlgorithm.ES256, GetValue<int>(map, CoseHeaderLabel.Algorithm, getMethod));
 
             if (getMethod != GetValueMethod.GetValueShortcut)
             {
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Cose.Tests
         public void Enumerate()
         {
             var map = new CoseHeaderMap();
-            SetValue(map, CoseHeaderLabel.Algorithm, (int)ECDsaAlgorithm.ES256, default(SetValueMethod));
+            SetValue(map, CoseHeaderLabel.Algorithm, (int)CoseAlgorithm.ES256, default(SetValueMethod));
             SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, GetDummyCritHeaderValue(), default(SetValueMethod));
             SetValue(map ,CoseHeaderLabel.ContentType, ContentTypeDummyValue, default(SetValueMethod));
             SetValue(map, CoseHeaderLabel.KeyIdentifier, s_sampleContent, default(SetValueMethod));
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 Assert.Equal(new CoseHeaderLabel(currentHeader), label);
                 ReadOnlyMemory<byte> expectedValue = currentHeader switch
                 {
-                    KnownHeaderAlg => EncodeInt32((int)ECDsaAlgorithm.ES256, writer),
+                    KnownHeaderAlg => EncodeInt32((int)CoseAlgorithm.ES256, writer),
                     KnownHeaderCrit => GetDummyCritHeaderValue(),
                     KnownHeaderContentType => EncodeString(ContentTypeDummyValue, writer),
                     KnownHeaderKid => EncodeBytes(s_sampleContent, writer),
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             Assert.True(protectedHeaders.IsReadOnly, "message.ProtectedHeaders.IsReadOnly");
 
-            int expectedAlgorithm = (int)ECDsaAlgorithm.ES256;
+            int expectedAlgorithm = (int)CoseAlgorithm.ES256;
             int algorithm = GetValue<int>(protectedHeaders, CoseHeaderLabel.Algorithm, getMethod);
             Assert.Equal(expectedAlgorithm, algorithm);
 
@@ -221,7 +221,7 @@ namespace System.Security.Cryptography.Cose.Tests
             VerifyThrows(protectedHeaders, CoseHeaderLabel.Algorithm);
 
             // Verify existing value was not overwritten even after throwing.
-            Assert.Equal((int)ECDsaAlgorithm.ES256, GetValue<int>(protectedHeaders, CoseHeaderLabel.Algorithm, default(GetValueMethod)));
+            Assert.Equal((int)CoseAlgorithm.ES256, GetValue<int>(protectedHeaders, CoseHeaderLabel.Algorithm, default(GetValueMethod)));
 
             // Non-readonly header works correctly.
             CoseHeaderMap unprotectedHeaders = message.UnprotectedHeaders;
@@ -525,7 +525,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             foreach ((SetValueMethod setMethod, GetValueMethod getMethod) in setGetValuePairs)
             {
-                writer.WriteInt32((int)ECDsaAlgorithm.ES256);
+                writer.WriteInt32((int)CoseAlgorithm.ES256);
                 yield return ReturnDataAndReset(KnownHeaderAlg, writer, setMethod, getMethod);
 
                 WriteDummyCritHeaderValue(writer, useIndefiniteLength: false);

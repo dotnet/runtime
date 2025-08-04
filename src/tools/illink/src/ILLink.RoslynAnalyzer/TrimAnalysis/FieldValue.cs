@@ -9,24 +9,34 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal partial record FieldValue
-	{
-		public FieldValue (IFieldSymbol fieldSymbol)
-		{
-			FieldSymbol = fieldSymbol;
-			StaticType = new (fieldSymbol.Type);
-			DynamicallyAccessedMemberTypes = FlowAnnotations.GetFieldAnnotation (fieldSymbol);
-		}
+    internal partial record FieldValue
+    {
+        public FieldValue(IFieldSymbol fieldSymbol)
+            : this(fieldSymbol, fieldSymbol.Type, FlowAnnotations.GetFieldAnnotation(fieldSymbol))
+        {
+        }
 
-		public readonly IFieldSymbol FieldSymbol;
+        public FieldValue(IPropertySymbol propertySymbol)
+            : this(propertySymbol, propertySymbol.Type, FlowAnnotations.GetBackingFieldAnnotation(propertySymbol))
+        {
+        }
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        private FieldValue(ISymbol fieldSymbol, ITypeSymbol fieldType, DynamicallyAccessedMemberTypes annotations)
+        {
+            FieldSymbol = fieldSymbol;
+            StaticType = new(fieldType);
+            DynamicallyAccessedMemberTypes = annotations;
+        }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { FieldSymbol.GetDisplayName () };
+        public readonly ISymbol FieldSymbol;
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override string ToString () => this.ValueToString (FieldSymbol, DynamicallyAccessedMemberTypes);
-	}
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
+            => new string[] { FieldSymbol.GetDisplayName() };
+
+        public override SingleValue DeepCopy() => this; // This value is immutable
+
+        public override string ToString() => this.ValueToString(FieldSymbol, DynamicallyAccessedMemberTypes);
+    }
 }

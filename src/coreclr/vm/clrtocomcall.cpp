@@ -35,7 +35,7 @@
 // dllimport.cpp
 void CreateCLRToDispatchCOMStub(
             MethodDesc * pMD,
-            DWORD        dwStubFlags             // NDirectStubFlags
+            DWORD        dwStubFlags             // PInvokeStubFlags
             );
 
 
@@ -108,10 +108,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
         return pComInfo;
 
     //
-    // Compute NDirectStubFlags
+    // Compute PInvokeStubFlags
     //
 
-    DWORD dwStubFlags = NDIRECTSTUB_FL_COM;
+    DWORD dwStubFlags = PINVOKESTUB_FL_COM;
 
     // Determine if this is a special COM event call.
     BOOL fComEventCall = pItfMT->IsComEventItfType();
@@ -120,10 +120,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     BOOL fLateBound = !fComEventCall && pItfMT->IsInterface() && pItfMT->GetComInterfaceType() == ifDispatch;
 
     if (fLateBound)
-        dwStubFlags |= NDIRECTSTUB_FL_COMLATEBOUND;
+        dwStubFlags |= PINVOKESTUB_FL_COMLATEBOUND;
 
     if (fComEventCall)
-        dwStubFlags |= NDIRECTSTUB_FL_COMEVENTCALL;
+        dwStubFlags |= PINVOKESTUB_FL_COMEVENTCALL;
 
     BOOL BestFit = TRUE;
     BOOL ThrowOnUnmappableChar = FALSE;
@@ -131,10 +131,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
 
     if (BestFit)
-        dwStubFlags |= NDIRECTSTUB_FL_BESTFIT;
+        dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
 
     if (ThrowOnUnmappableChar)
-        dwStubFlags |= NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR;
+        dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
 
     //
     // fill in out param
@@ -154,7 +154,7 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
     // Get the call signature information
     StubSigDesc sigDesc(pMD);
 
-    return NDirect::CreateCLRToNativeILStub(
+    return PInvoke::CreateCLRToNativeILStub(
                     &sigDesc,
                     (CorNativeLinkType)0,
                     (CorNativeLinkFlags)0,
@@ -347,7 +347,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         MethodDescCallSite eventProvider(pEvProvMD, &gc.EventProviderObj);
 
         // Retrieve the event handler passed in.
-        OBJECTREF EventHandlerObj = *(OBJECTREF*)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset());
+        OBJECTREF EventHandlerObj = ObjectToOBJECTREF(*(Object**)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset()));
 
         ARG_SLOT EventMethArgs[] =
         {

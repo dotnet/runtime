@@ -889,5 +889,13 @@ namespace System.Text.Json.Nodes.Tests
 
             static JsonArray PrepareData() => JsonSerializer.Deserialize<JsonArray>("[1,2,3,4,5]");
         }
+
+        [Theory]
+        [InlineData("42")]
+        [InlineData("{}")]
+        public static void Deserialize_WrongType(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<JsonArray>(json));
+        }
     }
 }
