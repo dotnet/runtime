@@ -897,8 +897,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3050", nameof(WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
             [ExpectedWarning("IL2026", nameof(WithRequires), "InstanceEvent.remove")]
             [ExpectedWarning("IL3050", nameof(WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
-            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.add", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
-            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.remove", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.add", Tool.All, "https://github.com/dotnet/runtime/issues/102525")]
+            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.remove", Tool.All, "https://github.com/dotnet/runtime/issues/102525")]
             [UnexpectedWarning("IL3050", nameof(WithRequires), "StaticEvent.add", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
             [UnexpectedWarning("IL3050", nameof(WithRequires), "StaticEvent.remove", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
             [ExpectedWarning("IL2026", nameof(DerivedRequires), "DerivedStaticEvent.add")]
@@ -942,8 +942,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3050", nameof(WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
             [ExpectedWarning("IL2026", nameof(WithRequires), "InstanceEvent.remove")]
             [ExpectedWarning("IL3050", nameof(WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
-            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.add", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
-            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.remove", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.add", Tool.All, "https://github.com/dotnet/runtime/issues/102525")]
+            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.remove", Tool.All, "https://github.com/dotnet/runtime/issues/102525")]
             [UnexpectedWarning("IL3050", nameof(WithRequires), "StaticEvent.add", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
             [UnexpectedWarning("IL3050", nameof(WithRequires), "StaticEvent.remove", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
             [ExpectedWarning("IL2026", nameof(DerivedRequires), "DerivedStaticEvent.add")]
@@ -983,8 +983,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL3050", nameof(WithRequires), "InstanceEvent.add", Tool.NativeAot, "")]
             [ExpectedWarning("IL2026", nameof(WithRequires), "InstanceEvent.remove")]
             [ExpectedWarning("IL3050", nameof(WithRequires), "InstanceEvent.remove", Tool.NativeAot, "")]
-            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.add", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
-            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.remove", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/102525")]
+            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.add", Tool.All, "https://github.com/dotnet/runtime/issues/102525")]
+            [UnexpectedWarning("IL2026", nameof(WithRequires), "StaticEvent.remove", Tool.All, "https://github.com/dotnet/runtime/issues/102525")]
             [UnexpectedWarning("IL3050", nameof(WithRequires), "StaticEvent.add", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
             [UnexpectedWarning("IL3050", nameof(WithRequires), "StaticEvent.remove", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/102525")]
             [ExpectedWarning("IL2026", nameof(DerivedRequires), "DerivedStaticEvent.add")]
@@ -1359,14 +1359,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             // This warning should ideally be suppressed by the RUC on the type:
-            [UnexpectedWarning("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
+            [UnexpectedWarning("IL2091", Tool.All, "https://github.com/dotnet/runtime/issues/108523")]
             [RequiresUnreferencedCode("--GenericClassWithWarningWithRequires--")]
             public class GenericClassWithWarningWithRequires<U> : RequiresAll<U>
             {
             }
 
             // This warning should ideally be suppressed by the RUC on the type:
-            [UnexpectedWarning("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
+            [UnexpectedWarning("IL2091", Tool.All, "https://github.com/dotnet/runtime/issues/108523")]
             [RequiresUnreferencedCode("--ClassWithWarningWithRequires--")]
             public class ClassWithWarningWithRequires : RequiresAll<T>
             {
@@ -1382,13 +1382,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 }
             }
 
-            [UnexpectedWarning("IL2026", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108507")]
+            [UnexpectedWarning("IL2026", Tool.All, "https://github.com/dotnet/runtime/issues/108507")]
             [RequiresUnreferencedCode("--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
             class ClassWithWarningOnGenericArgumentConstructorWithRequires : RequiresNew<ClassWithRequires>
             {
             }
 
-            [UnexpectedWarning("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
+            [UnexpectedWarning("IL2091", Tool.All, "https://github.com/dotnet/runtime/issues/108523")]
             [RequiresUnreferencedCode("--GenericAnnotatedWithWarningWithRequires--")]
             public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
             {
