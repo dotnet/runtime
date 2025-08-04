@@ -588,7 +588,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(3072, HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x04],
                         HashAlgorithmName.SHA512)
                 },
@@ -604,7 +604,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x06],
                         HashAlgorithmName.SHA512)
                 },
@@ -676,7 +676,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithRSA3072Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(3072, HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0F],
                         HashAlgorithmName.SHA512)
                 },
@@ -684,7 +684,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithRSA4096Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x10],
                         HashAlgorithmName.SHA512)
                 },
