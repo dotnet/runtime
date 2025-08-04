@@ -4988,7 +4988,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
 
     auto getRegInfo = [=, &retDesc](unsigned regIndex) {
         unsigned  offset  = retDesc.GetReturnFieldOffset(regIndex);
-        var_types regType = genActualType(retDesc.GetReturnRegType(regIndex));
+        var_types regType = retDesc.GetReturnRegType(regIndex);
         return LowerFieldListRegisterInfo(offset, regType);
     };
 
