@@ -251,8 +251,6 @@ namespace System.Threading.Channels
                     ChannelUtilities.Complete(parent._completion, error);
                 }
 
-                Debug.Assert(blockedReader is null || waitingReader is null, "There should only ever be at most one reader.");
-
                 // Complete a blocked reader if necessary
                 if (blockedReader is not null)
                 {

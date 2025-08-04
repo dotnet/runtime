@@ -3,12 +3,12 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NoKeptCtor.OverrideRemoval.Dependencies
 {
-	public class OverrideOfAbstractIsKeptNonEmpty_UnusedType
-	{
-	}
+    public class OverrideOfAbstractIsKeptNonEmpty_UnusedType
+    {
+    }
 
-	public abstract class OverrideOfAbstractIsKeptNonEmpty_BaseType
-	{
-		public abstract void Method ();
-	}
+    public abstract class OverrideOfAbstractIsKeptNonEmpty_BaseType
+    {
+        public abstract void Method();
+    }
 }

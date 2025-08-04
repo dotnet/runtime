@@ -5,11 +5,11 @@
 #include "staticcontract.h"
 
 #ifndef WRAPPER_NO_CONTRACT
-#define WRAPPER_NO_CONTRACT             ANNOTATION_WRAPPER
+#define WRAPPER_NO_CONTRACT
 #endif
 
 #ifndef LIMITED_METHOD_CONTRACT
-#define LIMITED_METHOD_CONTRACT                ANNOTATION_FN_LEAF
+#define LIMITED_METHOD_CONTRACT
 #endif
 
 //*****************************************************************************

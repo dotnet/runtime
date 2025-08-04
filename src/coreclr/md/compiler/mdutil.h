@@ -25,4 +25,49 @@ ULONG _GetSizeOfConstantBlob(
     void        *pValue,                    // BLOB value
     ULONG       cchString);                 // Size of string in wide chars, or -1 for auto.
 
+#if defined(FEATURE_METADATA_IN_VM)
+
+class RegMeta;
+
+//*********************************************************************
+//
+// Structure to record the all loaded modules and helpers.
+// RegMeta instance is added to the global variable that is tracking
+// the opened scoped. This happens in RegMeta's constructor.
+// In RegMeta's destructor, the RegMeta pointer will be removed from
+// this list.
+//
+//*********************************************************************
+class UTSemReadWrite;
+
+class LOADEDMODULES : public CDynArray<RegMeta *>
+{
+private:
+    static HRESULT InitializeStatics();
+
+    // Global per-process list of loaded modules
+    static LOADEDMODULES * s_pLoadedModules;
+
+public:
+    // Named for locking macros - see code:LOCKREAD
+    static UTSemReadWrite * m_pSemReadWrite;
+
+    static HRESULT AddModuleToLoadedList(RegMeta *pRegMeta);
+    static BOOL RemoveModuleFromLoadedList(RegMeta *pRegMeta);  // true if found and removed.
+
+    static HRESULT ResolveTypeRefWithLoadedModules(
+        mdTypeRef          tkTypeRef,       // [IN] TypeRef to be resolved.
+        RegMeta *          pTypeRefRegMeta, // [IN] Scope in which the TypeRef is defined.
+        IMetaModelCommon * pTypeRefScope,   // [IN] Scope in which the TypeRef is defined.
+        REFIID             riid,            // [IN] iid for the return interface.
+        IUnknown **        ppIScope,        // [OUT] Return interface.
+        mdTypeDef *        ptd);            // [OUT] TypeDef corresponding the TypeRef.
+
+#ifdef _DEBUG
+    static BOOL IsEntryInList(RegMeta *pRegMeta);
+#endif
+};  // class LOADEDMODULES
+
+#endif //FEATURE_METADATA_IN_VM
+
 #endif // __MDUtil__h__

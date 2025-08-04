@@ -40,6 +40,31 @@ const size_t Compiler::s_optCSEhashSizeInitial  = EXPSET_SZ * 2;
 const size_t Compiler::s_optCSEhashGrowthFactor = 2;
 const size_t Compiler::s_optCSEhashBucketSize   = 4;
 
+// Set the cut off values to use for deciding when we want to use aggressive, moderate or conservative
+//
+// The value of aggressiveRefCnt and moderateRefCnt start off as zero and
+// when enregCount reached a certain value we assign the current LclVar
+// (weighted) ref count to aggressiveRefCnt or moderateRefCnt.
+//
+//
+// On Windows x64 this yields:
+// CNT_AGGRESSIVE_ENREG == 12 and CNT_MODERATE_ENREG == 38
+// Thus we will typically set the cutoff values for
+//   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
+//   moderateRefCnt based upon the weight of T39 (the 39th tracked LclVar)
+//
+// For other architecture and platforms these values dynamically change
+// based upon the number of callee saved and callee scratch registers.
+//
+#define CNT_AGGRESSIVE_ENREG ((CNT_CALLEE_ENREG * 3) / 2)
+#define CNT_MODERATE_ENREG   ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))
+
+#define CNT_AGGRESSIVE_ENREG_FLT ((CNT_CALLEE_ENREG_FLOAT * 3) / 2)
+#define CNT_MODERATE_ENREG_FLT   ((CNT_CALLEE_ENREG_FLOAT * 3) + (CNT_CALLEE_TRASH_FLOAT * 2))
+
+#define CNT_AGGRESSIVE_ENREG_MSK ((CNT_CALLEE_ENREG_MASK * 3) / 2)
+#define CNT_MODERATE_ENREG_MSK   ((CNT_CALLEE_ENREG_MASK * 3) + (CNT_CALLEE_TRASH_MASK * 2))
+
 /*****************************************************************************
  *
  *  We've found all the candidates, build the index for easy access.
@@ -623,7 +648,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         assert(hashDsc->csdTreeList.tslTree != nullptr);
 
         // Check for mismatched types on GT_CNS_INT nodes
-        if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTreeList.tslTree->TypeGet()))
+        if (tree->OperIs(GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTreeList.tslTree->TypeGet()))
         {
             continue;
         }
@@ -1030,7 +1055,7 @@ void Compiler::optValnumCSE_InitDataFlow()
                     unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
                     BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailCrossCallBit);
                 }
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     // Any cse's that we haven't placed in the block->bbCseGen set
                     // aren't currently alive (using cseAvailCrossCallBit)
@@ -1531,29 +1556,17 @@ void Compiler::optValnumCSE_Availability()
 #ifdef DEBUG
                             if (this->verbose)
                             {
-                                VNFuncApp excSeq;
-
-                                vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
                                 printf(">>> defExcSetCurrent is ");
-                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                vnStore->vnDumpExc(this, desc->defExcSetCurrent);
                                 printf("\n");
 
-                                vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
                                 printf(">>> theLiberalExcSet is ");
-                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                vnStore->vnDumpExc(this, theLiberalExcSet);
                                 printf("\n");
 
-                                if (intersectionExcSet == vnStore->VNForEmptyExcSet())
-                                {
-                                    printf(">>> the intersectionExcSet is the EmptyExcSet\n");
-                                }
-                                else
-                                {
-                                    vnStore->GetVNFunc(intersectionExcSet, &excSeq);
-                                    printf(">>> the intersectionExcSet is ");
-                                    vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                    printf("\n");
-                                }
+                                printf(">>> the intersectionExcSet is ");
+                                vnStore->vnDumpExc(this, intersectionExcSet);
+                                printf("\n");
                             }
 #endif // DEBUG
 
@@ -1740,6 +1753,8 @@ CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
     enableConstCSE = Compiler::optConstantCSEEnabled();
 #if defined(TARGET_AMD64)
     cntCalleeTrashInt = pCompiler->get_CNT_CALLEE_TRASH_INT();
+    cntCalleeTrashFlt = pCompiler->get_CNT_CALLEE_TRASH_FLOAT();
+    cntCalleeTrashMsk = pCompiler->get_CNT_CALLEE_TRASH_MASK();
 #endif // TARGET_AMD64
 
 #ifdef DEBUG
@@ -1876,7 +1891,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
                 "GT_IND(GT_ARR_ELEM) = GT_IND(GT_ARR_ELEM) + xyz", whereas doing
                 the second would not allow it */
 
-            if (tree->AsOp()->gtOp1->gtOper == GT_ARR_ELEM)
+            if (tree->AsOp()->gtOp1->OperIs(GT_ARR_ELEM))
             {
                 return false;
             }
@@ -3124,6 +3139,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     CSE_Candidate candidate(this, cse);
 
     int enregCount = 0;
+
     for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
     {
         LclVarDsc* varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
@@ -3143,14 +3159,14 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 
         if (!varTypeIsFloating(varTyp))
         {
-            enregCount++; // The primitive types, including TYP_SIMD types use one register
+            enregCount++;
 
 #ifndef TARGET_64BIT
             if (varTyp == TYP_LONG)
             {
                 enregCount++; // on 32-bit targets longs use two registers
             }
-#endif
+#endif // TARGET_64BIT
         }
     }
 
@@ -3182,6 +3198,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     const unsigned blockSpread = maxPostorderNum - minPostorderNum;
 
     int type = rlHookTypeOther;
+
     if (candidate.Expr()->TypeIs(TYP_INT))
     {
         type = rlHookTypeInt;
@@ -3202,19 +3219,10 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     {
         type = rlHookTypeStruct;
     }
-
-#ifdef FEATURE_SIMD
     else if (varTypeIsSIMD(candidate.Expr()->TypeGet()))
     {
         type = rlHookTypeSimd;
     }
-#ifdef TARGET_XARCH
-    else if (candidate.Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
-    {
-        type = rlHookTypeSimd;
-    }
-#endif
-#endif
 
     int i         = 0;
     features[i++] = type;
@@ -3953,12 +3961,14 @@ CSE_HeuristicRL::Choice* CSE_HeuristicRL::FindChoice(CSEdsc* dsc, ArrayStack<Cho
 //
 CSE_Heuristic::CSE_Heuristic(Compiler* pCompiler)
     : CSE_HeuristicCommon(pCompiler)
+    , aggressiveRefCnt(0)
+    , moderateRefCnt(0)
+    , enregCountInt(0)
+    , enregCountFlt(0)
+    , enregCountMsk(0)
+    , largeFrame(false)
+    , hugeFrame(false)
 {
-    aggressiveRefCnt = 0;
-    moderateRefCnt   = 0;
-    enregCount       = 0;
-    largeFrame       = false;
-    hugeFrame        = false;
 }
 
 //------------------------------------------------------------------------
@@ -3988,8 +3998,10 @@ void CSE_Heuristic::Initialize()
 {
     // Record the weighted ref count of the last "for sure" callee saved LclVar
 
-    unsigned   frameSize        = 0;
-    unsigned   regAvailEstimate = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2) + 1);
+    unsigned   frameSize           = 0;
+    unsigned   regAvailEstimateInt = CNT_MODERATE_ENREG + 1;
+    unsigned   regAvailEstimateFlt = CNT_MODERATE_ENREG_FLT + 1;
+    unsigned   regAvailEstimateMsk = CNT_MODERATE_ENREG_MSK + 1;
     unsigned   lclNum;
     LclVarDsc* varDsc;
 
@@ -4019,7 +4031,24 @@ void CSE_Heuristic::Initialize()
         }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-        bool onStack = (regAvailEstimate == 0); // true when it is likely that this LclVar will have a stack home
+        unsigned* pRegAvailEstimate;
+
+        if (varTypeUsesIntReg(varDsc->TypeGet()))
+        {
+            pRegAvailEstimate = &regAvailEstimateInt;
+        }
+        else if (varTypeUsesMaskReg(varDsc->TypeGet()))
+        {
+            pRegAvailEstimate = &regAvailEstimateMsk;
+        }
+        else
+        {
+            assert(varTypeUsesFloatReg(varDsc->TypeGet()));
+            pRegAvailEstimate = &regAvailEstimateFlt;
+        }
+
+        // true when it is likely that this LclVar will have a stack home
+        bool onStack = (*pRegAvailEstimate) == 0;
 
         // Some LclVars always have stack homes
         if (varDsc->lvDoNotEnregister)
@@ -4028,12 +4057,12 @@ void CSE_Heuristic::Initialize()
         }
 
 #ifdef TARGET_X86
-        // Treat floating point and 64 bit integers as always on the stack
-        if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsLong(varDsc->TypeGet()))
+        // Treat 64 bit integers as always on the stack
+        if (varTypeIsLong(varDsc->TypeGet()))
         {
             onStack = true;
         }
-#endif
+#endif // TARGET_X86
 
         if (onStack)
         {
@@ -4049,19 +4078,19 @@ void CSE_Heuristic::Initialize()
             if (varDsc->lvRefCnt() <= 2)
             {
                 // a single use single def LclVar only uses 1
-                regAvailEstimate -= 1;
+                *pRegAvailEstimate -= 1;
             }
             else
             {
                 // a LclVar with multiple uses and defs uses 2
-                if (regAvailEstimate >= 2)
+                if (*pRegAvailEstimate >= 2)
                 {
-                    regAvailEstimate -= 2;
+                    *pRegAvailEstimate -= 2;
                 }
                 else
                 {
                     // Don't try to subtract when regAvailEstimate is 1
-                    regAvailEstimate = 0;
+                    *pRegAvailEstimate = 0;
                 }
             }
         }
@@ -4142,43 +4171,44 @@ void CSE_Heuristic::Initialize()
             continue;
         }
 
-        // enregCount only tracks the uses of integer registers.
-        //
-        // We could track floating point register usage separately
-        // but it isn't worth the additional complexity as floating point CSEs
-        // are rare and we typically have plenty of floating point register available.
-        //
-        if (!varTypeIsFloating(varTyp))
+        unsigned enregCount;
+        unsigned cntAggressiveEnreg;
+        unsigned cntModerateEnreg;
+
+        if (varTypeUsesIntReg(varTyp))
         {
-            enregCount++; // The primitive types, including TYP_SIMD types use one register
+            enregCountInt++;
 
 #ifndef TARGET_64BIT
             if (varTyp == TYP_LONG)
             {
-                enregCount++; // on 32-bit targets longs use two registers
+                enregCountInt++; // on 32-bit targets longs use two registers
             }
-#endif
+#endif // TARGET_64BIT
+
+            enregCount         = enregCountInt;
+            cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG;
+            cntModerateEnreg   = CNT_MODERATE_ENREG;
+        }
+        else if (varTypeUsesMaskReg(varTyp))
+        {
+            enregCountMsk++;
+
+            enregCount         = enregCountMsk;
+            cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_MSK;
+            cntModerateEnreg   = CNT_MODERATE_ENREG_MSK;
+        }
+        else
+        {
+            assert(varTypeUsesFloatReg(varTyp));
+            enregCountFlt++;
+
+            enregCount         = enregCountFlt;
+            cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_FLT;
+            cntModerateEnreg   = CNT_MODERATE_ENREG_FLT;
         }
 
-        // Set the cut off values to use for deciding when we want to use aggressive, moderate or conservative
-        //
-        // The value of aggressiveRefCnt and moderateRefCnt start off as zero and
-        // when enregCount reached a certain value we assign the current LclVar
-        // (weighted) ref count to aggressiveRefCnt or moderateRefCnt.
-        //
-        const unsigned aggressiveEnregNum = (CNT_CALLEE_ENREG * 3 / 2);
-        const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2));
-        //
-        // On Windows x64 this yields:
-        // aggressiveEnregNum == 12 and moderateEnregNum == 38
-        // Thus we will typically set the cutoff values for
-        //   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
-        //   moderateRefCnt based upon the weight of T39 (the 39th tracked LclVar)
-        //
-        // For other architecture and platforms these values dynamically change
-        // based upon the number of callee saved and callee scratch registers.
-        //
-        if ((aggressiveRefCnt == 0) && (enregCount > aggressiveEnregNum))
+        if ((aggressiveRefCnt == 0) && (enregCount > cntAggressiveEnreg))
         {
             if (CodeOptKind() == Compiler::SMALL_CODE)
             {
@@ -4190,7 +4220,7 @@ void CSE_Heuristic::Initialize()
             }
             aggressiveRefCnt += BB_UNITY_WEIGHT;
         }
-        if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))))
+        if ((moderateRefCnt == 0) && (enregCount > cntModerateEnreg))
         {
             if (CodeOptKind() == Compiler::SMALL_CODE)
             {
@@ -4220,7 +4250,9 @@ void CSE_Heuristic::Initialize()
         printf("\n");
         printf("Aggressive CSE Promotion cutoff is %f\n", aggressiveRefCnt);
         printf("Moderate CSE Promotion cutoff is %f\n", moderateRefCnt);
-        printf("enregCount is %u\n", enregCount);
+        printf("enregCountInt is %u\n", enregCountInt);
+        printf("enregCountFlt is %u\n", enregCountFlt);
+        printf("enregCountMsk is %u\n", enregCountMsk);
         printf("Framesize estimate is 0x%04X\n", frameSize);
         printf("We have a %s frame\n", hugeFrame ? "huge" : (largeFrame ? "large" : "small"));
     }
@@ -4374,8 +4406,11 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
     weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
-    bool     canEnregister = true;
-    unsigned slotCount     = 1;
+    bool     canEnregister      = true;
+    unsigned slotCount          = 1;
+    unsigned enregCount         = 0;
+    unsigned cntAggressiveEnreg = 0;
+
     if (candidate->Expr()->TypeIs(TYP_STRUCT))
     {
         // This is a non-enregisterable struct.
@@ -4384,6 +4419,22 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         // Note that the slotCount is used to estimate the reference cost, but it may overestimate this
         // because it doesn't take into account that we might use a vector register for struct copies.
         slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+    }
+    else if (varTypeUsesIntReg(candidate->Expr()->TypeGet()))
+    {
+        enregCount         = enregCountInt;
+        cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG;
+    }
+    else if (varTypeUsesMaskReg(candidate->Expr()->TypeGet()))
+    {
+        enregCount         = enregCountMsk;
+        cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_MSK;
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(candidate->Expr()->TypeGet()));
+        enregCount         = enregCountFlt;
+        cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_FLT;
     }
 
     if (CodeOptKind() == Compiler::SMALL_CODE)
@@ -4478,14 +4529,14 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
 #endif
             }
         }
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
         if (varTypeIsFloating(candidate->Expr()->TypeGet()))
         {
             // floating point loads/store encode larger
             cse_def_cost += 2;
             cse_use_cost += 1;
         }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
     }
     else // not SMALL_CODE ...
     {
@@ -4538,7 +4589,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 cse_def_cost = 2;
                 if (canEnregister)
                 {
-                    if (enregCount < (CNT_CALLEE_ENREG * 3 / 2))
+                    if (enregCount < cntAggressiveEnreg)
                     {
                         cse_use_cost = 1;
                     }
@@ -4602,20 +4653,59 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     //
     if (candidate->LiveAcrossCall())
     {
-        // If we have a floating-point CSE that is both live across a call and there
-        // are no callee-saved FP registers available, the RA will have to spill at
+        // If we have certain CSEs that are both live across a call and there
+        // are no callee-saved registers available, the RA will have to spill at
         // the def site and reload at the (first) use site, if the variable is a register
         // candidate. Account for that.
-        if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) && !candidate->IsConservative())
+        if (!candidate->IsConservative())
         {
-            cse_def_cost += 1;
-            cse_use_cost += 1;
+            bool hasRequiredSpill = false;
+
+            if (varTypeUsesIntReg(candidate->Expr()))
+            {
+                assert(CNT_CALLEE_SAVED != 0);
+            }
+            else if (varTypeUsesMaskReg(candidate->Expr()))
+            {
+                if (CNT_CALLEE_SAVED_MASK == 0)
+                {
+                    hasRequiredSpill = true;
+                }
+            }
+            else
+            {
+                assert(varTypeUsesFloatReg(candidate->Expr()));
+
+                if (CNT_CALLEE_SAVED_FLOAT == 0)
+                {
+                    hasRequiredSpill = true;
+                }
+#if defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH)
+                else if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
+                {
+                    hasRequiredSpill = true;
+                }
+#elif defined(TARGET_ARM64)
+                else if (candidate->Expr()->TypeIs(TYP_SIMD16))
+                {
+                    hasRequiredSpill = true;
+                }
+#endif
+#endif // FEATURE_SIMD
+            }
+
+            if (hasRequiredSpill)
+            {
+                cse_def_cost += 1;
+                cse_use_cost += 1;
+            }
         }
 
         // If we don't have a lot of variables to enregister or we have a floating point type
         // then we will likely need to spill an additional caller save register.
         //
-        if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()))
+        if (enregCount < cntAggressiveEnreg)
         {
             // Extra cost in case we have to spill/restore a caller saved register
             extra_yes_cost = BB_UNITY_WEIGHT_UNSIGNED;
@@ -4625,38 +4715,6 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 extra_yes_cost *= 2; // full cost if we are being Conservative
             }
         }
-
-#ifdef FEATURE_SIMD
-        // SIMD types may cause a SIMD register to be spilled/restored in the prolog and epilog.
-        //
-        if (varTypeIsSIMD(candidate->Expr()->TypeGet()))
-        {
-            // We don't have complete information about when these extra spilled/restore will be needed.
-            // Instead we are conservative and assume that each SIMD CSE that is live across a call
-            // will cause an additional spill/restore in the prolog and epilog.
-            //
-            int spillSimdRegInProlog = 1;
-
-#if defined(TARGET_XARCH)
-            // If we have a SIMD32/64 that is live across a call we have even higher spill costs
-            //
-            if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
-            {
-                // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
-                // (to hold the upper half of the simd32 register that isn't preserved across the call)
-                //
-                spillSimdRegInProlog++;
-
-                // We also increase the CSE use cost here to because we may have to generate instructions
-                // to move the upper half of the simd32 before and after a call.
-                //
-                cse_use_cost += 2;
-            }
-#endif // TARGET_XARCH
-
-            extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
-        }
-#endif // FEATURE_SIMD
     }
 
     // estimate the cost from lost codesize reduction if we do not perform the CSE

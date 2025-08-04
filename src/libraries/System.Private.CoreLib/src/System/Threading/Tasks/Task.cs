@@ -6024,8 +6024,25 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
-        public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
-            tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
+        public static Task WhenAll(params ReadOnlySpan<Task> tasks)
+        {
+            switch (tasks.Length)
+            {
+                case 0:
+                    return CompletedTask;
+
+                case 1:
+                    Task t = tasks[0];
+                    if (t is null)
+                    {
+                        ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    }
+                    return t;
+
+                default:
+                    return new WhenAllPromise(tasks);
+            }
+        }
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
@@ -6867,7 +6884,7 @@ namespace System.Threading.Tasks
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
         /// <param name="tasks">The tasks to iterate through as they complete.</param>
-        public static IAsyncEnumerable<Task> WhenEach(params ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+        public static IAsyncEnumerable<Task> WhenEach(params ReadOnlySpan<Task> tasks) =>
             WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
@@ -6887,7 +6904,7 @@ namespace System.Threading.Tasks
         /// <inheritdoc cref="WhenEach(Task[])"/>
         /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to iterate through as they complete.</param>
-        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params ReadOnlySpan<Task<TResult>> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params ReadOnlySpan<Task<TResult>> tasks) =>
             WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(ReadOnlySpan<Task>.CastUp(tasks)));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>

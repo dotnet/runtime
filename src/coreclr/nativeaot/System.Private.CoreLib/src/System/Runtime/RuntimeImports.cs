@@ -15,7 +15,7 @@ using CorElementType = System.Reflection.CorElementType;
 namespace System.Runtime
 {
     // CONTRACT with Runtime
-    // This class lists all the static methods that the redhawk runtime exports to a class library
+    // This class lists all the static methods that the NativeAOT runtime exports to a class library
     // These are not expected to change much but are needed by the class library to implement its functionality
     //
     //      The contents of this file can be modified if needed by the class library
@@ -294,6 +294,26 @@ namespace System.Runtime
             return h;
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpHandleAllocCrossReference")]
+        private static extern IntPtr RhpHandleAllocCrossReference(object value, IntPtr context);
+
+        internal static IntPtr RhHandleAllocCrossReference(object value, IntPtr context)
+        {
+            IntPtr h = RhpHandleAllocCrossReference(value, context);
+            if (h == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return h;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhHandleTryGetCrossReferenceContext")]
+        internal static extern bool RhHandleTryGetCrossReferenceContext(IntPtr handle, out IntPtr context);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhIsGCBridgeActive")]
+        internal static extern bool RhIsGCBridgeActive();
+
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]
@@ -391,8 +411,12 @@ namespace System.Runtime
         internal static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhNewVariableSizeObject")]
+        internal static extern unsafe Array RhNewVariableSizeObject(MethodTable* pEEType, int length);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static extern unsafe string RhNewString(MethodTable* pEEType, int length);
+        internal static extern unsafe string RhNewString(MethodTable* pEEType, nint length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhUnbox")]
@@ -578,6 +602,10 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentOSThreadId")]
         internal static extern unsafe ulong RhCurrentOSThreadId();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetDefaultStackSize")]
+        internal static extern unsafe IntPtr RhGetDefaultStackSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport("*", "RhGetCurrentThunkContext")]

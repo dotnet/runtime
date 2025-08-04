@@ -25,7 +25,7 @@ namespace
 
 #ifdef _DEBUG
 #define LOADER_HEAP_BEGIN_TRAP_FAULT BOOL __faulted = FALSE; EX_TRY {
-#define LOADER_HEAP_END_TRAP_FAULT   } EX_CATCH {__faulted = TRUE; } EX_END_CATCH(SwallowAllExceptions) if (__faulted) UnlockedLoaderHeap::WeGotAFaultNowWhat(pHeap);
+#define LOADER_HEAP_END_TRAP_FAULT   } EX_CATCH {__faulted = TRUE; } EX_END_CATCH if (__faulted) UnlockedLoaderHeap::WeGotAFaultNowWhat(pHeap);
 #else
 #define LOADER_HEAP_BEGIN_TRAP_FAULT
 #define LOADER_HEAP_END_TRAP_FAULT
@@ -44,7 +44,7 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
                                        const BYTE* dwReservedRegionAddress,
                                        SIZE_T dwReservedRegionSize,
                                        RangeList *pRangeList,
-                                       LoaderHeapImplementationKind kind) : 
+                                       LoaderHeapImplementationKind kind) :
     UnlockedLoaderHeapBase(kind)
 {
     CONTRACTL
@@ -70,7 +70,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     }
 }
 
-// ~LoaderHeap is not synchronised (obviously)
 UnlockedLoaderHeap::~UnlockedLoaderHeap()
 {
     CONTRACTL
@@ -1023,7 +1022,7 @@ void UnlockedLoaderHeap::DumpFreeList()
 
         result = TRUE;
     }
-    
+
     LOADER_HEAP_END_TRAP_FAULT
     return result;
 }
@@ -1053,7 +1052,6 @@ size_t UnlockedLoaderHeap::AllocMem_TotalSize(size_t dwRequestedSize)
 
     size_t dwSize = dwRequestedSize;
 
-    // Interleaved heap cannot ad any extra to the requested size
 #ifdef _DEBUG
     dwSize += LOADER_HEAP_DEBUG_BOUNDARY;
     dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));

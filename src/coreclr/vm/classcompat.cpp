@@ -2663,7 +2663,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
 
         if (IsReallyMdPinvokeImpl(dwMemberAttrs) || IsMiInternalCall(dwImplFlags))
         {
-            hr = NDirect::HasNAT_LAttribute(pMDInternalImport, tok, dwMemberAttrs);
+            hr = PInvoke::HasNAT_LAttribute(pMDInternalImport, tok, dwMemberAttrs);
 
             // There was a problem querying for the attribute
             if (FAILED(hr))
@@ -2698,7 +2698,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 else
                     Classification = mcPInvoke;
             }
-            // The NAT_L attribute is present, marking this method as NDirect
+            // The NAT_L attribute is present, marking this method as PInvoke
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);

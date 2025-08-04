@@ -24,17 +24,20 @@ namespace ILCompiler.Dataflow
         private readonly record struct TypeArgumentInfo(
             /// <summary>The method which calls the ctor for the given type</summary>
             MethodDesc CreatingMethod,
-            /// <summary>Attributes for the type, pulled from the creators type arguments</summary>
+            /// <summary>Generic parameters of the creator used as type arguments for the type</summary>
             IReadOnlyList<GenericParameterDesc?>? OriginalAttributes);
 
         private readonly TypeCacheHashtable _typeCacheHashtable;
 
         private readonly Logger _logger;
 
-        public CompilerGeneratedState(ILProvider ilProvider, Logger logger)
+        private readonly bool _disableGeneratedCodeHeuristics;
+
+        public CompilerGeneratedState(ILProvider ilProvider, Logger logger, bool disableGeneratedCodeHeuristics)
         {
             _typeCacheHashtable = new TypeCacheHashtable(ilProvider);
             _logger = logger;
+            _disableGeneratedCodeHeuristics = disableGeneratedCodeHeuristics;
         }
 
         private sealed class TypeCacheHashtable : LockFreeReaderHashtable<MetadataType, TypeCache>
@@ -346,15 +349,15 @@ namespace ILCompiler.Dataflow
                 /// Attempts to reverse the process of the compiler's alpha renaming. So if the original code was
                 /// something like this:
                 /// <code>
-                /// void M&lt;T&gt; () {
-                ///     Action a = () => { Console.WriteLine (typeof (T)); };
+                /// void M&lt;T&gt;() {
+                ///     Action a = () => { Console.WriteLine(typeof(T)); };
                 /// }
                 /// </code>
                 /// The compiler will generate a nested class like this:
                 /// <code>
                 /// class &lt;&gt;c__DisplayClass0&lt;T&gt; {
-                ///     public void &lt;M&gt;b__0 () {
-                ///         Console.WriteLine (typeof (T));
+                ///     public void &lt;M&gt;b__0() {
+                ///         Console.WriteLine(typeof(T));
                 ///     }
                 /// }
                 /// </code>
@@ -658,6 +661,16 @@ namespace ILCompiler.Dataflow
         {
             MetadataType generatedType = (MetadataType)type.GetTypeDefinition();
             Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
+
+            // Avoid the heuristics for .NET10+, where DynamicallyAccessedMembers flows to generated code
+            // because it is annotated with CompilerLoweringPreserveAttribute.
+            if (_disableGeneratedCodeHeuristics &&
+                generatedType.Module.Assembly is EcmaAssembly asm && asm.GetTargetFrameworkVersion() >= new Version(10, 0))
+            {
+                // Still run the logic for coverage to help us find bugs, but don't use the result.
+                GetCompilerGeneratedStateForType(generatedType);
+                return null;
+            }
 
             var typeCache = GetCompilerGeneratedStateForType(generatedType);
             if (typeCache is null)

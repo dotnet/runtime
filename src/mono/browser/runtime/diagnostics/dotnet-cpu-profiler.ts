@@ -13,8 +13,8 @@ export function collectCpuSamples (options?:DiagnosticCommandOptions):Promise<Ui
     if (!serverSession) {
         throw new Error("No active JS diagnostic session");
     }
-    if (!runtimeHelpers.config.environmentVariables!["DOTNET_WasmPerfInstrumentation"]) {
-        throw new Error("method instrumentation is not enabled, please enable it with WasmPerfInstrumentation MSBuild property");
+    if (!runtimeHelpers.config.environmentVariables!["DOTNET_WasmPerformanceInstrumentation"]) {
+        throw new Error("method instrumentation is not enabled, please enable it with WasmPerformanceInstrumentation MSBuild property");
     }
 
     const onClosePromise = loaderHelpers.createPromiseController<Uint8Array[]>();

@@ -6,6 +6,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 #if defined(__clang__) || defined (__GNUC__)
 static DN_FORCEINLINE(uint32_t)
 next_power_of_two (uint32_t value) {
@@ -217,5 +221,9 @@ dn_simdhash_assert_fail (const char *file, int line, const char *condition);
 	if (DN_UNLIKELY(!(expr))) { \
 		dn_simdhash_assert_fail(__FILE__, __LINE__, #expr); \
 	}
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif // __DN_SIMDHASH_UTILS_H__

@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -25,8 +22,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static T MaxNumber<T>(ReadOnlySpan<T> x)
-            where T : INumber<T> =>
-            MinMaxCore<T, MaxNumberOperator<T>>(x);
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsInt16<T, MaxNumberOperator<float>>(x, out T result))
+            {
+                return result;
+            }
+
+            return MinMaxCore<T, MaxNumberOperator<T>>(x);
+        }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -50,8 +54,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MaxNumber<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MaxNumberOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, MaxNumberOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -73,8 +84,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MaxNumber<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MaxNumberOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, MaxNumberOperator<T>>(x, y, destination);
+        }
 
         /// <summary>T.MaxNumber(x, y)</summary>
         internal readonly struct MaxNumberOperator<T> : IAggregationOperator<T> where T : INumber<T>

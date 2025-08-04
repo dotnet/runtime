@@ -48,7 +48,7 @@ PALTEST(threading_Sleep_test2_paltest_sleep_test2, "threading/Sleep/test2/paltes
         Sleep(SleepTimes[i]);
         NewTimeStamp = minipal_hires_ticks();
 
-        TimeDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
+        TimeDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
         MaxDelta = SleepTimes[i] + AcceptableTimeError;
 

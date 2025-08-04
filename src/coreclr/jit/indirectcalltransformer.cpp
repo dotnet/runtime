@@ -973,7 +973,7 @@ private:
                 //
                 if (inlineInfo->arrayInterface)
                 {
-                    methodHnd = call->gtCallMethHnd;
+                    methodHnd = inlineInfo->originalMethodHandle;
                     context   = inlineInfo->originalContextHandle;
                 }
 
@@ -1092,7 +1092,7 @@ private:
                     {
                         // We should always have a return temp if we return results by value
                         // and that value is used.
-                        assert((origCall->TypeGet() == TYP_VOID) || returnValueUnused);
+                        assert(origCall->TypeIs(TYP_VOID) || returnValueUnused);
                         newRetExpr = compiler->gtUnusedValNode(newRetExpr);
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);
@@ -1305,7 +1305,7 @@ private:
             // Rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
-            compiler->fgRedirectTargetEdge(coldBlock, elseBlock);
+            compiler->fgRedirectEdge(coldBlock->TargetEdgeRef(), elseBlock);
 
             // Update the profile data
             //

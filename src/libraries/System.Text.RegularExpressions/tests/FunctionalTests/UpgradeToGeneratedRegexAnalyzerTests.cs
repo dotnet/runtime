@@ -256,7 +256,7 @@ public partial class Program
     private static partial Regex MyRegex();
 }" };
 
-                // Test constructor with a local constant pattern.
+                // Test constructor with a local constant pattern (local constants are expanded).
                 yield return new object[] { @"using System.Text;
 using System.Text.RegularExpressions;
 
@@ -264,8 +264,8 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        const string pattern = @"""";
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"") + @"|]" + isMatchInvocation + @";
+        const string pattern = @""a|b"";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "pattern") + @"|]" + isMatchInvocation + @";
     }
 }", @"using System.Text;
 using System.Text.RegularExpressions;
@@ -274,39 +274,73 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        const string pattern = @"""";
+        const string pattern = @""a|b"";
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [GeneratedRegex("""")]
+    [GeneratedRegex(""a|b"")]
     private static partial Regex MyRegex();
 }" };
 
-                // Test constructor with a constant field pattern.
+                // Test constructor with a constant field pattern (field constants are preserved).
                 yield return new object[] { @"using System.Text;
 using System.Text.RegularExpressions;
 
 public class Program
 {
-    private const string pattern = @"""";
+    private const string Pattern = @""a|b"";
 
     public static void Main(string[] args)
     {
-        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"") + @"|]" + isMatchInvocation + @";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "Pattern") + @"|]" + isMatchInvocation + @";
     }
 }", @"using System.Text;
 using System.Text.RegularExpressions;
 
 public partial class Program
 {
-    private const string pattern = @"""";
+    private const string Pattern = @""a|b"";
 
     public static void Main(string[] args)
     {
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [GeneratedRegex("""")]
+    [GeneratedRegex(Pattern)]
+    private static partial Regex MyRegex();
+}" };
+
+                // Test constructor with external constant field pattern (external field constants are preserved).
+                yield return new object[] { @"using System.Text;
+using System.Text.RegularExpressions;
+
+public class PatternConstants
+{
+    public const string EmailPattern = @""^[^@]+@[^@]+\.[^@]+$"";
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "PatternConstants.EmailPattern") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text;
+using System.Text.RegularExpressions;
+
+public class PatternConstants
+{
+    public const string EmailPattern = @""^[^@]+@[^@]+\.[^@]+$"";
+}
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(PatternConstants.EmailPattern)]
     private static partial Regex MyRegex();
 }" };
             }
@@ -468,7 +502,39 @@ public partial class Program
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [GeneratedRegex("""", RegexOptions.None)]
+    [GeneratedRegex("""", Options)]
+    private static partial Regex MyRegex();
+}" };
+
+                // Test options as external constant field
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class RegexConstants
+{
+    public const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"", "RegexConstants.DefaultOptions") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public class RegexConstants
+{
+    public const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex("""", RegexConstants.DefaultOptions)]
     private static partial Regex MyRegex();
 }" };
             }
@@ -477,6 +543,186 @@ public partial class Program
         [Theory]
         [MemberData(nameof(ConstantOptionsTestData))]
         public async Task DiagnosticEmittedForConstantOptions(string test, string fixedSource)
+        {
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        public static IEnumerable<object[]> MixedConstantTestData()
+        {
+            foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
+            {
+                string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+                
+                // Test both pattern and options as field constants (both should be preserved)
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    const string MyPattern = @""[a-z]+"";
+    const RegexOptions MyOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "MyPattern", "MyOptions") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    const string MyPattern = @""[a-z]+"";
+    const RegexOptions MyOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(MyPattern, MyOptions)]
+    private static partial Regex MyRegex();
+}" };
+
+                // Test pattern as field constant and options as local constant (field preserved, local expanded)
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    const string GlobalPattern = @""\d+"";
+
+    public static void Main(string[] args)
+    {
+        const RegexOptions localOptions = RegexOptions.Multiline;
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "GlobalPattern", "localOptions") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    const string GlobalPattern = @""\d+"";
+
+    public static void Main(string[] args)
+    {
+        const RegexOptions localOptions = RegexOptions.Multiline;
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(GlobalPattern, RegexOptions.Multiline)]
+    private static partial Regex MyRegex();
+}" };
+
+                // Test pattern as local constant and options as field constant (local expanded, field preserved)
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    public static void Main(string[] args)
+    {
+        const string localPattern = @""test.*pattern"";
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "localPattern", "DefaultOptions") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
+    public static void Main(string[] args)
+    {
+        const string localPattern = @""test.*pattern"";
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(""test.*pattern"", DefaultOptions)]
+    private static partial Regex MyRegex();
+}" };
+
+                // Test external constants for both pattern and options
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public static class RegexConfig
+{
+    public const string EmailPattern = @""^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"";
+    public const RegexOptions EmailOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "RegexConfig.EmailPattern", "RegexConfig.EmailOptions") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public static class RegexConfig
+{
+    public const string EmailPattern = @""^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"";
+    public const RegexOptions EmailOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(RegexConfig.EmailPattern, RegexConfig.EmailOptions)]
+    private static partial Regex MyRegex();
+}" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MixedConstantTestData))]
+        public async Task DiagnosticEmittedForMixedConstants(string test, string fixedSource)
+        {
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        public static IEnumerable<object[]> StaticFieldConstantTestData()
+        {
+            foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
+            {
+                string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+                
+                // Test static field constants (should be preserved)
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static readonly string ReadOnlyPattern = @""readonly""; // This is not const, so won't be preserved
+    public const string ConstPattern = @""const"";
+    private static readonly RegexOptions ReadOnlyOptions = RegexOptions.IgnoreCase; // This is not const, so won't be preserved
+    private const RegexOptions ConstOptions = RegexOptions.Multiline;
+
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "ConstPattern", "ConstOptions") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static readonly string ReadOnlyPattern = @""readonly""; // This is not const, so won't be preserved
+    public const string ConstPattern = @""const"";
+    private static readonly RegexOptions ReadOnlyOptions = RegexOptions.IgnoreCase; // This is not const, so won't be preserved
+    private const RegexOptions ConstOptions = RegexOptions.Multiline;
+
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(ConstPattern, ConstOptions)]
+    private static partial Regex MyRegex();
+}" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StaticFieldConstantTestData))]
+        public async Task DiagnosticEmittedForStaticFieldConstants(string test, string fixedSource)
         {
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }

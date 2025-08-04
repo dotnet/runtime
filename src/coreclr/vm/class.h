@@ -460,6 +460,12 @@ class EEClassLayoutInfo
             m_ManagedLargestAlignmentRequirementOfAllMembers = alignment;
         }
 
+        void SetPackingSize(BYTE cbPackingSize)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_cbPackingSize = cbPackingSize;
+        }
+
         ULONG InitializeSequentialFieldLayout(
             FieldDesc* pFields,
             MethodTable** pByValueClassCache,
@@ -486,12 +492,6 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = isZeroSized ? (m_bFlags | e_ZERO_SIZED)
                                 : (m_bFlags & ~e_ZERO_SIZED);
-        }
-
-        void SetPackingSize(BYTE cbPackingSize)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_cbPackingSize = cbPackingSize;
         }
 
         UINT32 SetInstanceBytesSize(UINT32 size)
@@ -1799,8 +1799,12 @@ template<> struct cdac_data<EEClass>
 {
     static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
     static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t FieldDescList = offsetof(EEClass, m_pFieldDescList);
     static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
     static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
+    static constexpr size_t NumInstanceFields = offsetof(EEClass, m_NumInstanceFields);
+    static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
+    static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
 };
 
@@ -2043,7 +2047,7 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
 
 
 
