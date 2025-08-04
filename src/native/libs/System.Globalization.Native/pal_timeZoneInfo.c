@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "pal_errors_internal.h"
 #include "pal_locale_internal.h"
@@ -335,4 +336,22 @@ ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName, c
     }
 
     return GetResultCode(err);
+}
+
+/*
+Get the canonical timezone ID for a given timezone ID.
+*/
+int32_t GlobalizationNative_GetCanonicalTimeZoneId(const UChar* timeZoneId, UChar* canonicalId, int32_t canonicalIdLength)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    UBool isSystemID = 0;
+
+    int32_t actualLength = ucal_getCanonicalTimeZoneID(timeZoneId, -1, canonicalId, canonicalIdLength, &isSystemID, &status);
+
+    if (U_SUCCESS(status))
+    {
+        return actualLength;
+    }
+
+    return 0;
 }
