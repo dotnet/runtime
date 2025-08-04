@@ -55,18 +55,14 @@ namespace System.Runtime.Serialization
             }
             catch (ArgumentException exception)
             {
-                throw XmlExceptionHelper.CreateConversionException(value.ToString(null), "DateTimeOffset", exception);
+                var formattedValue = "DateTime: " + value.UtcDateTime + ", Offset: " + value.OffsetMinutes;
+                throw XmlExceptionHelper.CreateConversionException(formattedValue, "DateTimeOffset", exception);
             }
         }
 
         public static DateTimeOffsetAdapter GetDateTimeOffsetAdapter(DateTimeOffset value)
         {
             return new DateTimeOffsetAdapter(value.UtcDateTime, (short)value.Offset.TotalMinutes);
-        }
-
-        public string ToString(IFormatProvider? provider)
-        {
-            return "DateTime: " + UtcDateTime.ToString(provider) + ", Offset: " + OffsetMinutes;
         }
     }
 }
