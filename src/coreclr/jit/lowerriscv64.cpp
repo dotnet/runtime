@@ -211,6 +211,14 @@ bool Lowering::LowerAndReverseIntegerCompare(GenTree* cmp)
     GenTree*& right = cmp->AsOp()->gtOp2;
     assert(cmp->OperIsCmpCompare() && varTypeUsesIntReg(left));
     bool isReversed = false;
+
+    if (left->IsIntegralConst() && !right->IsIntegralConst())
+    {
+        // Normally const operand is ordered on the right. If we're here, it means we're lowering the second time
+        cmp->SetOperRaw(GenTree::SwapRelop(cmp->OperGet()));
+        std::swap(left, right);
+    }
+
     if (cmp->OperIs(GT_EQ, GT_NE))
     {
         if (!right->IsIntegralConst(0))
