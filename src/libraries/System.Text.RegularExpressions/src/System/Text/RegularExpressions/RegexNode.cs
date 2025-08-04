@@ -2287,10 +2287,23 @@ namespace System.Text.RegularExpressions
                 {
                     switch (subsequent.Kind)
                     {
+                        // Concatenate, capture, and atomic do not impact what comes at the beginning of their children,
+                        // so we can skip down to the first child.
                         case RegexNodeKind.Concatenate:
                         case RegexNodeKind.Capture:
                         case RegexNodeKind.Atomic:
+
+                        // Similarly, as long as a loop is guaranteed to iterate at least once, we can skip down to the child,
+                        // as whatever starts it is guaranteed to come after the predecessor.
                         case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when subsequent.M > 0:
+
+                        // Positive lookaheads can also be skipped through. The lookahead logically comes after the predecessor,
+                        // and even though it's zero width, we don't need to look at whatever comes after the lookahead, because
+                        // the lookahead ends up overlapping with its successor. If the node is disjoint from the lookahead, then
+                        // it's also disjoint from the intersection of the lookahead and the lookahead's successor, since the
+                        // intersection can only narrow the possible set of characters that need to be considered for overlap with
+                        // the predecessor node.
+                        case RegexNodeKind.PositiveLookaround when (subsequent.Options & RegexOptions.RightToLeft) == 0:
                             subsequent = subsequent.Child(0);
                             continue;
                     }
@@ -2330,13 +2343,6 @@ namespace System.Text.RegularExpressions
                 // If it doesn't, then we can upgrade it to being atomic to avoid unnecessary backtracking.
                 switch (node.Kind)
                 {
-                    case RegexNodeKind when iterateNullableSubsequent && subsequent.Kind is RegexNodeKind.PositiveLookaround:
-                        if (!CanBeMadeAtomic(node, subsequent.Child(0), iterateNullableSubsequent: false, allowLazy: allowLazy))
-                        {
-                            return false;
-                        }
-                        break;
-
                     case RegexNodeKind.Oneloop:
                     case RegexNodeKind.Onelazy when allowLazy:
                         switch (subsequent.Kind)

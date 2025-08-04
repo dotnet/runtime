@@ -450,7 +450,7 @@ public:
     OBJECTREF GetStaticOBJECTREF()
     {
         WRAPPER_NO_CONTRACT;
-        return *(OBJECTREF *)GetCurrentStaticAddress();
+        return ObjectToOBJECTREF(*(Object**)GetCurrentStaticAddress());
     }
 
     VOID SetStaticOBJECTREF(OBJECTREF objRef);

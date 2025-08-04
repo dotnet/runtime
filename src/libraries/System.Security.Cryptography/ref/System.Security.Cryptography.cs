@@ -3073,12 +3073,12 @@ namespace System.Security.Cryptography
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public byte[] ExportPkcs8PrivateKey() { throw null; }
         public string ExportPkcs8PrivateKeyPem() { throw null; }
+        public byte[] ExportSlhDsaPrivateKey() { throw null; }
+        public void ExportSlhDsaPrivateKey(System.Span<byte> destination) { }
+        protected abstract void ExportSlhDsaPrivateKeyCore(System.Span<byte> destination);
         public byte[] ExportSlhDsaPublicKey() { throw null; }
         public void ExportSlhDsaPublicKey(System.Span<byte> destination) { }
         protected abstract void ExportSlhDsaPublicKeyCore(System.Span<byte> destination);
-        public byte[] ExportSlhDsaSecretKey() { throw null; }
-        public void ExportSlhDsaSecretKey(System.Span<byte> destination) { }
-        protected abstract void ExportSlhDsaSecretKeyCore(System.Span<byte> destination);
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
         public string ExportSubjectPublicKeyInfoPem() { throw null; }
         public static System.Security.Cryptography.SlhDsa GenerateKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm) { throw null; }
@@ -3093,10 +3093,10 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.SlhDsa ImportFromPem(string source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportPkcs8PrivateKey(byte[] source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.SlhDsa ImportSlhDsaPrivateKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm, byte[] source) { throw null; }
+        public static System.Security.Cryptography.SlhDsa ImportSlhDsaPrivateKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportSlhDsaPublicKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm, byte[] source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportSlhDsaPublicKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
-        public static System.Security.Cryptography.SlhDsa ImportSlhDsaSecretKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm, byte[] source) { throw null; }
-        public static System.Security.Cryptography.SlhDsa ImportSlhDsaSecretKey(System.Security.Cryptography.SlhDsaAlgorithm algorithm, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportSubjectPublicKeyInfo(byte[] source) { throw null; }
         public static System.Security.Cryptography.SlhDsa ImportSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source) { throw null; }
         public byte[] SignData(byte[] data, byte[]? context = null) { throw null; }
@@ -3123,8 +3123,8 @@ namespace System.Security.Cryptography
     {
         internal SlhDsaAlgorithm() { }
         public string Name { get { throw null; } }
+        public int PrivateKeySizeInBytes { get { throw null; } }
         public int PublicKeySizeInBytes { get { throw null; } }
-        public int SecretKeySizeInBytes { get { throw null; } }
         public int SignatureSizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.SlhDsaAlgorithm SlhDsaSha2_128f { get { throw null; } }
         public static System.Security.Cryptography.SlhDsaAlgorithm SlhDsaSha2_128s { get { throw null; } }
@@ -3150,8 +3150,8 @@ namespace System.Security.Cryptography
     {
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public SlhDsaCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.SlhDsaAlgorithm)) { }
+        protected override void ExportSlhDsaPrivateKeyCore(System.Span<byte> destination) { }
         protected override void ExportSlhDsaPublicKeyCore(System.Span<byte> destination) { }
-        protected override void ExportSlhDsaSecretKeyCore(System.Span<byte> destination) { }
         public System.Security.Cryptography.CngKey GetKey() { throw null; }
         protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
         protected override void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination) { }
@@ -3171,8 +3171,8 @@ namespace System.Security.Cryptography
         public SlhDsaOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) : base (default(System.Security.Cryptography.SlhDsaAlgorithm)) { }
         protected override void Dispose(bool disposing) { }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
+        protected override void ExportSlhDsaPrivateKeyCore(System.Span<byte> destination) { }
         protected override void ExportSlhDsaPublicKeyCore(System.Span<byte> destination) { }
-        protected override void ExportSlhDsaSecretKeyCore(System.Span<byte> destination) { }
         protected override void SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
         protected override void SignPreHashCore(System.ReadOnlySpan<byte> hash, System.ReadOnlySpan<byte> context, string hashAlgorithmOid, System.Span<byte> destination) { }
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
