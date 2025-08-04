@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // Verify the key is actually private
                     AssertExtensions.SequenceEqual(
                         SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue,
-                        certKey.ExportSlhDsaSecretKey());
+                        certKey.ExportSlhDsaPrivateKey());
                 }
             }
         }
@@ -113,8 +113,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 using (SlhDsaMockImplementation publicSlhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128s))
                 {
-                    Exception e = new Exception("no secret key");
-                    publicSlhDsa.ExportSlhDsaSecretKeyCoreHook = _ => throw e;
+                    Exception e = new Exception("no private key");
+                    publicSlhDsa.ExportSlhDsaPrivateKeyCoreHook = _ => throw e;
                     publicSlhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
                         SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue.CopyTo(destination);
 
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 SlhDsaMockImplementation privateSlhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128s);
                 privateSlhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
                     SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue.CopyTo(destination);
-                privateSlhDsa.ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
+                privateSlhDsa.ExportSlhDsaPrivateKeyCoreHook = (Span<byte> destination) =>
                     SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue.CopyTo(destination);
 
                 using (X509Certificate2 privCert = CopyWithPrivateKey_SlhDsa(pubOnly, privateSlhDsa))
@@ -135,16 +135,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     {
                         AssertExtensions.SequenceEqual(
                             SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue,
-                            certPrivateSlhDsa.ExportSlhDsaSecretKey());
+                            certPrivateSlhDsa.ExportSlhDsaPrivateKey());
 
                         privateSlhDsa.Dispose();
                         privateSlhDsa.ExportSlhDsaPublicKeyCoreHook = _ => Assert.Fail();
-                        privateSlhDsa.ExportSlhDsaSecretKeyCoreHook = _ => Assert.Fail();
+                        privateSlhDsa.ExportSlhDsaPrivateKeyCoreHook = _ => Assert.Fail();
 
                         // Ensure the key is actual a clone
                         AssertExtensions.SequenceEqual(
                             SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue,
-                            certPrivateSlhDsa.ExportSlhDsaSecretKey());
+                            certPrivateSlhDsa.ExportSlhDsaPrivateKey());
                     }
                 }
             }
@@ -784,7 +784,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         private static X509Certificate2 LoadShlDsaIetfCertificateWithPrivateKey()
         {
             using (X509Certificate2 cert = X509CertificateLoader.LoadCertificate(SlhDsaTestData.IetfSlhDsaSha2_128sCertificate))
-            using (SlhDsa? privateKey = SlhDsa.ImportSlhDsaSecretKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
+            using (SlhDsa? privateKey = SlhDsa.ImportSlhDsaPrivateKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
                 return cert.CopyWithPrivateKey(privateKey);
         }
 
