@@ -25,6 +25,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'android'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
+    <_UseLibPrefix Condition="'$(_UseLibPrefix)' == ''">false</_UseLibPrefix>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -145,10 +146,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <!-- No OpenSSL on Apple platforms or Android -->
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true' and '$(_IsApplePlatform)' != 'true' and '$(_targetOS)' != 'android'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Android" Condition="'$(_targetOS)' == 'android'" />
+      <NetCoreAppNativeLibrary Include="System.IO.Ports.Native" Condition="'$(_targetOS)' == 'android'" />
     </ItemGroup>
 
     <ItemGroup>
-      <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'lib%(Identity)')" />
+      <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'%(Identity)')" />
       <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
         <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>

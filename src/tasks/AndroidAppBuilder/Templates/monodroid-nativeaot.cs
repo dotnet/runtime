@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using JObject = nint;
 using JString = nint;
 using JObjectArray = nint;
+using JSize = int;
 
 namespace MonoDroid.NativeAOT;
 
@@ -41,7 +42,21 @@ internal static unsafe partial class MonoDroidExports
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint")]
     public static int ExecEntryPoint(JNIEnv* env, JObject thiz, JString j_entryPointLibName, JObjectArray j_args)
     {
-        return Program.Main();
+        int argc = env->GetArrayLength(j_args);
+        string[] args = new string[argc];
+        for (int i = 0; i < argc; i++)
+        {
+            JObject j_arg = env->GetObjectArrayElement(j_args, i);
+            args[i] = env->GetStringUTFChars((JString)j_arg);
+        }
+
+#if SINGLE_FILE_TEST_RUNNER
+        // SingleFile unit tests
+        return SingleFileTestRunner.Main(args);
+#else
+        // Functional tests
+        return Program.Main(args);
+#endif
     }
 
     // void Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
@@ -77,6 +92,22 @@ internal unsafe struct JNIEnv
             JavaVM* vm;
             NativeInterface->GetJavaVM(thisptr, &vm);
             return vm;
+        }
+    }
+
+    public JSize GetArrayLength(JObjectArray array)
+    {
+        fixed (JNIEnv* thisptr = &this)
+        {
+            return NativeInterface->GetArrayLength(thisptr, array);
+        }
+    }
+
+    public JObject GetObjectArrayElement(JObjectArray array, int index)
+    {
+        fixed (JNIEnv* thisptr = &this)
+        {
+            return NativeInterface->GetObjectArrayElement(thisptr, array, index);
         }
     }
 
@@ -304,11 +335,10 @@ internal unsafe struct JNIEnv
         delegate* unmanaged[Cdecl]<JNIEnv*, JString, int> GetStringUTFLength;
         public delegate* unmanaged[Cdecl]<JNIEnv*, JString, out byte, byte*> GetStringUTFChars;
         public delegate* unmanaged[Cdecl]<JNIEnv*, JString, byte*, void> ReleaseStringUTFChars;
-
-        void* GetArrayLength;
+        public delegate* unmanaged[Cdecl]<JNIEnv*, JObjectArray, JSize> GetArrayLength;
 
         void* NewObjectArray;
-        void* GetObjectArrayElement;
+        public delegate* unmanaged[Cdecl]<JNIEnv*, JObjectArray, JSize, JObject> GetObjectArrayElement;
         void* SetObjectArrayElement;
 
         void* NewBooleanArray;

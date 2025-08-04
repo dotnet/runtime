@@ -79,7 +79,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ExportsFileExt Condition="'$(_targetOS)' != 'win'">.exports</ExportsFileExt>
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
-    <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <NativeBinary Condition="'$(_UseLibPrefix)' == 'true'">$(NativeOutputPath)lib$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <NativeBinary Condition="'$(_UseLibPrefix)' != 'true'">$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 

@@ -65,7 +65,7 @@ public class SingleFileTestRunner : XunitTestFramework
         var assemblyConfig = new TestAssemblyConfiguration()
         {
             // Turn off pre-enumeration of theories, since there is no theory selection UI in this runner
-            PreEnumerateTheories = false,
+            PreEnumerateTheories = true,
         };
 
         var xunitTestFx = new SingleFileTestRunner(diagnosticSink);

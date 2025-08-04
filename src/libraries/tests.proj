@@ -608,6 +608,7 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'NativeAOT'">
     <SmokeTestProject Include="$(RepoRoot)src\tests\FunctionalTests\Android\Device_Emulator\NativeAOT\*.Test.csproj"/>
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\NativeAOT\*.Test.csproj" />
