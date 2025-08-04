@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
             }
             catch (ArgumentException exception)
             {
-                var formattedValue = "DateTime: " + value.UtcDateTime + ", Offset: " + value.OffsetMinutes;
+                string formattedValue = "DateTime: " + value.UtcDateTime + ", Offset: " + value.OffsetMinutes;
                 throw XmlExceptionHelper.CreateConversionException(formattedValue, "DateTimeOffset", exception);
             }
         }
