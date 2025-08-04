@@ -556,7 +556,7 @@ namespace System.Text
 
             unsafe
             {
-                fixed (char* pChar = s)
+                fixed (char* pChar = &s.GetPinnableReference())
                 {
                     return GetByteCount(pChar + index, count);
                 }
@@ -644,7 +644,7 @@ namespace System.Text
 
             unsafe
             {
-                fixed (char* pChar = s)
+                fixed (char* pChar = &s.GetPinnableReference())
                 {
                     int byteCount = GetByteCount(pChar + index, count);
                     if (byteCount == 0)

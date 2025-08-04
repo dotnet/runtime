@@ -157,7 +157,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
-            fixed (char* pChars = s)
+            fixed (char* pChars = &s.GetPinnableReference())
                 return GetByteCount(pChars, s.Length, null);
         }
 
@@ -198,7 +198,7 @@ namespace System.Text
 
             int byteCount = bytes.Length - byteIndex;
 
-            fixed (char* pChars = s)
+            fixed (char* pChars = &s.GetPinnableReference())
             fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             {
                 return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);

@@ -161,7 +161,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars);
             }
 
-            fixed (char* pChars = chars)
+            fixed (char* pChars = &chars.GetPinnableReference())
             {
                 return GetByteCountCommon(pChars, chars.Length);
             }
@@ -279,7 +279,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
-            fixed (char* pChars = s)
+            fixed (char* pChars = &s.GetPinnableReference())
             fixed (byte* pBytes = bytes)
             {
                 return GetBytesCommon(pChars + charIndex, charCount, pBytes + byteIndex, bytes.Length - byteIndex);

@@ -62,7 +62,7 @@ namespace System.Text
                 int sourceLength = s.Length; // hoist this to avoid having the JIT auto-insert null checks
                 int bytesWritten;
 
-                fixed (char* pSource = s)
+                fixed (char* pSource = &s.GetPinnableReference())
                 {
                     bytesWritten = GetBytesCommon(pSource, sourceLength, pDestination, MaxSmallInputElementCount * MaxUtf8BytesPerChar);
                     Debug.Assert(0 <= bytesWritten && bytesWritten <= s.Length * MaxUtf8BytesPerChar);
