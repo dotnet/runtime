@@ -2457,6 +2457,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             }
             else
             {
+                // If rmOp is already in EAX, use that as implicit operand
                 if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EAX)
                 {
                     std::swap(rmOp, regOp);
