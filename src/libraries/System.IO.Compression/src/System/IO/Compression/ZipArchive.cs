@@ -626,6 +626,7 @@ namespace System.IO.Compression
 
                 // read the EOCD
                 ZipEndOfCentralDirectoryBlock eocd = ZipEndOfCentralDirectoryBlock.ReadBlock(_archiveStream);
+
                 ReadEndOfCentralDirectoryInnerWork(eocd);
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
