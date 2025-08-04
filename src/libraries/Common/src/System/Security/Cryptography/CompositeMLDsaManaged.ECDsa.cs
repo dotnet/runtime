@@ -178,7 +178,7 @@ namespace System.Security.Cryptography
                 return new ECDsaComponent(ECDsa.Create(parameters), algorithm);
 #else // NETFRAMEWORK
 #if NET472_OR_GREATER
-#error ECDsa.Create(ECParameters) is avaliable in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
+#error ECDsa.Create(ECParameters) is available in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
 #endif
                 Debug.Assert(!string.IsNullOrEmpty(algorithm.CurveOid.FriendlyName));
 
@@ -424,7 +424,7 @@ namespace System.Security.Cryptography
 
 #if NETFRAMEWORK
 #if NET472_OR_GREATER
-#error ECDsa.Create(ECParameters) is avaliable in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
+#error ECDsa.Create(ECParameters) is available in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
 #endif
             private static ECDsaCng ImportKeyBlob(byte[] ecKeyBlob, string curveName, bool includePrivateParameters)
             {
