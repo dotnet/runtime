@@ -133,6 +133,10 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
 
             Bundler bundler = CreateBundlerInstance();
             var bundlePath = bundler.GenerateBundle(fileSpecs);
+
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文/app.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/中文.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文")).Single().Type.Should().Be(FileType.Assembly);
         }
 
         [Fact]
