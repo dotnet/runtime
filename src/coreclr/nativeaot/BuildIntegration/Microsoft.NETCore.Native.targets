@@ -336,10 +336,6 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.targets" Condition="'$(_targetOS)' == 'win'" />
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Unix.targets" Condition="'$(_targetOS)' != 'win'" />
 
-  <ItemGroup>
-    <DirectPInvoke Include="@(NetCoreAppNativeLibrary)" />
-  </ItemGroup>
-
   <Target Name="MultiFileCopyNative"
       Inputs="@(NativeObjects)"
       Outputs="$(NativeOutputPath)"
