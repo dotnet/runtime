@@ -419,8 +419,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(info.Algorithm, mldsa.Algorithm);
                     AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
 
-                    byte[] actualSecretKey = mldsa.ExportMLDsaSecretKey();
-                    AssertExtensions.SequenceEqual(info.SecretKey, actualSecretKey);
+                    byte[] actualPrivateKey = mldsa.ExportMLDsaPrivateKey();
+                    AssertExtensions.SequenceEqual(info.PrivateKey, actualPrivateKey);
                 }
             }
         }
