@@ -34,7 +34,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Name")]
-        public void Add_String(string name)
+        public void Add_String(string? name)
         {
             var collection = new CodeTypeParameterCollection();
             collection.Add(name);
