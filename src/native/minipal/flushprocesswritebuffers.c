@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
 
 #ifdef __APPLE__
 #include <mach/thread_state.h>
@@ -37,7 +37,7 @@
 #endif
 #endif
 
-static bool CanFlushUsingMembarrier()
+static bool CanFlushUsingMembarrier(void)
 {
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
 
@@ -79,13 +79,13 @@ static uint8_t* g_helperPage = 0;
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
-size_t g_pageSizeUnixInl = 0;
+static size_t s_pageSize = 0;
 
-bool minipal_initialize_flush_process_write_buffers()
+bool minipal_initialize_flush_process_write_buffers(void)
 {
     int pageSize = sysconf( _SC_PAGE_SIZE );
 
-    g_pageSizeUnixInl = (size_t)((pageSize > 0) ? pageSize : 0x1000);
+    s_pageSize = (size_t)((pageSize > 0) ? pageSize : 0x1000);
 
 #ifndef TARGET_WASM
     //
@@ -102,7 +102,7 @@ bool minipal_initialize_flush_process_write_buffers()
     {
         assert(g_helperPage == 0);
 
-        g_helperPage = (uint8_t*)(mmap(0, minipal_get_page_size(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+        g_helperPage = (uint8_t*)(mmap(0, s_pageSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
 
         if (g_helperPage == MAP_FAILED)
         {
@@ -110,12 +110,12 @@ bool minipal_initialize_flush_process_write_buffers()
         }
 
         // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
-        assert((((size_t)g_helperPage) & (minipal_get_page_size() - 1)) == 0);
+        assert((((size_t)g_helperPage) & (s_pageSize - 1)) == 0);
 
         // Locking the page ensures that it stays in memory during the two mprotect
         // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
         // those calls, they would not have the expected effect of generating IPI.
-        int status = mlock(g_helperPage, minipal_get_page_size());
+        int status = mlock(g_helperPage, s_pageSize);
 
         if (status != 0)
         {
@@ -125,7 +125,7 @@ bool minipal_initialize_flush_process_write_buffers()
         status = pthread_mutex_init(&g_flushProcessWriteBuffersMutex, NULL);
         if (status != 0)
         {
-            munlock(g_helperPage, minipal_get_page_size());
+            munlock(g_helperPage, s_pageSize);
             return false;
         }
     }
@@ -134,18 +134,8 @@ bool minipal_initialize_flush_process_write_buffers()
     return true;
 }
 
-void minipal_shutdown_flush_process_write_buffers()
-{
-    int ret = munlock(g_helperPage, minipal_get_page_size());
-    assert(ret == 0);
-    ret = pthread_mutex_destroy(&g_flushProcessWriteBuffersMutex);
-    assert(ret == 0);
-
-    munmap(g_helperPage, minipal_get_page_size());
-}
-
 // Flush write buffers of processors that are executing threads of the current process
-void minipal_flush_process_write_buffers()
+void minipal_flush_process_write_buffers(void)
 {
 #ifndef TARGET_WASM
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
@@ -164,14 +154,14 @@ void minipal_flush_process_write_buffers()
         // causes the OS to issue IPI to flush TLBs on all processors. This also
         // results in flushing the processor buffers.
         // Changing a helper memory page protection from read / write to no access
-        status = mprotect(g_helperPage, minipal_get_page_size(), PROT_READ | PROT_WRITE);
+        status = mprotect(g_helperPage, s_pageSize, PROT_READ | PROT_WRITE);
         assert(status == 0 && "Failed to change helper page protection to read / write");
 
         // Ensure that the page is dirty before we change the protection so that
         // we prevent the OS from skipping the global TLB flush.
         __sync_add_and_fetch((size_t*)g_helperPage, 1);
 
-        status = mprotect(g_helperPage, minipal_get_page_size(), PROT_NONE);
+        status = mprotect(g_helperPage, s_pageSize, PROT_NONE);
         assert(status == 0 && "Failed to change helper page protection to no access");
 
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
@@ -229,7 +219,7 @@ void minipal_flush_process_write_buffers()
 #endif // !TARGET_WASM
 }
 #else // !TARGET_WINDOWS
-void minipal_flush_process_write_buffers()
+void minipal_flush_process_write_buffers(void)
 {
     ::FlushProcessWriteBuffers();
 }
