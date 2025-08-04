@@ -25,7 +25,7 @@
 #include "configuration.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
 
 // Finalizes a weak reference directly.
 extern void FinalizeWeakReference(Object* obj);

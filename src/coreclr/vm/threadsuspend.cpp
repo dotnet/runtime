@@ -14,7 +14,7 @@
 
 #include "finalizerthread.h"
 #include "dbginterface.h"
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
 #include <minipal/time.h>
 
 #ifdef FEATURE_EH_FUNCLETS

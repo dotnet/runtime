@@ -110,7 +110,8 @@
 #include "proftoeeinterfaceimpl.inl"
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
+
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
 #include "profdetach.h"

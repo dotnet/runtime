@@ -33,7 +33,7 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
