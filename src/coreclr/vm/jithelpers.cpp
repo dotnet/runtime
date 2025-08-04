@@ -1176,7 +1176,7 @@ void JIT_PInvokeEndRarePath()
 }
 
 /*************************************************************/
-// For an inlined N/Direct call (and possibly for other places that need this service)
+// For an inlined PInvoke call (and possibly for other places that need this service)
 // we have noticed that the returning thread should trap for one reason or another.
 // ECall sets up the frame.
 

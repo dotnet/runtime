@@ -1168,7 +1168,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyH
 
 /*static*/
 
-extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PTR ptrManagedAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible)
+extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PTR ptrAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible)
 {
     QCALL_CONTRACT;
 
@@ -1220,17 +1220,17 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
             loaderAllocator->ActivateManagedTracking();
         }
 
-        IfFailThrow(CustomAssemblyBinder::SetupContext(pDefaultBinder, loaderAllocator, loaderAllocatorHandle, ptrManagedAssemblyLoadContext, &pCustomBinder));
+        IfFailThrow(CustomAssemblyBinder::SetupContext(pDefaultBinder, loaderAllocator, loaderAllocatorHandle, ptrAssemblyLoadContext, &pCustomBinder));
         ptrNativeAssemblyBinder = reinterpret_cast<INT_PTR>(pCustomBinder);
     }
     else
     {
         // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
         // First, confirm we do not have an existing managed ALC attached to the TPA binder.
-        _ASSERTE(pDefaultBinder->GetManagedAssemblyLoadContext() == (INT_PTR)NULL);
+        _ASSERTE(pDefaultBinder->GetAssemblyLoadContext() == (INT_PTR)NULL);
 
         // Attach the managed TPA binding context with the native one.
-        pDefaultBinder->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
+        pDefaultBinder->SetAssemblyLoadContext(ptrAssemblyLoadContext);
         ptrNativeAssemblyBinder = reinterpret_cast<INT_PTR>(pDefaultBinder);
     }
 
@@ -1262,7 +1262,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
 {
     QCALL_CONTRACT;
 
-    INT_PTR ptrManagedAssemblyLoadContext = 0;
+    INT_PTR ptrAssemblyLoadContext = 0;
 
     BEGIN_QCALL;
 
@@ -1273,13 +1273,13 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
     if (!pAssemblyBinder->IsDefault())
     {
         // Fetch the managed binder reference from the native binder instance
-        ptrManagedAssemblyLoadContext = pAssemblyBinder->GetManagedAssemblyLoadContext();
-        _ASSERTE(ptrManagedAssemblyLoadContext != (INT_PTR)NULL);
+        ptrAssemblyLoadContext = pAssemblyBinder->GetAssemblyLoadContext();
+        _ASSERTE(ptrAssemblyLoadContext != (INT_PTR)NULL);
     }
 
     END_QCALL;
 
-    return ptrManagedAssemblyLoadContext;
+    return ptrAssemblyLoadContext;
 }
 
 // static

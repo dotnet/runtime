@@ -97,7 +97,7 @@ class Interop
 {
 public:
     // Check if pending exceptions are possible for the following native export.
-    static bool ShouldCheckForPendingException(_In_ NDirectMethodDesc* md);
+    static bool ShouldCheckForPendingException(_In_ PInvokeMethodDesc* md);
 
     // A no return callback that is designed to help propagate a managed
     // exception going from Managed to Native.
