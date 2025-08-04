@@ -159,7 +159,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
-    runtimeFlavor: nativeaot
+    runtimeFlavor: coreclr
     platforms:
     - android_x64
     - android_arm64
@@ -172,7 +172,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: NativeAOT
-      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:UseNativeAOTRuntime=true /p:RuntimeFlavor=nativeaot /p:TestNativeAOT=true
+      buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:UseNativeAOTRuntime=true /p:RuntimeFlavor=coreclr /p:TestNativeAOT=true
       timeoutInMinutes: 120
       condition: >-
         or(
