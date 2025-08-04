@@ -402,13 +402,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!methodTable.Flags.IsDynamicStatics)
             return default;
 
-        TargetPointer dynamicStaticsInfoSize = _target.ReadGlobalPointer(Constants.Globals.DynamicStaticsInfoSize);
+        TargetPointer dynamicStaticsInfoSize = _target.GetTypeInfo(DataType.DynamicStaticsInfo).Size!.Value;
         TargetPointer dynamicStaticsInfoAddr = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
         return dynamicStaticsInfoAddr;
     }
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle)
     {
         TargetPointer dynamicStaticsInfoAddr = GetDynamicStaticsInfo(typeHandle);
+        if (dynamicStaticsInfoAddr == TargetPointer.Null)
+            return TargetPointer.Null;
         Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(dynamicStaticsInfoAddr);
         return dynamicStaticsInfo.GCStatics;
     }
@@ -416,6 +418,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle)
     {
         TargetPointer dynamicStaticsInfoAddr = GetDynamicStaticsInfo(typeHandle);
+        if (dynamicStaticsInfoAddr == TargetPointer.Null)
+            return TargetPointer.Null;
         Data.DynamicStaticsInfo dynamicStaticsInfo = _target.ProcessedData.GetOrAdd<Data.DynamicStaticsInfo>(dynamicStaticsInfoAddr);
         return dynamicStaticsInfo.NonGCStatics;
     }

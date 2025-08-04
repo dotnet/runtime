@@ -339,7 +339,7 @@ CDAC_TYPE_FIELD(MethodTable, /*pointer*/, AuxiliaryData, cdac_data<MethodTable>:
 CDAC_TYPE_END(MethodTable)
 
 CDAC_TYPE_BEGIN(DynamicStaticsInfo)
-CDAC_TYPE_INDETERMINATE(DynamicStaticsInfo)
+CDAC_TYPE_SIZE(sizeof(DynamicStaticsInfo))
 CDAC_TYPE_FIELD(DynamicStaticsInfo, /*uint32*/, GCStatics, offsetof(DynamicStaticsInfo, m_pGCStatics))
 CDAC_TYPE_FIELD(DynamicStaticsInfo, /*uint32*/, NonGCStatics, offsetof(DynamicStaticsInfo, m_pNonGCStatics))
 CDAC_TYPE_END(DynamicStaticsInfo)
@@ -986,7 +986,6 @@ CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<Obj
 CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, uint32, DefaultADID)
 CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMASK)
-CDAC_GLOBAL(DynamicStaticsInfoSize, uintptr_t, sizeof(DynamicStaticsInfo))
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)

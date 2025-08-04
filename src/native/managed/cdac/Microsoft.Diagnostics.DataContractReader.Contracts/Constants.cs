@@ -56,7 +56,6 @@ public static class Constants
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
         public const string DefaultADID = nameof(DefaultADID);
         public const string StaticsPointerMask = nameof(StaticsPointerMask);
-        public const string DynamicStaticsInfoSize = nameof(DynamicStaticsInfoSize);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
         public const string PlatformMetadata = nameof(PlatformMetadata);
