@@ -355,7 +355,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(expectedExponent, originalExponent);
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsX509Sha1Signatures))]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsX509Sha1Signatures_384))]
         public static void TestKey_RSA384_ValidatesSignature()
         {
             byte[] signature =

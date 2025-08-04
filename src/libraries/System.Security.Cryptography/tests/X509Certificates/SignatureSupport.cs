@@ -15,14 +15,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // the logic here will need to get more complicated.
         public static bool SupportsX509Sha1Signatures { get; } = GetSupportsX509Sha1Signatures();
 
+        public static bool SupportsX509Sha1Signatures_384 { get; } = GetSupportsX509Sha1Signatures(384);
 
-        private static bool GetSupportsX509Sha1Signatures()
+
+        private static bool GetSupportsX509Sha1Signatures(int? keysize = null)
         {
             RSA rsa;
 
             try
             {
-                rsa = RSA.Create();
+                if (keysize.HasValue)
+                    rsa = RSA.Create(keysize.Value);
+                else
+                    rsa = RSA.Create();
             }
             catch (PlatformNotSupportedException)
             {

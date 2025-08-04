@@ -351,7 +351,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(expectedSignature, signature);
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures_384))]
         public void VerifySignature_SHA1_384()
         {
             byte[] signature =

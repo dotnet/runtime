@@ -35,6 +35,21 @@ namespace System.Security.Cryptography.Rsa.Tests
                     // For Windows 7 (Microsoft Windows 6.1) and Windows 8 (Microsoft Windows 6.2) this is false for RSACng.
                     _supports384PrivateKey = !RuntimeInformation.OSDescription.Contains("Windows 6.1") &&
                         !RuntimeInformation.OSDescription.Contains("Windows 6.2");
+                    if (_supports384PrivateKey.Value)
+                    {
+                        // Ensure we can make the key
+                        try
+                        {
+                            using (RSA rsa = Create(384))
+                            {
+                                _supports384PrivateKey = rsa.KeySize == 384;
+                            }
+                        }
+                        catch (CryptographicException)
+                        {
+                            _supports384PrivateKey = false;
+                        }
+                    }
                 }
 
                 return _supports384PrivateKey.Value;
