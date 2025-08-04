@@ -58,7 +58,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ true })]
         public async Task ResourcesFromProjectReference(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {
             string prefix = $"SatelliteAssemblyFromProjectRef";
