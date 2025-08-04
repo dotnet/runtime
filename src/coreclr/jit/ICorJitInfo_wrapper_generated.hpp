@@ -1474,10 +1474,11 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getStaticFieldCurrentClass(
 
 CORINFO_VARARGS_HANDLE WrapICorJitInfo::getVarArgsHandle(
           CORINFO_SIG_INFO* pSig,
+          CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection)
 {
     API_ENTER(getVarArgsHandle);
-    CORINFO_VARARGS_HANDLE temp = wrapHnd->getVarArgsHandle(pSig, ppIndirection);
+    CORINFO_VARARGS_HANDLE temp = wrapHnd->getVarArgsHandle(pSig, methHnd, ppIndirection);
     API_LEAVE(getVarArgsHandle);
     return temp;
 }

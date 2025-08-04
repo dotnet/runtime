@@ -2209,12 +2209,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static IntPtr _getVarArgsHandle(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection)
+        private static IntPtr _getVarArgsHandle(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* pSig, CORINFO_METHOD_STRUCT_* methHnd, void** ppIndirection)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getVarArgsHandle(pSig, ref *ppIndirection);
+                return _this.getVarArgsHandle(pSig, methHnd, ref *ppIndirection);
             }
             catch (Exception ex)
             {
@@ -2787,7 +2787,7 @@ namespace Internal.JitInterface
             callbacks[146] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, int, int, byte, byte>)&_getStaticFieldContent;
             callbacks[147] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte*, int, int, byte>)&_getObjectContent;
             callbacks[148] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, CORINFO_CLASS_STRUCT_*>)&_getStaticFieldCurrentClass;
-            callbacks[149] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void**, IntPtr>)&_getVarArgsHandle;
+            callbacks[149] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void**, IntPtr>)&_getVarArgsHandle;
             callbacks[150] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, byte>)&_canGetVarArgsHandle;
             callbacks[151] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, mdToken, void**, InfoAccessType>)&_constructStringLiteral;
             callbacks[152] = (delegate* unmanaged<IntPtr, IntPtr*, void**, InfoAccessType>)&_emptyStringLiteral;

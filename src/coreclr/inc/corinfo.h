@@ -3297,6 +3297,7 @@ public:
     // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
     virtual CORINFO_VARARGS_HANDLE getVarArgsHandle(
             CORINFO_SIG_INFO       *pSig,
+            CORINFO_METHOD_HANDLE   methHnd,
             void                  **ppIndirection = NULL
             ) = 0;
 

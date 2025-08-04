@@ -5510,7 +5510,7 @@ void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 }
 
-void MethodContext::recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection, CORINFO_VARARGS_HANDLE result)
+void MethodContext::recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection, CORINFO_VARARGS_HANDLE result)
 {
     if (GetVarArgsHandle == nullptr)
         GetVarArgsHandle = new LightWeightMap<GetVarArgsHandleValue, DLDL>();
@@ -5539,7 +5539,7 @@ void MethodContext::dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL v
         key.scope, key.token);
     printf(", value ppIndirection-%016" PRIX64 " result-%016" PRIX64 "", value.A, value.B);
 }
-CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection)
+CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection)
 {
     GetVarArgsHandleValue key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
