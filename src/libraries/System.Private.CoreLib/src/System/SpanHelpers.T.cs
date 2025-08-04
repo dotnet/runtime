@@ -247,7 +247,7 @@ namespace System
                         value.Equals(Unsafe.Add(ref searchSpace, index + 6)) ||
                         value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
                     {
-                        goto Found;
+                        return true;
                     }
 
                     index += 8;
@@ -262,7 +262,7 @@ namespace System
                         value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
                         value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
                     {
-                        goto Found;
+                        return true;
                     }
 
                     index += 4;
@@ -273,7 +273,7 @@ namespace System
                     length--;
 
                     if (value.Equals(Unsafe.Add(ref searchSpace, index)))
-                        goto Found;
+                        return true;
 
                     index += 1;
                 }
@@ -285,15 +285,12 @@ namespace System
                 {
                     if ((object?)Unsafe.Add(ref searchSpace, index) is null)
                     {
-                        goto Found;
+                        return true;
                     }
                 }
             }
 
             return false;
-
-        Found:
-            return true;
         }
 
         public static int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>?
@@ -310,21 +307,21 @@ namespace System
                     length -= 8;
 
                     if (value.Equals(Unsafe.Add(ref searchSpace, index)))
-                        goto Found;
+                        return (int)index;
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
-                        goto Found1;
+                        return (int)(index + 1);
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
-                        goto Found2;
+                        return (int)(index + 2);
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
-                        goto Found3;
+                        return (int)(index + 3);
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 4)))
-                        goto Found4;
+                        return (int)(index + 4);
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 5)))
-                        goto Found5;
+                        return (int)(index + 5);
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 6)))
-                        goto Found6;
+                        return (int)(index + 6);
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
-                        goto Found7;
+                        return (int)(index + 7);
 
                     index += 8;
                 }
@@ -334,13 +331,13 @@ namespace System
                     length -= 4;
 
                     if (value.Equals(Unsafe.Add(ref searchSpace, index)))
-                        goto Found;
+                        return (int)index;
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
-                        goto Found1;
+                        return (int)(index + 1);
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
-                        goto Found2;
+                        return (int)(index + 2);
                     if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
-                        goto Found3;
+                        return (int)(index + 3);
 
                     index += 4;
                 }
@@ -348,7 +345,7 @@ namespace System
                 while (length > 0)
                 {
                     if (value.Equals(Unsafe.Add(ref searchSpace, index)))
-                        goto Found;
+                        return (int)index;
 
                     index += 1;
                     length--;
@@ -361,28 +358,12 @@ namespace System
                 {
                     if ((object?)Unsafe.Add(ref searchSpace, index) is null)
                     {
-                        goto Found;
+                        return (int)index;
                     }
                 }
             }
-            return -1;
 
-        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return (int)index;
-        Found1:
-            return (int)(index + 1);
-        Found2:
-            return (int)(index + 2);
-        Found3:
-            return (int)(index + 3);
-        Found4:
-            return (int)(index + 4);
-        Found5:
-            return (int)(index + 5);
-        Found6:
-            return (int)(index + 6);
-        Found7:
-            return (int)(index + 7);
+            return -1;
         }
 
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>?
@@ -399,28 +380,28 @@ namespace System
                 {
                     lookUp = Unsafe.Add(ref searchSpace, index);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found;
+                        return index;
                     lookUp = Unsafe.Add(ref searchSpace, index + 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found1;
+                        return index + 1;
                     lookUp = Unsafe.Add(ref searchSpace, index + 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found2;
+                        return index + 2;
                     lookUp = Unsafe.Add(ref searchSpace, index + 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found3;
+                        return index + 3;
                     lookUp = Unsafe.Add(ref searchSpace, index + 4);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found4;
+                        return index + 4;
                     lookUp = Unsafe.Add(ref searchSpace, index + 5);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found5;
+                        return index + 5;
                     lookUp = Unsafe.Add(ref searchSpace, index + 6);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found6;
+                        return index + 6;
                     lookUp = Unsafe.Add(ref searchSpace, index + 7);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found7;
+                        return index + 7;
 
                     index += 8;
                 }
@@ -429,16 +410,16 @@ namespace System
                 {
                     lookUp = Unsafe.Add(ref searchSpace, index);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found;
+                        return index;
                     lookUp = Unsafe.Add(ref searchSpace, index + 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found1;
+                        return index + 1;
                     lookUp = Unsafe.Add(ref searchSpace, index + 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found2;
+                        return index + 2;
                     lookUp = Unsafe.Add(ref searchSpace, index + 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found3;
+                        return index + 3;
 
                     index += 4;
                 }
@@ -447,7 +428,7 @@ namespace System
                 {
                     lookUp = Unsafe.Add(ref searchSpace, index);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found;
+                        return index;
 
                     index++;
                 }
@@ -461,34 +442,17 @@ namespace System
                     {
                         if ((object?)value0 is null || (object?)value1 is null)
                         {
-                            goto Found;
+                            return index;
                         }
                     }
                     else if (lookUp.Equals(value0) || lookUp.Equals(value1))
                     {
-                        goto Found;
+                        return index;
                     }
                 }
             }
 
             return -1;
-
-        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return index;
-        Found1:
-            return index + 1;
-        Found2:
-            return index + 2;
-        Found3:
-            return index + 3;
-        Found4:
-            return index + 4;
-        Found5:
-            return index + 5;
-        Found6:
-            return index + 6;
-        Found7:
-            return index + 7;
         }
 
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>?
@@ -505,28 +469,28 @@ namespace System
                 {
                     lookUp = Unsafe.Add(ref searchSpace, index);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found;
+                        return index;
                     lookUp = Unsafe.Add(ref searchSpace, index + 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found1;
+                        return index + 1;
                     lookUp = Unsafe.Add(ref searchSpace, index + 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found2;
+                        return index + 2;
                     lookUp = Unsafe.Add(ref searchSpace, index + 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found3;
+                        return index + 3;
                     lookUp = Unsafe.Add(ref searchSpace, index + 4);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found4;
+                        return index + 4;
                     lookUp = Unsafe.Add(ref searchSpace, index + 5);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found5;
+                        return index + 5;
                     lookUp = Unsafe.Add(ref searchSpace, index + 6);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found6;
+                        return index + 6;
                     lookUp = Unsafe.Add(ref searchSpace, index + 7);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found7;
+                        return index + 7;
 
                     index += 8;
                 }
@@ -535,16 +499,16 @@ namespace System
                 {
                     lookUp = Unsafe.Add(ref searchSpace, index);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found;
+                        return index;
                     lookUp = Unsafe.Add(ref searchSpace, index + 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found1;
+                        return index + 1;
                     lookUp = Unsafe.Add(ref searchSpace, index + 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found2;
+                        return index + 2;
                     lookUp = Unsafe.Add(ref searchSpace, index + 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found3;
+                        return index + 3;
 
                     index += 4;
                 }
@@ -553,7 +517,7 @@ namespace System
                 {
                     lookUp = Unsafe.Add(ref searchSpace, index);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found;
+                        return index;
 
                     index++;
                 }
@@ -567,33 +531,17 @@ namespace System
                     {
                         if ((object?)value0 is null || (object?)value1 is null || (object?)value2 is null)
                         {
-                            goto Found;
+                            return index;
                         }
                     }
                     else if (lookUp.Equals(value0) || lookUp.Equals(value1) || lookUp.Equals(value2))
                     {
-                        goto Found;
+                        return index;
                     }
                 }
             }
-            return -1;
 
-        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return index;
-        Found1:
-            return index + 1;
-        Found2:
-            return index + 2;
-        Found3:
-            return index + 3;
-        Found4:
-            return index + 4;
-        Found5:
-            return index + 5;
-        Found6:
-            return index + 6;
-        Found7:
-            return index + 7;
+            return -1;
         }
 
         public static int IndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>?
@@ -720,21 +668,21 @@ namespace System
                     length -= 8;
 
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 7)))
-                        goto Found7;
+                        return length + 7;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 6)))
-                        goto Found6;
+                        return length + 6;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 5)))
-                        goto Found5;
+                        return length + 5;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 4)))
-                        goto Found4;
+                        return length + 4;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 3)))
-                        goto Found3;
+                        return length + 3;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 2)))
-                        goto Found2;
+                        return length + 2;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 1)))
-                        goto Found1;
+                        return length + 1;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length)))
-                        goto Found;
+                        return length;
                 }
 
                 if (length >= 4)
@@ -742,13 +690,13 @@ namespace System
                     length -= 4;
 
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 3)))
-                        goto Found3;
+                        return length + 3;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 2)))
-                        goto Found2;
+                        return length + 2;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length + 1)))
-                        goto Found1;
+                        return length + 1;
                     if (value.Equals(Unsafe.Add(ref searchSpace, length)))
-                        goto Found;
+                        return length;
                 }
 
                 while (length > 0)
@@ -756,7 +704,7 @@ namespace System
                     length--;
 
                     if (value.Equals(Unsafe.Add(ref searchSpace, length)))
-                        goto Found;
+                        return length;
                 }
             }
             else
@@ -765,29 +713,12 @@ namespace System
                 {
                     if ((object?)Unsafe.Add(ref searchSpace, length) is null)
                     {
-                        goto Found;
+                        return length;
                     }
                 }
             }
 
             return -1;
-
-        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return length;
-        Found1:
-            return length + 1;
-        Found2:
-            return length + 2;
-        Found3:
-            return length + 3;
-        Found4:
-            return length + 4;
-        Found5:
-            return length + 5;
-        Found6:
-            return length + 6;
-        Found7:
-            return length + 7;
         }
 
         public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>?
@@ -805,28 +736,28 @@ namespace System
 
                     lookUp = Unsafe.Add(ref searchSpace, length + 7);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found7;
+                        return length + 7;
                     lookUp = Unsafe.Add(ref searchSpace, length + 6);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found6;
+                        return length + 6;
                     lookUp = Unsafe.Add(ref searchSpace, length + 5);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found5;
+                        return length + 5;
                     lookUp = Unsafe.Add(ref searchSpace, length + 4);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found4;
+                        return length + 4;
                     lookUp = Unsafe.Add(ref searchSpace, length + 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found3;
+                        return length + 3;
                     lookUp = Unsafe.Add(ref searchSpace, length + 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found2;
+                        return length + 2;
                     lookUp = Unsafe.Add(ref searchSpace, length + 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found1;
+                        return length + 1;
                     lookUp = Unsafe.Add(ref searchSpace, length);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found;
+                        return length;
                 }
 
                 if (length >= 4)
@@ -835,16 +766,16 @@ namespace System
 
                     lookUp = Unsafe.Add(ref searchSpace, length + 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found3;
+                        return length + 3;
                     lookUp = Unsafe.Add(ref searchSpace, length + 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found2;
+                        return length + 2;
                     lookUp = Unsafe.Add(ref searchSpace, length + 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found1;
+                        return length + 1;
                     lookUp = Unsafe.Add(ref searchSpace, length);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found;
+                        return length;
                 }
 
                 while (length > 0)
@@ -853,7 +784,7 @@ namespace System
 
                     lookUp = Unsafe.Add(ref searchSpace, length);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                        goto Found;
+                        return length;
                 }
             }
             else
@@ -865,34 +796,17 @@ namespace System
                     {
                         if ((object?)value0 is null || (object?)value1 is null)
                         {
-                            goto Found;
+                            return length;
                         }
                     }
                     else if (lookUp.Equals(value0) || lookUp.Equals(value1))
                     {
-                        goto Found;
+                        return length;
                     }
                 }
             }
 
             return -1;
-
-        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return length;
-        Found1:
-            return length + 1;
-        Found2:
-            return length + 2;
-        Found3:
-            return length + 3;
-        Found4:
-            return length + 4;
-        Found5:
-            return length + 5;
-        Found6:
-            return length + 6;
-        Found7:
-            return length + 7;
         }
 
         public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>?
@@ -910,28 +824,28 @@ namespace System
 
                     lookUp = Unsafe.Add(ref searchSpace, length + 7);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found7;
+                        return length + 7;
                     lookUp = Unsafe.Add(ref searchSpace, length + 6);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found6;
+                        return length + 6;
                     lookUp = Unsafe.Add(ref searchSpace, length + 5);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found5;
+                        return length + 5;
                     lookUp = Unsafe.Add(ref searchSpace, length + 4);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found4;
+                        return length + 4;
                     lookUp = Unsafe.Add(ref searchSpace, length + 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found3;
+                        return length + 3;
                     lookUp = Unsafe.Add(ref searchSpace, length + 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found2;
+                        return length + 2;
                     lookUp = Unsafe.Add(ref searchSpace, length + 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found1;
+                        return length + 1;
                     lookUp = Unsafe.Add(ref searchSpace, length);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found;
+                        return length;
                 }
 
                 if (length >= 4)
@@ -940,16 +854,16 @@ namespace System
 
                     lookUp = Unsafe.Add(ref searchSpace, length + 3);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found3;
+                        return length + 3;
                     lookUp = Unsafe.Add(ref searchSpace, length + 2);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found2;
+                        return length + 2;
                     lookUp = Unsafe.Add(ref searchSpace, length + 1);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found1;
+                        return length + 1;
                     lookUp = Unsafe.Add(ref searchSpace, length);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found;
+                        return length;
                 }
 
                 while (length > 0)
@@ -958,7 +872,7 @@ namespace System
 
                     lookUp = Unsafe.Add(ref searchSpace, length);
                     if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                        goto Found;
+                        return length;
                 }
             }
             else
@@ -970,34 +884,17 @@ namespace System
                     {
                         if ((object?)value0 is null || (object?)value1 is null || (object?)value2 is null)
                         {
-                            goto Found;
+                            return length;
                         }
                     }
                     else if (lookUp.Equals(value0) || lookUp.Equals(value1) || lookUp.Equals(value2))
                     {
-                        goto Found;
+                        return length;
                     }
                 }
             }
 
             return -1;
-
-        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return length;
-        Found1:
-            return length + 1;
-        Found2:
-            return length + 2;
-        Found3:
-            return length + 3;
-        Found4:
-            return length + 4;
-        Found5:
-            return length + 5;
-        Found6:
-            return length + 6;
-        Found7:
-            return length + 7;
         }
 
         public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>?
@@ -1197,7 +1094,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             if (Unsafe.AreSame(ref first, ref second))
-                goto Equal;
+                return true;
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             T lookUp0;
@@ -1209,35 +1106,35 @@ namespace System
                 lookUp0 = Unsafe.Add(ref first, index);
                 lookUp1 = Unsafe.Add(ref second, index);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 1);
                 lookUp1 = Unsafe.Add(ref second, index + 1);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 2);
                 lookUp1 = Unsafe.Add(ref second, index + 2);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 3);
                 lookUp1 = Unsafe.Add(ref second, index + 3);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 4);
                 lookUp1 = Unsafe.Add(ref second, index + 4);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 5);
                 lookUp1 = Unsafe.Add(ref second, index + 5);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 6);
                 lookUp1 = Unsafe.Add(ref second, index + 6);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 7);
                 lookUp1 = Unsafe.Add(ref second, index + 7);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
 
                 index += 8;
             }
@@ -1249,19 +1146,19 @@ namespace System
                 lookUp0 = Unsafe.Add(ref first, index);
                 lookUp1 = Unsafe.Add(ref second, index);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 1);
                 lookUp1 = Unsafe.Add(ref second, index + 1);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 2);
                 lookUp1 = Unsafe.Add(ref second, index + 2);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 lookUp0 = Unsafe.Add(ref first, index + 3);
                 lookUp1 = Unsafe.Add(ref second, index + 3);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
 
                 index += 4;
             }
@@ -1271,16 +1168,12 @@ namespace System
                 lookUp0 = Unsafe.Add(ref first, index);
                 lookUp1 = Unsafe.Add(ref second, index);
                 if (!(lookUp0?.Equals(lookUp1) ?? (object?)lookUp1 is null))
-                    goto NotEqual;
+                    return false;
                 index += 1;
                 length--;
             }
 
-        Equal:
             return true;
-
-        NotEqual: // Workaround for https://github.com/dotnet/runtime/issues/8795
-            return false;
         }
 
         public static int SequenceCompareTo<T>(ref T first, int firstLength, ref T second, int secondLength)
@@ -1299,6 +1192,7 @@ namespace System
                 if (result != 0)
                     return result;
             }
+
             return firstLength.CompareTo(secondLength);
         }
 
@@ -1506,14 +1400,14 @@ namespace System
                 {
                     length -= 8;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) goto Found;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) goto Found1;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) goto Found2;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) goto Found3;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 4) == value)) goto Found4;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 5) == value)) goto Found5;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 6) == value)) goto Found6;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 7) == value)) goto Found7;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)(offset);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)(offset + 1);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)(offset + 2);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)(offset + 3);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 4) == value)) return (int)(offset + 4);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 5) == value)) return (int)(offset + 5);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 6) == value)) return (int)(offset + 6);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 7) == value)) return (int)(offset + 7);
 
                     offset += 8;
                 }
@@ -1522,10 +1416,10 @@ namespace System
                 {
                     length -= 4;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) goto Found;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) goto Found1;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) goto Found2;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) goto Found3;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)(offset);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 1) == value)) return (int)(offset + 1);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 2) == value)) return (int)(offset + 2);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset + 3) == value)) return (int)(offset + 3);
 
                     offset += 4;
                 }
@@ -1534,27 +1428,12 @@ namespace System
                 {
                     length -= 1;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) goto Found;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)(offset);
 
                     offset += 1;
                 }
+
                 return -1;
-            Found7:
-                return (int)(offset + 7);
-            Found6:
-                return (int)(offset + 6);
-            Found5:
-                return (int)(offset + 5);
-            Found4:
-                return (int)(offset + 4);
-            Found3:
-                return (int)(offset + 3);
-            Found2:
-                return (int)(offset + 2);
-            Found1:
-                return (int)(offset + 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
@@ -1717,21 +1596,21 @@ namespace System
 
                         ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                         lookUp = current;
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset);
                         lookUp = Unsafe.Add(ref current, 1);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found1;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 1);
                         lookUp = Unsafe.Add(ref current, 2);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found2;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 2);
                         lookUp = Unsafe.Add(ref current, 3);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found3;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 3);
                         lookUp = Unsafe.Add(ref current, 4);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found4;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 4);
                         lookUp = Unsafe.Add(ref current, 5);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found5;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 5);
                         lookUp = Unsafe.Add(ref current, 6);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found6;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 6);
                         lookUp = Unsafe.Add(ref current, 7);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found7;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 7);
 
                         offset += 8;
                     }
@@ -1743,13 +1622,13 @@ namespace System
 
                     ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset);
                     lookUp = Unsafe.Add(ref current, 1);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 1);
                     lookUp = Unsafe.Add(ref current, 2);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 2);
                     lookUp = Unsafe.Add(ref current, 3);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset + 3);
 
                     offset += 4;
                 }
@@ -1759,27 +1638,12 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset);
 
                     offset += 1;
                 }
+
                 return -1;
-            Found7:
-                return (int)(offset + 7);
-            Found6:
-                return (int)(offset + 6);
-            Found5:
-                return (int)(offset + 5);
-            Found4:
-                return (int)(offset + 4);
-            Found3:
-                return (int)(offset + 3);
-            Found2:
-                return (int)(offset + 2);
-            Found1:
-                return (int)(offset + 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
@@ -1924,21 +1788,21 @@ namespace System
 
                         ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                         lookUp = current;
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset);
                         lookUp = Unsafe.Add(ref current, 1);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found1;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 1);
                         lookUp = Unsafe.Add(ref current, 2);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found2;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 2);
                         lookUp = Unsafe.Add(ref current, 3);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found3;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 3);
                         lookUp = Unsafe.Add(ref current, 4);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found4;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 4);
                         lookUp = Unsafe.Add(ref current, 5);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found5;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 5);
                         lookUp = Unsafe.Add(ref current, 6);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found6;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 6);
                         lookUp = Unsafe.Add(ref current, 7);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found7;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 7);
 
                         offset += 8;
                     }
@@ -1950,13 +1814,13 @@ namespace System
 
                     ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset);
                     lookUp = Unsafe.Add(ref current, 1);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 1);
                     lookUp = Unsafe.Add(ref current, 2);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 2);
                     lookUp = Unsafe.Add(ref current, 3);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset + 3);
 
                     offset += 4;
                 }
@@ -1966,27 +1830,12 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset);
 
                     offset += 1;
                 }
+
                 return -1;
-            Found7:
-                return (int)(offset + 7);
-            Found6:
-                return (int)(offset + 6);
-            Found5:
-                return (int)(offset + 5);
-            Found4:
-                return (int)(offset + 4);
-            Found3:
-                return (int)(offset + 3);
-            Found2:
-                return (int)(offset + 2);
-            Found1:
-                return (int)(offset + 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
@@ -2114,13 +1963,13 @@ namespace System
 
                     ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset);
                     lookUp = Unsafe.Add(ref current, 1);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto Found1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset + 1);
                     lookUp = Unsafe.Add(ref current, 2);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto Found2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset + 2);
                     lookUp = Unsafe.Add(ref current, 3);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto Found3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset + 3);
 
                     offset += 4;
                 }
@@ -2130,19 +1979,12 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset);
 
                     offset += 1;
                 }
+
                 return -1;
-            Found3:
-                return (int)(offset + 3);
-            Found2:
-                return (int)(offset + 2);
-            Found1:
-                return (int)(offset + 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
@@ -2276,13 +2118,13 @@ namespace System
 
                     ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) return (int)(offset);
                     lookUp = Unsafe.Add(ref current, 1);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) goto Found1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) return (int)(offset + 1);
                     lookUp = Unsafe.Add(ref current, 2);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) goto Found2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) return (int)(offset + 2);
                     lookUp = Unsafe.Add(ref current, 3);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) goto Found3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) return (int)(offset + 3);
 
                     offset += 4;
                 }
@@ -2292,20 +2134,12 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3 || lookUp == value4)) return (int)(offset);
 
                     offset += 1;
                 }
 
                 return -1;
-            Found3:
-                return (int)(offset + 3);
-            Found2:
-                return (int)(offset + 2);
-            Found1:
-                return (int)(offset + 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
@@ -2439,14 +2273,14 @@ namespace System
                 {
                     length -= 8;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) goto Found;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) goto FoundM1;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) goto FoundM2;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) goto FoundM3;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 4) == value)) goto FoundM4;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 5) == value)) goto FoundM5;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 6) == value)) goto FoundM6;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 7) == value)) goto FoundM7;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)(offset);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)(offset - 1);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)(offset - 2);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)(offset - 3);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 4) == value)) return (int)(offset - 4);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 5) == value)) return (int)(offset - 5);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 6) == value)) return (int)(offset - 6);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 7) == value)) return (int)(offset - 7);
 
                     offset -= 8;
                 }
@@ -2455,10 +2289,10 @@ namespace System
                 {
                     length -= 4;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) goto Found;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) goto FoundM1;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) goto FoundM2;
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) goto FoundM3;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)(offset);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 1) == value)) return (int)(offset - 1);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 2) == value)) return (int)(offset - 2);
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset - 3) == value)) return (int)(offset - 3);
 
                     offset -= 4;
                 }
@@ -2467,27 +2301,12 @@ namespace System
                 {
                     length -= 1;
 
-                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) goto Found;
+                    if (TNegator.NegateIfNeeded(Unsafe.Add(ref searchSpace, offset) == value)) return (int)(offset);
 
                     offset -= 1;
                 }
+
                 return -1;
-            FoundM7:
-                return (int)(offset - 7);
-            FoundM6:
-                return (int)(offset - 6);
-            FoundM5:
-                return (int)(offset - 5);
-            FoundM4:
-                return (int)(offset - 4);
-            FoundM3:
-                return (int)(offset - 3);
-            FoundM2:
-                return (int)(offset - 2);
-            FoundM1:
-                return (int)(offset - 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
@@ -2564,21 +2383,21 @@ namespace System
 
                         ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                         lookUp = current;
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset);
                         lookUp = Unsafe.Add(ref current, -1);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM1;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 1);
                         lookUp = Unsafe.Add(ref current, -2);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM2;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 2);
                         lookUp = Unsafe.Add(ref current, -3);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM3;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 3);
                         lookUp = Unsafe.Add(ref current, -4);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM4;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 4);
                         lookUp = Unsafe.Add(ref current, -5);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM5;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 5);
                         lookUp = Unsafe.Add(ref current, -6);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM6;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 6);
                         lookUp = Unsafe.Add(ref current, -7);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM7;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 7);
 
                         offset -= 8;
                     }
@@ -2590,13 +2409,13 @@ namespace System
 
                     ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset);
                     lookUp = Unsafe.Add(ref current, -1);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 1);
                     lookUp = Unsafe.Add(ref current, -2);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 2);
                     lookUp = Unsafe.Add(ref current, -3);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto FoundM3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset - 3);
 
                     offset -= 4;
                 }
@@ -2606,27 +2425,12 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1)) return (int)(offset);
 
                     offset -= 1;
                 }
+
                 return -1;
-            FoundM7:
-                return (int)(offset - 7);
-            FoundM6:
-                return (int)(offset - 6);
-            FoundM5:
-                return (int)(offset - 5);
-            FoundM4:
-                return (int)(offset - 4);
-            FoundM3:
-                return (int)(offset - 3);
-            FoundM2:
-                return (int)(offset - 2);
-            FoundM1:
-                return (int)(offset - 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
@@ -2749,21 +2553,21 @@ namespace System
 
                         ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                         lookUp = current;
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset);
                         lookUp = Unsafe.Add(ref current, -1);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM1;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 1);
                         lookUp = Unsafe.Add(ref current, -2);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM2;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 2);
                         lookUp = Unsafe.Add(ref current, -3);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM3;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 3);
                         lookUp = Unsafe.Add(ref current, -4);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM4;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 4);
                         lookUp = Unsafe.Add(ref current, -5);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM5;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 5);
                         lookUp = Unsafe.Add(ref current, -6);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM6;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 6);
                         lookUp = Unsafe.Add(ref current, -7);
-                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM7;
+                        if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 7);
 
                         offset -= 8;
                     }
@@ -2775,13 +2579,13 @@ namespace System
 
                     ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset);
                     lookUp = Unsafe.Add(ref current, -1);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 1);
                     lookUp = Unsafe.Add(ref current, -2);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 2);
                     lookUp = Unsafe.Add(ref current, -3);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto FoundM3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset - 3);
 
                     offset -= 4;
                 }
@@ -2791,27 +2595,12 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2)) return (int)(offset);
 
                     offset -= 1;
                 }
+
                 return -1;
-            FoundM7:
-                return (int)(offset - 7);
-            FoundM6:
-                return (int)(offset - 6);
-            FoundM5:
-                return (int)(offset - 5);
-            FoundM4:
-                return (int)(offset - 4);
-            FoundM3:
-                return (int)(offset - 3);
-            FoundM2:
-                return (int)(offset - 2);
-            FoundM1:
-                return (int)(offset - 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
@@ -2933,13 +2722,13 @@ namespace System
 
                     ref TValue current = ref Unsafe.Add(ref searchSpace, offset);
                     lookUp = current;
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset);
                     lookUp = Unsafe.Add(ref current, -1);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto FoundM1;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset - 1);
                     lookUp = Unsafe.Add(ref current, -2);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto FoundM2;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset - 2);
                     lookUp = Unsafe.Add(ref current, -3);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto FoundM3;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset - 3);
 
                     offset -= 4;
                 }
@@ -2949,19 +2738,12 @@ namespace System
                     length -= 1;
 
                     lookUp = Unsafe.Add(ref searchSpace, offset);
-                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) goto Found;
+                    if (TNegator.NegateIfNeeded(lookUp == value0 || lookUp == value1 || lookUp == value2 || lookUp == value3)) return (int)(offset);
 
                     offset -= 1;
                 }
+
                 return -1;
-            FoundM3:
-                return (int)(offset - 3);
-            FoundM2:
-                return (int)(offset - 2);
-            FoundM1:
-                return (int)(offset - 1);
-            Found:
-                return (int)(offset);
             }
             else if (Vector512.IsHardwareAccelerated && length >= Vector512<TValue>.Count)
             {
