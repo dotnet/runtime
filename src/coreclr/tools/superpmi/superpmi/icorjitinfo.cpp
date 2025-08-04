@@ -1456,10 +1456,10 @@ CORINFO_CLASS_HANDLE MyICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fie
 }
 
 // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
-CORINFO_VARARGS_HANDLE MyICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection)
+CORINFO_VARARGS_HANDLE MyICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("getVarArgsHandle");
-    return jitInstance->mc->repGetVarArgsHandle(pSig, ppIndirection);
+    return jitInstance->mc->repGetVarArgsHandle(pSig, methHnd, ppIndirection);
 }
 
 // returns true if a VM cookie can be generated for it (might be false due to cross-module

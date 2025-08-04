@@ -708,6 +708,7 @@ struct GetVarArgsHandleValue
     DWORD     pSig_Index;
     DWORDLONG scope;
     DWORD     token;
+    DWORDLONG methHnd;
 };
 
 struct CanGetVarArgsHandleValue

@@ -628,6 +628,7 @@ CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
 
 CORINFO_VARARGS_HANDLE getVarArgsHandle(
           CORINFO_SIG_INFO* pSig,
+          CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection) override;
 
 bool canGetVarArgsHandle(

@@ -1215,10 +1215,11 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(
 
 CORINFO_VARARGS_HANDLE interceptor_ICJI::getVarArgsHandle(
           CORINFO_SIG_INFO* pSig,
+          CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection)
 {
     mcs->AddCall("getVarArgsHandle");
-    return original_ICorJitInfo->getVarArgsHandle(pSig, ppIndirection);
+    return original_ICorJitInfo->getVarArgsHandle(pSig, methHnd, ppIndirection);
 }
 
 bool interceptor_ICJI::canGetVarArgsHandle(
