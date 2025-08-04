@@ -31,9 +31,9 @@ BOOL Precode::IsValidType(PrecodeType t)
 
     switch (t) {
     case PRECODE_STUB:
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    case PRECODE_NDIRECT_IMPORT:
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+    case PRECODE_PINVOKE_IMPORT:
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
 #endif // HAS_FIXUP_PRECODE
@@ -67,10 +67,10 @@ SIZE_T Precode::SizeOf(PrecodeType t)
     {
     case PRECODE_STUB:
         return sizeof(StubPrecode);
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    case PRECODE_NDIRECT_IMPORT:
-        return sizeof(NDirectImportPrecode);
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+    case PRECODE_PINVOKE_IMPORT:
+        return sizeof(PInvokeImportPrecode);
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
         return sizeof(FixupPrecode);
@@ -142,11 +142,11 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     case PRECODE_STUB:
         pMD = AsStubPrecode()->GetMethodDesc();
         break;
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    case PRECODE_NDIRECT_IMPORT:
-        pMD = AsNDirectImportPrecode()->GetMethodDesc();
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+    case PRECODE_PINVOKE_IMPORT:
+        pMD = AsPInvokeImportPrecode()->GetMethodDesc();
         break;
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
         pMD = AsFixupPrecode()->GetMethodDesc();
@@ -304,7 +304,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
 #endif // HAS_THISPTR_RETBUF_PRECODE
     else
     {
-        _ASSERTE(t == PRECODE_STUB || t == PRECODE_NDIRECT_IMPORT);
+        _ASSERTE(t == PRECODE_STUB || t == PRECODE_PINVOKE_IMPORT);
         pPrecode = (Precode*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
         pPrecode->Init(pPrecode, t, pMD, pLoaderAllocator);
 
@@ -330,11 +330,11 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
     case PRECODE_STUB:
         ((StubPrecode*)this)->Init((StubPrecode*)pPrecodeRX, (TADDR)pMD, pLoaderAllocator);
         break;
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    case PRECODE_NDIRECT_IMPORT:
-        ((NDirectImportPrecode*)this)->Init((NDirectImportPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+    case PRECODE_PINVOKE_IMPORT:
+        ((PInvokeImportPrecode*)this)->Init((PInvokeImportPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
         break;
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
         ((FixupPrecode*)this)->Init((FixupPrecode*)pPrecodeRX, pMD, pLoaderAllocator);
@@ -433,9 +433,9 @@ void Precode::Reset()
     switch (t)
     {
     case PRECODE_STUB:
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    case PRECODE_NDIRECT_IMPORT:
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+    case PRECODE_PINVOKE_IMPORT:
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
 #endif // HAS_FIXUP_PRECODE
@@ -646,15 +646,15 @@ void InterpreterPrecode::Init(InterpreterPrecode* pPrecodeRX, TADDR byteCodeAddr
 }
 #endif // FEATURE_INTERPRETER
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
 
-void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+void PInvokeImportPrecode::Init(PInvokeImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
-    StubPrecode::Init(pPrecodeRX, (TADDR)pMD, pLoaderAllocator, NDirectImportPrecode::Type, GetEEFuncEntryPoint(NDirectImportThunk));
+    StubPrecode::Init(pPrecodeRX, (TADDR)pMD, pLoaderAllocator, PInvokeImportPrecode::Type, GetEEFuncEntryPoint(PInvokeImportThunk));
 }
 
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
 void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
@@ -857,8 +857,8 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 {
     dest->InvalidPrecodeType = PRECODE_INVALID;
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    dest->PInvokeImportPrecodeType = PRECODE_NDIRECT_IMPORT;
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+    dest->PInvokeImportPrecodeType = PRECODE_PINVOKE_IMPORT;
 #endif
 
 #ifdef HAS_FIXUP_PRECODE

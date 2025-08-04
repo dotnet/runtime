@@ -264,5 +264,18 @@ namespace Internal.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
         }
+
+#if !BUILDING_PKCS
+        internal static void ThrowIfDestinationWrongLength(
+            Span<byte> destination,
+            int expectedLength,
+            [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(destination))] string? paramName = null)
+        {
+            if (destination.Length != expectedLength)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_DestinationImprecise, expectedLength), paramName);
+            }
+        }
+#endif
     }
 }

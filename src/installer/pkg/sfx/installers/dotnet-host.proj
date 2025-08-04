@@ -12,7 +12,11 @@
     <!-- Contributes to DependencyKey which ensures stable provider key - do not change -->
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
-    <MajorUpgradeSchedule>afterInstallExecute</MajorUpgradeSchedule>
+
+    <!-- Scheduling RemoveExistingProducts after InstallInitialize will remove the previous install first
+         before installing the new version. This allows compositional changes in major upgrades
+         and supports rollback, provided it is not turned off using machine policies (DisableRollback is not set to 1). -->
+    <MajorUpgradeSchedule>afterInstallInitialize</MajorUpgradeSchedule>
     <VersionInstallerName>false</VersionInstallerName>
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
     <MacOSComponentNamePackType>sharedhost</MacOSComponentNamePackType>
@@ -26,7 +30,7 @@
   <ItemGroup>
     <WixSrcFile Include="host.wxs" />
     <WixExtraComponentGroupRefId Include="InstallSharedHostandDetectionKeys" />
-    <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
+    <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion;DISABLE_SETTING_HOST_PATH" />
     <!-- Enables stable provider key - do not change -->
     <CandleVariables Include="DependencyKey" Value="$(WixDependencyKeyName)_$(MajorVersion).$(MinorVersion)_$(TargetArchitecture)" />
   </ItemGroup>
