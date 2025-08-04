@@ -7,7 +7,7 @@
 
 #include "callcounting.h"
 #include "threadsuspend.h"
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
 
 #ifndef DACCESS_COMPILE
 extern "C" void STDCALL OnCallCountThresholdReachedStub();

@@ -40,7 +40,7 @@
 #include <sys/time.h>
 #include <cstdarg>
 #include <signal.h>
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
 #include <minipal/thread.h>
 
 #ifdef TARGET_LINUX

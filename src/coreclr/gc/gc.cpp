@@ -27,7 +27,7 @@
 #include "handletable.inl"
 #include "gcenv.inl"
 #include "gceventstatus.h"
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
 
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)

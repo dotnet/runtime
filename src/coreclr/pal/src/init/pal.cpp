@@ -36,7 +36,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
-#include <minipal/memory.h>
+#include <minipal/flushprocesswritebuffers.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
