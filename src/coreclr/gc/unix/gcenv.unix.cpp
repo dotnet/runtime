@@ -236,8 +236,6 @@ bool GCToOSInterface::Initialize()
 // Shutdown the interface implementation
 void GCToOSInterface::Shutdown()
 {
-    minipal_shutdown_flush_process_write_buffers();
-
     CleanupCGroup();
 }
 
