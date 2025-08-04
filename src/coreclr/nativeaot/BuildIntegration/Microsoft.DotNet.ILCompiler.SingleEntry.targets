@@ -33,6 +33,9 @@
     <_linuxLibcFlavor Condition="$(_targetOS.StartsWith($(_linuxToken)))">$(_targetOS.SubString($(_linuxToken.Length)))</_linuxLibcFlavor>
     <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
 
+    <!-- Treat android libc same as linux-bionic -->
+    <_linuxLibcFlavor Condition="$(_targetOS.StartsWith('android-'))">bionic</_linuxLibcFlavor>
+
     <!-- linux-bionic on ARM uses armel (softfp) ABI -->
     <_targetArchitectureWithAbi>$(_targetArchitecture)</_targetArchitectureWithAbi>
     <_targetArchitectureWithAbi Condition="'$(_linuxLibcFlavor)' == 'bionic' and '$(_targetArchitecture)' == 'arm'">armel</_targetArchitectureWithAbi>
