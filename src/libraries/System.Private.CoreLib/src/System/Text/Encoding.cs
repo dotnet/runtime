@@ -651,7 +651,7 @@ namespace System.Text
                         return Array.Empty<byte>();
 
                     byte[] bytes = new byte[byteCount];
-                    fixed (byte* pBytes = &bytes[0])
+                    fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
                     {
                         int bytesReceived = GetBytes(pChar + index, count, pBytes, byteCount);
                         Debug.Assert(byteCount == bytesReceived);

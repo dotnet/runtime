@@ -140,7 +140,7 @@ namespace System.Text
                 int sourceLength = bytes.Length; // hoist this to avoid having the JIT auto-insert null checks
                 int charsWritten;
 
-                fixed (byte* pSource = bytes)
+                fixed (byte* pSource = &MemoryMarshal.GetArrayDataReference(bytes))
                 {
                     charsWritten = GetCharsCommon(pSource, sourceLength, pDestination, MaxSmallInputElementCount);
                     Debug.Assert(0 <= charsWritten && charsWritten <= sourceLength); // should never have more output chars than input bytes

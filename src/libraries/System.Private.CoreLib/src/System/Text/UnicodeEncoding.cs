@@ -97,7 +97,7 @@ namespace System.Text
                 return 0;
 
             // Just call the pointer version
-            fixed (char* pChars = chars)
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
                 return GetByteCount(pChars + index, count, null);
         }
 
@@ -197,7 +197,7 @@ namespace System.Text
             // Just call pointer version
             int byteCount = bytes.Length - byteIndex;
 
-            fixed (char* pChars = chars)
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             {
                 // Remember that byteCount is # to decode, not size of array.
@@ -244,7 +244,7 @@ namespace System.Text
                 return 0;
 
             // Just call pointer version
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
                 return GetCharCount(pBytes + index, count, null);
         }
 
@@ -289,7 +289,7 @@ namespace System.Text
             // Just call pointer version
             int charCount = chars.Length - charIndex;
 
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             {
                 // Remember that charCount is # to decode, not size of array
@@ -334,7 +334,7 @@ namespace System.Text
             // Avoid problems with empty input buffer
             if (count == 0) return string.Empty;
 
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
                 return string.CreateStringFromEncoding(
                     pBytes + index, count, this);
         }

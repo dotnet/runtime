@@ -70,7 +70,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            fixed (char* pChars = chars)
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             {
                 return GetByteCountCommon(pChars + index, count);
             }
@@ -216,8 +216,8 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
-            fixed (char* pChars = chars)
-            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             {
                 return GetBytesCommon(pChars + charIndex, charCount, pBytes + byteIndex, bytes.Length - byteIndex);
             }
@@ -279,7 +279,7 @@ namespace System.Text
             }
 
             fixed (char* pChars = &s.GetPinnableReference())
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             {
                 return GetBytesCommon(pChars + charIndex, charCount, pBytes + byteIndex, bytes.Length - byteIndex);
             }
@@ -442,8 +442,8 @@ namespace System.Text
 
             char[] chars = new char[bytes.Length];
 
-            fixed (byte* pBytes = bytes)
-            fixed (char* pChars = chars)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             {
                 GetCharsCommon(pBytes, bytes.Length, pChars, chars.Length);
             }
@@ -477,8 +477,8 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
-            fixed (byte* pBytes = bytes)
-            fixed (char* pChars = chars)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             {
                 return GetCharsCommon(pBytes + byteIndex, byteCount, pChars + charIndex, chars.Length - charIndex);
             }
@@ -509,8 +509,8 @@ namespace System.Text
 
             char[] chars = new char[count];
 
-            fixed (byte* pBytes = bytes)
-            fixed (char* pChars = chars)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             {
                 GetCharsCommon(pBytes + index, count, pChars, chars.Length);
             }
@@ -554,7 +554,7 @@ namespace System.Text
             }
 
             string result = string.FastAllocateString(bytes.Length);
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             fixed (char* pChars = &result.GetPinnableReference())
             {
                 GetCharsCommon(pBytes, bytes.Length, pChars, result.Length);
@@ -584,7 +584,7 @@ namespace System.Text
             }
 
             string result = string.FastAllocateString(count);
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             fixed (char* pChars = &result.GetPinnableReference())
             {
                 GetCharsCommon(pBytes + index, count, pChars, count);

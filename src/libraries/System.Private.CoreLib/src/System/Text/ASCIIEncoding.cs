@@ -93,7 +93,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            fixed (char* pChars = chars)
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             {
                 return GetByteCountCommon(pChars + index, count);
             }
@@ -233,7 +233,7 @@ namespace System.Text
             }
 
             fixed (char* pChars = &chars.GetPinnableReference())
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             {
                 return GetBytesCommon(pChars + charIndex, charCount, pBytes + byteIndex, bytes.Length - byteIndex);
             }
@@ -280,8 +280,8 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
-            fixed (char* pChars = chars)
-            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             {
                 return GetBytesCommon(pChars + charIndex, charCount, pBytes + byteIndex, bytes.Length - byteIndex);
             }
@@ -453,7 +453,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             {
                 return GetCharCountCommon(pBytes + index, count);
             }
@@ -571,8 +571,8 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
-            fixed (byte* pBytes = bytes)
-            fixed (char* pChars = chars)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             {
                 return GetCharsCommon(pBytes + byteIndex, byteCount, pChars + charIndex, chars.Length - charIndex);
             }
@@ -747,7 +747,7 @@ namespace System.Text
             if (byteCount == 0)
                 return string.Empty;
 
-            fixed (byte* pBytes = bytes)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
             {
                 return string.CreateStringFromEncoding(pBytes + byteIndex, byteCount, this);
             }
