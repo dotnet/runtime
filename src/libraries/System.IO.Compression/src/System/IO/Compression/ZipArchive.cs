@@ -653,6 +653,9 @@ namespace System.IO.Compression
 
             long zip64EOCDOffset = (long)locator.OffsetOfZip64EOCD;
 
+            if (zip64EOCDOffset < 0 || zip64EOCDOffset > _archiveStream.Length)
+                throw new InvalidDataException(SR.InvalidOffsetToZip64EOCD);
+
             _archiveStream.Seek(zip64EOCDOffset, SeekOrigin.Begin);
         }
 
