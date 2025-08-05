@@ -1790,19 +1790,6 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         trace->InitForManaged(target);
     }
-    else if (pStubMD->IsPInvokeStub())
-    {
-        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Forward P/Invoke\n"));
-
-        MethodDesc* pTargetMD = pStubMD->GetILStubResolver()->GetStubTargetMethodDesc();
-        _ASSERTE(pTargetMD->IsPInvoke());
-
-        PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pTargetMD);
-        _ASSERTE_IMPL(!pNMD->PInvokeTargetIsImportThunk());
-        target = (PCODE)pNMD->GetPInvokeTarget();
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case %p\n", target));
-        trace->InitForUnmanaged(target);
-    }
     else if (pStubMD->HasMDContextArg())
     {
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Hidden argument is MethodDesc\n"));
