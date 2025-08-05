@@ -1941,7 +1941,7 @@ MAIN_LOOP:
                     OBJECTREF targetMethodObj = delegateObj->GetTarget();
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
 
-                    // TODO! Once we are investigatin performance here, we may way to optimize this so that
+                    // TODO! Once we are investigating performance here, we may want to optimize this so that
                     // delegate calls to interpeted methods don't have to go through the native invoke here, but for
                     // now this should work well.
                     InvokeDelegateInvokeMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, targetAddress);
