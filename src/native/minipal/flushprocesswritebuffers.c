@@ -73,6 +73,7 @@ static bool CanFlushUsingMembarrier(void)
 //
 static int s_flushUsingMemBarrier = 0;
 
+#ifndef TARGET_APPLE
 // Helper memory page used by the FlushProcessWriteBuffers
 static uint8_t* g_helperPage = 0;
 
@@ -80,13 +81,10 @@ static uint8_t* g_helperPage = 0;
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
 static size_t s_pageSize = 0;
+#endif // !TARGET_APPLE
 
 bool minipal_initialize_flush_process_write_buffers(void)
 {
-    int pageSize = sysconf( _SC_PAGE_SIZE );
-
-    s_pageSize = (size_t)((pageSize > 0) ? pageSize : 0x1000);
-
 #ifndef TARGET_WASM
     //
     // support for FlusProcessWriteBuffers
@@ -102,6 +100,9 @@ bool minipal_initialize_flush_process_write_buffers(void)
     {
         assert(g_helperPage == 0);
 
+        int pageSize = sysconf( _SC_PAGE_SIZE );
+
+        s_pageSize = (size_t)((pageSize > 0) ? pageSize : 0x1000);
         g_helperPage = (uint8_t*)(mmap(0, s_pageSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
 
         if (g_helperPage == MAP_FAILED)
@@ -146,6 +147,7 @@ void minipal_flush_process_write_buffers(void)
     }
     else
 #endif
+#ifndef TARGET_APPLE
     if (g_helperPage != 0)
     {
         int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
@@ -167,8 +169,8 @@ void minipal_flush_process_write_buffers(void)
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#ifdef TARGET_APPLE
     else
+#else
     {
         mach_msg_type_number_t cThreads;
         thread_act_t *pThreads;
