@@ -41,7 +41,8 @@ public:
             not_found,
             valid,
             invalid_json,
-            invalid_data
+            invalid_data,
+            __last
         };
 
         state state;

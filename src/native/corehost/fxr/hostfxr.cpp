@@ -173,15 +173,28 @@ enum class hostfxr_resolve_sdk2_result_key_t : int32_t
     resolved_sdk_dir = 0,
     global_json_path = 1,
     requested_version = 2,
+    global_json_state = 3,
 };
 
 typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
     hostfxr_resolve_sdk2_result_key_t key,
     const pal::char_t* value);
 
+namespace
+{
+    const pal::char_t *GlobalJsonStates[] =
+    {
+        _X("not_found"),
+        _X("valid"),
+        _X("invalid_json"),
+        _X("invalid_data"),
+    };
+    static_assert((sizeof(GlobalJsonStates) / sizeof(*GlobalJsonStates)) == static_cast<size_t>(sdk_resolver::global_file_info::state::__last), "Invalid state count");
+}
+
 //
 // Determines the directory location of the SDK accounting for
-// global.json and multi-level lookup policy.
+// global.json.
 //
 // Invoked via MSBuild SDK resolver to locate SDK props and targets
 // from an msbuild other than the one bundled by the CLI.
@@ -192,13 +205,12 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //      sub-folders. Pass the directory of a dotnet executable to
 //      mimic how that executable would search in its own directory.
 //      It is also valid to pass nullptr or empty, in which case
-//      multi-level lookup can still search other locations if
-//      it has not been disabled by the user's environment.
+//      only paths from any found global.json will be searched.
 //
 //    working_dir
 //      The directory where the search for global.json (which can
 //      control the resolved SDK version) starts and proceeds
-//      upwards.
+//      upwards. If nullptr or empty, global.json search is disabled.
 //
 //   flags
 //      Bitwise flags that influence resolution.
@@ -227,6 +239,10 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //      result will be invoked with requested_version key and the
 //      value will hold the requested version. This will occur for
 //      both resolution success and failure.
+//
+//      The result will be invoked with global_json_state key and
+//      the value will hold one of: not_found, valid, invalid_json,
+//      invalid_data.
 //
 // Return value:
 //   0 on success, otherwise failure
@@ -287,6 +303,10 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
             hostfxr_resolve_sdk2_result_key_t::requested_version,
             resolver.get_requested_version().as_str().c_str());
     }
+
+    result(
+        hostfxr_resolve_sdk2_result_key_t::global_json_state,
+        GlobalJsonStates[static_cast<int>(resolver.global_file().state)]);
 
     return !resolved_sdk_dir.empty()
         ? StatusCode::Success
