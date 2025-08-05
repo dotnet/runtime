@@ -207,7 +207,7 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             throw new InvalidOperationException("Context already created");
         _created = true;
         ulong contractDescriptorAddress = descriptor.CreateSubDescriptor(ContractDescriptorAddr, JsonDescriptorAddr, ContractPointerDataAddr);
-        MockMemorySpace.ReadContext context = GetReadContext();
-        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, context.ReadFromTarget, null, out target);
+        MockMemorySpace.MemoryContext memoryContext = GetMemoryContext();
+        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, memoryContext.ReadFromTarget, memoryContext.WriteToTarget, null, out target);
     }
 }
