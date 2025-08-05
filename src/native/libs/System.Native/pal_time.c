@@ -12,9 +12,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-#include <time.h>
-#endif
+#include <minipal/time.h>
 
 enum
 {
@@ -81,19 +79,14 @@ int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
     return result;
 }
 
-uint64_t SystemNative_GetTimestamp(void)
+int64_t SystemNative_GetTimestamp(void)
 {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#else
-    struct timespec ts;
+    return minipal_hires_ticks();
+}
 
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-    assert(result == 0); // only possible errors are if MONOTONIC isn't supported or &ts is an invalid address
-    (void)result; // suppress unused parameter warning in release builds
-
-    return ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
-#endif
+int64_t SystemNative_GetLowResolutionTimestamp(void)
+{
+    return minipal_lowres_ticks();
 }
 
 int64_t SystemNative_GetBootTimeTicks(void)
@@ -121,7 +114,7 @@ int64_t SystemNative_GetBootTimeTicks(void)
 
 double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
-#if defined(HAVE_GETRUSAGE) && !defined(HOST_BROWSER)
+#if defined(HAVE_GETRUSAGE)
     uint64_t kernelTime = 0;
     uint64_t userTime = 0;
 
@@ -141,7 +134,7 @@ double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
             ((uint64_t)(resUsage.ru_utime.tv_usec) * MicroSecondsToNanoSeconds);
     }
 
-    uint64_t currentTime = SystemNative_GetTimestamp();
+    uint64_t currentTime = (uint64_t)minipal_hires_ticks();
 
     uint64_t lastRecordedCurrentTime = previousCpuInfo->lastRecordedCurrentTime;
     uint64_t lastRecordedKernelTime = previousCpuInfo->lastRecordedKernelTime;

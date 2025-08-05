@@ -292,14 +292,14 @@ namespace Internal.Runtime.CompilerHelpers
         {
             string moduleName = GetModuleName(pCell);
 
-            uint dllImportSearchPath = 0;
+            uint dllImportSearchPath = (uint)DllImportSearchPath.AssemblyDirectory;
             bool hasDllImportSearchPath = (pCell->DllImportSearchPathAndCookie & InteropDataConstants.HasDllImportSearchPath) != 0;
             if (hasDllImportSearchPath)
             {
                 dllImportSearchPath = pCell->DllImportSearchPathAndCookie & ~InteropDataConstants.HasDllImportSearchPath;
             }
 
-            Assembly callingAssembly = ReflectionAugments.ReflectionCoreCallbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
+            Assembly callingAssembly = ReflectionAugments.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
 
             // First check if there's a NativeLibrary callback and call it to attempt the resolution
             IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);
@@ -310,6 +310,7 @@ namespace Internal.Runtime.CompilerHelpers
 
                 hModule = NativeLibrary.LoadBySearch(
                     callingAssembly,
+                    hasDllImportSearchPath,
                     searchAssemblyDirectory: (dllImportSearchPath & (uint)DllImportSearchPath.AssemblyDirectory) != 0,
                     dllImportSearchPathFlags: (int)(dllImportSearchPath & ~(uint)DllImportSearchPath.AssemblyDirectory),
                     ref loadLibErrorTracker,
@@ -452,7 +453,7 @@ namespace Internal.Runtime.CompilerHelpers
         /// <summary>
         /// Retrieves the current delegate that is being called
         /// </summary>
-        public static T GetCurrentCalleeDelegate<T>() where T : class // constraint can't be System.Delegate
+        public static T GetCurrentCalleeDelegate<T>() where T : Delegate
         {
             return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
         }
@@ -498,7 +499,7 @@ namespace Internal.Runtime.CompilerHelpers
 
 #if TARGET_WINDOWS
 #pragma warning disable CA1416
-            return ComWrappers.ComObjectForInterface(pUnk);
+            return ComWrappers.ComObjectForInterface(pUnk, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
 #pragma warning restore CA1416
 #else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

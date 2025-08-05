@@ -4,10 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <!-- Disabling baseline validation since this is a brand new package.
-       Once this package has shipped a stable version, the following line
-       should be removed in order to re-enable validation. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Diagnostic abstractions for Microsoft.Extensions.Diagnostics.
 
 Commonly Used Types:
@@ -23,7 +19,6 @@ Microsoft.Extensions.Diagnostics.Metrics.MetricsOptions</PackageDescription>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs" Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
-    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -31,6 +26,7 @@ Microsoft.Extensions.Diagnostics.Metrics.MetricsOptions</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">

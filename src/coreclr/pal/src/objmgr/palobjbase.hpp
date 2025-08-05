@@ -20,7 +20,6 @@ Abstract:
 #define _PALOBJBASE_HPP_
 
 #include "pal/corunix.hpp"
-#include "pal/cs.hpp"
 #include "pal/thread.hpp"
 
 namespace CorUnix
@@ -29,7 +28,7 @@ namespace CorUnix
     {
     private:
 
-        CRITICAL_SECTION m_cs;
+        minipal_mutex m_cs;
         bool m_fInitialized;
 
     public:
@@ -44,7 +43,7 @@ namespace CorUnix
         {
             if (m_fInitialized)
             {
-                InternalDeleteCriticalSection(&m_cs);
+                minipal_mutex_destroy(&m_cs);
             }
         };
 
@@ -55,7 +54,7 @@ namespace CorUnix
         {
             PAL_ERROR palError = NO_ERROR;
 
-            InternalInitializeCriticalSection(&m_cs);
+            minipal_mutex_init(&m_cs);
             m_fInitialized = TRUE;
 
             return palError;
@@ -67,7 +66,7 @@ namespace CorUnix
             IDataLock **pDataLock
             )
         {
-            InternalEnterCriticalSection(pthr, &m_cs);
+            minipal_mutex_enter(&m_cs);
             *pDataLock = static_cast<IDataLock*>(this);
         };
 
@@ -78,15 +77,13 @@ namespace CorUnix
             bool fDataChanged
             )
         {
-            InternalLeaveCriticalSection(pthr, &m_cs);
+            minipal_mutex_leave(&m_cs);
         };
 
     };
 
     class CPalObjectBase : public IPalObject
     {
-        template <class T> friend void InternalDelete(T *p);
-
     protected:
 
         LONG m_lRefCount;
@@ -114,7 +111,7 @@ namespace CorUnix
             ) = 0;
 
         virtual
-        bool
+        void
         ReleaseObjectDestructionLock(
             CPalThread *pthr,
             bool fDestructionPending

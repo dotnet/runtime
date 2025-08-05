@@ -1,6 +1,6 @@
 set(EVENT_MANIFEST ${VM_DIR}/ClrEtwAll.man)
 
-if(CLR_CMAKE_HOST_LINUX)
+if(FEATURE_EVENTSOURCE_XPLAT)
   add_subdirectory(lttngprovider)
 else()
   add_subdirectory(dummyprovider)

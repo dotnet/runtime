@@ -312,6 +312,39 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> Compare_TestData()
         {
+            #region Numeric ordering
+            var isNls = PlatformDetection.IsNlsGlobalization;
+
+            yield return new object[] { "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
+            yield return new object[] { "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
+
+            yield return new object[] { "02", "1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "a02", "a1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "02a", "1a", CompareOptions.NumericOrdering, -1 };
+
+            yield return new object[] { "01", "1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "a01", "a1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "01a", "1a", CompareOptions.NumericOrdering, -1 };
+
+            yield return new object[] { "1", "02", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "02", "2", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "2", "03", CompareOptions.NumericOrdering, 1 };
+
+            yield return new object[] { "2", "10", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "a2", "a10", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "2a", "10a", CompareOptions.NumericOrdering, 1 };
+
+            yield return new object[] { "1A02", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreCase, 0 };
+            yield return new object[] { "A1", "a2", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "A01", "a1", CompareOptions.NumericOrdering, -1 };
+
+            yield return new object[] { "1\u00E102", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreNonSpace, 1 };
+            yield return new object[] { "\u00E11", "a2", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "\u00E101", "a1", CompareOptions.NumericOrdering, 1 };
+
+            yield return new object[] { "0.1", "0.02", CompareOptions.NumericOrdering, 1 };
+            #endregion
+
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
             yield return new object[] { "\u3042", "\u30A2", ignoreKanaIgnoreWidthIgnoreCase, -1 };
             yield return new object[] { "\u3042", "\uFF71", ignoreKanaIgnoreWidthIgnoreCase, -1 };

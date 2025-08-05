@@ -14,16 +14,16 @@ namespace System.Formats.Asn1
         /// <returns>
         ///   A disposable value which will automatically call <see cref="PopSetOf"/>.
         /// </returns>
-        /// <remarks>
-        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes
-        ///   the writer will sort the Set-Of elements when the tag is closed.
-        /// </remarks>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
+        /// <remarks>
+        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes,
+        ///   the writer will sort the Set-Of elements when the tag is closed.
+        /// </remarks>
         /// <seealso cref="PopSetOf"/>
         public Scope PushSetOf(Asn1Tag? tag = null)
         {
@@ -38,10 +38,6 @@ namespace System.Formats.Asn1
         ///   returning the writer to the parent context.
         /// </summary>
         /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 17).</param>
-        /// <remarks>
-        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes
-        ///   the writer will sort the Set-Of elements when the tag is closed.
-        /// </remarks>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
@@ -51,6 +47,10 @@ namespace System.Formats.Asn1
         /// <exception cref="InvalidOperationException">
         ///   the writer is not currently positioned within a Set-Of with the specified tag.
         /// </exception>
+        /// <remarks>
+        ///   In <see cref="AsnEncodingRules.CER"/> and <see cref="AsnEncodingRules.DER"/> modes,
+        ///   the writer will sort the Set-Of elements when the tag is closed.
+        /// </remarks>
         /// <seealso cref="PushSetOf"/>
         public void PopSetOf(Asn1Tag? tag = null)
         {

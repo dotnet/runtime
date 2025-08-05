@@ -123,6 +123,11 @@ PALEXPORT int32_t SystemNative_GetSignalForBreak(void);
  */
 PALEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
 
+/**
+ * Resets the terminal to the state it was in before calling InitializeTerminalAndSignalHandling.
+ */
+PALEXPORT void SystemNative_UninitializeTerminal(void);
+
 typedef enum
 {
     Interrupt = 0,

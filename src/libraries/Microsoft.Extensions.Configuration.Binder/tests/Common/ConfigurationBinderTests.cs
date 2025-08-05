@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
@@ -208,14 +210,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            // Ensure exception messages are in sync
-            Assert.Throws<InvalidOperationException>(() => config.GetValue<bool?>("empty"));
-            Assert.Throws<InvalidOperationException>(() => config.GetValue<int?>("empty"));
-#else
             Assert.Null(config.GetValue<bool?>("empty"));
             Assert.Null(config.GetValue<int?>("empty"));
-#endif
         }
 
         [Fact]
@@ -326,8 +322,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         [Fact]
         public void GetNullValue()
         {
-            #nullable enable
-            #pragma warning disable IDE0004 // Cast is redundant
+#nullable enable
+#pragma warning disable IDE0004 // Cast is redundant
 
             var dic = new Dictionary<string, string?>
             {
@@ -377,8 +373,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(0, config.GetSection("Nested:Integer").Get<int>());
             Assert.Null(config.GetSection("Object").Get<ComplexOptions>());
 
-            #pragma warning restore IDE0004
-            #nullable restore
+#pragma warning restore IDE0004
+#nullable restore
         }
 
         [Fact]
@@ -619,13 +615,13 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.NotNull(exception.InnerException);
             Assert.NotNull(getException.InnerException);
             Assert.Equal(
-                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, type),
                 exception.Message);
             Assert.Equal(
-                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, type),
                 getException.Message);
             Assert.Equal(
-                SR.Format(SR.Error_FailedBinding, ConfigKey, type),
+                SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, type),
                 getValueException.Message);
         }
 
@@ -649,7 +645,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(options));
 
-            Assert.Equal(SR.Format(SR.Error_FailedBinding, ConfigKey, typeof(int)),
+            Assert.Equal(SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, typeof(int)),
                 exception.Message);
         }
 
@@ -1544,6 +1540,88 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
         }
 
+
+        public static IEnumerable<object[]> Configuration_TestData()
+        {
+            yield return new object[]
+            {
+                new ConfigurationBuilder()
+                    .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(@"{
+                            ""IntValue"" :              """",
+                            ""DoubleValue"" :           """",
+                            ""BoolValue"" :             """",
+                            ""DecimalValue"" :          """",
+                            ""FloatValue"" :            """",
+                            ""LongValue"" :             """",
+                            ""ShortValue"" :            """",
+                            ""ByteValue"" :             """",
+                            ""SByteValue"" :            """",
+                            ""UIntValue"" :             """",
+                            ""UShortValue"" :           """",
+                            ""ULongValue"" :            """",
+                            ""DateTimeValue"" :         """",
+                            ""DateTimeOffsetValue"" :   """",
+                            ""TimeSpanValue"" :         """",
+                            ""GuidValue"" :             """",
+                            ""StringComparisonValue"" : """"
+                        }"
+                    ))).Build()
+            };
+
+            yield return new object[]
+            {
+                new ConfigurationBuilder().AddInMemoryCollection(
+                    new Dictionary<string, string>
+                    {
+                        { "IntValue",               null },
+                        { "DoubleValue",            null },
+                        { "BoolValue",              null },
+                        { "DecimalValue",           null },
+                        { "FloatValue",             null },
+                        { "LongValue",              null },
+                        { "ShortValue",             null },
+                        { "ByteValue",              null },
+                        { "SByteValue",             null },
+                        { "UIntValue",              null },
+                        { "UShortValue",            null },
+                        { "ULongValue",             null },
+                        { "DateTimeValue",          null },
+                        { "DateTimeOffsetValue",    null },
+                        { "TimeSpanValue",          null },
+                        { "GuidValue",              null },
+                        { "StringComparisonValue",  null },
+                    }).Build()
+            };
+        }
+
+        /// <summary>
+        /// Test binding a value parsable types to null configuration values.
+        /// The test ensure the binding will succeed without exceptions and the value will be null (not set).
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Configuration_TestData))]
+        public void BindToKnownParsableTypesWithNullValueTest(IConfiguration configuration)
+        {
+            ParsableValuesClass instance = configuration.Get<ParsableValuesClass>();
+            Assert.Null(instance.IntValue);
+            Assert.Null(instance.DoubleValue);
+            Assert.Null(instance.BoolValue);
+            Assert.Null(instance.DecimalValue);
+            Assert.Null(instance.FloatValue);
+            Assert.Null(instance.LongValue);
+            Assert.Null(instance.ShortValue);
+            Assert.Null(instance.ByteValue);
+            Assert.Null(instance.SByteValue);
+            Assert.Null(instance.UIntValue);
+            Assert.Null(instance.UShortValue);
+            Assert.Null(instance.ULongValue);
+            Assert.Null(instance.DateTimeValue);
+            Assert.Null(instance.DateTimeOffsetValue);
+            Assert.Null(instance.TimeSpanValue);
+            Assert.Null(instance.GuidValue);
+            Assert.Null(instance.StringComparisonValue);
+        }
+
         /// <summary>
         /// Test binding to recursive types using Dictionary or Collections.
         /// This ensure no stack overflow will occur during the compilation through the source gen or at runtime.
@@ -1711,10 +1789,9 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var exception = Assert.Throws<InvalidOperationException>(
-                () => config.Get<ByteArrayOptions>());
+            var exception = Assert.Throws<InvalidOperationException>(() => config.Get<ByteArrayOptions>());
             Assert.Equal(
-                SR.Format(SR.Error_FailedBinding, "MyByteArray", typeof(byte[])),
+                SR.Format(SR.Error_FailedBinding, "(not a valid base64 string)", "MyByteArray", typeof(byte[])),
                 exception.Message);
         }
 
@@ -2731,7 +2808,235 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal("John,Jane,Stephen", result.Names);
             Assert.True(result.Enabled);
-            Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
+            Assert.Equal(new[] { "new", "class", "rosebud" }, result.Keywords);
+        }
+
+        [Fact]
+        public void TestDictionaryWithNullableEnumValueType()
+        {
+            var builder = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Settings:Dictionary:Key1", "Value2" },
+                    { "Settings:List:1", "Value3" },
+                });
+            var config = builder.Build();
+
+            var settingsSection = config.GetSection("Settings");
+            OptionsWithCollectionsWithNullableEnum settings = settingsSection.Get<OptionsWithCollectionsWithNullableEnum>()!;
+
+            Assert.NotNull(settings.Dictionary);
+            Assert.Equal(1, settings.Dictionary.Count);
+            Assert.Equal(MyValue.Value2, settings.Dictionary["Key1"]);
+
+            Assert.NotNull(settings.List);
+            Assert.Equal(1, settings.List.Count);
+            Assert.Equal(MyValue.Value3, settings.List[0]);
+        }
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [Fact]
+        public void EnsureThrowingWithCollectionAndErrorOnUnknownConfigurationOption()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = "not-an-array-of-string" }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+
+            configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = "" }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+
+            configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Values:Monday"] = null }).Build();
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<TestSettings>(options => options.ErrorOnUnknownConfiguration = true));
+        }
+
+        internal class TestSettings { public Dictionary<DayOfWeek, string[]> Values { get; init; } = []; }
+#endif
+
+        [Fact]
+        public void BindWithNullValues()
+        {
+            //
+            // Try json provider first which used to replace the null configuration values with empty strings.
+            // Now it should be able to bind null values correctly and not replacing them.
+            //
+
+            string jsonConfig = @"
+            {
+                ""NullConfiguration"": {
+                    ""StringProperty1"": ""New Value!"",
+                    ""StringProperty2"": null,
+                    ""StringProperty3"": """",
+                    ""IntProperty1"": 42,
+                    ""IntProperty2"": null,
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build().GetSection("NullConfiguration");
+
+            NullConfiguration result = configuration.Get<NullConfiguration>();
+
+            Assert.NotNull(result);
+            Assert.Equal("New Value!", result.StringProperty1);
+            Assert.Null(result.StringProperty2);
+            Assert.Null(result.IntProperty2);
+            Assert.Equal("", result.StringProperty3);
+            Assert.Equal(42, result.IntProperty1);
+
+            //
+            // Test with in-memory configuration provider which never replaced the null values with empty strings.
+            // But the binder used to treat the null values as non-existing values and not bind them at all.
+            //
+
+            var inMemoryConfiguration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "NullConfiguration:StringProperty1", "New Value!" },
+                    { "NullConfiguration:StringProperty2", null },
+                    { "NullConfiguration:StringProperty3", "" },
+                    { "NullConfiguration:IntProperty1", "42" },
+                    { "NullConfiguration:IntProperty2", null }
+                })
+                .Build().GetSection("NullConfiguration");
+
+            NullConfiguration inMemoryResult = inMemoryConfiguration.Get<NullConfiguration>();
+
+            Assert.NotNull(inMemoryResult);
+
+            Assert.Equal("New Value!", inMemoryResult.StringProperty1);
+
+            Assert.Null(inMemoryResult.StringProperty2);
+            Assert.Null(inMemoryResult.IntProperty2);
+            Assert.Equal("", inMemoryResult.StringProperty3);
+            Assert.Equal(42, inMemoryResult.IntProperty1);
+        }
+
+        [Fact]
+        public void BindArraysWithNullAndOtherValues()
+        {
+            // Arrays like other collection when binding, it will merge the existing values with the new ones we get from the configuration.
+            // Ensure null, empty, and other values work as expected.
+
+            string jsonConfig = @"
+            {
+                ""ArraysContainer"": {
+                    ""StringArray1"": [""Value1"", ""Value2""],
+                    ""StringArray2"": null,
+                    ""StringArray3"": """", // should result empty array
+
+                    // We can bind byte array values from base64 strings too. Let's cover this case too.
+                    ""ByteArray1"": null,
+                    ""ByteArray2"": """",
+                    ""ByteArray3"": ""AAECAwQFBgcICQo="" // encode byte values [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig)))
+                        .Build().GetSection("ArraysContainer");
+
+            ArraysContainer instance = new(); // all properties are initialized to null.
+            configuration.Bind(instance);
+
+            Assert.NotNull(instance);
+            Assert.Equal(["Value1", "Value2"], instance.StringArray1);
+            Assert.Null(instance.StringArray2);
+
+            Assert.Empty(instance.StringArray3); // empty string should result in empty array
+            Assert.Empty(instance.ByteArray2); // empty string should result in empty array
+
+            Assert.Null(instance.ByteArray1);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+
+            // Bind one more time and ensure the values are accumulated correctly.
+            configuration.Bind(instance);
+            Assert.Equal(["Value1", "Value2", "Value1", "Value2"], instance.StringArray1);
+            Assert.Null(instance.StringArray2);
+            Assert.Empty(instance.StringArray3); // empty string should result in empty array
+            Assert.Empty(instance.ByteArray2); // empty string should result in empty array
+
+            Assert.Null(instance.ByteArray1);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Source gen has different behavior with the byte array which should be addressed later
+            // Source gen override the existing array instead of merging the values.
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+#else
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+#endif
+
+            // Test the same accumulation behavior with in-memory configuration
+            var inMemoryConfiguration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    // String arrays - use indexed keys for array elements
+                    { "ArraysContainer:StringArray1:0", "Value1" },
+                    { "ArraysContainer:StringArray1:1", "Value2" },
+                    { "ArraysContainer:StringArray2", null },
+                    { "ArraysContainer:StringArray3", "" },
+
+                    // Byte arrays
+                    { "ArraysContainer:ByteArray1", null },
+                    { "ArraysContainer:ByteArray2", "" },
+                    { "ArraysContainer:ByteArray3", "AAECAwQFBgcICQo=" } // encode byte values [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                })
+                .Build().GetSection("ArraysContainer");
+
+            ArraysContainer inMemoryInstance = new();
+            inMemoryConfiguration.Bind(inMemoryInstance);
+            Assert.Equal(["Value1", "Value2"], inMemoryInstance.StringArray1);
+            Assert.Null(inMemoryInstance.StringArray2);
+            Assert.Empty(inMemoryInstance.StringArray3); // empty string should result in empty array
+            Assert.Empty(inMemoryInstance.ByteArray2); // empty string should result in empty array
+
+            Assert.Null(inMemoryInstance.ByteArray1);
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], inMemoryInstance.ByteArray3);
+
+            // Bind one more time and ensure the values are accumulated correctly.
+            inMemoryConfiguration.Bind(inMemoryInstance);
+            Assert.Equal(["Value1", "Value2", "Value1", "Value2"], inMemoryInstance.StringArray1);
+            Assert.Null(inMemoryInstance.StringArray2);
+            Assert.Empty(inMemoryInstance.StringArray3); // empty string should result in empty array
+            Assert.Empty(inMemoryInstance.ByteArray2); // empty string should result in empty array
+
+            Assert.Null(inMemoryInstance.ByteArray1);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Source gen has different behavior with the byte array which should be addressed later
+            // Source gen override the existing array instead of merging the values.
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+#else
+            Assert.Equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], instance.ByteArray3);
+#endif
+        }
+
+        [Fact]
+        public void TestProvidersOrder()
+        {
+            string jsonConfig1 = @"
+            {
+                ""SimplePoco"": {
+                    ""A"": ""Provider1A"",
+                    ""B"": ""Provider1B"",
+                },
+            }";
+
+            // Missing B in the second provider should not override the value from the first provider.
+            string jsonConfig2 = @"
+            {
+                ""SimplePoco"": {
+                    ""A"": ""Provider2A"",
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig2)))
+                        .Build().GetSection("SimplePoco");
+
+            SimplePoco? result = configuration.Get<SimplePoco>();
+
+            Assert.NotNull(result);
+            Assert.Equal("Provider2A", result.A); // Value should come from the last provider
+            Assert.Equal("Provider1B", result.B); // B should not be overridden by the second provider
         }
     }
 }

@@ -23,7 +23,8 @@ namespace System.Diagnostics.Tracing
             public const EventKeywords ProcessorCount = (EventKeywords)0x2;
         }
 
-        internal static RuntimeEventSource? Log => new RuntimeEventSource();
+        // this roots the singleton instance of the event source
+        internal static RuntimeEventSource Log { get; } = new RuntimeEventSource();
         private PollingCounter? _gcHeapSizeCounter;
         private IncrementingPollingCounter? _gen0GCCounter;
         private IncrementingPollingCounter? _gen1GCCounter;

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !MONO && (TARGET_AMD64 || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM) || TARGET_LOONGARCH64)
+#if TARGET_AMD64 || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM) || TARGET_LOONGARCH64
 // JIT is guaranteed to unroll blocks up to 64 bytes in size
 #define HAS_CUSTOM_BLOCKS
 #endif
@@ -33,11 +33,8 @@ namespace System
         private struct Block64 {}
 #endif // HAS_CUSTOM_BLOCKS
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhSpanHelpers_MemCopy")]
-#endif
         [Intrinsic] // Unrolled for small constant lengths
-        internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
+        internal static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
             if ((nuint)Unsafe.ByteOffset(ref src, ref dest) < len ||
@@ -242,14 +239,11 @@ namespace System
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
-            Buffer._Memmove(ref dest, ref src, len);
+            Buffer.MemmoveInternal(ref dest, ref src, len);
         }
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhSpanHelpers_MemZero")]
-#endif
         [Intrinsic] // Unrolled for small sizes
-        public static unsafe void ClearWithoutReferences(ref byte dest, nuint len)
+        public static void ClearWithoutReferences(ref byte dest, nuint len)
         {
             if (len == 0)
                 return;
@@ -431,12 +425,9 @@ namespace System
         PInvoke:
             // Implicit nullchecks
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
-            Buffer._ZeroMemory(ref dest, len);
+            Buffer.ZeroMemoryInternal(ref dest, len);
         }
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhSpanHelpers_MemSet")]
-#endif
         internal static void Fill(ref byte dest, byte value, nuint len)
         {
             if (!Vector.IsHardwareAccelerated)
@@ -447,7 +438,7 @@ namespace System
             if (len >= (nuint)Vector<byte>.Count)
             {
                 // We have enough data for at least one vectorized write.
-                Vector<byte> vector = new (value);
+                Vector<byte> vector = new(value);
                 nuint stopLoopAtOffset = len & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
                 nuint offset = 0;
 

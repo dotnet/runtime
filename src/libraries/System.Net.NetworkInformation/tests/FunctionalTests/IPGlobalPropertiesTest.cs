@@ -207,5 +207,15 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEmpty(await props.GetUnicastAddressesAsync());
             Assert.NotEmpty(await Task.Factory.FromAsync(props.BeginGetUnicastAddresses, props.EndGetUnicastAddresses, null));
         }
+
+        [Fact]
+        public void IPGlobalProperties_DomainName_ReturnsEmptyStringWhenNotSet()
+        {
+            IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/109280")]
+            string expectedDomainName = PlatformDetection.IsAndroid ? "localdomain" : string.Empty;
+            Assert.Equal(expectedDomainName, gp.DomainName);
+        }
     }
 }

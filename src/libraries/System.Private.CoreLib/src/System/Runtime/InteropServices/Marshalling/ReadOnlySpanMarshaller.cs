@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Supports marshalling from managed into unmanaged in a call from unmanaged code to managed code.
         /// </summary>
-        public static unsafe class UnmanagedToManagedOut
+        public static class UnmanagedToManagedOut
         {
             /// <summary>
             /// Allocates the space to store the unmanaged elements.
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Gets the size of the caller-allocated buffer to allocate.
             /// </summary>
             // We'll keep the buffer size at a maximum of 512 bytes to avoid overflowing the stack.
-            public static int BufferSize { get; } = 0x200 / sizeof(TUnmanagedElement);
+            public static int BufferSize => 0x200 / sizeof(TUnmanagedElement);
 
             private ReadOnlySpan<T> _managedArray;
             private TUnmanagedElement* _allocatedMemory;

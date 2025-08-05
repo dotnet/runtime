@@ -23,7 +23,7 @@ Some of these properties require a unique build of the runtime, which means that
 
 ### Multi-threading
 
-Multi-threading support is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`, and is currently disabled by default. It requires a unique build of the runtime.
+Multi-threading experiment is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`, and is currently disabled by default. It requires a unique build of the runtime.
 
 Your HTTPS server and/or proxy must be configured to send HTTP headers similar to `Cross-Origin-Embedder-Policy:require-corp` and `Cross-Origin-Opener-Policy:same-origin` in order to enable multi-threading support in end-user web browsers for security reasons.
 
@@ -40,14 +40,10 @@ It can be enabled with `<WasmEnableSIMD>true</WasmEnableSIMD>` and disabled with
 
 For more information on this feature, see [SIMD.md](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md).
 
-Older versions of NodeJS hosts may need `--experimental-wasm-simd` command line option.
-
 ### EH - Exception handling
 WebAssembly exception handling provides higher performance for code containing `try` blocks by allowing exceptions to be caught and thrown natively without the use of JavaScript. It is currently enabled by default and can be disabled via `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>`.
 
 For more information on this feature, see [Exceptions.md](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
-
-Older versions of NodeJS hosts may need `--experimental-wasm-eh` command line option.
 
 ### BigInt
 Passing Int64 and UInt64 values between JavaScript and C# requires support for the JavaScript `BigInt` type. See [JS-BigInt](https://github.com/WebAssembly/JS-BigInt-integration) for more information on this API.
@@ -59,14 +55,18 @@ Because web browsers do not expose direct access to sockets, we are unable to pr
 
 A prominent limitation is that your application must obey `Cross-Origin Resource Sharing` (CORS) rules in order to perform network requests successfully - see [CORS on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) for more information.
 
-For your application to be able to perform HTTP requests in a NodeJS host, you need to install the `node-fetch` and `node-abort-controller` npm packages.
+Since Net 10 Preview 3 the HTTP client supports [streaming HTTP response](https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams#consuming_a_fetch_as_a_stream) by default because all evergreen browsers now support it.
+
+This is a breaking change because the `response.Content.ReadAsStreamAsync()` is no longer `MemoryStream` but `BrowserHttpReadStream` which doesn't support synchronous operations like `Stream.Read(Span<Byte>)`. If your code uses synchronous operations, you can disable the feature or copy the stream into `MemoryStream` yourself.
+
+If you need to disable it, you can use `<WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>` or `DOTNET_WASM_ENABLE_STREAMING_RESPONSE` env variable to do it for all HTTP requests.
+
+Or you can use `request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), false);` for individual request.
 
 ### WebSocket
 Applications using the [WebSocketClient](https://learn.microsoft.com/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
 
 As with HTTP and HttpClient, we are unable to ship a custom implementation of this feature, so its behavior will depend on the browser being used to run the application.
-
-WebSocket support in NodeJS hosts requires the `ws` npm package.
 
 ### Initial Memory Size
 By default the .NET runtime will reserve a small amount of memory at startup, and as your application allocates more objects the runtime will attempt to "grow" this memory. This growth operation takes time and could fail if your device's memory is limited, which would result in an application error or "tab crash".
@@ -82,6 +82,9 @@ The default value is `2,147,483,648 bytes`, which may be too large and result in
 To set the maximum memory size, include the MSBuild property like `<EmccMaximumHeapSize>268435456<EmccMaximumHeapSize>`.
 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
+
+Recommended size of the memory used by dotnet applications in the desktop browsers is between 256MB and 512MB.
+If you are using more than 1GB, please make sure that you test it properly. Using more than 2GB is experimental.
 
 ### JITerpreter
 The JITerpreter is a browser-specific compiler which will optimize frequently executed code when running in interpreted (non-AOT) mode. While this significantly improves application performance, it will cause increased memory usage. You can disable it via `<BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>`, and configure it in more detail via the use of runtime options.
@@ -134,11 +137,13 @@ When you want to call JavaScript functions from C# or managed code from JavaScri
 * or [the documentation](https://learn.microsoft.com/aspnet/core/client-side/dotnet-interop).
 
 ### Embedding dotnet in existing JavaScript applications
-To embed the .NET runtime inside of a JavaScript application, you will need to use both the MSBuild toolchain (to build and publish your managed code) and your existing web build toolchain.
+The default build output relies on exact file names produced during .NET build. In our testing the dynamic loading of assets provides faster startup and shorter download times.
 
-The output of the MSBuild toolchain - located in the [AppBundle](#Project-folder-structure) folder - must be fed in to your web build toolchain in order to ensure that the runtime and managed binaries are deployed with the rest of your application assets.
-
-For a sample of using the .NET runtime in a React component, [see here](https://github.com/maraf/dotnet-wasm-react).
+JavaScript tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) can be used for further file modifications.
+An msbuild property `<WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>` can be used to generate different JavaScript files that are not runnable
+in the browsers, but they can be consumed by these JavaScript tools. Some examples:
+  - Merge all JavaScript files, resolve wasm & other files as files, copying them to the output directory, optionally fingerprinting them, etc.
+  - Embed all JavaScripts files and wasm & other files as base64 encoded blobs directly into a single file.
 
 ## Project folder structure
 
@@ -171,7 +176,7 @@ Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
 - `dotnet.runtime.js` - is integration of the dotnet with the browser
-- `blazor.boot.json` - contains list of all other assets and their integrity hash and also various configuration flags.
+- `dotnet.boot.js` - contains list of all other assets and their integrity hash and also various configuration flags.
 - `dotnet.native.wasm` - is the compiled binary of the dotnet (Mono) runtime.
 - `System.Private.CoreLib.*` - is NET assembly with the core implementation of dotnet runtime and class library
 - `*.wasm` - are .NET assemblies stored in `WebCIL` format (for better compatibility with firewalls and virus scanners).
@@ -207,7 +212,7 @@ Adding too many files into prefetch could be counterproductive.
 Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
-<link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
+<link rel="preload" href="./_framework/dotnet.boot.js" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
 ```
@@ -264,19 +269,12 @@ For some use cases, you may wish to override this behavior or create a custom IC
 
 There are also rare use cases where your application does not rely on the contents of the ICU databases. In those scenarios, you can make your application smaller by enabling Invariant Globalization via the `<InvariantGlobalization>true</InvariantGlobalization>` msbuild property. For more details see [globalization-invariant-mode.md](../../../docs/design/features/globalization-invariant-mode.md).
 
-We are currently developing a third approach for locales where we offer a more limited feature set by relying on browser APIs, called "Hybrid Globalization". This provides more functionality than Invariant Culture mode without the need to ship the ICU library or its databases, which improves startup time. You can use the msbuild property `<HybridGlobalization>true</HybridGlobalization>` to test this in-development feature, but be aware that it is currently incomplete and may have performance issues. For more details see [globalization-hybrid-mode.md](../../../docs/design/features/globalization-hybrid-mode.md).
-
 Customized globalization settings require [wasm-tools workload](#wasm-tools-workload) to be installed.
 
 ### Timezones
 Browsers do not offer a way to access the contents of their time zone database, so we deploy our own time zone database automatically as a part of your application. For applications that do not need to work with times or dates, you can use the `<InvariantTimezone>true</InvariantTimezone>` msbuild property to omit the database and reduce download size.
 
 This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
-
-### Bundling JavaScript and other assets
-Many web developers use tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) to bundle many files into one large .js file. When deploying a .NET application to the web, you can safely bundle the `dotnet.js` ES6 module with the rest of your JavaScript application, but the other assets and modules in the `_framework` folder may not be bundled as they are loaded dynamically.
-
-In our testing the dynamic loading of assets provides faster startup and shorter download times. We would like to [hear from the community](https://github.com/dotnet/runtime/issues/86162) if there are scenarios where you need the ability to bundle the rest of an application.
 
 ## Resources consumed on the target device
 When you deploy a .NET application to the browser, many necessary components and databases are included:
@@ -298,27 +296,6 @@ Note that all browsers on iOS and iPadOS are required to use the Safari browser 
 Mobile browsers typically have strict limits on the amount of memory they can use, and many users are on slow internet connections.
 
 A WebAssembly application that works well on desktop PCs browser may take minutes to download or run out of memory before it is able to start on a mobile device, and the same is true for .NET.
-
-### Shell environments - NodeJS & V8
-While our primary target is web browsers, we have partial support for Node.JS v14 sufficient to pass most of our automated tests. We also have partial support for the D8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
-
-#### NodeJS < 20
-Until node version 20, you may need to pass these arguments when running the application `--experimental-wasm-simd --experimental-wasm-eh`. When you run the application using `dotnet run`, you can add these to the runtimeconfig template
-
-```json
-"wasmHostProperties": {
-    "perHostConfig": [
-        {
-            "name": "node",
-            ...
-            "host-args": [
-                "--experimental-wasm-simd", // 👈 Enable SIMD support
-                "--experimental-wasm-eh" // 👈 Enable exception handling support
-            ]
-        }
-    ]
-}
-```
 
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
@@ -396,40 +373,63 @@ await dotnet
 
 See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
 
-### Profiling
+### Diagnostics tools
 
-You can enable integration with browser profiler via following elements in your .csproj
 ```xml
 <PropertyGroup>
-  <WasmProfilers>browser;</WasmProfilers>
+  <!-- enables diagnostic server -->
+  <EnableDiagnostics>true</EnableDiagnostics>
+
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  Only when WasmPerformanceInstrumentation is not empty or none.
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmPerformanceInstrumentation>N:Sample</WasmPerformanceInstrumentation>
+  <!-- alternatively all methods -->
+  <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
+
+  <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
+  <!-- this is existing switch also on other targets -->
+  <MetricsSupport>true</MetricsSupport>
+
+  <!-- enables system events https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/diagnostics#observability-and-telemetry -->
+  <!-- this is existing switch also on other targets -->
+  <EventSourceSupport>true</EventSourceSupport>
 </PropertyGroup>
 ```
 
-In Blazor, you can customize the startup in your index.html
-```html
-<script src="_framework/blazor.webassembly.js" autostart="false"></script>
-<script>
-Blazor.start({
-    configureRuntime: function (dotnet) {
-        dotnet.withConfig({
-            browserProfilerOptions: {}
-        });
-    }
-});
-</script>
+`Timing-Allow-Origin` HTTP header allows for more precise time measurements.
+
+Then you can trigger collection of a trace from browser dev tools
+
+```js
+globalThis.getDotnetRuntime(0).collectGcDump()
 ```
 
-In simple browser template, you can add following to your `main.js`
-
-```javascript
-import { dotnet } from './dotnet.js'
-await dotnet.withConfig({browserProfilerOptions: {}}).run();
+The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
+```js
+globalThis.getDotnetRuntime(0).collectMetrics({durationSeconds: 60})
 ```
 
-### Diagnostic tools
+The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`
 
-We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe)
+```js
+globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
+```
 
-At the moment it requires multi-threaded build of the runtime.
+The counters could be opened in VS or in `PerfView.exe`
 
-For more details see [diagnostic-server.md](../browser/runtime/diagnostics/diagnostic-server.md)
+
+### Profiling in the browser dev tools
+
+You can enable integration with the profiler in browser dev tools via following elements in your .csproj
+```xml
+<PropertyGroup>
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
+  <!-- alternatively all methods -->
+  <WasmProfilers>browser:callspec=all</WasmProfilers>
+</PropertyGroup>
+```

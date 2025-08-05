@@ -71,6 +71,8 @@ jobs:
           value: zip
         - name: tarCompression
           value: ''
+        - name: exeExt
+          value: '.exe'
         - name: scriptExt
           value: '.cmd'
         - name: dir
@@ -91,6 +93,8 @@ jobs:
           value: tar
         - name: tarCompression
           value: gz
+        - name: exeExt
+          value: ''
         - name: scriptExt
           value: '.sh'
         - name: dir
@@ -114,7 +118,7 @@ jobs:
       - ${{ if eq(parameters.archType, 'wasm') }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
-                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
@@ -170,12 +174,12 @@ jobs:
 
         # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macos-12'
+          vmImage: 'macos-13'
 
         # Official build OSX pool
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
           name: "Azure Pipelines"
-          vmImage: 'macos-13-arm64'
+          vmImage: 'macos-latest-internal'
           os: macOS
 
         # Official Build Windows Pool

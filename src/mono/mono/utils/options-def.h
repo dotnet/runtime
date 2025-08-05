@@ -59,12 +59,6 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 
 DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM exceptions")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
-#ifdef DISABLE_THREADS
-DEFINE_BOOL(wasm_mmap, "wasm-mmap", TRUE, "Enable custom memory manager for WASM")
-#else
-// Disabled by default for MT because it breaks strcmp somehow (??????)
-DEFINE_BOOL(wasm_mmap, "wasm-mmap", FALSE, "Enable custom memory manager for WASM")
-#endif
 
 #if HOST_BROWSER
 DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", FALSE, "Record interpreter tiering information for automatic PGO")
@@ -170,14 +164,14 @@ DEFINE_INT(jiterpreter_interp_entry_trampoline_hit_count, "jiterpreter-interp-en
 DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-entry-queue-flush-threshold", 3000, "Flush the interp_entry JIT queue after an unJITted call site has this many hits")
 // In degenerate cases the jiterpreter could end up generating lots of WASM, so shut off jitting once it reaches this limit
 // Each wasm byte likely maps to multiple bytes of native code, so it's important for this limit not to be too high
-DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
+DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 8 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
 DEFINE_INT(jiterpreter_table_size, "jiterpreter-table-size", 6 * 1024, "Size of the jiterpreter trace function table")
 // In real-world scenarios these tables can fill up at this size, but making them bigger causes startup time
 //  to bloat to an unacceptable degree. In practice this is still better than nothing.
 // FIXME: In the future if we find a way to reduce the number of unique tables we can raise this constant
 DEFINE_INT(jiterpreter_aot_table_size, "jiterpreter-aot-table-size", 3 * 1024, "Size of the jiterpreter AOT trampoline function tables")
-DEFINE_INT(jiterpreter_max_module_size, "jiterpreter-max-module-size", 4080, "Size limit for jiterpreter generated WASM modules")
-DEFINE_INT(jiterpreter_max_switch_size, "jiterpreter-max-switch-size", 24, "Size limit for jiterpreter switch opcodes (0 to disable)")
+DEFINE_INT(jiterpreter_max_module_size, "jiterpreter-max-module-size", 16384, "Size limit for jiterpreter generated WASM modules")
+DEFINE_INT(jiterpreter_max_switch_size, "jiterpreter-max-switch-size", 128, "Jump table size limit for jiterpreter switch opcodes (0 to disable)")
 #endif // HOST_BROWSER
 
 #if defined(TARGET_WASM) || defined(TARGET_IOS)  || defined(TARGET_TVOS) || defined (TARGET_MACCAT)

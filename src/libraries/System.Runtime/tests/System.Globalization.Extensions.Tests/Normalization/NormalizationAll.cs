@@ -93,6 +93,18 @@ namespace System.Globalization.Tests
             string normalized4 = c4.Normalize(normForm);
             string normalized5 = c5.Normalize(normForm);
 
+            Span<char> normalizedSpan1 = new char[normalized1.Length];
+            Span<char> normalizedSpan2 = new char[normalized2.Length];
+            Span<char> normalizedSpan3 = new char[normalized3.Length];
+            Span<char> normalizedSpan4 = new char[normalized4.Length];
+            Span<char> normalizedSpan5 = new char[normalized5.Length];
+
+            Assert.True(c1.AsSpan().TryNormalize(normalizedSpan1, out int charsWritten1, normForm), $"'{c1}' is not normalized with form {normForm}");
+            Assert.True(c2.AsSpan().TryNormalize(normalizedSpan2, out int charsWritten2, normForm), $"'{c2}' is not normalized with form {normForm}");
+            Assert.True(c3.AsSpan().TryNormalize(normalizedSpan3, out int charsWritten3, normForm), $"'{c3}' is not normalized with form {normForm}");
+            Assert.True(c4.AsSpan().TryNormalize(normalizedSpan4, out int charsWritten4, normForm), $"'{c4}' is not normalized with form {normForm}");
+            Assert.True(c5.AsSpan().TryNormalize(normalizedSpan5, out int charsWritten5, normForm), $"'{c5}' is not normalized with form {normForm}");
+
             switch (normForm)
             {
                 case NormalizationForm.FormC:
@@ -101,15 +113,24 @@ namespace System.Globalization.Tests
                     AssertEqualsForm(c2, normalized2);
                     AssertEqualsForm(c2, normalized3);
 
+                    AssertEqualsForm(c2, normalizedSpan1.Slice(0, charsWritten1).ToString());
+                    AssertEqualsForm(c2, normalizedSpan2.Slice(0, charsWritten2).ToString());
+                    AssertEqualsForm(c2, normalizedSpan3.Slice(0, charsWritten3).ToString());
+
                     // c4 ==  NFC(c4) ==  NFC(c5)
                     AssertEqualsForm(c4, normalized4);
                     AssertEqualsForm(c4, normalized5);
 
+                    AssertEqualsForm(c4, normalizedSpan4.Slice(0, charsWritten4).ToString());
+                    AssertEqualsForm(c4, normalizedSpan5.Slice(0, charsWritten5).ToString());
+
                     // c2 is normalized to Form C
                     Assert.True(c2.IsNormalized(normForm), $"'{c2}' is marked as not normalized with form {normForm}");
+                    Assert.True(c2.AsSpan().IsNormalized(normForm), $"'{c2}' span is marked as not normalized with form {normForm}");
 
                     // c4 is normalized to Form C
                     Assert.True(c4.IsNormalized(normForm), $"'{c4}' is marked as not normalized with form {normForm}");
+                    Assert.True(c4.AsSpan().IsNormalized(normForm), $"'{c4}' span is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormD:
@@ -118,15 +139,24 @@ namespace System.Globalization.Tests
                     AssertEqualsForm(c3, normalized2);
                     AssertEqualsForm(c3, normalized3);
 
+                    AssertEqualsForm(c3, normalizedSpan1.Slice(0, charsWritten1).ToString());
+                    AssertEqualsForm(c3, normalizedSpan2.Slice(0, charsWritten2).ToString());
+                    AssertEqualsForm(c3, normalizedSpan3.Slice(0, charsWritten3).ToString());
+
                     // c5 ==  NFD(c4) ==  NFD(c5)
                     AssertEqualsForm(c5, normalized4);
                     AssertEqualsForm(c5, normalized5);
 
+                    AssertEqualsForm(c5, normalizedSpan4.Slice(0, charsWritten4).ToString());
+                    AssertEqualsForm(c5, normalizedSpan5.Slice(0, charsWritten5).ToString());
+
                     // c3 is normalized to Form D
                     Assert.True(c3.IsNormalized(normForm), $"'{c3}' is marked as not normalized with form {normForm}");
+                    Assert.True(c3.AsSpan().IsNormalized(normForm), $"'{c3}' span is marked as not normalized with form {normForm}");
 
                     // c5 is normalized to Form D
                     Assert.True(c5.IsNormalized(normForm), $"'{c5}' is marked as not normalized with form {normForm}");
+                    Assert.True(c5.AsSpan().IsNormalized(normForm), $"'{c5}' span is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormKC:
@@ -138,8 +168,15 @@ namespace System.Globalization.Tests
                     AssertEqualsForm(c4, normalized4);
                     AssertEqualsForm(c4, normalized5);
 
+                    AssertEqualsForm(c4, normalizedSpan1.Slice(0, charsWritten1).ToString());
+                    AssertEqualsForm(c4, normalizedSpan2.Slice(0, charsWritten2).ToString());
+                    AssertEqualsForm(c4, normalizedSpan3.Slice(0, charsWritten3).ToString());
+                    AssertEqualsForm(c4, normalizedSpan4.Slice(0, charsWritten4).ToString());
+                    AssertEqualsForm(c4, normalizedSpan5.Slice(0, charsWritten5).ToString());
+
                     // c4 is normalized to Form KC
                     Assert.True(c4.IsNormalized(normForm), $"'{c4}' is marked as not normalized with form {normForm}");
+                    Assert.True(c4.AsSpan().IsNormalized(normForm), $"'{c4}' span is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormKD:
@@ -151,8 +188,15 @@ namespace System.Globalization.Tests
                     AssertEqualsForm(c5, normalized4);
                     AssertEqualsForm(c5, normalized5);
 
+                    AssertEqualsForm(c5, normalizedSpan1.Slice(0, charsWritten1).ToString());
+                    AssertEqualsForm(c5, normalizedSpan2.Slice(0, charsWritten2).ToString());
+                    AssertEqualsForm(c5, normalizedSpan3.Slice(0, charsWritten3).ToString());
+                    AssertEqualsForm(c5, normalizedSpan4.Slice(0, charsWritten4).ToString());
+                    AssertEqualsForm(c5, normalizedSpan5.Slice(0, charsWritten5).ToString());
+
                     // c5 is normalized to Form KD
                     Assert.True(c5.IsNormalized(normForm), $"'{c5}' is marked as not normalized with form {normForm}");
+                    Assert.True(c5.AsSpan().IsNormalized(normForm), $"'{c5}' span is marked as not normalized with form {normForm}");
                     break;
             }
         }

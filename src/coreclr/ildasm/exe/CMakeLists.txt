@@ -69,7 +69,6 @@ set(ILDASM_LINK_LIBRARIES
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
-    mdstaticapi
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     corguids
 )
@@ -94,7 +93,6 @@ else()
     list(APPEND ILDASM_LINK_LIBRARIES
         coreclrpal
         mscorrc
-        palrt
         coreclrminipal
     )
 endif(CLR_CMAKE_HOST_WIN32)
@@ -105,7 +103,6 @@ if(CLR_CMAKE_HOST_UNIX)
         ${ILDASM_LINK_LIBRARIES}
         mscorrc
         coreclrpal
-        palrt
         ${CMAKE_DL_LIBS}
     )
 else()

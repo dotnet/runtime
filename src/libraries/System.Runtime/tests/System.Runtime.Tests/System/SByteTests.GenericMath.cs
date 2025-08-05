@@ -2271,30 +2271,45 @@ namespace System.Tests
         public static void op_LeftShiftTest()
         {
             Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift((sbyte)0x00, 1));
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift((sbyte)0x00, 9));
             Assert.Equal((sbyte)0x02, ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift((sbyte)0x01, 1));
+            Assert.Equal((sbyte)0x02, ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift((sbyte)0x01, 9));
             Assert.Equal(unchecked((sbyte)0xFE), ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift((sbyte)0x7F, 1));
+            Assert.Equal(unchecked((sbyte)0xFE), ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift((sbyte)0x7F, 9));
             Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift(unchecked((sbyte)0x80), 1));
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift(unchecked((sbyte)0x80), 9));
             Assert.Equal(unchecked((sbyte)0xFE), ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift(unchecked((sbyte)0xFF), 1));
+            Assert.Equal(unchecked((sbyte)0xFE), ShiftOperatorsHelper<sbyte, int, sbyte>.op_LeftShift(unchecked((sbyte)0xFF), 9));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
             Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift((sbyte)0x00, 1));
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift((sbyte)0x00, 9));
             Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift((sbyte)0x01, 1));
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift((sbyte)0x01, 9));
             Assert.Equal((sbyte)0x3F, ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift((sbyte)0x7F, 1));
+            Assert.Equal((sbyte)0x3F, ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift((sbyte)0x7F, 9));
             Assert.Equal(unchecked((sbyte)0xC0), ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift(unchecked((sbyte)0x80), 1));
+            Assert.Equal(unchecked((sbyte)0xC0), ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift(unchecked((sbyte)0x80), 9));
             Assert.Equal(unchecked((sbyte)0xFF), ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift(unchecked((sbyte)0xFF), 1));
+            Assert.Equal(unchecked((sbyte)0xFF), ShiftOperatorsHelper<sbyte, int, sbyte>.op_RightShift(unchecked((sbyte)0xFF), 9));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
             Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift((sbyte)0x00, 1));
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift((sbyte)0x00, 9));
             Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift((sbyte)0x01, 1));
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift((sbyte)0x01, 9));
             Assert.Equal((sbyte)0x3F, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift((sbyte)0x7F, 1));
+            Assert.Equal((sbyte)0x3F, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift((sbyte)0x7F, 9));
             Assert.Equal((sbyte)0x40, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift(unchecked((sbyte)0x80), 1));
+            Assert.Equal((sbyte)0x40, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift(unchecked((sbyte)0x80), 9));
             Assert.Equal((sbyte)0x7F, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift(unchecked((sbyte)0xFF), 1));
+            Assert.Equal((sbyte)0x7F, ShiftOperatorsHelper<sbyte, int, sbyte>.op_UnsignedRightShift(unchecked((sbyte)0xFF), 9));
         }
 
         //

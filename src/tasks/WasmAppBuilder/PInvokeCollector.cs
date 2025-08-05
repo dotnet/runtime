@@ -204,8 +204,6 @@ internal sealed class PInvokeCollector {
                 .Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
         }
 
-       value = assembly.GetCustomAttributesData().Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
-
         return value;
     }
 }
@@ -248,7 +246,7 @@ internal sealed class PInvokeCallback
         {
             if (attr.AttributeType.Name == "UnmanagedCallersOnlyAttribute")
             {
-                foreach(var arg in attr.NamedArguments)
+                foreach (var arg in attr.NamedArguments)
                 {
                     if (arg.MemberName == "EntryPoint")
                     {

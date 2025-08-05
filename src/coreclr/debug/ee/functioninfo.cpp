@@ -382,7 +382,7 @@ DebuggerJitInfo::NativeOffset DebuggerJitInfo::MapILOffsetToNative(DebuggerJitIn
     if (ilOffset.m_funcletIndex <= PARENT_METHOD_INDEX)
     {
 #endif // FEATURE_EH_FUNCLETS
-        PREFIX_ASSUME( map != NULL );
+        _ASSERTE( map != NULL );
         LOG((LF_CORDB, LL_INFO10000, "DJI::MILOTN: ilOffset 0x%zx to nat 0x%x exact:%s (Entry IL Off:0x%x)\n",
              ilOffset.m_ilOffset, map->nativeStartOffset, (resultOffset.m_fExact ? "true" : "false"), map->ilOffset));
 
@@ -920,14 +920,13 @@ void DebuggerJitInfo::LazyInitBounds()
         BOOL fSuccess = DebugInfoManager::GetBoundariesAndVars(
             request,
             InteropSafeNew, NULL, // allocator
+            BoundsType::Instrumented,  // TODO We currently don't use the uninstrumented bounds here but we should and remove the instrumented bounds logic from the SetBoundaries function.
             &cMap, &pMap,
             &cVars, &pVars);
 
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=%p GetBoundariesAndVars success=%s\n",
             this, (fSuccess ? "true" : "false")));
 
-        // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
         if (!m_fAttemptInit)
@@ -952,7 +951,7 @@ void DebuggerJitInfo::LazyInitBounds()
         // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 /******************************************************************************
@@ -1047,13 +1046,17 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
     DebuggerILToNativeMap *m = m_sequenceMap;
 
+    // TODO: Consider removing the handling for the InstrumentedILMap here.
+    // since we now have the ability to get an uninstrumented IL offset mapping
+    // directly from the VM. This work was not done when adding the instrumented
+    // IL mapping due to the work ocurring too close to the shipping deadline for .NET 10.
+    // If we do so, we need to change the input to this function to be the uninstrumented IL offset mapping
+
     // For the instrumented-IL case, we need to remove all duplicate entries.
     // So we keep a record of the last old IL offset. If the current old IL
     // offset is the same as the last old IL offset, we remove it.
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
-
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
 
     InstrumentedILOffsetMapping mapping;
 
@@ -1061,7 +1064,16 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     if (!ilVersion.IsDefaultVersion())
     {
         // Did the current rejit provide a map?
-        const InstrumentedILOffsetMapping *pReJitMap = ilVersion.GetInstrumentedILMap();
+        const InstrumentedILOffsetMapping *pReJitMap = NULL;
+        if (ilVersion.GetRejitState() == RejitFlags::kStateActive)
+        {
+            pReJitMap = ilVersion.GetInstrumentedILMap();
+        }
+        else
+        {
+            _ASSERTE(!"Unexpected rejit state, should be active as there exists a native code version for this IL code version");
+        }
+
         if (pReJitMap != NULL)
         {
             mapping = *pReJitMap;
@@ -1427,7 +1439,7 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    DebuggerModule * pModule = GetPrimaryModule();
+    DebuggerModule * pModule = GetModule();
 
     m_fJMCStatus = false;
 
@@ -1443,9 +1455,9 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
 
 
 /******************************************************************************
- * Get the primary debugger module for this DMI. This is 1:1 w/ an EE Module.
+ * Get the debugger module for this DMI. This is 1:1 w/ an EE Module.
  ******************************************************************************/
-DebuggerModule* DebuggerMethodInfo::GetPrimaryModule()
+DebuggerModule* DebuggerMethodInfo::GetModule()
 {
     CONTRACTL
     {
@@ -1473,11 +1485,7 @@ DebuggerModule* DebuggerMethodInfo::GetPrimaryModule()
         return NULL;
     }
 
-    // Only give back primary modules...
-    DebuggerModule * p2 = pModule->GetPrimaryModule();
-    _ASSERTE(p2 != NULL);
-
-    return p2;
+    return pModule;
 }
 
 /******************************************************************************
@@ -1607,7 +1615,6 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     if (fd->IsVersionable())
     {
         CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
         nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(fd, startAddr);
         if (nativeCodeVersion.IsNull())
         {
@@ -1845,7 +1852,7 @@ void DebuggerMethodInfo::DJIIterator::Next(BOOL fFirst /*=FALSE*/)
 
     if (!fFirst)
     {
-        PREFIX_ASSUME(m_pCurrent != NULL); // IsAtEnd() should have caught this.
+        _ASSERTE(m_pCurrent != NULL); // IsAtEnd() should have caught this.
         m_pCurrent = m_pCurrent->m_prevJitInfo;
     }
 
@@ -2023,8 +2030,8 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
         // This also handles the possibility of getting the same methoddesc back from the iterator.
         // It also lets EnC + generics play nice together (including if an generic method was EnC-ed)
         LoadedMethodDescIterator it(pAppDomain, m_module, m_token);
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (it.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (it.Next(pAssembly.This()))
         {
             MethodDesc * pDesc = it.Current();
             if (!pDesc->HasNativeCode())

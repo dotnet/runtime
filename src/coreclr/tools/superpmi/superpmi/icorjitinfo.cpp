@@ -211,6 +211,13 @@ CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* r
     return result;
 }
 
+CORINFO_METHOD_HANDLE MyICJI::getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
+{
+    jitInstance->mc->cr->AddCall("getInstantiatedEntry");
+    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetInstantiatedEntry(ftn, methodHandle, classHandle);
+    return result;
+}
+
 // Given T, return the type of the default Comparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE MyICJI::getDefaultComparerClass(CORINFO_CLASS_HANDLE cls)
@@ -226,6 +233,15 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
 {
     jitInstance->mc->cr->AddCall("getDefaultEqualityComparerClass");
     CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetDefaultEqualityComparerClass(cls);
+    return result;
+}
+
+// Given T, return the type of the SZGenericArrayEnumerator<T>.
+// Returns null if the type can't be determined exactly.
+CORINFO_CLASS_HANDLE MyICJI::getSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getSZArrayHelperEnumeratorClass");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetSZArrayHelperEnumeratorClass(cls);
     return result;
 }
 
@@ -392,6 +408,13 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
 {
     jitInstance->mc->cr->AddCall("getTypeInstantiationArgument");
     CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetTypeInstantiationArgument(cls, index);
+    return result;
+}
+
+CORINFO_CLASS_HANDLE MyICJI::getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
+{
+    jitInstance->mc->cr->AddCall("getMethodInstantiationArgument");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetMethodInstantiationArgument(ftn, index);
     return result;
 }
 
@@ -583,13 +606,6 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeForBox(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getTypeForBox");
     return jitInstance->mc->repGetTypeForBox(cls);
-}
-
-// Class handle for a boxed value type, on the stack.
-CORINFO_CLASS_HANDLE MyICJI::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("getTypeForBoxOnStack");
-    return jitInstance->mc->repGetTypeForBoxOnStack(cls);
 }
 
 // returns the correct box helper for a particular class.  Note
@@ -1172,22 +1188,10 @@ void MyICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     jitInstance->mc->repGetEEInfo(pEEInfoOut);
 }
 
-// Returns name of the JIT timer log
-const char16_t* MyICJI::getJitTimeLogFilename()
+void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
 {
-    jitInstance->mc->cr->AddCall("getJitTimeLogFilename");
-    // we have the ability to replay this, but we treat it in this case as EE context
-    //  return jitInstance->eec->jitTimeLogFilename;
-
-    // We want to be able to set DOTNET_JitTimeLogFile or COMPlus_JitTimeLogFile when replaying, to collect JIT
-    // statistics. So, just do a getenv() call. This isn't quite as thorough as
-    // the normal CLR config value functions (which also check the registry), and we've
-    // also hard-coded the variable name here instead of using:
-    //      CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitTimeLogFile);
-    // like in the VM, but it works for our purposes.
-    const char16_t* dotnetVar = (const char16_t*)GetEnvironmentVariableWithDefaultW(W("DOTNET_JitTimeLogFile"));
-    return dotnetVar != nullptr ? dotnetVar :
-        (const char16_t*)GetEnvironmentVariableWithDefaultW(W("COMPlus_JitTimeLogFile"));
+    jitInstance->mc->cr->AddCall("getAsyncInfo");
+    jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
 }
 
 /*********************************************************************************/
@@ -1266,10 +1270,10 @@ int32_t* MyICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
-void* MyICJI::getHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
+void MyICJI::getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_HANDLE *methodHandle)
 {
     jitInstance->mc->cr->AddCall("getHelperFtn");
-    return jitInstance->mc->repGetHelperFtn(ftnNum, ppIndirection);
+    jitInstance->mc->repGetHelperFtn(ftnNum, pNativeEntrypoint, methodHandle);
 }
 
 // return a callable address of the function (native code). This function
@@ -1293,13 +1297,6 @@ void MyICJI::getFunctionFixedEntryPoint(
 {
     jitInstance->mc->cr->AddCall("getFunctionFixedEntryPoint");
     jitInstance->mc->repGetFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
-}
-
-// get the synchronization handle that is passed to monXstatic function
-void* MyICJI::getMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getMethodSync");
-    return jitInstance->mc->repGetMethodSync(ftn, ppIndirection);
 }
 
 // These entry points must be called if a handle is being embedded in
@@ -1374,8 +1371,7 @@ void MyICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CON
     jitInstance->mc->repGetAddressOfPInvokeTarget(method, pLookup);
 }
 
-// Generate a cookie based on the signature that would needs to be passed
-// to CORINFO_HELP_PINVOKE_CALLI
+// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
 LPVOID MyICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("GetCookieForPInvokeCalliSig");
@@ -1388,6 +1384,13 @@ bool MyICJI::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
     jitInstance->mc->cr->AddCall("canGetCookieForPInvokeCalliSig");
     return jitInstance->mc->repCanGetCookieForPInvokeCalliSig(szMetaSig);
+}
+
+// Generate a cookie based on the signature to pass to INTOP_CALLI
+LPVOID MyICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+{
+    jitInstance->mc->cr->AddCall("GetCookieForInterpreterCalliSig");
+    return jitInstance->mc->repGetCookieForInterpreterCalliSig(szMetaSig);
 }
 
 // Gets a handle that is checked to see if the current method is
@@ -1515,6 +1518,12 @@ bool MyICJI::getTailCallHelpers(
     return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
+CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
+{
+    jitInstance->mc->cr->AddCall("getAsyncResumptionStub");
+    return jitInstance->mc->repGetAsyncResumptionStub();;
+}
+
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
     jitInstance->mc->cr->AddCall("convertPInvokeCalliToCall");
@@ -1524,7 +1533,7 @@ bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
 bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
 {
     jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
-    return supported;
+    return jitInstance->mc->repNotifyInstructionSetUsage(instructionSet, supported);
 }
 
 void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
@@ -1539,16 +1548,7 @@ void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
 uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
 {
     jitInstance->mc->cr->AddCall("getJitFlags");
-    uint32_t ret = jitInstance->mc->repGetJitFlags(jitFlags, sizeInBytes);
-    if (jitInstance->forceClearAltJitFlag)
-    {
-        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
-    }
-    else if (jitInstance->forceSetAltJitFlag)
-    {
-        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
-    }
-    return ret;
+    return jitInstance->getJitFlags(jitFlags, sizeInBytes);
 }
 
 // Runs the given function with the given parameter under an error trap

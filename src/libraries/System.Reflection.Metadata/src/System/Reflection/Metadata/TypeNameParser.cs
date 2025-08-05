@@ -80,6 +80,8 @@ namespace System.Reflection.Metadata
                 return null;
             }
 
+            // At this point, we have performed O(fullTypeNameLength) total work.
+
             ReadOnlySpan<char> fullTypeName = _inputString.Slice(0, fullTypeNameLength);
             _inputString = _inputString.Slice(fullTypeNameLength);
 
@@ -142,6 +144,12 @@ namespace System.Reflection.Metadata
                 }
             }
 
+            // At this point, we may have performed O(fullTypeNameLength + _inputString.Length) total work.
+            // This will be the case if there was whitespace after the full type name in the original input
+            // string. We could end up looking at these same whitespace chars again later in this method,
+            // such as when parsing decorators. We rely on the TryDive routine to limit the total number
+            // of times we might inspect the same character.
+
             // If there was an error stripping the generic args, back up to
             // before we started processing them, and let the decorator
             // parser try handling it.
@@ -180,14 +188,24 @@ namespace System.Reflection.Metadata
             if (allowFullyQualifiedName && !TryParseAssemblyName(ref assemblyName))
             {
 #if SYSTEM_PRIVATE_CORELIB
-                // backward compat: throw FileLoadException for non-empty invalid strings
-                if (_throwOnError || !_inputString.TrimStart().StartsWith(","))
+                // Backward compatibility: throw for non-empty invalid assembly names.
+                if (!_inputString.TrimStart().StartsWith(","))
                 {
+                    // Reject attempt to provide top-level assembly name to Assembly.GetType
+                    if (_parseOptions.IsAssemblyGetType)
+                    {
+                        if (_throwOnError)
+                        {
+                            throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+                        }
+                        return null;
+                    }
+
+                    // Otherwise, no matter what throwOnError is set to, we throw FileLoadException for invalid assembly names.
                     throw new IO.FileLoadException(SR.InvalidAssemblyName, _inputString.ToString());
                 }
-#else
-                return null;
 #endif
+                return null;
             }
 
             // No matter what was parsed, the full name string is allocated only once.
@@ -201,6 +219,9 @@ namespace System.Reflection.Metadata
             {
                 result = new(fullName: null, assemblyName, elementOrGenericType: result, declaringType, genericArgs);
             }
+
+            // The loop below is protected by the dive check during the first decorator pass prior
+            // to assembly name parsing above.
 
             if (previousDecorator != default) // some decorators were recognized
             {
@@ -244,6 +265,8 @@ namespace System.Reflection.Metadata
             {
                 return null;
             }
+
+            // The loop below is protected by the dive check in GetFullTypeNameLength.
 
             TypeName? declaringType = null;
             int nameOffset = 0;

@@ -61,6 +61,12 @@ namespace ILCompiler
             return false;
         }
 
+        public override bool ComputeContainsByRefs(DefType type)
+        {
+            Debug.Assert(!_fallbackAlgorithm.ComputeContainsByRefs(type));
+            return false;
+        }
+
         public override bool ComputeIsUnsafeValueType(DefType type)
         {
             Debug.Assert(!_fallbackAlgorithm.ComputeIsUnsafeValueType(type));

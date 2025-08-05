@@ -31,10 +31,10 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     // or to force it on, then propagate that to the jit flags.
     jit->forceClearAltJitFlag = false;
     jit->forceSetAltJitFlag = false;
-    const WCHAR* altJitFlag = jit->getForceOption(W("AltJit"));
+    const char* altJitFlag = jit->getForceOption("AltJit");
     if (altJitFlag != nullptr)
     {
-        if (u16_strcmp(altJitFlag, W("")) == 0)
+        if (strcmp(altJitFlag, "") == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -43,10 +43,10 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
             jit->forceSetAltJitFlag = true;
         }
     }
-    const WCHAR* altJitNgenFlag = jit->getForceOption(W("AltJitNgen"));
+    const char* altJitNgenFlag = jit->getForceOption("AltJitNgen");
     if (altJitNgenFlag != nullptr)
     {
-        if (u16_strcmp(altJitNgenFlag, W("")) == 0)
+        if (strcmp(altJitNgenFlag, "") == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -56,12 +56,12 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
         }
     }
 
-    jit->environment.getIntConfigValue   = nullptr;
-    jit->environment.getStingConfigValue = nullptr;
+    jit->environment.getIntConfigValue    = nullptr;
+    jit->environment.getStringConfigValue = nullptr;
 
     if (st1 != nullptr)
         st1->Start();
-    HRESULT hr = jit->StartUp(nameOfJit, false, breakOnAssert, firstContext);
+    HRESULT hr = jit->StartUp(nameOfJit, breakOnAssert, firstContext);
     if (st1 != nullptr)
         st1->Stop();
     if (hr != S_OK)
@@ -75,7 +75,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     return jit;
 }
 
-HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext)
+HRESULT JitInstance::StartUp(char* PathToJit, bool breakOnDebugBreakorAV, MethodContext* firstContext)
 {
     // startup jit
     DWORD dwRetVal = 0;
@@ -85,8 +85,6 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
     SetBreakOnDebugBreakOrAV(breakOnDebugBreakorAV);
 
     char pFullPathName[MAX_PATH];
-    char lpTempPathBuffer[MAX_PATH];
-    char szTempFileName[MAX_PATH];
 
     // find the full jit path
     dwRetVal = ::GetFullPathNameA(PathToJit, MAX_PATH, pFullPathName, nullptr);
@@ -96,67 +94,15 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         return E_FAIL;
     }
 
-    // Store the full path to the jit
-    PathToOriginalJit = (char*)malloc(MAX_PATH);
-    if (PathToOriginalJit == nullptr)
-    {
-        LogError("1st HeapAlloc failed (0x%08x)", ::GetLastError());
-        return E_FAIL;
-    }
-    ::strcpy_s(PathToOriginalJit, MAX_PATH, pFullPathName);
-
-    if (copyJit)
-    {
-        // Get a temp file location
-        dwRetVal = ::GetTempPathA(MAX_PATH, lpTempPathBuffer);
-        if (dwRetVal == 0)
-        {
-            LogError("GetTempPath failed (0x%08x)", ::GetLastError());
-            return E_FAIL;
-        }
-        if (dwRetVal > MAX_PATH)
-        {
-            LogError("GetTempPath returned a path that was larger than MAX_PATH");
-            return E_FAIL;
-        }
-        // Get a temp filename
-        uRetVal = ::GetTempFileNameA(lpTempPathBuffer, "Jit", 0, szTempFileName);
-        if (uRetVal == 0)
-        {
-            LogError("GetTempFileName failed (0x%08x)", ::GetLastError());
-            return E_FAIL;
-        }
-        dwRetVal = (DWORD)::strlen(szTempFileName);
-
-        // Store the full path to the temp jit
-        PathToTempJit = (char*)malloc(MAX_PATH);
-        if (PathToTempJit == nullptr)
-        {
-            LogError("2nd HeapAlloc failed 0x%08x)", ::GetLastError());
-            return E_FAIL;
-        }
-        ::strcpy_s(PathToTempJit, MAX_PATH, szTempFileName);
-
-        // Copy Temp File
-        bRetVal = ::CopyFileA(PathToOriginalJit, PathToTempJit, FALSE);
-        if (bRetVal == FALSE)
-        {
-            LogError("CopyFile failed (0x%08x)", ::GetLastError());
-            return E_FAIL;
-        }
-    }
-    else
-        PathToTempJit = PathToOriginalJit;
-
 #ifndef TARGET_UNIX // No file version APIs in the PAL
     // Do a quick version check
     DWORD dwHandle = 0;
-    DWORD fviSize  = GetFileVersionInfoSizeA(PathToTempJit, &dwHandle);
+    DWORD fviSize  = GetFileVersionInfoSizeA(pFullPathName, &dwHandle);
 
     if ((fviSize != 0) && (dwHandle == 0))
     {
         unsigned char* fviData = new unsigned char[fviSize];
-        if (GetFileVersionInfoA(PathToTempJit, dwHandle, fviSize, fviData))
+        if (GetFileVersionInfoA(pFullPathName, dwHandle, fviSize, fviData))
         {
             UINT              size    = 0;
             VS_FIXEDFILEINFO* verInfo = nullptr;
@@ -165,7 +111,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
                 if (size)
                 {
                     if (verInfo->dwSignature == 0xfeef04bd)
-                        LogDebug("'%s' is version %u.%u.%u.%u", PathToTempJit, (verInfo->dwFileVersionMS) >> 16,
+                        LogDebug("'%s' is version %u.%u.%u.%u", pFullPathName, (verInfo->dwFileVersionMS) >> 16,
                                  (verInfo->dwFileVersionMS) & 0xFFFF, (verInfo->dwFileVersionLS) >> 16,
                                  (verInfo->dwFileVersionLS) & 0xFFFF);
                 }
@@ -176,7 +122,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
 #endif // !TARGET_UNIX
 
     // Load Library
-    hLib = ::LoadLibraryExA(PathToTempJit, NULL, 0);
+    hLib = ::LoadLibraryExA(pFullPathName, NULL, 0);
     if (hLib == 0)
     {
         LogError("LoadLibrary failed (0x%08x)", ::GetLastError());
@@ -222,58 +168,22 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         // Mismatched version ID. Fail the load.
         pJitInstance = NULL;
 
-        LogError("Jit Compiler has wrong version identifier");
+        GUID expected = JITEEVersionIdentifier;
+        GUID actual = versionId;
+        LogError("Jit Compiler has wrong version identifier. Expected: %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x. Actual: %08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x.",
+                 expected.Data1, expected.Data2, expected.Data3,
+                 expected.Data4[0], expected.Data4[1], expected.Data4[2], expected.Data4[3],
+                 expected.Data4[4], expected.Data4[5], expected.Data4[6], expected.Data4[7],
+                 actual.Data1, actual.Data2, actual.Data3,
+                 actual.Data4[0], actual.Data4[1], actual.Data4[2], actual.Data4[3],
+                 actual.Data4[4], actual.Data4[5], actual.Data4[6], actual.Data4[7]);
+
         return -1;
     }
 
     icji = InitICorJitInfo(this);
 
     return S_OK;
-}
-
-bool JitInstance::reLoad(MethodContext* firstContext)
-{
-    FreeLibrary(hLib);
-
-    // Load Library
-    hLib = ::LoadLibraryExA(PathToTempJit, NULL, 0);
-    if (hLib == 0)
-    {
-        LogError("LoadLibrary failed (0x%08x)", ::GetLastError());
-        return false;
-    }
-
-    // get entry points
-    pngetJit = (PgetJit)::GetProcAddress(hLib, "getJit");
-    if (pngetJit == 0)
-    {
-        LogError("GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
-        return false;
-    }
-    pnjitStartup    = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
-
-    // Setup ICorJitHost and call jitStartup if necessary
-    if (pnjitStartup != nullptr)
-    {
-        mc      = firstContext;
-        jitHost = new JitHost(*this);
-        if (!callJitStartup(jitHost))
-        {
-            LogError("jitStartup failed");
-            return false;
-        }
-    }
-
-    pJitInstance = pngetJit();
-    if (pJitInstance == nullptr)
-    {
-        LogError("pngetJit gave us null");
-        return false;
-    }
-
-    icji = InitICorJitInfo(this);
-
-    return true;
 }
 
 #undef DLLEXPORT
@@ -334,7 +244,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
 
         pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags, &os);
         CORJIT_FLAGS jitFlags;
-        pParam->pThis->mc->repGetJitFlags(&jitFlags, sizeof(jitFlags));
+        pParam->pThis->getJitFlags(&jitFlags, sizeof(jitFlags));
 
         pParam->results.IsMinOpts =
             jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE) ||
@@ -387,6 +297,14 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
                     matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
                     break;
 
+                case IMAGE_FILE_MACHINE_LOONGARCH64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+                    break;
+
+                case IMAGE_FILE_MACHINE_RISCV64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_RISCV64);
+                    break;
+
                 default:
                     LogError("Unknown target architecture");
                     break;
@@ -399,6 +317,17 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             {
                 jitResult = CORJIT_OK;
             }
+            else
+            {
+                // If the target matches, but the JIT is an altjit and the user specified RunAltJitCode=0,
+                // then the JIT will also return CORJIT_SKIPPED, to prevent the generated code from being used.
+                // However, we don't want to treat that as a replay failure.
+                if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT) &&
+                    (pParam->pThis->jitHost->getIntConfigValue("RunAltJitCode", 1) == 0))
+                {
+                    jitResult = CORJIT_OK;
+                }
+            }
         }
 
         if ((jitResult == CORJIT_OK) || (jitResult == CORJIT_BADCODE))
@@ -409,8 +338,6 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
             pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
-
-            pParam->results.NumCodeBytes = NCodeSizeBlock;
         }
         else
         {
@@ -510,31 +437,47 @@ void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
 
 /*-------------------------- Misc ---------------------------------------*/
 
-const WCHAR* JitInstance::getForceOption(const WCHAR* key)
+const char* JitInstance::getForceOption(const char* key)
 {
     return getOption(key, forceOptions);
 }
 
-const WCHAR* JitInstance::getOption(const WCHAR* key)
+const char* JitInstance::getOption(const char* key)
 {
     return getOption(key, options);
 }
 
-const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options)
+const char* JitInstance::getOption(const char* key, LightWeightMap<DWORD, DWORD>* options)
 {
     if (options == nullptr)
     {
         return nullptr;
     }
 
-    size_t keyLenInBytes = sizeof(WCHAR) * (u16_strlen(key) + 1);
+    size_t keyLenInBytes = sizeof(char) * (strlen(key) + 1);
     int    keyIndex      = options->Contains((unsigned char*)key, (unsigned int)keyLenInBytes);
     if (keyIndex == -1)
     {
         return nullptr;
     }
 
-    return (const WCHAR*)options->GetBuffer(options->Get(keyIndex));
+    return (const char*)options->GetBuffer(options->Get(keyIndex));
+}
+
+// Returns extended flags for a particular compilation instance, adjusted for altjit.
+// This is a helper call; it does not record the call in the CompileResult.
+uint32_t JitInstance::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
+{
+    uint32_t ret = mc->repGetJitFlags(jitFlags, sizeInBytes);
+    if (forceClearAltJitFlag)
+    {
+        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    else if (forceSetAltJitFlag)
+    {
+        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
+    }
+    return ret;
 }
 
 // Used to allocate memory that needs to handed to the EE.
@@ -599,7 +542,7 @@ bool JitInstance::callJitStartup(ICorJitHost* jithost)
     }
     PAL_ENDTRY
 
-    Assert(environment.getIntConfigValue == nullptr && environment.getStingConfigValue == nullptr);
+    Assert(environment.getIntConfigValue == nullptr && environment.getStringConfigValue == nullptr);
     environment = mc->cloneEnvironment();
 
     return param.result;
@@ -619,10 +562,10 @@ bool JitInstance::resetConfig(MethodContext* firstContext)
         environment.getIntConfigValue = nullptr;
     }
 
-    if (environment.getStingConfigValue != nullptr)
+    if (environment.getStringConfigValue != nullptr)
     {
-        delete environment.getStingConfigValue;
-        environment.getStingConfigValue = nullptr;
+        delete environment.getStringConfigValue;
+        environment.getStringConfigValue = nullptr;
     }
 
     mc                   = firstContext;

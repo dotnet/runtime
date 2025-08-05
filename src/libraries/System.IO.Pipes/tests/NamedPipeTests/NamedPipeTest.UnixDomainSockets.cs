@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support UnixDomain")]
     public class NamedPipeTest_UnixDomainSockets
     {
         [Fact]

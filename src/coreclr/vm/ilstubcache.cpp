@@ -97,33 +97,9 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     pResolver->SetStubMethodDesc(pStubMD);
 
-
-    {
-        UINT   maxStack;
-        size_t cbCode = pStubLinker->Link(&maxStack);
-        DWORD cbSig = pStubLinker->GetLocalSigSize();
-
-        COR_ILMETHOD_DECODER * pILHeader = pResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        BYTE * pbBuffer   = (BYTE *)pILHeader->Code;
-        BYTE * pbLocalSig = (BYTE *)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-
-        size_t numEH = pStubLinker->GetNumEHClauses();
-        if (numEH > 0)
-        {
-            pStubLinker->WriteEHClauses(pResolver->AllocEHSect(numEH));
-        }
-
-        pStubLinker->GenerateCode(pbBuffer, cbCode);
-        pStubLinker->GetLocalSig(pbLocalSig, cbSig);
-
-        pResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-    }
-
-    pResolver->SetTokenLookupMap(pStubLinker->GetTokenLookupMap());
+    pResolver->FinalizeILStub(pStubLinker);
 
     RETURN pStubMD;
-
 }
 
 
@@ -148,6 +124,7 @@ namespace
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
             case DynamicMethodDesc::StubMulticastDelegate:  return "IL_STUB_MulticastDelegate_Invoke";
+            case DynamicMethodDesc::StubDelegateInvokeMethod:  return "IL_STUB_Delegate_Invoke";
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
             case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
             case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
@@ -155,7 +132,9 @@ namespace
             case DynamicMethodDesc::StubWrapperDelegate:    return "IL_STUB_WrapperDelegate_Invoke";
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
-            case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_bVirtualStaticMethodDispatch";
+            case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_VirtualStaticMethodDispatch";
+            case DynamicMethodDesc::StubDelegateShuffleThunk: return "IL_STUB_DelegateShuffleThunk";
+            case DynamicMethodDesc::StubAsyncResume:        return "IL_STUB_AsyncResume";
             default:
                 UNREACHABLE_MSG("Unknown stub type");
         }
@@ -181,6 +160,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
                                                            mcDynamic,
                                                            TRUE /* fNonVtableSlot */,
                                                            TRUE /* fNativeCodeSlot */,
+                                                           FALSE /* HasAsyncMethodData */,
                                                            pMT,
                                                            pamTracker);
 
@@ -242,6 +222,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetILStubType(DynamicMethodDesc::StubMulticastDelegate);
     }
     else
+    if (SF_IsDelegateInvokeMethod(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubDelegateInvokeMethod);
+    }
+    else
     if (SF_IsWrapperDelegateStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubWrapperDelegate);
@@ -267,6 +252,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsTailCallCallTargetStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubTailCallCallTarget);
+    }
+    else
+    if (SF_IsAsyncResumeStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubAsyncResume);
     }
     else
 #ifdef FEATURE_COMINTEROP
@@ -295,6 +285,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
+    }
+    else
+    if (SF_IsDelegateShuffleThunk(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubDelegateShuffleThunk);
     }
     else
     {
@@ -447,9 +442,9 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 //
 // JIT'ed IL stubs
 //
-//    - The ILStubCache is per-BaseDomain
+//    - The ILStubCache is per-LoaderAllocator
 //
-//    - Each BaseDomain's ILStubCache will lazily create a "minimal MethodTable" to
+//    - Each LoaderAllocator's ILStubCache will lazily create a "minimal MethodTable" to
 //      serve as the home for IL stub MethodDescs
 //
 //    - The created MethodTables will use the Module belonging to one of the
@@ -463,10 +458,7 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 //
 // It's important to point out that the Module we latch onto here has no knowledge
 // of the MethodTable that we've just "added" to it.  There only exists a "back
-// pointer" to the Module from the MethodTable itself.  So we're really only using
-// that module to answer the question of what BaseDomain the MethodTable lives in.
-// So as long as the BaseDomain for that module is the same as the BaseDomain the
-// ILStubCache lives in, I think we have a fairly consistent story here.
+// pointer" to the Module from the MethodTable itself.
 //
 // We're relying on the fact that a VASigCookie may only mention types within the
 // corresponding module used to qualify the signature and the fact that interop
@@ -475,14 +467,7 @@ MethodDesc* ILStubCache::InsertStubMethodDesc(MethodDesc *pMD, ILStubHashBlob* p
 // ELEMENT_TYPE_INTERNAL, which may refer to any type.
 //
 // We can only access E_T_INTERNAL through LCG, which does not permit referring
-// to types in other BaseDomains.
-//
-//
-// Places for improvement:
-//
-//    - allow NGEN'ing of CALLI pinvoke and vararg pinvoke
-//
-//    - pre-populate the per-BaseDomain cache with IL stubs from  NGEN'ed image
+// to types in other AppDomains.
 //
 
 MethodDesc* ILStubCache::GetStubMethodDesc(

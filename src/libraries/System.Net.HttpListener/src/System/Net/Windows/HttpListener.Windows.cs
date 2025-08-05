@@ -70,7 +70,9 @@ namespace System.Net
                 {
                     return;
                 }
-                lock ((DisconnectResults as ICollection).SyncRoot)
+
+                var disconnectResults = DisconnectResults;
+                lock ((disconnectResults as ICollection).SyncRoot)
                 {
                     if (_unsafeConnectionNtlmAuthentication == value)
                     {
@@ -79,7 +81,7 @@ namespace System.Net
                     _unsafeConnectionNtlmAuthentication = value;
                     if (!value)
                     {
-                        foreach (DisconnectAsyncResult result in DisconnectResults.Values)
+                        foreach (DisconnectAsyncResult result in disconnectResults.Values)
                         {
                             result.AuthenticatedConnection = null;
                         }
@@ -366,7 +368,7 @@ namespace System.Net
             }
         }
 
-        private unsafe void CreateRequestQueueHandle()
+        private void CreateRequestQueueHandle()
         {
             Debug.Assert(Monitor.IsEntered(_internalLock));
             Debug.Assert(_currentSession is null);
@@ -374,7 +376,7 @@ namespace System.Net
             _currentSession = new HttpListenerSession(this);
         }
 
-        private unsafe void CloseRequestQueueHandle()
+        private void CloseRequestQueueHandle()
         {
             Debug.Assert(Monitor.IsEntered(_internalLock));
 
@@ -588,7 +590,7 @@ namespace System.Net
             }
         }
 
-        internal static unsafe bool ValidateRequest(HttpListenerSession session, RequestContextBase requestMemory)
+        internal static bool ValidateRequest(HttpListenerSession session, RequestContextBase requestMemory)
         {
             // Block potential DOS attacks
             if (requestMemory.RequestBlob->Headers.UnknownHeaderCount > UnknownHeaderLimit)
@@ -694,7 +696,13 @@ namespace System.Net
             // assurance that we do this only for NTLM/Negotiate is not here, but in the
             // code that caches WindowsIdentity instances in the Dictionary.
             DisconnectAsyncResult? disconnectResult;
-            DisconnectResults.TryGetValue(connectionId, out disconnectResult);
+
+            var disconnectResults = DisconnectResults;
+            lock ((disconnectResults as ICollection).SyncRoot)
+            {
+                disconnectResults.TryGetValue(connectionId, out disconnectResult);
+            }
+
             if (UnsafeConnectionNtlmAuthentication)
             {
                 if (authorizationHeader == null)
@@ -1327,7 +1335,12 @@ namespace System.Net
                     // Need to make sure it's going to get returned before adding it to the hash.  That way it'll be handled
                     // correctly in HandleAuthentication's finally.
                     disconnectResult = result;
-                    session.Listener.DisconnectResults[connectionId] = disconnectResult;
+
+                    var disconnectResults = session.Listener.DisconnectResults;
+                    lock ((disconnectResults as ICollection).SyncRoot)
+                    {
+                        disconnectResults[connectionId] = disconnectResult;
+                    }
                 }
 
                 if (statusCode == Interop.HttpApi.ERROR_SUCCESS && HttpListener.SkipIOCPCallbackOnSuccess)
@@ -1443,7 +1456,7 @@ namespace System.Net
             }
         }
 
-        private static unsafe int GetTokenOffsetFromBlob(IntPtr blob)
+        private static int GetTokenOffsetFromBlob(IntPtr blob)
         {
             Debug.Assert(blob != IntPtr.Zero);
             IntPtr tokenPointer = ((Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS*)blob)->ChannelToken;
@@ -1452,7 +1465,7 @@ namespace System.Net
             return (int)((byte*)tokenPointer - (byte*)blob);
         }
 
-        private static unsafe int GetTokenSizeFromBlob(IntPtr blob)
+        private static int GetTokenSizeFromBlob(IntPtr blob)
         {
             Debug.Assert(blob != IntPtr.Zero);
             return (int)((Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS*)blob)->ChannelTokenSize;
@@ -1582,7 +1595,7 @@ namespace System.Net
                 }
             }
 
-            internal unsafe DisconnectAsyncResult(HttpListenerSession session, ulong connectionId)
+            internal DisconnectAsyncResult(HttpListenerSession session, ulong connectionId)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HttpListener: {session.Listener}, ConnectionId: {connectionId}");
                 _ownershipState = OwnershipState.InHandleAuthentication;
@@ -1646,8 +1659,21 @@ namespace System.Net
             {
                 HttpListener listener = _listenerSession.Listener;
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DisconnectResults {listener.DisconnectResults} removing for _connectionId: {_connectionId}");
-                listener.DisconnectResults.Remove(_connectionId);
+                var disconnectResults = listener.DisconnectResults;
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    string? results;
+                    lock  ((disconnectResults as ICollection).SyncRoot)
+                    {
+                        results = disconnectResults.ToString();
+                    }
+                    NetEventSource.Info(this, $"DisconnectResults {results} removing for _connectionId: {_connectionId}");
+                }
+
+                lock ((disconnectResults as ICollection).SyncRoot)
+                {
+                    disconnectResults.Remove(_connectionId);
+                }
 
                 // Cached identity is disposed with the session context
                 Session?.Dispose();

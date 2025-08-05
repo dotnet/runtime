@@ -25,21 +25,21 @@ namespace System.Formats.Asn1
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 6).
         /// </param>
         /// <returns>
-        ///   The decoded object identifier, in dotted-decimal notation.
+        ///   The decoded object identifier in the dotted-decimal notation.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -345,16 +345,17 @@ namespace System.Formats.Asn1
         /// <param name="expectedTag">
         ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 6).
         /// </param>
+        /// <returns>The decoded object identifier in the dotted-decimal notation.</returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is

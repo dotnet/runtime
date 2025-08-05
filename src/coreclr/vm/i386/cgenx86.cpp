@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENX86.CPP -
-//
 // Various helper routines for generating x86 assembly code.
-//
-//
 
 // Precompiled Header
 
@@ -38,6 +36,10 @@
 #endif // FEATURE_COMINTEROP
 
 #include "stublink.inl"
+
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 // NOTE on Frame Size C_ASSERT usage in this file
 // if the frame size changes then the stubs have to be revisited for correctness
@@ -137,7 +139,7 @@ void EHContext::UpdateFrame(PREGDISPLAY regs)
 }
 #endif // FEATURE_EH_FUNCLETS
 
-void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -155,7 +157,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 
     UpdateRegDisplayHelper(pRD, pFunc->CbStackPop());
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
@@ -173,16 +175,15 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 
     CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
 
-    pRD->PCTAddr = GetReturnAddressPtr();
+    SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
+
+    DWORD CallerSP = (DWORD)(GetReturnAddressPtr() + sizeof(TADDR) + cbStackPop);
 
 #ifdef FEATURE_EH_FUNCLETS
-
-    DWORD CallerSP = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);;
     pRD->pCurrentContext->Esp = CallerSP;
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, regs);
@@ -199,194 +200,14 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
+    pRD->SP  = CallerSP;
 
 #endif // FEATURE_EH_FUNCLETS
 
     RETURN;
 }
 
-void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(m_MachState.isValid());               // InsureInit has been called
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState.GetRetAddr(), m_MachState.esp()));
-
-#ifdef FEATURE_EH_FUNCLETS
-
-    pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-#ifdef DACCESS_COMPILE
-    // For DAC, we may get here when the HMF is still uninitialized.
-    // So we may need to unwind here.
-    if (!m_MachState.isValid())
-    {
-        // This allocation throws on OOM.
-        MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
-
-        InsureInit(pUnwoundState);
-
-        pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
-        pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
-        pRD->pCurrentContext->Esp = pRD->SP        = pUnwoundState->esp();
-
-        // Do not use pUnwoundState->p##regname() here because it returns NULL in this case
-        pRD->pCurrentContext->Edi = pUnwoundState->_edi;
-        pRD->pCurrentContext->Esi = pUnwoundState->_esi;
-        pRD->pCurrentContext->Ebx = pUnwoundState->_ebx;
-        pRD->pCurrentContext->Ebp = pUnwoundState->_ebp;
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = (DWORD*) pUnwoundState->p##regname();
-        ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-        ClearRegDisplayArgumentAndScratchRegisters(pRD);
-
-        return;
-    }
-#endif // DACCESS_COMPILE
-
-    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
-    pRD->pCurrentContext->Eip = pRD->ControlPC = m_MachState.GetRetAddr();
-    pRD->pCurrentContext->Esp = pRD->SP = (DWORD) m_MachState.esp();
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *((DWORD*) m_MachState.p##regname());
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = (DWORD*) m_MachState.p##regname();
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    //
-    // Clear all knowledge of scratch registers.  We're skipping to any
-    // arbitrary point on the stack, and frames aren't required to preserve or
-    // keep track of these anyways.
-    //
-
-    ClearRegDisplayArgumentAndScratchRegisters(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-#ifdef DACCESS_COMPILE
-
-    //
-    // In the dac case we may have gotten here
-    // without the frame being initialized, so
-    // try and initialize on the fly.
-    //
-
-    if (!m_MachState.isValid())
-    {
-        MachState unwindState;
-
-        InsureInit(&unwindState);
-        pRD->PCTAddr = dac_cast<TADDR>(unwindState.pRetAddr());
-        pRD->ControlPC = unwindState.GetRetAddr();
-        pRD->SP = unwindState._esp;
-
-        // Get some special host instance memory
-        // so we have a place to point to.
-        // This host memory has no target address
-        // and so won't be looked up or used for
-        // anything else.
-        MachState* thisState = (MachState*)
-            DacAllocHostOnlyInstance(sizeof(*thisState), true);
-
-        thisState->_edi = unwindState._edi;
-        pRD->pEdi = (DWORD *)&thisState->_edi;
-        thisState->_esi = unwindState._esi;
-        pRD->pEsi = (DWORD *)&thisState->_esi;
-        thisState->_ebx = unwindState._ebx;
-        pRD->pEbx = (DWORD *)&thisState->_ebx;
-        thisState->_ebp = unwindState._ebp;
-        pRD->pEbp = (DWORD *)&thisState->_ebp;
-
-        // InsureInit always sets m_RegArgs to zero
-        // in the real code.  I'm not sure exactly
-        // what should happen in the on-the-fly case,
-        // but go with what would happen from an InsureInit.
-
-        RETURN;
-    }
-
-#endif // #ifdef DACCESS_COMPILE
-
-    // DACCESS: The MachState pointers are kept as PTR_TADDR so
-    // the host pointers here refer to the appropriate size and
-    // these casts are not a problem.
-    pRD->pEdi = (DWORD*) m_MachState.pEdi();
-    pRD->pEsi = (DWORD*) m_MachState.pEsi();
-    pRD->pEbx = (DWORD*) m_MachState.pEbx();
-    pRD->pEbp = (DWORD*) m_MachState.pEbp();
-
-    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
-    pRD->ControlPC = m_MachState.GetRetAddr();
-    pRD->SP  = (DWORD) m_MachState.esp();
-
-#endif // FEATURE_EH_FUNCLETS
-
-    RETURN;
-}
-
-#ifdef _DEBUG_IMPL
-// Confirm that if the machine state was not initialized, then
-// any unspilled callee saved registers did not change
-EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* frame, void* esiVal, void* ediVal, void* ebxVal, void* ebpVal)
-    {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        DEBUG_ONLY;
-    }
-    CONTRACTL_END;
-
-    MachState* state = frame->MachineState();
-
-    // if we've already executed this check once for this helper method frame then
-    // we don't do the check again because it is very expensive.
-    if (frame->HaveDoneConfirmStateCheck())
-    {
-        return state;
-    }
-
-    // probe to avoid a kazillion violations in the code that follows.
-    BEGIN_DEBUG_ONLY_CODE;
-    if (!state->isValid())
-    {
-        frame->InsureInit(NULL);
-        _ASSERTE(state->_pEsi != &state->_esi || state->_esi  == (TADDR)esiVal);
-        _ASSERTE(state->_pEdi != &state->_edi || state->_edi  == (TADDR)ediVal);
-        _ASSERTE(state->_pEbx != &state->_ebx || state->_ebx  == (TADDR)ebxVal);
-        _ASSERTE(state->_pEbp != &state->_ebp || state->_ebp  == (TADDR)ebpVal);
-    }
-    END_DEBUG_ONLY_CODE;
-
-    // set that we have executed this check once for this helper method frame.
-    frame->SetHaveDoneConfirmStateCheck();
-
-    return state;
-}
-#endif
-
-void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void ExternalMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -399,13 +220,13 @@ void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFlo
 
     UpdateRegDisplayHelper(pRD, CbStackPopUsingGCRefMap(GetGCRefMap()));
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
 
 
-void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -424,7 +245,7 @@ void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     else
     if (GetFunction() != NULL)
     {
-        FramedMethodFrame::UpdateRegDisplay(pRD);
+        FramedMethodFrame::UpdateRegDisplay_Impl(pRD);
     }
     else
     {
@@ -436,14 +257,20 @@ void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This path is hit when we are throwing null reference exception from
         // code:VSD_ResolveWorker or code:StubDispatchFixupWorker
         pRD->ControlPC = GetAdjustedCallAddress(pRD->ControlPC);
+#ifdef FEATURE_EH_FUNCLETS
+        // We need to set EIP to match ControlPC to ensure Thread::VirtualUnwindCallFrame
+        // doesn't fail assertion on GetControlPC(pRD) == GetIP(pRD->pCurrentContext)
+        // precondition.
+        pRD->pCurrentContext->Eip = pRD->ControlPC;
+#endif
     }
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
 
-PCODE StubDispatchFrame::GetReturnAddress()
+PCODE StubDispatchFrame::GetReturnAddress_Impl()
 {
     CONTRACTL
     {
@@ -452,7 +279,7 @@ PCODE StubDispatchFrame::GetReturnAddress()
     }
     CONTRACTL_END;
 
-    PCODE retAddress = FramedMethodFrame::GetReturnAddress();
+    PCODE retAddress = FramedMethodFrame::GetReturnAddress_Impl();
     if (GetFunction() == NULL && GetGCRefMap() == NULL)
     {
         // See comment in code:StubDispatchFrame::UpdateRegDisplay
@@ -461,7 +288,7 @@ PCODE StubDispatchFrame::GetReturnAddress()
     return retAddress;
 }
 
-void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -472,7 +299,7 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
     }
     CONTRACT_END;
 
-    pRD->PCTAddr = GetReturnAddressPtr();
+    SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
 #ifdef FEATURE_EH_FUNCLETS
 
@@ -508,16 +335,15 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
 #undef CALLEE_SAVED_REGISTER
 
     pRD->SP = m_Esp;
-    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
 
 #endif // FEATURE_EH_FUNCLETS
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
 
-void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -545,30 +371,34 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
     DWORD stackArgSize = 0;
 
 #if !defined(UNIX_X86_ABI)
-    stackArgSize = (DWORD) dac_cast<TADDR>(m_Datum);
+    TADDR datum = dac_cast<TADDR>(m_Datum);
+
+#ifdef FEATURE_EH_FUNCLETS
+    datum &= ~(TADDR)InlinedCallFrameMarker::Mask;
+#endif
+
+    stackArgSize = (DWORD)datum;
 
     if (stackArgSize & ~0xFFFF)
     {
-        NDirectMethodDesc * pMD = PTR_NDirectMethodDesc(m_Datum);
+        PInvokeMethodDesc * pMD = PTR_PInvokeMethodDesc(datum);
 
-        /* if this is not an NDirect frame, something is really wrong */
+        /* if this is not an PInvoke frame, something is really wrong */
 
-        _ASSERTE(pMD->SanityCheck() && pMD->IsNDirect());
+        _ASSERTE(pMD->SanityCheck() && pMD->IsPInvoke());
 
         stackArgSize = pMD->GetStackArgumentSize();
     }
 #endif
 
     /* The return address is just above the "ESP" */
-    pRD->PCTAddr = PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this,
-                                         m_pCallerReturnAddress);
+    SetRegdisplayPCTAddr(pRD, PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this, m_pCallerReturnAddress));
 
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
     pRD->pCurrentContext->Esp = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
     pRD->pCurrentContext->Ebp = (DWORD) m_pCalleeSavedFP;
 
@@ -589,13 +419,12 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 
     pRD->pEbp = (DWORD*) &m_pCalleeSavedFP;
 
-    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
     /* Now we need to pop off the outgoing arguments */
     pRD->SP  = (DWORD) dac_cast<TADDR>(m_pCallSiteSP) + stackArgSize;
 
 #endif // FEATURE_EH_FUNCLETS
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
@@ -604,13 +433,13 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 //==========================
 // Resumable Exception Frame
 //
-TADDR ResumableFrame::GetReturnAddressPtr()
+TADDR ResumableFrame::GetReturnAddressPtr_Impl()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip);
 }
 
-void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -621,14 +450,13 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     }
     CONTRACT_END;
 
-    pRD->PCTAddr = dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip);
+    SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip));
 
 #ifdef FEATURE_EH_FUNCLETS
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
     pRD->SP = m_Regs->Esp;
-    pRD->ControlPC = m_Regs->Eip;
 
 #define ARGUMENT_AND_SCRATCH_REGISTER(reg) pRD->pCurrentContextPointers->reg = &m_Regs->reg;
     ENUM_ARGUMENT_AND_SCRATCH_REGISTERS();
@@ -683,14 +511,14 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 
 #endif // !FEATURE_EH_FUNCLETS
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
 //  -> HijackFrame::UpdateRegDisplay should restore all the registers pushed by OnHijackTripThread
-void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL {
         NOTHROW;
@@ -699,15 +527,14 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     }
     CONTRACTL_END;
 
-    pRD->PCTAddr = dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Eip);
+    SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Eip));
 
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
-    pRD->pCurrentContext->Esp = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
+    pRD->pCurrentContext->Esp = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
 
 #define RESTORE_REG(reg) { pRD->pCurrentContext->reg = m_Args->reg; pRD->pCurrentContextPointers->reg = &m_Args->reg; }
 #define CALLEE_SAVED_REGISTER(reg) RESTORE_REG(reg)
@@ -736,17 +563,16 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 #undef ARGUMENT_AND_SCRATCH_REGISTER
 #undef RESTORE_REG
 
-    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
+    pRD->SP  = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
 
 #endif // FEATURE_EH_FUNCLETS
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
 #endif  // FEATURE_HIJACK
 
-void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void PInvokeCalliFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -760,13 +586,13 @@ void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     VASigCookie *pVASigCookie = GetVASigCookie();
     UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
 
 #ifndef UNIX_X86_ABI
-void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACT_VOID
     {
@@ -777,15 +603,14 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     }
     CONTRACT_END;
 
-    pRD->PCTAddr = GetReturnAddressPtr();
+    SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Eip = *PTR_PCODE(pRD->PCTAddr);
-    pRD->pCurrentContext->Esp = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
+    pRD->pCurrentContext->Esp = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, &m_regs);
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
@@ -801,24 +626,21 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
+    pRD->SP  = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
 
 #endif
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
 #endif // !UNIX_X86_ABI
 
-#ifdef FEATURE_READYTORUN
-void DynamicHelperFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+void DynamicHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     WRAPPER_NO_CONTRACT;
     UpdateRegDisplayHelper(pRD, 0);
 }
-#endif // FEATURE_READYTORUN
 
 //------------------------------------------------------------------------
 // This is declared as returning WORD instead of PRD_TYPE because of
@@ -861,78 +683,6 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 
 #ifndef DACCESS_COMPILE
-
-Stub *GenerateInitPInvokeFrameHelper()
-{
-    CONTRACT(Stub*)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    CORINFO_EE_INFO::InlinedCallFrameInfo FrameInfo;
-    InlinedCallFrame::GetEEInfo(&FrameInfo);
-
-    // EDI contains address of the frame on stack (the frame ptr, not its negspace)
-    unsigned negSpace = FrameInfo.offsetOfFrameVptr;
-
-    // mov esi, GetThread()
-    psl->X86EmitCurrentThreadFetch(kESI, (1 << kEDI) | (1 << kEBX) | (1 << kECX) | (1 << kEDX));
-
-    // mov [edi + FrameInfo.offsetOfGSCookie], GetProcessGSCookie()
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfGSCookie - negSpace);
-    psl->Emit32(GetProcessGSCookie());
-
-    // mov [edi + FrameInfo.offsetOfFrameVptr], InlinedCallFrame::GetFrameVtable()
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfFrameVptr - negSpace);
-    psl->Emit32(InlinedCallFrame::GetMethodFrameVPtr());
-
-    // mov eax, [esi + offsetof(Thread, m_pFrame)]
-    // mov [edi + FrameInfo.offsetOfFrameLink], eax
-    psl->X86EmitIndexRegLoad(kEAX, kESI, offsetof(Thread, m_pFrame));
-    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfFrameLink - negSpace, kEAX);
-
-    // mov [edi + FrameInfo.offsetOfCalleeSavedEbp], ebp
-    psl->X86EmitIndexRegStore(kEDI, FrameInfo.offsetOfCalleeSavedFP - negSpace, kEBP);
-
-    // mov [edi + FrameInfo.offsetOfReturnAddress], 0
-    psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfReturnAddress - negSpace);
-    psl->Emit32(0);
-
-    // mov [esi + offsetof(Thread, m_pFrame)], edi
-    psl->X86EmitIndexRegStore(kESI, offsetof(Thread, m_pFrame), kEDI);
-
-    // leave current Thread in ESI
-    psl->X86EmitReturn(0);
-
-    // A single process-wide stub that will never unload
-    RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-}
-
-// Disable when calling into managed code from a place that fails via Exceptions
-extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    // Do not add a CONTRACT here.  We haven't set up SEH.
-
-    // WARNING!!!!
-    // when we start executing here, we are actually in cooperative mode.  But we
-    // haven't synchronized with the barrier to reentry yet.  So we are in a highly
-    // dangerous mode.  If we call managed code, we will potentially be active in
-    // the GC heap, even as GC's are occurring!
-
-    // We must do the following in this order, because otherwise we would be constructing
-    // the exception for the abort without synchronizing with the GC.  Also, we have no
-    // CLR SEH set up, despite the fact that we may throw a ThreadAbortException.
-    pThread->RareDisablePreemptiveGC();
-    pThread->HandleThreadAbort();
-}
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -998,49 +748,6 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #pragma warning (default : 4731)
 #endif // !FEATURE_METADATA_UPDATER
 
-
-void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef _DEBUG
-    m_alignpad[0] = X86_INSTR_INT3;
-    m_alignpad[1] = X86_INSTR_INT3;
-#endif // _DEBUG
-    m_movEAX     = X86_INSTR_MOV_EAX_IMM32;
-    m_uet        = pvSecretParam;
-    m_jmp        = X86_INSTR_JMP_REL32;
-    m_execstub   = (BYTE*) ((pTargetCode) - (4+((BYTE*)&pEntryThunkCodeRX->m_execstub)));
-
-    ClrFlushInstructionCache(pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
-}
-
-void UMEntryThunkCode::Poison()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
-    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
-
-    pThisRW->m_execstub = (BYTE*) ((BYTE*)UMEntryThunk::ReportViolation - (4+((BYTE*)&m_execstub)));
-
-    // mov ecx, imm32
-    pThisRW->m_movEAX = 0xb9;
-
-    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
-}
-
-UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (*((BYTE*)pCallback) != X86_INSTR_MOV_EAX_IMM32 ||
-        ( ((size_t)pCallback) & 3) != 2) {
-        return NULL;
-    }
-    return *(UMEntryThunk**)( 1 + (BYTE*)pCallback );
-}
-
 #ifdef FEATURE_READYTORUN
 
 //
@@ -1049,7 +756,7 @@ UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1057,6 +764,14 @@ UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
     BYTE * pStart = startWriterHolder.GetRW(); \
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
+
+#ifdef FEATURE_PERFMAP
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
+#else
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
+#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
@@ -1289,9 +1004,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
-        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
-        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
     ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));

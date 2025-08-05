@@ -44,6 +44,13 @@ namespace System.Text.Json.Serialization.Converters
             {
                 Span<byte> stackSpan = stackalloc byte[MaxEscapedFormatLength];
                 int bytesWritten = reader.CopyString(stackSpan);
+
+                // CopyString can unescape which can change the length, so we need to perform the length check again.
+                if (bytesWritten < FormatLength)
+                {
+                    ThrowHelper.ThrowFormatException(DataType.DateOnly);
+                }
+
                 source = stackSpan.Slice(0, bytesWritten);
             }
 
@@ -57,11 +64,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
         {
-#if NET8_0_OR_GREATER
             Span<byte> buffer = stackalloc byte[FormatLength];
-#else
-            Span<char> buffer = stackalloc char[FormatLength];
-#endif
             bool formattedSuccessfully = value.TryFormat(buffer, out int charsWritten, "O", CultureInfo.InvariantCulture);
             Debug.Assert(formattedSuccessfully && charsWritten == FormatLength);
             writer.WriteStringValue(buffer);
@@ -69,11 +72,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-#if NET8_0_OR_GREATER
             Span<byte> buffer = stackalloc byte[FormatLength];
-#else
-            Span<char> buffer = stackalloc char[FormatLength];
-#endif
             bool formattedSuccessfully = value.TryFormat(buffer, out int charsWritten, "O", CultureInfo.InvariantCulture);
             Debug.Assert(formattedSuccessfully && charsWritten == FormatLength);
             writer.WritePropertyName(buffer);

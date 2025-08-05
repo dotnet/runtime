@@ -23,15 +23,6 @@ CreateFileA(
 PALIMPORT
 BOOL
 PALAPI
-CopyFileA(
-      IN LPCSTR lpExistingFileName,
-      IN LPCSTR lpNewFileName,
-      IN BOOL bFailIfExists);
-
-
-PALIMPORT
-BOOL
-PALAPI
 DeleteFileA(
         IN LPCSTR lpFileName);
 
@@ -50,40 +41,6 @@ CreateDirectoryW(
          IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
 
 PALIMPORT
-HANDLE
-PALAPI
-FindFirstFileA(
-           IN LPCSTR lpFileName,
-           OUT LPWIN32_FIND_DATAA lpFindFileData);
-
-PALIMPORT
-BOOL
-PALAPI
-FindNextFileA(
-          IN HANDLE hFindFile,
-          OUT LPWIN32_FIND_DATAA lpFindFileData);
-
-PALIMPORT
-DWORD
-PALAPI
-GetFileAttributesA(
-           IN LPCSTR lpFileName);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesA(
-           IN LPCSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesW(
-           IN LPCWSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-PALIMPORT
 DWORD
 PALAPI
 GetFullPathNameA(
@@ -91,15 +48,6 @@ GetFullPathNameA(
          IN DWORD nBufferLength,
          OUT LPSTR lpBuffer,
          OUT LPSTR *lpFilePart);
-
-PALIMPORT
-UINT
-PALAPI
-GetTempFileNameA(
-         IN LPCSTR lpPathName,
-         IN LPCSTR lpPrefixString,
-         IN UINT uUnique,
-         OUT LPSTR lpTempFileName);
 
 PALIMPORT
 DWORD

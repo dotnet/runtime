@@ -44,11 +44,11 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
 #ifdef FEATURE_READYTORUN
 static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 simpleName, bool compositeComponent, LPCUTF8 assemblyRequirementName)
 {
-    CHAR assemblyMvidText[GUID_STR_BUFFER_LEN];
-    GuidToLPSTR(mvidActual, assemblyMvidText);
+    CHAR assemblyMvidText[MINIPAL_GUID_BUFFER_LEN];
+    minipal_guid_as_string(mvidActual, assemblyMvidText, MINIPAL_GUID_BUFFER_LEN);
 
-    CHAR componentMvidText[GUID_STR_BUFFER_LEN];
-    GuidToLPSTR(mvidExpected, componentMvidText);
+    CHAR componentMvidText[MINIPAL_GUID_BUFFER_LEN];
+    minipal_guid_as_string(mvidExpected, componentMvidText, MINIPAL_GUID_BUFFER_LEN);
 
     SString message;
     if (compositeComponent)
@@ -168,11 +168,13 @@ void AssemblyBinder::AddLoadedAssembly(Assembly* loadedAssembly)
 
 void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName)
 {
-    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
+    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetAssemblyLoadContext())
     {
         alcName.Set(W("Default"));
         return;
     }
+
+    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
     OBJECTREF* alc = reinterpret_cast<OBJECTREF*>(managedALC);
 
@@ -203,7 +205,7 @@ void AssemblyBinder::GetNameForDiagnostics(/*out*/ SString& alcName)
     }
     else
     {
-        GetNameForDiagnosticsFromManagedALC(GetManagedAssemblyLoadContext(), alcName);
+        GetNameForDiagnosticsFromManagedALC(GetAssemblyLoadContext(), alcName);
     }
 }
 

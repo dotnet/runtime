@@ -3,7 +3,7 @@
 //
 // OBJECT.H
 //
-// Definitions of a Com+ Object
+// Definitions of a CLR Object
 //
 
 // See code:EEStartup#TableOfContents for overview
@@ -26,10 +26,10 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 /*
  #ObjectModel
- * COM+ Internal Object Model
+ * CLR Internal Object Model
  *
  *
- * Object              - This is the common base part to all COM+ objects
+ * Object              - This is the common base part to all CLR objects
  *  |                        it contains the MethodTable pointer and the
  *  |                        sync block index, which is at a negative offset
  *  |
@@ -77,7 +77,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 class MethodTable;
 class Thread;
-class BaseDomain;
 class Assembly;
 class DomainAssembly;
 class AssemblyNative;
@@ -128,6 +127,8 @@ struct RCW;
 //
 class Object
 {
+    friend class CheckAsmOffsets;
+
   protected:
     PTR_MethodTable m_pMethTab;
 
@@ -265,6 +266,7 @@ class Object
     static DWORD ComputeHashCode();
     static DWORD GetGlobalNewHashCode();
 
+    inline INT32 TryGetHashCode();
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
 #endif // #ifndef DACCESS_COMPILE
@@ -463,7 +465,7 @@ class Object
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Object>;
 };
 
 template<>
@@ -494,8 +496,8 @@ inline void ClearObjectReference(OBJECTREF* dst)
 
 // CopyValueClass sets a value class field
 
-void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
+void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
+void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 {
@@ -513,7 +515,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 #include <pshpack4.h>
 
 
-// There are two basic kinds of array layouts in COM+
+// There are two basic kinds of array layouts in CLR
 //      ELEMENT_TYPE_ARRAY  - a multidimensional array with lower bounds on the dims
 //      ELMENNT_TYPE_SZARRAY - A zero based single dimensional array
 //
@@ -533,8 +535,6 @@ class ArrayBase : public Object
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
     friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
     friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags);
-    friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-    friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
@@ -639,7 +639,7 @@ public:
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ArrayBase>;
 };
 
 #ifndef DACCESS_COMPILE
@@ -922,7 +922,6 @@ class StringObject : public Object
     BOOL HasTrailByte();
     BOOL GetTrailByte(BYTE *bTrailByte);
     BOOL SetTrailByte(BYTE bTrailByte);
-    static BOOL CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR * strA, _In_z_ INT8 * strB, int aLength, int bLength, int *result);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
     **N.B.: This performs no range checking and relies on the caller to have done this.
@@ -951,7 +950,7 @@ private:
     static STRINGREF* EmptyStringRefPtr;
     static bool EmptyStringIsFrozen;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<StringObject>;
 };
 
 template<>
@@ -1328,6 +1327,8 @@ private:
     // Set in unmanaged code and read in managed code.
     bool          m_IsDead;
 
+    bool          m_IsThreadPool;
+
 protected:
     // the ctor and dtor can do no useful work.
     ThreadBaseObject() {LIMITED_METHOD_CONTRACT;};
@@ -1579,7 +1580,6 @@ typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 #define ArgSlotToBool(s)  ((BOOL)(s))
 
 STRINGREF AllocateString(SString sstr);
-CHARARRAYREF AllocateCharArray(DWORD dwArrayLength);
 
 #ifdef FEATURE_COMINTEROP
 
@@ -2163,6 +2163,64 @@ typedef PTR_LoaderAllocatorObject LOADERALLOCATORREF;
 
 #endif // FEATURE_COLLECTIBLE_TYPES
 
+typedef DPTR(class GenericCacheStruct) PTR_GenericCacheStruct;
+class GenericCacheStruct
+{
+    friend class CoreLibBinder;
+    public:
+
+    ARRAYBASEREF GetTable() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _table;
+    }
+
+    int32_t CacheElementCount() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetTable()->GetNumComponents() - 1;
+    }
+
+    ARRAYBASEREF GetSentinelTable() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _sentinelTable;
+    }
+
+    void SetTable(ARRAYBASEREF table)
+    {
+        WRAPPER_NO_CONTRACT;
+        SetObjectReference((OBJECTREF*)&_table, (OBJECTREF)table);
+    }
+
+    void SetLastFlushSize(int32_t lastFlushSize)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _lastFlushSize = lastFlushSize;
+    }
+
+    int32_t GetInitialCacheSize() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _initialCacheSize;
+    }
+
+#ifdef DEBUG
+    static void ValidateLayout(MethodTable* pMTOfInstantiation);
+#endif
+
+    private:
+    // README:
+    // If you modify the order of these fields, make sure to update the definition in
+    // BCL for this object.
+
+    ARRAYBASEREF _table;
+    ARRAYBASEREF _sentinelTable;
+    int32_t _lastFlushSize;
+    int32_t _initialCacheSize;
+    int32_t _maxCacheSize;
+};
+
 // This class corresponds to Exception on the managed side.
 typedef DPTR(class ExceptionObject) PTR_ExceptionObject;
 #include "pshpack4.h"
@@ -2209,7 +2267,19 @@ public:
 
     void SetStackTrace(OBJECTREF stackTrace);
 
-    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const;
+    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const
+    {
+#ifdef DACCESS_COMPILE
+        return GetStackTrace(stackTrace, outKeepaliveArray, NULL);
+#else
+        return GetStackTrace(stackTrace, outKeepaliveArray, GetThread());
+#endif // DACCESS_COMPILE
+    }
+
+private:
+    static void GetStackTraceClone(StackTraceArray & stackTrace, PTRARRAYREF * outKeepAliveArray);
+public:
+    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray, Thread *pCurrentThread) const;
 
     static void GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray);
 
@@ -2378,7 +2448,7 @@ private:
     INT32       _xcode;
     INT32       _HResult;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ExceptionObject>;
 };
 
 template<>
@@ -2445,8 +2515,6 @@ typedef PTR_ContractExceptionObject CONTRACTEXCEPTIONREF;
 // non-nullable case.
 //
 // To do this we need to
-//     * Modify the boxing helper code:JIT_Box (we don't need a special one because
-//           the JIT inlines the common case, so this only gets call in uncommon cases)
 //     * Make a new helper for the Unbox case (see code:JIT_Unbox_Nullable)
 //     * Plumb the JIT to ask for what kind of Boxing helper is needed
 //          (see code:CEEInfo.getBoxHelper, code:CEEInfo.getUnBoxHelper
@@ -2486,14 +2554,12 @@ public:
     static void CheckFieldOffsets(TypeHandle nullableType);
     static BOOL IsNullableType(TypeHandle nullableType);
     static BOOL IsNullableForType(TypeHandle nullableType, MethodTable* paramMT);
-    static BOOL IsNullableForTypeNoGC(TypeHandle nullableType, MethodTable* paramMT);
 
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
-
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);
 
@@ -2513,7 +2579,6 @@ public:
 
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);
-    static BOOL IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT);
 
     CLR_BOOL* HasValueAddr(MethodTable* nullableMT);
     void* ValueAddr(MethodTable* nullableMT);

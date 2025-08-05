@@ -208,7 +208,14 @@ public unsafe class StartupHookTests
         string hook = asm.Location;
         AppContext.SetData(StartupHookKey, hook);
         var ex = Assert.Throws<TypeLoadException>(() => ProcessStartupHooks(string.Empty));
-        Assert.StartsWith($"Could not load type 'StartupHook' from assembly '{asm.GetName().Name}", ex.Message);
+        if (ex.Message.StartsWith("Could not load type")) // Mono-specific behavior, avoid dependency on TestLibrary.Utilities.IsMonoRuntime
+        {
+            Assert.StartsWith($"Could not load type 'StartupHook' from assembly '{asm.GetName().Name}", ex.Message);
+        }
+        else
+        {
+            Assert.StartsWith($"Could not resolve type 'StartupHook' in assembly '{asm.GetName().Name}", ex.Message);
+        }
     }
 
     [Fact]

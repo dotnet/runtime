@@ -34,6 +34,28 @@ namespace System.Collections.Tests
             return queue;
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        {
+            var queue = new PriorityQueue<TElement, TPriority>(capacity);
+            Assert.Equal(capacity, queue.Capacity);
+        }
+
+        [Fact]
+        public void PriorityQueue_EnsureCapacityThenTrimExcess_CapacityUpdates()
+        {
+            var queue = new PriorityQueue<TElement, TPriority>(2);
+            Assert.Equal(2, queue.Capacity);
+
+            queue.EnsureCapacity(12);
+            Assert.InRange(queue.Capacity, 12, int.MaxValue);
+
+            queue.TrimExcess();
+            Assert.Equal(0, queue.Capacity);
+        }
+
         #endregion
 
         #region Constructors

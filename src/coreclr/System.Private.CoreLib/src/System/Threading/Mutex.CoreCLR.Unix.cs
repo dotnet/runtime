@@ -14,9 +14,40 @@ namespace System.Threading
     /// </summary>
     public sealed partial class Mutex : WaitHandle
     {
-        private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
+        private unsafe void CreateMutexCore(bool initiallyOwned)
         {
-            SafeWaitHandle mutexHandle = CreateMutexCore(initiallyOwned, name, out int errorCode, out string? errorDetails);
+            SafeWaitHandle handle =
+                CreateMutex(
+                    initiallyOwned,
+                    name: null,
+                    currentUserOnly: false,
+                    systemCallErrors: null,
+                    systemCallErrorsBufferSize: 0);
+            if (handle.IsInvalid)
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+                handle.SetHandleAsInvalid();
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+
+            SafeWaitHandle = handle;
+        }
+
+        private void CreateMutexCore(
+            bool initiallyOwned,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
+        {
+            bool currentUserOnly = false;
+            if (!string.IsNullOrEmpty(name) && options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+                currentUserOnly = options.CurrentUserOnly;
+            }
+
+            SafeWaitHandle mutexHandle =
+                CreateMutexCore(initiallyOwned, name, currentUserOnly, out int errorCode, out string? errorDetails);
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
@@ -33,16 +64,26 @@ namespace System.Threading
             SafeWaitHandle = mutexHandle;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out Mutex? result)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
+
+            bool currentUserOnly = false;
+            if (options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+                currentUserOnly = options.CurrentUserOnly;
+            }
 
             result = null;
             // To allow users to view & edit the ACL's, call OpenMutex
             // with parameters to allow us to view & edit the ACL.  This will
             // fail if we don't have permission to view or edit the ACL's.
             // If that happens, ask for less permissions.
-            SafeWaitHandle myHandle = OpenMutexCore(name, out int errorCode, out string? errorDetails);
+            SafeWaitHandle myHandle = OpenMutexCore(name, currentUserOnly, out int errorCode, out string? errorDetails);
 
             if (myHandle.IsInvalid)
             {
@@ -86,11 +127,13 @@ namespace System.Threading
         private static unsafe SafeWaitHandle CreateMutexCore(
             bool initialOwner,
             string? name,
+            bool currentUserOnly,
             out int errorCode,
             out string? errorDetails)
         {
             byte* systemCallErrors = stackalloc byte[SystemCallErrorsBufferSize];
-            SafeWaitHandle mutexHandle = CreateMutex(initialOwner, name, systemCallErrors, SystemCallErrorsBufferSize);
+            SafeWaitHandle mutexHandle =
+                CreateMutex(initialOwner, name, currentUserOnly, systemCallErrors, SystemCallErrorsBufferSize);
 
             // Get the error code even if the handle is valid, as it could be ERROR_ALREADY_EXISTS, indicating that the mutex
             // already exists and was opened
@@ -100,10 +143,10 @@ namespace System.Threading
             return mutexHandle;
         }
 
-        private static unsafe SafeWaitHandle OpenMutexCore(string name, out int errorCode, out string? errorDetails)
+        private static unsafe SafeWaitHandle OpenMutexCore(string name, bool currentUserOnly, out int errorCode, out string? errorDetails)
         {
             byte* systemCallErrors = stackalloc byte[SystemCallErrorsBufferSize];
-            SafeWaitHandle mutexHandle = OpenMutex(name, systemCallErrors, SystemCallErrorsBufferSize);
+            SafeWaitHandle mutexHandle = OpenMutex(name, currentUserOnly, systemCallErrors, SystemCallErrorsBufferSize);
             errorCode = mutexHandle.IsInvalid ? Marshal.GetLastPInvokeError() : Interop.Errors.ERROR_SUCCESS;
             errorDetails = mutexHandle.IsInvalid ? GetErrorDetails(systemCallErrors) : null;
             return mutexHandle;
@@ -127,9 +170,9 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PAL_CreateMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial SafeWaitHandle CreateMutex([MarshalAs(UnmanagedType.Bool)] bool initialOwner, string? name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
+        private static unsafe partial SafeWaitHandle CreateMutex([MarshalAs(UnmanagedType.Bool)] bool initialOwner, string? name, [MarshalAs(UnmanagedType.Bool)] bool currentUserOnly, byte* systemCallErrors, uint systemCallErrorsBufferSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PAL_OpenMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial SafeWaitHandle OpenMutex(string name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
+        private static unsafe partial SafeWaitHandle OpenMutex(string name, [MarshalAs(UnmanagedType.Bool)] bool currentUserOnly, byte* systemCallErrors, uint systemCallErrorsBufferSize);
     }
 }

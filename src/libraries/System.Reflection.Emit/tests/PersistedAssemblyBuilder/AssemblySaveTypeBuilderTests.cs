@@ -5,11 +5,13 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveTypeBuilderTests
     {
         private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
@@ -124,11 +126,15 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        private static TypeBuilder CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder)
+        private static ModuleBuilder CreateAssembly(out PersistedAssemblyBuilder assemblyBuilder)
         {
             assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(s_assemblyName);
-            return assemblyBuilder.DefineDynamicModule("MyModule")
-                .DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
+            return assemblyBuilder.DefineDynamicModule("MyModule");
+        }
+
+        private static TypeBuilder CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder)
+        {
+            return CreateAssembly(out assemblyBuilder).DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
         }
 
         [Fact]
@@ -202,6 +208,83 @@ namespace System.Reflection.Emit.Tests
                     Assert.True(testMethod.ContainsGenericParameters);
                     AssertGenericParameters(typeParams, genericTypeParams);
                 }
+            }
+        }
+
+        private class GenericClassWithGenericField<T>
+        {
+#pragma warning disable CS0649
+            public T F;
+#pragma warning restore CS0649
+        }
+
+        private class GenericClassWithNonGenericField<T>
+        {
+#pragma warning disable CS0649
+            public int F;
+#pragma warning restore CS0649
+        }
+
+        public static IEnumerable<object[]> GenericTypesWithField()
+        {
+            yield return new object[] { typeof(GenericClassWithGenericField<int>), true };
+            yield return new object[] { typeof(GenericClassWithNonGenericField<bool>), false };
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericTypesWithField))]
+        public void SaveGenericField(Type declaringType, bool shouldFieldBeGeneric)
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                ModuleBuilder mb = CreateAssembly(out PersistedAssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = mb.DefineType("C", TypeAttributes.Class);
+                MethodBuilder method = tb.DefineMethod("TestMethod", MethodAttributes.Public, returnType: typeof(int), parameterTypes: null);
+                ILGenerator il = method.GetILGenerator();
+                il.Emit(OpCodes.Newobj, declaringType.GetConstructor([]));
+                il.Emit(OpCodes.Ldfld, declaringType.GetField("F"));
+                il.Emit(OpCodes.Ret);
+                Type createdType = tb.CreateType();
+                assemblyBuilder.Save(file.Path);
+
+                using (FileStream stream = File.OpenRead(file.Path))
+                {
+                    using (PEReader peReader = new PEReader(stream))
+                    {
+                        bool found = false;
+                        MetadataReader metadataReader = peReader.GetMetadataReader();
+                        foreach (MemberReferenceHandle memberRefHandle in metadataReader.MemberReferences)
+                        {
+                            MemberReference memberRef = metadataReader.GetMemberReference(memberRefHandle);
+                            if (memberRef.GetKind() == MemberReferenceKind.Field)
+                            {
+                                Assert.False(found);
+                                found = true;
+
+                                Assert.Equal("F", metadataReader.GetString(memberRef.Name));
+
+                                // A reference to a generic field should point to the open generic field, and not the resolved generic type.
+                                Assert.Equal(shouldFieldBeGeneric, IsGenericField(metadataReader.GetBlobReader(memberRef.Signature)));
+                            }
+                        }
+
+                        Assert.True(found);
+                    }
+                }
+            }
+
+            static bool IsGenericField(BlobReader signatureReader)
+            {
+                while (signatureReader.RemainingBytes > 0)
+                {
+                    SignatureTypeCode typeCode = signatureReader.ReadSignatureTypeCode();
+                    if (typeCode == SignatureTypeCode.GenericTypeParameter)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -650,8 +733,6 @@ namespace System.Reflection.Emit.Tests
             Assert.True(method3.ReturnParameter.IsRetval);
         }
 
-        public class BaseType<T> { }
-
         [Fact]
         public void GenericTypeWithTypeBuilderGenericParameter_UsedAsParent()
         {
@@ -666,9 +747,53 @@ namespace System.Reflection.Emit.Tests
 
             Assert.NotNull(type.GetConstructor(Type.EmptyTypes)); // Default constructor created
         }
+
+        [Fact]
+        public void CreateGenericTypeFromMetadataLoadContextSignatureTypes()
+        {
+            using TempFile file = TempFile.Create();
+
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module);
+
+            TypeBuilder childType = module.DefineType("Child");
+            TypeBuilder parentType = module.DefineType("Parent");
+
+            // Get List<T> from MLC and make both reference and value type fields from that.
+            using MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver());
+            Type listOfTType = mlc.CoreAssembly.GetType(typeof(List<>).FullName!);
+
+            // Currently MakeGenericSignatureType() must be used instead of MakeGenericType() for
+            // generic type parameters created with TypeBuilder.
+            Assert.Throws<ArgumentException>(() => listOfTType.MakeGenericType(childType));
+            Type listOfReferenceTypes = Type.MakeGenericSignatureType(listOfTType, childType);
+            parentType.DefineField("ReferenceTypeChildren", listOfReferenceTypes, FieldAttributes.Public);
+
+            // Pre-existing types can use MakeGenericType().
+            Type int32Type = mlc.CoreAssembly.GetType(typeof(int).FullName);
+            Type listOfValueTypes = listOfTType.MakeGenericType(int32Type);
+            parentType.DefineField("ValueTypeChildren", listOfValueTypes, FieldAttributes.Public);
+
+            parentType.CreateType();
+            childType.CreateType();
+
+            // Save and load the dynamically created assembly.
+            ab.Save(file.Path);
+            Module mlcModule = mlc.LoadFromAssemblyPath(file.Path).Modules.First();
+
+            Assert.Equal("Child", mlcModule.GetTypes()[0].Name);
+            Assert.Equal("Parent", mlcModule.GetTypes()[1].Name);
+
+            FieldInfo[] fields = mlcModule.GetTypes()[1].GetFields(BindingFlags.Public | BindingFlags.Instance);
+            Assert.Equal("ReferenceTypeChildren", fields[0].Name);
+            Assert.False(fields[0].FieldType.GetGenericArguments()[0].IsValueType);
+            Assert.Equal("ValueTypeChildren", fields[1].Name);
+            Assert.True(fields[1].FieldType.GetGenericArguments()[0].IsValueType);
+        }
     }
 
     // Test Types
+    public class BaseType<T> { }
+
     public interface INoMethod
     {
     }

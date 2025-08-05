@@ -145,7 +145,7 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions)
+            EX_END_CATCH
 
             if (pLeafContext != NULL)
             {

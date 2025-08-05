@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.XPath;
 using OLEDB.Test.ModuleCore;
 
 /// <summary>
@@ -1509,6 +1510,30 @@ namespace XmlCoreTest.Common
             return CoreWriter.WriteNodeAsync(reader, defattr);
         }
 
+        public override void WriteNode(XPathNavigator navigator, bool defattr)
+        {
+            if (AsyncUtil.RedirectWriter)
+            {
+                try
+                {
+                    CoreWriter.WriteNodeAsync(navigator, defattr).Wait();
+                }
+                catch (AggregateException ae)
+                {
+                    throw ae.InnerException;
+                }
+            }
+            else
+            {
+                CoreWriter.WriteNode(navigator, defattr);
+            }
+        }
+
+        public override Task WriteNodeAsync(XPathNavigator navigator, bool defattr)
+        {
+            return CoreWriter.WriteNodeAsync(navigator, defattr);
+        }
+
         public override void WriteProcessingInstruction(string name, string text)
         {
             if (AsyncUtil.RedirectWriter)
@@ -1746,6 +1771,35 @@ namespace XmlCoreTest.Common
             return CoreWriter.WriteWhitespaceAsync(ws);
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (!disposing)
+            {
+                return;
+            }
+
+            if (AsyncUtil.RedirectWriter)
+            {
+                try
+                {
+                    CoreWriter.DisposeAsync().AsTask().Wait();
+                }
+                catch (AggregateException ae)
+                {
+                    throw ae.InnerException;
+                }
+            }
+            else
+            {
+                CoreWriter.Dispose();
+            }
+        }
+
+        protected override ValueTask DisposeAsyncCore()
+        {
+            return CoreWriter.DisposeAsync();
+        }
+
         /// <summary>
         /// ////////////////////////////////
         /// </summary>
@@ -1788,9 +1842,9 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public new void Dispose()
+        public override void Close()
         {
-            CoreWriter.Dispose();
+            CoreWriter.Close();
         }
 
         public new void WriteStartElement(string localName, string ns)
@@ -1882,6 +1936,7 @@ namespace XmlCoreTest.Common
         {
             CoreWriter.WriteElementString(localName, ns, value);
         }
+
         #endregion
     }
 

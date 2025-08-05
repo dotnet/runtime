@@ -173,8 +173,6 @@ struct Agnostic_CORINFO_EE_INFO
     {
         DWORD size;
         DWORD sizeWithSecretStubArg;
-        DWORD offsetOfGSCookie;
-        DWORD offsetOfFrameVptr;
         DWORD offsetOfFrameLink;
         DWORD offsetOfCallSiteSP;
         DWORD offsetOfCalleeSavedFP;
@@ -193,6 +191,23 @@ struct Agnostic_CORINFO_EE_INFO
     DWORD maxUncheckedOffsetForNullObject;
     DWORD targetAbi;
     DWORD osType;
+};
+
+struct Agnostic_CORINFO_ASYNC_INFO
+{
+    DWORDLONG continuationClsHnd;
+    DWORDLONG continuationNextFldHnd;
+    DWORDLONG continuationResumeFldHnd;
+    DWORDLONG continuationStateFldHnd;
+    DWORDLONG continuationFlagsFldHnd;
+    DWORDLONG continuationDataFldHnd;
+    DWORDLONG continuationGCDataFldHnd;
+    DWORD continuationsNeedMethodHandle;
+    DWORDLONG captureExecutionContextMethHnd;
+    DWORDLONG restoreExecutionContextMethHnd;
+    DWORDLONG captureContinuationContextMethHnd;
+    DWORDLONG captureContextsMethHnd;
+    DWORDLONG restoreContextsMethHnd;
 };
 
 struct Agnostic_GetOSRInfo
@@ -256,6 +271,12 @@ struct Agnostic_CORINFO_CONST_LOOKUP
 {
     DWORD     accessType;
     DWORDLONG handle; // actually a union of two pointer sized things
+};
+
+struct Agnostic_GetHelperFtn
+{
+    Agnostic_CORINFO_CONST_LOOKUP helperLookup;
+    DWORDLONG                     helperMethod;
 };
 
 struct Agnostic_CORINFO_LOOKUP_KIND
@@ -654,11 +675,19 @@ struct Agnostic_ResolveVirtualMethodResult
 {
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
-    bool                            requiresInstMethodTableArg;
+    bool                            isInstantiatingStub;
+    bool                            wasArrayInterfaceDevirt;
     DWORDLONG                       exactContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
+};
+
+struct Agnostic_GetInstantiatedEntryResult
+{
+    DWORDLONG                       methodHandle;
+    DWORDLONG                       classHandle;
+    DWORDLONG                       result;
 };
 
 struct ResolveTokenValue
@@ -688,6 +717,14 @@ struct CanGetVarArgsHandleValue
 };
 
 struct GetCookieForPInvokeCalliSigValue
+{
+    DWORD     cbSig;
+    DWORD     pSig_Index;
+    DWORDLONG scope;
+    DWORD     token;
+};
+
+struct GetCookieForInterpreterCalliSigValue
 {
     DWORD     cbSig;
     DWORD     pSig_Index;

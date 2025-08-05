@@ -12,6 +12,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
+using System.Text;
 
 namespace System
 {
@@ -26,7 +27,8 @@ namespace System
           IComparable<Guid>,
           IEquatable<Guid>,
           ISpanParsable<Guid>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IUtf8SpanParsable<Guid>
     {
         private const byte Variant10xxMask = 0xC0;
         private const byte Variant10xxValue = 0x80;
@@ -266,7 +268,7 @@ namespace System
             ArgumentNullException.ThrowIfNull(g);
 
             var result = new GuidResult(GuidParseThrowStyle.All);
-            bool success = TryParseGuid(g, ref result);
+            bool success = TryParseGuid(g.AsSpan(), ref result);
             Debug.Assert(success, "GuidParseThrowStyle.All means throw on all failures");
 
             this = result.ToGuid();
@@ -284,7 +286,7 @@ namespace System
         ///     <para>This corresponds to the most significant 4 bits of the 6th byte: 00000000-0000-F000-0000-000000000000.</para>
         ///     <para>See RFC 9562 for more information on how to interpret this value.</para>
         /// </remarks>
-        public int Version => _c >>> 12;
+        public int Version => (ushort)_c >>> 12;
 
         /// <summary>Creates a new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</summary>
         /// <returns>A new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</returns>
@@ -343,6 +345,15 @@ namespace System
             return result.ToGuid();
         }
 
+        public static Guid Parse(ReadOnlySpan<byte> utf8Text)
+        {
+            var result = new GuidResult(GuidParseThrowStyle.AllButOverflow);
+            bool success = TryParseGuid(utf8Text, ref result);
+            Debug.Assert(success, "GuidParseThrowStyle.AllButOverflow means throw on all failures");
+
+            return result.ToGuid();
+        }
+
         public static bool TryParse([NotNullWhen(true)] string? input, out Guid result)
         {
             if (input == null)
@@ -358,6 +369,21 @@ namespace System
         {
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
             if (TryParseGuid(input, ref parseResult))
+            {
+                result = parseResult.ToGuid();
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Guid result)
+        {
+            var parseResult = new GuidResult(GuidParseThrowStyle.None);
+            if (TryParseGuid(utf8Text, ref parseResult))
             {
                 result = parseResult.ToGuid();
                 return true;
@@ -423,29 +449,15 @@ namespace System
             input = input.Trim();
 
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
-            bool success = false;
-            switch ((char)(format[0] | 0x20))
+            bool success = (format[0] | 0x20) switch
             {
-                case 'd':
-                    success = TryParseExactD(input, ref parseResult);
-                    break;
-
-                case 'n':
-                    success = TryParseExactN(input, ref parseResult);
-                    break;
-
-                case 'b':
-                    success = TryParseExactB(input, ref parseResult);
-                    break;
-
-                case 'p':
-                    success = TryParseExactP(input, ref parseResult);
-                    break;
-
-                case 'x':
-                    success = TryParseExactX(input, ref parseResult);
-                    break;
-            }
+                'd' => TryParseExactD(input, ref parseResult),
+                'n' => TryParseExactN(input, ref parseResult),
+                'b' => TryParseExactB(input, ref parseResult),
+                'p' => TryParseExactP(input, ref parseResult),
+                'x' => TryParseExactX(input, ref parseResult),
+                _ => false
+            };
 
             if (success)
             {
@@ -458,10 +470,9 @@ namespace System
                 return false;
             }
         }
-
-        private static bool TryParseGuid(ReadOnlySpan<char> guidString, ref GuidResult result)
+        private static bool TryParseGuid<TChar>(ReadOnlySpan<TChar> guidString, ref GuidResult result) where TChar : unmanaged, IUtfChar<TChar>
         {
-            guidString = guidString.Trim(); // Remove whitespace from beginning and end
+            guidString = Number.SpanTrim(guidString); // Remove whitespace from beginning and end
 
             if (guidString.Length < 32) // Minimal length we can parse ('N' format)
             {
@@ -469,23 +480,23 @@ namespace System
                 return false;
             }
 
-            return (guidString[0]) switch
+            return TChar.CastToUInt32(guidString[0]) switch
             {
                 '(' => TryParseExactP(guidString, ref result),
-                '{' => guidString[9] == '-' ?
+                '{' => guidString[9] == TChar.CastFrom('-') ?
                         TryParseExactB(guidString, ref result) :
                         TryParseExactX(guidString, ref result),
-                _ => guidString[8] == '-' ?
+                _ => guidString[8] == TChar.CastFrom('-') ?
                         TryParseExactD(guidString, ref result) :
                         TryParseExactN(guidString, ref result),
             };
         }
 
-        private static bool TryParseExactB(ReadOnlySpan<char> guidString, ref GuidResult result)
+        private static bool TryParseExactB<TChar>(ReadOnlySpan<TChar> guidString, ref GuidResult result) where TChar : unmanaged, IUtfChar<TChar>
         {
             // e.g. "{d85b1407-351d-4694-9392-03acc5870eb1}"
 
-            if (guidString.Length != 38 || guidString[0] != '{' || guidString[37] != '}')
+            if (guidString.Length != 38 || guidString[0] != TChar.CastFrom('{') || guidString[37] != TChar.CastFrom('}'))
             {
                 result.SetFailure(ParseFailure.Format_GuidInvLen);
                 return false;
@@ -494,11 +505,11 @@ namespace System
             return TryParseExactD(guidString.Slice(1, 36), ref result);
         }
 
-        private static bool TryParseExactD(ReadOnlySpan<char> guidString, ref GuidResult result)
+        private static bool TryParseExactD<TChar>(ReadOnlySpan<TChar> guidString, ref GuidResult result) where TChar : unmanaged, IUtfChar<TChar>
         {
             // e.g. "d85b1407-351d-4694-9392-03acc5870eb1"
 
-            if (guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
+            if (guidString.Length != 36 || guidString[8] != TChar.CastFrom('-') || guidString[13] != TChar.CastFrom('-') || guidString[18] != TChar.CastFrom('-') || guidString[23] != TChar.CastFrom('-'))
             {
                 result.SetFailure(guidString.Length != 36 ? ParseFailure.Format_GuidInvLen : ParseFailure.Format_GuidDashes);
                 return false;
@@ -541,7 +552,7 @@ namespace System
             // We continue to support these but expect them to be incredibly rare.  As such, we
             // optimize for correctly formed strings where all the digits are valid hex, and only
             // fall back to supporting these other forms if parsing fails.
-            if (guidString.ContainsAny('X', 'x', '+') && TryCompatParsing(guidString, ref result))
+            if (guidString.ContainsAny(TChar.CastFrom('X'), TChar.CastFrom('x'), TChar.CastFrom('+')) && TryCompatParsing(guidString, ref result))
             {
                 return true;
             }
@@ -549,7 +560,7 @@ namespace System
             result.SetFailure(ParseFailure.Format_GuidInvalidChar);
             return false;
 
-            static bool TryCompatParsing(ReadOnlySpan<char> guidString, ref GuidResult result)
+            static bool TryCompatParsing(ReadOnlySpan<TChar> guidString, ref GuidResult result)
             {
                 if (TryParseHex(guidString.Slice(0, 8), out result._a) && // _a
                     TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
@@ -580,7 +591,7 @@ namespace System
             }
         }
 
-        private static bool TryParseExactN(ReadOnlySpan<char> guidString, ref GuidResult result)
+        private static bool TryParseExactN<TChar>(ReadOnlySpan<TChar> guidString, ref GuidResult result) where TChar : unmanaged, IUtfChar<TChar>
         {
             // e.g. "d85b1407351d4694939203acc5870eb1"
 
@@ -623,11 +634,11 @@ namespace System
             return false;
         }
 
-        private static bool TryParseExactP(ReadOnlySpan<char> guidString, ref GuidResult result)
+        private static bool TryParseExactP<TChar>(ReadOnlySpan<TChar> guidString, ref GuidResult result) where TChar : unmanaged, IUtfChar<TChar>
         {
             // e.g. "(d85b1407-351d-4694-9392-03acc5870eb1)"
 
-            if (guidString.Length != 38 || guidString[0] != '(' || guidString[37] != ')')
+            if (guidString.Length != 38 || guidString[0] != TChar.CastFrom('(') || guidString[37] != TChar.CastFrom(')'))
             {
                 result.SetFailure(ParseFailure.Format_GuidInvLen);
                 return false;
@@ -636,7 +647,7 @@ namespace System
             return TryParseExactD(guidString.Slice(1, 36), ref result);
         }
 
-        private static bool TryParseExactX(ReadOnlySpan<char> guidString, ref GuidResult result)
+        private static bool TryParseExactX<TChar>(ReadOnlySpan<TChar> guidString, ref GuidResult result) where TChar : unmanaged, IUtfChar<TChar>
         {
             // e.g. "{0xd85b1407,0x351d,0x4694,{0x93,0x92,0x03,0xac,0xc5,0x87,0x0e,0xb1}}"
 
@@ -651,10 +662,10 @@ namespace System
 
             // Eat all of the whitespace.  Unlike the other forms, X allows for any amount of whitespace
             // anywhere, not just at the beginning and end.
-            guidString = EatAllWhitespace(guidString);
+            guidString = EatAllWhitespace(guidString, ref result);
 
             // Check for leading '{'
-            if (guidString.Length == 0 || guidString[0] != '{')
+            if (guidString.Length == 0 || guidString[0] != TChar.CastFrom('{'))
             {
                 result.SetFailure(ParseFailure.Format_GuidBrace);
                 return false;
@@ -669,7 +680,7 @@ namespace System
 
             // Find the end of this hex number (since it is not fixed length)
             int numStart = 3;
-            int numLen = guidString.Slice(numStart).IndexOf(',');
+            int numLen = guidString.Slice(numStart).IndexOf(TChar.CastFrom(','));
             if (numLen <= 0)
             {
                 result.SetFailure(ParseFailure.Format_GuidComma);
@@ -691,7 +702,7 @@ namespace System
             }
             // +3 to get by ',0x'
             numStart = numStart + numLen + 3;
-            numLen = guidString.Slice(numStart).IndexOf(',');
+            numLen = guidString.Slice(numStart).IndexOf(TChar.CastFrom(','));
             if (numLen <= 0)
             {
                 result.SetFailure(ParseFailure.Format_GuidComma);
@@ -713,7 +724,7 @@ namespace System
             }
             // +3 to get by ',0x'
             numStart = numStart + numLen + 3;
-            numLen = guidString.Slice(numStart).IndexOf(',');
+            numLen = guidString.Slice(numStart).IndexOf(TChar.CastFrom(','));
             if (numLen <= 0)
             {
                 result.SetFailure(ParseFailure.Format_GuidComma);
@@ -728,7 +739,7 @@ namespace System
             }
 
             // Check for '{'
-            if ((uint)guidString.Length <= (uint)(numStart + numLen + 1) || guidString[numStart + numLen + 1] != '{')
+            if ((uint)guidString.Length <= (uint)(numStart + numLen + 1) || guidString[numStart + numLen + 1] != TChar.CastFrom('{'))
             {
                 result.SetFailure(ParseFailure.Format_GuidBrace);
                 return false;
@@ -751,7 +762,7 @@ namespace System
                 // Calculate number length
                 if (i < 7)  // first 7 cases
                 {
-                    numLen = guidString.Slice(numStart).IndexOf(',');
+                    numLen = guidString.Slice(numStart).IndexOf(TChar.CastFrom(','));
                     if (numLen <= 0)
                     {
                         result.SetFailure(ParseFailure.Format_GuidComma);
@@ -760,7 +771,7 @@ namespace System
                 }
                 else // last case ends with '}', not ','
                 {
-                    numLen = guidString.Slice(numStart).IndexOf('}');
+                    numLen = guidString.Slice(numStart).IndexOf(TChar.CastFrom('}'));
                     if (numLen <= 0)
                     {
                         result.SetFailure(ParseFailure.Format_GuidBraceAfterLastNumber);
@@ -785,7 +796,7 @@ namespace System
             }
 
             // Check for last '}'
-            if (numStart + numLen + 1 >= guidString.Length || guidString[numStart + numLen + 1] != '}')
+            if (numStart + numLen + 1 >= guidString.Length || guidString[numStart + numLen + 1] != TChar.CastFrom('}'))
             {
                 result.SetFailure(ParseFailure.Format_GuidEndBrace);
                 return false;
@@ -802,44 +813,45 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte DecodeByte(char ch1, char ch2, ref int invalidIfNegative)
+        private static byte DecodeByte<TChar>(TChar ch1, TChar ch2, ref int invalidIfNegative) where TChar : unmanaged, IUtfChar<TChar>
         {
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
             Debug.Assert(lookup.Length == 256);
-
-            int upper = (sbyte)lookup[(byte)ch1];
-            int lower = (sbyte)lookup[(byte)ch2];
+            int upper = (sbyte)lookup[byte.CreateTruncating(ch1)];
+            int lower = (sbyte)lookup[byte.CreateTruncating(ch2)];
             int result = (upper << 4) | lower;
 
+            uint c1 = TChar.CastToUInt32(ch1);
+            uint c2 = TChar.CastToUInt32(ch2);
             // Result will be negative if ch1 or/and ch2 are greater than 0xFF
-            result = (ch1 | ch2) >> 8 == 0 ? result : -1;
+            result = (c1 | c2) >> 8 == 0 ? result : -1;
             invalidIfNegative |= result;
             return (byte)result;
         }
 
-        private static bool TryParseHex(ReadOnlySpan<char> guidString, out ushort result, ref bool overflow)
+        private static bool TryParseHex<TChar>(ReadOnlySpan<TChar> guidString, out ushort result, ref bool overflow) where TChar : unmanaged, IUtfChar<TChar>
         {
             bool success = TryParseHex(guidString, out uint tmp, ref overflow);
             result = (ushort)tmp;
             return success;
         }
 
-        private static bool TryParseHex(ReadOnlySpan<char> guidString, out uint result)
+        private static bool TryParseHex<TChar>(ReadOnlySpan<TChar> guidString, out uint result) where TChar : unmanaged, IUtfChar<TChar>
         {
             bool overflowIgnored = false;
             return TryParseHex(guidString, out result, ref overflowIgnored);
         }
 
-        private static bool TryParseHex(ReadOnlySpan<char> guidString, out uint result, ref bool overflow)
+        private static bool TryParseHex<TChar>(ReadOnlySpan<TChar> guidString, out uint result, ref bool overflow) where TChar : unmanaged, IUtfChar<TChar>
         {
             if (guidString.Length > 0)
             {
-                if (guidString[0] == '+')
+                if (guidString[0] == TChar.CastFrom('+'))
                 {
                     guidString = guidString.Slice(1);
                 }
 
-                if (guidString.Length > 1 && guidString[0] == '0' && (guidString[1] | 0x20) == 'x')
+                if (guidString.Length > 1 && guidString[0] == TChar.CastFrom('0') && (guidString[1] | TChar.CastFrom(0x20)) == TChar.CastFrom('x'))
                 {
                     guidString = guidString.Slice(2);
                 }
@@ -847,13 +859,13 @@ namespace System
 
             // Skip past leading 0s.
             int i = 0;
-            for (; i < guidString.Length && guidString[i] == '0'; i++) ;
+            for (; i < guidString.Length && guidString[i] == TChar.CastFrom('0'); i++) ;
 
             int processedDigits = 0;
             uint tmp = 0;
             for (; i < guidString.Length; i++)
             {
-                char c = guidString[i];
+                int c = int.CreateTruncating(guidString[i]);
                 int numValue = HexConverter.FromChar(c);
                 if (numValue == 0xFF)
                 {
@@ -870,43 +882,106 @@ namespace System
             return true;
         }
 
-        private static ReadOnlySpan<char> EatAllWhitespace(ReadOnlySpan<char> str)
+        private static ReadOnlySpan<TChar> EatAllWhitespace<TChar>(ReadOnlySpan<TChar> str, scoped ref GuidResult result) where TChar : unmanaged, IUtfChar<TChar>
         {
-            // Find the first whitespace character.  If there is none, just return the input.
-            int i;
-            for (i = 0; i < str.Length && !char.IsWhiteSpace(str[i]); i++) ;
-            if (i == str.Length)
+            if (typeof(TChar) == typeof(char))
             {
-                return str;
-            }
-
-            // There was at least one whitespace.  Copy over everything prior to it to a new array.
-            var chArr = new char[str.Length];
-            int newLength = 0;
-            if (i > 0)
-            {
-                newLength = i;
-                str.Slice(0, i).CopyTo(chArr);
-            }
-
-            // Loop through the remaining chars, copying over non-whitespace.
-            for (; i < str.Length; i++)
-            {
-                char c = str[i];
-                if (!char.IsWhiteSpace(c))
+                ReadOnlySpan<char> charSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(str);
+                // Find the first whitespace character. If there is none, just return the input.
+                int i;
+                for (i = 0; i < charSpan.Length && !char.IsWhiteSpace(charSpan[i]); i++) ;
+                if (i == charSpan.Length)
                 {
-                    chArr[newLength++] = c;
+                    return str;
                 }
-            }
 
-            // Return the string with the whitespace removed.
-            return new ReadOnlySpan<char>(chArr, 0, newLength);
+                // There was at least one whitespace. Copy over everything prior to it to a new array.
+                var chArr = new char[charSpan.Length];
+                int newLength = 0;
+                if (i > 0)
+                {
+                    newLength = i;
+                    charSpan.Slice(0, i).CopyTo(chArr);
+                }
+
+                // Loop through the remaining chars, copying over non-whitespace.
+                for (; i < charSpan.Length; i++)
+                {
+                    char c = charSpan[i];
+                    if (!char.IsWhiteSpace(c))
+                    {
+                        chArr[newLength++] = c;
+                    }
+                }
+
+                // Return the string with the whitespace removed.
+                return Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(new ReadOnlySpan<char>(chArr, 0, newLength));
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(byte));
+
+                ReadOnlySpan<byte> srcUtf8Span = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(str);
+
+                // Find the first whitespace character.  If there is none, just return the input.
+                int i = 0;
+                while (i < srcUtf8Span.Length)
+                {
+                    if (Rune.DecodeFromUtf8(srcUtf8Span.Slice(i), out Rune current, out int bytesConsumed) != Buffers.OperationStatus.Done)
+                    {
+                        result.SetFailure(ParseFailure.Format_GuidInvalidChar);
+                        return ReadOnlySpan<TChar>.Empty;
+                    }
+
+                    if (!Rune.IsWhiteSpace(current))
+                    {
+                        break;
+                    }
+
+                    i += bytesConsumed;
+                }
+
+                if (i == srcUtf8Span.Length)
+                {
+                    return str;
+                }
+
+                // There was at least one whitespace. Copy over everything prior to it to a new array.
+                Span<byte> destUtf8Span = new byte[srcUtf8Span.Length];
+                int newLength = 0;
+                if (i > 0)
+                {
+                    newLength = i;
+                    srcUtf8Span.Slice(0, i).CopyTo(destUtf8Span);
+                }
+
+                // Loop through the remaining chars, copying over non-whitespace.
+                while (i < srcUtf8Span.Length)
+                {
+                    if (Rune.DecodeFromUtf8(srcUtf8Span.Slice(i), out Rune current, out int bytesConsumed) != Buffers.OperationStatus.Done)
+                    {
+                        result.SetFailure(ParseFailure.Format_GuidInvalidChar);
+                        return ReadOnlySpan<TChar>.Empty;
+                    }
+
+                    if (!Rune.IsWhiteSpace(current))
+                    {
+                        srcUtf8Span.Slice(i, bytesConsumed).CopyTo(destUtf8Span.Slice(newLength));
+                        newLength += bytesConsumed;
+                    }
+
+                    i += bytesConsumed;
+                }
+
+                // Return the string with the whitespace removed.
+                return Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(destUtf8Span.Slice(0, newLength));
+            }
         }
 
-        private static bool IsHexPrefix(ReadOnlySpan<char> str, int i) =>
+        private static bool IsHexPrefix<TChar>(ReadOnlySpan<TChar> str, int i) where TChar : unmanaged, IUtfChar<TChar> =>
             i + 1 < str.Length &&
-            str[i] == '0' &&
-            (str[i + 1] | 0x20) == 'x';
+            str[i] == TChar.CastFrom('0') &&
+            (str[i + 1] | TChar.CastFrom(0x20)) == TChar.CastFrom('x');
 
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray()
@@ -914,13 +989,13 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(g, in this);
+                MemoryMarshal.Write(g, in this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
-                MemoryMarshal.TryWrite(g, in guid);
+                MemoryMarshal.Write(g, in guid);
             }
             return g;
         }
@@ -932,13 +1007,13 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(g, in this);
+                MemoryMarshal.Write(g, in this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
-                MemoryMarshal.TryWrite(g, in guid);
+                MemoryMarshal.Write(g, in guid);
             }
             return g;
         }
@@ -951,13 +1026,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(destination, in this);
+                MemoryMarshal.Write(destination, in this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
-                MemoryMarshal.TryWrite(destination, in guid);
+                MemoryMarshal.Write(destination, in guid);
             }
             return true;
         }
@@ -973,13 +1048,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(destination, in this);
+                MemoryMarshal.Write(destination, in this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
-                MemoryMarshal.TryWrite(destination, in guid);
+                MemoryMarshal.Write(destination, in guid);
             }
             bytesWritten = 16;
             return true;
@@ -1003,7 +1078,7 @@ namespace System
         {
             if (Vector128.IsHardwareAccelerated)
             {
-                return Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in left))) == Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in right)));
+                return Unsafe.BitCast<Guid, Vector128<byte>>(left) == Unsafe.BitCast<Guid, Vector128<byte>>(right);
             }
 
             ref int rA = ref Unsafe.AsRef(in left._a);
@@ -1106,24 +1181,6 @@ namespace System
             guidChars[3] = TChar.CastFrom(HexConverter.ToCharLower(b));
 
             return 4;
-        }
-
-        private static unsafe int HexsToCharsHexOutput<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            guidChars[0] = TChar.CastFrom('0');
-            guidChars[1] = TChar.CastFrom('x');
-
-            guidChars[2] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
-            guidChars[3] = TChar.CastFrom(HexConverter.ToCharLower(a));
-
-            guidChars[4] = TChar.CastFrom(',');
-            guidChars[5] = TChar.CastFrom('0');
-            guidChars[6] = TChar.CastFrom('x');
-
-            guidChars[7] = TChar.CastFrom(HexConverter.ToCharLower(b >> 4));
-            guidChars[8] = TChar.CastFrom(HexConverter.ToCharLower(b));
-
-            return 9;
         }
 
         // Returns the guid in "registry" format.
@@ -1379,49 +1436,67 @@ namespace System
             return true;
         }
 
-        private unsafe bool TryFormatX<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        private bool TryFormatX<TChar>(Span<TChar> dest, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
-            if (destination.Length < 68)
+            if (dest.Length < 68)
             {
                 charsWritten = 0;
                 return false;
             }
+
+            // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
+            dest[0]  = TChar.CastFrom('{');
+            dest[1]  = TChar.CastFrom('0');
+            dest[2]  = TChar.CastFrom('x');
+            dest[3]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 28));
+            dest[4]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 24));
+            dest[5]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 20));
+            dest[6]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 16));
+            dest[7]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 12));
+            dest[8]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 8));
+            dest[9]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 4));
+            dest[10] = TChar.CastFrom(HexConverter.ToCharLower(_a));
+            dest[11] = TChar.CastFrom(',');
+            dest[12] = TChar.CastFrom('0');
+            dest[13] = TChar.CastFrom('x');
+            dest[14] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 12));
+            dest[15] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 8));
+            dest[16] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 4));
+            dest[17] = TChar.CastFrom(HexConverter.ToCharLower(_b));
+            dest[18] = TChar.CastFrom(',');
+            dest[19] = TChar.CastFrom('0');
+            dest[20] = TChar.CastFrom('x');
+            dest[21] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 12));
+            dest[22] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 8));
+            dest[23] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 4));
+            dest[24] = TChar.CastFrom(HexConverter.ToCharLower(_c));
+            dest[25] = TChar.CastFrom(',');
+            dest[26] = TChar.CastFrom('{');
+            WriteHex(dest, 27, _d);
+            WriteHex(dest, 32, _e);
+            WriteHex(dest, 37, _f);
+            WriteHex(dest, 42, _g);
+            WriteHex(dest, 47, _h);
+            WriteHex(dest, 52, _i);
+            WriteHex(dest, 57, _j);
+            WriteHex(dest, 62, _k, appendComma: false);
+            dest[66] = TChar.CastFrom('}');
+            dest[67] = TChar.CastFrom('}');
             charsWritten = 68;
-
-            fixed (TChar* guidChars = &MemoryMarshal.GetReference(destination))
-            {
-                TChar* p = guidChars;
-
-                // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
-                *p++ = TChar.CastFrom('{');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _a >> 24, _a >> 16);
-                p += HexsToChars(p, _a >> 8, _a);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _b >> 8, _b);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _c >> 8, _c);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('{');
-                p += HexsToCharsHexOutput(p, _d, _e);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _f, _g);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _h, _i);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _j, _k);
-                *p++ = TChar.CastFrom('}');
-                *p = TChar.CastFrom('}');
-
-                Debug.Assert(p == guidChars + charsWritten - 1);
-            }
-
             return true;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void WriteHex(Span<TChar> dest, int offset, int val, bool appendComma = true)
+            {
+                dest[offset + 0] = TChar.CastFrom('0');
+                dest[offset + 1] = TChar.CastFrom('x');
+                dest[offset + 2] = TChar.CastFrom(HexConverter.ToCharLower(val >> 4));
+                dest[offset + 3] = TChar.CastFrom(HexConverter.ToCharLower(val));
+                if (appendComma)
+                {
+                    dest[offset + 4] = TChar.CastFrom(',');
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1439,7 +1514,7 @@ namespace System
                 (byte)'8', (byte)'9', (byte)'a', (byte)'b',
                 (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
-            Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref value);
+            Vector128<byte> srcVec = Unsafe.BitCast<Guid, Vector128<byte>>(value);
             (Vector128<byte> hexLow, Vector128<byte> hexHigh) =
                 HexConverter.AsciiToHexVector128(srcVec, hexMap);
 
@@ -1765,5 +1840,15 @@ namespace System
         [DoesNotReturn]
         private static void ThrowBadGuidFormatSpecification() =>
             throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static Guid Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Guid result) => TryParse(utf8Text, out result);
     }
 }

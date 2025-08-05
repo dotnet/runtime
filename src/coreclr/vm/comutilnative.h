@@ -74,6 +74,10 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
 
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee);
+
 //
 // Buffer
 //
@@ -83,8 +87,8 @@ public:
     static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 };
 
-extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
 extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length);
+extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
 
 const UINT MEM_PRESSURE_COUNT = 4;
 
@@ -170,7 +174,7 @@ public:
     static FCDECL1(void,    SetLOHCompactionMode, int newLOHCompactionyMode);
     static FCDECL2(FC_BOOL_RET, RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage);
     static FCDECL0(FC_BOOL_RET, CancelFullGCNotification);
-    static FCDECL1(int,     GetGeneration, Object* objUNSAFE);
+    static FCDECL1(int,     GetGenerationInternal, Object* objUNSAFE);
     static FCDECL0(UINT64,  GetSegmentSize);
     static FCDECL0(int,     GetLastGCPercentTimeInGC);
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
@@ -206,7 +210,7 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure);
 
 extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
@@ -258,11 +262,15 @@ class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
+    static FCDECL2(MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
+    static FCDECL1(MethodTable*, InstantiationArg0, MethodTable* mt);
+    static FCDECL1(OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
 extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
 extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+extern "C" INT32 QCALLTYPE TypeHandle_GetCorElementType(void* typeHnd);
 extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMT);
 
 BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);

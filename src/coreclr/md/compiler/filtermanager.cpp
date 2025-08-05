@@ -11,7 +11,7 @@
 #include "stdafx.h"
 #include "filtermanager.h"
 
-#define IsGlobalTypeDef(td) ((td) == TokenFromRid(mdtTypeDef, 1))
+#define IsGlobalTypeDef(td) ((td) == COR_GLOBAL_PARENT_TOKEN)
 
 //*****************************************************************************
 // Walk up to the containing tree and
@@ -28,7 +28,7 @@ HRESULT FilterManager::Mark(mdToken tk)
         goto ErrExit;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     switch ( TypeFromToken(tk) )
     {
@@ -171,7 +171,7 @@ HRESULT FilterManager::MarkCustomAttribute(mdCustomAttribute cv)
     CustomAttributeRec *pRec;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     IfFailGo( m_pMiniMd->GetFilterTable()->MarkCustomAttribute( cv ) );
 
@@ -192,7 +192,7 @@ HRESULT FilterManager::MarkDeclSecurity(mdPermission pe)
     HRESULT     hr = NOERROR;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     IfFailGo( m_pMiniMd->GetFilterTable()->MarkDeclSecurity( pe ) );
 ErrExit:
@@ -214,7 +214,7 @@ HRESULT FilterManager::MarkStandAloneSig(mdSignature sig)
     IHostFilter     *pFilter = m_pMiniMd->GetHostFilter();
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if TypeRef is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsSignatureMarked(sig))
@@ -253,7 +253,7 @@ HRESULT FilterManager::MarkTypeSpec(mdTypeSpec ts)
     IHostFilter     *pFilter = m_pMiniMd->GetHostFilter();
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if TypeRef is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsTypeSpecMarked(ts))
@@ -294,7 +294,7 @@ HRESULT FilterManager::MarkTypeRef(mdTypeRef tr)
     mdToken         parentTk;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if TypeRef is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsTypeRefMarked(tr))
@@ -313,7 +313,7 @@ HRESULT FilterManager::MarkTypeRef(mdTypeRef tr)
     }
 
     tkMap = m_pMiniMd->GetTypeRefToTypeDefMap();
-    PREFIX_ASSUME(tkMap != NULL);
+    _ASSERTE(tkMap != NULL);
     td = *(tkMap->Get(RidFromToken(tr)));
     if ( td != mdTokenNil )
     {
@@ -346,7 +346,7 @@ HRESULT FilterManager::MarkMemberRef(mdMemberRef mr)
     mdToken         tkParent;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if MemberRef is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsMemberRefMarked(mr))
@@ -375,7 +375,7 @@ HRESULT FilterManager::MarkMemberRef(mdMemberRef mr)
     IfFailGo( MarkSignature(pbSig, cbSize, &cbUsed) );
 
     tkMap = m_pMiniMd->GetMemberRefToMemberDefMap();
-    PREFIX_ASSUME(tkMap != NULL);
+    _ASSERTE(tkMap != NULL);
     md = *(tkMap->Get(RidFromToken(mr)));           // can be fielddef or methoddef
     if ( RidFromToken(md) != mdTokenNil )
     {
@@ -402,7 +402,7 @@ HRESULT FilterManager::MarkUserString(mdString str)
     HRESULT         hr = NOERROR;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if UserString is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsUserStringMarked(str))
@@ -423,7 +423,7 @@ HRESULT FilterManager::MarkNewUserString(mdString str)
     HRESULT         hr = NOERROR;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     IfFailGo( m_pMiniMd->GetFilterTable()->MarkNewUserString( str ) );
 
@@ -444,7 +444,7 @@ HRESULT FilterManager::MarkMethodSpec(mdMethodSpec ms)
     PCCOR_SIGNATURE pbSig;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if MethodSpec is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsMethodSpecMarked(ms))
@@ -474,7 +474,7 @@ HRESULT FilterManager::MarkModuleRef(mdModuleRef mr)
     HRESULT     hr = NOERROR;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if ModuleRef is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsModuleRefMarked(mr))
@@ -496,7 +496,7 @@ HRESULT FilterManager::MarkAssemblyRef(mdAssemblyRef ar)
     HRESULT     hr = NOERROR;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if ModuleREf is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsAssemblyRefMarked(ar))
@@ -563,7 +563,7 @@ HRESULT FilterManager::MarkDeclSecuritiesWithParentToken(mdToken tkParent)
     DeclSecurityRec *pRec;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     if ( m_pMiniMd->IsSorted( TBL_DeclSecurity ) )
     {
@@ -633,7 +633,7 @@ HRESULT FilterManager::MarkParam(mdParamDef pd)
     HRESULT     hr;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     IfFailGo( m_pMiniMd->GetFilterTable()->MarkParam( pd ) );
 
@@ -663,7 +663,7 @@ HRESULT FilterManager::MarkMethod(mdMethodDef md)
     IHostFilter     *pFilter = m_pMiniMd->GetHostFilter();
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if MethodDef is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsMethodMarked(md))
@@ -731,7 +731,7 @@ HRESULT FilterManager::MarkField(mdFieldDef fd)
     IHostFilter     *pFilter = m_pMiniMd->GetHostFilter();
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if FieldDef is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsFieldMarked(fd))
@@ -767,7 +767,7 @@ HRESULT FilterManager::MarkEvent(mdEvent ev)
     EventRec    *pRec;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if Event is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsEventMarked(ev))
@@ -804,7 +804,7 @@ HRESULT FilterManager::MarkProperty(mdProperty pr)
     PCCOR_SIGNATURE pbSig;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if Property is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsPropertyMarked(pr))
@@ -897,7 +897,7 @@ HRESULT FilterManager::MarkMethodImplsWithParentToken(mdTypeDef td)
     HENUMInternal hEnum;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     HENUMInternal::ZeroEnum(&hEnum);
     IfFailGo( m_pMiniMd->FindMethodImplHelper(td, &hEnum) );
@@ -1068,7 +1068,7 @@ HRESULT FilterManager::MarkInterfaceImpls(
     InterfaceImplRec *pRec;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     if ( m_pMiniMd->IsSorted(TBL_InterfaceImpl) )
     {
@@ -1110,7 +1110,7 @@ HRESULT FilterManager::MarkTypeDef(
     RID             iNester;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if TypeDef is already marked, just return
     if (m_pMiniMd->GetFilterTable()->IsTypeDefMarked(td))
@@ -1380,7 +1380,7 @@ HRESULT FilterManager::UnmarkTypeDef(
     CustomAttributeRec  *pCARec;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.
-    PREFIX_ASSUME(m_pMiniMd->GetFilterTable() != NULL);
+    _ASSERTE(m_pMiniMd->GetFilterTable() != NULL);
 
     // if TypeDef is already unmarked, just return
     if (m_pMiniMd->GetFilterTable()->IsTypeDefMarked(td) == false)

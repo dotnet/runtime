@@ -53,37 +53,33 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            if (factory.TypeSystemContext.SupportsUniversalCanon)
+            if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                foreach (var instantiationType in _type.Instantiation)
+                // Track generic virtual methods that will get added to the GVM tables
+                if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
                 {
-                    if (instantiationType.IsValueType)
-                    {
-                        // All valuetype generic parameters of a constructed type may be effectively constructed. This is generally not that
-                        // critical, but in the presence of universal generics the compiler may generate a Box followed by calls to ToString,
-                        // GetHashcode or Equals in ways that cannot otherwise be detected by dependency analysis. Thus force all struct type
-                        // generic parameters to be considered constructed when walking dependencies of a constructed generic
-                        dependencyList.Add(factory.ConstructedTypeSymbol(instantiationType.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                        "Struct generic parameters in constructed types may be assumed to be used as constructed in constructed generic types");
-                    }
+                    dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
                 }
             }
+            else
+            {
+                // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
+                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
 
-            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
-
-            factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+                factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+            }
 
             return dependencyList;
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
-            return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
+            return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
         }
 
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
+            Debug.Assert(!_type.IsCanonicalSubtype(CanonicalFormKind.Any));
             return factory.SerializedConstructedRuntimeTypeObject(_type);
         }
 
@@ -95,7 +91,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
         {
             // The interface type will be visible to reflection and should be considered constructed.
-            return factory.ConstructedTypeSymbol(interfaceType);
+            return factory.ConstructedTypeSymbol(interfaceType.NormalizeInstantiation());
         }
 
         protected override int GCDescSize => GCDescEncoder.GetGCDescSize(_type);

@@ -141,4 +141,8 @@
 2 = Environment.NewLine
 3 = handler.ToString()</comment>
   </data>
+    <data name="TypedClient_NoHttpClientCtor" xml:space="preserve">
+    <value>A suitable constructor for type '{0}' could not be located. A Typed client must provide a constructor taking a 'System.Net.Http.HttpClient' as a parameter.</value>
+    <comment>{0} = instance type</comment>
+  </data>
 </root>

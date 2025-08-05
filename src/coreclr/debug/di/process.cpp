@@ -26,7 +26,6 @@
 // @dbgtodo shim: process has some private hooks into the shim.
 #include "shimpriv.h"
 
-#include "metadataexports.h"
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
 
@@ -292,19 +291,58 @@ static inline DWORD CordbGetWaitTimeout()
     }
 }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void UnmanagedThreadTracker::Suspend()
+{
+    _ASSERTE(m_hThread != INVALID_HANDLE_VALUE);
+    if (m_hThread != INVALID_HANDLE_VALUE)
+    {
+        m_dwSuspendCount++;
+        ::SuspendThread(m_hThread);
+    }
+}
+
+void UnmanagedThreadTracker::Resume()
+{
+    _ASSERTE(m_dwSuspendCount > 0);
+    if (m_dwSuspendCount == 0)
+        return;
+    m_dwSuspendCount--;
+    _ASSERTE(m_hThread != INVALID_HANDLE_VALUE);
+    if (m_hThread != INVALID_HANDLE_VALUE)
+    {
+        ::ResumeThread(m_hThread);
+    }
+}
+
+void UnmanagedThreadTracker::Close()
+{
+    HANDLE hThread = m_hThread;
+    DWORD dwSuspendCount = m_dwSuspendCount;
+    m_hThread = INVALID_HANDLE_VALUE;
+    m_dwSuspendCount = 0;
+    if (hThread == INVALID_HANDLE_VALUE)
+    {
+        return;
+    }
+    for (DWORD i = 0; i < dwSuspendCount; i++)
+    {
+        ::ResumeThread(hThread);
+    }
+    ::CloseHandle(hThread);
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+
 //----------------------------------------------------------------------------
 // Implementation of IDacDbiInterface::IMetaDataLookup.
 // lookup Internal Metadata Importer keyed by PEAssembly
-// isILMetaDataForNGENImage is true iff the IMDInternalImport returned represents a pointer to
-// metadata from an IL image when the module was an ngen'ed image.
-IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage)
+IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 {
     INTERNAL_DAC_CALLBACK(this);
 
     HASHFIND hashFindAppDomain;
     HASHFIND hashFindModule;
     IMDInternalImport * pMDII = NULL;
-    isILMetaDataForNGENImage = false;
 
     // Check to see if one of the cached modules has the metadata we need
     // If not we will do a more exhaustive search below
@@ -358,7 +396,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, 
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, isILMetaDataForNGENImage, pModule);
+                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, pModule);
                 }
                 return pMDII;
             }
@@ -371,91 +409,29 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, 
 
 IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     VMPTR_PEAssembly vmPEAssembly,
-    bool &isILMetaDataForNGENImage,
     CordbModule * pModule)
 {
     DWORD dwImageTimeStamp = 0;
     DWORD dwImageSize = 0;
-    bool isNGEN = false;
     StringCopyHolder filePath;
     IMDInternalImport * pMDII = NULL;
 
     // First, see if the debugger can locate the exact metadata we want.
-    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, isNGEN, &filePath))
+    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath))
     {
         _ASSERTE(filePath.IsSet());
 
-        // Since we track modules by their IL images, that presents a little bit of oddness here.  The correct
-        // thing to do is preferentially load the NI content.
-        // We don't discriminate between timestamps & sizes becuase CLRv4 deterministic NGEN guarantees that the
-        // IL image and NGEN image have the same timestamp and size.  Should that guarantee change, this code
-        // will be horribly broken.
-
-        // If we happen to have an NI file path, use it instead.
-        const WCHAR * pwszFilePath = pModule->GetNGenImagePath();
-        if (pwszFilePath)
-        {
-            // Force the issue, regardless of the older codepath's opinion.
-            isNGEN = true;
-        }
-        else
-        {
-            pwszFilePath = (WCHAR *)filePath;
-        }
+        const WCHAR * pwszFilePath = (WCHAR *)filePath;
 
         ALLOW_DATATARGET_MISSING_MEMORY(
             pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, pwszFilePath, dwImageTimeStamp, dwImageSize);
         );
 
-        // If it's an ngen'ed image and the debugger couldn't find it, we can use the metadata from
-        // the corresponding IL image if the debugger can locate it.
         filePath.Clear();
-        if ((pMDII == NULL) &&
-            (isNGEN) &&
-            (this->GetDAC()->GetILImageInfoFromNgenPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath)))
-        {
-            _ASSERTE(filePath.IsSet());
-
-            WCHAR *mutableFilePath = (WCHAR *)filePath;
-
-            size_t pathLen = u16_strlen(mutableFilePath);
-
-            const WCHAR *nidll = W(".ni.dll");
-            const WCHAR *niexe = W(".ni.exe");
-            const size_t dllLen = u16_strlen(nidll);  // used for ni.exe as well
-
-            if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
-            {
-                wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".dll"));
-            }
-            else if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, niexe) == 0)
-            {
-                wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".exe"));
-            }
-
-            ALLOW_DATATARGET_MISSING_MEMORY(
-                pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, mutableFilePath, dwImageTimeStamp, dwImageSize);
-            );
-
-            if (pMDII != NULL)
-            {
-                isILMetaDataForNGENImage = true;
-            }
-        }
     }
     return pMDII;
 }
 
-// We do not know if the image being sent to us is an IL image or ngen image.
-// CordbProcess::LookupMetaDataFromDebugger() has this knowledge when it looks up the file to hand off
-// to this function.
-// DacDbiInterfaceImpl::GetMDImport() has this knowledge in the isNGEN flag.
-// The CLR v2 code that windbg used made a distinction whether the metadata came from
-// the exact binary or not (i.e. were we getting metadata from the IL image and using
-// it against the ngen image?) but that information was never used and so not brought forward.
-// It would probably be more interesting generally to track whether the debugger gives us back
-// a file that bears some relationship to the file we asked for, which would catch the NI/IL case
-// as well.
 IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
     CordbModule * pModule,
     LPCWSTR pwszFilePath,
@@ -463,6 +439,12 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
     DWORD dwSize)
 {
     INTERNAL_DAC_CALLBACK(this);
+
+    // If the debugger didn't supply a metadata locator interface, fail
+    if (m_pMetaDataLocator == nullptr)
+    {
+        return nullptr;
+    }
 
     ULONG32 cchLocalImagePath = MAX_LONGPATH;
     ULONG32 cchLocalImagePathRequired;
@@ -939,7 +921,6 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_unmanagedThreads(11),
 #endif
     m_appDomains(11),
-    m_sharedAppDomain(0),
     m_steppers(11),
     m_continueCounter(1),
     m_flushCounter(0),
@@ -974,13 +955,16 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_iFirstPatch(0),
     m_hHelperThread(NULL),
     m_dispatchedEvent(DB_IPCE_DEBUGGER_INVALID),
-    m_pDefaultAppDomain(NULL),
     m_hDacModule(hDacModule),
     m_pDacPrimitives(NULL),
     m_pEventChannel(NULL),
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
     m_writableMetadataUpdateMode(LegacyCompatPolicy)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    ,
+    m_dwOutOfProcessStepping(0)
+#endif
 {
     _ASSERTE((m_id == 0) == (pShim == NULL));
 
@@ -1072,8 +1056,6 @@ CordbProcess::~CordbProcess()
 
     // We shouldn't still be in Cordb's list of processes. Unfortunately, our root Cordb object
     // may have already been deleted b/c we're at the mercy of ref-counting, so we can't check.
-
-	_ASSERTE(m_sharedAppDomain == NULL);
 
     m_processMutex.Destroy();
     m_StopGoLock.Destroy();
@@ -1302,16 +1284,8 @@ void CordbProcess::NeuterChildren()
 
     m_userThreads.NeuterAndClear(GetProcessLock());
 
-    m_pDefaultAppDomain = NULL;
-
     // Frees per-appdomain left-side resources. See assumptions above.
     m_appDomains.NeuterAndClear(GetProcessLock());
-    if (m_sharedAppDomain != NULL)
-    {
-        m_sharedAppDomain->Neuter();
-        m_sharedAppDomain->InternalRelease();
-        m_sharedAppDomain = NULL;
-    }
 
     m_steppers.NeuterAndClear(GetProcessLock());
 
@@ -1349,6 +1323,22 @@ void CordbProcess::Neuter()
     // Take the process lock.
     RSLockHolder lockHolder(GetProcessLock());
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
+    CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
+    for (CUnmanagedThreadHashTableIterator it = beginIter; it != endIter; ++it)
+    {
+        UnmanagedThreadTracker * pUnmanagedThread = *it;
+        _ASSERTE(pUnmanagedThread != NULL);
+        if (pUnmanagedThread != NULL)
+        {
+            pUnmanagedThread->Close();
+            delete pUnmanagedThread;
+        }
+    }
+    m_unmanagedThreadHashTable.RemoveAll();
+    m_dwOutOfProcessStepping = 0;
+#endif
 
     NeuterChildren();
 
@@ -1737,7 +1727,7 @@ HRESULT CordbProcess::Init()
         hr = m_pDACDataTarget->QueryInterface(IID_ICorDebugMetaDataLocator, reinterpret_cast<void **>(&m_pMetaDataLocator));
 
         // Get the metadata dispenser.
-        hr = InternalCreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&m_pMetaDispenser);
+        hr = CreateMetaDataDispenser(IID_IMetaDataDispenserEx, (void **)&m_pMetaDispenser);
 
         // We statically link in the dispenser. We expect it to succeed, except for OOM, which
         // debugger doesn't yet handle.
@@ -1750,7 +1740,6 @@ HRESULT CordbProcess::Init()
         // a flag on the dispenser to create threadsafe readers. This is done best-effort but
         // really shouldn't ever fail. See issue 696511.
         VARIANT optionValue;
-        VariantInit(&optionValue);
         V_VT(&optionValue) = VT_UI4;
         V_UI4(&optionValue) = MDThreadSafetyOn;
         m_pMetaDispenser->SetOption(MetaDataThreadSafetyOptions, &optionValue);
@@ -2305,10 +2294,10 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 
 HRESULT CordbProcess::GetObject(CORDB_ADDRESS addr, ICorDebugObjectValue **ppObject)
 {
-    return this->GetObjectInternal(addr, nullptr, ppObject);
+    return this->GetObjectInternal(addr, ppObject);
 }
 
-HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject)
+HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject)
 {
     HRESULT hr = S_OK;
 
@@ -2332,7 +2321,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pApp
 
             CordbAppDomain *cdbAppDomain = NULL;
             CordbType *pType = NULL;
-            hr = GetTypeForObject(addr, pAppDomainOverride, &pType, &cdbAppDomain);
+            hr = GetTypeForObject(addr, &pType, &cdbAppDomain);
 
             if (SUCCEEDED(hr))
             {
@@ -2440,7 +2429,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
         GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, VMPTR_AppDomain::NullPtr(), id, &data);
 
         CordbType *type = 0;
-        hr = CordbType::TypeDataToType(GetSharedAppDomain(), &data, &type);
+        hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);
 
         if (SUCCEEDED(hr))
             hr = type->QueryInterface(IID_ICorDebugType, (void**)ppType);
@@ -2568,7 +2557,7 @@ COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEn
     return hr;
 }
 
-HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain)
+HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
     VMPTR_AppDomain appDomain;
     VMPTR_Module mod;
@@ -2577,11 +2566,7 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppD
     HRESULT hr = E_FAIL;
     if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainAssembly))
     {
-        if (pAppDomainOverride)
-        {
-            appDomain = pAppDomainOverride->GetADToken();
-        }
-        CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetSharedAppDomain() : LookupOrCreateAppDomain(appDomain);
+        CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetAppDomain() : LookupOrCreateAppDomain(appDomain);
 
         _ASSERTE(cdbAppDomain);
 
@@ -2632,7 +2617,7 @@ void CordbRefEnum::Neuter()
     {
         _ASSERTE(!"Hit an error freeing a ref walk.");
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     CordbBase::Neuter();
 }
@@ -2848,7 +2833,7 @@ void CordbHeapEnum::Clear()
     {
         _ASSERTE(!"Hit an error freeing the heap walk.");
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 HRESULT CordbHeapEnum::Clone(ICorDebugEnum **ppEnum)
@@ -4794,10 +4779,6 @@ void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
 //    A V2 shim can provide a proxy calllack that takes these events and queues them and
 //    does the real dispatch to the user to emulate V2 semantics.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 void CordbProcess::RawDispatchEvent(
     DebuggerIPCEvent *          pEvent,
     RSLockHolder *              pLockHolder,
@@ -4961,7 +4942,7 @@ void CordbProcess::RawDispatchEvent(
             STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: step complete.\n",
                  GetCurrentThreadId());
 
-            PREFIX_ASSUME(pThread != NULL);
+            _ASSERTE(pThread != NULL);
 
             CordbStepper * pStepper = m_steppers.GetBase(LsPtrToCookie(pEvent->StepData.stepperToken));
 
@@ -5080,6 +5061,23 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_LOAD_MODULE:
         {
+            LOG((LF_CORDB, LL_INFO100,
+                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08x AD:0x%08x \n",
+                dwVolatileThreadId,
+                VmPtrToCookie(pEvent->LoadModuleData.vmDomainAssembly),
+                VmPtrToCookie(pEvent->vmAppDomain)));
+
+            _ASSERTE (pAppDomain != NULL);
+
+            // Determine if this Assembly is cached.
+            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->LoadModuleData.vmDomainAssembly);
+            _ASSERTE(pAssembly != NULL); // throws on error
+
+            // If created, or have, an Assembly, notify callback.
+            {
+                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
+                hr = pCallback1->LoadAssembly(pAppDomain, pAssembly);
+            }
             _ASSERTE (pAppDomain != NULL);
             CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadModuleData.vmDomainAssembly);
 
@@ -5136,7 +5134,7 @@ void CordbProcess::RawDispatchEvent(
                  VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly),
                  VmPtrToCookie(pEvent->vmAppDomain));
 
-            PREFIX_ASSUME (pAppDomain != NULL);
+            _ASSERTE (pAppDomain != NULL);
 
             CordbModule *module = pAppDomain->LookupOrCreateModule(pEvent->UnloadModuleData.vmDomainAssembly);
 
@@ -5372,19 +5370,6 @@ void CordbProcess::RawDispatchEvent(
             }
             _ASSERTE (pAppDomain != NULL);
 
-            // See if this is the default AppDomain exiting.  This should only happen very late in
-            // the shutdown cycle, and so we shouldn't do anything significant with m_pDefaultDomain==NULL.
-            // We should try and remove m_pDefaultDomain entirely since we can't count on it always existing.
-            if (pAppDomain == m_pDefaultAppDomain)
-            {
-                m_pDefaultAppDomain = NULL;
-            }
-
-            // Update any threads which were last seen in this AppDomain.  We don't
-            // get any notification when a thread leaves an AppDomain, so our idea
-            // of what AppDomain the thread is in may be out of date.
-            UpdateThreadsForAdUnload( pAppDomain );
-
             // This will still maintain weak references so we could call Continue.
             AddToNeuterOnContinueList(pAppDomain);
 
@@ -5403,29 +5388,6 @@ void CordbProcess::RawDispatchEvent(
             // to this AppDomain have been moved to the default AppDomain, no one should be
             // interested in looking this AppDomain up anymore.
             m_appDomains.RemoveBase(VmPtrToCookie(pEvent->vmAppDomain));
-        }
-
-        break;
-
-    case DB_IPCE_LOAD_ASSEMBLY:
-        {
-            LOG((LF_CORDB, LL_INFO100,
-                "RCET::HRCE: load assembly on thread %#x Asm:0x%08x AD:0x%08x \n",
-                dwVolatileThreadId,
-                VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
-                VmPtrToCookie(pEvent->vmAppDomain)));
-
-            _ASSERTE (pAppDomain != NULL);
-
-            // Determine if this Assembly is cached.
-            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmDomainAssembly);
-            _ASSERTE(pAssembly != NULL); // throws on error
-
-            // If created, or have, an Assembly, notify callback.
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                hr = pCallback1->LoadAssembly(pAppDomain, pAssembly);
-            }
         }
 
         break;
@@ -5663,7 +5625,7 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(NULL != pAppDomain);
 
             CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
-            PREFIX_ASSUME(pModule != NULL);
+            _ASSERTE(pModule != NULL);
 
             CordbFunction * pCurFunction    = NULL;
             CordbFunction * pResumeFunction = NULL;
@@ -5719,12 +5681,12 @@ void CordbProcess::RawDispatchEvent(
             _ASSERTE(NULL != pAppDomain);
 
             CordbModule* pModule = pAppDomain->LookupOrCreateModule(pEvent->EnCRemap.vmDomainAssembly);
-            PREFIX_ASSUME(pModule != NULL);
+            _ASSERTE(pModule != NULL);
 
             // Find the function we're remapping to, which must be the latest version
             CordbFunction *pRemapFunction=
                 pModule->LookupFunctionLatestVersion(pEvent->EnCRemapComplete.funcMetadataToken);
-            PREFIX_ASSUME(pRemapFunction != NULL);
+            _ASSERTE(pRemapFunction != NULL);
 
             // Dispatch the FunctionRemapComplete callback
             RSSmartPtr<CordbFunction> pRef(pRemapFunction);
@@ -5964,9 +5926,6 @@ void CordbProcess::RawDispatchEvent(
 
     FinishEventDispatch();
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //---------------------------------------------------------------------------------------
 // Callback for prepopulating threads.
@@ -6584,7 +6543,7 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
         {
             hr = E_FAIL;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
 
     }
@@ -7188,7 +7147,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
             CONSISTENCY_CHECK_MSGF(false,
                 ("You're using ICorDebugProcess::WriteMemory() to write an 'int3' (1 byte 0xCC) at address 0x%p.\n"
                 "If you're trying to set a breakpoint, you should be using ICorDebugProcess::SetUnmanagedBreakpoint() instead.\n"
-                "(This assert is only enabled under the COM+ knob DbgCheckInt3.)\n",
+                "(This assert is only enabled under the CLR knob DbgCheckInt3.)\n",
                 CORDB_ADDRESS_TO_PTR(address)));
         }
 #endif // TARGET_X86 || TARGET_AMD64
@@ -7205,7 +7164,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
                 ("You're using ICorDebugProcess::WriteMemory() to write an 'opcode (0x%x)' at address 0x%p.\n"
                 "There's already a native patch at that address from ICorDebugProcess::SetUnmanagedBreakpoint().\n"
                 "If you're trying to remove the breakpoint, use ICDProcess::ClearUnmanagedBreakpoint() instead.\n"
-                "(This assert is only enabled under the COM+ knob DbgCheckInt3.)\n",
+                "(This assert is only enabled under the CLR knob DbgCheckInt3.)\n",
                 (DWORD) (buffer[0]), CORDB_ADDRESS_TO_PTR(address)));
             }
         }
@@ -8544,7 +8503,7 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
         {
             _ASSERTE(!"Writing process memory failed, perhaps due to an unexpected disconnection from the target.");
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     //
@@ -8723,19 +8682,23 @@ CordbAppDomain * CordbProcess::LookupOrCreateAppDomain(VMPTR_AppDomain vmAppDoma
     return CacheAppDomain(vmAppDomain);
 }
 
-CordbAppDomain * CordbProcess::GetSharedAppDomain()
+CordbAppDomain * CordbProcess::GetAppDomain()
 {
-    if (m_sharedAppDomain == NULL)
+    // Return the one and only app domain
+    HASHFIND find;
+    CordbAppDomain* appDomain = m_appDomains.FindFirst(&find);
+    if (appDomain != NULL)
     {
-        CordbAppDomain *pAD = new CordbAppDomain(this, VMPTR_AppDomain::NullPtr());
-        if (InterlockedCompareExchangeT<CordbAppDomain*>(&m_sharedAppDomain, pAD, NULL) != NULL)
-        {
-            delete pAD;
-        }
-		m_sharedAppDomain->InternalAddRef();
+        const ULONG appDomainId = 1; // DefaultADID in appdomain.hpp
+        ULONG32 id;
+        HRESULT hr = appDomain->GetID(&id);
+        TargetConsistencyCheck(SUCCEEDED(hr) && id == appDomainId);
+        return appDomain;
     }
 
-    return m_sharedAppDomain;
+    VMPTR_AppDomain vmAppDomain = GetDAC()->GetCurrentAppDomain();
+    appDomain = LookupOrCreateAppDomain(vmAppDomain);
+    return appDomain;
 }
 
 //---------------------------------------------------------------------------------------
@@ -8770,10 +8733,6 @@ CordbAppDomain * CordbProcess::CacheAppDomain(VMPTR_AppDomain vmAppDomain)
     // Caller ensures we're not already cached.
     // The cache will take ownership.
     m_appDomains.AddBaseOrThrow(pAppDomain);
-
-    // If this assert fires, then it likely means the target is corrupted.
-    TargetConsistencyCheck(m_pDefaultAppDomain == NULL);
-    m_pDefaultAppDomain = pAppDomain;
 
     CordbAppDomain * pReturn = pAppDomain;
     pAppDomain.ClearAndMarkDontNeuter();
@@ -11163,40 +11122,26 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // 3. read the thread context, and from that read the pointer to the left-side context and the size of the context
     // 4. then we can perform the actual SetThreadContext operation
     // 5. lastly, we must resume the thread
-    // For the first step of obtaining the thread handle, 
+    // For the first step of obtaining the thread handle,
     // we have previously attempted to use ::OpenThread to get a handle to the thread.
     // However, there are situations where OpenThread can fail with an Access Denied error.
-    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
-    // Windows causes the process to have higher privileges. 
-    // We are now using the following approach to access the thread handle, which is the same
-    // approach used by CordbThread::RefreshHandle:
-    // 1. Get the thread handle from the DAC
-    // 2. Duplicate the handle to the current process
+    // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in
+    // Windows causes the process to have higher privileges.
+    // We are now caching the thread handle in the unmanaged thread hash table when the thread is created.
 
-    // lookup the CordbThread by thread ID, so that we can access the left-side thread handle
-    CordbThread * pThread = TryLookupOrCreateThreadByVolatileOSId(dwThreadId);
+    UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
 
-    IDacDbiInterface* pDAC = GetDAC();
-    if (pDAC == NULL)
+    if (curThread == NULL || curThread->GetThreadId() != dwThreadId)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - DAC not initialized\n"));
-        ThrowHR(E_UNEXPECTED);
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Thread not found\n"));
+        ThrowHR(CORDBG_E_BAD_THREAD_STATE);
     }
 
-    HANDLE hOutOfProcThread = pDAC->GetThreadHandle(pThread->m_vmThreadToken);
-    if (hOutOfProcThread == NULL)
+    HANDLE hThread = curThread->GetThreadHandle();
+    if (hThread == INVALID_HANDLE_VALUE)
     {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Failed to get thread handle\n"));
-        ThrowHR(E_UNEXPECTED);
-    }
-
-    // Duplicate the thread handle to the current process
-    HandleHolder hThread;
-    BOOL fSuccess = DuplicateHandle(UnsafeGetProcessHandle(), hOutOfProcThread, ::GetCurrentProcess(), &hThread, 0, FALSE, DUPLICATE_SAME_ACCESS);
-    if (!fSuccess)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from DuplicateHandle\n"));
-        ThrowHR(HRESULT_FROM_GetLastError());
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Thread handle not found\n"));
+        ThrowHR(CORDBG_E_BAD_THREAD_STATE);
     }
 
     // Suspend the thread and so that we can read the thread context.
@@ -11210,8 +11155,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    // we originally used GetDataTarget()->GetThreadContext, but 
-    // the implementation uses ShimLocalDataTarget::GetThreadContext which 
+    // we originally used GetDataTarget()->GetThreadContext, but
+    // the implementation uses ShimLocalDataTarget::GetThreadContext which
     // depends on OpenThread which might fail with an Access Denied error (see note above)
     BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
     if (!success)
@@ -11224,10 +11169,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     TADDR lsContextAddr = (TADDR)context.Rcx;
     DWORD contextSize = (DWORD)context.Rdx;
 
-    // Read the expected Rip and Rsp from the thread context.  This is used to 
-    // validate the context read from the left-side.
-    TADDR expectedRip = (TADDR)context.R8;
-    TADDR expectedRsp = (TADDR)context.R9;
+    bool fIsInPlaceSingleStep = (bool)(context.R8&0x1);
+    PRD_TYPE opcode = (PRD_TYPE)context.R9;
 
     if (contextSize == 0 || contextSize > sizeof(CONTEXT) + 25000)
     {
@@ -11257,15 +11200,6 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual context size mismatch\n"));
 
         ThrowHR(ERROR_PARTIAL_COPY);
-    }
-
-    if (pContext->Rip != expectedRip || pContext->Rsp != expectedRsp)
-    {
-        _ASSERTE(!"ReadVirtual unexpectedly returned mismatched Rip and Rsp registers");
-
-        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - ReadVirtual unexpectedly returned mismatched Rip and Rsp registers\n"));
-
-        ThrowHR(E_UNEXPECTED);
     }
 
     // TODO: Ideally we would use ICorDebugMutableDataTarget::SetThreadContext however this API currently only handles the legacy context.
@@ -11346,9 +11280,132 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SetThreadContext\n"));
         ThrowHR(HRESULT_FROM_WIN32(lastError));
     }
+
+    if (fIsInPlaceSingleStep)
+    {
+        CORDB_ADDRESS_TYPE *patchSkipAddr = (CORDB_ADDRESS_TYPE*)pFrameContext->Rip;
+
+        HANDLE hProcess = UnsafeGetProcessHandle();
+        LPVOID baseAddress = (LPVOID)(patchSkipAddr);
+        DWORD oldProt;
+
+        if (!VirtualProtectEx(hProcess,
+                            baseAddress,
+                            CORDbg_BREAK_INSTRUCTION_SIZE,
+                            PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            // we may be seeing unwriteable directly mapped executable memory.
+            // let's try copy-on-write instead,
+            if (!VirtualProtectEx(hProcess,
+                baseAddress,
+                CORDbg_BREAK_INSTRUCTION_SIZE,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                ThrowHR(HRESULT_FROM_GetLastError());
+            }
+        }
+
+        LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - address=0x%p opcode=0x%x\n", patchSkipAddr, opcode));
+        HRESULT hr = RemoveRemotePatch(this, (void*)patchSkipAddr, opcode);
+        IfFailThrow(hr);
+
+        if (!VirtualProtectEx(hProcess,
+                    baseAddress,
+                    CORDbg_BREAK_INSTRUCTION_SIZE,
+                    oldProt, &oldProt))
+        {
+            _ASSERTE(!"VirtualProtect of code page failed");
+            ThrowHR(HRESULT_FROM_GetLastError());
+        }
+
+        curThread->SetPatchSkipAddress(patchSkipAddr);
+
+        // suspend all other threads
+        m_dwOutOfProcessStepping++;
+        CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
+        CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
+        for (CUnmanagedThreadHashTableIterator curIter = beginIter; curIter != endIter; ++curIter)
+        {
+            UnmanagedThreadTracker * pUnmanagedThread = *curIter;
+            _ASSERTE(pUnmanagedThread != NULL);
+            if (pUnmanagedThread == NULL || pUnmanagedThread->GetThreadId() == dwThreadId)
+            {
+                continue;
+            }
+            pUnmanagedThread->Suspend();
+        }
+    }
 #else
     #error Platform not supported
 #endif
+}
+
+bool CordbProcess::HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress)
+{
+    UnmanagedThreadTracker * curThread = m_unmanagedThreadHashTable.Lookup(dwThreadId);
+    _ASSERTE(curThread != NULL);
+    if (curThread != NULL &&
+        curThread->GetThreadId() == dwThreadId &&
+        curThread->IsInPlaceStepping())
+    {
+        // this is an in-place step, so place the breakpoint instruction back to the patch location
+
+        HANDLE hProcess = UnsafeGetProcessHandle();
+        LPVOID baseAddress = (LPVOID)(curThread->GetPatchSkipAddress());
+        DWORD oldProt;
+
+        if (!VirtualProtectEx(hProcess,
+                            baseAddress,
+                            CORDbg_BREAK_INSTRUCTION_SIZE,
+                            PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            // we may be seeing unwriteable directly mapped executable memory.
+            // let's try copy-on-write instead,
+            if (!VirtualProtectEx(hProcess,
+                baseAddress,
+                CORDbg_BREAK_INSTRUCTION_SIZE,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                ThrowHR(HRESULT_FROM_GetLastError());
+            }
+        }
+
+        HRESULT hr = ApplyRemotePatch(this, curThread->GetPatchSkipAddress());
+        IfFailThrow(hr);
+
+        if (!VirtualProtectEx(hProcess,
+            baseAddress,
+            CORDbg_BREAK_INSTRUCTION_SIZE,
+            oldProt, &oldProt))
+        {
+            _ASSERTE(!"VirtualProtect of code page failed");
+            ThrowHR(HRESULT_FROM_GetLastError());
+        }
+
+        curThread->ClearPatchSkipAddress();
+
+        m_dwOutOfProcessStepping--;
+
+        // resume all other threads
+        CUnmanagedThreadHashTableIterator beginIter = m_unmanagedThreadHashTable.Begin();
+        CUnmanagedThreadHashTableIterator endIter = m_unmanagedThreadHashTable.End();
+        for (CUnmanagedThreadHashTableIterator curIter = beginIter; curIter != endIter; ++curIter)
+        {
+            UnmanagedThreadTracker * pUnmanagedThread = *curIter;
+            _ASSERTE(pUnmanagedThread != NULL);
+            if (pUnmanagedThread == NULL || pUnmanagedThread->GetThreadId() == dwThreadId)
+            {
+                continue;
+            }
+            pUnmanagedThread->Resume();
+        }
+
+        return true;
+    }
+
+    return false;
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
@@ -11606,6 +11663,16 @@ HRESULT CordbProcess::Filter(
             HandleSetThreadContextNeeded(dwThreadId);
             *pContinueStatus = DBG_CONTINUE;
         }
+        else if (dwFirstChance && pRecord->ExceptionCode == STATUS_SINGLE_STEP && m_dwOutOfProcessStepping > 0)
+        {
+            // this may be an in-place step, and if so place the breakpoint instruction back to the patch location and resume the threads
+
+            if (HandleInPlaceSingleStep(dwThreadId, pRecord->ExceptionAddress))
+            {
+                // let the normal left side debugger stepper logic execute for this single step
+                *pContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
+            }
+        }
 #endif
     }
     PUBLIC_API_END(hr);
@@ -11808,7 +11875,7 @@ void CordbWin32EventThread::Win32EventLoop()
             // Once we detach, we don't need to continue any outstanding event.
             // So act like we never got the event.
             fEventAvailable = false;
-            PREFIX_ASSUME(m_pProcess == NULL); // W32 cleared process pointer
+            _ASSERTE(m_pProcess == NULL); // W32 cleared process pointer
         }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -11833,7 +11900,7 @@ void CordbWin32EventThread::Win32EventLoop()
         // But since the CordbProcess is our parent object, we know it won't go away until
         // it neuters us, so we can safely proceed.
         // Find the process this event is for.
-        PREFIX_ASSUME(m_pProcess != NULL);
+        _ASSERTE(m_pProcess != NULL);
         _ASSERTE(m_pProcess->m_id == GetProcessId(&event)); // should only get events for our proc
         g_pRSDebuggingInfo->m_MRUprocess = m_pProcess;
 
@@ -13207,7 +13274,11 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         {
             LOG((LF_CORDB, LL_INFO100000, "W32ET::W32EL: hijack complete will restore context...\n"));
             DT_CONTEXT tempContext = { 0 };
-            tempContext.ContextFlags = DT_CONTEXT_FULL;
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+            tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
+#else
+            tempContext.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
+#endif
             HRESULT hr = pUnmanagedThread->GetThreadContext(&tempContext);
             _ASSERTE(SUCCEEDED(hr));
 
@@ -14174,7 +14245,7 @@ void CordbProcess::CleanupHalfBakedLeftSide()
         {
             _ASSERTE(!"Writing process memory failed, perhaps due to an unexpected disconnection from the target.");
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     // Close and null out the various handles and events, including our process handle m_handle.
@@ -15118,6 +15189,13 @@ HRESULT CordbProcess::IsReadyForDetach()
         return CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS;
     }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    if (m_dwOutOfProcessStepping > 0)
+    {
+        return CORDBG_E_DETACH_FAILED_OUTSTANDING_STEPPERS;
+    }
+#endif
+
     //
     // If there are any outstanding breakpoints then fail the detach.
     //
@@ -15148,46 +15226,6 @@ HRESULT CordbProcess::IsReadyForDetach()
     }
 
     return S_OK;
-}
-
-
-/*
- * Look for any thread which was last seen in the specified AppDomain.
- * The CordbAppDomain object is about to be neutered due to an AD Unload
- * So the thread must no longer be considered to be in that domain.
- * Note that this is a workaround due to the existence of the (possibly incorrect)
- * cached AppDomain value.  Ideally we would remove the cached value entirely
- * and there would be no need for this.
- *
- * @dbgtodo: , appdomain: We should remove CordbThread::m_pAppDomain in the V3 architecture.
- * If we need the thread's current domain, we should get it accurately with DAC.
- */
-void CordbProcess::UpdateThreadsForAdUnload(CordbAppDomain * pAppDomain)
-{
-    INTERNAL_API_ENTRY(this);
-
-    // If we're doing an AD unload then we should have already seen the ATTACH
-    // notification for the default domain.
-    //_ASSERTE( m_pDefaultAppDomain != NULL );
-    // @dbgtodo appdomain: fix Default domain invariants with DAC-izing Appdomain work.
-
-    RSLockHolder lockHolder(GetProcessLock());
-
-    CordbThread* t;
-    HASHFIND find;
-
-    // We don't need to prepopulate here (to collect LS state) because we're just updating RS state.
-    for (t =  m_userThreads.FindFirst(&find);
-         t != NULL;
-         t =  m_userThreads.FindNext(&find))
-    {
-        if( t->GetAppDomain() == pAppDomain )
-        {
-            // This thread cannot actually be in this AppDomain anymore (since it's being
-            // unloaded).  Reset it to point to the default AppDomain
-            t->m_pAppDomain = m_pDefaultAppDomain;
-        }
-    }
 }
 
 // CordbProcess::LookupClass
@@ -15434,3 +15472,50 @@ void CordbProcess::HandleControlCTrapResult(HRESULT result)
     // Send the reply to the LS.
     SendIPCEvent(&eventControlCResult, sizeof(eventControlCResult));
 }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void CordbProcess::HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent)
+{
+    PUBLIC_API_ENTRY_FOR_SHIM(this);
+
+    const DWORD dwDesiredAccess = THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME;
+
+    switch (pEvent->dwDebugEventCode)
+    {
+        case CREATE_PROCESS_DEBUG_EVENT:
+            if (GetProcessId(pEvent->u.CreateProcessInfo.hProcess) == GetProcessId(UnsafeGetProcessHandle()))
+            {
+                HANDLE hThread = INVALID_HANDLE_VALUE;
+                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateProcessInfo.hThread, ::GetCurrentProcess(), &hThread, dwDesiredAccess, false, 0);
+                m_unmanagedThreadHashTable.AddNoThrow(new UnmanagedThreadTracker(pEvent->dwThreadId, hThread));
+            }
+            break;
+        case CREATE_THREAD_DEBUG_EVENT:
+            {
+                HANDLE hThread = INVALID_HANDLE_VALUE;
+                ::DuplicateHandle(::GetCurrentProcess(), pEvent->u.CreateThread.hThread, ::GetCurrentProcess(), &hThread, dwDesiredAccess, false, 0);
+                UnmanagedThreadTracker * newItem = new UnmanagedThreadTracker(pEvent->dwThreadId, hThread);
+                m_unmanagedThreadHashTable.AddNoThrow(newItem);
+                if (newItem && m_dwOutOfProcessStepping > 0) // if the insert was successful and we have out-of-process stepping enabled
+                {
+                    for (DWORD i = 0; i < m_dwOutOfProcessStepping; i++)
+                    {
+                        newItem->Suspend();
+                    }
+                }
+            }
+            break;
+        case EXIT_THREAD_DEBUG_EVENT:
+            {
+                UnmanagedThreadTracker * pUnmanagedThread = m_unmanagedThreadHashTable.Lookup(pEvent->dwThreadId);
+                if (pUnmanagedThread != NULL)
+                {
+                    pUnmanagedThread->Close();
+                    m_unmanagedThreadHashTable.Remove(pEvent->dwThreadId);
+                    delete pUnmanagedThread;
+                }
+            }
+            break;
+    }
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT

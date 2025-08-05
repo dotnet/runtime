@@ -130,6 +130,7 @@ namespace ILCompiler
             TypeDesc owningType = method.OwningType;
             return !method.Signature.IsStatic && /* Static methods don't have this */
                 !owningType.IsValueType && /* Value type instance methods take a ref to data */
+                !owningType.IsInterface && /* Interface MethodTable can be optimized away but the instance method can still be callable (`this` is of a non-interface type) */
                 !owningType.IsArrayTypeWithoutGenericInterfaces() && /* Type loader can make these at runtime */
                 (owningType is not MetadataType mdType || !mdType.IsModuleType) && /* Compiler parks some instance methods on the <Module> type */
                 !method.IsSharedByGenericInstantiations; /* Current impl limitation; can be lifted */

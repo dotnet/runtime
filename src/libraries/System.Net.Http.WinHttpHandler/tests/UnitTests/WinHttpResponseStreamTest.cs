@@ -285,7 +285,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             TestControl.WinHttpReadData.Pause();
             Task t1 = stream.ReadAsync(new byte[1], 0, 1);
 
-            Assert.Throws<InvalidOperationException>(() => { Task t2 = stream.ReadAsync(new byte[1], 0, 1); });
+            Assert.ThrowsAsync<InvalidOperationException>(() => stream.ReadAsync(new byte[1], 0, 1));
 
             TestControl.WinHttpReadData.Resume();
             t1.Wait();

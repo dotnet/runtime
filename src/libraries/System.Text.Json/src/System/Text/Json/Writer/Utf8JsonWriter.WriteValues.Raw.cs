@@ -38,10 +38,7 @@ namespace System.Text.Json
                 ValidateWritingValue();
             }
 
-            if (json == null)
-            {
-                throw new ArgumentNullException(nameof(json));
-            }
+            ArgumentNullException.ThrowIfNull(json);
 
             TranscodeAndWriteRawValue(json.AsSpan(), skipInputValidation);
         }

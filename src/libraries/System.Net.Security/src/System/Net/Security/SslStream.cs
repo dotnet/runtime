@@ -33,7 +33,7 @@ namespace System.Net.Security
     public delegate bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors);
 
     // A user delegate used to select local SSL certificate.
-    public delegate X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers);
+    public delegate X509Certificate? LocalCertificateSelectionCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers);
 
     public delegate X509Certificate ServerCertificateSelectionCallback(object sender, string? hostName);
 
@@ -228,14 +228,14 @@ namespace System.Net.Security
         //
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, AsyncCallback? asyncCallback, object? asyncState)
         {
-            return BeginAuthenticateAsClient(targetHost, null, SecurityProtocol.SystemDefaultSecurityProtocols, false,
+            return BeginAuthenticateAsClient(targetHost, null, SslProtocols.None, false,
                                            asyncCallback, asyncState);
         }
 
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, X509CertificateCollection? clientCertificates,
                                                             bool checkCertificateRevocation, AsyncCallback? asyncCallback, object? asyncState)
         {
-            return BeginAuthenticateAsClient(targetHost, clientCertificates, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation, asyncCallback, asyncState);
+            return BeginAuthenticateAsClient(targetHost, clientCertificates, SslProtocols.None, checkCertificateRevocation, asyncCallback, asyncState);
         }
 
         public virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, X509CertificateCollection? clientCertificates,
@@ -265,7 +265,7 @@ namespace System.Net.Security
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, AsyncCallback? asyncCallback, object? asyncState)
 
         {
-            return BeginAuthenticateAsServer(serverCertificate, false, SecurityProtocol.SystemDefaultSecurityProtocols, false,
+            return BeginAuthenticateAsServer(serverCertificate, false, SslProtocols.None, false,
                                                           asyncCallback,
                                                           asyncState);
         }
@@ -273,7 +273,7 @@ namespace System.Net.Security
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
                                                             bool checkCertificateRevocation, AsyncCallback? asyncCallback, object? asyncState)
         {
-            return BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation, asyncCallback, asyncState);
+            return BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, SslProtocols.None, checkCertificateRevocation, asyncCallback, asyncState);
         }
 
         public virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
@@ -307,12 +307,12 @@ namespace System.Net.Security
         #region Synchronous methods
         public virtual void AuthenticateAsClient(string targetHost)
         {
-            AuthenticateAsClient(targetHost, null, SecurityProtocol.SystemDefaultSecurityProtocols, false);
+            AuthenticateAsClient(targetHost, null, SslProtocols.None, false);
         }
 
         public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection? clientCertificates, bool checkCertificateRevocation)
         {
-            AuthenticateAsClient(targetHost, clientCertificates, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation);
+            AuthenticateAsClient(targetHost, clientCertificates, SslProtocols.None, checkCertificateRevocation);
         }
 
         public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection? clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
@@ -341,12 +341,12 @@ namespace System.Net.Security
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
         {
-            AuthenticateAsServer(serverCertificate, false, SecurityProtocol.SystemDefaultSecurityProtocols, false);
+            AuthenticateAsServer(serverCertificate, false, SslProtocols.None, false);
         }
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
         {
-            AuthenticateAsServer(serverCertificate, clientCertificateRequired, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation);
+            AuthenticateAsServer(serverCertificate, clientCertificateRequired, SslProtocols.None, checkCertificateRevocation);
         }
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
@@ -375,7 +375,7 @@ namespace System.Net.Security
         #region Task-based async public methods
         public virtual Task AuthenticateAsClientAsync(string targetHost) => AuthenticateAsClientAsync(targetHost, null, false);
 
-        public virtual Task AuthenticateAsClientAsync(string targetHost, X509CertificateCollection? clientCertificates, bool checkCertificateRevocation) => AuthenticateAsClientAsync(targetHost, clientCertificates, SecurityProtocol.SystemDefaultSecurityProtocols, checkCertificateRevocation);
+        public virtual Task AuthenticateAsClientAsync(string targetHost, X509CertificateCollection? clientCertificates, bool checkCertificateRevocation) => AuthenticateAsClientAsync(targetHost, clientCertificates, SslProtocols.None, checkCertificateRevocation);
 
         public virtual Task AuthenticateAsClientAsync(string targetHost, X509CertificateCollection? clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
@@ -401,7 +401,7 @@ namespace System.Net.Security
         }
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate) =>
-            AuthenticateAsServerAsync(serverCertificate, false, SecurityProtocol.SystemDefaultSecurityProtocols, false);
+            AuthenticateAsServerAsync(serverCertificate, false, SslProtocols.None, false);
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
         {
@@ -580,6 +580,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual CipherAlgorithmType CipherAlgorithm
         {
             get
@@ -589,6 +590,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int CipherStrength
         {
             get
@@ -598,6 +600,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual HashAlgorithmType HashAlgorithm
         {
             get
@@ -607,6 +610,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int HashStrength
         {
             get
@@ -616,6 +620,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual ExchangeAlgorithmType KeyExchangeAlgorithm
         {
             get
@@ -625,6 +630,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int KeyExchangeStrength
         {
             get
@@ -921,7 +927,8 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (!IsAuthenticated)
+            // if the Protocol is set then rest of the ConnectionInfo is valid
+            if (_connectionInfo.Protocol == 0)
             {
                 ThrowNotAuthenticated();
             }

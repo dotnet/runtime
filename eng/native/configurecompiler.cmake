@@ -1,7 +1,3 @@
-# Due to how we build the libraries native build as part of the CoreCLR build as well as standalone,
-# we can end up coming to this file twice. Only run it once to simplify our build.
-include_guard()
-
 include(${CMAKE_CURRENT_LIST_DIR}/configuretools.cmake)
 
 # Set initial flags for each configuration
@@ -74,6 +70,12 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
+  if (NOT CLR_CMAKE_PGO_INSTRUMENT)
+    # Load all imported DLLs from the System32 directory.
+    # Don't do this when instrumenting for PGO as a local DLL dependency is introduced by the instrumentation
+    add_linker_flag(/DEPENDENTLOADFLAG:0x800)
+  endif()
+
   # Linker flags
   #
   set (WINDOWS_SUBSYSTEM_VERSION 6.01)
@@ -131,17 +133,13 @@ if (MSVC)
   add_linker_flag(/OPT:NOICF CHECKED)
 
   # Release build specific flags
-  add_linker_flag(/LTCG RELEASE)
   add_linker_flag(/OPT:REF RELEASE)
   add_linker_flag(/OPT:ICF RELEASE)
   add_linker_flag(/INCREMENTAL:NO RELEASE)
-  set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
 
   # ReleaseWithDebugInfo build specific flags
-  add_linker_flag(/LTCG RELWITHDEBINFO)
   add_linker_flag(/OPT:REF RELWITHDEBINFO)
   add_linker_flag(/OPT:ICF RELWITHDEBINFO)
-  set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
 
 elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
@@ -305,14 +303,21 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
   add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT)
-elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+elseif(CLR_CMAKE_HOST_APPLE)
+  # enable support for X/Open and POSIX APIs, like the <ucontext.h> header file
   add_definitions(-D_XOPEN_SOURCE)
+  # enable support for Darwin extension APIs, like pthread_getthreadid_np
+  add_definitions(-D_DARWIN_C_SOURCE)
+  # enable the non-cancellable versions of APIs with $NOCANCEL variants, like close(2)
+  add_definitions(-D__DARWIN_NON_CANCELABLE=1)
 
-  # the new linker in Xcode 15 (ld_new/ld_prime) deprecated the -bind_at_load flag for macOS which causes a warning
-  # that fails the build since we build with -Werror. Only pass the flag if we need it, i.e. older linkers.
-  check_linker_flag(C "-Wl,-bind_at_load,-fatal_warnings" LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
-  if(LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
-    add_linker_flag("-Wl,-bind_at_load")
+  if(CLR_CMAKE_HOST_OSX)
+    # the new linker in Xcode 15 (ld_new/ld_prime) deprecated the -bind_at_load flag for macOS which causes a warning
+    # that fails the build since we build with -Werror. Only pass the flag if we need it, i.e. older linkers.
+    check_linker_flag(C "-Wl,-bind_at_load,-fatal_warnings" LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
+    if(LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
+      add_linker_flag("-Wl,-bind_at_load")
+    endif()
   endif()
 elseif(CLR_CMAKE_HOST_HAIKU)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
@@ -439,6 +444,8 @@ if (CLR_CMAKE_HOST_UNIX)
     message("Detected Haiku x86_64")
   elseif(CLR_CMAKE_HOST_BROWSER)
     add_definitions(-DHOST_BROWSER)
+  elseif(CLR_CMAKE_HOST_ANDROID)
+    add_definitions(-DHOST_ANDROID)
   endif()
 elseif(CLR_CMAKE_HOST_WASI)
   add_definitions(-DHOST_WASI)
@@ -624,6 +631,9 @@ if (CLR_CMAKE_HOST_UNIX)
 
     # clang 18.1 supressions
     add_compile_options(-Wno-switch-default)
+
+    # clang 20 suppressions
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nontrivial-memaccess>)
   else()
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)

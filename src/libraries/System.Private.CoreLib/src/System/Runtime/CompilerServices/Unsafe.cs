@@ -26,7 +26,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void* AsPointer<T>(ref T value)
+        public static void* AsPointer<T>(ref readonly T value)
             where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
@@ -255,7 +255,7 @@ namespace System.Runtime.CompilerServices
             where TFrom : allows ref struct
             where TTo : allows ref struct
         {
-            if (sizeof(TFrom) != sizeof(TTo) || default(TFrom) is null || default(TTo) is null)
+            if (sizeof(TFrom) != sizeof(TTo) || !typeof(TFrom).IsValueType || !typeof(TTo).IsValueType)
             {
                 ThrowHelper.ThrowNotSupportedException();
             }
@@ -405,6 +405,22 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is greater than
+        /// or equal to the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &gt;= (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressGreaterThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            return !IsAddressLessThan(in left, in right);
+        }
+
+        /// <summary>
         /// Determines whether the memory address referenced by <paramref name="left"/> is less than
         /// the memory address referenced by <paramref name="right"/>.
         /// </summary>
@@ -426,6 +442,22 @@ namespace System.Runtime.CompilerServices
             // ldarg.1
             // clt.un
             // ret
+        }
+
+        /// <summary>
+        /// Determines whether the memory address referenced by <paramref name="left"/> is less than
+        /// or equal to the memory address referenced by <paramref name="right"/>.
+        /// </summary>
+        /// <remarks>
+        /// This check is conceptually similar to "(void*)(&amp;left) &lt;= (void*)(&amp;right)".
+        /// </remarks>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsAddressLessThanOrEqualTo<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
+        {
+            return !IsAddressGreaterThan(in left, in right);
         }
 
         /// <summary>
@@ -748,7 +780,7 @@ namespace System.Runtime.CompilerServices
         public static bool IsNullRef<T>(ref readonly T source)
             where T : allows ref struct
         {
-            return AsPointer(ref Unsafe.AsRef(in source)) == null;
+            return AsPointer(in source) == null;
 
             // ldarg.0
             // ldc.i4.0
@@ -949,7 +981,7 @@ namespace System.Runtime.CompilerServices
             // GC will keep alignment when moving objects (up to sizeof(void*)),
             // otherwise alignment should be considered a hint if not pinned.
             Debug.Assert(nuint.IsPow2(alignment));
-            return ((nuint)AsPointer(ref AsRef(in address)) & (alignment - 1)) == 0;
+            return ((nuint)AsPointer(in address) & (alignment - 1)) == 0;
         }
 
         // Determines the misalignment of the address with respect to the specified `alignment`.
@@ -961,7 +993,7 @@ namespace System.Runtime.CompilerServices
             // GC will keep alignment when moving objects (up to sizeof(void*)),
             // otherwise alignment should be considered a hint if not pinned.
             Debug.Assert(nuint.IsPow2(alignment));
-            return (nuint)AsPointer(ref AsRef(in address)) & (alignment - 1);
+            return (nuint)AsPointer(in address) & (alignment - 1);
         }
     }
 }

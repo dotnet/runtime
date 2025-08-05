@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Version of the Apple OS SDKs we target. Usually empty so the latest version is used but can be overriden externally. -->
+    <!-- Version of the Apple OS SDKs we target. Usually empty so the latest version is used but can be overridden externally. -->
     <iOSVersion></iOSVersion>
     <tvOSVersion></tvOSVersion>
     <watchOSVersion></watchOSVersion>
@@ -34,9 +34,9 @@
 
   <!-- Directory to provision and use WASI sdk if WASI_SDK_PATH env variable is not set -->
   <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION24')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
     <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
-    <ShouldProvisionWasiSdk Condition="!Exists('$(WASI_SDK_PATH)/VERSION24')">true</ShouldProvisionWasiSdk>
+    <ShouldProvisionWasiSdk Condition="!Exists('$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0')">true</ShouldProvisionWasiSdk>
   </PropertyGroup>
 
   <PropertyGroup>

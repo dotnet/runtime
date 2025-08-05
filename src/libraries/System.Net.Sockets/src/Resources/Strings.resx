@@ -312,9 +312,6 @@
   <data name="SystemNetSockets_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Sockets is not supported on this platform.</value>
   </data>
-  <data name="net_sockets_handle_already_used" xml:space="preserve">
-    <value>Handle is already used by another Socket.</value>
-  </data>
   <data name="net_sockets_address_small" xml:space="preserve">
     <value>Provided SocketAddress is too small for given AddressFamily.</value>
   </data>

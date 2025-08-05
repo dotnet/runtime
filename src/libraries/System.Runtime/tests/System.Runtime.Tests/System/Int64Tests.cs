@@ -303,8 +303,7 @@ namespace System.Tests
             foreach (object[] objs in Int32Tests.Parse_Invalid_TestData())
             {
                 if ((Type)objs[3] == typeof(OverflowException) &&
-                    (((NumberStyles)objs[1] & NumberStyles.AllowBinarySpecifier) != 0 || // TODO https://github.com/dotnet/runtime/issues/83619: Remove once BigInteger supports binary parsing
-                     !BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
+                    (!BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
                      (bi >= long.MinValue && bi <= long.MaxValue)))
                 {
                     continue;

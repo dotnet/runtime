@@ -12,7 +12,7 @@ import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begi
 import { do_not_force_dispose, is_gcv_handle } from "./gc-handles";
 import { assert_c_interop, assert_js_interop } from "./invoke-js";
 import { monoThreadInfo, mono_wasm_main_thread_ptr } from "./pthreads";
-import { _zero_region, copyBytes } from "./memory";
+import { _zero_region, copyBytes, malloc } from "./memory";
 import { stringToUTF8Ptr } from "./strings";
 import { mono_log_error } from "./logging";
 
@@ -74,7 +74,8 @@ export function call_entry_point (main_assembly_name: string, program_args: stri
 
         return promise;
     } finally {
-        Module.stackRestore(sp); // synchronously
+        // synchronously
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
     }
 }
 
@@ -90,7 +91,8 @@ export function load_satellite_assembly (dll: Uint8Array): void {
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
         invoke_sync_jsexport(managedExports.LoadSatelliteAssembly, args);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -109,7 +111,8 @@ export function load_lazy_assembly (dll: Uint8Array, pdb: Uint8Array | null): vo
         marshal_array_to_cs(arg2, pdb, MarshalerType.Byte);
         invoke_sync_jsexport(managedExports.LoadLazyAssembly, args);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -132,7 +135,8 @@ export function release_js_owned_object_by_gc_handle (gc_handle: GCHandle) {
             invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.ReleaseJSOwnedObjectByGCHandle, args, size);
         }
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -157,7 +161,8 @@ export function complete_task (holder_gc_handle: GCHandle, error?: any, data?: a
         }
         invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.CompleteTask, args, size);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -203,7 +208,8 @@ export function call_delegate (callback_gc_handle: GCHandle, arg1_js: any, arg2_
             return res_converter(res);
         }
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -223,7 +229,8 @@ export function get_managed_stack_trace (exception_gc_handle: GCHandle) {
         const res = get_arg(args, 1);
         return marshal_string_to_js(res);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -285,7 +292,7 @@ export function invoke_async_jsexport (managedTID: PThreadPtr, method: MonoMetho
     } else {
         set_receiver_should_free(args);
         const bytes = JavaScriptMarshalerArgSize * size;
-        const cpy = Module._malloc(bytes) as any;
+        const cpy = malloc(bytes) as any;
         copyBytes(args as any, cpy, bytes);
         twraps.mono_wasm_invoke_jsexport_async_post(managedTID, method, cpy);
     }
@@ -341,7 +348,8 @@ export function bind_assembly_exports (assemblyName: string): Promise<void> {
         }
         return promise;
     } finally {
-        Module.stackRestore(sp); // synchronously
+        // synchronously
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
     }
 }
 

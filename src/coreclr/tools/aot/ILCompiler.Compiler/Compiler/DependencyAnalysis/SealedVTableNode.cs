@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -218,10 +219,10 @@ namespace ILCompiler.DependencyAnalysis
                             {
                                 // Canonical instance default interface methods need to go through a thunk that acquires the generic context from `this`.
                                 // Static methods have their generic context passed explicitly.
-                                canonImplMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(canonImplMethod, declType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType);
+                                canonImplMethod = factory.TypeSystemContext.GetDefaultInterfaceMethodImplementationThunk(canonImplMethod, declType.ConvertToCanonForm(CanonicalFormKind.Specific), providingInterfaceDefinitionType, out int providingInterfaceIndex);
 
                                 // The above thunk will index into interface list to find the right context. Make sure to keep all interfaces prior to this one
-                                for (int i = 0; i < interfaceIndex; i++)
+                                for (int i = 0; i <= providingInterfaceIndex; i++)
                                 {
                                     _nonRelocationDependencies ??= new DependencyList();
                                     _nonRelocationDependencies.Add(factory.InterfaceUse(declTypeRuntimeInterfaces[i].GetTypeDefinition()), "Interface with shared default methods folows this");
@@ -267,14 +268,20 @@ namespace ILCompiler.DependencyAnalysis
 
             if (BuildSealedVTableSlots(factory, relocsOnly))
             {
+                bool isSharedDynamicInterfaceCastableImpl = _type.IsInterface
+                    && _type.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    && ((MetadataType)_type).IsDynamicInterfaceCastableImplementation();
+
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
                     IMethodNode relocTarget = _sealedVTableEntries[i].Target;
 
+                    int delta = isSharedDynamicInterfaceCastableImpl ? DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag : 0;
+
                     if (factory.Target.SupportsRelativePointers)
-                        objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32);
+                        objData.EmitReloc(relocTarget, RelocType.IMAGE_REL_BASED_RELPTR32, delta);
                     else
-                        objData.EmitPointerReloc(relocTarget);
+                        objData.EmitPointerReloc(relocTarget, delta);
                 }
             }
 

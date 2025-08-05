@@ -22,6 +22,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal static unsafe int GetBytes(this Encoding encoding, string str, Span<byte> destination)
+        {
+            return GetBytes(encoding, str.AsSpan(), destination);
+        }
+
         internal static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> str, Span<byte> destination)
         {
             if (str.IsEmpty)
@@ -100,24 +105,13 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            int hashSize = hash.AlgorithmName.Name switch
-            {
-                nameof(HashAlgorithmName.MD5) => 128 >> 3,
-                nameof(HashAlgorithmName.SHA1) => 160 >> 3,
-                nameof(HashAlgorithmName.SHA256) => 256 >> 3,
-                nameof(HashAlgorithmName.SHA384) => 384 >> 3,
-                nameof(HashAlgorithmName.SHA512) => 512 >> 3,
-                _ => throw new CryptographicException(),
-            };
+            byte[] actual = hash.GetHashAndReset();
 
-            if (destination.Length < hashSize)
+            if (destination.Length < actual.Length)
             {
                 bytesWritten = 0;
                 return false;
             }
-
-            byte[] actual = hash.GetHashAndReset();
-            Debug.Assert(actual.Length == hashSize);
 
             actual.AsSpan().CopyTo(destination);
             bytesWritten = actual.Length;
@@ -125,6 +119,7 @@ namespace System.Security.Cryptography
         }
     }
 
+#if !NETSTANDARD2_1_OR_GREATER
     internal static class CryptographicOperations
     {
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -157,18 +152,5 @@ namespace System.Security.Cryptography
             return accum == 0;
         }
     }
-}
-
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    internal sealed class CallerArgumentExpressionAttribute : Attribute
-    {
-        public CallerArgumentExpressionAttribute(string parameterName)
-        {
-            ParameterName = parameterName;
-        }
-
-        public string ParameterName { get; }
-    }
+#endif
 }

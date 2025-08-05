@@ -398,12 +398,12 @@ namespace Internal.JitInterface
     public enum CORINFO_CALLINFO_FLAGS
     {
         CORINFO_CALLINFO_NONE = 0x0000,
-        CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
-        CORINFO_CALLINFO_CALLVIRT = 0x0002,   // Is it a virtual call?
+        CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001, // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
+        CORINFO_CALLINFO_CALLVIRT = 0x0002, // Is it a virtual call?
         // UNUSED = 0x0004,
-        // UNUSED = 0x0008,
-        CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
-        CORINFO_CALLINFO_LDFTN = 0x0020,   // Resolving target of LDFTN
+        CORINFO_CALLINFO_DISALLOW_STUB = 0x0008, // Do not use a stub for this call, even if it is a virtual call.
+        CORINFO_CALLINFO_SECURITYCHECKS = 0x0010, // Perform security checks.
+        CORINFO_CALLINFO_LDFTN = 0x0020, // Resolving target of LDFTN
         // UNUSED = 0x0040,
     }
 
@@ -620,8 +620,7 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FILTER = 0x0001, // If this bit is on, then this EH entry is for a filter
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
-        CORINFO_EH_CLAUSE_DUPLICATED = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
+        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one.
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -836,8 +835,6 @@ namespace Internal.JitInterface
             // Size of the Frame structure inside IL stubs that include secret stub arg in the frame
             public uint sizeWithSecretStubArg;
 
-            public uint offsetOfGSCookie;
-            public uint offsetOfFrameVptr;
             public uint offsetOfFrameLink;
             public uint offsetOfCallSiteSP;
             public uint offsetOfCalleeSavedFP;
@@ -873,6 +870,18 @@ namespace Internal.JitInterface
         public CORINFO_RUNTIME_ABI targetAbi;
 
         public CORINFO_OS osType;
+    }
+
+    public unsafe struct CORINFO_ASYNC_INFO
+    {
+        // Class handle for System.Runtime.CompilerServices.Continuation
+        public CORINFO_CLASS_STRUCT_* continuationClsHnd;
+        // 'Next' field
+        public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
+        // 'Data' field
+        public CORINFO_FIELD_STRUCT_* continuationDataFldHnd;
+        // 'GCData' field
+        public CORINFO_FIELD_STRUCT_* continuationGCDataFldHnd;
     }
 
     // Flags passed from JIT to runtime.
@@ -1081,17 +1090,21 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
+        // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
+        // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+        //     (in which case the method handle and context will be a generic method)
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
-        public byte _requiresInstMethodTableArg;
-        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
+        public byte _isInstantiatingStub;
+        public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
+        public byte _wasArrayInterfaceDevirt;
+        public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------
@@ -1378,11 +1391,11 @@ namespace Internal.JitInterface
         CORJIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        CORJIT_FLAG_MAKEFINALCODE           = 10, // Use the final code generator, i.e., not the interpreter.
-        CORJIT_FLAG_READYTORUN              = 11, // Use version-resilient code generation
+        // CORJIT_FLAG_UNUSED               = 10,
+        CORJIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         CORJIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
-        CORJIT_FLAG_PREJIT                  = 14, // prejit is the execution engine.
+        // CORJIT_FLAG_UNUSED               = 14,
         CORJIT_FLAG_RELOC                   = 15, // Generate relocatable code
         CORJIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         CORJIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
@@ -1401,9 +1414,6 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
-
-        // x86/x64 only
-        CORJIT_FLAG_VECTOR512_THROTTLING    = 31, // On x86/x64, 512-bit vector usage may incur CPU frequency throttling
     }
 
     public struct CORJIT_FLAGS

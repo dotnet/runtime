@@ -159,7 +159,7 @@ namespace ILCompiler
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
                         if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0
-                            && module.PEReader.TryGetReadyToRunHeader(out int _))
+                            && module.PEReader.TryGetCompositeReadyToRunHeader(out int _))
                         {
                             Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
                             continue;
@@ -595,6 +595,7 @@ namespace ILCompiler
                     nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
+                    nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport);
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -908,14 +909,19 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new Crossgen2RootCommand(args)
+            new Crossgen2RootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
-            }.Invoke(args);
+                .UseExtendedHelp(Crossgen2RootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
     }
 }

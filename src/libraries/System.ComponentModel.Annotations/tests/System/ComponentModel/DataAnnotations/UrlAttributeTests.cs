@@ -14,6 +14,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new UrlAttribute(), "http://foo.bar");
             yield return new TestCase(new UrlAttribute(), "https://foo.bar");
             yield return new TestCase(new UrlAttribute(), "ftp://foo.bar");
+            yield return new TestCase(new UrlAttribute(), new Uri("http://foo.bar"));
+            yield return new TestCase(new UrlAttribute(), new Uri("https://foo.bar"));
+            yield return new TestCase(new UrlAttribute(), new Uri("ftp://foo.bar"));
         }
 
         protected override IEnumerable<TestCase> InvalidValues()
@@ -21,6 +24,10 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new UrlAttribute(), "file:///foo.bar");
             yield return new TestCase(new UrlAttribute(), "foo.png");
             yield return new TestCase(new UrlAttribute(), new object());
+            yield return new TestCase(new UrlAttribute(), new Uri("file:///foo.bar"));
+            yield return new TestCase(new UrlAttribute(), new Uri("//foo.png"));
+            yield return new TestCase(new UrlAttribute(), new Uri("/foo.png", UriKind.RelativeOrAbsolute));
+            yield return new TestCase(new UrlAttribute(), new Uri("foo.png", UriKind.Relative));
         }
 
         [Fact]

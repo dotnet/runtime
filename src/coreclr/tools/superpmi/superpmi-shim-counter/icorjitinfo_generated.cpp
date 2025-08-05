@@ -162,6 +162,15 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
     return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
+          CORINFO_METHOD_HANDLE ftn,
+          CORINFO_METHOD_HANDLE* methodArg,
+          CORINFO_CLASS_HANDLE* classArg)
+{
+    mcs->AddCall("getInstantiatedEntry");
+    return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {
@@ -174,6 +183,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(
 {
     mcs->AddCall("getDefaultEqualityComparerClass");
     return original_ICorJitInfo->getDefaultEqualityComparerClass(elemType);
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getSZArrayHelperEnumeratorClass(
+          CORINFO_CLASS_HANDLE elemType)
+{
+    mcs->AddCall("getSZArrayHelperEnumeratorClass");
+    return original_ICorJitInfo->getSZArrayHelperEnumeratorClass(elemType);
 }
 
 void interceptor_ICJI::expandRawHandleIntrinsic(
@@ -322,6 +338,14 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(
 {
     mcs->AddCall("getTypeInstantiationArgument");
     return original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
+          unsigned index)
+{
+    mcs->AddCall("getMethodInstantiationArgument");
+    return original_ICorJitInfo->getMethodInstantiationArgument(ftn, index);
 }
 
 size_t interceptor_ICJI::printClassName(
@@ -506,13 +530,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(
 {
     mcs->AddCall("getTypeForBox");
     return original_ICorJitInfo->getTypeForBox(cls);
-}
-
-CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("getTypeForBoxOnStack");
-    return original_ICorJitInfo->getTypeForBoxOnStack(cls);
 }
 
 CorInfoHelpFunc interceptor_ICJI::getBoxHelper(
@@ -945,10 +962,11 @@ void interceptor_ICJI::getEEInfo(
     original_ICorJitInfo->getEEInfo(pEEInfoOut);
 }
 
-const char16_t* interceptor_ICJI::getJitTimeLogFilename()
+void interceptor_ICJI::getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut)
 {
-    mcs->AddCall("getJitTimeLogFilename");
-    return original_ICorJitInfo->getJitTimeLogFilename();
+    mcs->AddCall("getAsyncInfo");
+    original_ICorJitInfo->getAsyncInfo(pAsyncInfoOut);
 }
 
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
@@ -1024,12 +1042,13 @@ int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(
     return original_ICorJitInfo->getAddrOfCaptureThreadGlobal(ppIndirection);
 }
 
-void* interceptor_ICJI::getHelperFtn(
+void interceptor_ICJI::getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection)
+          CORINFO_CONST_LOOKUP* pNativeEntrypoint,
+          CORINFO_METHOD_HANDLE* pMethod)
 {
     mcs->AddCall("getHelperFtn");
-    return original_ICorJitInfo->getHelperFtn(ftnNum, ppIndirection);
+    original_ICorJitInfo->getHelperFtn(ftnNum, pNativeEntrypoint, pMethod);
 }
 
 void interceptor_ICJI::getFunctionEntryPoint(
@@ -1048,14 +1067,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
 {
     mcs->AddCall("getFunctionFixedEntryPoint");
     original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
-}
-
-void* interceptor_ICJI::getMethodSync(
-          CORINFO_METHOD_HANDLE ftn,
-          void** ppIndirection)
-{
-    mcs->AddCall("getMethodSync");
-    return original_ICorJitInfo->getMethodSync(ftn, ppIndirection);
 }
 
 CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
@@ -1129,6 +1140,13 @@ void* interceptor_ICJI::GetCookieForPInvokeCalliSig(
 {
     mcs->AddCall("GetCookieForPInvokeCalliSig");
     return original_ICorJitInfo->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
+}
+
+void* interceptor_ICJI::GetCookieForInterpreterCalliSig(
+          CORINFO_SIG_INFO* szMetaSig)
+{
+    mcs->AddCall("GetCookieForInterpreterCalliSig");
+    return original_ICorJitInfo->GetCookieForInterpreterCalliSig(szMetaSig);
 }
 
 bool interceptor_ICJI::canGetCookieForPInvokeCalliSig(
@@ -1259,6 +1277,12 @@ bool interceptor_ICJI::getTailCallHelpers(
 {
     mcs->AddCall("getTailCallHelpers");
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+{
+    mcs->AddCall("getAsyncResumptionStub");
+    return original_ICorJitInfo->getAsyncResumptionStub();
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(
