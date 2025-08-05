@@ -90,7 +90,7 @@ endfunction(generate_data_descriptors)
 # before the targets include directories.
 function(add_interface_library target_name interface_name)
   get_target_property(target_includes ${target_name} INCLUDE_DIRECTORIES)
-  target_link_libraries(${target_name} PUBLIC ${interface_name})
+  target_link_libraries(${target_name} PRIVATE ${interface_name})
   set_target_properties(${target_name} PROPERTIES INCLUDE_DIRECTORIES "${target_includes}")
 
   get_target_property(interface_includes ${interface_name} INTERFACE_INCLUDE_DIRECTORIES)
