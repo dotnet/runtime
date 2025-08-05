@@ -102,7 +102,7 @@ int64_t minipal_lowres_ticks(void)
 #if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
     // CLOCK_MONOTONIC_COARSE has enough precision for GetTickCount but
     // doesn't have the same overhead as CLOCK_MONOTONIC. This allows
-    // overall higher throughput. See dotnet/coreclr#2257 for more details.
+    // overall higher throughput. See https://github.com/dotnet/runtime/issues/4755 for more details.
 
     const clockid_t clockType = CLOCK_MONOTONIC_COARSE;
 #else

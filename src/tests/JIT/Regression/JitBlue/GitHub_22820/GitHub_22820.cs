@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-// Repro for https://github.com/dotnet/coreclr/issues/22820.
+// Repro for https://github.com/dotnet/runtime/issues/12113.
 // On x86 we need to report enclosed handler
 // live-in locals as live into any enclosing filter.
 //

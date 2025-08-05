@@ -5,7 +5,7 @@ using System;
 using Xunit;
 
 // Repro for https://github.com/dotnet/runtime/issues/88168.
-// Derived from (and similar to) test GitHub_22820 for https://github.com/dotnet/coreclr/issues/22820.
+// Derived from (and similar to) test GitHub_22820 for https://github.com/dotnet/runtime/issues/12113.
 //
 // Run with optimized codegen and DOTNET_GCStress=0x4
 

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This test captures the redundant struct zeroing from https://github.com/dotnet/coreclr/issues/11816.
+// This test captures the redundant struct zeroing from https://github.com/dotnet/runtime/issues/8186.
 // Since the issue was filed, the 'TestStructManuallyInlined' case has apparently
 // gotten worse, as there is a MEMSET of the large struct to 0.
 

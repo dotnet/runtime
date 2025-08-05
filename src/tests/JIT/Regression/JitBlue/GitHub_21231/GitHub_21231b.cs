@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-// Test case for https://github.com/dotnet/coreclr/issues/21231
+// Test case for https://github.com/dotnet/runtime/issues/11559
 //
 // 
 // Debug: Outputs 2

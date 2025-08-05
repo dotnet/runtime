@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-// Issue https://github.com/dotnet/coreclr/issues/2580 fix description
+// Issue https://github.com/dotnet/runtime/issues/4914 fix description
 //
 // The changes fix a bug generating 16-bit signed comparison code to                                 
 // compare unsigned 16-bit values.                                                                   

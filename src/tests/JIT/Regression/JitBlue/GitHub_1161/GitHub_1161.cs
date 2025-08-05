@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This test illustrates a limitation in the JIT in that it will not promote
-// a struct that has a single double register. See https://github.com/dotnet/coreclr/issues/1161.
+// a struct that has a single double register. See https://github.com/dotnet/runtime/issues/4323.
 
 using System;
 using System.Runtime.CompilerServices;
