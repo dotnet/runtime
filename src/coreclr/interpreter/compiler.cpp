@@ -2707,6 +2707,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
+    bool isDelegateInvoke = false;
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
     CORINFO_CALL_INFO callInfo;
@@ -2756,6 +2757,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     return;
                 }
             }
+        }
+
+        if (callInfo.methodFlags & CORINFO_FLG_DELEGATE_INVOKE)
+        {
+            isDelegateInvoke = true;
         }
 
         if (callInfo.thisTransform != CORINFO_NO_THIS_TRANSFORM)
@@ -3031,7 +3037,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     // before the call.
                     // TODO: Add null checking behavior somewhere here!
                 }
-                AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
+                if (isDelegateInvoke)
+                {
+                    assert(!isPInvoke && !isMarshaledPInvoke);
+                    AddIns(INTOP_CALLDELEGATE);
+                }
+                else
+                {
+                    AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
+                }
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
                 if (isPInvoke && !isMarshaledPInvoke)
                 {
