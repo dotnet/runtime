@@ -807,24 +807,12 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		}
 	}
 
-	if (etype) {
-		if (!(*etype)) {
-			switch (size)
-			{
-				case 1:
-					*etype = m_class_get_byval_arg (mono_defaults.sbyte_class);
-					break;
-				case 2:
-					*etype = m_class_get_byval_arg (mono_defaults.int16_class);
-					break;
-				case 4:
-					*etype = mono_get_int32_type ();
-					break;
-				default:
-					return FALSE;
-			}
-		}
+	// we don't want to scalarize an empty struct
+	if (nfields == 0) {
+		return FALSE;
 	}
+
+	g_assert (!etype || *etype);
 
 	return TRUE;
 }
