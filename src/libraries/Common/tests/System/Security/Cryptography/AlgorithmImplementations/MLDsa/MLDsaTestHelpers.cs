@@ -51,8 +51,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateSeed(new byte[mldsa.Algorithm.PrivateSeedSizeInBytes]));
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPublicKey());
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPublicKey(new byte[mldsa.Algorithm.PublicKeySizeInBytes]));
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaSecretKey());
-            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaSecretKey(new byte[mldsa.Algorithm.SecretKeySizeInBytes]));
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => mldsa.ExportMLDsaPrivateKey(new byte[mldsa.Algorithm.PrivateKeySizeInBytes]));
 
             Assert.Throws<ObjectDisposedException>(() => mldsa.ExportPkcs8PrivateKey());
             Assert.Throws<ObjectDisposedException>(() => mldsa.TryExportPkcs8PrivateKey(bigBuffer, out _));
@@ -121,31 +121,31 @@ namespace System.Security.Cryptography.Tests
             testEmbeddedCall(spki => MLDsa.ImportFromPem(PemEncoding.WriteString("PUBLIC KEY", spki).AsSpan()));
         }
 
-        internal static void AssertImportSecretKey(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] secretKey) =>
-            AssertImportSecretKey(test, test, algorithm, secretKey);
+        internal static void AssertImportPrivateKey(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] privateKey) =>
+            AssertImportPrivateKey(test, test, algorithm, privateKey);
 
-        internal static void AssertImportSecretKey(Action<Func<MLDsa>> testDirectCall, Action<Func<MLDsa>> testEmbeddedCall, MLDsaAlgorithm algorithm, byte[] secretKey)
+        internal static void AssertImportPrivateKey(Action<Func<MLDsa>> testDirectCall, Action<Func<MLDsa>> testEmbeddedCall, MLDsaAlgorithm algorithm, byte[] privateKey)
         {
-            testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey));
+            testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, privateKey));
 
-            if (secretKey?.Length == 0)
+            if (privateKey?.Length == 0)
             {
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, Array.Empty<byte>().AsSpan()));
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, ReadOnlySpan<byte>.Empty));
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, default(ReadOnlySpan<byte>)));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, Array.Empty<byte>().AsSpan()));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, ReadOnlySpan<byte>.Empty));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, default(ReadOnlySpan<byte>)));
             }
             else
             {
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey));
-                testDirectCall(() => MLDsa.ImportMLDsaSecretKey(algorithm, secretKey.AsSpan()));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, privateKey));
+                testDirectCall(() => MLDsa.ImportMLDsaPrivateKey(algorithm, privateKey.AsSpan()));
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            MLDsaPrivateKeyAsn privateKey = new MLDsaPrivateKeyAsn
+            MLDsaPrivateKeyAsn privateKeyAsn = new MLDsaPrivateKeyAsn
             {
-                ExpandedKey = secretKey
+                ExpandedKey = privateKey
             };
-            privateKey.Encode(writer);
+            privateKeyAsn.Encode(writer);
 
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
@@ -161,8 +161,8 @@ namespace System.Security.Cryptography.Tests
                 testEmbeddedCall(() => import(pkcs8.Encode())));
         }
 
-        internal static void AssertImportPrivateSeed(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] secretKey) =>
-            AssertImportPrivateSeed(test, test, algorithm, secretKey);
+        internal static void AssertImportPrivateSeed(Action<Func<MLDsa>> test, MLDsaAlgorithm algorithm, byte[] privateSeed) =>
+            AssertImportPrivateSeed(test, test, algorithm, privateSeed);
 
         internal static void AssertImportPrivateSeed(Action<Func<MLDsa>> testDirectCall, Action<Func<MLDsa>> testEmbeddedCall, MLDsaAlgorithm algorithm, byte[] privateSeed)
         {
@@ -291,15 +291,15 @@ namespace System.Security.Cryptography.Tests
                     SubjectPublicKeyInfoAsn.Decode(exportSpki(mldsa), AsnEncodingRules.DER).SubjectPublicKey.Span.ToArray()));
         }
 
-        internal static void AssertExportMLDsaSecretKey(Action<Func<MLDsa, byte[]>> callback) =>
-            AssertExportMLDsaSecretKey(callback, callback);
+        internal static void AssertExportMLDsaPrivateKey(Action<Func<MLDsa, byte[]>> callback) =>
+            AssertExportMLDsaPrivateKey(callback, callback);
 
-        internal static void AssertExportMLDsaSecretKey(Action<Func<MLDsa, byte[]>> directCallback, Action<Func<MLDsa, byte[]>> indirectCallback)
+        internal static void AssertExportMLDsaPrivateKey(Action<Func<MLDsa, byte[]>> directCallback, Action<Func<MLDsa, byte[]>> indirectCallback)
         {
             directCallback(mldsa =>
             {
-                byte[] buffer = new byte[mldsa.Algorithm.SecretKeySizeInBytes];
-                mldsa.ExportMLDsaSecretKey(buffer.AsSpan());
+                byte[] buffer = new byte[mldsa.Algorithm.PrivateKeySizeInBytes];
+                mldsa.ExportMLDsaPrivateKey(buffer.AsSpan());
                 return buffer;
             });
 
@@ -322,7 +322,7 @@ namespace System.Security.Cryptography.Tests
             {
                 return new MLDsaPrivateKeyAsn
                 {
-                    ExpandedKey = (mldsa.Algorithm.SecretKeySizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
+                    ExpandedKey = (mldsa.Algorithm.PrivateKeySizeInBytes == encoded.Length) ? encoded : default(ReadOnlyMemory<byte>?),
                 };
             }
         }

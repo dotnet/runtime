@@ -11,7 +11,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void Ctor_Type(Type typeChanged)
+        public void Ctor_Type(Type? typeChanged)
         {
             var args = new RefreshEventArgs(typeChanged);
             Assert.Null(args.ComponentChanged);
