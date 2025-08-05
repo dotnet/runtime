@@ -340,6 +340,9 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root, const sdk_
             }
             trace::println(_X("    Invalid global.json is ignored for SDK resolution."));
             break;
+        case sdk_resolver::global_file_info::state::__last:
+            assert(false && "Unexpected __last state");
+            break;
     }
 
     trace::println(_X("\n")
