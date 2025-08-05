@@ -487,73 +487,87 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
         private unsafe void Initialize(IAssemblyMetadata metadata)
         {
-            _assemblyCache = new List<IAssemblyMetadata>();
+            try
+            {
+                _assemblyCache = new List<IAssemblyMetadata>();
 
-            if (CompositeReader == null)
-            {
-                Image ??= File.ReadAllBytes(Filename);
-                ImageReader = new NativeReader(new MemoryStream(Image));
-                byte[] image = Image;
-                ImagePin = new PinningReference(image);
-                CompositeReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
-            }
-            else
-            {
-                ImmutableArray<byte> content = CompositeReader.GetEntireImage().GetContent();
-                Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
-                ImageReader = new NativeReader(new MemoryStream(Image));
-                ImagePin = new PinningReference(Image);
-            }
-
-            if (metadata == null && CompositeReader.HasMetadata)
-            {
-                metadata = new StandaloneAssemblyMetadata(CompositeReader);
-            }
-
-            if (metadata != null)
-            {
-                if ((CompositeReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
+                if (CompositeReader == null)
                 {
-                    if (!TryLocateNativeReadyToRunHeader())
-                    {
-                        Console.Error.WriteLine($"Image file '{Filename}' information:");
-                        Console.Error.WriteLine($"Size: {Image.Length} byte(s)");
-                        Console.Error.WriteLine($"MetadataSize: {CompositeReader.PEHeaders.MetadataSize} byte(s)");
-
-                        if (CompositeReader.PEHeaders.PEHeader is PEHeader header)
-                        {
-                            Console.Error.WriteLine($"SizeOfImage: {header.SizeOfImage} byte(s)");
-                            Console.Error.WriteLine($"ImageBase: 0x{header.ImageBase:X}");
-                            Console.Error.WriteLine($"FileAlignment: 0x{header.FileAlignment:X}");
-                            Console.Error.WriteLine($"SectionAlignment: 0x{header.SectionAlignment:X}");
-                        }
-                        else
-                            Console.Error.WriteLine("No PEHeader");
-
-                        Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader.Flags}");
-
-                        var exportTable = CompositeReader.GetExportTable();
-                        exportTable.DumpToConsoleError();
-
-                        throw new BadImageFormatException("The file is not a ReadyToRun image");
-                    }
-
-                    Debug.Assert(Composite);
+                    Image ??= File.ReadAllBytes(Filename);
+                    ImageReader = new NativeReader(new MemoryStream(Image));
+                    byte[] image = Image;
+                    ImagePin = new PinningReference(image);
+                    CompositeReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
                 }
                 else
                 {
-                    _assemblyCache.Add(metadata);
-
-                    DirectoryEntry r2rHeaderDirectory = CompositeReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
-                    _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
-                    Debug.Assert(!Composite);
+                    ImmutableArray<byte> content = CompositeReader.GetEntireImage().GetContent();
+                    Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+                    ImageReader = new NativeReader(new MemoryStream(Image));
+                    ImagePin = new PinningReference(Image);
                 }
 
+                if (metadata == null && CompositeReader.HasMetadata)
+                {
+                    metadata = new StandaloneAssemblyMetadata(CompositeReader);
+                }
+
+                if (metadata != null)
+                {
+                    if ((CompositeReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
+                    {
+                        if (!TryLocateNativeReadyToRunHeader())
+                        {
+                            DumpImageInformation();
+
+                            throw new BadImageFormatException("The file is not a ReadyToRun image");
+                        }
+
+                        Debug.Assert(Composite);
+                    }
+                    else
+                    {
+                        _assemblyCache.Add(metadata);
+
+                        DirectoryEntry r2rHeaderDirectory = CompositeReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
+                        _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
+                        Debug.Assert(!Composite);
+                    }
+
+                }
+                else if (!TryLocateNativeReadyToRunHeader())
+                {
+                    throw new BadImageFormatException($"ECMA metadata / RTR_HEADER not found in file '{Filename}'");
+                }
             }
-            else if (!TryLocateNativeReadyToRunHeader())
+            catch (BadImageFormatException)
             {
-                throw new BadImageFormatException($"ECMA metadata / RTR_HEADER not found in file '{Filename}'");
+                if (CompositeReader != null)
+                    DumpImageInformation();
+                throw;
             }
+        }
+
+        internal void DumpImageInformation()
+        {
+            Console.Error.WriteLine($"Image file '{Filename}' information:");
+            Console.Error.WriteLine($"Size: {Image.Length} byte(s)");
+            Console.Error.WriteLine($"MetadataSize: {CompositeReader.PEHeaders.MetadataSize} byte(s)");
+
+            if (CompositeReader.PEHeaders.PEHeader is PEHeader header)
+            {
+                Console.Error.WriteLine($"SizeOfImage: {header.SizeOfImage} byte(s)");
+                Console.Error.WriteLine($"ImageBase: 0x{header.ImageBase:X}");
+                Console.Error.WriteLine($"FileAlignment: 0x{header.FileAlignment:X}");
+                Console.Error.WriteLine($"SectionAlignment: 0x{header.SectionAlignment:X}");
+            }
+            else
+                Console.Error.WriteLine("No PEHeader");
+
+            Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader.Flags}");
+
+            var exportTable = CompositeReader.GetExportTable();
+            exportTable.DumpToConsoleError();
         }
 
         internal void EnsureMethods()
@@ -1451,10 +1465,23 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        private void EnsureImportSections()
+        {
+            try
+            {
+                EnsureImportSectionsImpl();
+            }
+            catch (BadImageFormatException)
+            {
+                DumpImageInformation();
+                throw;
+            }
+        }
+
         /// <summary>
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapimport.cpp">ZapImportSectionsTable::Save</a>
         /// </summary>
-        private void EnsureImportSections()
+        private void EnsureImportSectionsImpl()
         {
             if (_importSections != null)
             {
