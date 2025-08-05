@@ -2112,6 +2112,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 #elif defined(TARGET_S390X)
 		if (type_enum_is_float(arg0_type)) {
+			if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+				return NULL;
 			return emit_simd_ins_for_sig (cfg, klass, arg0_type == MONO_TYPE_R8 ? OP_S390_VFLPDB : OP_S390_VFLPSB, -1, arg0_type, fsig, args);
 		} else {
 			return emit_simd_ins_for_sig (cfg, klass, OP_VECTOR_IABS, -1, arg0_type, fsig, args);
@@ -2135,10 +2137,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
 			return NULL;
 
+#if defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1 && ((id == SN_Max) || (id == SN_Min) || (id == SN_MaxNative) || (id == SN_MinNative) || (id !=SN_Xor) || (id != SN_BitwiseAnd) || (id != SN_BitwiseOr)) && arg0_type == MONO_TYPE_R4)
+			return NULL;
+#endif
+
 #if !defined(TARGET_ARM64) && !defined(TARGET_S390X)
 		if (((id == SN_Max) || (id == SN_Min)) && type_enum_is_float(arg0_type))
 			return NULL;
 #endif
+
 
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
@@ -2149,7 +2157,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]) || 
 			!(MONO_TYPE_IS_VECTOR_PRIMITIVE (fsig->params [1]) || is_element_type_primitive (fsig->params [1])))
 			return NULL;
-
+#if defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
 	case SN_Multiply: {
@@ -2170,7 +2181,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return NULL;
 		} else if (!(is_element_type_primitive (fsig->params [0]) && is_element_type_primitive (fsig->params [1])))
 			return NULL;
-
+#if defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1 && (vector_inner_type == MONO_TYPE_R4))
+                        return NULL;
+#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, vector_inner_type, id);
 	}
 	case SN_AndNot: {
@@ -2198,13 +2212,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int add_op;
 
 		if (type_enum_is_float (arg0_type)) {
+#if defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 			mul_op = OP_FMUL;
 			add_op = OP_FADD;
 		} else {
 			mul_op = OP_IMUL;
 			add_op = OP_IADD;
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
 			if (!COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_I || arg0_type == MONO_TYPE_U))
 				return NULL;
 #endif
@@ -2274,6 +2292,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int ceil_or_floor = id == SN_Ceiling ? 10 : 9;
 		return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_ROUNDP, ceil_or_floor, arg0_type, fsig, args);
 #elif defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
 		int ceil_or_floor = id == SN_Ceiling ? 6 : 7;
 		switch (arg0_type){
 		case MONO_TYPE_R4:
@@ -2464,6 +2484,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_vector_create_scalar (cfg, vklass, etype, args [0], is_unsafe);
 	}
 	case SN_Dot: {
+#if defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		return emit_dot (cfg, klass, fsig->params [0], arg0_type, args [0]->dreg, args [1]->dreg);
 	}
 	case SN_Equals:
@@ -2472,6 +2496,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		if (id == SN_Equals)
 			return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
 
@@ -2733,7 +2761,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_LessThanOrEqual: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		return emit_xcompare_for_intrinsic (cfg, klass, id, arg0_type, args [0], args [1]);
 	}
 	case SN_GreaterThanAll:
@@ -2750,7 +2781,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		g_assert (fsig->param_count == 2 &&
 			fsig->ret->type == MONO_TYPE_BOOLEAN &&
 			mono_metadata_type_equal (fsig->params [0], fsig->params [1]));
-
+#ifdef TARGET_S390X
+                if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+                        return NULL;
+#endif
 		gboolean is_all = FALSE;
 		switch (id) {
 		case SN_GreaterThanAll:
@@ -2857,6 +2891,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		if (!type_enum_is_float(arg0_type))
 			return emit_xzero (cfg, klass);
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		int op = -1;
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_S390X)
 		op = OP_ONES_COMPLEMENT;
@@ -2879,7 +2917,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return emit_xones (cfg, klass);
 			}
 		}
-
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		MonoInst *arg0 = args [0];
 		MonoClass *op_klass = klass;
 
@@ -2907,6 +2948,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_IsPositiveInfinity: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		if (arg0_type == MONO_TYPE_R4) {
 			guint32 value[4];
 
@@ -2984,6 +3029,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_IsZero: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		return emit_xcompare (cfg, klass, arg0_type, args [0], emit_xzero (cfg, klass));
 	}
 	case SN_Narrow: {
@@ -3129,7 +3178,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_OnesComplement: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && (id == SN_Negate) && (arg0_type == MONO_TYPE_R4))
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
+#endif
 	}
 	case SN_Shuffle: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
@@ -3295,6 +3347,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, instc0, arg0_type, fsig, args);
 #elif defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+
 		int instc0 = arg0_type == MONO_TYPE_R4 ? OP_S390_VFSQSB : OP_S390_VFSQDB;
 		return emit_simd_ins_for_sig (cfg, klass, instc0, 0, arg0_type, fsig, args);
 #else
@@ -3792,6 +3847,10 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		if (fsig->param_count != 2 )
 			return NULL;
 		arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && ((id !=SN_op_ExclusiveOr) || (id != SN_op_BitwiseAnd) || (id != SN_op_BitwiseOr)) && arg0_type == MONO_TYPE_R4)
+                        return NULL;
+#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 
 	}
@@ -3800,6 +3859,10 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		if (fsig->param_count != 2 )
 			return NULL;
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		switch (id) {
 			case SN_op_Equality: return emit_xequal (cfg, arg_class, arg0_type, args [0], args [1]);
 			case SN_op_Inequality: return emit_not_xequal (cfg, arg_class, arg0_type, args [0], args [1]);
@@ -3810,6 +3873,10 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_op_UnaryNegation:
 		if (fsig->param_count != 1 )
 			return NULL;
+#if defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1 && (id == SN_op_UnaryNegation) && (arg0_type == MONO_TYPE_R4))
+			return NULL;
+#endif
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	case SN_op_UnaryPlus:
 		if (fsig->param_count != 1)
@@ -4151,9 +4218,17 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		if ((id == SN_Max) || (id == SN_Min))
 			return NULL;
 #endif
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1 && ((id == SN_Max) || (id == SN_Min) || (id == SN_MaxNative) || (id == SN_MinNative)))
+                        return NULL;
+#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	}
 	case SN_Dot: {
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1)
+                        return NULL;
+#endif
 		return emit_dot (cfg, klass, fsig->params [0], MONO_TYPE_R4, args [0]->dreg, args [1]->dreg);
 	}
 	case SN_Negate:
@@ -4172,6 +4247,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return emit_simd_ins_for_sig (cfg, cmethod->klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS, MONO_TYPE_R4, fsig, args);
 #endif
 		}
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1)
+                        return NULL;
+#endif
 		// MAX(x,0-x)
 		MonoInst *zero = emit_xzero (cfg, klass);
 		MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
@@ -4185,12 +4264,20 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_op_Equality: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1)
+                        return NULL;
+#endif
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		return emit_xequal (cfg, arg_class, MONO_TYPE_R4, args [0], args [1]);
 	}
 	case SN_op_Inequality: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1)
+                        return NULL;
+#endif
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		return emit_not_xequal (cfg, arg_class, MONO_TYPE_R4, args [0], args [1]);
 	}
@@ -4200,6 +4287,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #elif defined(TARGET_AMD64) || defined(TARGET_WASM)
 		ins = emit_simd_ins (cfg, klass, OP_XOP_X_X, args [0]->dreg, -1);
 		ins->inst_c0 = (IntrinsicId)INTRINS_SIMD_SQRT_R4;
+		return ins;
+#elif defined(TARGET_S390X)
+		if (!mono_hwcap_s390x_has_ve1)
+			return NULL;
+		ins = emit_simd_ins (cfg, klass, OP_S390_VFSQSB, args [0]->dreg, -1);
 		return ins;
 #else
 		return NULL;
@@ -4214,6 +4306,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #ifndef TARGET_ARM64
 		if (id == SN_Clamp)
 			return NULL;
+#endif
+#ifdef TARGET_S390X
+		if (!mono_hwcap_s390x_has_ve1)
+                        return NULL;
 #endif
 
 		MonoInst *max = emit_simd_ins (cfg, klass, OP_XBINOP, args[0]->dreg, args[1]->dreg);
@@ -6865,6 +6961,11 @@ static MonoInst*
 emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
+#ifdef TARGET_S390X
+	/* vector facility was introduced in z13 */
+	if (!mono_hwcap_s390x_has_vec)
+		return NULL;
+#endif
 
 	if (cfg->opt & MONO_OPT_SIMD) {
 		ins = arch_emit_simd_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
