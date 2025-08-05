@@ -7639,6 +7639,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         GenTree* useNode  = nullptr;
         bool     foundUse = blockRange.TryGetUse(tree, &treeUse);
         useNode           = treeUse.User();
+        assert(foundUse);
 
 #ifdef TARGET_ARM64
         if (refPosition->needsConsecutive && useNode->OperIs(GT_FIELD_LIST))
@@ -7652,9 +7653,19 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
             foundUse = blockRange.TryGetUse(useNode, &fieldListUse);
             treeUse  = fieldListUse;
             useNode  = treeUse.User();
+            assert(foundUse);
         }
 #endif
-        assert(foundUse);
+
+        // If the node is contained then the actual use is the containing node (which may be much
+        // later in the LIR). Recursively check until there is no contained node.
+        while (useNode->isContained())
+        {
+            foundUse = blockRange.TryGetUse(useNode, &treeUse);
+            useNode  = treeUse.User();
+            assert(foundUse);
+        }
+
         JITDUMP("before %d.%s:\n", useNode->gtTreeID, GenTree::OpName(useNode->gtOper));
 
         // We need to insert the restore prior to the use, not (necessarily) immediately after the lclVar.
