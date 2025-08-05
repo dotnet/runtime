@@ -222,7 +222,7 @@ void minipal_memory_barrier_process_wide(void)
 }
 #else // !TARGET_WINDOWS
 
-#include "windows.h"
+#include <processthreadsapi.h>
 
 void minipal_memory_barrier_process_wide(void)
 {
