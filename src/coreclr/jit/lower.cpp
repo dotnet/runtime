@@ -4988,7 +4988,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
 
     auto getRegInfo = [=, &retDesc](unsigned regIndex) {
         unsigned  offset  = retDesc.GetReturnFieldOffset(regIndex);
-        var_types regType = genActualType(retDesc.GetReturnRegType(regIndex));
+        var_types regType = retDesc.GetReturnRegType(regIndex);
         return LowerFieldListRegisterInfo(offset, regType);
     };
 
@@ -5308,6 +5308,26 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             GenTree* bitCast = comp->gtNewBitCastNode(regType, regEntry->GetNode());
             BlockRange().InsertBefore(fieldList, bitCast);
             regEntry->SetNode(bitCast);
+        }
+
+        // If this is the last entry then try to optimize out unnecessary
+        // normalizing casts, similar to how LowerRetSingleRegStructLclVar
+        // avoids inserting them.
+        if ((i == numRegs - 1) && varTypeUsesIntReg(regType))
+        {
+            GenTree* node = regEntry->GetNode();
+            // If this is a cast that affects only bits after the return size
+            // then it can be removed. Those bits are undefined in all our ABIs
+            // for structs.
+            while (node->OperIs(GT_CAST) && !node->gtOverflow() && varTypeUsesIntReg(node->CastToType()) &&
+                   (genTypeSize(regType) <= genTypeSize(node->CastToType())))
+            {
+                GenTree* op = node->AsCast()->CastOp();
+                regEntry->SetNode(op);
+                op->ClearContained();
+                node->gtBashToNOP();
+                node = op;
+            }
         }
 
         if (fieldListPrev->gtNext != fieldList)
