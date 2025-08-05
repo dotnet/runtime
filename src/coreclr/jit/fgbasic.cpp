@@ -4860,9 +4860,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
 //------------------------------------------------------------------------
 // fgSplitEdge: Splits the edge between a block 'curr' and its successor 'succ' by creating a new block
-//              that replaces 'succ' as a successor of 'curr', and which branches unconditionally
-//              to (or falls through to) 'succ'. Note that for a BBJ_COND block 'curr',
-//              'succ' might be the fall-through path or the branch path from 'curr'.
+//              that replaces 'succ' as a successor of 'curr', and which branches unconditionally to 'succ'.
 //
 // Arguments:
 //    curr - A block which branches to 'succ'
@@ -4876,8 +4874,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 //
 // Notes:
 //    The returned block is empty.
-//    Can be invoked before pred lists are built.
-
+//
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
     assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS));
@@ -4885,19 +4882,19 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     assert(fgGetPredForBlock(succ, curr) != nullptr);
 
     BasicBlock* newBlock;
-    if (curr->NextIs(succ))
+
+    // Place 'newBlock' before 'succ' if we can do so without breaking EH invariants.
+    // This avoids disrupting existing fallthrough out of 'curr' if it has multiple successors.
+    // Else, place 'newBlock' after 'curr'; at the very least, 'curr' will fall through into 'newBlock'.
+    if (BasicBlock::sameEHRegion(curr, succ) && !bbIsTryBeg(succ))
     {
-        // The successor is the fall-through path of a BBJ_COND, or
-        // an immediately following block of a BBJ_SWITCH (which has
-        // no fall-through path). For this case, simply insert a new
-        // fall-through block after 'curr'.
-        newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */);
+        newBlock = fgNewBBbefore(BBJ_ALWAYS, succ, /* extendRegion */ true);
     }
     else
     {
-        // The new block always jumps to 'succ'
-        newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* isRunRarely */ curr->isRunRarely());
+        newBlock = fgNewBBafter(BBJ_ALWAYS, curr, /* extendRegion */ true);
     }
+
     newBlock->CopyFlags(curr, succ->GetFlagsRaw() & BBF_BACKWARD_JUMP);
 
     // Async resumption stubs are permitted to branch into EH regions, so if we
@@ -4915,15 +4912,9 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     newBlock->SetTargetEdge(newSuccEdge);
 
     // Set weight for newBlock
-    //
-    FlowEdge* const currNewEdge = fgGetPredForBlock(newBlock, curr);
-    newBlock->bbWeight          = currNewEdge->getLikelyWeight();
+    assert(newBlock->bbPreds != nullptr);
+    newBlock->bbWeight = newBlock->bbPreds->getLikelyWeight();
     newBlock->CopyFlags(curr, BBF_PROF_WEIGHT);
-
-    if (newBlock->bbWeight == BB_ZERO_WEIGHT)
-    {
-        newBlock->bbSetRunRarely();
-    }
 
     // The bbLiveIn and bbLiveOut are both equal to the bbLiveIn of 'succ'
     if (fgLocalVarLivenessDone)
