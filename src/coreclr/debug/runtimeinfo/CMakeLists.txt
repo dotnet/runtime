@@ -61,7 +61,7 @@ generate_data_descriptors(
    DLLEXPORT
    INTERFACE_TARGET runtime_descriptor_interface)
 
-set(GC_DESCRIPTOR_DIR "${CLR_DIR}/gc/gcdatadescriptors")
+set(GC_DESCRIPTOR_DIR "${CLR_DIR}/gc/datadescriptor")
 add_library(gc_wks_descriptor_interface INTERFACE)
 target_include_directories(gc_wks_descriptor_interface INTERFACE
     ${GC_DESCRIPTOR_DIR}

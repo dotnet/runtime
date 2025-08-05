@@ -17,11 +17,9 @@
 #define GC_NAMESPACE WKS
 #endif // SERVER_GC
 
-#ifdef SERVER_GC
-namespace SVR {
-#else // SERVER_GC
-namespace WKS {
-#endif // SERVER_GC
+// These files are designed to be used inside of the GC namespace.
+// Without the namespace (WKS/SVR) there are naming conflicts.
+namespace GC_NAMESPACE {
 
 #include "gcimpl.h"
 #include "gcpriv.h"

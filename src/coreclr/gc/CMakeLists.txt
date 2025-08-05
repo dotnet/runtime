@@ -104,7 +104,6 @@ list(APPEND GC_SOURCES ${GC_HEADERS})
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
 if(FEATURE_STANDALONE_GC)
-
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     set(BUILD_EXP_GC 1)
   endif()
@@ -147,7 +146,7 @@ if(FEATURE_STANDALONE_GC)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)
 
-  add_subdirectory(gcdatadescriptors)
+  add_subdirectory(datadescriptor)
 
   install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
