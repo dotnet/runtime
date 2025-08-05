@@ -66,9 +66,9 @@ add_library(gc_wks_descriptor_interface INTERFACE)
 target_include_directories(gc_wks_descriptor_interface INTERFACE
     ${GC_DESCRIPTOR_DIR}
     ${CLR_DIR}/gc
-    ${CLR_DIR}/gc/env)
+    ${VM_DIR}
+    ${VM_DIR}/${ARCH_SOURCES_DIR})
 add_dependencies(gc_wks_descriptor_interface cee_wks_core)
-target_compile_definitions(gc_wks_descriptor_interface INTERFACE -DIN_PROCESS_GC)
 generate_data_descriptors(
     LIBRARY_NAME gc_wks_descriptor
     CONTRACT_NAME "GCContractDescriptorWKS"
@@ -80,10 +80,10 @@ if (FEATURE_SVR_GC)
   target_include_directories(gc_svr_descriptor_interface INTERFACE
       ${GC_DESCRIPTOR_DIR}
       ${CLR_DIR}/gc
-      ${CLR_DIR}/gc/env)
+      ${VM_DIR}
+      ${VM_DIR}/${ARCH_SOURCES_DIR})
   add_dependencies(gc_svr_descriptor_interface cee_wks_core)
   target_compile_definitions(gc_svr_descriptor_interface INTERFACE -DSERVER_GC)
-  target_compile_definitions(gc_svr_descriptor_interface INTERFACE -DIN_PROCESS_GC)
   generate_data_descriptors(
       LIBRARY_NAME gc_svr_descriptor
       CONTRACT_NAME "GCContractDescriptorSVR"
