@@ -234,6 +234,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         {
             if (subDescriptor.Value.Indirect)
             {
+                if (subDescriptor.Value.NumericValue.Value >= (ulong)descriptor.PointerData.Length)
+                    throw new InvalidOperationException($"Invalid pointer data index {subDescriptor.Value.NumericValue.Value}.");
+
                 yield return descriptor.PointerData[(int)subDescriptor.Value.NumericValue];
             }
         }

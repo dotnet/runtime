@@ -12,6 +12,7 @@ extern const uintptr_t POINTER_NAME[];
 const uintptr_t POINTER_NAME[] = {
     (uintptr_t)0, // placeholder
 #define CDAC_GLOBAL_POINTER(name,value) (uintptr_t)(value),
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) (uintptr_t)(value),
 #include "datadescriptor.inc"
 };
 
