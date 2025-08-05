@@ -176,6 +176,7 @@ else()
     else()
         list(APPEND NATIVE_LIBS
             System.Security.Cryptography.Native.Android-Static
+            System.Security.Cryptography.Native.Android-StaticJNIExport
         )
     endif()
 
