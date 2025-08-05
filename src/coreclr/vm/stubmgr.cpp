@@ -1951,7 +1951,7 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         return FALSE;
 #else
         TADDR firstArg = StubManagerHelpers::GetFirstArg(pContext);
-        _ASSERTE(firstArg != NULL);
+        _ASSERTE(firstArg != (TADDR)NULL);
 
         VASigCookie* vaSigCookie = (VASigCookie*)firstArg;
         PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(vaSigCookie->pMethodDesc);
