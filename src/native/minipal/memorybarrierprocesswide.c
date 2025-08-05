@@ -170,7 +170,6 @@ void minipal_memory_barrier_process_wide(void)
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-    else
 #else
     {
         mach_msg_type_number_t cThreads;
