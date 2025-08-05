@@ -31,7 +31,7 @@ namespace System.CommandLine
 
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                if (isReadyToRun)
+                if (isReadyToRun && (targetOS != TargetOS.OSX))
                 {
                     // ReadyToRun can presume AVX2, BMI1, BMI2, F16C, FMA, LZCNT, and MOVBE
                     instructionSetSupportBuilder.AddSupportedInstructionSet("x86-64-v3");
