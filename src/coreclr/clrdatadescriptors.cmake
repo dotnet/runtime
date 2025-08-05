@@ -10,7 +10,7 @@ function(generate_data_descriptors)
   set(INTERMEDIARY_LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME}_temp)
   set(LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME})
 
-  set(DATA_DESCRIPTOR_SHARED_SOURCE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/debug/datadescriptor")
+  set(DATA_DESCRIPTOR_SHARED_SOURCE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/debug/datadescriptor-shared")
   set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac-${LIBRARY}")
 
   # configure contract export name
