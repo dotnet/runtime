@@ -499,14 +499,17 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
         EmitLoadTyHnd(pCode, arg.TyHnd);
     }
 
-    // All arguments are loaded on the stack, it is safe to disable the GC reporting of ArgBuffer now.
-    // This is optimization to avoid extending argument lifetime unnecessarily.
-    // We still need to report the inst argument of shared generic code to prevent it from being unloaded. The inst
-    // argument is just a regular IntPtr on the stack. It is safe to stop reporting it only after the target method
-    // takes over.
-    pCode->EmitLDARG(ARG_ARG_BUFFER);
-    pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_INACTIVE);
-    pCode->EmitSTIND_I4();
+    if (info.HasGCDescriptor)
+    {
+        // All arguments are loaded on the stack, it is safe to disable the GC reporting of ArgBuffer now.
+        // This is optimization to avoid extending argument lifetime unnecessarily.
+        // We still need to report the inst argument of shared generic code to prevent it from being unloaded. The inst
+        // argument is just a regular IntPtr on the stack. It is safe to stop reporting it only after the target method
+        // takes over.
+        pCode->EmitLDARG(ARG_ARG_BUFFER);
+        pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_INACTIVE);
+        pCode->EmitSTIND_I4();
+    }
 
     int numRetVals = info.CallSiteSig->IsReturnTypeVoid() ? 0 : 1;
     // Normally there will not be any target and we just emit a normal
