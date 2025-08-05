@@ -170,7 +170,8 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                CryptoPool.Return(buffer, clearSize: numBytesNeeded);
+                // Already cleared by PinAndClear.Track above
+                CryptoPool.Return(buffer, clearSize: 0);
             }
         }
 
