@@ -106,7 +106,6 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size)
 
     if (pOldBuffer != NULL)
     {
-        _ASSERTE(pOldBuffer->State == TAILCALLARGBUFFER_INACTIVE);
         _ASSERTE(pOldBuffer->Size < size);
 
         delete[] (BYTE*)pOldBuffer;

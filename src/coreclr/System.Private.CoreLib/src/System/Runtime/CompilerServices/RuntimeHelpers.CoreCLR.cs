@@ -501,7 +501,11 @@ namespace System.Runtime.CompilerServices
         private static unsafe TailCallArgBuffer* AllocTailCallArgBuffer(int size, IntPtr gcDesc)
         {
             TailCallArgBuffer* buffer = GetTailCallArgBuffer();
-            if (buffer == null || buffer->Size < size)
+            if (buffer != null && buffer->Size >= size)
+            {
+                buffer->State = TAILCALLARGBUFFER_INACTIVE;
+            }
+            esle
             {
                 buffer = AllocTailCallArgBufferWorker(size);
 
