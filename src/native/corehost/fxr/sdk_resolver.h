@@ -34,10 +34,22 @@ enum class sdk_roll_forward_policy
 class sdk_resolver
 {
 public:
-    explicit sdk_resolver(bool allow_prerelease = true);
-    sdk_resolver(fx_ver_t version, sdk_roll_forward_policy roll_forward, bool allow_prerelease);
+    struct global_file_info
+    {
+        enum class state
+        {
+            not_found,
+            valid,
+            invalid_json,
+            invalid_data
+        };
 
-    const pal::string_t& global_file_path() const;
+        state state;
+        pal::string_t path;
+        pal::string_t error_message;
+    };
+
+    const global_file_info& global_file() const { return global_json; }
 
     const fx_ver_t& get_requested_version() const;
 
@@ -54,10 +66,11 @@ public:
         bool allow_prerelease = true);
 
 private:
+    explicit sdk_resolver(bool allow_prerelease = true);
     static sdk_roll_forward_policy to_policy(const pal::string_t& name);
     static const pal::char_t* to_policy_name(sdk_roll_forward_policy policy);
     static pal::string_t find_nearest_global_file(const pal::string_t& cwd);
-    bool parse_global_file(pal::string_t global_file_path);
+    global_file_info parse_global_file(const pal::string_t& global_file_path);
     bool matches_policy(const fx_ver_t& current) const;
     bool is_better_match(const fx_ver_t& current, const fx_ver_t& previous) const;
     bool exact_match_preferred() const;
@@ -66,7 +79,7 @@ private:
     // Returns true and sets sdk_path/resolved_version if a matching SDK was found
     bool resolve_sdk_path_and_version(const pal::string_t& dir, pal::string_t& sdk_path, fx_ver_t& resolved_version) const;
 
-    pal::string_t global_file;
+    global_file_info global_json;
     fx_ver_t requested_version;
     sdk_roll_forward_policy roll_forward;
     bool allow_prerelease;

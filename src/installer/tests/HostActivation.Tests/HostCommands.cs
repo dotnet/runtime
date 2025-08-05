@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace HostActivation.Tests
@@ -166,6 +167,42 @@ namespace HostActivation.Tests
                 .And.HaveStdOutContaining("Environment variables:")
                 .And.NotHaveStdOutContaining(comPlusEnvVar)
                 .And.HaveStdOutContaining("Detected COMPlus_* environment variable(s). Consider transitioning to DOTNET_* equivalent.");
+        }
+
+        [Fact]
+        public void Info_GlobalJson_InvalidJson()
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidJson)))
+            {
+                string globalJsonPath = GlobalJson.Write(workingDir.Location, "{ \"sdk\": { }");
+                TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining("JSON parsing exception:")
+                    .And.NotHaveStdErr();
+            }
+        }
+
+        [Theory]
+        [InlineData("9.0")]
+        [InlineData("invalid")]
+        public void Info_GlobalJson_InvalidData(string version)
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidData)))
+            {
+                string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
+                TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value")
+                    .And.NotHaveStdErr();
+            }
         }
 
         [Fact]

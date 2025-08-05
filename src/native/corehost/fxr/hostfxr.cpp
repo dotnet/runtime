@@ -273,11 +273,12 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
             resolved_sdk_dir.c_str());
     }
 
-    if (!resolver.global_file_path().empty())
+    if (resolver.global_file().state == sdk_resolver::global_file_info::state::valid
+        && !resolver.global_file().path.empty())
     {
         result(
             hostfxr_resolve_sdk2_result_key_t::global_json_path,
-            resolver.global_file_path().c_str());
+            resolver.global_file().path.c_str());
     }
 
     if (!resolver.get_requested_version().is_empty())
