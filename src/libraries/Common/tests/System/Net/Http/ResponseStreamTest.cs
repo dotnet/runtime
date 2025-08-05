@@ -497,7 +497,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static TheoryData CancelRequestReadFunctions
+        public static TheoryData<bool, int, bool> CancelRequestReadFunctions
             => new TheoryData<bool, int, bool>
             {
                 { false, 0, false },

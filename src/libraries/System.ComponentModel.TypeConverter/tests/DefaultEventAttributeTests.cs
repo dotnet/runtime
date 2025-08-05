@@ -11,7 +11,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("name")]
-        public void Ctor_Name(string name)
+        public void Ctor_Name(string? name)
         {
             var attribute = new DefaultEventAttribute(name);
             Assert.Equal(name, attribute.Name);
