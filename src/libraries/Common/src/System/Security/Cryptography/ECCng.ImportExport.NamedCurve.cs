@@ -28,12 +28,19 @@ namespace System.Security.Cryptography
                 //     -- Only if "includePrivateParameters" is true --
                 //     byte[cbKey]          D
 
-                int blobSize = sizeof(BCRYPT_ECCKEY_BLOB) +
-                    x.Length +
-                    y.Length;
-                if (includePrivateParameters)
+                Debug.Assert(x.Length == y.Length);
+
+                int blobSize;
+
+                checked
                 {
-                    blobSize += d!.Length;
+                    blobSize = sizeof(BCRYPT_ECCKEY_BLOB) +
+                        x.Length +
+                        y.Length;
+                    if (includePrivateParameters)
+                    {
+                        blobSize += d!.Length;
+                    }
                 }
 
                 blob = new byte[blobSize];
@@ -53,6 +60,7 @@ namespace System.Security.Cryptography
 
                         if (includePrivateParameters)
                         {
+                            Debug.Assert(x.Length == d?.Length);
                             Interop.BCrypt.Emit(blob, ref offset, d!);
                         }
 
@@ -71,10 +79,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal delegate void DecodeBlobFunc(KeyBlobMagicNumber magic, byte[] x, byte[] y, byte[]? d);
+        internal delegate T DecodeBlobFunc<T>(KeyBlobMagicNumber magic, byte[] x, byte[] y, byte[]? d);
 
         // When possible, operate on the private key inside the callback since the array will be pinned during its execution.
-        internal static void DecodeEccKeyBlob(ReadOnlySpan<byte> ecBlob, DecodeBlobFunc decodeCallback, bool clearPrivateKey = true)
+        internal static T DecodeEccKeyBlob<T>(ReadOnlySpan<byte> ecBlob, DecodeBlobFunc<T> decodeCallback, bool clearPrivateKey = true)
         {
             // We now have a buffer laid out as follows:
             //     BCRYPT_ECCKEY_BLOB   header
@@ -112,7 +120,7 @@ namespace System.Security.Cryptography
 
                                 Debug.Assert(offset == ecBlob.Length);
 
-                                decodeCallback(magic, x, y, d);
+                                return decodeCallback(magic, x, y, d);
                             }
                             finally
                             {
@@ -127,7 +135,7 @@ namespace System.Security.Cryptography
                     {
                         Debug.Assert(offset == ecBlob.Length);
 
-                        decodeCallback(magic, x, y, null);
+                        return decodeCallback(magic, x, y, null);
                     }
                 }
             }

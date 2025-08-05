@@ -99,8 +99,7 @@ namespace System.Security.Cryptography
             }
 
             // If the field is too short then it needs to be prepended
-            // with zeroes in the response.  Since the array was already
-            // zeroed out, just figure out where we need to start copying.
+            // with zeroes in the response.
             int writeOffset = response.Length - signatureField.Length;
             response.Slice(0, writeOffset).Clear();
             signatureField.CopyTo(response.Slice(writeOffset));

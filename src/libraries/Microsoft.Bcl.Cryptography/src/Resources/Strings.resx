@@ -174,6 +174,9 @@
   <data name="Cryptography_IncorrectTagLength" xml:space="preserve">
     <value>The size of the specified tag does not match the expected size of {0}.</value>
   </data>
+  <data name="Cryptography_InvalidCurveKeyParameters" xml:space="preserve">
+    <value>The specified key parameters are not valid. Q.X and Q.Y, or D, must be specified. Q.X, Q.Y must be the same length. If D is specified it must be the same length as Q.X and Q.Y if also specified for named curves or the same length as Order for explicit curves.</value>
+  </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>

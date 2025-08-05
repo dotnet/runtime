@@ -130,6 +130,8 @@ namespace System.Security.Cryptography
                                 y = zero;
                             }
 
+                            ValidateNamedCurve(x, y, d);
+
                             return new ECDsaComponent(
                                 ECCng.EncodeEccKeyBlob(
                                     algorithm.PrivateKeyBlobMagicNumber,
@@ -250,7 +252,10 @@ namespace System.Security.Cryptography
                                         throw new CryptographicException();
                                     }
 
+                                    ValidateNamedCurve(x, y, d);
+
                                     WriteKey(d, x, y, _algorithm.CurveOidValue, writer);
+                                    return true;
                                 });
                         });
 
@@ -331,8 +336,11 @@ namespace System.Security.Cryptography
                                     throw new CryptographicException();
                                 }
 
+                                ValidateNamedCurve(localX, localY, null);
+
                                 x = localX;
                                 y = localY;
+                                return true;
                             });
                     });
 #endif
@@ -454,6 +462,25 @@ namespace System.Security.Cryptography
                 using (CngKey key = CngKey.Create(new CngAlgorithm("ECDSA"), null, creationParameters))
                 {
                     return new ECDsaCng(key);
+                }
+            }
+
+            private static void ValidateNamedCurve(byte[]? x, byte[]? y, byte[]? d)
+            {
+                bool hasErrors = true;
+
+                if (d is not null && y is null && x is null)
+                {
+                    hasErrors = false;
+                }
+                else if (y is not null && x is not null && y.Length == x.Length)
+                {
+                    hasErrors = (d is not null && (d.Length != x.Length));
+                }
+
+                if (hasErrors)
+                {
+                    throw new CryptographicException(SR.Cryptography_InvalidCurveKeyParameters);
                 }
             }
 #endif

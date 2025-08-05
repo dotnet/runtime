@@ -153,17 +153,24 @@ namespace System.Security.Cryptography
             if (errorCode != ErrorCode.ERROR_SUCCESS)
                 throw errorCode.ToCryptographicException();
 
-            byte[] buffer = new byte[numBytesNeeded];
+            byte[] buffer = CryptoPool.Rent(numBytesNeeded);
 
-            using (PinAndClear.Track(buffer))
+            try
             {
-                errorCode = Interop.NCrypt.NCryptExportKey(handle, IntPtr.Zero, blobType, IntPtr.Zero, buffer, buffer.Length, out numBytesNeeded, 0);
-                if (errorCode != ErrorCode.ERROR_SUCCESS)
-                    throw errorCode.ToCryptographicException();
+                using (PinAndClear.Track(buffer))
+                {
+                    errorCode = Interop.NCrypt.NCryptExportKey(handle, IntPtr.Zero, blobType, IntPtr.Zero, buffer, buffer.Length, out numBytesNeeded, 0);
+                    if (errorCode != ErrorCode.ERROR_SUCCESS)
+                        throw errorCode.ToCryptographicException();
 
-                // The second call to NCryptExportKey should always return the same number of bytes as the first call,
-                // but we will slice the buffer just in case.
-                callback(buffer.AsSpan(0, numBytesNeeded));
+                    // The second call to NCryptExportKey should always return the same number of bytes as the first call,
+                    // but we will slice the buffer just in case.
+                    callback(buffer.AsSpan(0, numBytesNeeded));
+                }
+            }
+            finally
+            {
+                CryptoPool.Return(buffer, clearSize: numBytesNeeded);
             }
         }
 

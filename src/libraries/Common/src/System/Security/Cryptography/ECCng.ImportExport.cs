@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
                 parameters.Q.X!,
                 parameters.Q.Y!,
                 parameters.D,
-                blob => blob,
+                static blob => blob,
                 clearBlob: false); // Returning blob to caller, so don't clear it.
         }
 
@@ -118,27 +118,44 @@ namespace System.Security.Cryptography
 
         internal static void ExportNamedCurveParameters(ref ECParameters ecParams, byte[] ecBlob, bool includePrivateParameters)
         {
-            ECParameters temp = default;
-
-            DecodeEccKeyBlob(
-                ecBlob,
-                (KeyBlobMagicNumber magic, byte[] x, byte[] y, byte[]? d) =>
-                {
-                    CheckMagicValueOfKey(magic, includePrivateParameters);
-
-                    temp = new ECParameters
+            if (includePrivateParameters)
+            {
+                ecParams = DecodeEccKeyBlob(
+                    ecBlob,
+                    static (KeyBlobMagicNumber magic, byte[] x, byte[] y, byte[]? d) =>
                     {
-                        Q = new ECPoint
-                        {
-                            X = x,
-                            Y = y,
-                        },
-                        D = d,
-                    };
-                },
-                clearPrivateKey: false); // Returning key to caller, so don't clear it.
+                        CheckMagicValueOfKey(magic, includePrivateParameters: true);
 
-            ecParams = temp;
+                        return new ECParameters
+                        {
+                            Q = new ECPoint
+                            {
+                                X = x,
+                                Y = y,
+                            },
+                            D = d,
+                        };
+                    },
+                    clearPrivateKey: false); // Returning key to caller, so don't clear it.
+            }
+            else
+            {
+                ecParams = DecodeEccKeyBlob(
+                    ecBlob,
+                    static (KeyBlobMagicNumber magic, byte[] x, byte[] y, byte[]? d) =>
+                    {
+                        CheckMagicValueOfKey(magic, includePrivateParameters: false);
+
+                        return new ECParameters
+                        {
+                            Q = new ECPoint
+                            {
+                                X = x,
+                                Y = y,
+                            },
+                        };
+                    });
+            }
         }
 
         internal static void ExportPrimeCurveParameters(ref ECParameters ecParams, byte[] ecBlob, bool includePrivateParameters)
