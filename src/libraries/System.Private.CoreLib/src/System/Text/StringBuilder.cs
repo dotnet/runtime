@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -1027,6 +1028,17 @@ namespace System.Text
             m_ChunkLength++;
         }
 
+        public StringBuilder Append(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Append span
+            return Append(charsSlice);
+        }
+
         [CLSCompliant(false)]
         public StringBuilder Append(sbyte value) => AppendSpanFormattable(value);
 
@@ -1325,6 +1337,17 @@ namespace System.Text
 
             Insert(index, ref value, 1);
             return this;
+        }
+
+        public StringBuilder Insert(int index, Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Insert span
+            return Insert(index, charsSlice);
         }
 
         public StringBuilder Insert(int index, char[]? value)
@@ -2248,6 +2271,26 @@ namespace System.Text
             return this;
         }
 
+        public StringBuilder Replace(Rune oldRune, Rune newRune)
+        {
+            return Replace(oldRune, newRune, 0, Length);
+        }
+        public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
+        {
+            // Convert oldRune to span
+            Span<char> leftChars = stackalloc char[2];
+            int leftCharsWritten = oldRune.EncodeToUtf16(leftChars);
+            ReadOnlySpan<char> leftCharsSlice = leftChars[..leftCharsWritten];
+
+            // Convert newRune to span
+            Span<char> rightChars = stackalloc char[2];
+            int rightCharsWritten = newRune.EncodeToUtf16(rightChars);
+            ReadOnlySpan<char> rightCharsSlice = rightChars[..rightCharsWritten];
+
+            // Replace span with span
+            return Replace(leftCharsSlice, rightCharsSlice, startIndex, count);
+        }
+
         /// <summary>
         /// Appends a character buffer to this builder.
         /// </summary>
@@ -2796,6 +2839,37 @@ namespace System.Text
 
             Debug.Assert(chunk != null, "We fell off the beginning of the string!");
             AssertInvariants();
+        }
+
+        public Rune GetRuneAt(int index)
+        {
+            if (TryGetRuneAt(index, out Rune value))
+            {
+                return value;
+            }
+            throw new Exception($"Unable to get rune at {index}.");
+        }
+
+        public bool TryGetRuneAt(int index, out Rune value)
+        {
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Length);
+
+            // Get span at StringBuilder index
+            Span<char> chars = index + 1 < Length
+                ? [this[index], this[index + 1]]
+                : [this[index]];
+
+            OperationStatus status = Rune.DecodeFromUtf16(chars, out Rune result, out _);
+            if (status is OperationStatus.Done)
+            {
+                value = result;
+                return true;
+            }
+            else
+            {
+                value = default;
+                return false;
+            }
         }
 
         /// <summary>Provides a handler used by the language compiler to append interpolated strings into <see cref="StringBuilder"/> instances.</summary>
