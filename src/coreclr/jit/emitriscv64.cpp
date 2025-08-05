@@ -1894,7 +1894,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         // jalr t2
 
         ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
-        assert((uint64_t)(imm >> 32) <= 0x7fff); // RISC-V Linux Kernel SV48
+        assert((uint64_t)(imm >> 32) <= 0x7fffUL); // RISC-V Linux Kernel SV48
 
         int reg2 = (int)(imm & 1);
         imm -= reg2;
