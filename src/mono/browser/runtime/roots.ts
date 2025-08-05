@@ -7,7 +7,7 @@ import cwraps from "./cwraps";
 import { mono_assert, runtimeHelpers } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
-import { _zero_region, free, localHeapViewU32, malloc } from "./memory";
+import { _zero_region, free, localHeapViewU32, localHeapViewI64Big, malloc } from "./memory";
 import { gc_locked } from "./gc-lock";
 
 const maxScratchRoots = 8192;
@@ -16,6 +16,7 @@ let _scratch_root_free_indices: Int32Array | null = null;
 let _scratch_root_free_indices_count = 0;
 const _scratch_root_free_instances: WasmRoot<any>[] = [];
 const _external_root_free_instances: WasmExternalRoot<any>[] = [];
+// FIXME: set this based on wasm64 / wasm32 build
 const ptrSize = 8;
 
 /**
@@ -166,14 +167,22 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     private length: number;
     private __offset: VoidPtr;
     private __offset32: number;
+    private __offset64: bigint;
     private __handle: number;
     private __ownsAllocation: boolean;
 
     constructor (offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string) {
-        const capacityBytes = capacity * 4;
+        const capacityBytes = capacity * ptrSize;
 
         this.__offset = offset;
         this.__offset32 = <number><any>offset >>> 2;
+        if (typeof offset === "bigint") {
+            this.__offset64 = offset >> 3n;
+        } else if (typeof offset === "number") {
+            this.__offset64 = BigInt(offset) >> 3n;
+        } else {
+            throw new Error("Invalid offset type: " + typeof offset);
+        }
         this.__count = capacity;
         this.length = capacity;
         mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
@@ -200,13 +209,23 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
         return this.__offset32 + index;
     }
 
+    get_address_64 (index: number): bigint {
+        this._check_in_range(index);
+        return this.__offset64 + BigInt(index);
+    }
+
     // NOTE: These functions do not use the helpers from memory.ts because WasmRoot.get and WasmRoot.set
     //  are hot-spots when you profile any application that uses the bindings extensively.
 
     get (index: number): ManagedPointer {
         this._check_in_range(index);
-        const offset = this.get_address_32(index);
-        return <any>localHeapViewU32()[offset];
+        if (ptrSize != 8) {
+            const offset = this.get_address_32(index);
+            return <any>localHeapViewU32()[offset];
+        } else {
+            const offset = this.get_address_64(index);
+            return <any>localHeapViewI64Big()[Number(offset)];
+        }
     }
 
     set (index: number, value: ManagedPointer): ManagedPointer {
@@ -220,8 +239,11 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
         cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
     }
 
-    _unsafe_get (index: number): number {
-        return localHeapViewU32()[this.__offset32 + index];
+    _unsafe_get (index: number): number | bigint {
+        if (ptrSize === 8)
+            return localHeapViewI64Big()[Number(this.__offset64 + BigInt(index))];
+        else
+            return localHeapViewU32()[this.__offset32 + index];
     }
 
     _unsafe_set (index: number, value: ManagedPointer | NativePointer): void {
@@ -243,6 +265,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
         }
 
         this.__handle = (<any>this.__offset) = this.__count = this.__offset32 = 0;
+        this.__offset64 = 0n;
     }
 
     toString (): string {
@@ -265,6 +288,9 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
 
     get_address_32 (): number {
         return this.__buffer.get_address_32(this.__index);
+    }
+    get_address_64 (): bigint {
+        return this.__buffer.get_address_64(this.__index);
     }
 
     get address (): MonoObjectRef {
@@ -319,8 +345,13 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     clear (): void {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
-        const address32 = this.__buffer.get_address_32(this.__index);
-        localHeapViewU32()[address32] = 0;
+        if (ptrSize === 8) {
+            const address64 = this.__buffer.get_address_64(this.__index);
+            localHeapViewI64Big()[Number(address64)] = 0n;
+        } else {
+            const address32 = this.__buffer.get_address_32(this.__index);
+            localHeapViewU32()[address32] = 0;
+        }
     }
 
     release (): void {
@@ -346,6 +377,7 @@ class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
 class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     private __external_address: MonoObjectRef = MonoObjectRefNull;
     private __external_address_32: number = <any>0;
+    private __external_address_64: bigint = <any>0n;
 
     constructor (address: NativePointer | ManagedPointer) {
         this._set_address(address);
@@ -354,6 +386,10 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     _set_address (address: NativePointer | ManagedPointer): void {
         this.__external_address = <MonoObjectRef><any>address;
         this.__external_address_32 = <number><any>address >>> 2;
+        if (typeof address === "bigint")
+            this.__external_address_64 = address >> 3n;
+        else
+            this.__external_address_64 = BigInt(<any>address) >> 3n;
     }
 
     get address (): MonoObjectRef {
@@ -368,9 +404,18 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
         return this.__external_address_32;
     }
 
+    get_address_64 (): bigint {
+        return this.__external_address_64;
+    }
+
     get (): T {
-        const result = localHeapViewU32()[this.__external_address_32];
-        return <any>result;
+        if (ptrSize === 8) { // wasm64)
+            const result = localHeapViewI64Big()[Number(this.__external_address_64)];
+            return <any>result;
+        } else {
+            const result = localHeapViewU32()[this.__external_address_32];
+            return <any>result;
+        }
     }
 
     set (value: T): T {
@@ -415,7 +460,10 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     clear (): void {
         // .set performs an expensive write barrier, and that is not necessary in most cases
         //  for clear since clearing a root cannot cause new objects to survive a GC
-        localHeapViewU32()[<any>this.__external_address >>> 2] = 0;
+        if (ptrSize === 8)
+            localHeapViewI64Big()[Number(this.__external_address_64)] = 0n;
+        else
+            localHeapViewU32()[<any>this.__external_address >>> 2] = 0;
     }
 
     release (): void {

@@ -409,6 +409,7 @@ export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 export interface WasmRoot<T extends MonoObject> {
     get_address(): MonoObjectRef;
     get_address_32(): number;
+    get_address_64(): bigint;
     get address(): MonoObjectRef;
     get(): T;
     set(value: T): T;
@@ -427,6 +428,7 @@ export interface WasmRoot<T extends MonoObject> {
 export interface WasmRootBuffer {
     get_address(index: number): MonoObjectRef
     get_address_32(index: number): number
+    get_address_64(index: number): bigint
     get(index: number): ManagedPointer
     set(index: number, value: ManagedPointer): ManagedPointer
     copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void

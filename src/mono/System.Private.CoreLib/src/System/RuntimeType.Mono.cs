@@ -39,7 +39,7 @@ namespace System
                               FormatGenericParam |
                               FormatFullInst
     }
-    
+
     internal unsafe partial class RuntimeType
     {
         #region Definitions
@@ -2198,14 +2198,13 @@ namespace System
             //var h = new Mono.SafeGPtrArrayHandle(result);
             //var h = new Mono.RuntimeGPtrArrayHandle(result);
             RuntimeStructs.GPtrArray* myData = (RuntimeStructs.GPtrArray*)result;
-            
 
             IntPtr* data = myData->data;
             long idx = 0x1;
             var a = data[idx];
             var b = data[idx];
             var c = data[idx];
-                        
+
             var sum = c + a;
 
             IntPtr[] array = new IntPtr[6];
