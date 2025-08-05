@@ -13,6 +13,7 @@
 #include "methodtable.h"
 #include "threads.h"
 #include "exinfo.h"
+#include "interoplibinterface_comwrappers.h"
 
 #include "configure.h"
 
