@@ -548,6 +548,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThrowInvalidCastException)
     DllImportEntry(IsInstanceOf_NoCacheLookup)
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
+    DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
 };
 
 const void* QCallResolveDllImport(const char* name)

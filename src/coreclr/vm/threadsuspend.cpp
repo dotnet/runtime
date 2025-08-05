@@ -802,7 +802,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
     else
     {
         MethodDesc *pMD = pCf->GetFunction();
-        if (pCf->GetFrame() != NULL && pMD != NULL && (pMD->IsNDirect() || pMD->IsCLRToCOMCall()))
+        if (pCf->GetFrame() != NULL && pMD != NULL && (pMD->IsPInvoke() || pMD->IsCLRToCOMCall()))
         {
             // This may be interop method of an interesting interop call - latch it.
             frameAction = LatchCurrentFrame;
@@ -2303,11 +2303,7 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-#ifdef FEATURE_EH_FUNCLETS
-        DispatchManagedException(exceptObj);
-#else // FEATURE_EH_FUNCLETS
         RaiseTheExceptionInternalOnly(exceptObj, FALSE);
-#endif // FEATURE_EH_FUNCLETS
     }
 
     ::SetLastError(lastError);

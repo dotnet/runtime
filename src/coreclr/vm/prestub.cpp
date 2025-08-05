@@ -706,15 +706,20 @@ namespace
         _ASSERTE(pConfig != NULL);
         _ASSERTE(pDecoderMemory != NULL);
 
+        if (!pMD->MayHaveILHeader())
+            return NULL;
+
         COR_ILMETHOD_DECODER* pHeader = NULL;
+
         COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
 
         // For a Runtime Async method the methoddef maps to a Task-returning thunk with runtime-provided implementation,
         // while the default IL belongs to the Async implementation variant.
         // By default the config captures the default methoddesc, which would be a thunk, thus no IL header.
         // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
-        if (ilHeader == NULL && pMD->IsAsyncVariantMethod() && !pMD->IsAsyncThunkMethod())
+        if (ilHeader == NULL && pMD->IsAsyncVariantMethod())
         {
+            _ASSERTE(!pMD->IsAsyncThunkMethod());
             ilHeader = pMD->GetILHeader();
         }
 
@@ -2235,7 +2240,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
         pCode = PrepareInitialCode(callerGCMode);
     } // end else if (IsIL() || IsNoMetadata())
-    else if (IsNDirect())
+    else if (IsPInvoke())
     {
         if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
         {
@@ -2383,7 +2388,7 @@ PCODE TheUMThunkPreStub()
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
 }
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 

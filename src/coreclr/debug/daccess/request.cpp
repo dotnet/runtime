@@ -5024,15 +5024,15 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
     PTR_PEAssembly pPEAssembly = pModule->GetPEAssembly();
     PTR_AssemblyBinder pBinder = pPEAssembly->GetAssemblyBinder();
 
-    INT_PTR managedAssemblyLoadContextHandle = pBinder->GetManagedAssemblyLoadContext();
+    INT_PTR AssemblyLoadContextHandle = pBinder->GetAssemblyLoadContext();
 
-    TADDR managedAssemblyLoadContextAddr = 0;
-    if (managedAssemblyLoadContextHandle != 0)
+    TADDR AssemblyLoadContextAddr = 0;
+    if (AssemblyLoadContextHandle != 0)
     {
-        DacReadAll(managedAssemblyLoadContextHandle,&managedAssemblyLoadContextAddr,sizeof(TADDR),true);
+        DacReadAll(AssemblyLoadContextHandle,&AssemblyLoadContextAddr,sizeof(TADDR),true);
     }
 
-    *assemblyLoadContext = TO_CDADDR(managedAssemblyLoadContextAddr);
+    *assemblyLoadContext = TO_CDADDR(AssemblyLoadContextAddr);
 
     SOSDacLeave();
     return hr;

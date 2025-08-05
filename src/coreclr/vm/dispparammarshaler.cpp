@@ -250,7 +250,7 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
     if (vt == VT_RECORD && !pElemMT->IsBlittable())
     {
         GCX_PREEMP();
-        pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElemMT);
+        pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElemMT);
     }
 
     // Create an array from the SAFEARRAY.
@@ -296,7 +296,7 @@ void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT
         if (vt == VT_RECORD && !pElemMT->IsBlittable())
         {
             GCX_PREEMP();
-            pStructMarshalStubAddress = NDirect::GetEntryPointForStructMarshalStub(pElemMT);
+            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElemMT);
         }
         GCPROTECT_END();
 
@@ -407,7 +407,7 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
             {
                 GCX_PREEMP();
 
-                pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pRecordMT);
+                pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pRecordMT);
             }
 
             MarshalStructViaILStub(pStructMarshalStub, BoxedValueClass->GetData(), pvRecord, StructMarshalStubs::MarshalOperation::Unmarshal);

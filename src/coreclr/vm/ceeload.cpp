@@ -3355,11 +3355,11 @@ void Module::FixupVTables()
                     iCurMethod++;
 
 #ifdef _DEBUG
-                    if (pMD->IsNDirect())
+                    if (pMD->IsPInvoke())
                     {
                         LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
-                            (size_t)(((NDirectMethodDesc*)pMD)->GetNDirectTarget())));
+                            (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
 #endif // _DEBUG
 
@@ -3619,7 +3619,7 @@ void Module::RunEagerFixupsUnlocked()
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
@@ -3635,7 +3635,7 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
     {
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods))
             return FALSE;
 
         _ASSERTE(*fixupCell != 0);
@@ -4348,7 +4348,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
-            pCookie->pNDirectILStub = 0;
+            pCookie->pPInvokeILStub = 0;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;

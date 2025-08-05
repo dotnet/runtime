@@ -49,20 +49,46 @@ namespace System.Threading
             Thread currentThread = Thread.CurrentThread;
             currentThread.SetWaitSleepJoinState();
 
-#if NATIVEAOT
+            long startTime = 0;
+            if (millisecondsTimeout != -1)
+            {
+                startTime = Environment.TickCount64;
+            }
+
             int result;
-            if (reentrantWait)
+            while (true)
             {
-                Debug.Assert(!waitAll);
-                result = RuntimeImports.RhCompatibleReentrantWaitAny(false, millisecondsTimeout, numHandles, pHandles);
-            }
-            else
-            {
-                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
-            }
+#if NATIVEAOT
+                if (reentrantWait)
+                {
+                    Debug.Assert(!waitAll);
+                    result = RuntimeImports.RhCompatibleReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles);
+                }
+                else
+                {
+                    result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                }
 #else
-            int result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 #endif
+
+                if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    break;
+
+                // Handle APC completion by adjusting timeout and retrying
+                if (millisecondsTimeout != -1)
+                {
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+                    if (elapsed >= millisecondsTimeout)
+                    {
+                        result = Interop.Kernel32.WAIT_TIMEOUT;
+                        break;
+                    }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+            }
             currentThread.ClearWaitSleepJoinState();
 
             if (result == Interop.Kernel32.WAIT_FAILED)
@@ -102,8 +128,35 @@ namespace System.Threading
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+            long startTime = 0;
+            if (millisecondsTimeout != -1)
+            {
+                startTime = Environment.TickCount64;
+            }
 
+            // Signal the object and wait for the first time
+            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+
+            // Handle APC completion by retrying with WaitForSingleObjectEx (without signaling again)
+            while (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
+            {
+                if (millisecondsTimeout != -1)
+                {
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+
+                    if (elapsed >= millisecondsTimeout)
+                    {
+                        ret = Interop.Kernel32.WAIT_TIMEOUT;
+                        break;
+                    }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+
+                // For retries, only wait on the handle (don't signal again)
+                ret = (int)Interop.Kernel32.WaitForSingleObjectEx(handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+            }
             if (ret == Interop.Kernel32.WAIT_FAILED)
             {
                 ThrowWaitFailedException(Interop.Kernel32.GetLastError());

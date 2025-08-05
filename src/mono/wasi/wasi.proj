@@ -165,7 +165,8 @@
       { "identity": "WasmSingleFileBundle",   "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
       { "identity": "EnableDiagnostics",      "defaultValueInRuntimePack": "$(EnableDiagnostics)" },
       { "identity": "WasmProfilers",          "defaultValueInRuntimePack": "$(WasmProfilers)" },
-      { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" }
+      { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
+      { "identity": "RunAOTCompilation",      "defaultValueInRuntimePack": "$(RunAOTCompilation)" }
     ]
   }
 }

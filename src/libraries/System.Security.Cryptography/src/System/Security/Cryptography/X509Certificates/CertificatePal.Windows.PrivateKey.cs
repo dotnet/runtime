@@ -288,7 +288,6 @@ namespace System.Security.Cryptography.X509Certificates
             return CertificateHelpers.GetPrivateKey<T>(this, createCsp, createCng);
         }
 
-
         private CertificatePal? CopyWithPersistedCngKey(CngKey cngKey) => CertificateHelpers.CopyWithPersistedCngKey(this, cngKey);
 
         private CertificatePal CopyWithEphemeralKey(CngKey cngKey) => CertificateHelpers.CopyWithEphemeralKey(this, cngKey);

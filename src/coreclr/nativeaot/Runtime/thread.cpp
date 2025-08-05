@@ -38,7 +38,7 @@ static Thread* g_RuntimeInitializingThread;
 
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
-    minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_lowres_ticks());
+    minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_hires_ticks());
 }
 
 thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();

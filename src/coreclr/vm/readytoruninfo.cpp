@@ -1251,10 +1251,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            BOOL mayUsePrecompiledNDirectMethods = TRUE;
-            mayUsePrecompiledNDirectMethods = !pConfig->IsForMulticoreJit();
+            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
+            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
 
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledNDirectMethods))
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
             {
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
                 goto done;

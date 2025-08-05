@@ -5921,7 +5921,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 #endif
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
-    // it was causing problems creating a stepper while sitting in ndirect stubs after we'd returned from the unmanaged
+    // it was causing problems creating a stepper while sitting in PInvoke stubs after we'd returned from the unmanaged
     // function that had been called.
     DebuggerJitInfo *ji = info->m_activeFrame.GetJitInfoFromFrame();
     if( ji != NULL )
@@ -6537,7 +6537,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 _ASSERTE(dji != NULL);
 
                 // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value
-                // in that, and it was causing problems creating a stepper while sitting in ndirect stubs after we'd
+                // in that, and it was causing problems creating a stepper while sitting in PInvoke stubs after we'd
                 // returned from the unmanaged function that had been called.
                 ULONG reloffset = info->m_activeFrame.relOffset;
 
@@ -6816,7 +6816,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
     CONTRACTL_END;
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
-    // it was causing problems creating a stepper while sitting in ndirect stubs after we'd returned from the unmanaged
+    // it was causing problems creating a stepper while sitting in PInvoke stubs after we'd returned from the unmanaged
     // function that had been called.
     MethodDesc *fd = dji->m_nativeCodeVersion.GetMethodDesc();
 

@@ -16,8 +16,10 @@ namespace System.Security.Cryptography.Pkcs
     {
         public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.AsymmetricAlgorithm? privateKey) { }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
-        public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.SlhDsa? privateKey) { }
+        public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.MLDsa? privateKey) { }
         public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.RSA? privateKey, System.Security.Cryptography.RSASignaturePadding? signaturePadding) { }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate, System.Security.Cryptography.SlhDsa? privateKey) { }
         public System.Security.Cryptography.AsymmetricAlgorithm? PrivateKey { get { throw null; } set { } }
         public System.Security.Cryptography.RSASignaturePadding? SignaturePadding { get { throw null; } set { } }
     }

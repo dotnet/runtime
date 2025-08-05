@@ -49,7 +49,9 @@ endif()
 
 add_library_clr(clrinterpreter ${LIBRARY_TYPE} ${INTERPRETER_SOURCES})
 
-set_target_properties(clrinterpreter PROPERTIES EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
+if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
+  set_target_properties(clrinterpreter PROPERTIES EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
+endif()
 
 add_dependencies(clrinterpreter interpreter_exports)
 

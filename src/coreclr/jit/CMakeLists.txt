@@ -304,6 +304,7 @@ set( JIT_HEADERS
   compilerbitsettraits.hpp
   compmemkind.h
   compphases.h
+  handlekinds.h
   dataflow.h
   debuginfo.h
   decomposelongs.h

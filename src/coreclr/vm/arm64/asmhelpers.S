@@ -31,15 +31,15 @@ LEAF_END GetDataCacheZeroIDReg, _TEXT
     LEAF_END GetSveLengthFromOS, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -224
     SAVE_ARGUMENT_REGISTERS sp, 16
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96
 
     mov x0, x12
-    bl C_FUNC(NDirectImportWorker)
+    bl C_FUNC(PInvokeImportWorker)
     mov x12, x0
 
     // pop the stack and restore original register state
@@ -47,11 +47,11 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     RESTORE_ARGUMENT_REGISTERS sp, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 224
 
-    // If we got back from NDirectImportWorker, the MD has been successfully
+    // If we got back from PInvokeImportWorker, the MD has been successfully
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG x12
 
-NESTED_END NDirectImportThunk, _TEXT
+NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
 

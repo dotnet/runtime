@@ -381,11 +381,11 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     if (stackArgSize & ~0xFFFF)
     {
-        NDirectMethodDesc * pMD = PTR_NDirectMethodDesc(datum);
+        PInvokeMethodDesc * pMD = PTR_PInvokeMethodDesc(datum);
 
-        /* if this is not an NDirect frame, something is really wrong */
+        /* if this is not an PInvoke frame, something is really wrong */
 
-        _ASSERTE(pMD->SanityCheck() && pMD->IsNDirect());
+        _ASSERTE(pMD->SanityCheck() && pMD->IsPInvoke());
 
         stackArgSize = pMD->GetStackArgumentSize();
     }

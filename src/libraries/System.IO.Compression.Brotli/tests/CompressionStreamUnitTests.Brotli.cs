@@ -109,7 +109,7 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFilesBrotli))]
-        public async void BrotliCompressionQuality_SizeInOrder(string testFile)
+        public async Task BrotliCompressionQuality_SizeInOrder(string testFile)
         {
             using var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
 

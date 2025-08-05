@@ -418,6 +418,21 @@ namespace System.Text.RegularExpressions
                    ((uint)index < (uint)inputSpan.Length && RegexCharClass.IsBoundaryWordChar(inputSpan[index]));
         }
 
+        /// <summary>Determines whether the specified index is a boundary.</summary>",
+        /// <remarks>This variant is only employed when the subsequent character will separately be validated as a word character.</remarks>",
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsPreWordCharBoundary(ReadOnlySpan<char> inputSpan, int index)
+        {
+            int indexMinus1 = index - 1;
+            return (uint)indexMinus1 >= (uint)inputSpan.Length || !RegexCharClass.IsBoundaryWordChar(inputSpan[indexMinus1]);
+        }
+
+        /// <summary>Determines whether the specified index is a boundary.</summary>
+        /// <remarks>This variant is only employed when the previous character has already been validated as a word character.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsPostWordCharBoundary(ReadOnlySpan<char> inputSpan, int index) =>
+            (uint)index >= (uint)inputSpan.Length || !RegexCharClass.IsBoundaryWordChar(inputSpan[index]);
+
         /// <summary>Called to determine a char's inclusion in the \w set.</summary>
         internal static bool IsWordChar(char ch) => RegexCharClass.IsWordChar(ch);
 

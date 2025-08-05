@@ -25,7 +25,7 @@ namespace System.Text.Tests
         [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", 16, 0, "aaaabbbbccccdddd")]
         [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddde", "", 0, 16, "aaaabbbbccccdddd")]
         [InlineData("aaaaaaaaaaaaaaaa", "a", "b", 0, 16, "bbbbbbbbbbbbbbbb")]
-        public void Replace_StringBuilder(string value, string oldValue, string newValue, int startIndex, int count, string expected)
+        public void Replace_StringBuilder(string value, string oldValue, string? newValue, int startIndex, int count, string expected)
         {
             StringBuilder builder;
             if (startIndex == 0 && count == value.Length)

@@ -32,8 +32,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
     }
 
     private readonly Configuration _config;
-    private readonly Reader _reader;
 
+    private readonly DataTargetDelegates _dataTargetDelegates;
     private readonly Dictionary<string, int> _contracts = [];
     private readonly IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
     private readonly Dictionary<DataType, Target.TypeInfo> _knownTypes = [];
@@ -43,6 +43,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
+    public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
 
     /// <summary>
@@ -56,18 +57,19 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public static bool TryCreate(
         ulong contractDescriptor,
         ReadFromTargetDelegate readFromTarget,
+        WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
-        Reader reader = new Reader(readFromTarget, getThreadContext);
+        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext);
         if (TryReadContractDescriptor(
             contractDescriptor,
-            reader,
+            dataTargetDelegates,
             out Configuration config,
             out ContractDescriptorParser.ContractDescriptor? descriptor,
             out TargetPointer[] pointerData))
         {
-            target = new ContractDescriptorTarget(config, descriptor!, pointerData, reader);
+            target = new ContractDescriptorTarget(config, descriptor!, pointerData, dataTargetDelegates);
             return true;
         }
 
@@ -89,6 +91,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ContractDescriptorParser.ContractDescriptor contractDescriptor,
         TargetPointer[] globalPointerValues,
         ReadFromTargetDelegate readFromTarget,
+        WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
         bool isLittleEndian,
         int pointerSize)
@@ -97,15 +100,15 @@ public sealed unsafe class ContractDescriptorTarget : Target
             new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize },
             contractDescriptor,
             globalPointerValues,
-            new Reader(readFromTarget, getThreadContext));
+            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext));
     }
 
-    private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
+    private ContractDescriptorTarget(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, DataTargetDelegates dataTargetDelegates)
     {
         Contracts = new CachingContractRegistry(this, this.TryGetContractVersion);
         ProcessedData = new DataCache(this);
         _config = config;
-        _reader = reader;
+        _dataTargetDelegates = dataTargetDelegates;
 
         _contracts = descriptor.Contracts ?? [];
 
@@ -187,7 +190,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     // See docs/design/datacontracts/contract-descriptor.md
     private static bool TryReadContractDescriptor(
         ulong address,
-        Reader reader,
+        DataTargetDelegates dataTargetDelegates,
         out Configuration config,
         out ContractDescriptorParser.ContractDescriptor? descriptor,
         out TargetPointer[] pointerData)
@@ -198,7 +201,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         // Magic - uint64_t
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
-        if (reader.ReadFromTarget(address, buffer) < 0)
+        if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
             return false;
 
         address += sizeof(ulong);
@@ -209,7 +212,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             return false;
 
         // Flags - uint32_t
-        if (!TryRead(address, isLittleEndian, reader, out uint flags))
+        if (!TryRead(address, isLittleEndian, dataTargetDelegates, out uint flags))
             return false;
 
         address += sizeof(uint);
@@ -220,19 +223,19 @@ public sealed unsafe class ContractDescriptorTarget : Target
         config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize };
 
         // Descriptor size - uint32_t
-        if (!TryRead(address, config.IsLittleEndian, reader, out uint descriptorSize))
+        if (!TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint descriptorSize))
             return false;
 
         address += sizeof(uint);
 
         // Descriptor - char*
-        if (!TryReadPointer(address, config, reader, out TargetPointer descriptorAddr))
+        if (!TryReadPointer(address, config, dataTargetDelegates, out TargetPointer descriptorAddr))
             return false;
 
         address += (uint)pointerSize;
 
         // Pointer data count - uint32_t
-        if (!TryRead(address, config.IsLittleEndian, reader, out uint pointerDataCount))
+        if (!TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint pointerDataCount))
             return false;
 
         address += sizeof(uint);
@@ -241,14 +244,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
         address += sizeof(uint);
 
         // Pointer data - uintptr_t*
-        if (!TryReadPointer(address, config, reader, out TargetPointer pointerDataAddr))
+        if (!TryReadPointer(address, config, dataTargetDelegates, out TargetPointer pointerDataAddr))
             return false;
 
         // Read descriptor
         Span<byte> descriptorBuffer = descriptorSize <= StackAllocByteThreshold
             ? stackalloc byte[(int)descriptorSize]
             : new byte[(int)descriptorSize];
-        if (reader.ReadFromTarget(descriptorAddr.Value, descriptorBuffer) < 0)
+        if (dataTargetDelegates.ReadFromTarget(descriptorAddr.Value, descriptorBuffer) < 0)
             return false;
 
         descriptor = ContractDescriptorParser.ParseCompact(descriptorBuffer);
@@ -259,7 +262,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         pointerData = new TargetPointer[pointerDataCount];
         for (int i = 0; i < pointerDataCount; i++)
         {
-            if (!TryReadPointer(pointerDataAddr.Value + (uint)(i * pointerSize), config, reader, out pointerData[i]))
+            if (!TryReadPointer(pointerDataAddr.Value + (uint)(i * pointerSize), config, dataTargetDelegates, out pointerData[i]))
                 return false;
         }
 
@@ -280,7 +283,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer)
     {
         // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
-        int hr = _reader.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
+        int hr = _dataTargetDelegates.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
         return hr == 0;
     }
 
@@ -292,22 +295,48 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <returns>Value read from the target</returns>
     public override T Read<T>(ulong address)
     {
-        if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
+        if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T value))
             throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
     }
 
-    private static bool TryRead<T>(ulong address, bool isLittleEndian, Reader reader, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    private static bool TryRead<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         value = default;
         Span<byte> buffer = stackalloc byte[sizeof(T)];
-        if (reader.ReadFromTarget(address, buffer) < 0)
+        if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
             return false;
 
         return isLittleEndian
             ? T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value)
             : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
+    }
+
+    /// <summary>
+    /// Write a value to the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to write</typeparam>
+    /// <param name="address">Address to start writing to</param>
+    /// <returns>True if the value is successfully written. Throws an InvalidOperationException otherwise.</returns>
+    public override bool Write<T>(ulong address, T value)
+    {
+        if (!TryWrite(address, _config.IsLittleEndian, _dataTargetDelegates, value))
+            throw new InvalidOperationException($"Failed to write {typeof(T)} at 0x{address:x8}.");
+        return true;
+    }
+
+    private static bool TryWrite<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
+        int bytesWritten = default;
+        bool success = isLittleEndian
+            ? value.TryWriteLittleEndian(buffer, out bytesWritten)
+            : value.TryWriteBigEndian(buffer, out bytesWritten);
+        if (!success || bytesWritten != buffer.Length || dataTargetDelegates.WriteToTarget(address, buffer) < 0)
+            return false;
+
+        return true;
     }
 
     private static T Read<T>(ReadOnlySpan<byte> bytes, bool isLittleEndian) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
@@ -335,7 +364,18 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private bool TryReadBuffer(ulong address, Span<byte> buffer)
     {
-        return _reader.ReadFromTarget(address, buffer) >= 0;
+        return _dataTargetDelegates.ReadFromTarget(address, buffer) >= 0;
+    }
+
+    public override void WriteBuffer(ulong address, Span<byte> buffer)
+    {
+        if (!TryWriteBuffer(address, buffer))
+            throw new InvalidOperationException($"Failed to write {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
+    private bool TryWriteBuffer(ulong address, Span<byte> buffer)
+    {
+        return _dataTargetDelegates.WriteToTarget(address, buffer) >= 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -351,7 +391,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <returns>Pointer read from the target</returns>}
     public override TargetPointer ReadPointer(ulong address)
     {
-        if (!TryReadPointer(address, _config, _reader, out TargetPointer pointer))
+        if (!TryReadPointer(address, _config, _dataTargetDelegates, out TargetPointer pointer))
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
@@ -456,33 +496,33 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <returns>Value read from the target</returns>
     public override TargetNUInt ReadNUInt(ulong address)
     {
-        if (!TryReadNUInt(address, _config, _reader, out ulong value))
+        if (!TryReadNUInt(address, _config, _dataTargetDelegates, out ulong value))
             throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
 
         return new TargetNUInt(value);
     }
 
-    private static bool TryReadPointer(ulong address, Configuration config, Reader reader, out TargetPointer pointer)
+    private static bool TryReadPointer(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out TargetPointer pointer)
     {
         pointer = TargetPointer.Null;
-        if (!TryReadNUInt(address, config, reader, out ulong value))
+        if (!TryReadNUInt(address, config, dataTargetDelegates, out ulong value))
             return false;
 
         pointer = new TargetPointer(value);
         return true;
     }
 
-    private static bool TryReadNUInt(ulong address, Configuration config, Reader reader, out ulong value)
+    private static bool TryReadNUInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out ulong value)
     {
         value = 0;
         if (config.PointerSize == sizeof(uint)
-            && TryRead(address, config.IsLittleEndian, reader, out uint value32))
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint value32))
         {
             value = value32;
             return true;
         }
         else if (config.PointerSize == sizeof(ulong)
-            && TryRead(address, config.IsLittleEndian, reader, out ulong value64))
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out ulong value64))
         {
             value = value64;
             return true;
@@ -657,8 +697,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
-    private readonly struct Reader(
+    private readonly struct DataTargetDelegates(
         ReadFromTargetDelegate readFromTarget,
+        WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
@@ -672,6 +713,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
         {
             return getThreadContext(threadId, contextFlags, buffer);
+        }
+        public int WriteToTarget(ulong address, Span<byte> buffer)
+        {
+            return writeToTarget(address, buffer);
         }
     }
 }

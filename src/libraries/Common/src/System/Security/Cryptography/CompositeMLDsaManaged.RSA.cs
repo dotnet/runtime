@@ -156,6 +156,10 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                     }
 #endif
+                    if (rsa.KeySize != algorithm.KeySizeInBits)
+                    {
+                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                    }
 
                     if (bytesRead != source.Length)
                     {
@@ -207,6 +211,10 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                     }
 #endif
+                    if (rsa.KeySize != algorithm.KeySizeInBits)
+                    {
+                        throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
+                    }
 
                     if (bytesRead != source.Length)
                     {

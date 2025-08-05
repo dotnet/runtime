@@ -168,7 +168,7 @@ void AssemblyBinder::AddLoadedAssembly(Assembly* loadedAssembly)
 
 void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName)
 {
-    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
+    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetAssemblyLoadContext())
     {
         alcName.Set(W("Default"));
         return;
@@ -205,7 +205,7 @@ void AssemblyBinder::GetNameForDiagnostics(/*out*/ SString& alcName)
     }
     else
     {
-        GetNameForDiagnosticsFromManagedALC(GetManagedAssemblyLoadContext(), alcName);
+        GetNameForDiagnosticsFromManagedALC(GetAssemblyLoadContext(), alcName);
     }
 }
 

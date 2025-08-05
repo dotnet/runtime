@@ -351,7 +351,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadIntPtr(Object, Int32) may be unavailable in future releases.")]
-        public static IntPtr ReadIntPtr(object ptr, int ofs)
+        public static nint ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
             return (nint)ReadInt64(ptr, ofs);
@@ -360,7 +360,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
+        public static nint ReadIntPtr(IntPtr ptr, int ofs)
         {
 #if TARGET_64BIT
             return (nint)ReadInt64(ptr, ofs);
@@ -369,7 +369,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static IntPtr ReadIntPtr(IntPtr ptr) => ReadIntPtr(ptr, 0);
+        public static nint ReadIntPtr(IntPtr ptr) => ReadIntPtr(ptr, 0);
 
         public static unsafe long ReadInt64(IntPtr ptr, int ofs)
         {
@@ -468,32 +468,28 @@ namespace System.Runtime.InteropServices
 
         public static void WriteInt32(IntPtr ptr, int val) => WriteInt32(ptr, 0, val);
 
-        public static void WriteIntPtr(IntPtr ptr, int ofs, IntPtr val)
+        public static void WriteIntPtr(IntPtr ptr, int ofs, nint val)
         {
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
-#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
-#pragma warning restore CA2020
 #endif
         }
 
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("WriteIntPtr(Object, Int32, IntPtr) may be unavailable in future releases.")]
-        public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
+        public static void WriteIntPtr(object ptr, int ofs, nint val)
         {
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
-#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
-#pragma warning restore CA2020
 #endif
         }
 
-        public static void WriteIntPtr(IntPtr ptr, IntPtr val) => WriteIntPtr(ptr, 0, val);
+        public static void WriteIntPtr(IntPtr ptr, nint val) => WriteIntPtr(ptr, 0, val);
 
         public static unsafe void WriteInt64(IntPtr ptr, int ofs, long val)
         {

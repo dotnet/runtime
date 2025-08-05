@@ -1005,7 +1005,7 @@ namespace System.Text.Json.Tests
         [InlineData("[\"\\u0030\\u0031\\u0032\\u0033\\u0034\\u0035\", \"\\u0000\\u002B\", \"a\\u005C\\u0072b\", \"a\\\\u005C\\u0072b\", \"a\\u008E\\u008Fb\", \"a\\uD803\\uDE6Db\", \"a\\uD834\\uDD1Eb\", \"a\\\\uD834\\\\uDD1Eb\"]")]
         [InlineData("{\"message\":\"Hello /a/b/c \\/ \\r\\b\\n\\f\\t\\/\"}")]
         [InlineData(null)]  // Large randomly generated string
-        public static void TestingGetString(string jsonString)
+        public static void TestingGetString(string? jsonString)
         {
             if (jsonString == null)
             {

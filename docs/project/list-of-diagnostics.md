@@ -297,7 +297,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 APIs can be marked as `[Experimental]` if their shape or functionality is included in a release but not yet officially supported. Experimental APIs offer the opportunity to collect customer feedback on these APIs in a major release, usually refining the APIs and removing the `[Experimental]` attribute in the next release. The `[Experimental]` attribute differs from `[RequiresPreviewFeatures]`, wherein:
 
 * `[RequiresPreviewFeatures]` APIs require a corresponding preview feature in another product area such as the compiler or SDK
-    - Using these APIs requires enabling preview features for the the project and all its consumers
+    - Using these APIs requires enabling preview features for the project and all its consumers
 * `[Experimental]` APIs are self-contained within the libraries and do not require preview features in other parts of the product
     - These APIs can be used by suppressing specific diagnostics without enabling preview features for the project
 

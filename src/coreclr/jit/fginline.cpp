@@ -1591,8 +1591,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
-            // Todo: we may want to exclude other flags here.
-            iciBlock->SetFlags(inlineeBlockFlags & ~BBF_RUN_RARELY);
+            // Todo: we may want to exclude some flags here.
+            iciBlock->SetFlags(inlineeBlockFlags);
 
 #ifdef DEBUG
             if (verbose)

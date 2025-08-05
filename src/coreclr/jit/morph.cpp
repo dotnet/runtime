@@ -3787,7 +3787,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         if (tree->AsFieldAddr()->gtFieldLookup.accessType == IAT_PVALUE)
         {
             offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsFieldAddr()->gtFieldLookup.addr,
-                                                  GTF_ICON_CONST_PTR, true);
+                                                  GTF_ICON_CONST_PTR);
 #ifdef DEBUG
             offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)fieldHandle;
 #endif
@@ -3909,7 +3909,7 @@ GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
     }
     else
     {
-        dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_CONST_PTR, true);
+        dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_CONST_PTR);
 
         // Next we multiply by 4
         dllRef = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(4, TYP_I_IMPL));
@@ -6804,14 +6804,14 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         switch (addrInfo.accessType)
         {
             case IAT_PPVALUE:
-                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_CONST_PTR, true);
+                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_CONST_PTR);
 
                 // Add the second indirection
                 indNode = gtNewIndir(TYP_I_IMPL, indNode, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
                 break;
 
             case IAT_PVALUE:
-                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_FTN_ADDR, true);
+                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_FTN_ADDR);
                 INDEBUG(indNode->gtGetOp1()->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
                 break;
 

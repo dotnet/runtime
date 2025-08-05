@@ -474,7 +474,7 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
         {
             // Skip new exception handling helpers
             InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
-            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
             TADDR datum = dac_cast<TADDR>(pMD);
             if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
             {
@@ -527,7 +527,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
         {
             // Skip new exception handling helpers
             InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
-            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
             TADDR datum = dac_cast<TADDR>(pMD);
             if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
             {

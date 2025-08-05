@@ -2985,7 +2985,7 @@ void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 {
     _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-    pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
+    pInlinedCallFrame->m_Datum = (PTR_PInvokeMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
 }
 
 // Mark the pinvoke frame as invoking any exception handling helper
@@ -2993,7 +2993,7 @@ void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
 {
     _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-    pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
+    pInlinedCallFrame->m_Datum = (PTR_PInvokeMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
 }
 
 static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)

@@ -751,7 +751,7 @@ public:
     virtual BOOL CanUnload() = 0;
     void Init(BYTE *pExecutableHeapMemory);
     void Terminate();
-    virtual void ReleaseManagedAssemblyLoadContext() {}
+    virtual void ReleaseAssemblyLoadContext() {}
 
     SIZE_T EstimateSize();
 
@@ -961,7 +961,7 @@ public:
     }
     virtual ~AssemblyLoaderAllocator();
     void RegisterBinder(CustomAssemblyBinder* binderToRelease);
-    virtual void ReleaseManagedAssemblyLoadContext();
+    virtual void ReleaseAssemblyLoadContext();
 #endif // !defined(DACCESS_COMPILE)
 
 private:

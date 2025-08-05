@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
@@ -21,7 +22,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        public async void ReferenceNewAssembly(Configuration config, bool aot, bool nativeRelink, bool invariant)
+        public async Task ReferenceNewAssembly(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_tasks");     
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);

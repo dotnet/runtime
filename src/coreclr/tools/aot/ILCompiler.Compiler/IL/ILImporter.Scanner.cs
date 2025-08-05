@@ -921,6 +921,7 @@ namespace Internal.IL
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeTypeHandle), "mkrefany");
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
             ImportTypedRefOperationDependencies(token, "mkrefany");
         }
 
@@ -959,6 +960,8 @@ namespace Internal.IL
                         break;
                     }
                 }
+
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
@@ -1190,6 +1193,9 @@ namespace Internal.IL
             if (!type.IsValueType)
                 return;
 
+            TypeDesc typeForAccessCheck = type.IsRuntimeDeterminedSubtype ? type.ConvertToCanonForm(CanonicalFormKind.Specific) : type;
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, typeForAccessCheck);
+
             if (type.IsRuntimeDeterminedSubtype)
             {
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), reason);
@@ -1217,6 +1223,7 @@ namespace Internal.IL
         private void ImportNewArray(int token)
         {
             var elementType = (TypeDesc)_methodIL.GetObject(token);
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
             if (elementType.IsRuntimeDeterminedSubtype)
             {
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType.MakeArrayType()), "newarr");

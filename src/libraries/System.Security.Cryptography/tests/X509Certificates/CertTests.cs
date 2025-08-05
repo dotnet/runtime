@@ -152,8 +152,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (MLDsa certKey = certWithKey.GetMLDsaPrivateKey())
             {
                 Assert.NotNull(certKey);
-                byte[] expectedKey = MLDsaTestsData.IetfMLDsa44.SecretKey;
-                byte[] actualKey = certKey.ExportMLDsaSecretKey();
+                byte[] expectedKey = MLDsaTestsData.IetfMLDsa44.PrivateKey;
+                byte[] actualKey = certKey.ExportMLDsaPrivateKey();
                 AssertExtensions.SequenceEqual(expectedKey, actualKey);
             }
         }
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.NotNull(certKey);
                 byte[] expectedKey = SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue;
-                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportSlhDsaSecretKey());
+                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportSlhDsaPrivateKey());
             }
         }
 

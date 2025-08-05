@@ -244,6 +244,7 @@
     <Content Include="DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" Link="Common\System\IO\ReparsePointUtilities.cs" />
+    <Compile Include="$(CommonTestPath)Tests\TheoryDataExtensions.cs" Link="Common\Tests\TheoryDataExtensions.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

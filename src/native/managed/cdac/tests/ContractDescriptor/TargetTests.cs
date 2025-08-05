@@ -185,6 +185,45 @@ public unsafe class TargetTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void WriteValue(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        uint expected = 0xdeadbeef;
+        ulong addr = 0x1000;
+
+        MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[4] };
+        builder.AddHeapFragment(fragment);
+
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+        bool writeSuccess = target.Write<uint>(addr, expected);
+        Assert.True(writeSuccess);
+        Assert.Equal(expected, target.Read<uint>(addr));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void WriteBuffer(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        byte[] expected = new byte[] { 0xde, 0xad, 0xbe, 0xef };
+        ulong addr = 0x1000;
+
+        MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[4] };
+        builder.AddHeapFragment(fragment);
+
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+        target.WriteBuffer(addr, expected);
+        Span<byte> data = stackalloc byte[4];
+        target.ReadBuffer(addr, data);
+        Assert.Equal(expected, data);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void ReadUtf16String(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);

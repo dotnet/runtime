@@ -1541,9 +1541,9 @@ PCODE COMDelegate::GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** 
 
     ValidateDelegatePInvoke(pDelegateMD);
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
-    RETURN NDirect::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
+    RETURN PInvoke::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
 }
 
 
@@ -1555,10 +1555,10 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     MethodTable *pMT = pDelegateMD->GetMethodTable();
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
-    return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
+    return PInvoke::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
 
 extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
@@ -2034,7 +2034,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
-    if (NDirect::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
+    if (PInvoke::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 

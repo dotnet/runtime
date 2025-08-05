@@ -148,8 +148,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
-      <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'lib%(Identity)')" />
-      <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
+      <DirectPInvoke Include="@(NetCoreAppNativeLibrary)" />
+      <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary)">
         <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
@@ -180,7 +180,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static' and '$(InvariantGlobalization)' != 'true'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
-      <DirectPInvoke Include="libSystem.Globalization.Native" />
+      <DirectPInvoke Include="System.Globalization.Native" />
       <StaticICULibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
       <StaticICULibs Include="-licuio -licutu -licui18n -licuuc -licudata -lstdc++" />
       <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
@@ -193,7 +193,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Security.Cryptography.Native/build/libSystem.Security.Cryptography.Native.OpenSsl.a" />
-      <DirectPInvoke Include="libSystem.Security.Cryptography.Native.OpenSsl" />
+      <DirectPInvoke Include="System.Security.Cryptography.Native.OpenSsl" />
       <StaticSslLibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
       <StaticSslLibs Include="-lssl -lcrypto" />
       <StaticSslLibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />

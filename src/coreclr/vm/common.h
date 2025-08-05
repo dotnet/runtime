@@ -142,7 +142,7 @@ typedef DPTR(class MethodImpl)          PTR_MethodImpl;
 typedef DPTR(class MethodTable)         PTR_MethodTable;
 typedef DPTR(class CoreLibBinder)      PTR_CoreLibBinder;
 typedef VPTR(class Module)              PTR_Module;
-typedef DPTR(class NDirectMethodDesc)   PTR_NDirectMethodDesc;
+typedef DPTR(class PInvokeMethodDesc)   PTR_PInvokeMethodDesc;
 typedef DPTR(class Thread)              PTR_Thread;
 typedef DPTR(class Object)              PTR_Object;
 typedef DPTR(PTR_Object)                PTR_PTR_Object;

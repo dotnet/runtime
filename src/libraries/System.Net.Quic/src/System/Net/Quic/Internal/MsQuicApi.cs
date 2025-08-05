@@ -62,8 +62,8 @@ internal sealed unsafe partial class MsQuicApi
     internal static string MsQuicLibraryVersion { get; } = "unknown";
     internal static string? NotSupportedReason { get; }
 
-    // workaround for https://github.com/microsoft/msquic/issues/4132
-    internal static bool SupportsAsyncCertValidation => Version >= new Version(2, 4);
+    // Workaround for https://github.com/microsoft/msquic/issues/4132
+    internal static bool SupportsAsyncCertValidation => Version > new Version(2, 4);
 
     internal static bool UsesSChannelBackend { get; }
 

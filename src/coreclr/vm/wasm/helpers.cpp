@@ -58,9 +58,9 @@ extern "C" void STDCALL DelayLoad_Helper_ObjObj()
     PORTABILITY_ASSERT("DelayLoad_Helper_ObjObj is not implemented on wasm");
 }
 
-extern "C" void STDCALL NDirectImportThunk()
+extern "C" void STDCALL PInvokeImportThunk()
 {
-    PORTABILITY_ASSERT("NDirectImportThunk is not implemented on wasm");
+    PORTABILITY_ASSERT("PInvokeImportThunk is not implemented on wasm");
 }
 
 extern "C" void STDCALL StubPrecodeCode()

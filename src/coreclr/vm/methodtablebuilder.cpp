@@ -3151,7 +3151,7 @@ MethodTableBuilder::EnumerateClassMethods()
 
         if (IsReallyMdPinvokeImpl(dwMemberAttrs) || IsMiInternalCall(dwImplFlags))
         {
-            hr = NDirect::HasNAT_LAttribute(pMDInternalImport, tok, dwMemberAttrs);
+            hr = PInvoke::HasNAT_LAttribute(pMDInternalImport, tok, dwMemberAttrs);
 
             // There was a problem querying for the attribute
             if (FAILED(hr))
@@ -3187,7 +3187,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     type = mcPInvoke;
                 }
             }
-            // The NAT_L attribute is present, marking this method as NDirect
+            // The NAT_L attribute is present, marking this method as PInvoke
             else
             {
                 CONSISTENCY_CHECK(hr == S_OK);
@@ -3807,7 +3807,7 @@ VOID MethodTableBuilder::AllocateFieldDescs()
     // table in every single method desc, we allocate memory in the
     // following manner:
     //   o  Field descs get a single contiguous block.
-    //   o  Method descs of different sizes (normal vs NDirect) are
+    //   o  Method descs of different sizes (normal vs PInvoke) are
     //      allocated in different MethodDescChunks.
     //   o  Each method desc chunk starts with a header, and has
     //      at most MAX_ method descs (if there are more
@@ -6143,8 +6143,8 @@ MethodTableBuilder::InitMethodDesc(
     DWORD               dwImplFlags,
     DWORD               dwMemberAttrs,
     BOOL                fEnC,
-    DWORD               RVA,        // Only needed for NDirect case
-    IMDInternalImport * pIMDII,     // Needed for NDirect, EEImpl(Delegate) cases
+    DWORD               RVA,        // Only needed for PInvoke case
+    IMDInternalImport * pIMDII,     // Needed for PInvoke, EEImpl(Delegate) cases
     LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
     Signature           sig, // Only needed for the Async thunk case
     AsyncMethodKind     asyncKind
@@ -6172,18 +6172,18 @@ MethodTableBuilder::InitMethodDesc(
     {
     case mcPInvoke:
         {
-            // NDirect specific initialization.
-            NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
+            // PInvoke specific initialization.
+            PInvokeMethodDesc *pNewNMD = (PInvokeMethodDesc*)pNewMD;
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-            pNewNMD->ndirect.m_pImportThunkGlue = Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,
-                GetLoaderAllocator(), GetMemTracker())->AsNDirectImportPrecode();
-#else // !HAS_NDIRECT_IMPORT_PRECODE
-            pNewNMD->GetNDirectImportThunkGlue()->Init(pNewNMD);
-#endif // !HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+            pNewNMD->m_pImportThunkGlue = Precode::Allocate(PRECODE_PINVOKE_IMPORT, pNewMD,
+                GetLoaderAllocator(), GetMemTracker())->AsPInvokeImportPrecode();
+#else // !HAS_PINVOKE_IMPORT_PRECODE
+            pNewNMD->GetPInvokeImportThunkGlue()->Init(pNewNMD);
+#endif // !HAS_PINVOKE_IMPORT_PRECODE
 
 #if defined(TARGET_X86)
-            pNewNMD->ndirect.m_cbStackArgumentSize = 0xFFFF;
+            pNewNMD->m_cbStackArgumentSize = 0xFFFF;
 #endif // defined(TARGET_X86)
 
             // If the RVA of a native method is set, this is an early-bound IJW call
@@ -6194,7 +6194,7 @@ MethodTableBuilder::InitMethodDesc(
                 pNewNMD->SetIsEarlyBound();
             }
 
-            pNewNMD->ndirect.m_pNDirectTarget = pNewNMD->GetNDirectImportThunkGlue()->GetEntrypoint();
+            pNewNMD->m_pPInvokeTarget = pNewNMD->GetPInvokeImportThunkGlue()->GetEntrypoint();
         }
         break;
 
@@ -6287,7 +6287,7 @@ MethodTableBuilder::InitMethodDesc(
     DWORD stressSynchronizedVal = stressSynchronized.val(CLRConfig::INTERNAL_stressSynchronized);
 
     bool isStressSynchronized =  stressSynchronizedVal &&
-        pNewMD->IsIL() && // Synchronized is not supported on Ecalls, NDirect method, etc
+        pNewMD->IsIL() && // Synchronized is not supported on Ecalls, PInvoke method, etc
         // IsValueClass() and IsEnum() do not work for System.ValueType and System.Enum themselves
         ((g_pValueTypeClass != NULL && g_pEnumClass != NULL &&
           !IsValueClass()) || // Can not synchronize on byref "this"

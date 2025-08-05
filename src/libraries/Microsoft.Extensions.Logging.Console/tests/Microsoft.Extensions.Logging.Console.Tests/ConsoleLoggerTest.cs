@@ -239,7 +239,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData(null, 1)]
         [InlineData("missingFormatter", 0)]
         [InlineData("missingFormatter", 1)]
-        public void Options_FormatterNameNull_UsesDeprecatedProperties(string formatterName, int formatNumber)
+        public void Options_FormatterNameNull_UsesDeprecatedProperties(string? formatterName, int formatNumber)
         {
             // Arrange
             ConsoleLoggerFormat format = (ConsoleLoggerFormat)formatNumber;

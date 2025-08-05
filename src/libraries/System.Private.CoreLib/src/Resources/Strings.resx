@@ -633,8 +633,8 @@
   <data name="Arg_NamedParamTooBig" xml:space="preserve">
     <value>Named parameter array cannot be bigger than argument array.</value>
   </data>
-  <data name="Arg_NDirectBadObject" xml:space="preserve">
-    <value>No PInvoke conversion exists for value passed to Object-typed parameter.</value>
+  <data name="Arg_PInvokeBadObject" xml:space="preserve">
+    <value>No PInvoke conversion exists for the value passed to an Object-typed parameter.</value>
   </data>
   <data name="Arg_Need1DArray" xml:space="preserve">
     <value>Array was not a one-dimensional array.</value>
@@ -2986,6 +2986,9 @@
   </data>
   <data name="NotSupported_ByRefToVoidReturn" xml:space="preserve">
     <value>ByRef to void return values are not supported in reflection invocation.</value>
+  </data>
+  <data name="NotSupported_Async" xml:space="preserve">
+    <value>Async infrastructure methods are not supported in reflection invocation.</value>
   </data>
   <data name="NotSupported_CallToVarArg" xml:space="preserve">
     <value>Vararg calling convention not supported.</value>

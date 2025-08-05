@@ -692,7 +692,7 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg, insOpts instOption
         assert(INS_setge == (INS_setge_apx + offset));
         assert(INS_setle == (INS_setle_apx + offset));
         assert(INS_setg == (INS_setg_apx + offset));
-        ins = (instruction)(ins + offset);
+        ins = (instruction)(ins - offset);
     }
 #endif
 

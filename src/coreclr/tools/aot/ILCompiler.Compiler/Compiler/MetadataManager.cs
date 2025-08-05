@@ -1240,6 +1240,10 @@ namespace ILCompiler
         protected abstract MetadataCategory GetMetadataCategory(TypeDesc type);
         protected abstract MetadataCategory GetMetadataCategory(FieldDesc field);
 
+        public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, TypeDesc accessedType)
+        {
+        }
+
         public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, MethodDesc calledMethod)
         {
         }
