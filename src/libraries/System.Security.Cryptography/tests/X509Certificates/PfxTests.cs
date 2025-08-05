@@ -706,8 +706,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
 
                 Assert.Throws<CryptographicException>(() => mldsa.ExportMLDsaPrivateSeed());
-                byte[] secretKey = mldsa.ExportMLDsaSecretKey();
-                AssertExtensions.SequenceEqual(info.SecretKey, secretKey);
+                byte[] privateKey = mldsa.ExportMLDsaPrivateKey();
+                AssertExtensions.SequenceEqual(info.PrivateKey, privateKey);
             }
         }
 
@@ -729,8 +729,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] seed = mldsa.ExportMLDsaPrivateSeed();
                 AssertExtensions.SequenceEqual(info.PrivateSeed.AsSpan(), seed.AsSpan());
 
-                byte[] sk = mldsa.ExportMLDsaSecretKey();
-                AssertExtensions.SequenceEqual(info.SecretKey, sk);
+                byte[] sk = mldsa.ExportMLDsaPrivateKey();
+                AssertExtensions.SequenceEqual(info.PrivateKey, sk);
             }
         }
 
@@ -782,7 +782,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
                 // Note this display string is reversed from the one in the IETF example but equivalent.
                 Assert.Equal("O=Bogus SLH-DSA-SHA2-128s CA, L=Paris, C=FR", cert.Subject);
-                AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaSecretKey());
+                AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaPrivateKey());
             }
         }
 

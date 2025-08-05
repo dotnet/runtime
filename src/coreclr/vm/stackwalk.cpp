@@ -1282,7 +1282,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         // 0012e884 ntdll32!DbgBreakPoint
         // 0012e89c CLRStub[StubLinkStub]@1f0ac1e
         // 0012e8a4     invalid ESP of Foo() according to the REGDISPLAY specified by the debuggers
-        // 0012e8b4     address of transition frame (NDirectMethodFrameStandalone)
+        // 0012e8b4     address of transition frame (PInvokeMethodFrameStandalone)
         // 0012e8c8     real ESP of Foo() according to the transition frame
         // 0012e8d8 managed!Dummy.Foo()+0x20
         //

@@ -66,7 +66,7 @@ namespace System.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("name")]
-        public static unsafe void ThrowIfNull_Null_ThrowsArgumentNullException(string paramName)
+        public static unsafe void ThrowIfNull_Null_ThrowsArgumentNullException(string? paramName)
         {
             AssertExtensions.Throws<ArgumentNullException>(paramName, () => ArgumentNullException.ThrowIfNull((object)null, paramName));
             AssertExtensions.Throws<ArgumentNullException>(paramName, () => ArgumentNullException.ThrowIfNull((void*)null, paramName));
