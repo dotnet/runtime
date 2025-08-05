@@ -834,15 +834,17 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_D
 
     _ASSERTE(!vmDomainAssembly.IsNull() || !vmModule.IsNull());
 
+    if (vmModule.IsNull())
+        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
+
+    _ASSERTE(!vmModule.IsNull());
+
     // check to see if the module is present in this app domain
-    pModule = m_modules.GetBase(vmDomainAssembly.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainAssembly));
+    pModule = m_modules.GetBase(VmPtrToCookie(vmModule));
     if (pModule != NULL)
     {
         return pModule;
     }
-
-    if (vmModule.IsNull())
-        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
 
     RSInitHolder<CordbModule> pModuleInit(new CordbModule(GetProcess(), vmModule, vmDomainAssembly));
     pModule = pModuleInit.TransferOwnershipToHash(&m_modules);
