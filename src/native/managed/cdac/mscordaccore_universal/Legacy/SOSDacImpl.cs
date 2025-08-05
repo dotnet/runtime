@@ -569,8 +569,54 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetGCHeapData(void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetGCHeapData(data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetGCHeapData(DacpGcHeapData* data)
+    {
+        int hr = HResults.S_OK;
+
+        if (data == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+
+        try
+        {
+            IGC gc = _target.Contracts.GC;
+            GCHeapType heapType = gc.GetGCHeapType();
+            if (heapType == GCHeapType.Unknown)
+            {
+                hr = HResults.E_FAIL;
+            }
+            else
+            {
+                data->g_max_generation = gc.GetMaxGeneration();
+                data->bServerMode = heapType == GCHeapType.Server ? 1 : 0;
+                data->bGcStructuresValid = gc.GetGCStructuresValid() ? 1 : 0;
+                data->HeapCount = gc.GetGCHeapCount();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpGcHeapData dataLocal = default;
+            int hrLocal = _legacyImpl.GetGCHeapData(&dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->bServerMode == dataLocal.bServerMode, $"cDAC: {data->bServerMode}, DAC: {dataLocal.bServerMode}");
+                Debug.Assert(data->bGcStructuresValid == dataLocal.bGcStructuresValid, $"cDAC: {data->bGcStructuresValid}, DAC: {dataLocal.bGcStructuresValid}");
+                Debug.Assert(data->HeapCount == dataLocal.HeapCount, $"cDAC: {data->HeapCount}, DAC: {dataLocal.HeapCount}");
+                Debug.Assert(data->g_max_generation == dataLocal.g_max_generation, $"cDAC: {data->g_max_generation}, DAC: {dataLocal.g_max_generation}");
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetGCHeapDetails(ClrDataAddress heap, void* details)
         => _legacyImpl is not null ? _legacyImpl.GetGCHeapDetails(heap, details) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetGCHeapList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] heaps, uint* pNeeded)

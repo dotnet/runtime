@@ -228,6 +228,15 @@ internal struct DacpMethodDescData
 
 }
 
+internal struct DacpGcHeapData
+{
+    public int bServerMode;
+    public int bGcStructuresValid;
+    public uint HeapCount;
+    public uint g_max_generation;
+}
+
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 internal unsafe partial interface ISOSDacInterface
@@ -351,7 +360,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // GC
     [PreserveSig]
-    int GetGCHeapData(/*struct DacpGcHeapData*/ void* data);
+    int GetGCHeapData(DacpGcHeapData* data);
     [PreserveSig]
     int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] heaps, uint* pNeeded); // svr only
     [PreserveSig]
