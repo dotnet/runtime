@@ -12,6 +12,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 
 #ifdef __APPLE__
+#include <stdlib.h>
 #include <mach/thread_state.h>
 
 #define CHECK_MACH(_msg, machret) do {                                      \
