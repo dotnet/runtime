@@ -7,8 +7,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct GC_1 : IGC
 {
-    private const string GC_TYPE_SERVER = "server";
-    private const string GC_TYPE_WORKSTATION = "workstation";
+    private const string GC_TYPE_SVR = "server";
+    private const string GC_TYPE_WRK = "workstation";
+    private const uint WRK_HEAP_COUNT = 1;
     private readonly Target _target;
 
     internal GC_1(Target target)
@@ -23,7 +24,7 @@ internal readonly struct GC_1 : IGC
         switch (GetGCHeapType())
         {
             case GCHeapType.Workstation:
-                return 1; // Workstation GC has a single heap
+                return WRK_HEAP_COUNT; // Workstation GC has a single heap
             case GCHeapType.Server:
                 TargetPointer pNumHeaps = _target.ReadGlobalPointer(Constants.Globals.NumHeaps);
                 return (uint)_target.Read<int>(pNumHeaps);
@@ -49,8 +50,8 @@ internal readonly struct GC_1 : IGC
     {
         return _target.ReadGlobalString(Constants.Globals.HeapType) switch
         {
-            GC_TYPE_WORKSTATION => GCHeapType.Workstation,
-            GC_TYPE_SERVER => GCHeapType.Server,
+            GC_TYPE_WRK => GCHeapType.Workstation,
+            GC_TYPE_SVR => GCHeapType.Server,
             _ => GCHeapType.Unknown,
         };
     }
