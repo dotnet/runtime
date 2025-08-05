@@ -441,5 +441,69 @@ namespace System.IO.Compression
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
         }
+
+        [Fact]
+        public void EmptyGZipStream_WritesHeaderAndFooter()
+        {
+            // Test that an empty GZip stream still writes the required headers and footers
+            using (var ms = new MemoryStream())
+            {
+                using (var gzipStream = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write nothing - this should still produce a valid empty GZip file
+                }
+
+                // An empty GZip file should still contain headers and footers
+                // At minimum it should have the GZip signature (0x1f 0x8b) and other required data
+                Assert.True(ms.Length > 0, "Empty GZip stream should write headers and footers");
+                
+                byte[] compressedData = ms.ToArray();
+                Assert.True(compressedData.Length >= 2, "GZip stream should at least contain the signature");
+                Assert.Equal(0x1f, compressedData[0]); // GZip magic number first byte
+                Assert.Equal(0x8b, compressedData[1]); // GZip magic number second byte
+                
+                // Verify the compressed data can be decompressed successfully
+                ms.Seek(0, SeekOrigin.Begin);
+                using (var decompressStream = new GZipStream(ms, CompressionMode.Decompress))
+                using (var resultStream = new MemoryStream())
+                {
+                    decompressStream.CopyTo(resultStream);
+                    Assert.Equal(0, resultStream.Length); // Should decompress to empty data
+                }
+            }
+        }
+
+        [Fact]
+        public void EmptyGZipStream_MatchesWorkaroundBehavior()
+        {
+            // Ensure that the new behavior matches the workaround behavior
+            byte[] emptyStreamData;
+            byte[] workaroundStreamData;
+            
+            // Create empty stream (new behavior)
+            using (var ms = new MemoryStream())
+            {
+                using (var gzipStream = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write nothing
+                }
+                emptyStreamData = ms.ToArray();
+            }
+            
+            // Create stream with workaround
+            using (var ms = new MemoryStream())
+            {
+                using (var gzipStream = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
+                {
+                    gzipStream.Write(new byte[0]); // Workaround
+                }
+                workaroundStreamData = ms.ToArray();
+            }
+            
+            // Both should produce the same output now
+            Assert.True(emptyStreamData.Length > 0, "Empty stream should write headers and footers");
+            Assert.True(workaroundStreamData.Length > 0, "Workaround stream should write headers and footers");
+            Assert.Equal(workaroundStreamData, emptyStreamData);
+        }
     }
 }

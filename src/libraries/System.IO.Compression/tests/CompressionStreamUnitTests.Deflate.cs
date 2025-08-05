@@ -219,5 +219,23 @@ namespace System.IO.Compression
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
         }
+
+        [Fact]
+        public void EmptyDeflateStream_DoesNotWriteAnything()
+        {
+            // Test that empty DeflateStream behavior is unchanged - it should still write nothing
+            // This ensures our GZip fix doesn't affect regular deflate streams
+            using (var ms = new MemoryStream())
+            {
+                using (var deflateStream = new DeflateStream(ms, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write nothing
+                }
+
+                // DeflateStream should continue to write nothing for empty streams
+                // This preserves backward compatibility for code that depends on this behavior
+                Assert.Equal(0, ms.Length);
+            }
+        }
     }
 }

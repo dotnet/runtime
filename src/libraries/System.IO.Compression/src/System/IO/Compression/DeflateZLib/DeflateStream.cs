@@ -23,6 +23,7 @@ namespace System.IO.Compression
         private byte[]? _buffer;
         private volatile bool _activeAsyncOperation;
         private bool _wroteBytes;
+        private bool _usingGZip;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {
@@ -119,6 +120,7 @@ namespace System.IO.Compression
             _stream = stream;
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
+            _usingGZip = windowBits == ZLibNative.GZip_DefaultWindowBits;
             InitializeBuffer();
         }
 
@@ -620,8 +622,10 @@ namespace System.IO.Compression
             // This round-trips and we should be ok with this, but our legacy managed deflater
             // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
             // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input:
-            if (_wroteBytes)
+            // some input.
+            // However, for GZip streams, we must always write the headers and footers even
+            // when no input data was provided, as an empty GZip file is still a valid GZip file.
+            if (_wroteBytes || _usingGZip)
             {
                 // Compress any bytes left
                 WriteDeflaterOutput();
@@ -668,7 +672,9 @@ namespace System.IO.Compression
             // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
             // took dependencies on it. Thus, make sure to only "flush" when we actually had
             // some input.
-            if (_wroteBytes)
+            // However, for GZip streams, we must always write the headers and footers even
+            // when no input data was provided, as an empty GZip file is still a valid GZip file.
+            if (_wroteBytes || _usingGZip)
             {
                 // Compress any bytes left
                 await WriteDeflaterOutputAsync(default).ConfigureAwait(false);
