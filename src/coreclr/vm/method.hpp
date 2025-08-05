@@ -1710,6 +1710,7 @@ public:
 
     // The stub produced by prestub requires method desc to be passed
     // in dedicated register.
+    // See HasMDContextArg() for the related stub version.
     BOOL RequiresMDContextArg() const;
 
     // Returns true if the method has to have stable entrypoint always.
@@ -2896,14 +2897,11 @@ public:
     }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
+    // See RequiresMDContextArg() for the non-stub version.
     bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        bool needsArg = IsCLRToCOMStub();
-#ifndef DACCESS_COMPILE
-        _ASSERTE(needsArg == !!RequiresMDContextArg());
-#endif // !DACCESS_COMPILE
-        return needsArg;
+        return IsCLRToCOMStub();
     }
 
     //
