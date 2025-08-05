@@ -457,7 +457,7 @@ class SyncBlock
     DWORD GetSyncBlockIndex()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwSyncIndex;
+        return m_dwSyncIndex & ~SyncBlockPrecious;
     }
 
    // As soon as a syncblock acquires some state that cannot be recreated, we latch
