@@ -221,6 +221,9 @@ void minipal_memory_barrier_process_wide(void)
 #endif // !TARGET_WASM
 }
 #else // !TARGET_WINDOWS
+
+#include "windows.h"
+
 void minipal_memory_barrier_process_wide(void)
 {
     ::FlushProcessWriteBuffers();
