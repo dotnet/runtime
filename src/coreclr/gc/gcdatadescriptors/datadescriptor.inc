@@ -126,6 +126,10 @@ CDAC_GLOBAL_STRING(HeapType, workstation)
 CDAC_GLOBAL_POINTER(MaxGeneration, &::g_max_generation)
 CDAC_GLOBAL_POINTER(StructureInvalidCount, (&GCScan::m_GcStructuresInvalidCnt))
 
+#ifdef SERVER_GC
+CDAC_GLOBAL_POINTER(NumHeaps, &GC_NAMESPACE::gc_heap::n_heaps)
+#endif // SERVER_GC
+
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

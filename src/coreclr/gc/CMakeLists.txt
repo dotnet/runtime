@@ -109,8 +109,6 @@ if(FEATURE_STANDALONE_GC)
     set(BUILD_EXP_GC 1)
   endif()
 
-  add_subdirectory(gcdatadescriptors)
-
   # clrgcexp is build with standalone+regions
   if (BUILD_EXP_GC)
     add_library_clr(clrgcexp SHARED ${GC_SOURCES})
@@ -148,6 +146,8 @@ if(FEATURE_STANDALONE_GC)
 
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)
+
+  add_subdirectory(gcdatadescriptors)
 
   install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)

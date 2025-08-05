@@ -8,9 +8,7 @@
 
 add_library(gc_dll_wks_descriptor_interface INTERFACE)
 target_include_directories(gc_dll_wks_descriptor_interface INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CLR_DIR}/gc
-    ${CLR_DIR}/gc/env)
+    ${CMAKE_CURRENT_SOURCE_DIR})
 add_dependencies(gc_dll_wks_descriptor_interface eventing_headers)
 generate_data_descriptors(
     LIBRARY_NAME gc_dll_wks_descriptor
@@ -21,9 +19,7 @@ generate_data_descriptors(
 if (FEATURE_SVR_GC)
   add_library(gc_dll_svr_descriptor_interface INTERFACE)
   target_include_directories(gc_dll_svr_descriptor_interface INTERFACE
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${CLR_DIR}/gc
-      ${CLR_DIR}/gc/env)
+      ${CMAKE_CURRENT_SOURCE_DIR})
   add_dependencies(gc_dll_svr_descriptor_interface eventing_headers)
   target_compile_definitions(gc_dll_svr_descriptor_interface INTERFACE -DSERVER_GC)
   generate_data_descriptors(
@@ -36,9 +32,7 @@ endif()
 if(BUILD_EXP_GC)
   add_library(gcexp_dll_wks_descriptor_interface INTERFACE)
   target_include_directories(gcexp_dll_wks_descriptor_interface INTERFACE
-      ${CMAKE_CURRENT_SOURCE_DIR}
-      ${CLR_DIR}/gc
-      ${CLR_DIR}/gc/env)
+      ${CMAKE_CURRENT_SOURCE_DIR})
   add_dependencies(gcexp_dll_wks_descriptor_interface eventing_headers)
   target_compile_definitions(gcexp_dll_wks_descriptor_interface INTERFACE -DUSE_REGIONS)
   generate_data_descriptors(
@@ -50,9 +44,7 @@ if(BUILD_EXP_GC)
   if (FEATURE_SVR_GC)
     add_library(gcexp_dll_svr_descriptor_interface INTERFACE)
     target_include_directories(gcexp_dll_svr_descriptor_interface INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CLR_DIR}/gc
-        ${CLR_DIR}/gc/env)
+        ${CMAKE_CURRENT_SOURCE_DIR})
     add_dependencies(gcexp_dll_svr_descriptor_interface eventing_headers)
     target_compile_definitions(gcexp_dll_svr_descriptor_interface INTERFACE -DUSE_REGIONS)
     target_compile_definitions(gcexp_dll_svr_descriptor_interface INTERFACE -DSERVER_GC)
