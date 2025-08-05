@@ -77,6 +77,7 @@ internal sealed class ZipArchiveFuzzer : IFuzzer
         }
         catch (InvalidDataException)
         {
+            // ignore, this exception is expected to be thrown for invalid/corrupted archives.
         }
         finally
         {
