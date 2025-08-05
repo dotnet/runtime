@@ -11,6 +11,7 @@
 typedef intptr_t ManagedContextHandle;
 typedef void (*STREAM_WRITER)(ManagedContextHandle, uint8_t*, int32_t);
 typedef int32_t (*STREAM_READER)(ManagedContextHandle, uint8_t*, int32_t*);
+typedef void (*MANAGED_CONTEXT_CLEANUP)(ManagedContextHandle);
 
 typedef struct SSLStream
 {
@@ -24,6 +25,7 @@ typedef struct SSLStream
     ManagedContextHandle managedContextHandle;
     STREAM_READER streamReader;
     STREAM_WRITER streamWriter;
+    MANAGED_CONTEXT_CLEANUP managedContextCleanup;
 } SSLStream;
 
 typedef struct ApplicationProtocolData_t ApplicationProtocolData;
@@ -67,15 +69,16 @@ PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEn
 
 /*
 Initialize an SSL context
-  - isServer      : true if the context should be created in server mode
-  - streamReader  : callback for reading data from the connection
-  - streamWriter  : callback for writing data to the connection
-  - appBufferSize : initial buffer size for application data
+  - isServer                : true if the context should be created in server mode
+  - streamReader            : callback for reading data from the connection
+  - streamWriter            : callback for writing data to the connection
+  - managedContextCleanup   : callback for cleaning up the managed context
+  - appBufferSize           : initial buffer size for application data
 
 Returns 1 on success, 0 otherwise
 */
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(
-    SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, int32_t appBufferSize, char* peerHost);
+    SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, MANAGED_CONTEXT_CLEANUP managedContextCleanup, int32_t appBufferSize, char* peerHost);
 
 /*
 Set target host

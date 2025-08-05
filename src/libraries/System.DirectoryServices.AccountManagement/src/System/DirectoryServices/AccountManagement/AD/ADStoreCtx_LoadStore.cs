@@ -602,15 +602,15 @@ namespace System.DirectoryServices.AccountManagement
                     // This is the tricky case.  They didn't specify a UrnScheme, so we need to
                     // try all of them.
 
-                    string[] urnSchemesToTry = new string[]
-                    {
+                    ReadOnlySpan<string> urnSchemesToTry =
+                    [
                         UrnScheme.SamAccountScheme,
                         UrnScheme.UpnScheme,
                         UrnScheme.DistinguishedNameScheme,
                         UrnScheme.SidScheme,
                         UrnScheme.GuidScheme,
                         UrnScheme.NameScheme
-                    };
+                    ];
 
                     StringBuilder innerLdapFilter = new StringBuilder();
 
