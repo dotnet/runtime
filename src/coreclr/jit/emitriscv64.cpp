@@ -1895,7 +1895,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
         }
     }
 
-    return dst - origDst;
+    return (unsigned)(dst - origDst);
 }
 
 void emitter::emitJumpDistBind()
