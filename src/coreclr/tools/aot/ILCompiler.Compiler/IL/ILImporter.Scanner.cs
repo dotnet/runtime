@@ -697,6 +697,7 @@ namespace Internal.IL
             {
                 Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
 
+                // TODO: https://github.com/dotnet/runtime/issues/72589
                 ThrowHelper.ThrowBadImageFormatException();
             }
             else if (method.Signature.IsStatic)

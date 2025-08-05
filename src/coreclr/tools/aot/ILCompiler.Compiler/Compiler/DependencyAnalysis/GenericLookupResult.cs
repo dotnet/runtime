@@ -920,7 +920,7 @@ namespace ILCompiler.DependencyAnalysis
                         instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethodDefinition, out implMethod);
                     if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
                     {
-                        // TODO: diamond/reabstraction
+                        // TODO: diamond/reabstraction: https://github.com/dotnet/runtime/issues/72589
                         ThrowHelper.ThrowInvalidProgramException();
                     }
                 }

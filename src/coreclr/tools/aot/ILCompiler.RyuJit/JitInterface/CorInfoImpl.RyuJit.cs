@@ -420,7 +420,7 @@ namespace Internal.JitInterface
                 }
                 else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
                 {
-                    // TODO
+                    // TODO: https://github.com/dotnet/runtime/issues/72589
                     ThrowHelper.ThrowInvalidProgramException();
                 }
             }
