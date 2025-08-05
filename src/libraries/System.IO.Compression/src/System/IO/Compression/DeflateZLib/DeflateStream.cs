@@ -23,7 +23,6 @@ namespace System.IO.Compression
         private byte[]? _buffer;
         private volatile bool _activeAsyncOperation;
         private bool _wroteBytes;
-        private bool _usingGZip;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {
@@ -120,7 +119,6 @@ namespace System.IO.Compression
             _stream = stream;
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
-            _usingGZip = windowBits == ZLibNative.GZip_DefaultWindowBits;
             InitializeBuffer();
         }
 
@@ -618,42 +616,20 @@ namespace System.IO.Compression
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
-            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
-            // This round-trips and we should be ok with this, but our legacy managed deflater
-            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
-            // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input.
-            // However, for GZip streams, we must always write the headers and footers even
-            // when no input data was provided, as an empty GZip file is still a valid GZip file.
-            if (_wroteBytes || _usingGZip)
-            {
-                // Compress any bytes left
-                WriteDeflaterOutput();
 
-                // Pull out any bytes left inside deflater:
-                bool finished;
-                do
-                {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+            // Compress any bytes left
+            WriteDeflaterOutput();
 
-                    if (compressedBytes > 0)
-                        _stream.Write(_buffer, 0, compressedBytes);
-                } while (!finished);
-            }
-            else
+            // Pull out any bytes left inside deflater:
+            bool finished;
+            do
             {
-                // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
-                // the dispose operation and although it frees the stream but it return error code because the
-                // stream state was still marked as in use. The symptoms of this problem will not be seen except
-                // if running any diagnostic tools which check for disposing safe handle objects
-                bool finished;
-                do
-                {
-                    finished = _deflater.Finish(_buffer, out _);
-                } while (!finished);
-            }
+                int compressedBytes;
+                finished = _deflater.Finish(_buffer, out compressedBytes);
+
+                if (compressedBytes > 0)
+                    _stream.Write(_buffer, 0, compressedBytes);
+            } while (!finished);
         }
 
         private async ValueTask PurgeBuffersAsync()
@@ -667,42 +643,20 @@ namespace System.IO.Compression
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
-            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
-            // This round-trips and we should be ok with this, but our legacy managed deflater
-            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
-            // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input.
-            // However, for GZip streams, we must always write the headers and footers even
-            // when no input data was provided, as an empty GZip file is still a valid GZip file.
-            if (_wroteBytes || _usingGZip)
-            {
-                // Compress any bytes left
-                await WriteDeflaterOutputAsync(default).ConfigureAwait(false);
 
-                // Pull out any bytes left inside deflater:
-                bool finished;
-                do
-                {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
+            // Compress any bytes left
+            await WriteDeflaterOutputAsync(default).ConfigureAwait(false);
 
-                    if (compressedBytes > 0)
-                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes)).ConfigureAwait(false);
-                } while (!finished);
-            }
-            else
+            // Pull out any bytes left inside deflater:
+            bool finished;
+            do
             {
-                // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
-                // the dispose operation and although it frees the stream, it returns an error code because the
-                // stream state was still marked as in use. The symptoms of this problem will not be seen except
-                // if running any diagnostic tools which check for disposing safe handle objects.
-                bool finished;
-                do
-                {
-                    finished = _deflater.Finish(_buffer, out _);
-                } while (!finished);
-            }
+                int compressedBytes;
+                finished = _deflater.Finish(_buffer, out compressedBytes);
+
+                if (compressedBytes > 0)
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes)).ConfigureAwait(false);
+            } while (!finished);
         }
 
         protected override void Dispose(bool disposing)

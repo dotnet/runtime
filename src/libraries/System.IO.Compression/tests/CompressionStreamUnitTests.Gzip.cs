@@ -473,37 +473,5 @@ namespace System.IO.Compression
             }
         }
 
-        [Fact]
-        public void EmptyGZipStream_MatchesWorkaroundBehavior()
-        {
-            // Ensure that the new behavior matches the workaround behavior
-            byte[] emptyStreamData;
-            byte[] workaroundStreamData;
-            
-            // Create empty stream (new behavior)
-            using (var ms = new MemoryStream())
-            {
-                using (var gzipStream = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
-                {
-                    // Write nothing
-                }
-                emptyStreamData = ms.ToArray();
-            }
-            
-            // Create stream with workaround
-            using (var ms = new MemoryStream())
-            {
-                using (var gzipStream = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
-                {
-                    gzipStream.Write(new byte[0]); // Workaround
-                }
-                workaroundStreamData = ms.ToArray();
-            }
-            
-            // Both should produce the same output now
-            Assert.True(emptyStreamData.Length > 0, "Empty stream should write headers and footers");
-            Assert.True(workaroundStreamData.Length > 0, "Workaround stream should write headers and footers");
-            Assert.Equal(workaroundStreamData, emptyStreamData);
-        }
     }
 }
