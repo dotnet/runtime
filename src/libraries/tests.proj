@@ -331,6 +331,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.csproj" />
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/116558 -->
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Device/LibraryMode/iOS.Device.LibraryMode.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/LibraryMode/iOS.Simulator.LibraryMode.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisablediOSTests)' != 'true'">
