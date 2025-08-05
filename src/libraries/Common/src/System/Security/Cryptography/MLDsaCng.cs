@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -48,14 +48,20 @@ namespace System.Security.Cryptography
             _key = duplicateKey;
         }
 
+        /// <inheritdoc />
+        protected override void SignMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        /// <inheritdoc />
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
         private static MLDsaAlgorithm AlgorithmFromHandleWithPlatformCheck(CngKey key, out CngKey duplicateKey)
         {
-#if !NETFRAMEWORK
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!Helpers.IsOSPlatformWindows)
             {
                 throw new PlatformNotSupportedException();
             }
-#endif
 
             return AlgorithmFromHandle(key, out duplicateKey);
         }

@@ -44,7 +44,7 @@ __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
         NESTED_ENTRY $__PInvokeStubFuncName
 
         ; get the stub
-        ldr                 x9, [$VASigCookieReg, #VASigCookie__pNDirectILStub]
+        ldr                 x9, [$VASigCookieReg, #VASigCookie__pPInvokeILStub]
 
         ; if null goto stub generation
         cbz                 x9, %0

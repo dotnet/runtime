@@ -491,7 +491,7 @@ namespace System.PrivateUri.Tests
         [InlineData("1.2.3.4", UriHostNameType.IPv4)]
         [InlineData(null, UriHostNameType.Unknown)]
         [InlineData("!@*(@#&*#$&*#", UriHostNameType.Unknown)]
-        public static void TestCheckHostName(string hostName, UriHostNameType expected)
+        public static void TestCheckHostName(string? hostName, UriHostNameType expected)
         {
             Assert.Equal(expected, Uri.CheckHostName(hostName));
         }
@@ -500,7 +500,7 @@ namespace System.PrivateUri.Tests
         [InlineData("http", true)]
         [InlineData(null, false)]
         [InlineData("!", false)]
-        public static void TestCheckSchemeName(string scheme, bool expected)
+        public static void TestCheckSchemeName(string? scheme, bool expected)
         {
             Assert.Equal(expected, Uri.CheckSchemeName(scheme));
         }

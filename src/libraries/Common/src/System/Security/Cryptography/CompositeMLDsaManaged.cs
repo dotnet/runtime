@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
@@ -52,8 +51,82 @@ namespace System.Security.Cryptography
                 });
         }
 
-        internal static CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm) =>
-            throw new PlatformNotSupportedException();
+        internal static CompositeMLDsa GenerateKeyImpl(CompositeMLDsaAlgorithm algorithm)
+        {
+            Debug.Assert(IsAlgorithmSupportedImpl(algorithm));
+
+            AlgorithmMetadata metadata = s_algorithmMetadata[algorithm];
+
+            // draft-ietf-lamps-pq-composite-sigs-latest (July 7, 2025), 4.1
+            //  1.  Generate component keys
+            //
+            //      mldsaSeed = Random(32)
+            //      (mldsaPK, _) = ML-DSA.KeyGen(mldsaSeed)
+            //      (tradPK, tradSK) = Trad.KeyGen()
+
+            MLDsa? mldsaKey = null;
+            ComponentAlgorithm? tradKey = null;
+
+            try
+            {
+                mldsaKey = MLDsaImplementation.GenerateKey(metadata.MLDsaAlgorithm);
+            }
+            catch (CryptographicException)
+            {
+            }
+
+            try
+            {
+                tradKey = metadata.TraditionalAlgorithm switch
+                {
+                    RsaAlgorithm rsaAlgorithm => RsaComponent.GenerateKey(rsaAlgorithm),
+                    ECDsaAlgorithm ecdsaAlgorithm => ECDsaComponent.GenerateKey(ecdsaAlgorithm),
+                    _ => FailAndGetNull(),
+                };
+
+                static ComponentAlgorithm? FailAndGetNull()
+                {
+                    Debug.Fail("Only supported algorithms should reach here.");
+                    return null;
+                }
+            }
+            catch (CryptographicException)
+            {
+            }
+
+            //  2.  Check for component key gen failure
+            //
+            //      if NOT (mldsaPK, mldsaSK) or NOT (tradPK, tradSK):
+            //          output "Key generation error"
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            static bool KeyGenFailed([NotNullWhen(false)] MLDsa? mldsaKey, [NotNullWhen(false)] ComponentAlgorithm? tradKey) =>
+                (mldsaKey is null) | (tradKey is null);
+
+            if (KeyGenFailed(mldsaKey, tradKey))
+            {
+                try
+                {
+                    Debug.Assert(mldsaKey is null || tradKey is null);
+
+                    mldsaKey?.Dispose();
+                    tradKey?.Dispose();
+                }
+                catch (CryptographicException)
+                {
+                }
+
+                throw new CryptographicException();
+            }
+
+            //  3.  Output the composite public and private keys
+            //
+            //      pk = SerializePublicKey(mldsaPK, tradPK)
+            //      sk = SerializePrivateKey(mldsaSeed, tradSK)
+            //      return (pk, sk)
+
+            return new CompositeMLDsaManaged(algorithm, mldsaKey, tradKey);
+        }
 
         internal static CompositeMLDsa ImportCompositeMLDsaPublicKeyImpl(CompositeMLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
@@ -473,38 +546,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        private sealed class ECDsaComponent : ComponentAlgorithm
-#if DESIGNTIMEINTERFACES
-#pragma warning disable SA1001 // Commas should be spaced correctly
-            , IComponentAlgorithmFactory<ECDsaComponent, ECDsaAlgorithm>
-#pragma warning restore SA1001 // Commas should be spaced correctly
-#endif
-        {
-            public static bool IsAlgorithmSupported(ECDsaAlgorithm _) => false;
-            public static ECDsaComponent GenerateKey(ECDsaAlgorithm algorithm) => throw new NotImplementedException();
-            public static ECDsaComponent ImportPrivateKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => throw new NotImplementedException();
-            public static ECDsaComponent ImportPublicKey(ECDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => throw new NotImplementedException();
-
-            internal override bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
-            internal override bool TryExportPublicKey(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
-
-            internal override bool VerifyData(
-#if NET
-                ReadOnlySpan<byte> data,
-#else
-                byte[] data,
-#endif
-                ReadOnlySpan<byte> signature) => throw new NotImplementedException();
-
-            internal override int SignData(
-#if NET
-                ReadOnlySpan<byte> data,
-#else
-                byte[] data,
-#endif
-                Span<byte> destination) => throw new NotImplementedException();
-        }
-
         private static Dictionary<CompositeMLDsaAlgorithm, AlgorithmMetadata> CreateAlgorithmMetadata()
         {
             const int count = 18;
@@ -539,7 +580,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa44,
-                        new ECDsaAlgorithm(),
+                        new ECDsaAlgorithm(256, Oids.secp256r1, HashAlgorithmName.SHA256),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x03],
                         HashAlgorithmName.SHA256)
                 },
@@ -547,7 +588,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(3072, HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x04],
                         HashAlgorithmName.SHA512)
                 },
@@ -563,7 +604,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x06],
                         HashAlgorithmName.SHA512)
                 },
@@ -579,7 +620,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new ECDsaAlgorithm(),
+                        new ECDsaAlgorithm(256, Oids.secp256r1, HashAlgorithmName.SHA256),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x08],
                         HashAlgorithmName.SHA512)
                 },
@@ -587,7 +628,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new ECDsaAlgorithm(),
+                        new ECDsaAlgorithm(384, Oids.secp384r1, HashAlgorithmName.SHA384),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x09],
                         HashAlgorithmName.SHA512)
                 },
@@ -595,7 +636,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-                        new ECDsaAlgorithm(),
+                        new ECDsaAlgorithm(256, "1.3.36.3.3.2.8.1.1.7", HashAlgorithmName.SHA256),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0A],
                         HashAlgorithmName.SHA512)
                 },
@@ -611,7 +652,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new ECDsaAlgorithm(),
+                        new ECDsaAlgorithm(384, Oids.secp384r1, HashAlgorithmName.SHA384),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0C],
                         HashAlgorithmName.SHA512)
                 },
@@ -619,7 +660,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new ECDsaAlgorithm(),
+                        new ECDsaAlgorithm(384, "1.3.36.3.3.2.8.1.1.11", HashAlgorithmName.SHA384),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0D],
                         HashAlgorithmName.SHA512)
                 },
@@ -635,7 +676,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithRSA3072Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new RsaAlgorithm(3072, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(3072, HashAlgorithmName.SHA256, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0F],
                         HashAlgorithmName.SHA512)
                 },
@@ -643,7 +684,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithRSA4096Pss,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new RsaAlgorithm(4096, HashAlgorithmName.SHA512, RSASignaturePadding.Pss),
+                        new RsaAlgorithm(4096, HashAlgorithmName.SHA384, RSASignaturePadding.Pss),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x10],
                         HashAlgorithmName.SHA512)
                 },
@@ -651,7 +692,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-                        new ECDsaAlgorithm(),
+                        new ECDsaAlgorithm(521, Oids.secp521r1, HashAlgorithmName.SHA512),
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x11],
                         HashAlgorithmName.SHA512)
                 }
@@ -681,8 +722,37 @@ namespace System.Security.Cryptography
             internal RSASignaturePadding Padding { get; } = padding;
         }
 
-        private sealed class ECDsaAlgorithm
+        private sealed class ECDsaAlgorithm(int keySizeInBits, string curveOid, HashAlgorithmName hashAlgorithmName)
         {
+            internal int KeySizeInBits { get; } = keySizeInBits;
+            internal HashAlgorithmName HashAlgorithmName { get; } = hashAlgorithmName;
+            internal string CurveOid { get; } = curveOid;
+
+            internal int KeySizeInBytes => (KeySizeInBits + 7) / 8;
+
+#if NET
+            internal ECCurve Curve
+            {
+                get
+                {
+                    return CurveOid switch
+                    {
+                        Oids.secp256r1 => ECCurve.NamedCurves.nistP256,
+                        Oids.secp384r1 => ECCurve.NamedCurves.nistP384,
+                        Oids.secp521r1 => ECCurve.NamedCurves.nistP521,
+                        "1.3.36.3.3.2.8.1.1.7" => ECCurve.NamedCurves.brainpoolP256r1,
+                        "1.3.36.3.3.2.8.1.1.11" => ECCurve.NamedCurves.brainpoolP384r1,
+                        string oid => FailAndThrow(oid)
+                    };
+
+                    static ECCurve FailAndThrow(string oid)
+                    {
+                        Debug.Fail($"'{oid}' is not a valid ECDSA curve for Composite ML-DSA.");
+                        throw new CryptographicException();
+                    }
+                }
+            }
+#endif
         }
 
         private sealed class EdDsaAlgorithm
