@@ -130,7 +130,10 @@ namespace System.Security.Cryptography
                                 y = zero;
                             }
 
-                            ValidateNamedCurve(x, y, d);
+                            if (!TryValidateNamedCurve(x, y, d))
+                            {
+                                throw new CryptographicException(SR.Cryptography_InvalidECPrivateKeyParameters);
+                            }
 
                             return new ECDsaComponent(
                                 ECCng.EncodeEccKeyBlob(
@@ -252,7 +255,11 @@ namespace System.Security.Cryptography
                                         throw new CryptographicException();
                                     }
 
-                                    ValidateNamedCurve(x, y, d);
+                                    if (!TryValidateNamedCurve(x, y, d))
+                                    {
+                                        Debug.Fail("Invalid EC parameters.");
+                                        throw new CryptographicException();
+                                    }
 
                                     WriteKey(d, x, y, _algorithm.CurveOidValue, writer);
                                     return true;
@@ -336,7 +343,11 @@ namespace System.Security.Cryptography
                                     throw new CryptographicException();
                                 }
 
-                                ValidateNamedCurve(localX, localY, null);
+                                if (!TryValidateNamedCurve(localX, localY, null))
+                                {
+                                    Debug.Fail("Invalid EC parameters.");
+                                    throw new CryptographicException();
+                                }
 
                                 x = localX;
                                 y = localY;
@@ -465,7 +476,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private static void ValidateNamedCurve(byte[]? x, byte[]? y, byte[]? d)
+            private static bool TryValidateNamedCurve(byte[]? x, byte[]? y, byte[]? d)
             {
                 bool hasErrors = true;
 
@@ -478,10 +489,7 @@ namespace System.Security.Cryptography
                     hasErrors = (d is not null && (d.Length != x.Length));
                 }
 
-                if (hasErrors)
-                {
-                    throw new CryptographicException(SR.Cryptography_InvalidCurveKeyParameters);
-                }
+                return !hasErrors;
             }
 #endif
         }
