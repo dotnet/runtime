@@ -9255,15 +9255,15 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX512_LoadAlignedVector512:
         {
-            // In minOpts, we need to ensure that an unaligned address will fault when an explicit LoadAligned is used.
-            // Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for scalar
-            // loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
+            // For debug code, we need to ensure that an unaligned address will fault when an explicit LoadAligned is
+            // used. Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for
+            // scalar loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
             //
             // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's
             // requirement.
 
-            return (supportsSIMDLoad &&
-                    ((!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16)) || !comp->opts.MinOpts()));
+            return (supportsSIMDLoad && (comp->opts.OptimizationEnabled() ||
+                                         (!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16))));
         }
 
         case NI_X86Base_LoadScalarVector128:
@@ -9279,7 +9279,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX512_BroadcastScalarToVector512:
         {
-            if (comp->opts.MinOpts() || !comp->canUseEmbeddedBroadcast())
+            if (!comp->opts.Tier0OptimizationEnabled() || !comp->canUseEmbeddedBroadcast())
             {
                 return false;
             }

@@ -828,7 +828,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock     = bbIsTryBeg(block);
                 const bool isFuncletEntryBlock = fgFuncletsCreated && bbIsFuncletBeg(block);
 
-                if (isTryEntryBlock || isFuncletEntryBlock || block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_ALIGN))
+                if (isTryEntryBlock || isFuncletEntryBlock || block->HasFlag(BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -839,10 +839,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (isFuncletEntryBlock)
                     {
                         fprintf(fgxFile, "F");
-                    }
-                    if (block->HasFlag(BBF_RUN_RARELY))
-                    {
-                        fprintf(fgxFile, "R");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -2414,7 +2410,7 @@ void Compiler::fgDumpStmtTree(const BasicBlock* block, Statement* stmt)
 void Compiler::fgDumpBlock(BasicBlock* block)
 {
     printf("\n------------ ");
-    block->dspBlockHeader(this);
+    block->dspBlockHeader();
 
     if (fgSsaValid)
     {
@@ -2968,7 +2964,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         maxBBNum = max(maxBBNum, block->bbNum);
 
         // Check that all the successors have the current traversal stamp.
-        for (BasicBlock* const succBlock : block->Succs(this))
+        for (BasicBlock* const succBlock : block->Succs())
         {
             assert(succBlock->bbTraversalStamp == curTraversalStamp);
         }
@@ -3132,16 +3128,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                     assert(bbInTryRegions(finallyIndex, block) || block->HasFlag(BBF_ASYNC_RESUMPTION));
                 }
             }
-        }
-
-        /* Check if BBF_RUN_RARELY is set that we have bbWeight of zero */
-        if (block->isRunRarely())
-        {
-            assert(block->bbWeight == BB_ZERO_WEIGHT);
-        }
-        else
-        {
-            assert(block->bbWeight > BB_ZERO_WEIGHT);
         }
     }
 
@@ -3942,6 +3928,12 @@ void Compiler::fgDebugCheckBlockLinks()
         // If this is a switch, check that the tables are consistent.
         if (block->KindIs(BBJ_SWITCH))
         {
+            // Switch blocks with dominant cases must have profile-derived weights.
+            if (block->GetSwitchTargets()->HasDominantCase())
+            {
+                assert(block->hasProfileWeight());
+            }
+
             // Create a set with all the successors.
             BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
             BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
@@ -4288,61 +4280,58 @@ public:
 
     void ProcessDefs(GenTree* tree)
     {
-        GenTreeLclVarCommon* lclNode;
-        bool                 isFullDef    = false;
-        ssize_t              offset       = 0;
-        unsigned             storeSize    = 0;
-        bool                 definesLocal = tree->DefinesLocal(m_compiler, &lclNode, &isFullDef, &offset, &storeSize);
+        auto visitDef = [=](const LocalDef& def) {
+            const bool       isUse  = (def.Def->gtFlags & GTF_VAR_USEASG) != 0;
+            unsigned const   lclNum = def.Def->GetLclNum();
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (!definesLocal)
-        {
-            return;
-        }
+            assert(!(def.IsEntire && isUse));
 
-        const bool       isUse  = (lclNode->gtFlags & GTF_VAR_USEASG) != 0;
-        unsigned const   lclNum = lclNode->GetLclNum();
-        LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-
-        assert(!(isFullDef && isUse));
-
-        if (lclNode->HasCompositeSsaName())
-        {
-            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            if (def.Def->HasCompositeSsaName())
             {
-                unsigned const   fieldLclNum = varDsc->lvFieldLclStart + index;
-                LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
-                unsigned const   fieldSsaNum = lclNode->GetSsaNum(m_compiler, index);
-
-                ssize_t  fieldStoreOffset;
-                unsigned fieldStoreSize;
-                if (m_compiler->gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+                for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
                 {
-                    ProcessDef(lclNode, fieldLclNum, fieldSsaNum);
+                    unsigned const   fieldLclNum = varDsc->lvFieldLclStart + index;
+                    LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
+                    unsigned const   fieldSsaNum = def.Def->GetSsaNum(m_compiler, index);
 
-                    if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset, fieldStoreSize))
+                    ssize_t  fieldStoreOffset;
+                    unsigned fieldStoreSize;
+                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
+                                                        &fieldStoreSize))
                     {
-                        assert(isUse);
-                        unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();
-                        ProcessUse(lclNode, fieldLclNum, fieldUseSsaNum);
+                        ProcessDef(def.Def, fieldLclNum, fieldSsaNum);
+
+                        if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset,
+                                                              fieldStoreSize))
+                        {
+                            assert(isUse);
+                            unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();
+                            ProcessUse(def.Def, fieldLclNum, fieldUseSsaNum);
+                        }
                     }
                 }
             }
-        }
-        else
-        {
-            unsigned const ssaNum = lclNode->GetSsaNum();
-            ProcessDef(lclNode, lclNum, ssaNum);
-
-            if (isUse)
+            else
             {
-                unsigned useSsaNum = SsaConfig::RESERVED_SSA_NUM;
-                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                unsigned const ssaNum = def.Def->GetSsaNum();
+                ProcessDef(def.Def, lclNum, ssaNum);
+
+                if (isUse)
                 {
-                    useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
+                    unsigned useSsaNum = SsaConfig::RESERVED_SSA_NUM;
+                    if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                    {
+                        useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
+                    }
+                    ProcessUse(def.Def, lclNum, useSsaNum);
                 }
-                ProcessUse(lclNode, lclNum, useSsaNum);
             }
-        }
+
+            return GenTree::VisitResult::Continue;
+        };
+
+        tree->VisitLocalDefs(m_compiler, visitDef);
     }
 
     void ProcessUse(GenTreeLclVarCommon* tree, unsigned lclNum, unsigned ssaNum)

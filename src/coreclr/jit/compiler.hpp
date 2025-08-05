@@ -4683,6 +4683,129 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
     }
 }
 
+//------------------------------------------------------------------------
+// VisitLocalDefs: Visit locals being defined by this node.
+//
+// Arguments:
+//   comp    - the compiler instance
+//   visitor - Functor of type GenTree::VisitResult(LocalDef)
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+// Notes:
+//   This function is contractually bound to recognize a superset of stores
+//   that "LocalAddressVisitor" recognizes and transforms, as it is used to
+//   detect which trees can define tracked locals.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
+{
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        unsigned size = comp->lvaLclExactSize(AsLclVarCommon()->GetLclNum());
+        return visitor(LocalDef(AsLclVarCommon(), /* isEntire */ true, 0, size));
+    }
+    if (OperIs(GT_STORE_LCL_FLD))
+    {
+        GenTreeLclFld* fld = AsLclFld();
+        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize()));
+    }
+    if (OperIs(GT_CALL))
+    {
+        GenTreeCall* call = AsCall();
+        if (call->IsAsync())
+        {
+            GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
+            if (suspendedArg != nullptr)
+            {
+                bool isEntire = comp->lvaLclExactSize(suspendedArg->GetLclNum()) == 1;
+                if (visitor(LocalDef(suspendedArg, isEntire, suspendedArg->GetLclOffs(), 1)) == VisitResult::Abort)
+                {
+                    return VisitResult::Abort;
+                }
+            }
+        }
+
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (lclAddr != nullptr)
+        {
+            unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
+
+            bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
+
+            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), storeSize));
+        }
+    }
+
+    return VisitResult::Continue;
+}
+
+//------------------------------------------------------------------------
+// VisitLocalDefNodes: Visit GenTreeLclVarCommon nodes representing definitions in the specified node.
+//
+// Arguments:
+//   comp    - the compiler instance
+//   visitor - Functor of type GenTree::VisitResult(GenTreeLclVarCommon*)
+//
+// Return Value:
+//   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
+//
+// Notes:
+//   This function is contractually bound to recognize a superset of stores
+//   that "LocalAddressVisitor" recognizes and transforms, as it is used to
+//   detect which trees can define tracked locals.
+//
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visitor)
+{
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        return visitor(AsLclVarCommon());
+    }
+    if (OperIs(GT_STORE_LCL_FLD))
+    {
+        return visitor(AsLclFld());
+    }
+    if (OperIs(GT_CALL))
+    {
+        GenTreeCall* call = AsCall();
+        if (call->IsAsync())
+        {
+            GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
+            if ((suspendedArg != nullptr) && (visitor(suspendedArg) == VisitResult::Abort))
+            {
+                return VisitResult::Abort;
+            }
+        }
+
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (lclAddr != nullptr)
+        {
+            return visitor(lclAddr);
+        }
+    }
+
+    return VisitResult::Continue;
+}
+
+//------------------------------------------------------------------------
+// HasAnyLocalDefs:
+//   Check if a tree is considered as defining any locals.
+//
+// Arguments:
+//   comp - the compiler instance
+//
+// Return Value:
+//   True if it is.
+//
+inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
+{
+    return VisitLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
+        return GenTree::VisitResult::Abort;
+    }) == GenTree::VisitResult::Abort;
+}
+
 /*****************************************************************************
  *  operator new
  *
@@ -5286,6 +5409,171 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     }
 
     return BasicBlockVisit::Continue;
+}
+
+//-----------------------------------------------------------
+// gtComplexityExceeds: Check if a tree exceeds a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+
+// Arguments:
+//    tree              - The tree to check
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Return Value:
+//     True if 'tree' exceeds the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity)
+{
+    struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
+    {
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        ComplexityVisitor(Compiler* comp, unsigned limit, TFunc getComplexity)
+            : GenTreeVisitor<ComplexityVisitor>(comp)
+            , m_complexity(0)
+            , m_limit(limit)
+            , m_getComplexity(getComplexity)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            m_complexity += m_getComplexity(*use);
+            return (m_complexity > m_limit) ? WALK_ABORT : WALK_CONTINUE;
+        }
+
+    private:
+        unsigned       m_complexity;
+        const unsigned m_limit;
+        TFunc          m_getComplexity;
+    };
+
+    assert(tree != nullptr);
+
+    ComplexityVisitor visitor(this, limit, getComplexity);
+
+    fgWalkResult result = visitor.WalkTree(&tree, nullptr);
+
+    return (result == WALK_ABORT);
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: Check if the trees in a block exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//   True if the trees in the block exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(comp != nullptr);
+
+    unsigned localCount    = 0;
+    auto     getComplexity = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        localCount += treeComplexity;
+        return treeComplexity;
+    };
+
+    for (Statement* const stmt : Statements())
+    {
+        const unsigned slack = limit - localCount;
+        if (comp->gtComplexityExceeds(stmt->GetRootNode(), slack, getComplexity))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: Check if the trees in a range of blocks exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//    True if the trees in the block range exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(comp != nullptr);
+
+    unsigned localCount    = 0;
+    auto     getComplexity = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        localCount += treeComplexity;
+        return treeComplexity;
+    };
+
+    for (BasicBlock* const block : *this)
+    {
+        const unsigned slack = limit - localCount;
+        if (block->ComplexityExceeds(comp, slack, getComplexity))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optLoopComplexityExceeds: Check if the trees in a loop exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//     True if the trees in 'loop' exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(loop != nullptr);
+
+    unsigned loopComplexity = 0;
+    auto     getComplexity  = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        loopComplexity += treeComplexity;
+        return treeComplexity;
+    };
+
+    BasicBlockVisit const result = loop->VisitLoopBlocks([&](BasicBlock* block) {
+        assert(limit >= loopComplexity);
+        const unsigned slack = limit - loopComplexity;
+        return block->ComplexityExceeds(this, slack, getComplexity) ? BasicBlockVisit::Abort
+                                                                    : BasicBlockVisit::Continue;
+    });
+
+    return (result == BasicBlockVisit::Abort);
 }
 
 /*****************************************************************************/

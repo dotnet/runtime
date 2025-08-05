@@ -28,6 +28,46 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get => IsSupported; }
         }
 
+
+        // Saturating absolute value
+
+        /// <summary>
+        /// svint8_t svqabs[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        /// svint8_t svqabs[_s8]_x(svbool_t pg, svint8_t op)
+        /// svint8_t svqabs[_s8]_z(svbool_t pg, svint8_t op)
+        ///   SQABS Ztied.B, Pg/M, Zop.B
+        ///   SQABS Ztied.B, Pg/M, Ztied.B
+        /// </summary>
+        public static Vector<sbyte> AbsSaturate(Vector<sbyte> value) => AbsSaturate(value);
+
+        /// <summary>
+        /// svint16_t svqabs[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        /// svint16_t svqabs[_s16]_x(svbool_t pg, svint16_t op)
+        /// svint16_t svqabs[_s16]_z(svbool_t pg, svint16_t op)
+        ///   SQABS Ztied.H, Pg/M, Zop.H
+        ///   SQABS Ztied.H, Pg/M, Ztied.H
+        /// </summary>
+        public static Vector<short> AbsSaturate(Vector<short> value) => AbsSaturate(value);
+
+        /// <summary>
+        /// svint32_t svqabs[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        /// svint32_t svqabs[_s32]_x(svbool_t pg, svint32_t op)
+        /// svint32_t svqabs[_s32]_z(svbool_t pg, svint32_t op)
+        ///   SQABS Ztied.S, Pg/M, Zop.S
+        ///   SQABS Ztied.S, Pg/M, Ztied.S
+        /// </summary>
+        public static Vector<int> AbsSaturate(Vector<int> value) => AbsSaturate(value);
+
+        /// <summary>
+        /// svint64_t svqabs[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        /// svint64_t svqabs[_s64]_x(svbool_t pg, svint64_t op)
+        /// svint64_t svqabs[_s64]_z(svbool_t pg, svint64_t op)
+        ///   SQABS Ztied.D, Pg/M, Zop.D
+        ///   SQABS Ztied.D, Pg/M, Ztied.D
+        /// </summary>
+        public static Vector<long> AbsSaturate(Vector<long> value) => AbsSaturate(value);
+
+
         // Absolute difference and accumulate
 
         /// <summary>
@@ -471,6 +511,84 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UADALP Ztied1.D, Pg/M, Zop2.S
         /// </summary>
         public static Vector<ulong> AddPairwiseWideningAndAdd(Vector<ulong> left, Vector<uint> right) => AddPairwiseWideningAndAdd(left, right);
+
+
+        // Rounding add narrow high part (bottom)
+
+        /// <summary>
+        /// svuint8_t svraddhnb[_u16](svuint16_t op1, svuint16_t op2)
+        ///   RADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> AddRoundedHighNarrowingEven(Vector<ushort> left, Vector<ushort> right) => AddRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svint16_t svraddhnb[_s32](svint32_t op1, svint32_t op2)
+        ///   RADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> AddRoundedHighNarrowingEven(Vector<int> left, Vector<int> right) => AddRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svint32_t svraddhnb[_s64](svint64_t op1, svint64_t op2)
+        ///   RADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> AddRoundedHighNarrowingEven(Vector<long> left, Vector<long> right) => AddRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svint8_t svraddhnb[_s16](svint16_t op1, svint16_t op2)
+        ///   RADDHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> AddRoundedHighNarrowingEven(Vector<short> left, Vector<short> right) => AddRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svuint16_t svraddhnb[_u32](svuint32_t op1, svuint32_t op2)
+        ///   RADDHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> AddRoundedHighNarrowingEven(Vector<uint> left, Vector<uint> right) => AddRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svuint32_t svraddhnb[_u64](svuint64_t op1, svuint64_t op2)
+        ///   RADDHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> AddRoundedHighNarrowingEven(Vector<ulong> left, Vector<ulong> right) => AddRoundedHighNarrowingEven(left, right);
+
+
+        // Rounding add narrow high part (top)
+
+        /// <summary>
+        /// svuint8_t svraddhnt[_u16](svuint8_t even, svuint16_t op1, svuint16_t op2)
+        ///   RADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> AddRoundedHighNarrowingOdd(Vector<byte> even, Vector<ushort> left, Vector<ushort> right) => AddRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svint16_t svraddhnt[_s32](svint16_t even, svint32_t op1, svint32_t op2)
+        ///   RADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> AddRoundedHighNarrowingOdd(Vector<short> even, Vector<int> left, Vector<int> right) => AddRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svint32_t svraddhnt[_s64](svint32_t even, svint64_t op1, svint64_t op2)
+        ///   RADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> AddRoundedHighNarrowingOdd(Vector<int> even, Vector<long> left, Vector<long> right) => AddRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svint8_t svraddhnt[_s16](svint8_t even, svint16_t op1, svint16_t op2)
+        ///   RADDHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> AddRoundedHighNarrowingOdd(Vector<sbyte> even, Vector<short> left, Vector<short> right) => AddRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svuint16_t svraddhnt[_u32](svuint16_t even, svuint32_t op1, svuint32_t op2)
+        ///   RADDHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> AddRoundedHighNarrowingOdd(Vector<ushort> even, Vector<uint> left, Vector<uint> right) => AddRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svuint32_t svraddhnt[_u64](svuint32_t even, svuint64_t op1, svuint64_t op2)
+        ///   RADDHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> AddRoundedHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) => AddRoundedHighNarrowingOdd(even, left, right);
 
 
         // Saturating add
@@ -1002,6 +1120,33 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) => BitwiseSelectRightInverted(select, left, right);
 
+        // Complex dot product
+
+        /// <summary>
+        /// svint32_t svcdot[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_rotation)
+        ///   CDOT Ztied1.S, Zop2.B, Zop3.B, #imm_rotation
+        /// </summary>
+        public static Vector<int> DotProductRotateComplex(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplex(op1, op2, op3, rotation);
+
+        /// <summary>
+        /// svint64_t svcdot[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_rotation)
+        ///   CDOT Ztied1.D, Zop2.H, Zop3.H, #imm_rotation
+        /// </summary>
+        public static Vector<long> DotProductRotateComplex(Vector<long> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplex(op1, op2, op3, rotation);
+
+        /// <summary>
+        /// svint32_t svcdot_lane[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CDOT Ztied1.S, Zop2.B, Zop3.B[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<int> DotProductRotateComplexBySelectedIndex(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplexBySelectedIndex(op1, op2, op3, imm_index, rotation);
+
+        /// <summary>
+        /// svint64_t svcdot_lane[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   CDOT Ztied1.D, Zop2.H, Zop3.H[imm_index], #imm_rotation
+        /// </summary>
+        public static Vector<long> DotProductRotateComplexBySelectedIndex(Vector<long> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(1))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplexBySelectedIndex(op1, op2, op3, imm_index, rotation);
+
+
         // Halving add
 
         /// <summary>
@@ -1166,6 +1311,58 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> FusedSubtractHalving(Vector<ulong> left, Vector<ulong> right) => FusedSubtractHalving(left, right);
 
+
+        // Rounding halving add
+
+        /// <summary>
+        /// svuint8_t svrhadd[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   URHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> FusedAddRoundedHalving(Vector<byte> left, Vector<byte> right) => FusedAddRoundedHalving(left, right);
+
+        /// <summary>
+        /// svint16_t svrhadd[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SRHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> FusedAddRoundedHalving(Vector<short> left, Vector<short> right) => FusedAddRoundedHalving(left, right);
+
+        /// <summary>
+        /// svint32_t svrhadd[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SRHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> FusedAddRoundedHalving(Vector<int> left, Vector<int> right) => FusedAddRoundedHalving(left, right);
+
+        /// <summary>
+        /// svint64_t svrhadd[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SRHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> FusedAddRoundedHalving(Vector<long> left, Vector<long> right) => FusedAddRoundedHalving(left, right);
+
+        /// <summary>
+        /// svint8_t svrhadd[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SRHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> FusedAddRoundedHalving(Vector<sbyte> left, Vector<sbyte> right) => FusedAddRoundedHalving(left, right);
+
+        /// <summary>
+        /// svuint16_t svrhadd[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   URHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> FusedAddRoundedHalving(Vector<ushort> left, Vector<ushort> right) => FusedAddRoundedHalving(left, right);
+
+        /// <summary>
+        /// svuint32_t svrhadd[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   URHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> FusedAddRoundedHalving(Vector<uint> left, Vector<uint> right) => FusedAddRoundedHalving(left, right);
+
+        /// <summary>
+        /// svuint64_t svrhadd[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   URHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> FusedAddRoundedHalving(Vector<ulong> left, Vector<ulong> right) => FusedAddRoundedHalving(left, right);
+
+
         /// Interleaving Xor
 
         /// <summary>
@@ -1264,6 +1461,205 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> left, Vector<ulong> right) => InterleavingXorOddEven(even, left, right);
 
+        // Maximum number pairwise
+
+        /// <summary>
+        /// svfloat64_t svmaxnmp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmaxnmp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMAXNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FMAXNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> MaxNumberPairwise(Vector<double> left, Vector<double> right) => MaxNumberPairwise(left, right);
+
+        /// <summary>
+        /// svfloat32_t svmaxnmp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmaxnmp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMAXNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FMAXNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> MaxNumberPairwise(Vector<float> left, Vector<float> right) => MaxNumberPairwise(left, right);
+
+        // Maximum pairwise
+
+        /// <summary>
+        /// svuint8_t svmaxp[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svmaxp[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> MaxPairwise(Vector<byte> left, Vector<byte> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svfloat64_t svmaxp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svmaxp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> MaxPairwise(Vector<double> left, Vector<double> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svint16_t svmaxp[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svmaxp[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MaxPairwise(Vector<short> left, Vector<short> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svint32_t svmaxp[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svmaxp[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MaxPairwise(Vector<int> left, Vector<int> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svint64_t svmaxp[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svmaxp[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MaxPairwise(Vector<long> left, Vector<long> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svint8_t svmaxp[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svmaxp[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MaxPairwise(Vector<sbyte> left, Vector<sbyte> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svfloat32_t svmaxp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svmaxp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> MaxPairwise(Vector<float> left, Vector<float> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svuint16_t svmaxp[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svmaxp[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> MaxPairwise(Vector<ushort> left, Vector<ushort> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svuint32_t svmaxp[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svmaxp[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> MaxPairwise(Vector<uint> left, Vector<uint> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// svuint64_t svmaxp[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svmaxp[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> MaxPairwise(Vector<ulong> left, Vector<ulong> right) => MaxPairwise(left, right);
+
+        // Minimum number pairwise
+
+        /// <summary>
+        /// svfloat64_t svminnmp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svminnmp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMINNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FMINNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> MinNumberPairwise(Vector<double> left, Vector<double> right) => MinNumberPairwise(left, right);
+
+        /// <summary>
+        /// svfloat32_t svminnmp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svminnmp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMINNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FMINNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> MinNumberPairwise(Vector<float> left, Vector<float> right) => MinNumberPairwise(left, right);
+
+        // Minimum pairwise
+
+        /// <summary>
+        /// svuint8_t svminp[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        /// svuint8_t svminp[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   UMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   UMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> MinPairwise(Vector<byte> left, Vector<byte> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svfloat64_t svminp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        /// svfloat64_t svminp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   FMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   FMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<double> MinPairwise(Vector<double> left, Vector<double> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svint16_t svminp[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
+        /// svint16_t svminp[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   SMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MinPairwise(Vector<short> left, Vector<short> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svint32_t svminp[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
+        /// svint32_t svminp[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   SMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MinPairwise(Vector<int> left, Vector<int> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svint64_t svminp[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
+        /// svint64_t svminp[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   SMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MinPairwise(Vector<long> left, Vector<long> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svint8_t svminp[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
+        /// svint8_t svminp[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        ///   SMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MinPairwise(Vector<sbyte> left, Vector<sbyte> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svfloat32_t svminp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        /// svfloat32_t svminp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   FMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   FMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<float> MinPairwise(Vector<float> left, Vector<float> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svuint16_t svminp[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        /// svuint16_t svminp[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   UMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        ///   UMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> MinPairwise(Vector<ushort> left, Vector<ushort> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svuint32_t svminp[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        /// svuint32_t svminp[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   UMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        ///   UMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> MinPairwise(Vector<uint> left, Vector<uint> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// svuint64_t svminp[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        /// svuint64_t svminp[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   UMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        ///   UMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> MinPairwise(Vector<ulong> left, Vector<ulong> right) => MinPairwise(left, right);
 
         // Multiply-add, addend first
 
@@ -1634,6 +2030,54 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> MultiplyBySelectedScalarWideningOddAndSubtract(Vector<ulong> minuend, Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) => MultiplyBySelectedScalarWideningOddAndSubtract(minuend, left, right, rightIndex);
 
 
+        // Saturating doubling multiply high with index
+
+        /// <summary>
+        /// svint16_t svqdmulh_lane[_s16](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.H, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// svint32_t svqdmulh_lane[_s32](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.S, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqdmulh_lane[_s64](svint64_t op1, svint64_t op2, uint64_t imm_index)
+        ///   SQDMULH Zresult.D, Zop1.D, Zop2.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingBySelectedScalarSaturateHigh(Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+
+        // Saturating doubling multiply high
+
+        /// <summary>
+        /// svint8_t svqdmulh[_s8](svint8_t op1, svint8_t op2)
+        ///   SQDMULH Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyDoublingSaturateHigh(Vector<sbyte> left, Vector<sbyte> right) => MultiplyDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint16_t svqdmulh[_s16](svint16_t op1, svint16_t op2)
+        ///   SQDMULH Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MultiplyDoublingSaturateHigh(Vector<short> left, Vector<short> right) => MultiplyDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint32_t svqdmulh[_s32](svint32_t op1, svint32_t op2)
+        ///   SQDMULH Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MultiplyDoublingSaturateHigh(Vector<int> left, Vector<int> right) => MultiplyDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint64_t svqdmulh[_s64](svint64_t op1, svint64_t op2)
+        ///   SQDMULH Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MultiplyDoublingSaturateHigh(Vector<long> left, Vector<long> right) => MultiplyDoublingSaturateHigh(left, right);
+
+
         // Multiply long (bottom)
 
         /// <summary>
@@ -1803,6 +2247,447 @@ namespace System.Runtime.Intrinsics.Arm
         ///   PMULLT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
         public static Vector<ulong> PolynomialMultiplyWideningOdd(Vector<uint> left, Vector<uint> right) => PolynomialMultiplyWideningOdd(left, right);
+
+
+        // Saturating doubling multiply-add long (bottom)
+
+        /// <summary>
+        /// svint16_t svqdmlalb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLALB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndAddSaturateEven(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) => MultiplyDoublingWideningAndAddSaturateEven(addend, left, right);
+
+        /// <summary>
+        /// svint32_t svqdmlalb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLALB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndAddSaturateEven(Vector<int> addend, Vector<short> left, Vector<short> right) => MultiplyDoublingWideningAndAddSaturateEven(addend, left, right);
+
+        /// <summary>
+        /// svint64_t svqdmlalb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLALB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndAddSaturateEven(Vector<long> addend, Vector<int> left, Vector<int> right) => MultiplyDoublingWideningAndAddSaturateEven(addend, left, right);
+
+
+        // Saturating doubling multiply-add long (bottom × top)
+
+        /// <summary>
+        /// svint16_t svqdmlalbt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLALBT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndAddSaturateEvenOdd(Vector<short> addend, Vector<sbyte> leftEven, Vector<sbyte> rightOdd) => MultiplyDoublingWideningAndAddSaturateEvenOdd(addend, leftEven, rightOdd);
+
+        /// <summary>
+        /// svint32_t svqdmlalbt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLALBT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndAddSaturateEvenOdd(Vector<int> addend, Vector<short> leftEven, Vector<short> rightOdd) => MultiplyDoublingWideningAndAddSaturateEvenOdd(addend, leftEven, rightOdd);
+
+        /// <summary>
+        /// svint64_t svqdmlalbt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLALBT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndAddSaturateEvenOdd(Vector<long> addend, Vector<int> leftEven, Vector<int> rightOdd) => MultiplyDoublingWideningAndAddSaturateEvenOdd(addend, leftEven, rightOdd);
+
+
+        // Saturating doubling multiply-add long (top)
+
+        /// <summary>
+        /// svint16_t svqdmlalt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLALT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndAddSaturateOdd(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) => MultiplyDoublingWideningAndAddSaturateOdd(addend, left, right);
+
+        /// <summary>
+        /// svint32_t svqdmlalt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLALT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndAddSaturateOdd(Vector<int> addend, Vector<short> left, Vector<short> right) => MultiplyDoublingWideningAndAddSaturateOdd(addend, left, right);
+
+        /// <summary>
+        /// svint64_t svqdmlalt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLALT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndAddSaturateOdd(Vector<long> addend, Vector<int> left, Vector<int> right) => MultiplyDoublingWideningAndAddSaturateOdd(addend, left, right);
+
+
+        // Saturating doubling multiply-subtract long (bottom)
+
+        /// <summary>
+        /// svint16_t svqdmlslb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLSLB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndSubtractSaturateEven(Vector<short> minuend, Vector<sbyte> left, Vector<sbyte> right) => MultiplyDoublingWideningAndSubtractSaturateEven(minuend, left, right);
+
+        /// <summary>
+        /// svint32_t svqdmlslb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLSLB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndSubtractSaturateEven(Vector<int> minuend, Vector<short> left, Vector<short> right) => MultiplyDoublingWideningAndSubtractSaturateEven(minuend, left, right);
+
+        /// <summary>
+        /// svint64_t svqdmlslb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLSLB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndSubtractSaturateEven(Vector<long> minuend, Vector<int> left, Vector<int> right) => MultiplyDoublingWideningAndSubtractSaturateEven(minuend, left, right);
+
+
+        // Saturating doubling multiply-subtract long (bottom × top)
+
+        /// <summary>
+        /// svint16_t svqdmlslbt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLSLBT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(Vector<short> minuend, Vector<sbyte> leftEven, Vector<sbyte> rightOdd) => MultiplyDoublingWideningAndSubtractSaturateEvenOdd(minuend, leftEven, rightOdd);
+
+        /// <summary>
+        /// svint32_t svqdmlslbt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLSLBT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(Vector<int> minuend, Vector<short> leftEven, Vector<short> rightOdd) => MultiplyDoublingWideningAndSubtractSaturateEvenOdd(minuend, leftEven, rightOdd);
+
+        /// <summary>
+        /// svint64_t svqdmlslbt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLSLBT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndSubtractSaturateEvenOdd(Vector<long> minuend, Vector<int> leftEven, Vector<int> rightOdd) => MultiplyDoublingWideningAndSubtractSaturateEvenOdd(minuend, leftEven, rightOdd);
+
+
+        // Saturating doubling multiply-subtract long (top)
+
+        /// <summary>
+        /// svint16_t svqdmlslt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SQDMLSLT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningAndSubtractSaturateOdd(Vector<short> minuend, Vector<sbyte> left, Vector<sbyte> right) => MultiplyDoublingWideningAndSubtractSaturateOdd(minuend, left, right);
+
+        /// <summary>
+        /// svint32_t svqdmlslt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SQDMLSLT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningAndSubtractSaturateOdd(Vector<int> minuend, Vector<short> left, Vector<short> right) => MultiplyDoublingWideningAndSubtractSaturateOdd(minuend, left, right);
+
+        /// <summary>
+        /// svint64_t svqdmlslt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SQDMLSLT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningAndSubtractSaturateOdd(Vector<long> minuend, Vector<int> left, Vector<int> right) => MultiplyDoublingWideningAndSubtractSaturateOdd(minuend, left, right);
+
+
+        // Saturating doubling multiply-add long with index (bottom)
+
+        /// <summary>
+        /// svint32_t svqdmlalb_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQDMLALB Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven(Vector<int> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqdmlalb_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQDMLALB Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven(Vector<long> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningBySelectedScalarAndAddSaturateEven(addend, left, right, rightIndex);
+
+
+        // Saturating doubling multiply-add long with index (top)
+
+        /// <summary>
+        /// svint32_t svqdmlalt_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQDMLALT Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd(Vector<int> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqdmlalt_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQDMLALT Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd(Vector<long> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningBySelectedScalarAndAddSaturateOdd(addend, left, right, rightIndex);
+
+
+        // Saturating doubling multiply-subtract long with index (bottom)
+
+        /// <summary>
+        /// svint32_t svqdmlslb_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQDMLSLB Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven(Vector<int> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven(minuend, left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqdmlslb_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQDMLSLB Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven(Vector<long> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateEven(minuend, left, right, rightIndex);
+
+
+        // Saturating doubling multiply-subtract long (top)
+
+        /// <summary>
+        /// svint32_t svqdmlslt_lane[_s32](svint32_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQDMLSLT Ztied1.S, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd(Vector<int> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd(minuend, left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqdmlslt_lane[_s64](svint64_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQDMLSLT Ztied1.D, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd(Vector<long> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd(minuend, left, right, rightIndex);
+
+
+        // Saturating doubling multiply long (bottom)
+
+        /// <summary>
+        /// svint16_t svqdmullb[_s16](svint8_t op1, svint8_t op2)
+        ///   SQDMULLB Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningSaturateEven(Vector<sbyte> left, Vector<sbyte> right) => MultiplyDoublingWideningSaturateEven(left, right);
+
+        /// <summary>
+        /// svint32_t svqdmullb[_s32](svint16_t op1, svint16_t op2)
+        ///   SQDMULLB Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningSaturateEven(Vector<short> left, Vector<short> right) => MultiplyDoublingWideningSaturateEven(left, right);
+
+        /// <summary>
+        /// svint64_t svqdmullb[_s64](svint32_t op1, svint32_t op2)
+        ///   SQDMULLB Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningSaturateEven(Vector<int> left, Vector<int> right) => MultiplyDoublingWideningSaturateEven(left, right);
+
+
+        // Saturating doubling multiply long with index (bottom)
+
+        /// <summary>
+        /// svint32_t svqdmullb_lane[_s32](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQDMULLB Zresult.S, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningSaturateEvenBySelectedScalar(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningSaturateEvenBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqdmullb_lane[_s64](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQDMULLB Zresult.D, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningSaturateEvenBySelectedScalar(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningSaturateEvenBySelectedScalar(left, right, rightIndex);
+
+
+        // Saturating doubling multiply long (top)
+
+        /// <summary>
+        /// svint16_t svqdmullt[_s16](svint8_t op1, svint8_t op2)
+        ///   SQDMULLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> MultiplyDoublingWideningSaturateOdd(Vector<sbyte> left, Vector<sbyte> right) => MultiplyDoublingWideningSaturateOdd(left, right);
+
+        /// <summary>
+        /// svint32_t svqdmullt[_s32](svint16_t op1, svint16_t op2)
+        ///   SQDMULLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningSaturateOdd(Vector<short> left, Vector<short> right) => MultiplyDoublingWideningSaturateOdd(left, right);
+
+        /// <summary>
+        /// svint64_t svqdmullt[_s64](svint32_t op1, svint32_t op2)
+        ///   SQDMULLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningSaturateOdd(Vector<int> left, Vector<int> right) => MultiplyDoublingWideningSaturateOdd(left, right);
+
+
+        // Saturating doubling multiply long with index (top)
+
+        /// <summary>
+        /// svint32_t svqdmullt_lane[_s32](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQDMULLT Zresult.S, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyDoublingWideningSaturateOddBySelectedScalar(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningSaturateOddBySelectedScalar(left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqdmullt_lane[_s64](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQDMULLT Zresult.D, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyDoublingWideningSaturateOddBySelectedScalar(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyDoublingWideningSaturateOddBySelectedScalar(left, right, rightIndex);
+
+
+        // Saturating rounding doubling multiply high with index
+
+        /// <summary>
+        /// svint16_t svqrdmulh_lane[_s16](svint16_t op1, svint16_t op2, uint64_t imm_index)
+        ///   SQRDMULH Zresult.H, Zop1.H, Zop2.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// svint32_t svqrdmulh_lane[_s32](svint32_t op1, svint32_t op2, uint64_t imm_index)
+        ///   SQRDMULH Zresult.S, Zop1.S, Zop2.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqrdmulh_lane[_s64](svint64_t op1, svint64_t op2, uint64_t imm_index)
+        ///   SQRDMULH Zresult.D, Zop1.D, Zop2.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingBySelectedScalarSaturateHigh(Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingBySelectedScalarSaturateHigh(left, right, rightIndex);
+
+
+        // Saturating rounding doubling multiply-add high
+
+        /// <summary>
+        /// svint8_t svqrdmlah[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
+        ///   SQRDMLAH Ztied1.B, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyRoundedDoublingSaturateAndAddHigh(Vector<sbyte> addend, Vector<sbyte> left, Vector<sbyte> right) => MultiplyRoundedDoublingSaturateAndAddHigh(addend, left, right);
+
+        /// <summary>
+        /// svint16_t svqrdmlah[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
+        ///   SQRDMLAH Ztied1.H, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateAndAddHigh(Vector<short> addend, Vector<short> left, Vector<short> right) => MultiplyRoundedDoublingSaturateAndAddHigh(addend, left, right);
+
+        /// <summary>
+        /// svint32_t svqrdmlah[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
+        ///   SQRDMLAH Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateAndAddHigh(Vector<int> addend, Vector<int> left, Vector<int> right) => MultiplyRoundedDoublingSaturateAndAddHigh(addend, left, right);
+
+        /// <summary>
+        /// svint64_t svqrdmlah[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
+        ///   SQRDMLAH Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateAndAddHigh(Vector<long> addend, Vector<long> left, Vector<long> right) => MultiplyRoundedDoublingSaturateAndAddHigh(addend, left, right);
+
+
+        // Saturating rounding doubling multiply-subtract high
+
+        /// <summary>
+        /// svint8_t svqrdmlsh[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
+        ///   SQRDMLSH Ztied1.B, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyRoundedDoublingSaturateAndSubtractHigh(Vector<sbyte> minuend, Vector<sbyte> left, Vector<sbyte> right) => MultiplyRoundedDoublingSaturateAndSubtractHigh(minuend, left, right);
+
+        /// <summary>
+        /// svint16_t svqrdmlsh[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
+        ///   SQRDMLSH Ztied1.H, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateAndSubtractHigh(Vector<short> minuend, Vector<short> left, Vector<short> right) => MultiplyRoundedDoublingSaturateAndSubtractHigh(minuend, left, right);
+
+        /// <summary>
+        /// svint32_t svqrdmlsh[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
+        ///   SQRDMLSH Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateAndSubtractHigh(Vector<int> minuend, Vector<int> left, Vector<int> right) => MultiplyRoundedDoublingSaturateAndSubtractHigh(minuend, left, right);
+
+        /// <summary>
+        /// svint64_t svqrdmlsh[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
+        ///   SQRDMLSH Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateAndSubtractHigh(Vector<long> minuend, Vector<long> left, Vector<long> right) => MultiplyRoundedDoublingSaturateAndSubtractHigh(minuend, left, right);
+
+
+        // Saturating rounding doubling multiply-add high with index
+
+        /// <summary>
+        /// svint16_t svqrdmlah_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQRDMLAH Ztied1.H, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(Vector<short> addend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// svint32_t svqrdmlah_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQRDMLAH Ztied1.S, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(Vector<int> addend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(addend, left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqrdmlah_lane[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_index)
+        ///   SQRDMLAH Ztied1.D, Zop2.D, Zop3.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(Vector<long> addend, Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh(addend, left, right, rightIndex);
+
+
+        // Saturating rounding doubling multiply-subtract high with index
+
+        /// <summary>
+        /// svint16_t svqrdmlsh_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index)
+        ///   SQRDMLSH Ztied1.H, Zop2.H, Zop3.H[imm_index]
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(Vector<short> minuend, Vector<short> left, Vector<short> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(minuend, left, right, rightIndex);
+
+        /// <summary>
+        /// svint32_t svqrdmlsh_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index)
+        ///   SQRDMLSH Ztied1.S, Zop2.S, Zop3.S[imm_index]
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(Vector<int> minuend, Vector<int> left, Vector<int> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(minuend, left, right, rightIndex);
+
+        /// <summary>
+        /// svint64_t svqrdmlsh_lane[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_index)
+        ///   SQRDMLSH Ztied1.D, Zop2.D, Zop3.D[imm_index]
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(Vector<long> minuend, Vector<long> left, Vector<long> right, [ConstantExpected] byte rightIndex) => MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh(minuend, left, right, rightIndex);
+
+
+        // Saturating rounding doubling multiply high
+
+        /// <summary>
+        /// svint8_t svqrdmulh[_s8](svint8_t op1, svint8_t op2)
+        ///   SQRDMULH Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<sbyte> MultiplyRoundedDoublingSaturateHigh(Vector<sbyte> left, Vector<sbyte> right) => MultiplyRoundedDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint16_t svqrdmulh[_s16](svint16_t op1, svint16_t op2)
+        ///   SQRDMULH Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<short> MultiplyRoundedDoublingSaturateHigh(Vector<short> left, Vector<short> right) => MultiplyRoundedDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint32_t svqrdmulh[_s32](svint32_t op1, svint32_t op2)
+        ///   SQRDMULH Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<int> MultiplyRoundedDoublingSaturateHigh(Vector<int> left, Vector<int> right) => MultiplyRoundedDoublingSaturateHigh(left, right);
+
+        /// <summary>
+        /// svint64_t svqrdmulh[_s64](svint64_t op1, svint64_t op2)
+        ///   SQRDMULH Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<long> MultiplyRoundedDoublingSaturateHigh(Vector<long> left, Vector<long> right) => MultiplyRoundedDoublingSaturateHigh(left, right);
+
+
+        // Saturating negate
+
+        /// <summary>
+        /// svint8_t svqneg[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        /// svint8_t svqneg[_s8]_x(svbool_t pg, svint8_t op)
+        /// svint8_t svqneg[_s8]_z(svbool_t pg, svint8_t op)
+        ///   SQNEG Ztied.B, Pg/M, Zop.B
+        ///   SQNEG Ztied.B, Pg/M, Ztied.B
+        /// </summary>
+        public static Vector<sbyte> NegateSaturate(Vector<sbyte> value) => NegateSaturate(value);
+
+        /// <summary>
+        /// svint16_t svqneg[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        /// svint16_t svqneg[_s16]_x(svbool_t pg, svint16_t op)
+        /// svint16_t svqneg[_s16]_z(svbool_t pg, svint16_t op)
+        ///   SQNEG Ztied.H, Pg/M, Zop.H
+        ///   SQNEG Ztied.H, Pg/M, Ztied.H
+        /// </summary>
+        public static Vector<short> NegateSaturate(Vector<short> value) => NegateSaturate(value);
+
+        /// <summary>
+        /// svint32_t svqneg[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        /// svint32_t svqneg[_s32]_x(svbool_t pg, svint32_t op)
+        /// svint32_t svqneg[_s32]_z(svbool_t pg, svint32_t op)
+        ///   SQNEG Ztied.S, Pg/M, Zop.S
+        ///   SQNEG Ztied.S, Pg/M, Ztied.S
+        /// </summary>
+        public static Vector<int> NegateSaturate(Vector<int> value) => NegateSaturate(value);
+
+        /// <summary>
+        /// svint64_t svqneg[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        /// svint64_t svqneg[_s64]_x(svbool_t pg, svint64_t op)
+        /// svint64_t svqneg[_s64]_z(svbool_t pg, svint64_t op)
+        ///   SQNEG Ztied.D, Pg/M, Zop.D
+        ///   SQNEG Ztied.D, Pg/M, Ztied.D
+        /// </summary>
+        public static Vector<long> NegateSaturate(Vector<long> value) => NegateSaturate(value);
 
 
         // Rounding shift left
@@ -2844,6 +3729,84 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SUBHNT Ztied.S, Zop1.D, Zop2.D
         /// </summary>
         public static Vector<uint> SubtractHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) => SubtractHighNarrowingOdd(even, left, right);
+
+
+        // Rounding subtract narrow high part (bottom)
+
+        /// <summary>
+        /// svuint8_t svrsubhnb[_u16](svuint16_t op1, svuint16_t op2)
+        ///   RSUBHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> SubtractRoundedHighNarrowingEven(Vector<ushort> left, Vector<ushort> right) => SubtractRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svint16_t svrsubhnb[_s32](svint32_t op1, svint32_t op2)
+        ///   RSUBHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> SubtractRoundedHighNarrowingEven(Vector<int> left, Vector<int> right) => SubtractRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svint32_t svrsubhnb[_s64](svint64_t op1, svint64_t op2)
+        ///   RSUBHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> SubtractRoundedHighNarrowingEven(Vector<long> left, Vector<long> right) => SubtractRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svint8_t svrsubhnb[_s16](svint16_t op1, svint16_t op2)
+        ///   RSUBHNB Zresult.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> SubtractRoundedHighNarrowingEven(Vector<short> left, Vector<short> right) => SubtractRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svuint16_t svrsubhnb[_u32](svuint32_t op1, svuint32_t op2)
+        ///   RSUBHNB Zresult.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> SubtractRoundedHighNarrowingEven(Vector<uint> left, Vector<uint> right) => SubtractRoundedHighNarrowingEven(left, right);
+
+        /// <summary>
+        /// svuint32_t svrsubhnb[_u64](svuint64_t op1, svuint64_t op2)
+        ///   RSUBHNB Zresult.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> SubtractRoundedHighNarrowingEven(Vector<ulong> left, Vector<ulong> right) => SubtractRoundedHighNarrowingEven(left, right);
+
+
+        // Rounding subtract narrow high part (top)
+
+        /// <summary>
+        /// svuint8_t svrsubhnt[_u16](svuint8_t even, svuint16_t op1, svuint16_t op2)
+        ///   RSUBHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<byte> SubtractRoundedHighNarrowingOdd(Vector<byte> even, Vector<ushort> left, Vector<ushort> right) => SubtractRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svint16_t svrsubhnt[_s32](svint16_t even, svint32_t op1, svint32_t op2)
+        ///   RSUBHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<short> SubtractRoundedHighNarrowingOdd(Vector<short> even, Vector<int> left, Vector<int> right) => SubtractRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svint32_t svrsubhnt[_s64](svint32_t even, svint64_t op1, svint64_t op2)
+        ///   RSUBHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<int> SubtractRoundedHighNarrowingOdd(Vector<int> even, Vector<long> left, Vector<long> right) => SubtractRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svint8_t svrsubhnt[_s16](svint8_t even, svint16_t op1, svint16_t op2)
+        ///   RSUBHNT Ztied.B, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<sbyte> SubtractRoundedHighNarrowingOdd(Vector<sbyte> even, Vector<short> left, Vector<short> right) => SubtractRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svuint16_t svrsubhnt[_u32](svuint16_t even, svuint32_t op1, svuint32_t op2)
+        ///   RSUBHNT Ztied.H, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ushort> SubtractRoundedHighNarrowingOdd(Vector<ushort> even, Vector<uint> left, Vector<uint> right) => SubtractRoundedHighNarrowingOdd(even, left, right);
+
+        /// <summary>
+        /// svuint32_t svrsubhnt[_u64](svuint32_t even, svuint64_t op1, svuint64_t op2)
+        ///   RSUBHNT Ztied.S, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<uint> SubtractRoundedHighNarrowingOdd(Vector<uint> even, Vector<ulong> left, Vector<ulong> right) => SubtractRoundedHighNarrowingOdd(even, left, right);
 
 
         // Saturating subtract

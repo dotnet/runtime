@@ -73,26 +73,27 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118314")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Disconnect_NotConnected_ThrowsInvalidOperationException(bool reuseSocket)
+        public async Task Disconnect_NotConnected_ThrowsInvalidOperationException(bool reuseSocket)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.ThrowsAsync<InvalidOperationException>(async () => await DisconnectAsync(s, reuseSocket));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await DisconnectAsync(s, reuseSocket));
             }
         }
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Disconnect_ObjectDisposed_ThrowsObjectDisposedException(bool reuseSocket)
+        public async Task Disconnect_ObjectDisposed_ThrowsObjectDisposedException(bool reuseSocket)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 s.Dispose();
-                Assert.ThrowsAsync<ObjectDisposedException>(async () => await DisconnectAsync(s, reuseSocket));
+                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await DisconnectAsync(s, reuseSocket));
             }
         }
     }
