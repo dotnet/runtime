@@ -89,7 +89,6 @@ class GCScan
     static void VerifyHandleTable(int condemned, int max_gen, ScanContext* sc);
 
     static VOLATILE(int32_t) m_GcStructuresInvalidCnt;
-    static int32_t m_testVar;
 };
 
 #endif // _GCSCAN_H_
