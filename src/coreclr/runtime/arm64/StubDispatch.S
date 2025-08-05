@@ -5,6 +5,14 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+#if defined(__APPLE__)
+    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
+    // Fix, but adding an empty, unused method
+    LEAF_ENTRY RhpStubDispatchDoNotFailToBuild, _TEXT
+       ret
+    LEAF_END RhpStubDispatchDoNotFailToBuild, _TEXT
+#endif
+
     // Macro that generates code to check a single cache entry.
     .macro CHECK_CACHE_ENTRY entry
         // Check a single entry in the cache.
@@ -31,7 +39,15 @@
         ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in x0.
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+.cfi_endproc
+#endif
         ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+#ifdef TARGET_APPLE
+.cfi_startproc
+#endif
         ldr     x10, [x0]
 
     .global CurrentEntry

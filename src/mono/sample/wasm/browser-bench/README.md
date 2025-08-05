@@ -26,6 +26,18 @@ To run the benchmark with blazor startup measurements, set `BlazorStartup` prope
 
     > dotnet build /t:RunSample /p:BlazorStartup=true
 
+### How to check that the startup patches are up to date
+
+To check that the startup measurements work, build the repo first like
+
+    > ./build.sh -bl -os browser -c Release -subset mono+libs+packs
+
+in the repository root and then try to run the bench with startup measurements like
+
+    > ./dotnet.sh build -c Release /t:RunSample /p:BlazorStartup=true /p:BrowserStartup=true src/mono/sample/wasm/browser-bench
+
+When the patches are out of date, the build will fail and the benchmark will not run.
+
 ### Additional build arguments
 
 The benchmark project is built in a separate process, so to pass additional msbuild arguments, use `BuildAdditionalArgs` property, like:

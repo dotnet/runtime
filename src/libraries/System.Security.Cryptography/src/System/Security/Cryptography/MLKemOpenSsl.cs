@@ -20,7 +20,6 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
     public sealed partial class MLKemOpenSsl : MLKem
     {
         private readonly SafeEvpPKeyHandle _key;

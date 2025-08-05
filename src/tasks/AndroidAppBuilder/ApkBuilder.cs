@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Android.Build;
 using Microsoft.Build.Framework;
@@ -39,7 +40,6 @@ public partial class ApkBuilder
     public bool ForceAOT { get; set; }
     public bool ForceFullAOT { get; set; }
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
-    public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
     public string[] RuntimeComponents { get; set; } = Array.Empty<string>();
@@ -120,11 +120,6 @@ public partial class ApkBuilder
             throw new ArgumentException($"Using DiagnosticPorts targeting Mono requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
-        if (IsCoreCLR && StaticLinkedRuntime)
-        {
-            throw new ArgumentException("Static linking is not supported for CoreCLR runtime");
-        }
-
         AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
@@ -200,11 +195,8 @@ public partial class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
 
         var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
-        if (StripDebugSymbols)
-        {
-            extensionsToIgnore.Add(".pdb");
-            extensionsToIgnore.Add(".dbg");
-        }
+        extensionsToIgnore.Add(".pdb");
+        extensionsToIgnore.Add(".dbg");
 
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
@@ -263,6 +255,10 @@ public partial class ApkBuilder
             {
                 runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
             }
+            else if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                runtimeLib = Path.Combine(AppDir, "libcoreclr_static.a");
+            }
             else if (IsCoreCLR)
             {
                 runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
@@ -277,7 +273,7 @@ public partial class ApkBuilder
                 nativeLibraries += $"{runtimeLib}{Environment.NewLine}";
             }
 
-            if (StaticLinkedRuntime)
+            if (StaticLinkedRuntime && IsMono)
             {
                 string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
 
@@ -311,12 +307,37 @@ public partial class ApkBuilder
                 // due to circular dependency.
                 nativeLibraries += $"    {runtimeLib}{Environment.NewLine}";
             }
+
+            if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                string[] staticMonoStubs = Directory.GetFiles(AppDir, "libmono*.a");
+                string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
+                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase) &&
+                                  !staticMonoStubs.Contains(lib, StringComparer.OrdinalIgnoreCase))
+                    .ToArray();
+
+                foreach (string lib in staticLibs)
+                {
+                    nativeLibraries += $"    {lib}{Environment.NewLine}";
+                }
+
+                nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
+                nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
+            }
         }
 
         StringBuilder extraLinkerArgs = new StringBuilder();
         foreach (ITaskItem item in ExtraLinkerArguments)
         {
             extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
+        }
+
+        if (StaticLinkedRuntime && IsCoreCLR)
+        {
+            // Ensure global symbol references in the shared library are resolved to definitions in
+            // the same shared library. For the static linked runtime specifically, we need this for
+            // global functions in assembly for the linker to treat relative offsets to them as constant
+            extraLinkerArgs.AppendLine($"    \"-Wl,-Bsymbolic\"");
         }
 
         nativeLibraries += assemblerFilesToLink.ToString();
@@ -361,11 +382,19 @@ public partial class ApkBuilder
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
-        File.WriteAllText(Path.Combine(OutputDir, monodroidSource), Utils.GetEmbeddedResource(monodroidSource));
+
+        string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
+        if (IsCoreCLR)
+        {
+            monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
+        }
+        File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
 
         AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
         project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
         project.BuildCMake(OutputDir, StripDebugSymbols);
+
+        // TODO: https://github.com/dotnet/runtime/issues/115717
 
         string abi = project.Abi;
 
@@ -401,7 +430,8 @@ public partial class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
-        string jniLibraryName = (IsLibraryMode) ? ProjectName! : "System.Security.Cryptography.Native.Android";
+        string jniLibraryName = (IsLibraryMode) ? ProjectName! :
+            (StaticLinkedRuntime && IsCoreCLR) ? "monodroid" : "System.Security.Cryptography.Native.Android";
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
             .Replace("%JNI_LIBRARY_NAME%", jniLibraryName)
@@ -458,7 +488,8 @@ public partial class ApkBuilder
                     excludedLibs.Add("libmscordaccore.so");
                 }
             }
-            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
+            if (!StaticLinkedRuntime)
+                dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
         }
 
         // add all *.so files to lib/%abi%/
@@ -615,4 +646,66 @@ public partial class ApkBuilder
 
     [GeneratedRegex(@"\.(\d)")]
     private static partial Regex DotNumberRegex();
+
+    private string RenderMonodroidCoreClrTemplate(string monodroidContent)
+    {
+        // At the moment, we only set the AppContext properties, so it's all done here for simplicity.
+        // If we need to add more rendering logic, we can refactor this method later.
+        var appContextKeys = new StringBuilder();
+        appContextKeys.AppendLine("    appctx_keys[0] = \"RUNTIME_IDENTIFIER\";");
+        appContextKeys.AppendLine("    appctx_keys[1] = \"APP_CONTEXT_BASE_DIRECTORY\";");
+        appContextKeys.AppendLine("    appctx_keys[2] = \"HOST_RUNTIME_CONTRACT\";");
+
+        var appContextValues = new StringBuilder();
+        appContextValues.AppendLine("    appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;");
+        appContextValues.AppendLine("    appctx_values[1] = g_bundle_path;");
+        appContextValues.AppendLine();
+        appContextValues.AppendLine("    char contract_str[19];"); // 0x + 16 hex digits + '\0'
+        appContextValues.AppendLine("    snprintf(contract_str, 19, \"0x%zx\", (size_t)(&g_host_contract));");
+        appContextValues.AppendLine("    appctx_values[2] = contract_str;");
+        appContextValues.AppendLine();
+
+        // Parse runtime config properties and add them to the AppContext keys and values.
+        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties();
+        int hardwiredAppContextProperties = 3; // For the hardwired AppContext keys and values above.
+        int i = 0;
+        foreach ((string key, string value) in configProperties)
+        {
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardwiredAppContextProperties}] = \"{key}\";");
+            appContextValues.AppendLine($"    appctx_values[{i + hardwiredAppContextProperties}] = \"{value}\";");
+            i++;
+        }
+
+        // Replace the template placeholders.
+        string updatedContent = monodroidContent.Replace("%AppContextPropertyCount%", (configProperties.Count + hardwiredAppContextProperties).ToString())
+            .Replace("%AppContextKeys%", appContextKeys.ToString().TrimEnd())
+            .Replace("%AppContextValues%", appContextValues.ToString().TrimEnd());
+        return updatedContent;
+    }
+
+    private Dictionary<string, string> ParseRuntimeConfigProperties()
+    {
+        var configProperties = new Dictionary<string, string>();
+        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), $"{ProjectName}.runtimeconfig.json");
+
+        try
+        {
+            string jsonContent = File.ReadAllText(runtimeConfigPath);
+            using JsonDocument doc = JsonDocument.Parse(jsonContent);
+            JsonElement root = doc.RootElement;
+            if (root.TryGetProperty("runtimeOptions", out JsonElement runtimeOptions) && runtimeOptions.TryGetProperty("configProperties", out JsonElement propertiesJson))
+            {
+                foreach (JsonProperty property in propertiesJson.EnumerateObject())
+                {
+                    configProperties[property.Name] = property.Value.ToString();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogMessage(MessageImportance.High, $"Error while parsing runtime config at {runtimeConfigPath}: {ex.Message}");
+        }
+
+        return configProperties;
+    }
 }

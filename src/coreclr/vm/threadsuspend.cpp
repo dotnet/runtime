@@ -209,7 +209,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
 #if defined(_DEBUG)
     int nCnt = 0;
     bool bDiagSuspend = g_pConfig->GetDiagnosticSuspend();
-    ULONGLONG i64TimestampStart = CLRGetTickCount64();
+    ULONGLONG i64TimestampStart = minipal_lowres_ticks();
     ULONGLONG i64TimestampCur = i64TimestampStart;
     ULONGLONG i64TimestampPrev = i64TimestampStart;
 
@@ -321,7 +321,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                 if ((!fOneTryOnly) && bDiagSuspend)
                 {
                     while ( m_dwForbidSuspendThread != 0 &&
-                        CLRGetTickCount64()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
+                        minipal_lowres_ticks()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
                     {
                         if (g_SystemInfo.dwNumberOfProcessors > 1)
                         {
@@ -379,9 +379,9 @@ retry:
 
 #if defined(_DEBUG)
         i64TimestampPrev = i64TimestampCur;
-        i64TimestampCur = CLRGetTickCount64();
-        // CLRGetTickCount64() is global per machine (not per CPU, like getTimeStamp()).
-        // Next ASSERT states that CLRGetTickCount64() is increasing, or has wrapped.
+        i64TimestampCur = minipal_lowres_ticks();
+        // minipal_lowres_ticks() is global per machine (not per CPU, like getTimeStamp()).
+        // Next ASSERT states that minipal_lowres_ticks() is increasing, or has wrapped.
         // If it wrapped, the last iteration should have executed faster then 0.5 seconds.
         _ASSERTE(i64TimestampCur >= i64TimestampPrev || i64TimestampCur <= 500);
 
@@ -802,7 +802,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
     else
     {
         MethodDesc *pMD = pCf->GetFunction();
-        if (pCf->GetFrame() != NULL && pMD != NULL && (pMD->IsNDirect() || pMD->IsCLRToCOMCall()))
+        if (pCf->GetFrame() != NULL && pMD != NULL && (pMD->IsPInvoke() || pMD->IsCLRToCOMCall()))
         {
             // This may be interop method of an interesting interop call - latch it.
             frameAction = LatchCurrentFrame;
@@ -1183,10 +1183,6 @@ bool UseActivationInjection()
 #endif
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 HRESULT
 Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 {
@@ -1206,8 +1202,8 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     // Swap in timeout
     if (timeout != INFINITE)
     {
-        ULONG64 curTime = CLRGetTickCount64();
-        ULONG64 newEndTime = curTime + timeout;
+        ULONGLONG curTime = minipal_lowres_ticks();
+        ULONGLONG newEndTime = curTime + timeout;
 
         SetAbortEndTime(newEndTime, abortType == EEPolicy::TA_Rude);
     }
@@ -1267,7 +1263,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
         ULONGLONG abortEndTime = GetAbortEndTime();
         if (abortEndTime != MAXULONGLONG)
         {
-            ULONGLONG now_time = CLRGetTickCount64();
+            ULONGLONG now_time = minipal_lowres_ticks();
 
             if (now_time >= abortEndTime)
             {
@@ -1661,7 +1657,7 @@ LPrepareRetry:
                 return S_OK;
             }
 
-            ULONGLONG curTime = CLRGetTickCount64();
+            ULONGLONG curTime = minipal_lowres_ticks();
             if (curTime >= GetAbortEndTime())
             {
                 break;
@@ -1682,9 +1678,6 @@ LPrepareRetry:
 
     return S_OK;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void Thread::SetRudeAbortEndTimeFromEEPolicy()
 {
@@ -2310,11 +2303,7 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-#ifdef FEATURE_EH_FUNCLETS
-        DispatchManagedException(exceptObj);
-#else // FEATURE_EH_FUNCLETS
         RaiseTheExceptionInternalOnly(exceptObj, FALSE);
-#endif // FEATURE_EH_FUNCLETS
     }
 
     ::SetLastError(lastError);
@@ -3798,7 +3787,7 @@ ThrowControlForThread(
     INSTALL_MANAGED_EXCEPTION_DISPATCHER
     RaiseComPlusException();
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-#endif // FEATURE_EH_FUNCLETS    
+#endif // FEATURE_EH_FUNCLETS
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4217,18 +4206,6 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         if ((thread->m_State & TS_DebugWillSync) == 0)
             continue;
 
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-        if (thread->m_State & Thread::TS_SSToExitApcCallDone)
-        {
-            thread->ResetThreadState(Thread::TS_SSToExitApcCallDone);
-            goto Label_MarkThreadAsSynced;
-        }
-        if (thread->m_State & Thread::TS_SSToExitApcCall)
-        {
-            continue;
-        }
-#endif
-
         if (!UseContextBasedThreadRedirection())
         {
             // On platforms that do not support safe thread suspension we either
@@ -4487,7 +4464,7 @@ BOOL Thread::WaitSuspendEventsHelper(void)
     }
     EX_CATCH {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result != WAIT_OBJECT_0;
 }
@@ -5353,19 +5330,6 @@ BOOL Thread::HandledJITCase()
 #endif // FEATURE_HIJACK
 
 // Some simple helpers to keep track of the threads we are waiting for
-void Thread::MarkForSuspensionAndWait(ULONG bit)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-    m_DebugSuspendEvent.Reset();
-    InterlockedOr((LONG*)&m_State, bit);
-    ThreadStore::IncrementTrapReturningThreads();
-    m_DebugSuspendEvent.Wait(INFINITE,FALSE);
-}
-
 void Thread::MarkForSuspension(ULONG bit)
 {
     CONTRACTL {
@@ -5788,8 +5752,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 //       address to take the thread to the appropriate stub (based on the return
 //       type of the method) which will then handle preparing the thread for GC.
 //
-
-void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger)
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 {
     struct AutoClearPendingThreadActivation
     {
@@ -5824,18 +5787,6 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
     EECodeInfo codeInfo(ip);
     if (!codeInfo.IsValid())
         return;
-
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    // It's not allowed to change the IP while paused in an APC Callback for security reasons if CET is turned on
-    // So we enable the single step in the thread that is running the APC Callback
-    // and then it will be paused using single step exception after exiting the APC callback
-    // this will allow the debugger to setIp to execute FuncEvalHijack.
-    if (suspendForDebugger)
-    {
-        g_pDebugInterface->SingleStepToExitApcCall(pThread, interruptedContext);
-        return;
-    }
-#endif        
 
     DWORD addrOffset = codeInfo.GetRelOffset();
 
@@ -5912,11 +5863,6 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
     }
 }
 
-void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
-{
-    HandleSuspensionForInterruptedThread(interruptedContext, false);
-}
-
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 {
@@ -5943,10 +5889,10 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 
     switch (reason)
     {
-        case ActivationReason::SuspendForDebugger:
         case ActivationReason::SuspendForGC:
+        case ActivationReason::SuspendForDebugger:
         case ActivationReason::ThreadAbort:
-            HandleSuspensionForInterruptedThread(pContext, reason == ActivationReason::SuspendForDebugger);
+            HandleSuspensionForInterruptedThread(pContext);
             break;
 
         default:
@@ -6063,20 +6009,13 @@ DWORD StatisticsBase::secondsToDisplay = 0;
 DWORD StatisticsBase::GetTime()
 {
     LIMITED_METHOD_CONTRACT;
-    LARGE_INTEGER large;
 
     if (divisor == 0)
     {
-        if (QueryPerformanceFrequency(&large) && (large.QuadPart != 0))
-            divisor = (DWORD)(large.QuadPart / (1000 * 1000));        // microseconds
-        else
-            divisor = 1;
+        divisor = (DWORD)minipal_hires_tick_frequency() / (1000 * 1000);        // microseconds
     }
 
-    if (QueryPerformanceCounter(&large))
-        return (DWORD) (large.QuadPart / divisor);
-    else
-        return 0;
+    return (DWORD) (minipal_hires_ticks() / divisor);
 }
 
 DWORD StatisticsBase::GetElapsed(DWORD start, DWORD stop)
@@ -6107,7 +6046,7 @@ void StatisticsBase::RollOverIfNeeded()
     const DWORD RolloverInterval = 3900;
 
     // every so often, print a summary of our statistics
-    DWORD ticksNow = GetTickCount();
+    DWORD ticksNow = (DWORD)minipal_lowres_ticks();
 
     if (secondsToDisplay == 0)
     {
@@ -6122,7 +6061,7 @@ void StatisticsBase::RollOverIfNeeded()
     {
         DisplayAndUpdate();
 
-        startTick = GetTickCount();
+        startTick = (DWORD)minipal_lowres_ticks();
 
         // Our counters are 32 bits and can count to 4 GB in microseconds or 4K in seconds.
         // Reset when we get close to overflowing

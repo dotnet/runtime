@@ -69,8 +69,6 @@ FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("get_CurrentManagedThreadId", JIT_GetCurrentManagedThreadId)
-    FCFuncElement("get_TickCount", SystemNative::GetTickCount)
-    FCFuncElement("get_TickCount64", SystemNative::GetTickCount64)
     FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
     FCFuncElement("get_ExitCode", SystemNative::GetExitCode)
 FCFuncEnd()
@@ -358,20 +356,17 @@ FCFuncStart(gStubHelperFuncs)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("CalcVaListSize", StubHelpers::CalcVaListSize)
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
-    FCFuncElement("GetStubContext", StubHelpers::GetStubContext)
-    FCFuncElement("NextCallReturnAddress", StubHelpers::NextCallReturnAddress)
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)
     FCFuncElement("_InternalAlloc", MarshalNative::GCHandleInternalAlloc)
     FCFuncElement("_InternalFree", MarshalNative::GCHandleInternalFree)
     FCFuncElement("InternalGet", MarshalNative::GCHandleInternalGet)
+#ifdef FEATURE_JAVAMARSHAL
+    FCFuncElement("InternalTryGetBridgeWait", MarshalNative::GCHandleInternalTryGetBridgeWait)
+#endif
     FCFuncElement("InternalSet", MarshalNative::GCHandleInternalSet)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
-FCFuncEnd()
-
-FCFuncStart(gComAwareWeakReferenceFuncs)
-    FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
 FCFuncEnd()
 
 //
@@ -387,7 +382,6 @@ FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
-FCClassElement("ComAwareWeakReference", "System", gComAwareWeakReferenceFuncs)
 FCClassElement("Delegate", "System", gDelegateFuncs)
 FCClassElement("DependentHandle", "System.Runtime", gDependentHandleFuncs)
 FCClassElement("Environment", "System", gEnvironmentFuncs)

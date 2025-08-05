@@ -452,7 +452,7 @@ void LeftSideResourceCleanupList::SweepNeuterLeftSideResources(CordbProcess * pP
  * ------------------------------------------------------------------------- */
 extern void* GetClrModuleBase();
 
-// Do any initialization necessary for both CorPublish and CorDebug
+// Do any initialization necessary for CorDebug
 // This includes enabling logging and adding the SEDebug priv.
 void CordbCommonBase::InitializeCommon()
 {
@@ -1702,7 +1702,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
 
         UnlockProcessList();
 
-        PREFIX_ASSUME(pProcess != NULL);
+        _ASSERTE(pProcess != NULL);
 
         pProcess->ExternalAddRef();
         *ppProcess = (ICorDebugProcess *)pProcess;
@@ -2487,7 +2487,7 @@ HRESULT CordbEnumFilter::Init (ICorDebugModuleEnum * pModEnum, CordbAssembly *pA
             }
             else
             {
-                PREFIX_ASSUME(pPrevious != NULL);
+                _ASSERTE(pPrevious != NULL);
                 pPrevious->SetNext (pElement);
             }
             pPrevious = pElement;
@@ -2591,7 +2591,7 @@ HRESULT CordbEnumFilter::Init (ICorDebugThreadEnum *pThreadEnum, CordbAppDomain 
             }
             else
             {
-                PREFIX_ASSUME(pPrevious != NULL);
+                _ASSERTE(pPrevious != NULL);
                 pPrevious->SetNext (pElement);
             }
 

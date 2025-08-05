@@ -6,21 +6,15 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal sealed partial class MLDsaImplementation : MLDsa
     {
-        private MLDsaImplementation(MLDsaAlgorithm algorithm)
-            : base(algorithm)
-        {
-            ThrowIfNotSupported();
-        }
-
         internal static partial bool SupportsAny();
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm);
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm);
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
-        internal static partial MLDsaImplementation ImportPkcs8PrivateKeyValue(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
-        internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        internal static partial MLDsaImplementation ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
         /// <summary>
@@ -35,22 +29,25 @@ namespace System.Security.Cryptography
             Debug.Assert(key is not MLDsaImplementation);
 
             MLDsaAlgorithm alg = key.Algorithm;
-            byte[] rented = CryptoPool.Rent(alg.SecretKeySizeInBytes);
-            int written = 0;
+            Debug.Assert(alg.PrivateKeySizeInBytes > alg.PrivateSeedSizeInBytes);
+            byte[] rented = CryptoPool.Rent(alg.PrivateKeySizeInBytes);
 
             try
             {
-                written = key.ExportMLDsaPrivateSeed(rented);
-                return ImportSeed(alg, new ReadOnlySpan<byte>(rented, 0, written));
+                Span<byte> seedSpan = rented.AsSpan(0, alg.PrivateSeedSizeInBytes);
+                key.ExportMLDsaPrivateSeed(seedSpan);
+                return ImportSeed(alg, seedSpan);
             }
             catch (CryptographicException)
             {
-                written = key.ExportMLDsaSecretKey(rented);
-                return ImportSecretKey(alg, new ReadOnlySpan<byte>(rented, 0, written));
+                // Rented array may still be larger but we expect exact length
+                Span<byte> skSpan = rented.AsSpan(0, alg.PrivateKeySizeInBytes);
+                key.ExportMLDsaPrivateKey(skSpan);
+                return ImportPrivateKey(alg, skSpan);
             }
             finally
             {
-                CryptoPool.Return(rented, written);
+                CryptoPool.Return(rented);
             }
         }
     }

@@ -66,14 +66,14 @@ public class MiscTests : BlazorWasmTestBase
                                     : "<RunAOTCompilation>true</RunAOTCompilation>";
         ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_aot_prj_file", extraProperties: extraProperties);
 
-        // No relinking, no AOT
-        BlazorBuild(info, config);
+        // build relinks
+        BlazorBuild(info, config, isNativeBuild: true);
 
         // will aot
         BlazorPublish(info, config, new PublishOptions(UseCache: false, AOT: true));
 
         // build again
-        BlazorBuild(info, config, new BuildOptions(UseCache: false));
+        BlazorBuild(info, config, new BuildOptions(UseCache: false), isNativeBuild: true);
     }
 
     [Fact]
@@ -96,6 +96,6 @@ public class MiscTests : BlazorWasmTestBase
         string bootConfigPath = _provider.GetBootConfigPath(GetBlazorBinFrameworkDir(config, forPublish: true));
         BootJsonData bootJson = _provider.GetBootJson(bootConfigPath);
 
-        Assert.Contains(bootJson.resources.lazyAssembly.Keys, f => f.StartsWith(razorClassLibraryName));
+        Assert.Contains(((AssetsData)bootJson.resources).lazyAssembly, f => f.name.StartsWith(razorClassLibraryName));
     }
 }

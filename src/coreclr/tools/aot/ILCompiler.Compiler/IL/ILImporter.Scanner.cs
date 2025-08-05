@@ -843,7 +843,10 @@ namespace Internal.IL
             {
                 TypeDesc isinstCheckType = (TypeDesc)_canonMethodIL.GetObject(_isInstCheckPatternAnalyzer.Token);
                 if (ConstructedEETypeNode.CreationAllowed(isinstCheckType)
-                    && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+                    // Below makes sure we don't need to worry about variance
+                    && !isinstCheckType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any)
+                    // However, we still need to worry about variant-by-size casting with arrays
+                    && !_factory.TypeSystemContext.IsArrayVariantCastable(isinstCheckType))
                 {
                     condition = _factory.MaximallyConstructableType(isinstCheckType);
                 }
@@ -883,7 +886,7 @@ namespace Internal.IL
 
             if (type.IsRuntimeDeterminedSubtype)
             {
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "Unbox");
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, type), "Unbox");
             }
             else
             {
@@ -915,6 +918,7 @@ namespace Internal.IL
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeType), "mkrefany");
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.TypeHandleToRuntimeTypeHandle), "mkrefany");
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
             ImportTypedRefOperationDependencies(token, "mkrefany");
         }
 
@@ -954,13 +958,16 @@ namespace Internal.IL
                     }
                 }
 
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
+
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
 
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
                 {
-                    reference = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type);
+                    reference = GetGenericLookupHelper(
+                        isTypeEquals ? ReadyToRunHelperId.NecessaryTypeHandle : ReadyToRunHelperId.TypeHandle, type);
                 }
                 else
                 {
@@ -1183,6 +1190,9 @@ namespace Internal.IL
             if (!type.IsValueType)
                 return;
 
+            TypeDesc typeForAccessCheck = type.IsRuntimeDeterminedSubtype ? type.ConvertToCanonForm(CanonicalFormKind.Specific) : type;
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, typeForAccessCheck);
+
             if (type.IsRuntimeDeterminedSubtype)
             {
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), reason);
@@ -1210,6 +1220,7 @@ namespace Internal.IL
         private void ImportNewArray(int token)
         {
             var elementType = (TypeDesc)_methodIL.GetObject(token);
+            _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
             if (elementType.IsRuntimeDeterminedSubtype)
             {
                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType.MakeArrayType()), "newarr");
@@ -1254,7 +1265,7 @@ namespace Internal.IL
             if (elementType.IsGCPointer && !_isReadOnly)
             {
                 if (elementType.IsRuntimeDeterminedSubtype)
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType), "ldelema");
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, elementType), "ldelema");
                 else
                     _dependencies.Add(_factory.NecessaryTypeSymbol(elementType), "ldelema");
 

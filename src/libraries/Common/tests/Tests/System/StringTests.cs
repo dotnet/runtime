@@ -150,7 +150,7 @@ namespace System.Tests
         [InlineData(new char[] { '\u041F', '\u0420', '\u0418', '\u0412', '\u0415', '\u0422' }, 0, 6, "\u041F\u0420\u0418\u0412\u0415\u0422")]
         [InlineData(new char[0], 0, 0, "")]
         [InlineData(null, 0, 0, "")]
-        public static void Ctor_CharArray(char[] value, int startIndex, int length, string expected)
+        public static void Ctor_CharArray(char[]? value, int startIndex, int length, string expected)
         {
             if (value == null)
             {
@@ -2121,6 +2121,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public static void EndsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -2555,7 +2556,7 @@ namespace System.Tests
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("123", 123, StringComparison.OrdinalIgnoreCase, false)] // Not a string
         [InlineData("\0AAAAAAAAA", "\0BBBBBBBBBBBB", StringComparison.OrdinalIgnoreCase, false)]
-        public static void EqualsTest(string s1, object obj, StringComparison comparisonType, bool expected)
+        public static void EqualsTest(string? s1, object? obj, StringComparison comparisonType, bool expected)
         {
             string s2 = obj as string;
             if (s1 != null)
@@ -2856,7 +2857,7 @@ namespace System.Tests
         [MemberData(nameof(Format_Invalid_FormatExceptionFromArgs_MemberData))]
         [InlineData(null, "{10000000}", new object[] { null })]
         [InlineData(null, "{0,10000000}", new string[] { null })]
-        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider provider, string format, object[] args)
+        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider? provider, string format, object[] args)
         {
             if (provider is null)
             {
@@ -3804,7 +3805,7 @@ namespace System.Tests
         [InlineData("", true)]
         [InlineData("foo", false)]
         [InlineData("   ", false)]
-        public static void IsNullOrEmpty(string value, bool expected)
+        public static void IsNullOrEmpty(string? value, bool expected)
         {
             Assert.Equal(expected, string.IsNullOrEmpty(value));
 
@@ -3969,7 +3970,7 @@ namespace System.Tests
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 0, 3, "Foo$$Bar$$Baz")]
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 3, 0, "")]
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 1, 1, "Bar")]
-        public static void Join_StringArray(string separator, string[] values, int startIndex, int count, string expected)
+        public static void Join_StringArray(string? separator, string[] values, int startIndex, int count, string expected)
         {
             if (startIndex + count == values.Length && count != 0)
             {
@@ -4891,7 +4892,7 @@ namespace System.Tests
         [InlineData("Aa1Bbb1Cccc1Ddddd1Eeeeee1Fffffff", "1", "23", "Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff")]
         [InlineData("11111111111111111111111", "1", "11", "1111111111111111111111111111111111111111111111")] //  Checks if we handle the max # of matches
         [InlineData("11111111111111111111111", "1", "", "")] // Checks if we handle the max # of matches
-        public static void Replace_String_String(string s, string oldValue, string newValue, string expected)
+        public static void Replace_String_String(string s, string oldValue, string? newValue, string expected)
         {
             Assert.Equal(expected, s.Replace(oldValue, newValue));
         }
@@ -6148,7 +6149,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void Trim(string s, char[] trimChars, string expected)
+        public static void Trim(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6178,7 +6179,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void TrimEnd(string s, char[] trimChars, string expected)
+        public static void TrimEnd(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6208,7 +6209,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void TrimStart(string s, char[] trimChars, string expected)
+        public static void TrimStart(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -7308,6 +7309,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/112195", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public static void StartsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)

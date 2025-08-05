@@ -233,7 +233,7 @@ namespace ILCompiler
             {
                 _typesWithEETypesGenerated.Add(eetypeNode.Type);
 
-                if (eetypeNode is ConstructedEETypeNode || eetypeNode is CanonicalEETypeNode)
+                if (eetypeNode is ConstructedEETypeNode)
                 {
                     _typesWithConstructedEETypesGenerated.Add(eetypeNode.Type);
                 }
@@ -1239,6 +1239,10 @@ namespace ILCompiler
         /// </summary>
         protected abstract MetadataCategory GetMetadataCategory(TypeDesc type);
         protected abstract MetadataCategory GetMetadataCategory(FieldDesc field);
+
+        public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, TypeDesc accessedType)
+        {
+        }
 
         public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, MethodDesc calledMethod)
         {

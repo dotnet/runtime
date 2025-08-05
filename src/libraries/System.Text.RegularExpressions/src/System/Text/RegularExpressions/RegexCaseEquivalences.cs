@@ -117,7 +117,7 @@ namespace System.Text.RegularExpressions
         ///       EquivalenceCasingValues => The final table contains ushort representing characters. We grab the index3 computed in the previous table, and we use it
         ///                                  to search on this table and grab the next 'count' items which are the equivalence mappings for <paramref name="c"/>.
         ///
-        /// Example: using character 'A' (0x0041). We caluclate index by doing `index = 0x0041 / CharactersPerRange` which results in 0. We then look on the first lookup table using the
+        /// Example: using character 'A' (0x0041). We calculate index by doing `index = 0x0041 / CharactersPerRange` which results in 0. We then look on the first lookup table using the
         /// calculated index `EquivalenceFirstLevelLookup[index]` which results in the value 0x0000. Because this value is not 0xFFFF, character 'A' may be participating in case
         /// conversion, so we continue our search by looking into the second lookup table. We calculate index2 by doing `index2 = (0x0041 % CharactersPerRange) + 0x0000` which results in
         /// index2 = 0x0041. We then use that index to search in the second lookup table `EquivalenceCasingMap[0x0041]` and get a value of 0x4000 back. Because that value isn't

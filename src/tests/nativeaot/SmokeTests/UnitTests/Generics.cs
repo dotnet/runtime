@@ -61,6 +61,7 @@ class Generics
         Test105397Regression.Run();
         Test105880Regression.Run();
         TestInterfaceGenericCornerCase.Run();
+        Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -3762,6 +3763,19 @@ class Generics
             var g = Activator.CreateInstance(t);
             var mi = ((MethodInfo)t.GetMemberWithSameMetadataDefinitionAs(typeof(Conversion<,>).GetMethod(nameof(Conversion<MyStruct, Base>.PrintGeneric)))).MakeGenericMethod(typeof(object));
             return (string)mi.Invoke(g, []);
+        }
+    }
+
+    class Test115442Regression
+    {
+        public readonly struct TypeBuilder<T1, T2>
+        {
+            public TypeBuilder<(T1, T2), T3> Add<T3>() => default;
+        }
+
+        public static void Run()
+        {
+            typeof(TypeBuilder<int, int>).GetMethod("Add").MakeGenericMethod(typeof(int)).Invoke(default(TypeBuilder<int, int>), []);
         }
     }
 

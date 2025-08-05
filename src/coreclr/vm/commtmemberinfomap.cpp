@@ -1211,7 +1211,7 @@ void ComMTMemberInfoMap::AssignDefaultMember(
         {
             // See if the function returns anything.
             rProps[defDispid].pMeth->GetSig(&pbSig, &cbSig);
-            PREFIX_ASSUME(pbSig != NULL);
+            _ASSERTE(pbSig != NULL);
 
             ixSig = CorSigUncompressData(pbSig, &callconv);
             _ASSERTE(callconv != IMAGE_CEE_CS_CALLCONV_FIELD);
@@ -1293,7 +1293,7 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
 
         // Get the signature, skip the calling convention, get the param count.
         pMeth->GetSig(&pbSig, &cbSig);
-        PREFIX_ASSUME(pbSig != NULL);
+        _ASSERTE(pbSig != NULL);
 
         ixSig = CorSigUncompressData(pbSig, &callconv);
         _ASSERTE(callconv != IMAGE_CEE_CS_CALLCONV_FIELD);

@@ -164,9 +164,7 @@ export type LoaderHelpers = {
 
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-    logDownloadStatsToConsole: () => void;
     installUnhandledErrorHandler: () => void;
-    purgeUnusedCacheEntriesAsync: () => Promise<void>;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
@@ -179,6 +177,7 @@ export type LoaderHelpers = {
     // from wasm-feature-detect npm package
     exceptions: () => Promise<boolean>,
     simd: () => Promise<boolean>,
+    relaxedSimd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
     emscriptenBuildOptions: EmscriptenBuildOptions,
@@ -232,6 +231,7 @@ export type RuntimeHelpers = {
 
     featureWasmEh: boolean,
     featureWasmSimd: boolean,
+    featureWasmRelaxedSimd: boolean,
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,
@@ -282,7 +282,7 @@ export type EmscriptenBuildOptions = {
     enableAotProfiler: boolean,
     enableDevToolsProfiler: boolean,
     enableLogProfiler: boolean,
-    enablePerfTracing: boolean,
+    enableEventPipe: boolean,
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,

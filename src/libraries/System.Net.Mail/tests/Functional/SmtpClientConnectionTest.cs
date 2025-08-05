@@ -23,6 +23,17 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        public async Task UnrecognizedReply_Throws()
+        {
+            Server.OnCommandReceived = (command, arg) =>
+            {
+                return "Go away";
+            };
+
+            await SendMail<SmtpException>(new MailMessage("mono@novell.com", "everyone@novell.com", "introduction", "hello"));
+        }
+
+        [Fact]
         public async Task EHelloNotRecognized_RestartWithHello()
         {
             bool helloReceived = false;

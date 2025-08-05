@@ -33,13 +33,13 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
 }
 
 /*static*/ void framework_info::get_all_framework_infos(
-    const pal::string_t& own_dir,
+    const pal::string_t& dotnet_dir,
     const pal::char_t* fx_name,
     bool disable_multilevel_lookup,
     std::vector<framework_info>* framework_infos)
 {
     std::vector<pal::string_t> hive_dir;
-    get_framework_locations(own_dir, disable_multilevel_lookup, &hive_dir);
+    get_framework_locations(dotnet_dir, disable_multilevel_lookup, &hive_dir);
 
     int32_t hive_depth = 0;
 
@@ -105,13 +105,15 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
     std::sort(framework_infos->begin(), framework_infos->end(), compare_by_name_and_version);
 }
 
-/*static*/ bool framework_info::print_all_frameworks(const pal::string_t& own_dir, const pal::string_t& leading_whitespace)
+/*static*/ bool framework_info::print_all_frameworks(const pal::string_t& dotnet_dir, const pal::char_t* leading_whitespace)
 {
+    assert(leading_whitespace != nullptr);
+
     std::vector<framework_info> framework_infos;
-    get_all_framework_infos(own_dir, nullptr, /*disable_multilevel_lookup*/ true, &framework_infos);
+    get_all_framework_infos(dotnet_dir, nullptr, /*disable_multilevel_lookup*/ true, &framework_infos);
     for (framework_info info : framework_infos)
     {
-        trace::println(_X("%s%s %s [%s]"), leading_whitespace.c_str(), info.name.c_str(), info.version.as_str().c_str(), info.path.c_str());
+        trace::println(_X("%s%s %s [%s]"), leading_whitespace, info.name.c_str(), info.version.as_str().c_str(), info.path.c_str());
     }
 
     return framework_infos.size() > 0;

@@ -16,8 +16,6 @@
 #include <malloc.h>
 #endif
 
-#include <algorithm>
-
 #include "corhdr.h"
 #include "corjit.h"
 
@@ -27,3 +25,9 @@
 
 #define ALIGN_UP_TO(val,align) ((((size_t)val) + (size_t)((align) - 1)) & (~((size_t)(align - 1))))
 
+#ifdef DEBUG
+extern "C" void assertAbort(const char* why, const char* file, unsigned line);
+
+#undef assert
+#define assert(p) (void)((p) || (assertAbort(#p, __FILE__, __LINE__), 0))
+#endif // DEBUG

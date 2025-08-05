@@ -887,7 +887,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
                     dest = FPREG_Xstate_Egpr(native, &size);
                     _ASSERT(size == (sizeof(DWORD64) * 16));
-                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->Egpr16, sizeof(DWORD64) * 16);
+                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
                 }
 #endif //  !TARGET_OSX
             }
@@ -1183,6 +1183,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+            lpContext->ContextFlags |= CONTEXT_LSX;
         }
         else if (LASX_CTX_MAGIC == info->magic)
         {
@@ -1190,6 +1191,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+            lpContext->ContextFlags |= CONTEXT_LASX;
         }
         else
         {
@@ -1243,7 +1245,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             {
                 src = FPREG_Xstate_Egpr(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 16));
-                memcpy_s(&lpContext->Egpr16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
+                memcpy_s(&lpContext->R16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
             }
@@ -2204,17 +2206,19 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
     size_t copySize;
     if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
     {
-        if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
         {
-            copySize = sizeof(CONTEXT);
-        }
-        else if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
-        {
-            copySize = offsetof(CONTEXT, Egpr16);
+            copySize = offsetof(CONTEXT, R16);
         }
         else
         {
             copySize = offsetof(CONTEXT, KMask0);
+        }
+
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
+        {
+            // Copy APX EGPRs separately.
+            memcpy(&(this->R16), &(ctx.R16), sizeof(DWORD64) * 16);
         }
     }
     else

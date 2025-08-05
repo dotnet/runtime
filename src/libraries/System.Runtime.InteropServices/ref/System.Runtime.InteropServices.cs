@@ -394,6 +394,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public System.Runtime.InteropServices.Marshalling.ComInterfaceOptions Options { get { throw null; } set { } }
         public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
         public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
+        public System.Type? ExceptionToUnmanagedMarshaller { get { throw null; } set { } }
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IComExposedClass
@@ -478,6 +479,10 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { }
         }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     [System.CLSCompliantAttribute(false)]
     public partial class StrategyBasedComWrappers : System.Runtime.InteropServices.ComWrappers
     {
@@ -488,6 +493,7 @@ namespace System.Runtime.InteropServices.Marshalling
         protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy CreateCacheStrategy() { throw null; }
         protected static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy CreateDefaultCacheStrategy() { throw null; }
         protected sealed override object CreateObject(nint externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags) { throw null; }
+        protected sealed override object? CreateObject(nint externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags, object? userState, out System.Runtime.InteropServices.CreatedWrapperFlags wrapperFlags) { throw null; }
         protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy() { throw null; }
         protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownStrategy GetOrCreateIUnknownStrategy() { throw null; }
         protected sealed override void ReleaseObjects(System.Collections.IEnumerable objects) { }
@@ -673,6 +679,7 @@ namespace System.Runtime.InteropServices
     }
     public static partial class CollectionsMarshal
     {
+        public static System.Span<byte> AsBytes(System.Collections.BitArray? array) { throw null; }
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue, TAlternateKey>(System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> dictionary, TAlternateKey key) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
@@ -762,16 +769,18 @@ namespace System.Runtime.InteropServices
             public System.IntPtr Vtable;
             public unsafe static T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
         }
-        public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
-        protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
-        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
-        protected abstract object? CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
-        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
-        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper, System.IntPtr inner) { throw null; }
+        public System.IntPtr GetOrCreateComInterfaceForObject(object instance, System.Runtime.InteropServices.CreateComInterfaceFlags flags) { throw null; }
+        protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, System.Runtime.InteropServices.CreateComInterfaceFlags flags, out int count);
+        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags) { throw null; }
+        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags, object? userState) { throw null; }
+        protected abstract object? CreateObject(System.IntPtr externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags);
+        protected virtual object? CreateObject(System.IntPtr externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags, object? userState, out System.Runtime.InteropServices.CreatedWrapperFlags wrapperFlags) { throw null; }
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags, object wrapper) { throw null; }
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags, object wrapper, System.IntPtr inner) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public static void RegisterForMarshalling(ComWrappers instance) { }
+        public static void RegisterForMarshalling(System.Runtime.InteropServices.ComWrappers instance) { }
         public static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.FlagsAttribute]
@@ -789,6 +798,13 @@ namespace System.Runtime.InteropServices
         UniqueInstance = 2,
         Aggregation = 4,
         Unwrap = 8,
+    }
+    [System.FlagsAttribute]
+    public enum CreatedWrapperFlags
+    {
+        None = 0,
+        TrackerObject = 1,
+        NonWrapping = 2
     }
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct CULong : System.IEquatable<System.Runtime.InteropServices.CULong>
@@ -1052,6 +1068,7 @@ namespace System.Runtime.InteropServices
         public static int GetExceptionCode() { throw null; }
         public static System.Exception? GetExceptionForHR(int errorCode) { throw null; }
         public static System.Exception? GetExceptionForHR(int errorCode, System.IntPtr errorInfo) { throw null; }
+        public static System.Exception? GetExceptionForHR(int errorCode, in System.Guid iid, System.IntPtr pUnk) { throw null; }
         public static System.IntPtr GetExceptionPointers() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Marshalling code for the delegate might not be available. Use the GetFunctionPointerForDelegate<TDelegate> overload instead.")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1192,6 +1209,7 @@ namespace System.Runtime.InteropServices
         public static void StructureToPtr<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure, System.IntPtr ptr, bool fDeleteOld) { }
         public static void ThrowExceptionForHR(int errorCode) { }
         public static void ThrowExceptionForHR(int errorCode, System.IntPtr errorInfo) { }
+        public static void ThrowExceptionForHR(int errorCode, in System.Guid iid, System.IntPtr pUnk) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement(System.Array arr, int index) { throw null; }
         public static System.IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index) { throw null; }
@@ -2364,6 +2382,44 @@ namespace System.Runtime.InteropServices.ComTypes
         VAR_STATIC = 1,
         VAR_CONST = 2,
         VAR_DISPATCH = 3,
+    }
+}
+namespace System.Runtime.InteropServices.Java
+{
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public struct ComponentCrossReference
+    {
+        public nuint SourceGroupIndex;
+        public nuint DestinationGroupIndex;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public static class JavaMarshal
+    {
+        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences) => throw null;
+        public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context) => throw null;
+        public static unsafe void* GetContext(GCHandle obj) => throw null;
+        public static unsafe void FinishCrossReferenceProcessing(
+            MarkCrossReferencesArgs* crossReferences,
+            System.ReadOnlySpan<GCHandle> unreachableObjectHandles) => throw null;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct StronglyConnectedComponent
+    {
+        public nuint Count;
+        public void** Contexts;
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct MarkCrossReferencesArgs
+    {
+        public nuint ComponentCount;
+        public StronglyConnectedComponent* Components;
+        public nuint CrossReferenceCount;
+        public ComponentCrossReference* CrossReferences;
     }
 }
 namespace System.Runtime.InteropServices.ObjectiveC

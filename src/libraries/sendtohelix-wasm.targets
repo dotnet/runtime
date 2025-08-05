@@ -14,6 +14,7 @@
     <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableWebcil)' == 'false'">NoWebcil-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmFingerprintAssets)' == 'false'">NoFingerprint-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">JavascriptBundler-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' != 'true'">$(WorkItemPrefix)ST-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' == 'true'">$(WorkItemPrefix)MT-</WorkItemPrefix>
   </PropertyGroup>
@@ -50,7 +51,7 @@
 
     <!-- for testing with workloads, we use separate items -->
     <ItemGroup>
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
@@ -58,7 +59,7 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true' or '$(WasmFingerprintAssets)' != 'true'">
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true' or '$(WasmFingerprintAssets)' != 'true' or '$(WasmBundlerFriendlyBootConfig)' != 'false'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>

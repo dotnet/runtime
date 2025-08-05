@@ -135,6 +135,11 @@ int32_t CryptoNative_EvpPKeyFamily(const EVP_PKEY* key)
         {
             return PalPKeyFamilyId_MLKem;
         }
+
+        if (EVP_PKEY_is_a(key, "ML-DSA-44") || EVP_PKEY_is_a(key, "ML-DSA-65") || EVP_PKEY_is_a(key, "ML-DSA-87"))
+        {
+            return PalPKeyFamilyId_MLDsa;
+        }
     }
 #endif
 

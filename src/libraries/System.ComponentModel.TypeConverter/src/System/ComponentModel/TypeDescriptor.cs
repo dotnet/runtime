@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -33,6 +34,15 @@ namespace System.ComponentModel
            DynamicallyAccessedMemberTypes.PublicProperties | // For GetProperties()
            DynamicallyAccessedMemberTypes.PublicMethods | // For calling enum.ToObject()
            DynamicallyAccessedMemberTypes.PublicEvents; // For GetEvents()
+
+        internal const DynamicallyAccessedMemberTypes AllMembersAndInterfaces =
+            DynamicallyAccessedMemberTypes.AllConstructors |
+            DynamicallyAccessedMemberTypes.AllEvents |
+            DynamicallyAccessedMemberTypes.AllFields |
+            DynamicallyAccessedMemberTypes.AllMethods |
+            DynamicallyAccessedMemberTypes.AllNestedTypes |
+            DynamicallyAccessedMemberTypes.AllProperties |
+            DynamicallyAccessedMemberTypes.Interfaces;
 
         internal const string DesignTimeAttributeTrimmed = "Design-time attributes are not preserved when trimming. Types referenced by attributes like EditorAttribute and DesignerAttribute may not be available after trimming.";
 
@@ -449,7 +459,7 @@ namespace System.ComponentModel
         /// This dynamically binds an EventDescriptor to a type.
         /// </summary>
         public static EventDescriptor CreateEvent(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType,
             string name,
             Type type,
             params Attribute[] attributes)
@@ -462,7 +472,7 @@ namespace System.ComponentModel
         /// has the specified metadata attributes merged with the existing metadata attributes.
         /// </summary>
         public static EventDescriptor CreateEvent(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType,
             EventDescriptor oldEventDescriptor,
             params Attribute[] attributes)
         {
@@ -509,7 +519,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public static PropertyDescriptor CreateProperty(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType,
             string name,
             Type type,
             params Attribute[] attributes)
@@ -523,7 +533,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public static PropertyDescriptor CreateProperty(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType,
             PropertyDescriptor oldPropertyDescriptor,
             params Attribute[] attributes)
         {
@@ -674,7 +684,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of attributes for the specified type of component.
         /// </summary>
-        public static AttributeCollection GetAttributes([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
+        public static AttributeCollection GetAttributes([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType)
         {
             if (componentType == null)
             {
@@ -806,7 +816,7 @@ namespace System.ComponentModel
         /// Gets the name of the class for the specified type.
         /// </summary>
         public static string? GetClassName(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType)
         {
             return GetDescriptor(componentType, nameof(componentType)).GetClassName();
         }
@@ -861,14 +871,14 @@ namespace System.ComponentModel
         /// Gets a type converter for the specified type.
         /// </summary>
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
-        public static TypeConverter GetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        public static TypeConverter GetConverter([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type)
         {
             return GetDescriptor(type, nameof(type)).GetConverter();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                   Justification = "The callers of this method ensure getting the converter is trim compatible - i.e. the type is not Nullable<T>.")]
-        internal static TypeConverter GetConverterTrimUnsafe([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) =>
+        internal static TypeConverter GetConverterTrimUnsafe([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type) =>
             GetConverter(type);
 
         /// <summary>
@@ -881,7 +891,7 @@ namespace System.ComponentModel
 
         // This is called by System.ComponentModel.DefaultValueAttribute via reflection.
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
-        private static object? ConvertFromInvariantString([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, string stringValue)
+        private static object? ConvertFromInvariantString([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, string stringValue)
         {
             return GetConverter(type).ConvertFromInvariantString(stringValue);
         }
@@ -891,7 +901,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public static EventDescriptor? GetDefaultEvent(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType)
         {
             if (componentType == null)
             {
@@ -929,7 +939,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public static PropertyDescriptor? GetDefaultProperty(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType)
         {
             if (componentType == null)
             {
@@ -967,7 +977,7 @@ namespace System.ComponentModel
         /// Performs arg checking so callers don't have to.
         /// </summary>
         private static DefaultTypeDescriptor GetDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type,
             string typeName)
         {
             ArgumentNullException.ThrowIfNull(type, typeName);
@@ -1077,7 +1087,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(DesignTimeAttributeTrimmed)]
         public static object? GetEditor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type,
             Type editorBaseType)
         {
             ArgumentNullException.ThrowIfNull(editorBaseType);
@@ -1089,7 +1099,7 @@ namespace System.ComponentModel
         /// Gets a collection of events for a specified type of component.
         /// </summary>
         public static EventDescriptorCollection GetEvents(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType)
         {
             if (componentType == null)
             {
@@ -1115,7 +1125,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static EventDescriptorCollection GetEvents(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType,
             Attribute[] attributes)
         {
             if (componentType == null)
@@ -1326,7 +1336,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public static PropertyDescriptorCollection GetProperties(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType)
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType)
         {
             if (componentType == null)
             {
@@ -1352,7 +1362,7 @@ namespace System.ComponentModel
         /// </summary>
         [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static PropertyDescriptorCollection GetProperties(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType,
             Attribute[]? attributes)
         {
             if (componentType == null)
@@ -2775,7 +2785,7 @@ namespace System.ComponentModel
             /// descriptor that walks the linked list for each of its calls.
             /// </summary>
             [return: NotNullIfNotNull(nameof(instance))]
-            public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+            public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType, object? instance)
             {
                 ArgumentNullException.ThrowIfNull(objectType);
 
@@ -2886,7 +2896,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Creates a custom type descriptor that replaces the attributes.
             /// </summary>
-            public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+            public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType, object? instance)
             {
                 return new AttributeTypeDescriptor(_attrs, base.GetTypeDescriptor(objectType, instance));
             }
@@ -3053,12 +3063,16 @@ namespace System.ComponentModel
                     throw new NotSupportedException(SR.ComObjectDescriptorsNotSupported);
                 }
 
-                Type realComNativeDescriptor = Type.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms", throwOnError: true)!;
-                _comNativeDescriptor = (TypeDescriptionProvider)Activator.CreateInstance(realComNativeDescriptor)!;
+                _comNativeDescriptor = (TypeDescriptionProvider)CreateComNativeDescriptor();
+
+                [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+                [return: UnsafeAccessorType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms")]
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static extern object CreateComNativeDescriptor();
             }
 
             [return: NotNullIfNotNull(nameof(instance))]
-            public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+            public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType, object? instance)
             {
                 return _comNativeDescriptor.GetTypeDescriptor(objectType, instance);
             }
@@ -3352,7 +3366,7 @@ namespace System.ComponentModel
             /// Implements GetTypeDescriptor. This creates a custom type
             /// descriptor that walks the linked list for each of its calls.
             /// </summary>
-            public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+            public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType, object? instance)
             {
                 ArgumentNullException.ThrowIfNull(objectType);
 
@@ -3389,7 +3403,7 @@ namespace System.ComponentModel
                 ICustomTypeDescriptor Forward() => GetTypeDescriptor(objectType, instance);
             }
 
-            internal DefaultTypeDescriptor GetDefaultTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType)
+            internal DefaultTypeDescriptor GetDefaultTypeDescriptor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType)
             {
                 return new DefaultTypeDescriptor(this, objectType, instance: null);
             }
@@ -3771,7 +3785,7 @@ namespace System.ComponentModel
         private readonly struct DefaultTypeDescriptor : ICustomTypeDescriptor
         {
             private readonly TypeDescriptionNode _node;
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)]
             private readonly Type _objectType;
             private readonly object? _instance;
 
@@ -3780,7 +3794,7 @@ namespace System.ComponentModel
             /// </summary>
             internal DefaultTypeDescriptor(
                 TypeDescriptionNode node,
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
+                [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType,
                 object? instance)
             {
                 _node = node;

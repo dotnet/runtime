@@ -273,7 +273,7 @@ protected:
     DWORD               m_dwMngdMarshalerLocalNum;
 
 private:
-    NDirectStubLinker* m_pslNDirect;
+    PInvokeStubLinker* m_pslPInvoke;
     ILCodeStream*       m_pcsMarshal;
     ILCodeStream*       m_pcsUnmarshal;
     ILStubMarshalHome   m_nativeHome;
@@ -282,7 +282,7 @@ private:
 public:
 
     ILMarshaler() :
-        m_pslNDirect(NULL)
+        m_pslPInvoke(NULL)
     {
     }
 
@@ -291,11 +291,11 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    void SetNDirectStubLinker(NDirectStubLinker* pslNDirect)
+    void SetPInvokeStubLinker(PInvokeStubLinker* pslPInvoke)
     {
         LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK(NULL == m_pslNDirect);
-        m_pslNDirect = pslNDirect;
+        CONSISTENCY_CHECK(NULL == m_pslPInvoke);
+        m_pslPInvoke = pslPInvoke;
     }
 
 private:
@@ -306,7 +306,7 @@ private:
             OverrideProcArgs* pargs)
     {
         LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK_MSG(m_pslNDirect != NULL, "please call SetNDirectStubLinker() before EmitMarshalArgument or EmitMarshalReturnValue");
+        CONSISTENCY_CHECK_MSG(m_pslPInvoke != NULL, "please call SetPInvokeStubLinker() before EmitMarshalArgument or EmitMarshalReturnValue");
         m_pcsMarshal = pcsMarshal;
         m_pcsUnmarshal = pcsUnmarshal;
         m_pargs = pargs;
@@ -431,7 +431,7 @@ protected:
         WRAPPER_NO_CONTRACT;
         if (g_pConfig->InteropLogArguments())
         {
-            m_pslNDirect->EmitLogNativeArgument(pslILEmit, dwPinnedLocal);
+            m_pslPInvoke->EmitLogNativeArgument(pslILEmit, dwPinnedLocal);
         }
     }
 
@@ -484,12 +484,12 @@ public:
         // we set the clr-to-native flag so the marshal phase is CLR->Native and the unmarshal phase is Native->CLR
         Init(pcsMarshal, pcsUnmarshal, argidx, MARSHAL_FLAG_IN | MARSHAL_FLAG_OUT | MARSHAL_FLAG_CLR_TO_NATIVE | MARSHAL_FLAG_FIELD, pargs);
 
-        EmitCreateMngdMarshaler(m_pslNDirect->GetSetupCodeStream());
+        EmitCreateMngdMarshaler(m_pslPInvoke->GetSetupCodeStream());
 
-        EmitSetupArgumentForMarshalling(m_pslNDirect->GetSetupCodeStream());
+        EmitSetupArgumentForMarshalling(m_pslPInvoke->GetSetupCodeStream());
 
         EmitSetupDefaultHomesForField(
-            m_pslNDirect->GetSetupCodeStream(),
+            m_pslPInvoke->GetSetupCodeStream(),
             managedOffset,
             nativeOffset);
 
@@ -519,10 +519,10 @@ public:
         // we know that we don't need a managed marshaler since we will just pin.
         if (!CanMarshalViaPinning())
         {
-            EmitCreateMngdMarshaler(m_pslNDirect->GetSetupCodeStream());
+            EmitCreateMngdMarshaler(m_pslPInvoke->GetSetupCodeStream());
         }
 
-        EmitSetupArgumentForMarshalling(m_pslNDirect->GetSetupCodeStream());
+        EmitSetupArgumentForMarshalling(m_pslPInvoke->GetSetupCodeStream());
 
         if (IsCLRToNative(dwMarshalFlags))
         {
@@ -627,7 +627,7 @@ public:
 
             if (NeedsMarshalCleanupIndex())
             {
-                m_pslNDirect->EmitSetArgMarshalIndex(m_pcsUnmarshal, NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx);
+                m_pslPInvoke->EmitSetArgMarshalIndex(m_pcsUnmarshal, PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx);
             }
 
             EmitConvertSpaceAndContentsNativeToCLR(m_pcsUnmarshal);
@@ -642,7 +642,7 @@ public:
 
             if (NeedsMarshalCleanupIndex())
             {
-                m_pslNDirect->EmitSetArgMarshalIndex(m_pcsUnmarshal, NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx);
+                m_pslPInvoke->EmitSetArgMarshalIndex(m_pcsUnmarshal, PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx);
             }
 
             if (IsHresultSwap(dwMarshalFlags))
@@ -665,7 +665,7 @@ public:
             if (NeedsUnmarshalCleanupIndex())
             {
                 // if an exception is thrown after this point, we will clean up the unmarshaled retval
-                m_pslNDirect->EmitSetArgMarshalIndex(m_pcsUnmarshal, NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
+                m_pslPInvoke->EmitSetArgMarshalIndex(m_pcsUnmarshal, PInvokeStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
             }
 
             EmitCleanupNativeToCLR();
@@ -723,12 +723,12 @@ protected:
 
     void EmitLoadCleanupWorkList(ILCodeStream* pslILEmit)
     {
-        m_pslNDirect->LoadCleanupWorkList(pslILEmit);
+        m_pslPInvoke->LoadCleanupWorkList(pslILEmit);
     }
 
     int GetLCIDParamIndex()
     {
-        return m_pslNDirect->GetLCIDParamIdx();
+        return m_pslPInvoke->GetLCIDParamIdx();
     }
 
     void EmitSetupSigAndDefaultHomesCLRToNative()
@@ -756,12 +756,12 @@ protected:
         {
             CONSISTENCY_CHECK(NeedsMarshalCleanupIndex());
 
-            ILCodeStream* pcsCleanup = m_pslNDirect->GetCleanupCodeStream();
+            ILCodeStream* pcsCleanup = m_pslPInvoke->GetCleanupCodeStream();
             ILCodeLabel*  pSkipClearNativeLabel = pcsCleanup->NewCodeLabel();
 
-            m_pslNDirect->EmitCheckForArgCleanup(pcsCleanup,
-                                                 NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx,
-                                                 NDirectStubLinker::BranchIfNotMarshaled,
+            m_pslPInvoke->EmitCheckForArgCleanup(pcsCleanup,
+                                                 PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx,
+                                                 PInvokeStubLinker::BranchIfNotMarshaled,
                                                  pSkipClearNativeLabel);
 
             EmitClearNativeTemp(pcsCleanup);
@@ -777,12 +777,12 @@ protected:
         {
             CONSISTENCY_CHECK(NeedsMarshalCleanupIndex());
 
-            ILCodeStream* pcsCleanup = m_pslNDirect->GetCleanupCodeStream();
+            ILCodeStream* pcsCleanup = m_pslPInvoke->GetCleanupCodeStream();
             ILCodeLabel*  pSkipClearNativeLabel = pcsCleanup->NewCodeLabel();
 
-            m_pslNDirect->EmitCheckForArgCleanup(pcsCleanup,
-                                                 NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx,
-                                                 NDirectStubLinker::BranchIfNotMarshaled,
+            m_pslPInvoke->EmitCheckForArgCleanup(pcsCleanup,
+                                                 PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx,
+                                                 PInvokeStubLinker::BranchIfNotMarshaled,
                                                  pSkipClearNativeLabel);
 
             EmitClearNative(pcsCleanup);
@@ -1021,7 +1021,7 @@ protected:
         EmitConvertSpaceAndContentsNativeToCLR(m_pcsUnmarshal);
         if (NeedsClearNative())
         {
-            ILCodeStream* pcsCleanup = m_pslNDirect->GetCleanupCodeStream();
+            ILCodeStream* pcsCleanup = m_pslPInvoke->GetCleanupCodeStream();
             EmitClearNative(pcsCleanup);
         }
     }
@@ -1034,12 +1034,12 @@ protected:
         {
             CONSISTENCY_CHECK(NeedsMarshalCleanupIndex());
 
-            ILCodeStream* pcsCleanup = m_pslNDirect->GetCleanupCodeStream();
+            ILCodeStream* pcsCleanup = m_pslPInvoke->GetCleanupCodeStream();
             ILCodeLabel*  pSkipClearCLRLabel = pcsCleanup->NewCodeLabel();
 
-            m_pslNDirect->EmitCheckForArgCleanup(pcsCleanup,
-                                                 NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx,
-                                                 NDirectStubLinker::BranchIfNotMarshaled,
+            m_pslPInvoke->EmitCheckForArgCleanup(pcsCleanup,
+                                                 PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx,
+                                                 PInvokeStubLinker::BranchIfNotMarshaled,
                                                  pSkipClearCLRLabel);
 
             EmitClearCLR(pcsCleanup);
@@ -1071,11 +1071,11 @@ protected:
         _ASSERTE(IsRetval(m_dwMarshalFlags) || IsOut(m_dwMarshalFlags));
 
         LocalDesc nativeType = GetNativeType();
-        ILCodeStream *pcsCleanup = m_pslNDirect->GetExceptionCleanupCodeStream();
+        ILCodeStream *pcsCleanup = m_pslPInvoke->GetExceptionCleanupCodeStream();
 
         if (NeedsClearNative())
         {
-            m_pslNDirect->SetExceptionCleanupNeeded();
+            m_pslPInvoke->SetExceptionCleanupNeeded();
 
             ILCodeLabel *pSkipCleanupLabel = pcsCleanup->NewCodeLabel();
 
@@ -1086,9 +1086,9 @@ protected:
                 ILCodeLabel *pSkipCopyLabel = pcsCleanup->NewCodeLabel();
 
                 CONSISTENCY_CHECK(NeedsMarshalCleanupIndex());
-                m_pslNDirect->EmitCheckForArgCleanup(pcsCleanup,
-                                                     NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx,
-                                                     NDirectStubLinker::BranchIfMarshaled,
+                m_pslPInvoke->EmitCheckForArgCleanup(pcsCleanup,
+                                                     PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_argidx,
+                                                     PInvokeStubLinker::BranchIfMarshaled,
                                                      pSkipCopyLabel);
 
                 pcsCleanup->EmitLDARG(m_argidx);
@@ -1105,12 +1105,12 @@ protected:
                 CONSISTENCY_CHECK(NeedsUnmarshalCleanupIndex());
 
                 UINT uArgIdx = (IsRetval(m_dwMarshalFlags) ?
-                    NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL :
-                    NDirectStubLinker::CLEANUP_INDEX_ARG0_UNMARSHAL + m_argidx);
+                    PInvokeStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL :
+                    PInvokeStubLinker::CLEANUP_INDEX_ARG0_UNMARSHAL + m_argidx);
 
-                m_pslNDirect->EmitCheckForArgCleanup(pcsCleanup,
+                m_pslPInvoke->EmitCheckForArgCleanup(pcsCleanup,
                                                      uArgIdx,
-                                                     NDirectStubLinker::BranchIfNotMarshaled,
+                                                     PInvokeStubLinker::BranchIfNotMarshaled,
                                                      pSkipCleanupLabel);
             }
 
@@ -1132,7 +1132,7 @@ protected:
         // if there is an output buffer, zero it out so the caller does not get pointer to already freed data
         if (IsRetval(m_dwMarshalFlags) || (IsOut(m_dwMarshalFlags) && IsByref(m_dwMarshalFlags)))
         {
-            m_pslNDirect->SetExceptionCleanupNeeded();
+            m_pslPInvoke->SetExceptionCleanupNeeded();
 
             EmitReInitNative(pcsCleanup);
             if (IsHresultSwap(m_dwMarshalFlags) || IsOut(m_dwMarshalFlags))
@@ -1458,9 +1458,9 @@ protected:
     void EmitKeepAliveManagedValue()
     {
         // Don't use the cleanup work list to avoid any extra allocations.
-        m_pslNDirect->SetCleanupNeeded();
+        m_pslPInvoke->SetCleanupNeeded();
 
-        ILCodeStream* pslILEmit = m_pslNDirect->GetCleanupCodeStream();
+        ILCodeStream* pslILEmit = m_pslPInvoke->GetCleanupCodeStream();
 
         ILCodeLabel* pNoManagedValueLabel = nullptr;
         if (IsFieldMarshal(m_dwMarshalFlags))
@@ -1483,7 +1483,7 @@ public:
 
     // Extension point to allow a marshaler to conditionally override all of the ILMarshaler logic with its own or block marshalling when marshalling an argument.
     // See MarshalInfo::GetArgumentOverrideProc for the implementation.
-    static MarshalerOverrideStatus ArgumentOverride(NDirectStubLinker* psl,
+    static MarshalerOverrideStatus ArgumentOverride(PInvokeStubLinker* psl,
                                                     BOOL               byref,
                                                     BOOL               fin,
                                                     BOOL               fout,
@@ -1498,7 +1498,7 @@ public:
 
     // Extension point to allow a marshaler to conditionally override all of the ILMarshaler logic with its own or block marshalling when marshalling a return value.
     // See MarshalInfo::GetReturnOverrideProc for the implementation.
-    static MarshalerOverrideStatus ReturnOverride(NDirectStubLinker*  psl,
+    static MarshalerOverrideStatus ReturnOverride(PInvokeStubLinker*  psl,
                                                   BOOL                fManagedToNative,
                                                   BOOL                fHresultSwap,
                                                   OverrideProcArgs*   pargs,
@@ -2199,7 +2199,7 @@ public:
         return false;
     }
 
-    static MarshalerOverrideStatus ArgumentOverride(NDirectStubLinker* psl,
+    static MarshalerOverrideStatus ArgumentOverride(PInvokeStubLinker* psl,
                                                     BOOL               byref,
                                                     BOOL               fin,
                                                     BOOL               fout,
@@ -2208,7 +2208,7 @@ public:
                                                     UINT*              pResID,
                                                     UINT               argidx);
 
-    static MarshalerOverrideStatus ReturnOverride(NDirectStubLinker* psl,
+    static MarshalerOverrideStatus ReturnOverride(PInvokeStubLinker* psl,
                                                   BOOL               fManagedToNative,
                                                   BOOL               fHresultSwap,
                                                   OverrideProcArgs*  pargs,
@@ -2239,7 +2239,7 @@ public:
     void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
 
-    static MarshalerOverrideStatus ArgumentOverride(NDirectStubLinker* psl,
+    static MarshalerOverrideStatus ArgumentOverride(PInvokeStubLinker* psl,
                                                     BOOL               byref,
                                                     BOOL               fin,
                                                     BOOL               fout,
@@ -2248,7 +2248,7 @@ public:
                                                     UINT*              pResID,
                                                     UINT               argidx);
 
-    static MarshalerOverrideStatus ReturnOverride(NDirectStubLinker *psl,
+    static MarshalerOverrideStatus ReturnOverride(PInvokeStubLinker *psl,
                                                   BOOL        fManagedToNative,
                                                   BOOL        fHresultSwap,
                                                   OverrideProcArgs *pargs,
@@ -2282,7 +2282,7 @@ public:
     void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
 
-    static MarshalerOverrideStatus ArgumentOverride(NDirectStubLinker* psl,
+    static MarshalerOverrideStatus ArgumentOverride(PInvokeStubLinker* psl,
                                                     BOOL               byref,
                                                     BOOL               fin,
                                                     BOOL               fout,
@@ -2291,7 +2291,7 @@ public:
                                                     UINT*              pResID,
                                                     UINT               argidx);
 
-    static MarshalerOverrideStatus ReturnOverride(NDirectStubLinker *psl,
+    static MarshalerOverrideStatus ReturnOverride(PInvokeStubLinker *psl,
                                                   BOOL        fManagedToNative,
                                                   BOOL        fHresultSwap,
                                                   OverrideProcArgs *pargs,
@@ -2941,7 +2941,7 @@ public:
         return LocalDesc();
     }
 
-    static MarshalerOverrideStatus ArgumentOverride(NDirectStubLinker* psl,
+    static MarshalerOverrideStatus ArgumentOverride(PInvokeStubLinker* psl,
                                             BOOL               byref,
                                             BOOL               fin,
                                             BOOL               fout,

@@ -313,23 +313,6 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
         mov     r15, [rax]
 
-#if 0 // _DEBUG  // @TODO: temporarily removed because trashing RBP breaks the debugger
-        // trash the values at the old homes to make sure nobody uses them
-        mov     rcx, 0xbaaddeed
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax], rcx
-#endif
-
         mov     rdi, [rsp + locArg0]                                // rsi <- exception object
         call    qword ptr [rsp + locArg1]                           // call handler funclet
 
@@ -452,41 +435,9 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
         mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR15]
         mov     r15, [rax]
 
-#if 0 // _DEBUG // @TODO: temporarily removed because trashing RBP breaks the debugger
-        // trash the values at the old homes to make sure nobody uses them
-        mov     rcx, 0xbaaddeed
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax], rcx
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax], rcx
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax], rcx
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax], rcx
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax], rcx
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax], rcx
-#endif
-
         call    qword ptr [rsp + locArg0]                            // handler funclet address
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
-
-        mov     rsi, [rsp + locArg1]                                 // rsi <- regdisplay
-
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax]                            , rbx
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax]                            , rbp
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax]                            , r12
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax]                            , r13
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax]                            , r14
-        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax]                            , r15
 
         mov     rax, [rsp + locThread]                               // rax <- Thread*
    lock or      dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
@@ -584,23 +535,6 @@ NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
         mov     r14, [rax]
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
         mov     r15, [rax]
-
-#if 0 // _DEBUG  // @TODO: temporarily removed because trashing RBP breaks the debugger
-        // trash the values at the old homes to make sure nobody uses them
-        mov     rcx, 0xbaaddeed
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax], rcx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax], rcx
-#endif
 
 #ifdef _DEBUG
         // Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we

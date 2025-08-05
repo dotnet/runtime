@@ -5241,6 +5241,62 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	return res;
 }
 
+static void process_unsafe_accessor_type (MonoUnsafeAccessorKind kind, MonoMethod *accessor_method, MonoMethodSignature *tgt_sig)
+{
+	g_assert (accessor_method);
+	g_assert (tgt_sig);
+
+	char *type_name;
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
+	MonoImage *image = m_class_get_image (accessor_method->klass);
+	MonoType *type;
+
+	// Iterate through all parameters. Zero is the return value, the arguments are 1-based.
+	for (guint16 seq = 0; seq <= tgt_sig->param_count; ++seq) {
+
+		ERROR_DECL (error);
+
+		type_name = NULL;
+		if (!mono_method_param_get_unsafe_accessor_type_attr_data (accessor_method, seq, &type_name, error))
+			continue;
+		mono_error_assert_ok (error);
+		g_assert (type_name);
+
+		type = mono_reflection_type_from_name_checked (type_name, alc, image, error);
+		if (!type)
+			continue;
+		mono_error_assert_ok (error);
+
+		// Future versions of the runtime may support
+		// UnsafeAccessorTypeAttribute on value types.
+		g_assert (type->type != MONO_TYPE_VALUETYPE);
+
+		if (seq == 0 && m_type_is_byref (tgt_sig->ret)) {
+			// [FIXME] UnsafeAccessorType is not supported on return that are byref, type safety issue.
+			return;
+		}
+
+		// Check the target signature for attribute, byref and cmods state. This information
+		// is not contained with in the type name itself, so we may need to check the target
+		// signature and retain it on the new type.
+		MonoType *current_param = (seq == 0) ? tgt_sig->ret : tgt_sig->params [seq - 1];
+		if (current_param->attrs != 0 || m_type_is_byref(current_param) || current_param->has_cmods) {
+			type = mono_metadata_type_dup_with_cmods(image, type, current_param);
+			type->byref__ = current_param->byref__;
+			type->attrs = current_param->attrs;
+		}
+
+		// Update the target signature with the new type
+		if (seq == 0) {
+			// The return value
+			tgt_sig->ret = type;
+		} else {
+			// The arguments
+			tgt_sig->params [seq - 1] = type;
+		}
+	}
+}
+
 /*
  * mono_marshal_get_unsafe_accessor_wrapper:
  *
@@ -5388,6 +5444,9 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 		sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
 	}
 	sig->pinvoke = 0;
+
+	// Parse the signature and check for instances of UnsafeAccessorTypeAttribute.
+	process_unsafe_accessor_type (kind, accessor_method, sig);
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 

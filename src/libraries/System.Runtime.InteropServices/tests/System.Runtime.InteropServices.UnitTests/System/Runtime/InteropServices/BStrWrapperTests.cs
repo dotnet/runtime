@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Value")]
-        public void Ctor_StringValue(string value)
+        public void Ctor_StringValue(string? value)
         {
             var wrapper = new BStrWrapper(value);
             Assert.Equal(value, wrapper.WrappedObject);
@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Value")]
-        public void Ctor_ObjectValue(object value)
+        public void Ctor_ObjectValue(object? value)
         {
             var wrapper = new BStrWrapper(value);
             Assert.Equal(value, wrapper.WrappedObject);

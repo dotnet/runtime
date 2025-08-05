@@ -14,9 +14,26 @@ internal readonly struct Loader_1 : ILoader
 
     private enum ModuleFlags_1 : uint
     {
-        Tenured = 0x00000001,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
-        EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-        ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+        Tenured = 0x1,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
+        ClassFreed = 0x4,
+        EditAndContinue = 0x8, // Edit and Continue is enabled for this module
+
+        ProfilerNotified = 0x10,
+        EtwNotified = 0x20,
+
+        ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
+        ProfilerDisableOptimizations = 0x80,
+        ProfilerDisableInlining = 0x100,
+
+        DebuggerUserOverridePriv = 0x400,
+        DebuggerAllowJitOptsPriv = 0x800,
+        DebuggerTrackJitInfoPriv = 0x1000,
+        DebuggerEnCEnabledPriv = 0x2000,
+        DebuggerPDBsCopied = 0x4000,
+        DebuggerIgnorePDbs = 0x8000,
+
+        IJWFixedUp = 0x80000,
+        BeingUnloaded = 0x100000,
     }
 
     private readonly Target _target;
@@ -26,15 +43,26 @@ internal readonly struct Loader_1 : ILoader
         _target = target;
     }
 
-    ModuleHandle ILoader.GetModuleHandle(TargetPointer modulePointer)
+    ModuleHandle ILoader.GetModuleHandleFromModulePtr(TargetPointer modulePointer)
     {
         if (modulePointer == TargetPointer.Null)
             throw new ArgumentNullException(nameof(modulePointer));
 
         return new ModuleHandle(modulePointer);
     }
+    ModuleHandle ILoader.GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer)
+    {
+        if (assemblyPointer == TargetPointer.Null)
+            throw new ArgumentNullException(nameof(assemblyPointer));
 
-    IEnumerable<ModuleHandle> ILoader.GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(assemblyPointer);
+        if (assembly.Module == TargetPointer.Null)
+            throw new InvalidOperationException("Assembly does not have a module associated with it.");
+
+        return new ModuleHandle(assembly.Module);
+    }
+
+    IEnumerable<ModuleHandle> ILoader.GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags)
     {
         if (appDomain == TargetPointer.Null)
             throw new ArgumentNullException(nameof(appDomain));
@@ -110,6 +138,20 @@ internal readonly struct Loader_1 : ILoader
         TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
         Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
         return appDomain.RootAssembly;
+    }
+
+    string ILoader.GetAppDomainFriendlyName()
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(_target.ReadPointer(appDomainPointer));
+        return appDomain.FriendlyName != TargetPointer.Null
+            ? _target.ReadUtf16String(appDomain.FriendlyName)
+            : string.Empty;
+    }
+
+    TargetPointer ILoader.GetModule(ModuleHandle handle)
+    {
+        return handle.Address;
     }
 
     TargetPointer ILoader.GetAssembly(ModuleHandle handle)
@@ -196,10 +238,37 @@ internal readonly struct Loader_1 : ILoader
         ModuleFlags flags = default;
         if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
             flags |= ModuleFlags.Tenured;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ClassFreed))
+            flags |= ModuleFlags.ClassFreed;
         if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
             flags |= ModuleFlags.EditAndContinue;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerNotified))
+            flags |= ModuleFlags.ProfilerNotified;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.EtwNotified))
+            flags |= ModuleFlags.EtwNotified;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableOptimizations))
+            flags |= ModuleFlags.ProfilerDisableOptimizations;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableInlining))
+            flags |= ModuleFlags.ProfilerDisableInlining;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerUserOverridePriv))
+            flags |= ModuleFlags.DebuggerUserOverridePriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerAllowJitOptsPriv))
+            flags |= ModuleFlags.DebuggerAllowJitOptsPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerTrackJitInfoPriv))
+            flags |= ModuleFlags.DebuggerTrackJitInfoPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerEnCEnabledPriv))
+            flags |= ModuleFlags.DebuggerEnCEnabledPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerPDBsCopied))
+            flags |= ModuleFlags.DebuggerPDBsCopied;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerIgnorePDbs))
+            flags |= ModuleFlags.DebuggerIgnorePDbs;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.IJWFixedUp))
+            flags |= ModuleFlags.IJWFixedUp;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.BeingUnloaded))
+            flags |= ModuleFlags.BeingUnloaded;
+
         return flags;
     }
 
@@ -235,6 +304,15 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return module.Base;
+    }
+
+    TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+        Data.AssemblyBinder binder = _target.ProcessedData.GetOrAdd<Data.AssemblyBinder>(peAssembly.AssemblyBinder);
+        Data.ObjectHandle objectHandle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(binder.AssemblyLoadContext);
+        return objectHandle.Object;
     }
 
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
@@ -294,5 +372,30 @@ internal readonly struct Loader_1 : ILoader
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
         return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
+    }
+
+    TargetPointer ILoader.GetGlobalLoaderAllocator()
+    {
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        return systemDomain.GlobalLoaderAllocator;
+    }
+
+    TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.HighFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.LowFrequencyHeap;
+    }
+
+    TargetPointer ILoader.GetStubHeap(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.StubHeap;
     }
 }

@@ -62,7 +62,7 @@ public class GenerateWasmBootJson : Task
 
     public string[]? Profilers { get; set; }
 
-    public string StartupMemoryCache { get; set; }
+    public string? RuntimeConfigJsonPath { get; set; }
 
     public string Jiterpreter { get; set; }
 
@@ -92,6 +92,8 @@ public class GenerateWasmBootJson : Task
 
     public string MergeWith { get; set; }
 
+    public bool BundlerFriendly { get; set; }
+
     public override bool Execute()
     {
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
@@ -115,7 +117,6 @@ public class GenerateWasmBootJson : Task
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache)
         };
 
         if (IsTargeting100OrLater())
@@ -128,8 +129,11 @@ public class GenerateWasmBootJson : Task
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
-            if (CacheBootResources)
-                result.cacheBootResources = CacheBootResources;
+            if (!IsTargeting100OrLater())
+            {
+                if (CacheBootResources)
+                    result.cacheBootResources = CacheBootResources;
+            }
 
             if (LinkerEnabled)
                 result.linkerEnabled = LinkerEnabled;
@@ -181,6 +185,7 @@ public class GenerateWasmBootJson : Task
         // - runtime:
         //   - UriPath (e.g., "dotnet.js")
         //     - ContentHash (e.g., "3448f339acf512448")
+        ResourcesData resourceData = (ResourcesData)result.resources;
         if (Resources != null)
         {
             var endpointByAsset = Endpoints.ToDictionary(e => e.GetMetadata("AssetFile"));
@@ -195,7 +200,6 @@ public class GenerateWasmBootJson : Task
             });
 
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
-            var resourceData = result.resources;
 
             if (FingerprintAssets)
                 resourceData.fingerprinting = new();
@@ -384,7 +388,7 @@ public class GenerateWasmBootJson : Task
                     endLineNumber: 0,
                     endColumnNumber: 0,
                     message: message,
-                    string.Join(";", LazyLoadedAssemblies.Select(a => a.ItemSpec)));
+                    string.Join(";", remainingLazyLoadAssemblies.Select(a => a.ItemSpec)));
 
                 return;
             }
@@ -392,7 +396,7 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
-            result.debugLevel = helper.GetDebugLevel(result.resources?.pdb?.Count > 0);
+            result.debugLevel = helper.GetDebugLevel(resourceData.pdb?.Count > 0);
         }
 
         if (ConfigurationFiles != null)
@@ -435,16 +439,29 @@ public class GenerateWasmBootJson : Task
                 result.extensions[key] = config;
             }
         }
+
+        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
+        {
+            using var fs = File.OpenRead(RuntimeConfigJsonPath);
+            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+            result.runtimeConfig = runtimeConfig;
+        }
+
         Profilers ??= Array.Empty<string>();
         var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
         if (browserProfiler != null)
         {
             result.environmentVariables ??= new();
-            result.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
+            result.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
         }
 
         helper.ComputeResourcesHash(result);
-        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith);
+
+        string? imports = null;
+        if (IsTargeting100OrLater())
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly);
+
+        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {

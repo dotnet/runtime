@@ -144,25 +144,12 @@ class HolderBase
 
 };  // class HolderBase<>
 
-#ifndef _PREFAST_ // Work around an ICE error in EspX.dll
-
 template <typename TYPE>
 BOOL CompareDefault(TYPE value, TYPE defaultValue)
 {
     STATIC_CONTRACT_SUPPORTS_DAC;
     return value == defaultValue;
 }
-
-#else
-
-template <typename TYPE>
-BOOL CompareDefault(TYPE value, TYPE defaultValue)
-{
-    return FALSE;
-}
-
-#endif
-
 
 template <typename TYPE>
 BOOL NoNull(TYPE value, TYPE defaultValue)

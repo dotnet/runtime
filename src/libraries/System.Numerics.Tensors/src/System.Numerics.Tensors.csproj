@@ -6,8 +6,9 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for operating over tensors.</PackageDescription>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
-    <!-- SYSLIB5001: Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9 -->
-    <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
+    <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).netcore.cs'))</GenAPITargetPath>
+    <!-- SA1001: Commas should not be preceded by a whitespace; needed due to ifdef -->
+    <NoWarn>$(NoWarn);SA1001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +16,6 @@
     <Compile Include="System\Numerics\Tensors\TensorPrimitives.Single.cs" />
     <Compile Include="System\Numerics\Tensors\TensorPrimitives.Helpers.cs" />
     <Compile Include="System\ThrowHelper.cs" />
-    <Compile Include="$(CommonPath)System\Experimentals.cs" Link="Common\System\Experimentals.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -36,9 +36,11 @@
     <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ITensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorDimensionSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorDimensionSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorOperation.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acos.cs" />
@@ -167,8 +169,9 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Truncate.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Xor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan_1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
+    <Compile Include="System\Runtime\InteropServices\TensorMarshal.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">

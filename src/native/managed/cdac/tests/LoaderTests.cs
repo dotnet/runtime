@@ -28,7 +28,7 @@ public unsafe class LoaderTests
         TargetPointer moduleAddr = loader.AddModule(path: expected);
         TargetPointer moduleAddrEmptyPath = loader.AddModule();
 
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, loader.Types);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
 
@@ -36,12 +36,12 @@ public unsafe class LoaderTests
         ILoader contract = target.Contracts.Loader;
         Assert.NotNull(contract);
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
             string actual = contract.GetPath(handle);
             Assert.Equal(expected, actual);
         }
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddrEmptyPath);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyPath);
             string actual = contract.GetFileName(handle);
             Assert.Equal(string.Empty, actual);
         }
@@ -62,7 +62,7 @@ public unsafe class LoaderTests
         TargetPointer moduleAddr = loader.AddModule(fileName: expected);
         TargetPointer moduleAddrEmptyName = loader.AddModule();
 
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, loader.Types);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
 
@@ -70,12 +70,12 @@ public unsafe class LoaderTests
         Contracts.ILoader contract = target.Contracts.Loader;
         Assert.NotNull(contract);
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
             string actual = contract.GetFileName(handle);
             Assert.Equal(expected, actual);
         }
         {
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddrEmptyName);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyName);
             string actual = contract.GetFileName(handle);
             Assert.Equal(string.Empty, actual);
         }

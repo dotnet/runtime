@@ -1,17 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: VirtualCallStub.CPP
-//
+
 // This file contains the virtual call stub manager and caches
-//
-
-
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 #include "array.h"
@@ -188,7 +178,7 @@ void VirtualCallStubManager::StartupLogging()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (g_hStubLogFile == INVALID_HANDLE_VALUE) {
         g_hStubLogFile = NULL;
@@ -1567,7 +1557,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     return target;
 }
 
-/* Resolve to a method and return its address or NULL if there is none 
+/* Resolve to a method and return its address or NULL if there is none
    Our return value is the target address that control should continue to.  Our caller will
    enter the target address as if a direct call with the original stack frame had been made from
    the actual call site.  Hence our strategy is to either return a target address
@@ -1765,7 +1755,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
-    PREFIX_ASSUME(pMgr != NULL);
+    _ASSERTE(pMgr != NULL);
 
 #ifndef TARGET_X86
     // Have we failed the dispatch stub too many times?
@@ -1810,7 +1800,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget);
-    PREFIX_ASSUME(pMgr != NULL);
+    _ASSERTE(pMgr != NULL);
 
     pMgr->BackPatchWorker(&callSite);
 }
@@ -1960,7 +1950,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_CATCH
     {
     }
-    EX_END_CATCH (SwallowAllExceptions);
+    EX_END_CATCH
 
     /////////////////////////////////////////////////////////////////////////////////////
     // If we failed to find a target in either the resolver or cache entry hash tables,
@@ -2252,7 +2242,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_CATCH
     {
     }
-    EX_END_CATCH (SwallowAllExceptions);
+    EX_END_CATCH
 
     // Target can be NULL only if we can't resolve to an address
     _ASSERTE(target != (PCODE)NULL);
@@ -2332,11 +2322,6 @@ VirtualCallStubManager::Resolver(
         BOOL fSlotCallsPrestub = DoesSlotCallPrestub(implSlot.GetTarget());
         if (!fSlotCallsPrestub)
         {
-            // Skip fixup precode jump for better perf
-            PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(implSlot.GetTarget());
-            if (pDirectTarget != (PCODE)NULL)
-                implSlot = DispatchSlot(pDirectTarget);
-
             // Only patch to a target if it's not going to call the prestub.
             fShouldPatch = TRUE;
         }
@@ -2493,8 +2478,8 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
-    // This is called when trying to create a HelperMethodFrame, which means there are
-    // potentially managed references on the stack that are not yet protected.
+    // This is called in a context where managed references on the stack may not be fully protected,
+    // so garbage collection must be forbidden here.
     GCX_FORBID();
 
     if (token.IsTypedToken())
@@ -2534,7 +2519,7 @@ MethodDesc *VirtualCallStubManager::GetInterfaceMethodDescFromToken(DispatchToke
 #ifndef DACCESS_COMPILE
 
     MethodTable * pMT = GetTypeFromToken(token);
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 

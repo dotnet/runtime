@@ -392,6 +392,11 @@
         <target state="translated">型 '{1}' 向けのエントリ ポイント マーシャラー型 '{0}' は、この型をマネージド型として指定する 'System.Runtime.InteropServices.CustomMarshallerAttribute' を 1 つ以上持つ型である必要があります</target>
         <note />
       </trans-unit>
+      <trans-unit id="ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode">
+        <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
+        <target state="translated">'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' として指定された型 '{0}' には、生成されたコードからアクセスできません。この型には少なくともアクセシビリティ 'internal' が必要です。{1}</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
         <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
         <target state="translated">'ElementIndirectionDepth' {0} にマーシャリング情報が指定されましたが、マーシャリング情報は間接参照の {1} レベルにのみ必要です</target>
@@ -430,6 +435,11 @@
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
         <target state="translated">'StringMarshalling' および 'StringMarshallingCustomType' の構成は、ベース COM インターフェイスと一致する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericDelegatesNotSupported">
+        <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
+        <target state="translated">汎用デリゲートのマーシャリングはサポートされていません。代わりに関数ポインターの使用を検討してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -610,6 +620,11 @@
       <trans-unit id="InvalidExceptionMarshallingValue">
         <source>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</source>
         <target state="translated">指定された値は、'ExceptionMarshalling' 列挙型の既知のフラグではありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionToUnmanagedMarshallerType">
+        <source>The type specified as 'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' is not a valid marshaller type.</source>
+        <target state="translated">'GeneratedComInterfaceAttribute.ExceptionToUnmanagedMarshaller' として指定された型は、有効なマーシャラー型ではありません。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">

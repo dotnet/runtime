@@ -124,7 +124,7 @@ bool ExecutableAllocator::IsDoubleMappingEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64) || defined(HOST_WASM)
     return false;
 #else
     return g_isWXorXEnabled;
@@ -504,6 +504,11 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
 
 void ExecutableAllocator::Release(void* pRX)
 {
+    ReleaseWorker(pRX, false /* this is the standard Release of normally allocated memory */);
+}
+
+void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate)
+{
     LIMITED_METHOD_CONTRACT;
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
@@ -548,9 +553,19 @@ void ExecutableAllocator::Release(void* pRX)
                 cachedMappingThatOverlaps = FindOverlappingCachedMapping(pBlock);
             }
 
-            if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
+            if (releaseTemplate)
             {
-                g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the double mapped memory failed"));
+                if (!VMToOSInterface::FreeThunksFromTemplate(pRX, pBlock->size / 2))
+                {
+                    g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the template mapped memory failed"));
+                }
+            }
+            else
+            {
+                if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
+                {
+                    g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the double mapped memory failed"));
+                }
             }
             // Put the released block into the free block list
             pBlock->baseRX = NULL;
@@ -961,4 +976,61 @@ void ExecutableAllocator::UnmapRW(void* pRW)
     {
         g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the RW mapping failed"));
     }
+}
+
+void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
+{
+    if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
+    {
+        CRITSEC_Holder csh(m_CriticalSection);
+        
+        bool isFreeBlock;
+        BlockRX* block = AllocateBlock(templateSize * 2, &isFreeBlock);
+        if (block == NULL)
+        {
+            return NULL;
+        }
+        
+        void* result = VMToOSInterface::ReserveDoubleMappedMemory(m_doubleMemoryMapperHandle, block->offset, templateSize * 2, 0, 0);
+
+        if (result != NULL)
+        {
+            block->baseRX = result;
+            AddRXBlock(block);
+        }
+        else
+        {
+            BackoutBlock(block, isFreeBlock);
+        }
+
+        void *pTemplateAddressAllocated = VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, block->baseRX, dataPageGenerator);
+
+        if (pTemplateAddressAllocated == NULL)
+        {
+            ReleaseWorker(block->baseRX, false);
+        }
+
+        return pTemplateAddressAllocated;
+    }
+    else
+    {
+        return VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, NULL, dataPageGenerator);
+    }
+}
+
+void ExecutableAllocator::FreeThunksFromTemplate(void *pThunks, size_t templateSize)
+{
+    if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
+    {
+        ReleaseWorker(pThunks, true /* This is a release of template allocated memory */);
+    }
+    else
+    {
+        VMToOSInterface::FreeThunksFromTemplate(pThunks, templateSize);
+    }
+}
+
+void* ExecutableAllocator::CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
+{
+    return VMToOSInterface::CreateTemplate(templateInImage, templateSize, codePageGenerator);
 }
