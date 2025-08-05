@@ -6,11 +6,16 @@
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"
-#include "callstubgenerator.h"
 #include "frames.h"
 
 // for numeric_limits
 #include <limits>
+
+#ifdef TARGET_WASM
+void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet);
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target);
+#else
+#include "callstubgenerator.h"
 
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
@@ -106,6 +111,8 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 
     return pHeader;
 }
+
+#endif // !TARGET_WASM
 
 typedef void* (*HELPER_FTN_P_P)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
@@ -2195,7 +2202,7 @@ do {                                                                           \
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
-                    OBJECTREF elemRef = *(OBJECTREF*)(pData + idx * sizeof(OBJECTREF));
+                    OBJECTREF elemRef = ObjectToOBJECTREF(*(Object**)(pData + idx * sizeof(OBJECTREF)));
                     LOCAL_VAR(ip[1], OBJECTREF) = elemRef;
                     ip += 4;
                     break;

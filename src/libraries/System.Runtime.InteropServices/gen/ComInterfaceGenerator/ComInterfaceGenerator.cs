@@ -54,7 +54,7 @@ namespace Microsoft.Interop
             var externalInterfaceSymbols = attributedInterfaces.SelectMany(static (data, ct) =>
             {
                 return ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(data.Symbol);
-            });
+            }).Collect().SelectMany(static (data, ct) => data.Distinct(ComInterfaceInfo.EqualityComparerForExternalIfaces.Instance));
 
             var interfaceSymbolsWithoutDiagnostics = interfaceSymbolsToGenerateWithoutDiagnostics.Concat(externalInterfaceSymbols);
 
@@ -84,11 +84,7 @@ namespace Microsoft.Interop
                 .SelectMany(static (data, ct) =>
                 {
                     return ComMethodContext.CalculateAllMethods(data, ct);
-                })
-                // Now that we've determined method offsets, we can remove all externally defined methods.
-                // We'll also filter out methods originally declared on externally defined base interfaces
-                // as we may not be able to emit them into our assembly.
-                .Where(context => !context.Method.OriginalDeclaringInterface.IsExternallyDefined);
+                });
 
             // Now that we've determined method offsets, we can remove all externally defined interfaces.
             var interfaceContextsToGenerate = interfaceContexts.Where(context => !context.IsExternallyDefined);
@@ -107,13 +103,20 @@ namespace Microsoft.Interop
                     return new ComMethodContext(
                         data.Method,
                         data.OwningInterface,
-                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.OwningInterface.Info.Type, ct));
+                        CalculateStubInformation(
+                            data.Method.MethodInfo.Syntax,
+                            symbolMap[data.Method.MethodInfo],
+                            data.Method.Index,
+                            env,
+                            data.OwningInterface.Info,
+                            ct));
                 }).WithTrackingName(StepNames.CalculateStubInformation);
 
             var interfaceAndMethodsContexts = comMethodContexts
                 .Collect()
                 .Combine(interfaceContextsToGenerate.Collect())
-                .SelectMany((data, ct) => GroupComContextsForInterfaceGeneration(data.Left, data.Right, ct));
+                .SelectMany((data, ct) =>
+                    GroupComContextsForInterfaceGeneration(data.Left, data.Right, ct));
 
             // Generate the code for the managed-to-unmanaged stubs.
             var managedToNativeInterfaceImplementations = interfaceAndMethodsContexts
@@ -256,12 +259,22 @@ namespace Microsoft.Interop
                 || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo owningInterface, CancellationToken ct)
+        /// <summary>
+        /// Calculates the shared information needed for both source-available and sourceless stub generation.
+        /// </summary>
+        private static IncrementalMethodStubGenerationContext CalculateSharedStubInformation(
+            IMethodSymbol symbol,
+            int index,
+            StubEnvironment environment,
+            ISignatureDiagnosticLocations diagnosticLocations,
+            ComInterfaceInfo owningInterfaceInfo,
+            CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.LcidConversionAttrType;
             INamedTypeSymbol? suppressGCTransitionAttrType = environment.SuppressGCTransitionAttrType;
             INamedTypeSymbol? unmanagedCallConvAttrType = environment.UnmanagedCallConvAttrType;
+
             // Get any attributes of interest on the method
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;
@@ -282,8 +295,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            var locations = new MethodSignatureDiagnosticLocations(syntax);
-            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), diagnosticLocations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             if (lcidConversionAttr is not null)
             {
@@ -293,8 +305,8 @@ namespace Microsoft.Interop
 
             GeneratedComInterfaceCompilationData.TryGetGeneratedComInterfaceAttributeFromInterface(symbol.ContainingType, out var generatedComAttribute);
             var generatedComInterfaceAttributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComAttribute);
-            // Create the stub.
 
+            // Create the stub.
             var signatureContext = SignatureContext.Create(
                 symbol,
                 DefaultMarshallingInfoParser.Create(
@@ -349,7 +361,7 @@ namespace Microsoft.Interop
                     // Add the HRESULT return value in the native signature.
                     // This element does not have any influence on the managed signature, so don't assign a managed index.
                     ElementTypeInformation = returnSwappedSignatureElements.Add(
-                        new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
+                        new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo(owningInterfaceInfo.InterfaceId))
                         {
                             NativeIndex = TypePositionInfo.ReturnIndex
                         })
@@ -387,10 +399,6 @@ namespace Microsoft.Interop
                     GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue);
             }
 
-            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
-
-            var methodSyntaxTemplate = new ContainingSyntax(new SyntaxTokenList(syntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword))).StripAccessibilityModifiers(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
-
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = VirtualMethodPointerStubGenerator.GenerateCallConvSyntaxFromAttributes(
                 suppressGCTransitionAttribute,
                 unmanagedCallConvAttribute,
@@ -398,10 +406,7 @@ namespace Microsoft.Interop
 
             var declaringType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
-            var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com);
-
             MarshallingInfo exceptionMarshallingInfo;
-
             if (generatedComInterfaceAttributeData.ExceptionToUnmanagedMarshaller is null)
             {
                 exceptionMarshallingInfo = new ComExceptionMarshalling();
@@ -418,16 +423,53 @@ namespace Microsoft.Interop
 
             return new IncrementalMethodStubGenerationContext(
                 signatureContext,
+                diagnosticLocations,
+                callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
+                new VirtualMethodIndexData(index, ImplicitThisParameter: true, direction, true, ExceptionMarshalling.Com),
+                exceptionMarshallingInfo,
+                environment.EnvironmentFlags,
+                owningInterfaceInfo.Type,
+                declaringType,
+                generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
+                ComInterfaceDispatchMarshallingInfo.Instance);
+        }
+
+        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
+        {
+            ISignatureDiagnosticLocations locations = syntax is null
+                ? NoneSignatureDiagnosticLocations.Instance
+                : new MethodSignatureDiagnosticLocations(syntax);
+
+            var sourcelessStubInformation = CalculateSharedStubInformation(
+                symbol,
+                index,
+                environment,
+                locations,
+                owningInterface,
+                ct);
+
+            if (syntax is null)
+                return sourcelessStubInformation;
+
+            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
+            var methodSyntaxTemplate = new ContainingSyntax(
+                new SyntaxTokenList(syntax.Modifiers.Where(static m => !m.IsKind(SyntaxKind.NewKeyword))).StripAccessibilityModifiers(),
+                SyntaxKind.MethodDeclaration,
+                syntax.Identifier,
+                syntax.TypeParameterList);
+
+            return new SourceAvailableIncrementalMethodStubGenerationContext(
+                sourcelessStubInformation.SignatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
                 locations,
-                callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
-                virtualMethodIndexData,
-                exceptionMarshallingInfo,
-                environment.EnvironmentFlags,
-                owningInterface,
-                declaringType,
-                generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
+                sourcelessStubInformation.CallingConvention,
+                sourcelessStubInformation.VtableIndexData,
+                sourcelessStubInformation.ExceptionMarshallingInfo,
+                sourcelessStubInformation.EnvironmentFlags,
+                sourcelessStubInformation.TypeKeyOwner,
+                sourcelessStubInformation.DeclaringType,
+                sourcelessStubInformation.Diagnostics,
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
 
@@ -520,12 +562,12 @@ namespace Microsoft.Interop
         private static InterfaceDeclarationSyntax GenerateImplementationInterface(ComInterfaceAndMethodsContext interfaceGroup, CancellationToken _)
         {
             var definingType = interfaceGroup.Interface.Info.Type;
-            var shadowImplementations = interfaceGroup.InheritedMethods.Select(m => (Method: m, ManagedToUnmanagedStub: m.ManagedToUnmanagedStub))
+            var shadowImplementations = interfaceGroup.InheritedMethods.Where(m => !m.IsExternallyDefined).Select(m => (Method: m, ManagedToUnmanagedStub: m.ManagedToUnmanagedStub))
                 .Where(p => p.ManagedToUnmanagedStub is GeneratedStubCodeContext)
                 .Select(ctx => ((GeneratedStubCodeContext)ctx.ManagedToUnmanagedStub).Stub.Node
                 .WithExplicitInterfaceSpecifier(
                     ExplicitInterfaceSpecifier(ParseName(definingType.FullTypeName))));
-            var inheritedStubs = interfaceGroup.InheritedMethods.Select(m => m.UnreachableExceptionStub);
+            var inheritedStubs = interfaceGroup.InheritedMethods.Where(m => !m.IsExternallyDefined).Select(m => m.UnreachableExceptionStub);
             return ImplementationInterfaceTemplate
                 .AddBaseListTypes(SimpleBaseType(definingType.Syntax))
                 .WithMembers(
@@ -661,7 +703,6 @@ namespace Microsoft.Interop
 
             BlockSyntax fillBaseInterfaceSlots;
 
-
             if (interfaceMethods.Interface.Base is null)
             {
                 // If we don't have a base interface, we need to manually fill in the base iUnknown slots.
@@ -740,7 +781,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                // NativeMemory.Copy(StrategyBasedComWrappers.DefaultIUnknownInteraceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<baseInterfaceType>).TypeHandle).ManagedVirtualMethodTable, vtable, (nuint)(sizeof(void*) * <startingOffset>));
+                // NativeMemory.Copy(StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<baseInterfaceType>).TypeHandle).ManagedVirtualMethodTable, vtable, (nuint)(sizeof(void*) * <baseVTableSize>));
                 fillBaseInterfaceSlots = Block(
                         MethodInvocationStatement(
                             TypeSyntaxes.System_Runtime_InteropServices_NativeMemory,
@@ -750,7 +791,7 @@ namespace Microsoft.Interop
                                     TypeSyntaxes.StrategyBasedComWrappers
                                         .Dot(IdentifierName("DefaultIUnknownInterfaceDetailsStrategy")),
                                     IdentifierName("GetIUnknownDerivedDetails"),
-                                    Argument( //baseInterfaceTypeInfo.BaseInterface.FullTypeName)),
+                                    Argument(
                                         TypeOfExpression(ParseTypeName(interfaceMethods.Interface.Base.Info.Type.FullTypeName))
                                             .Dot(IdentifierName("TypeHandle"))))
                                     .Dot(IdentifierName("ManagedVirtualMethodTable"))),
@@ -767,7 +808,7 @@ namespace Microsoft.Interop
                                 ParenthesizedExpression(
                                     BinaryExpression(SyntaxKind.MultiplyExpression,
                                         SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
-                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethods.InheritedMethods.Count() + 3))))))));
+                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethods.BaseVTableSize))))))));
             }
 
             var validDeclaredMethods = interfaceMethods.DeclaredMethods
@@ -787,7 +828,7 @@ namespace Microsoft.Interop
                                 IdentifierName($"{declaredMethodContext.MethodInfo.MethodName}_{declaredMethodContext.GenerationContext.VtableIndexData.Index}")),
                             PrefixUnaryExpression(
                                 SyntaxKind.AddressOfExpression,
-                                IdentifierName($"ABI_{declaredMethodContext.GenerationContext.StubMethodSyntaxTemplate.Identifier}")))));
+                                IdentifierName($"ABI_{((SourceAvailableIncrementalMethodStubGenerationContext)declaredMethodContext.GenerationContext).StubMethodSyntaxTemplate.Identifier}")))));
             }
 
             return ImplementationInterfaceTemplate
@@ -826,7 +867,7 @@ namespace Microsoft.Interop
                             EqualsValueClause(
                                 ImplicitObjectCreationExpression()
                                     .AddArgumentListArguments(
-                                        Argument(CreateEmbeddedDataBlobCreationStatement(context.InterfaceId.ToByteArray())))))
+                                        Argument(ComInterfaceGeneratorHelpers.CreateEmbeddedDataBlobCreationStatement(context.InterfaceId.ToByteArray())))))
                         .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
 
             if (context.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
@@ -858,20 +899,6 @@ namespace Microsoft.Interop
                     .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                     .WithExpressionBody(ArrowExpressionClause(LiteralExpression(SyntaxKind.NullLiteralExpression)))
                     .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
-
-
-            static ExpressionSyntax CreateEmbeddedDataBlobCreationStatement(ReadOnlySpan<byte> bytes)
-            {
-                var literals = new CollectionElementSyntax[bytes.Length];
-
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    literals[i] = ExpressionElement(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(bytes[i])));
-                }
-
-                // [ <byte literals> ]
-                return CollectionExpression(SeparatedList(literals));
-            }
         }
     }
 }
