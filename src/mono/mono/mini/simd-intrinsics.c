@@ -2183,7 +2183,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #if defined(TARGET_S390X)
 		if (!mono_hwcap_s390x_has_ve1 && (vector_inner_type == MONO_TYPE_R4))
-                        return NULL;
+			return NULL;
 #endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, vector_inner_type, id);
 	}
@@ -2783,7 +2783,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			mono_metadata_type_equal (fsig->params [0], fsig->params [1]));
 #ifdef TARGET_S390X
                 if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
-                        return NULL;
+			return NULL;
 #endif
 		gboolean is_all = FALSE;
 		switch (id) {
@@ -4227,7 +4227,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Dot: {
 #ifdef TARGET_S390X
 		if (!mono_hwcap_s390x_has_ve1)
-                        return NULL;
+			return NULL;
 #endif
 		return emit_dot (cfg, klass, fsig->params [0], MONO_TYPE_R4, args [0]->dreg, args [1]->dreg);
 	}
@@ -4249,7 +4249,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		}
 #ifdef TARGET_S390X
 		if (!mono_hwcap_s390x_has_ve1)
-                        return NULL;
+			return NULL;
 #endif
 		// MAX(x,0-x)
 		MonoInst *zero = emit_xzero (cfg, klass);
@@ -4266,7 +4266,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return NULL;
 #ifdef TARGET_S390X
 		if (!mono_hwcap_s390x_has_ve1)
-                        return NULL;
+			return NULL;
 #endif
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		return emit_xequal (cfg, arg_class, MONO_TYPE_R4, args [0], args [1]);
@@ -4276,7 +4276,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return NULL;
 #ifdef TARGET_S390X
 		if (!mono_hwcap_s390x_has_ve1)
-                        return NULL;
+			return NULL;
 #endif
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		return emit_not_xequal (cfg, arg_class, MONO_TYPE_R4, args [0], args [1]);
@@ -4309,7 +4309,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #endif
 #ifdef TARGET_S390X
 		if (!mono_hwcap_s390x_has_ve1)
-                        return NULL;
+			return NULL;
 #endif
 
 		MonoInst *max = emit_simd_ins (cfg, klass, OP_XBINOP, args[0]->dreg, args[1]->dreg);
