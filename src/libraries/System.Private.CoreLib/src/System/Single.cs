@@ -1469,8 +1469,8 @@ namespace System
             else if (typeof(TOther) == typeof(nuint))
             {
 #if MONO
-                nuint actualResult = (value >= uint.MaxValue) ? nuint.MaxValue :
-                                     (value <= uint.MinValue) ? nuint.MinValue : (nuint)value;
+                nuint actualResult = (value >= nuint.MaxValue) ? nuint.MaxValue :
+                                     (value <= nuint.MinValue) ? nuint.MinValue : (nuint)value;
 #else
                 nuint actualResult = (nuint)value;
 #endif
