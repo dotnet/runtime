@@ -494,7 +494,7 @@ namespace System.Runtime.CompilerServices
         private static unsafe partial TailCallArgBuffer* AllocTailCallArgBufferInternal(int size);
 
         private const int TAILCALLARGBUFFER_ACTIVE = 0;
-        private const int TAILCALLARGBUFFER_INSTARG_ONLY = 1;
+        // private const int TAILCALLARGBUFFER_INSTARG_ONLY = 1;
         private const int TAILCALLARGBUFFER_INACTIVE = 2;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // To allow unrolling of Span.Clear
