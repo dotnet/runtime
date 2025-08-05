@@ -563,11 +563,8 @@ namespace System.Runtime.CompilerServices
             {
                 tls->Frame = prevFrame;
 
-                // If the arg buffer is reporting inst argument, it is safe to abandon it now
-                if (tls->ArgBuffer != null && tls->ArgBuffer->State == TAILCALLARGBUFFER_INSTARG_ONLY)
-                {
-                    tls->ArgBuffer->State = TAILCALLARGBUFFER_INACTIVE;
-                }
+                // If the arg buffer is reporting inst argument (TAILCALLARGBUFFER_INSTARG_ONLY), it is safe to abandon it now.
+                tls->ArgBuffer->State = TAILCALLARGBUFFER_INACTIVE;
             }
         }
 
