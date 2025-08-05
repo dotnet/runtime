@@ -28,8 +28,9 @@ CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD)
     }
     CONTRACTL_END
 
-    CallStubGenerator callStubGenerator;
     GCX_PREEMP();
+
+    CallStubGenerator callStubGenerator;
 
     AllocMemTracker amTracker;
     CallStubHeader *header = callStubGenerator.GenerateCallStub(pMD, &amTracker, true /* interpreterToNative */);
