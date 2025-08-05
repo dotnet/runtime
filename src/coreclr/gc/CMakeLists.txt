@@ -105,23 +105,33 @@ convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
 if(FEATURE_STANDALONE_GC)
 
+  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+    set(BUILD_EXP_GC 1)
+  endif()
+
   add_subdirectory(gcdatadescriptors)
 
   # clrgcexp is build with standalone+regions
-  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  if (BUILD_EXP_GC)
     add_library_clr(clrgcexp SHARED ${GC_SOURCES})
     add_dependencies(clrgcexp eventing_headers)
     target_link_libraries(clrgcexp PRIVATE ${GC_LINK_LIBRARIES})
-    target_link_libraries(clrgcexp PRIVATE gc_contract_descriptor)
+    target_link_libraries(clrgcexp PRIVATE gcexp_dll_wks_descriptor)
+    if (FEATURE_SVR_GC)
+      target_link_libraries(clrgcexp PRIVATE gcexp_dll_svr_descriptor)
+    endif()
     target_compile_definitions(clrgcexp PRIVATE -DUSE_REGIONS)
     install_clr(TARGETS clrgcexp DESTINATIONS . COMPONENT runtime)
-  endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  endif (BUILD_EXP_GC)
 
   # clrgc is build with standalone+segments
   add_library_clr(clrgc SHARED ${GC_SOURCES})
   add_dependencies(clrgc eventing_headers)
   target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
-  target_link_libraries(clrgc PRIVATE gc_contract_descriptor)
+  target_link_libraries(clrgc PRIVATE gc_dll_wks_descriptor)
+  if(FEATURE_SVR_GC)
+    target_link_libraries(clrgc PRIVATE gc_dll_svr_descriptor)
+  endif()
   install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)
 
   add_definitions(-DBUILD_AS_STANDALONE)

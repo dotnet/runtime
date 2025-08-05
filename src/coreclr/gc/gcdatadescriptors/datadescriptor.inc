@@ -112,17 +112,22 @@ CDAC_BASELINE("empty")
 
 CDAC_TYPES_BEGIN()
 
-// CDAC_TYPE_BEGIN(DummyType)
-// CDAC_TYPE_SIZE(10)
-// CDAC_TYPE_FIELD(DummyType, /*uint32*/, DummyField, 0)
-// CDAC_TYPE_END(DummyType)
 
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
-// CDAC_GLOBAL(TestGlobal, uint32, 3)
-// CDAC_GLOBAL_STRING(TestGlobalString, "Hello, World!")
-// CDAC_GLOBAL_POINTER(TestGlobalPointer, (void*)0x12345678)
+
+// CDAC_GLOBAL_POINTER(HeapType, &::g_gc_heap_type)
+
+#ifdef SERVER_GC
+// CDAC_GLOBAL_STRING(HeapType, server)
+#else // SERVER_GC
+// CDAC_GLOBAL_STRING(HeapType, workstation)
+#endif // SERVER_GC
+
+// CDAC_GLOBAL_POINTER(MaxGeneration, &::g_max_generation)
+// CDAC_GLOBAL_POINTER(StructureInvalidCount, (&GCScan::m_GcStructuresInvalidCnt))
+// CDAC_GLOBAL_POINTER(StructureInvalidCount, (&GCScan::m_testVar))
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

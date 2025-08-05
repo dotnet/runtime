@@ -53563,7 +53563,10 @@ bool GCHeap::IsConcurrentGCEnabled()
 extern "C"
 {
     struct ContractDescriptor;
-    extern ContractDescriptor GCContractDescriptor;
+    extern ContractDescriptor GCContractDescriptorWKS;
+#if FEATURE_SVR_GC
+    extern ContractDescriptor GCContractDescriptorSVR;
+#endif // FEATURE_SVR_GC
 }
 
 void PopulateDacVars(GcDacVars *gcDacVars)
@@ -53710,7 +53713,11 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     }
     if (v6)
     {
-        gcDacVars->gc_descriptor = (void*)&GCContractDescriptor;
+#ifdef MULTIPLE_HEAPS
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptorSVR;
+#else // MULTIPLE_HEAPS
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptorWKS;
+#endif // MULTIPLE_HEAPS
     }
 }
 
