@@ -672,7 +672,7 @@ DEFINE_FIELD(CONDITION,             WAITERS_HEAD,           _waitersHead)
 DEFINE_FIELD(CONDITION,             CURRENT_THREAD_WAITER,  t_waiterForCurrentThread)
 
 DEFINE_CLASS(WAITER,                Threading,              Condition+Waiter)
-DEFINE_FIELD(WAITER,                NEXT,                   _next)
+DEFINE_FIELD(WAITER,                NEXT,                   next)
 
 DEFINE_CLASS(THREAD_BLOCKING_INFO,  Threading,              ThreadBlockingInfo)
 DEFINE_FIELD(THREAD_BLOCKING_INFO,  FIRST,                  t_first)

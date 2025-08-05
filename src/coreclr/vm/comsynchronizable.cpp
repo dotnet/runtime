@@ -893,20 +893,20 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
     }
 }
 
-extern "C" int QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack obj)
+extern "C" int32_t QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack obj)
 {
     QCALL_CONTRACT;
 
-    int index = -1;
+    int32_t index = -1;
 
     BEGIN_QCALL;
 
     // Force creation of a SyncBlock for the object.
-    (void)obj.Get()->GetSyncBlock();
+    index = (int32_t)obj.Get()->GetSyncBlock()->GetSyncBlockIndex();
 
     END_QCALL;
 
-    return obj.Get()->GetSyncBlockIndex();
+    return index;
 }
 
 extern "C" OBJECTHANDLE QCALLTYPE SyncTable_GetLockHandle(int idx)
@@ -917,8 +917,7 @@ extern "C" OBJECTHANDLE QCALLTYPE SyncTable_GetLockHandle(int idx)
 
     BEGIN_QCALL;
 
-    // Force creation of a SyncBlock for the object.
-    handle = g_pSyncTable[idx]->GetLock();
+    handle = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock();
 
     END_QCALL;
 
