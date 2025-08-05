@@ -1039,11 +1039,6 @@ UInt32_BOOL PalCloseHandle(HANDLE arg1)
     return ::CloseHandle(arg1);
 }
 
-void minipal_memory_barrier_process_wide()
-{
-    ::FlushProcessWriteBuffers();
-}
-
 uint32_t PalGetCurrentProcessId()
 {
     return static_cast<uint32_t>(::GetCurrentProcessId());
