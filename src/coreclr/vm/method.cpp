@@ -2476,16 +2476,12 @@ MethodImpl *MethodDesc::GetMethodImpl()
 #ifndef DACCESS_COMPILE
 
 //*******************************************************************************
-BOOL MethodDesc::RequiresMethodDescCallingConvention()
+BOOL MethodDesc::RequiresMDContextArg() const
 {
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
     if (IsCLRToCOMCall())
-        return TRUE;
-
-    // Interop marshalling of vararg needs MethodDesc calling convention
-    if (IsPInvoke() && IsVarArg())
         return TRUE;
 
     return FALSE;
@@ -3909,7 +3905,7 @@ PrecodeType MethodDesc::GetPrecodeType()
     PrecodeType precodeType = PRECODE_INVALID;
 
 #ifdef HAS_FIXUP_PRECODE
-    if (!RequiresMethodDescCallingConvention())
+    if (!RequiresMDContextArg())
     {
         // Use the more efficient fixup precode if possible
         precodeType = PRECODE_FIXUP;

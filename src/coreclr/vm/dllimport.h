@@ -168,7 +168,7 @@ enum PInvokeStubFlags
     PINVOKESTUB_FL_STUB_HAS_THIS            = 0x00010000,
     PINVOKESTUB_FL_TARGET_HAS_THIS          = 0x00020000,
     PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION  = 0x00040000,
-    // unused                               = 0x00080000,
+    PINVOKESTUB_FL_SHARED_STUB              = 0x00080000,
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
     // unused                               = 0x00400000,
@@ -197,7 +197,7 @@ enum ILStubTypes
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     ILSTUB_UNBOXINGILSTUB                = 0x80000005,
     ILSTUB_INSTANTIATINGSTUB             = 0x80000006,
-#endif
+#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
     ILSTUB_WRAPPERDELEGATE_INVOKE        = 0x80000007,
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
@@ -219,6 +219,7 @@ inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_STRUCT_MARSHAL)); }
 inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION)); }
+inline bool SF_IsSharedStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_SHARED_STUB)); }
 
 inline bool SF_IsVirtualStaticMethodDispatchStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return dwStubFlags == ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB; }
 
@@ -264,33 +265,6 @@ inline bool SF_IsReverseCOMStub          (DWORD dwStubFlags) { WRAPPER_NO_CONTRA
 
 inline bool SF_IsForwardDelegateStub     (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (SF_IsDelegateStub(dwStubFlags) && SF_IsForwardStub(dwStubFlags)); }
 inline bool SF_IsReverseDelegateStub     (DWORD dwStubFlags) { WRAPPER_NO_CONTRACT; return (SF_IsDelegateStub(dwStubFlags) && SF_IsReverseStub(dwStubFlags)); }
-
-inline bool SF_IsSharedStub(DWORD dwStubFlags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    if (SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    if (SF_IsAsyncResumeStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
-    {
-        return false;
-    }
-
-    return true;
-}
 
 inline void SF_ConsistencyCheck(DWORD dwStubFlags)
 {
@@ -593,8 +567,6 @@ protected:
 // This attempts to guess whether a target is an API call that uses SetLastError to communicate errors.
 BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget);
 DWORD STDMETHODCALLTYPE FalseGetLastError();
-
-PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD);
 
 PCODE JitILStub(MethodDesc* pStubMD);
 PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags = 0);

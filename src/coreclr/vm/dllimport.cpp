@@ -209,6 +209,33 @@ StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
 
 #ifndef DACCESS_COMPILE
 
+static bool IsSharedStubScenario(DWORD dwStubFlags)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags))
+    {
+        return false;
+    }
+
+    if (SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags))
+    {
+        return false;
+    }
+
+    if (SF_IsAsyncResumeStub(dwStubFlags))
+    {
+        return false;
+    }
+
+    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 class StubState
 {
 public:
@@ -241,11 +268,22 @@ protected:
                 int iLCIDParamIdx,
                 MethodDesc* pTargetMD)
         : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx)
-        , m_dwStubFlags(dwStubFlags)
+        , m_dwStubFlags(UpdateStubFlags(dwStubFlags))
     {
         STANDARD_VM_CONTRACT;
 
         m_fSetLastError = 0;
+    }
+
+private:
+    static DWORD UpdateStubFlags(DWORD dwStubFlags)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        if (IsSharedStubScenario(dwStubFlags))
+            dwStubFlags |= PINVOKESTUB_FL_SHARED_STUB;
+
+        return dwStubFlags;
     }
 
 public:
@@ -815,7 +853,8 @@ public:
             // Forward delegate stubs get all the context they need in 'this' so they
             // don't use the secret parameter.
         }
-        else if (SF_IsForwardPInvokeStub(m_dwStubFlags) && !SF_IsCALLIStub(m_dwStubFlags))
+        else if (SF_IsForwardPInvokeStub(m_dwStubFlags)
+                && !SF_IsCALLIStub(m_dwStubFlags))
         {
             // Forward stubs (i.e., PInvokes) don't use the secret parameter
         }
@@ -4000,10 +4039,13 @@ namespace
 
         INT32       m_iLCIDArg;
         INT32       m_nParams;
-        BYTE        m_rgbSigAndParamData[1];
+
+        // Fields added to the end of the blob (see CreateHashBlob):
+        //
         // (dwParamAttr, cbNativeType)          // length: number of parameters
         // NativeTypeBlob                       // length: number of parameters
         // BYTE     m_rgbSigData[];             // length: determined by sig walk
+        BYTE        m_rgbSigAndParamData[1];
     };
 
     // For better performance and less memory fragmentation,
@@ -4363,7 +4405,7 @@ namespace
         CONTRACTL_END;
 
         WORD ndirectflags = 0;
-        if (pNMD->MethodDesc::IsVarArg())
+        if (pNMD->IsVarArg())
             ndirectflags |= PInvokeMethodDesc::kVarArgs;
 
         if (sigInfo.GetCharSet() == nltAnsi)
@@ -4944,7 +4986,7 @@ namespace
                             UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                         }
 
-                        if (SF_IsSharedStub(params.m_dwStubFlags))
+                        if (SF_IsSharedStub(dwStubFlags))
                         {
                             // We need to re-acquire the lock in case we need to get a new pStubMD
                             // in the case that the owner of the shared stub was destroyed.
@@ -5916,65 +5958,9 @@ EXTERN_C LPVOID STDCALL PInvokeImportWorker(PInvokeMethodDesc* pMD)
 //  Support for Pinvoke Calli instruction
 //
 //===========================================================================
-
-EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
+static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
 {
-    PreserveLastErrorHolder preserveLastError;
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    PrestubMethodFrame frame(pTransitionBlock, pMD);
-    PrestubMethodFrame * pFrame = &frame;
-
-    pFrame->Push(CURRENT_THREAD);
-
-    _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
-    _ASSERTE(pMD == pFrame->GetFunction());
-
-    GetILStubForCalli(pVASigCookie, pMD);
-
-    pFrame->Pop(CURRENT_THREAD);
-}
-
-EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
-{
-    PreserveLastErrorHolder preserveLastError;
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    PInvokeCalliFrame frame(pTransitionBlock, pVASigCookie, pUnmanagedTarget);
-    PInvokeCalliFrame * pFrame = &frame;
-
-    pFrame->Push(CURRENT_THREAD);
-
-    _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
-
-    GetILStubForCalli(pVASigCookie, NULL);
-
-    pFrame->Pop(CURRENT_THREAD);
-}
-
-PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
-{
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -5982,9 +5968,8 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         MODE_ANY;
         PRECONDITION(CheckPointer(pVASigCookie));
         PRECONDITION(CheckPointer(pMD, NULL_OK));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PCODE pTempILStub = (PCODE)NULL;
 
@@ -6004,10 +5989,8 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
     DWORD dwStubFlags = PINVOKESTUB_FL_BESTFIT;
 
-    // The MethodDesc pointer may in fact be the unmanaged target, see PInvokeStubs.asm.
-    if (pMD == NULL || (UINT_PTR)pMD & 0x1)
+    if (pMD == NULL)
     {
-        pMD = NULL;
         dwStubFlags |= PINVOKESTUB_FL_UNMANAGED_CALLI;
 
         // need to convert the CALLI signature to stub signature with managed calling convention
@@ -6091,8 +6074,64 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+}
 
-    RETURN pVASigCookie->pPInvokeILStub;
+EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie* pVASigCookie)
+{
+    PreserveLastErrorHolder preserveLastError;
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_ENTRY_POINT;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+    MethodDesc* pMD = pVASigCookie->pMethodDesc;
+    _ASSERTE(pMD != NULL);
+
+    PrestubMethodFrame frame(pTransitionBlock, pMD);
+    PrestubMethodFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
+    _ASSERTE(pMD == pFrame->GetFunction());
+
+    GetILStubForCalli(pVASigCookie, pMD);
+
+    pFrame->Pop(CURRENT_THREAD);
+}
+
+EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
+{
+    PreserveLastErrorHolder preserveLastError;
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_ENTRY_POINT;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+    PInvokeCalliFrame frame(pTransitionBlock, pVASigCookie, pUnmanagedTarget);
+    PInvokeCalliFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
+
+    GetILStubForCalli(pVASigCookie, NULL);
+
+    pFrame->Pop(CURRENT_THREAD);
 }
 
 namespace

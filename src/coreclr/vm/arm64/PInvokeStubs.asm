@@ -7,9 +7,6 @@
 
 #include "asmmacros.h"
 
-
-    IMPORT VarargPInvokeStubWorker
-    IMPORT GenericPInvokeCalliStubWorker
     IMPORT JIT_PInvokeEndRarePath
 
     IMPORT g_TrapReturningThreads

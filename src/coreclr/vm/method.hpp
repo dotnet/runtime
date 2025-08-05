@@ -742,14 +742,14 @@ public:
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
-    inline DWORD IsCLRToCOMCall()
+    inline DWORD IsCLRToCOMCall() const
     {
         WRAPPER_NO_CONTRACT;
         return mcComInterop == GetClassification();
     }
 #else // !FEATURE_COMINTEROP
      // hardcoded to return FALSE to improve code readability
-    inline DWORD IsCLRToCOMCall()
+    inline DWORD IsCLRToCOMCall() const
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -1710,7 +1710,7 @@ public:
 
     // The stub produced by prestub requires method desc to be passed
     // in dedicated register.
-    BOOL RequiresMethodDescCallingConvention();
+    BOOL RequiresMDContextArg() const;
 
     // Returns true if the method has to have stable entrypoint always.
     BOOL RequiresStableEntryPoint();
@@ -2899,7 +2899,11 @@ public:
     bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub();
+        bool needsArg = IsCLRToCOMStub();
+#ifndef DACCESS_COMPILE
+        _ASSERTE(needsArg == !!RequiresMDContextArg());
+#endif // !DACCESS_COMPILE
+        return needsArg;
     }
 
     //
