@@ -18,7 +18,6 @@ namespace System.Reflection.Emit
         private Type _genericType;
         private Type[] _typeArguments;
         #endregion
-        private string? _strFullQualName;
         internal Hashtable _hashtable;
 
 
@@ -104,7 +103,7 @@ namespace System.Reflection.Emit
 
         public override Assembly Assembly => _genericType.Assembly;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
-        public override string? FullName => _strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
+        public override string? FullName => field ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
         public override string? Namespace => _genericType.Namespace;
         public override string? AssemblyQualifiedName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",

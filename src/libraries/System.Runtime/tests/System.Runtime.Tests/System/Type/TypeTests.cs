@@ -584,7 +584,7 @@ namespace System.Tests
         [InlineData(typeof(ushort), TypeCode.UInt16)]
         [InlineData(typeof(uint), TypeCode.UInt32)]
         [InlineData(typeof(ulong), TypeCode.UInt64)]
-        public void GetTypeCode_ValidType_ReturnsExpected(Type t, TypeCode typeCode)
+        public void GetTypeCode_ValidType_ReturnsExpected(Type? t, TypeCode typeCode)
         {
             Assert.Equal(typeCode, Type.GetTypeCode(t));
         }

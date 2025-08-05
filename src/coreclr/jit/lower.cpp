@@ -1222,7 +1222,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             JITDUMP("Lowering switch " FMT_BB ": using jump table expansion\n", originalSwitchBB->bbNum);
 
 #ifdef TARGET_64BIT
-            if (tempLclType != TYP_I_IMPL)
+            if (RISCV64_ONLY(!comp->compOpportunisticallyDependsOn(InstructionSet_Zba)&&) // shXadd.uw 0-extends index
+                tempLclType != TYP_I_IMPL)
             {
                 // SWITCH_TABLE expects the switch value (the index into the jump table) to be TYP_I_IMPL.
                 // Note that the switch value is unsigned so the cast should be unsigned as well.
@@ -11479,6 +11480,22 @@ bool Lowering::TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode)
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------
+// CanConvertOpToCCMP : Checks whether operand can be converted to CCMP
+//
+// Arguments:
+//    operand - operand to check for CCMP conversion
+//    tree    - parent of the operand
+//
+// Return Value:
+//    true if operand can be converted to CCMP
+//
+bool Lowering::CanConvertOpToCCMP(GenTree* operand, GenTree* tree)
+{
+    return operand->OperIsCmpCompare() && varTypeIsIntegralOrI(operand->gtGetOp1()) &&
+           IsInvariantInRange(operand, tree);
+}
+
+//------------------------------------------------------------------------
 // TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
 //
 // Arguments:
@@ -11519,16 +11536,22 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     // by TryLowerConditionToFlagsNode.
     //
     GenCondition cond1;
-    if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
-        (op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
-        (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()) &&
+    bool         canConvertOp2ToCCMP = CanConvertOpToCCMP(op2, tree);
+    bool         canConvertOp1ToCCMP = CanConvertOpToCCMP(op1, tree);
+
+    if (canConvertOp2ToCCMP &&
+        (!canConvertOp1ToCCMP ||
+         ((op2->gtGetOp1()->IsIntegralConst() || !op2->gtGetOp1()->isContained()) &&
+          (op2->gtGetOp2() == nullptr || op2->gtGetOp2()->IsIntegralConst() || !op2->gtGetOp2()->isContained()))) &&
         TryLowerConditionToFlagsNode(tree, op1, &cond1, false))
     {
         // Fall through, converting op2 to the CCMP
     }
-    else if (op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1()) && IsInvariantInRange(op1, tree) &&
-             (op1->gtGetOp1()->IsIntegralConst() || !op1->gtGetOp1()->isContained()) &&
-             (op1->gtGetOp2() == nullptr || op1->gtGetOp2()->IsIntegralConst() || !op1->gtGetOp2()->isContained()) &&
+    else if (canConvertOp1ToCCMP &&
+             (!op1->gtGetOp1()->isContained() || op1->gtGetOp1()->IsIntegralConst() ||
+              IsContainableMemoryOp(op1->gtGetOp1())) &&
+             (op1->gtGetOp2() == nullptr || !op1->gtGetOp2()->isContained() || op1->gtGetOp2()->IsIntegralConst() ||
+              IsContainableMemoryOp(op1->gtGetOp2())) &&
              TryLowerConditionToFlagsNode(tree, op2, &cond1, false))
     {
         std::swap(op1, op2);

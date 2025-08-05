@@ -12,9 +12,11 @@
 #ifdef FEATURE_CODE_VERSIONING
 #include "threadsuspend.h"
 #include "methoditer.h"
+#ifdef DDEBUGGING_SUPPORTED
 #include "../debug/ee/debugger.h"
 #include "../debug/ee/walker.h"
 #include "../debug/ee/controller.h"
+#endif // DDEBUGGING_SUPPORTED
 #endif // FEATURE_CODE_VERSIONING
 
 #ifndef FEATURE_CODE_VERSIONING
@@ -911,7 +913,7 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     {
         PTR_Module pModule = GetModule();
         PTR_MethodDesc pMethodDesc = dac_cast<PTR_MethodDesc>(pModule->LookupMethodDef(GetMethodDef()));
-        if (pMethodDesc != NULL)
+        if (pMethodDesc != NULL && pMethodDesc->MayHaveILHeader())
         {
             pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader());
         }
