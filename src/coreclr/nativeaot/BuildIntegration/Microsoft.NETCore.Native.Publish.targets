@@ -29,7 +29,7 @@
 
     <ItemGroup>
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
-      <IntermediateAssembly Include="@(NativeBinary)" />
+      <IntermediateAssembly Include="$(NativeBinary)" />
     </ItemGroup>
   </Target>
 
