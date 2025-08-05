@@ -5,11 +5,7 @@ namespace System.Runtime.Loader.Tests
 {
     public class VersionTestClass
     {
-        public static string GetVersion() => "1.0.0";
-        
-        public static string GetAssemblyVersion() 
-        {
-            return typeof(VersionTestClass).Assembly.GetName().Version?.ToString() ?? "Unknown";
-        }
+        public static string GetVersion()
+            => typeof(VersionTestClass).Assembly.GetName().Version?.ToString(3) ?? "Unknown";
     }
 }
