@@ -2834,11 +2834,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (newObjThisArgLocation != INT_MAX)
     {
-        const char* className = m_compHnd->getClassNameFromMetadata(resolvedCallToken.hClass, NULL);
+        const char* namespaceName = nullptr;
+        const char* className = m_compHnd->getClassNameFromMetadata(resolvedCallToken.hClass, &namespaceName);
         CorInfoType corInfoType;
-        if (!strcmp(className, g_RuntimeMethodHandleInternalName) ||
-            !strcmp(className, g_RuntimeFieldHandleInternalName) ||
-            !strcmp(className, g_RuntimeArgumentHandleName))
+        if (namespaceName != NULL && className != NULL &&
+            !strcmp(namespaceName, "System") &&
+            (!strcmp(className, g_RuntimeMethodHandleInternalName) ||
+             !strcmp(className, g_RuntimeFieldHandleInternalName) ||
+             !strcmp(className, g_RuntimeArgumentHandleName)))
         {
             corInfoType = CORINFO_TYPE_VALUECLASS;
         }
