@@ -810,10 +810,9 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 	// empty struct
 	if (nfields == 0) {
 		*etype = m_class_get_byval_arg (mono_defaults.sbyte_class);
-		return TRUE;
 	}
 
 	g_assert (!etype || *etype);
 
-	return FALSE;
+	return TRUE;
 }
