@@ -4,6 +4,7 @@
 
 #include "interpreter.h"
 #include "stackmap.h"
+#include "../vm/classnames.h"
 
 #include <inttypes.h>
 
@@ -2833,7 +2834,21 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (newObjThisArgLocation != INT_MAX)
     {
-        ctorType = GetInterpType(m_compHnd->asCorInfoType(resolvedCallToken.hClass));
+        const char* className = m_compHnd->getClassNameFromMetadata(resolvedCallToken.hClass, NULL);
+        CorInfoType corInfoType;
+        if (!strcmp(className, g_RuntimeMethodHandleInternalName) ||
+            !strcmp(className, g_RuntimeFieldHandleInternalName) ||
+            !strcmp(className, g_RuntimeArgumentHandleName))
+        {
+            corInfoType = CORINFO_TYPE_VALUECLASS;
+        }
+        else
+        {
+            corInfoType = m_compHnd->asCorInfoType(resolvedCallToken.hClass);
+        }
+
+        ctorType = GetInterpType(corInfoType);
+
         if (ctorType == InterpTypeVT)
         {
             vtsize = m_compHnd->getClassSize(resolvedCallToken.hClass);
@@ -5412,6 +5427,18 @@ DO_LDFTN:
                         m_ip += 5;
                         break;
                     }
+                    case CEE_CPBLK:
+                        CHECK_STACK(3);
+                        if (volatile_)
+                        {
+                            AddIns(INTOP_MEMBAR);
+                            volatile_ = false;
+                        }
+                        AddIns(INTOP_CPBLK);
+                        m_pStackPointer -= 3;
+                        m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+                        m_ip++;
+                        break;
                     default:
                     {
                         const uint8_t *ip = m_ip - 1;

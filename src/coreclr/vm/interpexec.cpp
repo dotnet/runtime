@@ -2012,6 +2012,15 @@ CALL_INTERP_METHOD:
                     memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
                     ip += 3;
                     break;
+                case INTOP_CPBLK:
+                {
+                    void* dst = LOCAL_VAR(ip[1], void*);
+                    void* src = LOCAL_VAR(ip[2], void*);
+                    size_t size = LOCAL_VAR(ip[3], size_t);
+                    memcpy(dst, src, size);
+                    ip += 4;
+                    break;
+                }
                 case INTOP_LOCALLOC:
                 {
                     size_t len = LOCAL_VAR(ip[2], size_t);
