@@ -1039,7 +1039,7 @@ UInt32_BOOL PalCloseHandle(HANDLE arg1)
     return ::CloseHandle(arg1);
 }
 
-void minipal_flush_process_write_buffers()
+void minipal_memory_barrier_process_wide()
 {
     ::FlushProcessWriteBuffers();
 }

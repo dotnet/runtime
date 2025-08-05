@@ -14,7 +14,7 @@
 
 #include "finalizerthread.h"
 #include "dbginterface.h"
-#include <minipal/flushprocesswritebuffers.h>
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/time.h>
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -3315,7 +3315,7 @@ void ThreadSuspend::SuspendAllThreads()
     // - we get a reliable reading of the threads' m_fPreemptiveGCDisabled state
     // - other threads see that g_TrapReturningThreads is set
     // See VSW 475315 and 488918 for details.
-    minipal_flush_process_write_buffers();
+    minipal_memory_barrier_process_wide();
 
     int prevRemaining = INT32_MAX;
     bool observeOnly = true;
@@ -3386,7 +3386,7 @@ void ThreadSuspend::SuspendAllThreads()
     // This is needed to synchronize threads that were running in preemptive mode thus were
     // left alone by suspension to flush their writes that they made before they switched to
     // preemptive mode.
-    minipal_flush_process_write_buffers();
+    minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64
 
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "Thread::SuspendAllThreads() - Success\n");
@@ -3611,7 +3611,7 @@ void ThreadSuspend::ResumeAllThreads(BOOL SuspendSucceeded)
         // This is needed to synchronize threads that were running in preemptive mode while
         // the runtime was suspended and that will return to cooperative mode after the runtime
         // is restarted.
-        minipal_flush_process_write_buffers();
+        minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64
 
     //
@@ -5393,7 +5393,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
     // This is needed to synchronize threads that were running in preemptive mode while
     // the runtime was suspended and that will return to cooperative mode after the runtime
     // is restarted.
-    minipal_flush_process_write_buffers();
+    minipal_memory_barrier_process_wide();
 #endif //TARGET_ARM || TARGET_ARM64
 
     //

@@ -2,7 +2,7 @@ include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
-    flushprocesswritebuffers.c
+    memorybarrierprocesswide.c
     mutex.c
     guid.c
     random.c

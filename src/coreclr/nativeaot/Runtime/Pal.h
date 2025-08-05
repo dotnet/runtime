@@ -23,7 +23,7 @@
 #include <pthread.h>
 #endif
 
-#include <minipal/flushprocesswritebuffers.h>
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/guid.h>
 
 #include "CommonTypes.h"

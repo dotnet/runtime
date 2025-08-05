@@ -23,7 +23,7 @@
 #include "volatile.h"
 #include "gcconfig.h"
 #include "numasupport.h"
-#include <minipal/flushprocesswritebuffers.h>
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
 

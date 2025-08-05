@@ -33,7 +33,7 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
-#include <minipal/flushprocesswritebuffers.h>
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
@@ -1562,7 +1562,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 {
     QCALL_CONTRACT;
 
-    minipal_flush_process_write_buffers();
+    minipal_memory_barrier_process_wide();
 }
 
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)

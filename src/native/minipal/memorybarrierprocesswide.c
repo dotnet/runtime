@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <minipal/flushprocesswritebuffers.h>
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef __APPLE__
 #include <mach/thread_state.h>
@@ -83,7 +83,7 @@ static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 static size_t s_pageSize = 0;
 #endif // !TARGET_APPLE
 
-bool minipal_initialize_flush_process_write_buffers(void)
+bool minipal_initialize_memory_barrier_process_wide(void)
 {
 #ifndef TARGET_WASM
     //
@@ -136,7 +136,7 @@ bool minipal_initialize_flush_process_write_buffers(void)
 }
 
 // Flush write buffers of processors that are executing threads of the current process
-void minipal_flush_process_write_buffers(void)
+void minipal_memory_barrier_process_wide(void)
 {
 #ifndef TARGET_WASM
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
@@ -221,7 +221,7 @@ void minipal_flush_process_write_buffers(void)
 #endif // !TARGET_WASM
 }
 #else // !TARGET_WINDOWS
-void minipal_flush_process_write_buffers(void)
+void minipal_memory_barrier_process_wide(void)
 {
     ::FlushProcessWriteBuffers();
 }

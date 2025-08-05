@@ -27,7 +27,7 @@
 #include "handletable.inl"
 #include "gcenv.inl"
 #include "gceventstatus.h"
-#include <minipal/flushprocesswritebuffers.h>
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef __INTELLISENSE__
 #if defined(FEATURE_SVR_GC)
@@ -9875,7 +9875,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         if (!write_barrier_updated)
         {
             seg_mapping_table = new_seg_mapping_table;
-            minipal_flush_process_write_buffers();
+            minipal_memory_barrier_process_wide();
             g_gc_lowest_address = saved_g_lowest_address;
             g_gc_highest_address = saved_g_highest_address;
 
