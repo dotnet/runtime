@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef TARGET_WINDOWS
+#ifndef HOST_WINDOWS
 #include <assert.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -152,6 +152,7 @@ void minipal_memory_barrier_process_wide(void)
     if (g_helperPage != 0)
     {
         int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
+        (void)status; // unused in release config
         assert(status == 0 && "Failed to lock the flushProcessWriteBuffersMutex lock");
 
         // causes the OS to issue IPI to flush TLBs on all processors. This also
@@ -220,7 +221,7 @@ void minipal_memory_barrier_process_wide(void)
 #endif // TARGET_APPLE
 #endif // !TARGET_WASM
 }
-#else // !TARGET_WINDOWS
+#else // !HOST_WINDOWS
 
 #include <processthreadsapi.h>
 
@@ -228,4 +229,4 @@ void minipal_memory_barrier_process_wide(void)
 {
     ::FlushProcessWriteBuffers();
 }
-#endif // !TARGET_WINDOWS
+#endif // !HOST_WINDOWS
