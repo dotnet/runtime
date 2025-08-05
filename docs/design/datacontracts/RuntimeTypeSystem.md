@@ -485,7 +485,7 @@ The contract additionally depends on these data descriptors
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;
         TargetPointer threadStaticsInfoAddr = methodTable.AuxiliaryData - threadStaticsInfoSize;
 
-        TargetPointer tlsIndexAddr threadStaticsInfoAddr + /* ThreadStaticsInfo::NonGCTlsIndex offset */;
+        TargetPointer tlsIndexAddr = threadStaticsInfoAddr + /* ThreadStaticsInfo::NonGCTlsIndex offset */;
         Contracts.IThread threadContract = target.Contracts.Thread;
         return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexAddr);
     }

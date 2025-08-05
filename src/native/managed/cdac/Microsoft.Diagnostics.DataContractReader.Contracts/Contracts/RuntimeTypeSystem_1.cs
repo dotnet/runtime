@@ -416,7 +416,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         if (!typeHandle.IsMethodTable())
             return TargetPointer.Null;
-        TargetPointer tlsIndexPtr = GetTlsIndex(typeHandle, true);
+        TargetPointer tlsIndexPtr = GetTlsIndex(typeHandle, false);
         Contracts.IThread threadContract = _target.Contracts.Thread;
         return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexPtr);
     }

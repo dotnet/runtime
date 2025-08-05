@@ -230,7 +230,7 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
         {
             TargetPointer tlsIndexInFlightPtr = target.ReadPointer(inFlightData + /* InflightTLSData::TlsIndex offset */);
             Data.TLSIndex tlsIndexInFlight = new Data.TLSIndex(tlsIndexInFlightPtr);
-            if (tlsIndexInflight.TLSIndexRawIndex == tlsIndex.TLSIndexRawIndex)
+            if (tlsIndexInFlight.TLSIndexRawIndex == tlsIndex.TLSIndexRawIndex)
             {
                 threadLocalStaticBase = target.ReadPointer(tlsIndexInFlightPtr + /* InflightTLSData::TLSData offset */);
                 break;
