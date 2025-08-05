@@ -81,39 +81,37 @@ Thread* STDCALL GetThreadHelper()
     return GetThreadNULLOk();
 }
 
-TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
+TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(size >= (int)offsetof(TailCallArgBuffer, Args));
 
-    if (m_argBuffer != NULL && m_argBuffer->Size < size)
+    // Round the size up
+    size = max(size, (int)(8 * sizeof(void*)));
+
+    TailCallArgBuffer* pBuffer = (TailCallArgBuffer*)new BYTE[size];
+    TailCallArgBuffer* pOldBuffer;
+
+    pBuffer->Size = size;
+    pBuffer->State = TAILCALLARGBUFFER_INACTIVE;
+
     {
-        FreeArgBuffer();
+        // We need to ensure that the GC does not run while we are switching the arg buffer.
+        GCX_COOP();
+
+        pOldBuffer = m_argBuffer;
+        m_argBuffer = pBuffer;
     }
 
-    if (m_argBuffer == NULL)
+    if (pOldBuffer != NULL)
     {
-        m_argBuffer = (TailCallArgBuffer*)new (nothrow) BYTE[size];
-        if (m_argBuffer == NULL)
-            return NULL;
-        m_argBuffer->Size = size;
+        _ASSERTE(pOldBuffer->Size < size);
+
+        delete[] (BYTE*)pOldBuffer;
     }
 
-    m_argBuffer->State = TAILCALLARGBUFFER_ACTIVE;
-
-    m_argBuffer->GCDesc = gcDesc;
-    if (gcDesc != NULL)
-    {
-        memset(m_argBuffer->Args, 0, size - offsetof(TailCallArgBuffer, Args));
-    }
-
-    return m_argBuffer;
+    return pBuffer;
 }
 
 #if defined (_DEBUG_IMPL)
