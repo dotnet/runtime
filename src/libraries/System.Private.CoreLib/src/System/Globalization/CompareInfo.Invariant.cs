@@ -66,10 +66,11 @@ namespace System.Globalization
                     if (char.IsLowSurrogate(cl))
                     {
                         SurrogateCasing.ToUpper(c, cl, out char hr, out char lr);
-                        BinaryPrimitives.WriteUInt16BigEndian(sortKey, hr);
-                        BinaryPrimitives.WriteUInt16BigEndian(sortKey, lr);
-                        i++;
+                        Span<byte> tmp = sortKey.Slice(0, 2 * sizeof(ushort)); // help with bounds check elimination
+                        BinaryPrimitives.WriteUInt16BigEndian(tmp, hr);
+                        BinaryPrimitives.WriteUInt16BigEndian(tmp.Slice(sizeof(ushort)), lr);
                         sortKey = sortKey.Slice(2 * sizeof(ushort));
+                        i++;
                         continue;
                     }
                 }

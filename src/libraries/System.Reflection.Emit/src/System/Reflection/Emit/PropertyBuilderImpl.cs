@@ -26,14 +26,14 @@ namespace System.Reflection.Emit
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal object? _defaultValue = DBNull.Value;
 
-        internal PropertyBuilderImpl(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers, TypeBuilderImpl containingType)
+        internal PropertyBuilderImpl(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers, TypeBuilderImpl containingType)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
             _name = name;
             _attributes = attributes;
             _callingConvention = callingConvention;
-            _propertyType = returnType;
+            _propertyType = returnType ?? containingType.GetModuleBuilder().GetTypeFromCoreAssembly(CoreTypeId.Void);
             _parameterTypes = parameterTypes;
             _containingType = containingType;
             _returnTypeRequiredCustomModifiers = returnTypeRequiredCustomModifiers;
@@ -57,7 +57,6 @@ namespace System.Reflection.Emit
         protected override void SetConstantCore(object? defaultValue)
         {
             _containingType.ThrowIfCreated();
-            FieldBuilderImpl.ValidateDefaultValueType(defaultValue, _propertyType);
             _defaultValue = defaultValue;
         }
 

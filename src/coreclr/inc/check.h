@@ -162,7 +162,6 @@ public: // !!! NOTE: Called from macros only!!!
 #endif
 };
 
-
 //--------------------------------------------------------------------------------
 // These CHECK macros are the correct way to propagate an assertion.  These
 // routines are designed for use inside "Check" routines.  Such routines may
@@ -511,7 +510,7 @@ CHECK CheckValue(TYPENAME &val)
 // in a free build they are passed through to the compiler to use in optimization.
 //--------------------------------------------------------------------------------
 
-#if defined(_PREFAST_) || defined(_PREFIX_) || defined(__clang_analyzer__)
+#if defined(__clang_analyzer__)
 #define COMPILER_ASSUME_MSG(_condition, _message) if (!(_condition)) __UNREACHABLE();
 #define COMPILER_ASSUME_MSGF(_condition, args) if (!(_condition)) __UNREACHABLE();
 #else
@@ -533,37 +532,9 @@ CHECK CheckValue(TYPENAME &val)
 
 #endif // DACCESS_COMPILE
 
-#endif // _PREFAST_ || _PREFIX_
-
+#endif
 
 #define COMPILER_ASSUME(_condition) \
-    COMPILER_ASSUME_MSG(_condition, "")
-
-
-//--------------------------------------------------------------------------------
-// PREFIX_ASSUME_MSG and PREFAST_ASSUME_MSG are just another name
-// for COMPILER_ASSUME_MSG
-// In a checked build these turn into asserts; in a free build
-// they are passed through to the compiler to use in optimization;
-//  via an __assume(_condition) optimization hint.
-//--------------------------------------------------------------------------------
-
-#define PREFIX_ASSUME_MSG(_condition, _message) \
-    COMPILER_ASSUME_MSG(_condition, _message)
-
-#define PREFIX_ASSUME_MSGF(_condition, args) \
-    COMPILER_ASSUME_MSGF(_condition, args)
-
-#define PREFIX_ASSUME(_condition) \
-    COMPILER_ASSUME_MSG(_condition, "")
-
-#define PREFAST_ASSUME_MSG(_condition, _message) \
-    COMPILER_ASSUME_MSG(_condition, _message)
-
-#define PREFAST_ASSUME_MSGF(_condition, args) \
-    COMPILER_ASSUME_MSGF(_condition, args)
-
-#define PREFAST_ASSUME(_condition) \
     COMPILER_ASSUME_MSG(_condition, "")
 
 //--------------------------------------------------------------------------------
@@ -576,18 +547,17 @@ CHECK CheckValue(TYPENAME &val)
 #define UNREACHABLE() \
     UNREACHABLE_MSG("")
 
-#ifdef __llvm__
+#define UNREACHABLE_RET() \
+  do {                    \
+    UNREACHABLE();        \
+    return 0;             \
+  } while (0)
 
-// LLVM complains if a function does not return what it says.
-#define UNREACHABLE_RET() do { UNREACHABLE(); return 0; } while (0)
-#define UNREACHABLE_MSG_RET(_message) UNREACHABLE_MSG(_message); return 0;
-
-#else // __llvm__
-
-#define UNREACHABLE_RET() UNREACHABLE()
-#define UNREACHABLE_MSG_RET(_message) UNREACHABLE_MSG(_message)
-
-#endif // __llvm__ else
+#define UNREACHABLE_MSG_RET(_message) \
+  do {                                \
+    UNREACHABLE_MSG(_message);        \
+    return 0;                         \
+  } while (0)
 
 #ifdef _DEBUG_IMPL
 
@@ -605,7 +575,6 @@ CHECK CheckValue(TYPENAME &val)
 #define UNREACHABLE_MSG(_message) __UNREACHABLE()
 
 #endif
-
 
 //--------------------------------------------------------------------------------
 // STRESS_CHECK represents a check which is included in a free build
@@ -655,14 +624,15 @@ CHECK CheckValue(TYPENAME &val)
 
 #define CCHECK_END                                                              \
         } EX_CATCH {                                                            \
-            if (___result.IsInAssert())                                            \
+            if (___result.IsInAssert())                                         \
             {                                                                   \
                 ___exception = TRUE;                                            \
                 ___transient = GET_EXCEPTION()->IsTransient();                  \
             }                                                                   \
             else                                                                \
                 EX_RETHROW;                                                     \
-        } EX_END_CATCH(RethrowTerminalExceptions);                              \
+            RethrowTerminalExceptions();                                          \
+        } EX_END_CATCH                                                          \
                                                                                 \
         if (___exception)                                                       \
         {                                                                       \
@@ -704,8 +674,6 @@ CHECK CheckValue(TYPENAME &val)
 
 #endif
 
-
-
 //--------------------------------------------------------------------------------
 // Common base level checks
 //--------------------------------------------------------------------------------
@@ -730,7 +698,9 @@ CHECK CheckOverflow(UINT64 value1, UINT64 value2);
 #ifdef __APPLE__
 CHECK CheckOverflow(SIZE_T value1, SIZE_T value2);
 #endif
+#ifndef __wasm__
 CHECK CheckOverflow(PTR_CVOID address, UINT offset);
+#endif
 #if defined(_MSC_VER)
 CHECK CheckOverflow(const void *address, ULONG offset);
 #endif

@@ -43,7 +43,7 @@ namespace System.Data.OleDb
                     break;
 
                 case DBStatus.E_CANTCREATE:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_CANTCREATE");
+                    Debug.Fail("CommandParameterStatus: unexpected E_CANTCREATE");
                     goto default;
 
                 case DBStatus.E_UNAVAILABLE:
@@ -52,19 +52,19 @@ namespace System.Data.OleDb
                     break;
 
                 case DBStatus.E_PERMISSIONDENIED:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_PERMISSIONDENIED");
+                    Debug.Fail("CommandParameterStatus: unexpected E_PERMISSIONDENIED");
                     goto default;
 
                 case DBStatus.E_INTEGRITYVIOLATION:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_INTEGRITYVIOLATION");
+                    Debug.Fail("CommandParameterStatus: unexpected E_INTEGRITYVIOLATION");
                     goto default;
 
                 case DBStatus.E_SCHEMAVIOLATION:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_SCHEMAVIOLATION");
+                    Debug.Fail("CommandParameterStatus: unexpected E_SCHEMAVIOLATION");
                     goto default;
 
                 case DBStatus.E_BADSTATUS:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_BADSTATUS");
+                    Debug.Fail("CommandParameterStatus: unexpected E_BADSTATUS");
                     goto default;
 
                 case DBStatus.S_DEFAULT:

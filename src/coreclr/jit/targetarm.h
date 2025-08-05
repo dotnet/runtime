@@ -19,7 +19,6 @@
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        1       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register (including HFA support)
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register (including passing HFAs)
@@ -90,16 +89,17 @@
   #define RBM_LOW_REGS            (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5|RBM_R6|RBM_R7)
   #define RBM_HIGH_REGS           (RBM_R8|RBM_R9|RBM_R10|RBM_R11|RBM_R12|RBM_SP|RBM_LR|RBM_PC)
 
-  #define RBM_CALL_GC_REGS_ORDER   RBM_R4,RBM_R5,RBM_R6,RBM_R7,RBM_R8,RBM_R9,RBM_R10,RBM_R11,RBM_INTRET
-  #define RBM_CALL_GC_REGS         (RBM_R4|RBM_R5|RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10|RBM_R11|RBM_INTRET)
-
   #define CNT_CALLEE_SAVED        (8)
   #define CNT_CALLEE_TRASH        (6)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
-  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED+1)
 
   #define CNT_CALLEE_SAVED_FLOAT  (16)
   #define CNT_CALLEE_TRASH_FLOAT  (16)
+  #define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
+
+  #define CNT_CALLEE_SAVED_MASK   (0)
+  #define CNT_CALLEE_TRASH_MASK   (0)
+  #define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT*sizeof(float))
@@ -143,7 +143,8 @@
   //     On exit:
   //       r0: trashed
   //       r3: trashed
-  // CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
+  //      r12: trashed
+// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
   //     On entry:
   //       r0: the destination address (object reference written here)
   //       r1: the source address (points to object reference to write)
@@ -152,6 +153,7 @@
   //       r1: incremented by 4
   //       r2: trashed
   //       r3: trashed
+  //      r12: trashed
 
   #define REG_WRITE_BARRIER_DST          REG_ARG_0
   #define RBM_WRITE_BARRIER_DST          RBM_ARG_0
@@ -251,6 +253,9 @@
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R0
+
+  #define REG_ASYNC_CONTINUATION_RET REG_R2
+  #define RBM_ASYNC_CONTINUATION_RET RBM_R2
 
   #define REG_FPBASE               REG_R11
   #define RBM_FPBASE               RBM_R11

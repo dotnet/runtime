@@ -114,6 +114,10 @@ namespace System.Net.Security.Tests
                     Assert.False(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
                 }
             }
+
+            // Assert that the certificates are not being disposed
+            Assert.NotEqual(_clientCertificate.Handle, IntPtr.Zero);
+            Assert.NotEqual(_serverCertificate.Handle, IntPtr.Zero);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
@@ -152,7 +156,8 @@ namespace System.Net.Security.Tests
                     // mutual authentication should only be set if server required client cert
                     Assert.Equal(expectMutualAuthentication, server.IsMutuallyAuthenticated);
                     Assert.Equal(expectMutualAuthentication, client.IsMutuallyAuthenticated);
-                };
+                }
+                ;
             }
         }
 
@@ -266,9 +271,10 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
             }
         }
 
@@ -320,9 +326,10 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
             }
         }
 
@@ -357,7 +364,7 @@ namespace System.Net.Security.Tests
 
                     if (expectMutualAuthentication)
                     {
-                      clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
+                        clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
                     }
                     else
                     {
@@ -378,9 +385,10 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
             }
         }
 

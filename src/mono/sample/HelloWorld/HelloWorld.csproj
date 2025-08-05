@@ -9,6 +9,7 @@
     <RunAOTCompilation Condition="'$(SampleUseAOT)' == 'true' or '$(SampleUseFullAOT)' == 'true'">true</RunAOTCompilation>
     <SampleAOTMode Condition="'$(SampleAOTMode)' == '' and '$(SampleUseAOT)' == 'true'">normal</SampleAOTMode>
     <SampleAOTMode Condition="'$(SampleAOTMode)' == '' and '$(SampleUseFullAOT)' == 'true'">full</SampleAOTMode>
+    <DynamicCodeSupport Condition="'$(SampleUseFullAOT)' == 'true'">false</DynamicCodeSupport>
   </PropertyGroup>
 
   <UsingTask TaskName="MonoAOTCompiler"
@@ -43,6 +44,10 @@
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
   </Target>
+
+  <ItemGroup>
+      <ProjectReference Include="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.csproj" ReferenceOutputAssembly="false" Condition="'$(RunAOTCompilation)' == 'true'" AdditionalProperties="Configuration=Debug"/>
+  </ItemGroup>
 
   <UsingTask TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />

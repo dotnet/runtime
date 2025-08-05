@@ -15,7 +15,7 @@
 //
 //  GCStress<> template classes with its IsEnabled() & MaybeTrigger members.
 //
-//  Use GCStress<> to abstract away the GC stress related decissions. The
+//  Use GCStress<> to abstract away the GC stress related decisions. The
 //  template definitions will resolve to nothing when STRESS_HEAP is not
 //  defined, and will inline the function body at the call site otherwise.
 //
@@ -34,7 +34,7 @@ struct alloc_context;
 
 
 enum gcs_trigger_points {
-    // generic handling based on EEConfig settings
+    // Generic handling based on EEConfig settings
     cfg_any,                        // any bit set in EEConfig::iGCStress
     cfg_alloc,                      // trigger on GC allocations
     cfg_transition,                 // trigger on transitions
@@ -44,7 +44,7 @@ enum gcs_trigger_points {
     cfg_instr,                      // trigger on managed instructions (JITted or NGENed)
     cfg_last,                       // boundary
 
-    // special handling at particular trigger points
+    // Special handling at particular trigger points
     jit_on_create_jump_stub,
     jit_on_create_il_stub,
     gc_on_alloc,
@@ -72,13 +72,22 @@ namespace GCStressPolicy
     private:
         // This static controls whether GC stress may induce GCs. EEConfig::GetGCStressLevel() still
         // controls when GCs may occur.
-        static Volatile<DWORD> s_nGcStressDisabled;
-
+        static int s_nGcStressDisabled;
         bool m_bAcquired;
+
+        FORCEINLINE static void Disable()
+        { Interlocked::Increment(&InhibitHolder::s_nGcStressDisabled); }
+
+        FORCEINLINE static void Enable()
+        {
+            int newVal;
+            newVal = Interlocked::Decrement(&InhibitHolder::s_nGcStressDisabled);
+            _ASSERTE(newVal >= 0);
+        }
 
     public:
         InhibitHolder()
-        { LIMITED_METHOD_CONTRACT; ++s_nGcStressDisabled; m_bAcquired = true; }
+        { LIMITED_METHOD_CONTRACT; Disable(); m_bAcquired = true;}
 
         ~InhibitHolder()
         { LIMITED_METHOD_CONTRACT; Release(); }
@@ -88,7 +97,7 @@ namespace GCStressPolicy
             LIMITED_METHOD_CONTRACT;
             if (m_bAcquired)
             {
-                --s_nGcStressDisabled;
+                Enable();
                 m_bAcquired = false;
             }
         }
@@ -99,13 +108,13 @@ namespace GCStressPolicy
     } UNUSED_ATTR;
 
     FORCEINLINE bool IsEnabled()
-    { return InhibitHolder::s_nGcStressDisabled == 0U; }
+    { return VolatileLoadWithoutBarrier(&InhibitHolder::s_nGcStressDisabled) == 0; }
 
     FORCEINLINE void GlobalDisable()
-    { ++InhibitHolder::s_nGcStressDisabled; }
+    { InhibitHolder::Disable(); }
 
     FORCEINLINE void GlobalEnable()
-    { --InhibitHolder::s_nGcStressDisabled; }
+    { InhibitHolder::Enable(); }
 
 #else // STRESS_HEAP
 
@@ -131,7 +140,7 @@ namespace _GCStress
 
 #ifdef STRESS_HEAP
 
-    // Support classes to allow easy customization of GC Stress policies
+    // Support classes to allow easy customization of GC stress policies
     namespace detail
     {
         using namespace mpl;
@@ -155,7 +164,7 @@ namespace _GCStress
         >
         struct GetPolicy<type_list<HeadT, TailT>, DefPolicy, Traits>
         {
-            // is true if HeadT and DefPolicy evaluate to the same tag,
+            // Is true if HeadT and DefPolicy evaluate to the same tag,
             // through Traits<>
             static const bool sameTag = std::is_same<
                         typename Traits<HeadT>::tag,
@@ -184,7 +193,7 @@ namespace _GCStress
     // GC stress specific EEConfig accessors
     namespace detail
     {
-        // no definition provided so that absence of concrete implementations cause compiler errors
+        // No definition provided so that absence of concrete implementations causes compiler errors
         template <enum gcs_trigger_points>
         bool IsEnabled();
 
@@ -265,7 +274,7 @@ namespace _GCStress
     class CoopGcModePolicy
     {
 #ifndef DACCESS_COMPILE
-        // implicit constructor an destructor will do the right thing
+        // Implicit constructor and destructor will do the right thing
         GCCoop m_coop;
 #endif // DACCESS_COMPILE
 
@@ -289,7 +298,7 @@ namespace _GCStress
             // BUG(github #10318) - when not using allocation contexts, the alloc lock
             // must be acquired here. Until fixed, this assert prevents random heap corruption.
             _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-            GCHeapUtilities::GetGCHeap()->StressHeap(GetThread()->GetAllocContext());
+            GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
         }
 
         FORCEINLINE

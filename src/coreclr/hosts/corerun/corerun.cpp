@@ -4,6 +4,7 @@
 // Runtime headers
 #include <coreclrhost.h>
 #include <corehost/host_runtime_contract.h>
+#include <minipal/debugger.h>
 
 #include "corerun.hpp"
 #include "dotenv.hpp"
@@ -69,25 +70,32 @@ namespace envvar
 
     // Variable used to preload a mock hostpolicy for testing.
     const char_t* mockHostPolicy = W("MOCK_HOSTPOLICY");
+
+    // Variable used to indicate how app assemblies should be provided to the runtime
+    // - PROPERTY: corerun will pass the paths vias the TRUSTED_PLATFORM_ASSEMBLIES property
+    // - EXTERNAL: corerun will pass an external assembly probe to the runtime for app assemblies
+    // - Not set: same as PROPERTY
+    const char_t* appAssemblies = W("APP_ASSEMBLIES");
 }
 
 static void wait_for_debugger()
 {
-    pal::debugger_state_t state = pal::is_debugger_attached();
-    if (state == pal::debugger_state_t::na)
+    if (!minipal_can_check_for_native_debugger())
     {
         pal::fprintf(stdout, W("Debugger attach is not available on this platform\n"));
         return;
     }
-    else if (state == pal::debugger_state_t::not_attached)
+
+    bool attached = minipal_is_native_debugger_present();
+    if (!attached)
     {
         uint32_t pid = pal::get_process_id();
         pal::fprintf(stdout, W("Waiting for the debugger to attach (PID: %u). Press any key to continue ...\n"), pid);
         (void)getchar();
-        state = pal::is_debugger_attached();
+        attached = minipal_is_native_debugger_present();
     }
 
-    if (state == pal::debugger_state_t::attached)
+    if (attached)
     {
         pal::fprintf(stdout, W("Debugger is attached.\n"));
     }
@@ -240,6 +248,37 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     return -1;
 }
 
+// Paths for external assembly probe
+static char* s_core_libs_path = nullptr;
+static char* s_core_root_path = nullptr;
+
+static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
+    const char* path,
+    void** data_start,
+    int64_t* size)
+{
+    // Get just the file name
+    const char* name = path;
+    const char* pos = strrchr(name, '/');
+    if (pos != NULL)
+        name = pos + 1;
+
+    // Try to map the file from our known app assembly paths
+    for (const char* dir : { s_core_libs_path, s_core_root_path })
+    {
+        if (dir == nullptr)
+            continue;
+
+        std::string full_path = dir;
+        assert(full_path.back() == pal::dir_delim);
+        full_path.append(name);
+        if (pal::try_map_file_readonly(full_path.c_str(), data_start, size))
+            return true;
+    }
+
+    return false;
+}
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -247,9 +286,9 @@ static int run(const configuration& config)
     // Check if debugger attach scenario was requested.
     if (config.wait_to_debug)
         wait_for_debugger();
-    
+
     config.dotenv_configuration.load_into_current_process();
-    
+
     string_t exe_path = pal::get_exe_path();
 
     // Determine the managed application's path.
@@ -293,7 +332,37 @@ static int run(const configuration& config)
         native_search_dirs << core_root << pal::env_path_delim;
     }
 
-    string_t tpa_list = build_tpa(core_root, core_libs);
+    string_t tpa_list;
+    string_t app_assemblies_env = pal::getenv(envvar::appAssemblies);
+    bool use_external_assembly_probe = false;
+    if (app_assemblies_env.empty() || app_assemblies_env == W("PROPERTY"))
+    {
+        // Use the TRUSTED_PLATFORM_ASSEMBLIES property to pass the app assemblies to the runtime.
+        tpa_list = build_tpa(core_root, core_libs);
+    }
+    else if (app_assemblies_env == W("EXTERNAL"))
+    {
+        // Use the external assembly probe to load assemblies from the app assembly paths.
+        use_external_assembly_probe = true;
+        if (!core_libs.empty())
+        {
+            pal::string_utf8_t core_libs_utf8 = pal::convert_to_utf8(core_libs.c_str());
+            s_core_libs_path = (char*)::malloc(core_libs_utf8.length() + 1);
+            ::strcpy(s_core_libs_path, core_libs_utf8.c_str());
+        }
+
+        if (!core_root.empty())
+        {
+            pal::string_utf8_t core_root_utf8 = pal::convert_to_utf8(core_root.c_str());
+            s_core_root_path = (char*)::malloc(core_root_utf8.length() + 1);
+            ::strcpy(s_core_root_path, core_root_utf8.c_str());
+        }
+    }
+    else
+    {
+        pal::fprintf(stderr, W("Unknown value for APP_ASSEMBLIES environment variable: %s\n"), app_assemblies_env.c_str());
+        return -1;
+    }
 
     {
         // Load hostpolicy if requested.
@@ -374,7 +443,8 @@ static int run(const configuration& config)
         (void*)&config,
         &get_runtime_property,
         nullptr,
-        nullptr };
+        nullptr,
+        use_external_assembly_probe ? &external_assembly_probe : nullptr };
     propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
     std::stringstream ss;
     ss << "0x" << std::hex << (size_t)(&host_contract);
@@ -455,6 +525,8 @@ static int run(const configuration& config)
     if (exit_code != -1)
         exit_code = latched_exit_code;
 
+    ::free((void*)s_core_libs_path);
+    ::free((void*)s_core_root_path);
     return exit_code;
 }
 
@@ -472,6 +544,7 @@ static void display_usage()
         W("  -p, --property - Property to pass to runtime during initialization.\n")
         W("                   If a property value contains spaces, quote the entire argument.\n")
         W("                   May be supplied multiple times. Format: <key>=<value>.\n")
+        W("  -l, --preload - path to shared library to load before loading the CLR.\n")
         W("  -d, --debug - causes corerun to wait for a debugger to attach before executing.\n")
         W("  -e, --env - path to a .env file with environment variables that corerun should set.\n")
         W("  -?, -h, --help - show this help.\n")
@@ -568,6 +641,22 @@ static bool parse_args(
             string_t value = prop.substr(delim_maybe + 1);
             config.user_defined_keys.push_back(std::move(key));
             config.user_defined_values.push_back(std::move(value));
+        }
+        else if (pal::strcmp(option, W("l")) == 0 || (pal::strcmp(option, W("preload")) == 0))
+        {
+            i++;
+            if (i >= argc)
+            {
+                pal::fprintf(stderr, W("Option %s: missing shared library path\n"), arg);
+                break;
+            }
+
+            string_t library = argv[i];
+            pal::mod_t hMod;
+            if (!pal::try_load_library(library, hMod))
+            {
+                break;
+            }
         }
         else if (pal::strcmp(option, W("d")) == 0 || (pal::strcmp(option, W("debug")) == 0))
         {

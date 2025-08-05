@@ -6,7 +6,7 @@
 -->
 
 <Project Sdk="Microsoft.NET.Sdk">
-  
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -17,10 +17,11 @@
     <Compile Include="..\Helpers.cs" />
     <Compile Include="..\TensorPrimitives.NonGeneric.Single.cs" />
     <Compile Include="..\TensorPrimitivesTests.cs" />
+    <Compile Include="..\TensorPrimitivesTests.Reference.cs" />
     <Compile Include="..\TensorPrimitives.ConvertTo.cs" />
     <Compile Include="..\TensorPrimitives.Generic.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Numerics.Tensors.csproj" SkipUseReferenceAssembly="true">
       <SetTargetFramework>TargetFramework=net8.0</SetTargetFramework>

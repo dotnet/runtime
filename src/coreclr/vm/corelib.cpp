@@ -28,15 +28,16 @@
 #include "comsynchronizable.h"
 #include "floatdouble.h"
 #include "floatsingle.h"
+#include "divmodint.h"
 #include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comthreadpool.h"
 #include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"
 
 #include "appdomainnative.hpp"
+#include "conditionalweaktable.h"
 #include "runtimehandles.h"
 #include "reflectioninvocation.h"
 #include "managedmdimport.hpp"
@@ -47,8 +48,11 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
-#include "mngstdinterfaces.h"
 #endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_COMWRAPPERS)
+#include "interoplibinterface_comwrappers.h"
+#endif
 
 #include "interoplibinterface.h"
 
@@ -158,6 +162,11 @@ enum _gsigc {
     const BYTE gsige_IM_ ## varname[] = { (BYTE) -gsigl_IM_ ## varname,         \
         IMAGE_CEE_CS_CALLCONV_HASTHIS, gsigc_IM_ ## varname, retval args };
 
+#define _GM(varname, conv, n, args, retval) extern const BYTE gsige_GM_ ## varname[];    \
+    HardCodedMetaSig gsig_GM_ ## varname = { gsige_GM_ ## varname };              \
+    const BYTE gsige_GM_ ## varname[] = { (BYTE) -gsigl_GM_ ## varname,                        \
+        conv | IMAGE_CEE_CS_CALLCONV_GENERIC, n, gsigc_GM_ ## varname, retval args };
+
 #define _Fld(varname, val) extern const BYTE gsige_Fld_ ## varname[];           \
     HardCodedMetaSig gsig_Fld_ ## varname = { gsige_Fld_ ## varname };          \
     const BYTE gsige_Fld_ ## varname[] = { (BYTE) -gsigl_Fld_ ## varname,       \
@@ -167,6 +176,7 @@ enum _gsigc {
 
 #undef _SM
 #undef _IM
+#undef _GM
 #undef _Fld
 
 #ifdef _DEBUG

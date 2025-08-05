@@ -105,12 +105,12 @@ namespace ILCompiler
 
         public bool CanReferenceConstructedMethodTable(TypeDesc type)
         {
-            return NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
+            return NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation());
         }
 
         public bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
         {
-            return NodeFactory.DevirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type);
+            return NodeFactory.DevirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation());
         }
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)
@@ -266,11 +266,20 @@ namespace ILCompiler
 
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
-            bool canConstructPerWholeProgramAnalysis = NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
-            bool creationAllowed = ConstructedEETypeNode.CreationAllowed(type);
-            return (canConstructPerWholeProgramAnalysis && creationAllowed)
-                ? ReadyToRunHelperId.TypeHandle
-                : ReadyToRunHelperId.NecessaryTypeHandle;
+            // This will not correctly answer questions for canonical forms because the answer would
+            // be about whether a type loader template for the type exists.
+            // We need to make a small exception for canonical definitions because of RuntimeAugments.GetCanonType
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+
+            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
+                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation());
+            if (canPotentiallyConstruct)
+                return ReadyToRunHelperId.TypeHandle;
+
+            if (type.IsGenericDefinition && NodeFactory.DevirtualizationManager.IsGenericDefinitionMethodTableReflectionVisible(type))
+                return ReadyToRunHelperId.TypeHandle;
+
+            return ReadyToRunHelperId.NecessaryTypeHandle;
         }
 
         public static MethodDesc GetConstructorForCreateInstanceIntrinsic(TypeDesc type)
@@ -304,11 +313,20 @@ namespace ILCompiler
                     {
                         var type = (TypeDesc)targetOfLookup;
 
-                        // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-                        // If this cast happens with an object that implements IDynamicIntefaceCastable, user code will
-                        // see a RuntimeTypeHandle representing this interface.
                         if (type.IsInterface)
-                            return NodeFactory.MaximallyConstructableType(type);
+                        {
+                            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+                            // If this cast happens with an object that implements IDynamicInterfaceCastable, user code will
+                            // see a RuntimeTypeHandle representing this interface.
+                            if (NodeFactory.DevirtualizationManager.CanHaveDynamicInterfaceImplementations(type))
+                            {
+                                return NodeFactory.MaximallyConstructableType(type);
+                            }
+                            else
+                            {
+                                return NecessaryTypeSymbolIfPossible(type);
+                            }
+                        }
 
                         if (type.IsNullable)
                             type = type.Instantiation[0];
@@ -331,7 +349,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.ObjectAllocator:
                     {
                         var type = (TypeDesc)targetOfLookup;
-                        return NodeFactory.ExternSymbol(JitHelper.GetNewObjectHelperForType(type));
+                        return NodeFactory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(type));
                     }
 
                 default:
@@ -370,9 +388,7 @@ namespace ILCompiler
             if (lookupKind == ReadyToRunHelperId.TypeHandleForCasting)
             {
                 var type = (TypeDesc)targetOfLookup;
-                if (!type.IsRuntimeDeterminedType ||
-                    (!((RuntimeDeterminedType)type).CanonicalType.IsCanonicalDefinitionType(CanonicalFormKind.Universal) &&
-                    !((RuntimeDeterminedType)type).CanonicalType.IsNullable))
+                if (!type.IsRuntimeDeterminedType || !((RuntimeDeterminedType)type).CanonicalType.IsNullable)
                 {
                     if (type.IsNullable)
                     {
@@ -380,12 +396,6 @@ namespace ILCompiler
                     }
                     lookupKind = ReadyToRunHelperId.NecessaryTypeHandle;
                 }
-            }
-
-            // We don't have separate entries for necessary type handles to avoid possible duplication
-            if (lookupKind == ReadyToRunHelperId.NecessaryTypeHandle)
-            {
-                lookupKind = ReadyToRunHelperId.TypeHandle;
             }
 
             DictionaryLayoutNode dictionaryLayout;
@@ -639,7 +649,7 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
+                    if (node is ConstructedEETypeNode)
                         yield return ((IEETypeNode)node).Type;
                 }
             }

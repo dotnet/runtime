@@ -28,7 +28,6 @@ namespace System.Net.Http
         public const int DefaultHttpPort = 80;
         public const int DefaultHttpsPort = 443;
 
-        private static readonly bool s_isWindows7Or2008R2 = GetIsWindows7Or2008R2();
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
@@ -36,6 +35,7 @@ namespace System.Net.Http
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
         private readonly Uri? _proxyUri;
+        private readonly string? _telemetryServerAddress;
 
         /// <summary>The origin authority used to construct the <see cref="HttpConnectionPool"/>.</summary>
         private readonly HttpAuthority _originAuthority;
@@ -73,12 +73,14 @@ namespace System.Net.Http
         /// <param name="port">The port with which this pool is associated.</param>
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri)
+        /// <param name="telemetryServerAddress">The value of the 'server.address' tag to be emitted by Metrics and Distributed Tracing.</param>
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string? telemetryServerAddress)
         {
             _poolManager = poolManager;
             _kind = kind;
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
+            _telemetryServerAddress = telemetryServerAddress;
 
             // The only case where 'host' will not be set is if this is a Proxy connection pool.
             Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
@@ -86,7 +88,7 @@ namespace System.Net.Http
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
 
-            if (IsHttp3Supported())
+            if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3)
             {
                 _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30;
             }
@@ -228,7 +230,7 @@ namespace System.Net.Http
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                 }
 
-                if (IsHttp3Supported() && _http3Enabled)
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _http3Enabled)
                 {
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
@@ -244,6 +246,10 @@ namespace System.Net.Http
             if (_http2Enabled)
             {
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
+            }
+            if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _http3Enabled)
+            {
+                _http3RequestQueue = new RequestQueue<Http3Connection?>();
             }
 
             if (_proxyUri != null && HttpUtilities.IsSupportedSecureScheme(_proxyUri.Scheme))
@@ -273,23 +279,10 @@ namespace System.Net.Http
             // Set TargetHost for SNI
             sslOptions.TargetHost = sslHostName;
 
-            // Windows 7 and Windows 2008 R2 support TLS 1.1 and 1.2, but for legacy reasons by default those protocols
-            // are not enabled when a developer elects to use the system default.  However, in .NET Core 2.0 and earlier,
-            // HttpClientHandler would enable them, due to being a wrapper for WinHTTP, which enabled them.  Both for
-            // compatibility and because we prefer those higher protocols whenever possible, SocketsHttpHandler also
-            // pretends they're part of the default when running on Win7/2008R2.
-            if (s_isWindows7Or2008R2 && sslOptions.EnabledSslProtocols == SslProtocols.None)
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(poolManager, $"Win7OrWin2K8R2 platform, Changing default TLS protocols to {SecurityProtocol.DefaultSecurityProtocols}");
-                }
-                sslOptions.EnabledSslProtocols = SecurityProtocol.DefaultSecurityProtocols;
-            }
-
             return sslOptions;
         }
 
+        public string? TelemetryServerAddress => _telemetryServerAddress;
         public HttpAuthority OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
@@ -411,7 +404,7 @@ namespace System.Net.Http
                     HttpResponseMessage? response = null;
 
                     // Use HTTP/3 if possible.
-                    if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
+                    if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                         !request.IsExtendedConnectRequest)
@@ -555,83 +548,102 @@ namespace System.Net.Http
                     // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,
                     // but in that case http2ConnectionWaiter.ConnectionCancellationTokenSource shall be null.
                     Debug.Assert(http11ConnectionWaiter is null || http2ConnectionWaiter?.ConnectionCancellationTokenSource is null);
-                    http11ConnectionWaiter?.CancelIfNecessary(this, cancellationToken.IsCancellationRequested);
-                    http2ConnectionWaiter?.CancelIfNecessary(this, cancellationToken.IsCancellationRequested);
+                    http11ConnectionWaiter?.SetTimeoutToPendingConnectionAttempt(this, cancellationToken.IsCancellationRequested);
+                    http2ConnectionWaiter?.SetTimeoutToPendingConnectionAttempt(this, cancellationToken.IsCancellationRequested);
                 }
             }
         }
 
-        private async ValueTask<(Stream, TransportContext?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
-            switch (_kind)
-            {
-                case HttpConnectionKind.Http:
-                case HttpConnectionKind.Https:
-                case HttpConnectionKind.ProxyConnect:
-                    stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
-                    // remoteEndPoint is returned for diagnostic purposes.
-                    remoteEndPoint = GetRemoteEndPoint(stream);
-                    if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
-                    {
-                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
-                    }
-                    break;
-
-                case HttpConnectionKind.Proxy:
-                    stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
-                    // remoteEndPoint is returned for diagnostic purposes.
-                    remoteEndPoint = GetRemoteEndPoint(stream);
-                    if (_sslOptionsProxy != null)
-                    {
-                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
-                    }
-                    break;
-
-                case HttpConnectionKind.ProxyTunnel:
-                case HttpConnectionKind.SslProxyTunnel:
-                    stream = await EstablishProxyTunnelAsync(async, cancellationToken).ConfigureAwait(false);
-
-                    if (stream is HttpContentStream contentStream && contentStream._connection?._stream is Stream innerStream)
-                    {
-                        remoteEndPoint = GetRemoteEndPoint(innerStream);
-                    }
-
-                    break;
-
-                case HttpConnectionKind.SocksTunnel:
-                case HttpConnectionKind.SslSocksTunnel:
-                    stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
-                    // remoteEndPoint is returned for diagnostic purposes.
-                    remoteEndPoint = GetRemoteEndPoint(stream);
-                    break;
-            }
-
-            Debug.Assert(stream != null);
-
+            Exception? exception = null;
             TransportContext? transportContext = null;
-            if (IsSecure)
+
+            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, _telemetryServerAddress, OriginAuthority.Port);
+
+            try
             {
-                SslStream? sslStream = stream as SslStream;
-                if (sslStream == null)
+                switch (_kind)
                 {
-                    sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                    case HttpConnectionKind.Http:
+                    case HttpConnectionKind.Https:
+                    case HttpConnectionKind.ProxyConnect:
+                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        // remoteEndPoint is returned for diagnostic purposes.
+                        remoteEndPoint = GetRemoteEndPoint(stream);
+                        if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
+                        {
+                            stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                        }
+                        break;
+
+                    case HttpConnectionKind.Proxy:
+                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        // remoteEndPoint is returned for diagnostic purposes.
+                        remoteEndPoint = GetRemoteEndPoint(stream);
+                        if (_sslOptionsProxy != null)
+                        {
+                            stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                        }
+                        break;
+
+                    case HttpConnectionKind.ProxyTunnel:
+                    case HttpConnectionKind.SslProxyTunnel:
+                        stream = await EstablishProxyTunnelAsync(async, cancellationToken).ConfigureAwait(false);
+
+                        if (stream is HttpContentStream contentStream && contentStream._connection?._stream is Stream innerStream)
+                        {
+                            remoteEndPoint = GetRemoteEndPoint(innerStream);
+                        }
+
+                        break;
+
+                    case HttpConnectionKind.SocksTunnel:
+                    case HttpConnectionKind.SslSocksTunnel:
+                        stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
+                        // remoteEndPoint is returned for diagnostic purposes.
+                        remoteEndPoint = GetRemoteEndPoint(stream);
+                        break;
                 }
-                else
+
+                Debug.Assert(stream != null);
+
+                if (IsSecure)
                 {
-                    if (NetEventSource.Log.IsEnabled())
+                    SslStream? sslStream = stream as SslStream;
+                    if (sslStream == null)
                     {
-                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol}'");
+                        sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
                     }
+                    else
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol}'");
+                        }
+                    }
+                    transportContext = sslStream.TransportContext;
+                    stream = sslStream;
                 }
-                transportContext = sslStream.TransportContext;
-                stream = sslStream;
             }
+            catch (Exception ex) when (activity is not null)
+            {
+                exception = ex;
+                throw;
+            }
+            finally
+            {
+                if (activity is not null)
+                {
+                    ConnectionSetupDistributedTracing.StopConnectionSetupActivity(activity, exception, remoteEndPoint);
+                }
+            }
+
+            return (stream, transportContext, activity, remoteEndPoint);
 
             static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
-
-            return (stream, transportContext, remoteEndPoint);
         }
 
         private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
@@ -691,7 +703,7 @@ namespace System.Net.Http
             {
                 throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
                     CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
-                    ConnectHelper.CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
+                    ConnectHelper.CreateWrappedException(ex, host, port, cancellationToken);
             }
         }
 
@@ -771,7 +783,7 @@ namespace System.Net.Http
             if (tunnelResponse.StatusCode != HttpStatusCode.OK)
             {
                 tunnelResponse.Dispose();
-                throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
+                throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode), statusCode: tunnelResponse.StatusCode);
             }
 
             try
@@ -795,16 +807,40 @@ namespace System.Net.Http
             {
                 await SocksHelper.EstablishSocksTunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, async, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception e) when (!(e is OperationCanceledException))
+            catch (Exception e) when (e is not OperationCanceledException)
             {
-                Debug.Assert(!(e is HttpRequestException));
+                Debug.Assert(e is not HttpRequestException);
                 throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.net_http_proxy_tunnel_error, e);
             }
 
             return stream;
         }
 
-        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
+        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource<T>(HttpConnectionWaiter<T> waiter)
+            where T : HttpConnectionBase?
+        {
+            var cts = new CancellationTokenSource(Settings._connectTimeout);
+
+            lock (waiter)
+            {
+                // After a request completes (or is canceled), it will call into SetTimeoutToPendingConnectionAttempt,
+                // which will no-op if ConnectionCancellationTokenSource is not set, assuming that the connection attempt is done.
+                // As the initiating request for this connection attempt may complete concurrently at any time,
+                // there is a race condition where the first call to SetTimeoutToPendingConnectionAttempt may happen
+                // before we were able to set the CTS, so no timeout will be applied even though the request is already done.
+                waiter.ConnectionCancellationTokenSource = cts;
+
+                // To fix that, we check whether the waiter already completed now that we're holding a lock.
+                // If it had, call SetTimeoutToPendingConnectionAttempt again now that the CTS is set.
+                if (waiter.Task.IsCompleted)
+                {
+                    waiter.SetTimeoutToPendingConnectionAttempt(this, requestCancelled: waiter.Task.IsCanceled);
+                    waiter.ConnectionCancellationTokenSource = null;
+                }
+            }
+
+            return cts;
+        }
 
         private static Exception CreateConnectTimeoutException(OperationCanceledException oce)
         {
@@ -881,11 +917,12 @@ namespace System.Net.Http
                     _availableHttp2Connections.Clear();
                 }
 
-                if (_http3Connection is not null)
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _availableHttp3Connections is not null)
                 {
                     toDispose ??= new();
-                    toDispose.Add(_http3Connection);
-                    _http3Connection = null;
+                    toDispose.AddRange(_availableHttp3Connections);
+                    _associatedHttp3ConnectionCount -= _availableHttp3Connections.Count;
+                    _availableHttp3Connections.Clear();
                 }
 
                 if (_authorityExpireTimer != null)
@@ -956,6 +993,14 @@ namespace System.Net.Http
                     // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
                     // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
                 }
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _availableHttp3Connections is not null)
+                {
+                    int removed = ScavengeHttp3ConnectionList(_availableHttp3Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
+                    _associatedHttp3ConnectionCount -= removed;
+
+                    // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
+                    // Http3 connections will not, hence the difference in handing _associatedHttp3ConnectionCount.
+                }
             }
 
             // Dispose the stale connections outside the pool lock, to avoid holding the lock too long.
@@ -967,19 +1012,6 @@ namespace System.Net.Http
             }
 
             // Pool is active.  Should not be removed.
-            return false;
-        }
-
-        /// <summary>Gets whether we're running on Windows 7 or Windows 2008 R2.</summary>
-        private static bool GetIsWindows7Or2008R2()
-        {
-            OperatingSystem os = Environment.OSVersion;
-            if (os.Platform == PlatformID.Win32NT)
-            {
-                // Both Windows 7 and Windows 2008 R2 report version 6.1.
-                Version v = os.Version;
-                return v.Major == 6 && v.Minor == 1;
-            }
             return false;
         }
 

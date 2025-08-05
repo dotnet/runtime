@@ -105,27 +105,27 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
     {
         if (varTypeIsStruct(type))
         {
-            info.NumSegments = structDesc.eightByteCount;
-            info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[structDesc.eightByteCount];
+            info = ABIPassingInformation(comp, structDesc.eightByteCount);
 
             for (unsigned i = 0; i < structDesc.eightByteCount; i++)
             {
                 regNumber reg = structDesc.IsIntegralSlot(i) ? m_intRegs.Dequeue() : m_floatRegs.Dequeue();
-                info.Segments[i] =
+                info.Segment(i) =
                     ABIPassingSegment::InRegister(reg, structDesc.eightByteOffsets[i], structDesc.eightByteSizes[i]);
             }
         }
         else
         {
             regNumber reg = varTypeUsesFloatArgReg(type) ? m_floatRegs.Dequeue() : m_intRegs.Dequeue();
-            info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(reg, 0, genTypeSize(type)));
+            info          = ABIPassingInformation::FromSegmentByValue(comp,
+                                                                      ABIPassingSegment::InRegister(reg, 0, genTypeSize(type)));
         }
     }
     else
     {
         assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
         unsigned size = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
-        info          = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0, size));
+        info = ABIPassingInformation::FromSegmentByValue(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0, size));
         m_stackArgSize += roundUp(size, TARGET_POINTER_SIZE);
     }
 
@@ -172,10 +172,12 @@ ABIPassingInformation WinX64Classifier::Classify(Compiler*    comp,
     // vice versa.
     assert(m_intRegs.Count() == m_floatRegs.Count());
 
-    unsigned typeSize = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
+    bool     passedByRef = false;
+    unsigned typeSize    = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
     if ((typeSize > TARGET_POINTER_SIZE) || !isPow2(typeSize))
     {
-        typeSize = TARGET_POINTER_SIZE; // Passed by implicit byref
+        passedByRef = true;
+        typeSize    = TARGET_POINTER_SIZE;
     }
 
     ABIPassingSegment segment;
@@ -192,7 +194,7 @@ ABIPassingInformation WinX64Classifier::Classify(Compiler*    comp,
         m_stackArgSize += TARGET_POINTER_SIZE;
     }
 
-    return ABIPassingInformation::FromSegment(comp, segment);
+    return ABIPassingInformation::FromSegment(comp, passedByRef, segment);
 }
 
 //-----------------------------------------------------------------------------

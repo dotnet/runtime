@@ -777,7 +777,7 @@ If you can formulate any assumptions as asserts in the code itself, you should d
 //    More detailed notes about the function.
 //    What errors can the function return?
 //    What other methods are related or alternatives to be considered?
-
+//
 <function definition>
 ```
 
@@ -805,8 +805,7 @@ The following is a sample of a completed function definition:
 // Notes:
 //    Call-site signature blobs include ELEMENT_TYPE_SENTINEL.
 //    This method does not check for the presence of the sentinel.
-
-// static
+//
 BOOL MetaSig::IsVarArg(Module*         pModule,
                        PCCOR_SIGNATURE pSig)
 {

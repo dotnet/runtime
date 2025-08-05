@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Hosting
     public static class HostingHostBuilderExtensions
     {
         /// <summary>
-        /// Specify the environment to be used by the host. To avoid the environment being overwritten by a default
+        /// Specifies the environment to be used by the host. To avoid the environment being overwritten by a default
         /// value, ensure this is called after defaults are configured.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
-                ThrowHelper.ThrowIfNull(environment);
+                ArgumentNullException.ThrowIfNull(environment);
 
                 configBuilder.AddInMemoryCollection(new[]
                 {
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Specify the content root directory to be used by the host. To avoid the content root directory being
+        /// Specifies the content root directory to be used by the host. To avoid the content root directory being
         /// overwritten by a default value, ensure this is called after defaults are configured.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
-                ThrowHelper.ThrowIfNull(contentRoot);
+                ArgumentNullException.ThrowIfNull(contentRoot);
 
                 configBuilder.AddInMemoryCollection(new[]
                 {
@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Specify the <see cref="IServiceProvider"/> to be the default one.
+        /// Specifies the <see cref="IServiceProvider"/> to be the default one.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Hosting
             => hostBuilder.UseDefaultServiceProvider((context, options) => configure(options));
 
         /// <summary>
-        /// Specify the <see cref="IServiceProvider"/> to be the default one.
+        /// Specifies the <see cref="IServiceProvider"/> to be the default one.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This may be called multiple times.
+        /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This can be called multiple times.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureLogging">The delegate that configures the <see cref="ILoggingBuilder"/>.</param>
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This may be called multiple times.
+        /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This can be called multiple times.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureLogging">The delegate that configures the <see cref="ILoggingBuilder"/>.</param>
@@ -182,6 +182,7 @@ namespace Microsoft.Extensions.Hosting
         ///     * load host <see cref="IConfiguration"/> from "DOTNET_" prefixed environment variables
         ///     * load host <see cref="IConfiguration"/> from supplied command line args
         ///     * load app <see cref="IConfiguration"/> from 'appsettings.json' and 'appsettings.[<see cref="IHostEnvironment.EnvironmentName"/>].json'
+        ///     * load app <see cref="IConfiguration"/> from '[<see cref="IHostEnvironment.ApplicationName"/>].settings.json' and '[<see cref="IHostEnvironment.ApplicationName"/>].settings.[<see cref="IHostEnvironment.EnvironmentName"/>].json' when <see cref="IHostEnvironment.ApplicationName"/> is not empty
         ///     * load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly
         ///     * load app <see cref="IConfiguration"/> from environment variables
         ///     * load app <see cref="IConfiguration"/> from supplied command line args
@@ -241,6 +242,14 @@ namespace Microsoft.Extensions.Hosting
             appConfigBuilder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
                     .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
 
+            if (env.ApplicationName is { Length: > 0 })
+            {
+                string sanitizedApplicationName = env.ApplicationName.Replace(Path.DirectorySeparatorChar, '_')
+                                                                    .Replace(Path.AltDirectorySeparatorChar, '_');
+                appConfigBuilder.AddJsonFile($"{sanitizedApplicationName}.settings.json", optional: true, reloadOnChange: reloadOnChange)
+                        .AddJsonFile($"{sanitizedApplicationName}.settings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+            }
+
             if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
             {
                 try
@@ -293,7 +302,7 @@ namespace Microsoft.Extensions.Hosting
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
 #if NET
-                if (!OperatingSystem.IsBrowser())
+                if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
 #endif
                 {
                     logging.AddConsole();
@@ -399,7 +408,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This may be called multiple times.
+        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This can be called multiple times.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureMetrics">The delegate that configures the <see cref="IMetricsBuilder"/>.</param>
@@ -410,7 +419,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This may be called multiple times.
+        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This can be called multiple times.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureMetrics">The delegate that configures the <see cref="IMetricsBuilder"/>.</param>

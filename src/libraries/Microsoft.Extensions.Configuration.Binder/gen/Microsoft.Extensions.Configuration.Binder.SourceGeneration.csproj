@@ -7,6 +7,7 @@
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
+    <DefineConstants Condition="'$(UpdateBaselines)' == 'true'">$(DefineConstants);UPDATE_BASELINES</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DevBuild)' == 'true'">

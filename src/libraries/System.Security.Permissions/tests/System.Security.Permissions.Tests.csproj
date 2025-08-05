@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <!-- SYSLIB0003 is the obsoletion of CAS, but we still have unit tests for it -->
-    <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0003;SYSLIB0057</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />

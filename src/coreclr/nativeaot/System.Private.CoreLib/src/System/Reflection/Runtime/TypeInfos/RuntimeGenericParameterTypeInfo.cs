@@ -152,8 +152,8 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                LowLevelList<QTypeDefRefOrSpec> result = new LowLevelList<QTypeDefRefOrSpec>();
                 QTypeDefRefOrSpec[] constraints = Constraints;
+                ArrayBuilder<QTypeDefRefOrSpec> result = new ArrayBuilder<QTypeDefRefOrSpec>(constraints.Length);
                 RuntimeTypeInfo[] constraintInfos = ConstraintInfos;
                 for (int i = 0; i < constraints.Length; i++)
                 {

@@ -27,15 +27,35 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
+static HANDLE g_lowMemoryNotification = NULL;
+
+#ifdef TARGET_WINDOWS
+static bool g_ComAndFlsInitSucceeded = false;
+#endif
+
 EXTERN_C void QCALLTYPE ProcessFinalizers();
 
-// Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we can't run managed code. Instead this method waits
+// Unmanaged front-end to the finalizer thread. We require this because at the point when this thread is
+// created we can't run managed code. Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
 // managed portion of the thread at that point
 uint32_t WINAPI FinalizerStart(void* pContext)
 {
+#ifdef TARGET_WINDOWS
+    g_ComAndFlsInitSucceeded = PalInitComAndFlsSlot();
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    UInt32_BOOL res = PalSetEvent(g_FinalizerDoneEvent.GetOSEvent());
+    ASSERT(res);
+
+    // if FLS initialization failed do not attach the current thread and just exit instead.
+    // we are going to fail the runtime initialization.
+    if (!g_ComAndFlsInitSucceeded)
+        return 0;
+#endif // DEBUG
+
     HANDLE hFinalizerEvent = (HANDLE)pContext;
+
+    PalSetCurrentThreadName(".NET Finalizer");
 
     ThreadStore::AttachCurrentThread();
     Thread * pThread = ThreadStore::GetCurrentThread();
@@ -45,9 +65,6 @@ uint32_t WINAPI FinalizerStart(void* pContext)
     pThread->SetSuppressGcStress();
 
     g_pFinalizerThread = PTR_Thread(pThread);
-
-    // We have some time until the first finalization request - use the time to calibrate normalized waits.
-    EnsureYieldProcessorNormalizedInitialized();
 
     // Wait for a finalization request.
     uint32_t uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);
@@ -76,6 +93,7 @@ bool RhInitializeFinalization()
         return false;
     if (!g_FinalizerDoneEvent.CreateManualEventNoThrow(false))
         return false;
+    g_lowMemoryNotification = PalCreateLowMemoryResourceNotification();
 
     // Create the finalizer thread itself.
     if (!PalStartFinalizerThread(FinalizerStart, (void*)g_FinalizerEvent.GetOSEvent()))
@@ -84,14 +102,34 @@ bool RhInitializeFinalization()
     return true;
 }
 
+#ifdef TARGET_WINDOWS
+bool RhWaitForFinalizerThreadStart()
+{
+    g_FinalizerDoneEvent.Wait(INFINITE,FALSE);
+    g_FinalizerDoneEvent.Reset();
+    return g_ComAndFlsInitSucceeded;
+}
+#endif
+
 void RhEnableFinalization()
 {
     g_FinalizerEvent.Set();
 }
 
-EXTERN_C void QCALLTYPE RhInitializeFinalizerThread()
+static int32_t g_fullGcCountSeenByFinalization;
+
+// Indicate that the current round of finalizations is complete.
+EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount, int32_t observedFullGcCount)
 {
-    g_FinalizerEvent.Set();
+    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
+
+    g_fullGcCountSeenByFinalization = observedFullGcCount;
+    g_FinalizerDoneEvent.Set();
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        YieldProcessorNormalization::PerformMeasurement();
+    }
 }
 
 EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
@@ -103,6 +141,14 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
     // Can't call this from the finalizer thread itself.
     if (ThreadStore::GetCurrentThread() != g_pFinalizerThread)
     {
+        // We may see a completion of finalization cycle that might not see objects that became
+        // F-reachable in recent GCs. In such case we want to wait for a completion of another cycle.
+        // However, since an object cannot be prevented from promoting, one can only rely on Full GCs
+        // to collect unreferenced objects deterministically. Thus we only care about Full GCs here.
+        int desiredFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+
+    tryAgain:
         // Clear any current indication that a finalization pass is finished and wake the finalizer thread up
         // (if there's no work to do it'll set the done event immediately).
         g_FinalizerDoneEvent.Reset();
@@ -110,6 +156,17 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
 
         // Wait for the finalizer thread to get back to us.
         g_FinalizerDoneEvent.Wait(INFINITE, false, allowReentrantWait);
+
+        // we use unsigned math here as the collection counts, which are size_t internally,
+        // can in theory overflow an int and wrap around.
+        // unsigned math would have more defined/portable behavior in such case
+        if ((int)((unsigned int)desiredFullGcCount - (unsigned int)g_fullGcCountSeenByFinalization) > 0)
+        {
+            // There were some Full GCs happening before we started waiting and possibly not seen by the
+            // last finalization cycle. This is rare, but we need to be sure we have seen those,
+            // so we try one more time.
+            goto tryAgain;
+        }
     }
 }
 
@@ -132,17 +189,12 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
     // two second timeout expires.
     do
     {
-        HANDLE  lowMemEvent = NULL;
-#if 0 // TODO: hook up low memory notification
-        lowMemEvent = pHeap->GetLowMemoryNotificationEvent();
+        HANDLE  lowMemEvent = g_lowMemoryNotification;
         HANDLE  rgWaitHandles[] = { g_FinalizerEvent.GetOSEvent(), lowMemEvent };
         uint32_t  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         uint32_t  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
-        uint32_t uResult = PalWaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, FALSE, uTimeout, FALSE);
-#else
-        uint32_t uResult = PalWaitForSingleObjectEx(g_FinalizerEvent.GetOSEvent(), INFINITE, FALSE);
-#endif
+        uint32_t uResult = PalCompatibleWaitAny(/*alertable=*/ FALSE, uTimeout, cWaitHandles, rgWaitHandles, /*allowReentrantWait=*/ FALSE);
 
         switch (uResult)
         {
@@ -179,13 +231,6 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             return FALSE;
         }
     } while (true);
-}
-
-// Indicate that the current round of finalizations is complete.
-EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount)
-{
-    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
-    g_FinalizerDoneEvent.Set();
 }
 
 //

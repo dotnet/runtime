@@ -133,12 +133,12 @@ void ILFormatter::setTarget(size_t ilOffset, size_t depth) {
 /***************************************************************************/
 void ILFormatter::spillStack(OutString* out) {
 
-    for(unsigned i = 0; i < stackDepth(); i++) {
+    for(size_t i = 0; i < stackDepth(); i++) {
         // don't bother spilling something already spilled.
         if (memcmp(stackStart[i].val.val(), "@STK", 4) != 0)
-            *out << "@STK" << i << " = " << stackStart[i].val.val() << "\n";
+            *out << "@STK" << static_cast<unsigned int>(i) << " = " << stackStart[i].val.val() << "\n";
         stackStart[i].val.clear();
-        stackStart[i].val << "@STK" << i ;
+        stackStart[i].val << "@STK" << static_cast<unsigned int>(i);
     }
 }
 
@@ -290,10 +290,6 @@ void ILFormatter::formatInstrArgs(OpInfo op, OpArgsVal arg, OutString* out, size
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 /***************************************************************************/
 const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
 
@@ -811,8 +807,3 @@ const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
     }
     return(instrPtr);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
-

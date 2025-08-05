@@ -329,7 +329,6 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region Dictionary
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void SerializeDictionary()
         {
@@ -348,7 +347,6 @@ namespace System.Text.Json.Tests
             Assert.Equal("3", (string)a[3]);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void DeserializeDictionary()
         {
@@ -366,7 +364,6 @@ namespace System.Text.Json.Tests
             Assert.Equal("3", data[3]);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void DeserializeDictionaryInterface()
         {
@@ -386,7 +383,6 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region SortedDictionary
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void SerializeSortedDictionary()
         {
@@ -398,14 +394,13 @@ namespace System.Text.Json.Tests
             });
 
             string json = JsonSerializer.Serialize(data, s_indentedOption);
-            Assert.Equal(@"{
+            JsonTestHelper.AssertJsonEqual(@"{
   ""1"": ""One"",
   ""2"": ""II"",
   ""3"": ""3""
 }", json);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void DeserializeSortedDictionary()
         {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -29,12 +30,7 @@ namespace System
         /// </summary>
         /// <param name="value">A Boolean value.</param>
         /// <returns>A byte array with length 1.</returns>
-        public static byte[] GetBytes(bool value)
-        {
-            byte[] r = new byte[1];
-            r[0] = (value ? (byte)1 : (byte)0);
-            return r;
-        }
+        public static byte[] GetBytes(bool value) => [(value ? (byte)1 : (byte)0)];
 
         /// <summary>
         /// Converts a Boolean into a span of bytes.
@@ -59,7 +55,8 @@ namespace System
         public static byte[] GetBytes(char value)
         {
             byte[] bytes = new byte[sizeof(char)];
-            Unsafe.As<byte, char>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -86,7 +83,8 @@ namespace System
         public static byte[] GetBytes(short value)
         {
             byte[] bytes = new byte[sizeof(short)];
-            Unsafe.As<byte, short>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -113,7 +111,8 @@ namespace System
         public static byte[] GetBytes(int value)
         {
             byte[] bytes = new byte[sizeof(int)];
-            Unsafe.As<byte, int>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -140,7 +139,8 @@ namespace System
         public static byte[] GetBytes(long value)
         {
             byte[] bytes = new byte[sizeof(long)];
-            Unsafe.As<byte, long>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -167,7 +167,8 @@ namespace System
         public static byte[] GetBytes(Int128 value)
         {
             byte[] bytes = new byte[Int128.Size];
-            Unsafe.As<byte, Int128>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -195,7 +196,8 @@ namespace System
         public static byte[] GetBytes(ushort value)
         {
             byte[] bytes = new byte[sizeof(ushort)];
-            Unsafe.As<byte, ushort>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -224,7 +226,8 @@ namespace System
         public static byte[] GetBytes(uint value)
         {
             byte[] bytes = new byte[sizeof(uint)];
-            Unsafe.As<byte, uint>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -253,7 +256,8 @@ namespace System
         public static byte[] GetBytes(ulong value)
         {
             byte[] bytes = new byte[sizeof(ulong)];
-            Unsafe.As<byte, ulong>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -282,7 +286,8 @@ namespace System
         public static byte[] GetBytes(UInt128 value)
         {
             byte[] bytes = new byte[UInt128.Size];
-            Unsafe.As<byte, UInt128>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -310,7 +315,8 @@ namespace System
         public static unsafe byte[] GetBytes(Half value)
         {
             byte[] bytes = new byte[sizeof(Half)];
-            Unsafe.As<byte, Half>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -337,7 +343,8 @@ namespace System
         public static byte[] GetBytes(float value)
         {
             byte[] bytes = new byte[sizeof(float)];
-            Unsafe.As<byte, float>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -364,7 +371,8 @@ namespace System
         public static byte[] GetBytes(double value)
         {
             byte[] bytes = new byte[sizeof(double)];
-            Unsafe.As<byte, double>(ref bytes[0]) = value;
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
             return bytes;
         }
 
@@ -615,7 +623,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a 64-bit unsigned integer converted from four bytes at a specified position in a byte array.
+        /// Returns a 64-bit unsigned integer converted from eight bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
         /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
@@ -645,7 +653,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a 128-bit unsigned integer converted from four bytes at a specified position in a byte array.
+        /// Returns a 128-bit unsigned integer converted from sixteen bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
         /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
@@ -738,7 +746,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a double-precision floating point number converted from four bytes at a specified position in a byte array.
+        /// Returns a double-precision floating point number converted from eight bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
         /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
@@ -897,7 +905,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A 64-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [Intrinsic]
-        public static unsafe long DoubleToInt64Bits(double value) => Unsafe.BitCast<double, long>(value);
+        public static long DoubleToInt64Bits(double value) => Unsafe.BitCast<double, long>(value);
 
         /// <summary>
         /// Converts the specified 64-bit signed integer to a double-precision floating point number.
@@ -905,7 +913,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A double-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [Intrinsic]
-        public static unsafe double Int64BitsToDouble(long value) => Unsafe.BitCast<long, double>(value);
+        public static double Int64BitsToDouble(long value) => Unsafe.BitCast<long, double>(value);
 
         /// <summary>
         /// Converts the specified single-precision floating point number to a 32-bit signed integer.
@@ -913,7 +921,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A 32-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [Intrinsic]
-        public static unsafe int SingleToInt32Bits(float value) => Unsafe.BitCast<float, int>(value);
+        public static int SingleToInt32Bits(float value) => Unsafe.BitCast<float, int>(value);
 
         /// <summary>
         /// Converts the specified 32-bit signed integer to a single-precision floating point number.
@@ -921,7 +929,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A single-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [Intrinsic]
-        public static unsafe float Int32BitsToSingle(int value) => Unsafe.BitCast<int, float>(value);
+        public static float Int32BitsToSingle(int value) => Unsafe.BitCast<int, float>(value);
 
         /// <summary>
         /// Converts the specified half-precision floating point number to a 16-bit signed integer.
@@ -929,7 +937,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A 16-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe short HalfToInt16Bits(Half value) => (short)value._value;
+        public static short HalfToInt16Bits(Half value) => (short)value._value;
 
         /// <summary>
         /// Converts the specified 16-bit signed integer to a half-precision floating point number.
@@ -937,7 +945,7 @@ namespace System
         /// <param name="value">The number to convert.</param>
         /// <returns>A half-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Half Int16BitsToHalf(short value) => new Half((ushort)(value));
+        public static Half Int16BitsToHalf(short value) => new Half((ushort)(value));
 
         /// <summary>
         /// Converts the specified double-precision floating point number to a 64-bit unsigned integer.
@@ -946,7 +954,7 @@ namespace System
         /// <returns>A 64-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe ulong DoubleToUInt64Bits(double value) => Unsafe.BitCast<double, ulong>(value);
+        public static ulong DoubleToUInt64Bits(double value) => Unsafe.BitCast<double, ulong>(value);
 
         /// <summary>
         /// Converts the specified 64-bit unsigned integer to a double-precision floating point number.
@@ -955,7 +963,7 @@ namespace System
         /// <returns>A double-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe double UInt64BitsToDouble(ulong value) => Unsafe.BitCast<ulong, double>(value);
+        public static double UInt64BitsToDouble(ulong value) => Unsafe.BitCast<ulong, double>(value);
 
         /// <summary>
         /// Converts the specified single-precision floating point number to a 32-bit unsigned integer.
@@ -964,7 +972,7 @@ namespace System
         /// <returns>A 32-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe uint SingleToUInt32Bits(float value) => Unsafe.BitCast<float, uint>(value);
+        public static uint SingleToUInt32Bits(float value) => Unsafe.BitCast<float, uint>(value);
 
         /// <summary>
         /// Converts the specified 32-bit unsigned integer to a single-precision floating point number.
@@ -973,7 +981,7 @@ namespace System
         /// <returns>A single-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe float UInt32BitsToSingle(uint value) => Unsafe.BitCast<uint, float>(value);
+        public static float UInt32BitsToSingle(uint value) => Unsafe.BitCast<uint, float>(value);
 
         /// <summary>
         /// Converts the specified half-precision floating point number to a 16-bit unsigned integer.
@@ -982,7 +990,7 @@ namespace System
         /// <returns>A 16-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ushort HalfToUInt16Bits(Half value) => value._value;
+        public static ushort HalfToUInt16Bits(Half value) => value._value;
 
         /// <summary>
         /// Converts the specified 16-bit unsigned integer to a half-precision floating point number.
@@ -991,6 +999,6 @@ namespace System
         /// <returns>A half-precision floating point number whose bits are identical to <paramref name="value"/>.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Half UInt16BitsToHalf(ushort value) => new Half(value);
+        public static Half UInt16BitsToHalf(ushort value) => new Half(value);
     }
 }

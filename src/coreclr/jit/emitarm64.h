@@ -98,7 +98,8 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         secondRetSize,
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
@@ -106,7 +107,8 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         secondRetSize,
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*   enum to allow instruction optimisation to specify register order   */
@@ -192,6 +194,8 @@ FORCEINLINE bool OptimizeLdrStr(instruction ins,
                                 bool        localVar = false,
                                 int         varx     = -1,
                                 int         offs     = -1 DEBUG_ARG(bool useRsvdReg = false));
+
+bool OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr regAttr);
 
 emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 {
@@ -550,6 +554,9 @@ static code_t insEncodeReg3Scale(bool isScaled);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 static code_t insEncodeSveElemsize(emitAttr size);
+
+// Returns the encoding to select the 1/2/4 byte elemsize for an Arm64 Sve narrowing vector instruction
+static code_t insEncodeNarrowingSveElemsize(emitAttr size);
 
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the size at bit locations '22-21'.
@@ -1205,6 +1212,11 @@ inline static bool isHighPredicateRegister(regNumber reg)
     return (reg >= REG_PREDICATE_HIGH_FIRST) && (reg <= REG_PREDICATE_HIGH_LAST);
 }
 
+inline static bool isMaskReg(regNumber reg)
+{
+    return isPredicateRegister(reg);
+}
+
 inline static bool isEvenRegister(regNumber reg)
 {
     if (isGeneralRegister(reg))
@@ -1450,6 +1462,10 @@ void emitIns_R_I(instruction     ins,
                  insOpts         opt  = INS_OPTS_NONE,
                  insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+void emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
+                               regNumber   targetReg,
+                               regNumber   reg,
+                               ssize_t imm DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitInsSve_R_I(instruction     ins,
                     emitAttr        attr,
@@ -1722,31 +1738,6 @@ void emitIns_ARR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg
 
 void emitIns_R_ARX(
     instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, unsigned mul, int disp);
-
-enum EmitCallType
-{
-    EC_FUNC_TOKEN, // Direct call to a helper/static/nonvirtual/global method
-    EC_INDIR_R,    // Indirect call via register
-    EC_COUNT
-};
-
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*            addr,
-                  ssize_t          argSize,
-                  emitAttr         retSize,
-                  emitAttr         secondRetSize,
-                  VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
-                  const DebugInfo& di,
-                  regNumber        ireg,
-                  regNumber        xreg,
-                  unsigned         xmul,
-                  ssize_t          disp,
-                  bool             isJump,
-                  bool             noSafePoint = false);
 
 BYTE*    emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);

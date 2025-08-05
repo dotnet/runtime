@@ -1,37 +1,32 @@
 # IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
 
-include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/brotli/include")
+include(FetchContent)
 
-set (BROTLI_SOURCES_BASE
-    common/constants.c
-    common/context.c
-    common/dictionary.c
-    common/platform.c
-    common/transform.c
-    dec/bit_reader.c
-    dec/decode.c
-    dec/huffman.c
-    dec/state.c
-    enc/backward_references.c
-    enc/backward_references_hq.c
-    enc/bit_cost.c
-    enc/block_splitter.c
-    enc/brotli_bit_stream.c
-    enc/cluster.c
-    enc/command.c
-    enc/compress_fragment.c
-    enc/compress_fragment_two_pass.c
-    enc/dictionary_hash.c
-    enc/encode.c
-    enc/encoder_dict.c
-    enc/entropy_encode.c
-    enc/fast_log.c
-    enc/histogram.c
-    enc/literal_cost.c
-    enc/memory.c
-    enc/metablock.c
-    enc/static_dict.c
-    enc/utf8_util.c
+FetchContent_Declare(
+    brotli
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/brotli
 )
 
-addprefix(BROTLI_SOURCES "${CMAKE_CURRENT_LIST_DIR}/brotli" "${BROTLI_SOURCES_BASE}")
+set(BROTLI_DISABLE_TESTS ON)
+set(__CURRENT_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
+FetchContent_MakeAvailable(brotli)
+set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
+
+target_compile_options(brotlicommon PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/guard:cf>)
+target_compile_options(brotlienc PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/guard:cf>)
+target_compile_options(brotlidec PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/guard:cf>)
+target_compile_options(brotlienc PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-implicit-fallthrough>)
+target_compile_options(brotlidec PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-implicit-fallthrough>)
+
+# Even though we aren't building brotli as shared libraries, we still need to be able to export the symbols
+# from the brotli libraries so that they can be used by System.IO.Compression.
+# Since we link all of the static libraries into a single shared library, we need to define BROTLICOMMON_SHARED_COMPILATION
+# for all targets so brotlienc and brotlidec don't expect to link against a separate brotlicommon shared library.
+target_compile_definitions(brotlienc PRIVATE BROTLI_SHARED_COMPILATION BROTLIENC_SHARED_COMPILATION BROTLICOMMON_SHARED_COMPILATION)
+target_compile_definitions(brotlidec PRIVATE BROTLI_SHARED_COMPILATION BROTLIDEC_SHARED_COMPILATION BROTLICOMMON_SHARED_COMPILATION)
+target_compile_definitions(brotlicommon PRIVATE BROTLI_SHARED_COMPILATION BROTLICOMMON_SHARED_COMPILATION)
+
+# Don't build the brotli command line tool unless explicitly requested
+# (which we never do)
+set_target_properties(brotli PROPERTIES EXCLUDE_FROM_ALL ON)

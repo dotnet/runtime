@@ -15,6 +15,7 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -82,11 +83,8 @@
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs">
       <Link>JitInterface\SystemVStructClassificator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs">
-      <Link>JitInterface\LoongArch64PassStructInRegister.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs">
-      <Link>JitInterface\RISCV64PassStructInRegister.cs</Link>
+    <Compile Include="..\..\Common\Internal\Runtime\RiscVLoongArch64FpStruct.cs">
+      <Link>Common\RiscVLoongArch64FpStruct.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs">
       <Link>JitInterface\SwiftPhysicalLowering.cs</Link>
@@ -101,5 +99,9 @@
 
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="Pgo\ProfileData.cs" />
 
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\CallGraphNode.cs" Link="Compiler\PettisHansenSort\CallGraphNode.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\DisjointSetForest.cs" Link="Compiler\PettisHansenSort\DisjointSetForest.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\PettisHansenSort\PettisHansen.cs" Link="Compiler\PettisHansenSort\PettisHansen.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\FileLayoutOptimizer.cs" Link="Compiler\FileLayoutOptimizer.cs" />
   </ItemGroup>
 </Project>

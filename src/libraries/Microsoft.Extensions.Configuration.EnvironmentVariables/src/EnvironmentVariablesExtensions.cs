@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration.EnvironmentVariables;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Extension methods for registering <see cref="EnvironmentVariablesConfigurationProvider"/> with <see cref="IConfigurationBuilder"/>.
+    /// Provides extension methods for registering <see cref="EnvironmentVariablesConfigurationProvider"/> with <see cref="IConfigurationBuilder"/>.
     /// </summary>
     public static class EnvironmentVariablesExtensions
     {
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Configuration
         /// Adds an <see cref="IConfigurationProvider"/> that reads configuration values from environment variables.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
-        /// <param name="configureSource">Configures the source.</param>
+        /// <param name="configureSource">The action that configures the source.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddEnvironmentVariables(this IConfigurationBuilder builder, Action<EnvironmentVariablesConfigurationSource>? configureSource)
             => builder.Add(configureSource);

@@ -344,6 +344,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chainTest.ChainPolicy.ExtraStore.Add(issuerCert);
 
+                X509ChainStatusFlags allowedFlags = X509ChainStatusFlags.NoError;
+
                 switch (testArguments)
                 {
                     case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot:
@@ -361,6 +363,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         chainHolder.DisposeChainElements();
                         chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
                         chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
+                        chainTest.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                        chainTest.ChainPolicy.ExtraStore.Add(rootCert);
+                        allowedFlags |= X509ChainStatusFlags.UntrustedRoot;
                         break;
                     default:
                         throw new InvalidDataException();
@@ -368,7 +373,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
                 Assert.Equal(3, chainTest.ChainElements.Count);
-                Assert.Equal(chainFlags, chainTest.AllStatusFlags());
+
+                X509ChainStatusFlags actualFlags = chainTest.AllStatusFlags();
+                actualFlags &= ~allowedFlags;
+
+                Assert.Equal(chainFlags, actualFlags);
             }
         }
 
@@ -932,8 +941,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Chain building on Android fails with an empty subject")]
-        public static void ChainWithEmptySubject()
+        public static void ChainWithEmptySubjectAndCritialSan()
         {
             using (var cert = new X509Certificate2(TestData.EmptySubjectCertificate))
             using (var issuer = new X509Certificate2(TestData.EmptySubjectIssuerCertificate))
@@ -1270,7 +1278,6 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/100224", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsArmOrArm64Process))]
         public static void BuildChainForSelfSignedCertificate_WithSha256RsaSignature()
         {
             using (ChainHolder chainHolder = new ChainHolder())
@@ -1284,12 +1291,22 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
                 // minimum be marked UntrustedRoot.
 
                 Assert.False(chain.Build(cert));
-                AssertExtensions.HasFlag(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android always validates trust as part of building a path,
+                    // so violations comes back as PartialChain with no elements
+                    Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                    Assert.Equal(0, chain.ChainElements.Count);
+                }
+                else
+                {
+                    AssertExtensions.HasFlag(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+                }
             }
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/100224", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsArmOrArm64Process))]
         public static void BuildChainForSelfSignedCertificate_WithUnknownOidSignature()
         {
             using (ChainHolder chainHolder = new ChainHolder())
@@ -1310,6 +1327,12 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
                 {
                     Assert.False(chain.Build(cert));
                     AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                }
+                else if (PlatformDetection.IsAndroid)
+                {
+                    Assert.False(chain.Build(cert));
+                    AssertExtensions.HasFlag(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
+                    Assert.Equal(0, chain.ChainElements.Count);
                 }
                 else if (PlatformDetection.IsOpenSslSupported)
                 {

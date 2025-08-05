@@ -174,4 +174,13 @@
   <data name="InvalidInstrumentType" xml:space="preserve">
     <value>The instrument is of different generic type.</value>
   </data>
+  <data name="InvalidHistogramExplicitBucketBoundaries" xml:space="preserve">
+    <value>Histogram explicit bucket boundaries must be specified in ascending order and cannot contain duplicate values.</value>
+  </data>
+  <data name="InvalidHistogramScale" xml:space="preserve">
+    <value>Invalid scale value {0}. Scale must be greater than or equal to {1} and less than or equal to {2}.</value>
+  </data>
+  <data name="InvalidHistogramMaxBuckets" xml:space="preserve">
+    <value>Invalid Max buckets value {0}. Max buckets must be greater than or equal to {1}.</value>
+  </data>
 </root>

@@ -19,66 +19,17 @@ record struct ThreadStoreCounts (
 
 enum ThreadState
 {
-    TS_Unknown                = 0x00000000,    // threads are initialized this way
-
-    TS_AbortRequested         = 0x00000001,    // Abort the thread
-
-    TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
-
-    TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
-    TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
-
-    TS_LegalToJoin            = 0x00000020,    // Is it now legal to attempt a Join()
-
-    TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
-
-    TS_Hijacked               = 0x00000080,    // Return address has been hijacked
-
-    // unused                 = 0x00000100,
-    TS_Background             = 0x00000200,    // Thread is a background thread
-    TS_Unstarted              = 0x00000400,    // Thread has never been started
-    TS_Dead                   = 0x00000800,    // Thread is dead
-
-    TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
-    TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread
-
-    TS_InSTA                  = 0x00004000,    // Thread hosts an STA
-    TS_InMTA                  = 0x00008000,    // Thread is part of the MTA
-
-    // Some bits that only have meaning for reporting the state to clients.
-    TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
-    TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
-
-    TS_TaskReset              = 0x00040000,    // The task is reset
-
-    TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
-    TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
-
-    TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
-                                                // See comment for s_pWaitForStackCrawlEvent for reason.
-
-    // unused                 = 0x00400000,
-
-    // unused                 = 0x00800000,
-    TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
-
-    TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
-    TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
-
-    TS_CompletionPortThread   = 0x08000000,    // Completion port thread
-
-    TS_AbortInitiated         = 0x10000000,    // set when abort is begun
-
-    TS_Finalized              = 0x20000000,    // The associated managed Thread object has been finalized.
-                                                // We can clean up the unmanaged part now.
-
-    TS_FailStarted            = 0x40000000,    // The thread fails during startup.
-    TS_Detached               = 0x80000000,    // Thread was detached by DllMain
+    Unknown             = 0x00000000,    // threads are initialized this way
+    Hijacked            = 0x00000080,    // Return address has been hijacked
+    Background          = 0x00000200,    // Thread is a background thread
+    Unstarted           = 0x00000400,    // Thread has never been started
+    Dead                = 0x00000800,    // Thread is dead
+    ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
 }
 
 record struct ThreadData (
-    uint ThreadId;
-    TargetNUint OsThreadId;
+    uint Id;
+    TargetNUInt OSId;
     ThreadState State;
     bool PreemptiveGCDisabled
     TargetPointer AllocContextPointer;
@@ -86,7 +37,7 @@ record struct ThreadData (
     TargetPointer Frame;
     TargetPointer FirstNestedException;
     TargetPointer TEB;
-    DacGCHandle LastThrownObjectHandle;
+    TargetPointer LastThrownObjectHandle;
     TargetPointer NextThread;
 );
 ```
@@ -95,99 +46,117 @@ record struct ThreadData (
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
-TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out TargetPointer nextNestedException);
-TargetPointer GetManagedThreadObject(TargetPointer threadPointer);
+TargetPointer IdToThread(uint id);
 ```
 
 ## Version 1
 
+The contract depends on the following globals
 
+| Global name | Type | Meaning |
+| --- | --- |
+| `AppDomain` | TargetPointer | A pointer to the address of the one AppDomain
+| `ThreadStore` | TargetPointer | A pointer to the address of the ThreadStore
+| `FeatureEHFunclets` | TargetPointer | 1 if EH funclets are enabled, 0 otherwise
+| `FinalizerThread` | TargetPointer | A pointer to the finalizer thread
+| `GCThread` | TargetPointer | A pointer to the GC thread
+| `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects
 
+The contract additionally depends on these data descriptors
+
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
+| `GCAllocContext` | `Pointer` | GC allocation pointer |
+| `GCAllocContext` | `Limit` | Allocation limit pointer |
+| `IdDispenser` | `HighestId` | Highest possible small thread ID |
+| `IdDispenser` | `IdToThread` | Array mapping small thread IDs to thread pointers |
+| `RuntimeThreadLocals` | `AllocContext` | GC allocation context for the thread |
+| `Thread` | `Id` | Thread identifier |
+| `Thread` | `OSId` | Operating system thread identifier |
+| `Thread` | `State` | Thread state flags |
+| `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
+| `Thread` | `Frame` | Pointer to current frame |
+| `Thread` | `TEB` | Thread Environment Block pointer |
+| `Thread` | `LastThrownObject` | Handle to last thrown exception object |
+| `Thread` | `LinkNext` | Pointer to get next thread |
+| `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
+| `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
+| `ThreadStore` | `ThreadCount` | Number of threads |
+| `ThreadStore` | `FirstThreadLink` | Pointer to first thread in the linked list |
+| `ThreadStore` | `UnstartedCount` | Number of unstarted threads |
+| `ThreadStore` | `BackgroundCount` | Number of background threads |
+| `ThreadStore` | `PendingCount` | Number of pending threads |
+| `ThreadStore` | `DeadCount` | Number of dead threads |
 ``` csharp
-SListReader ThreadListReader = Contracts.SList.GetReader("Thread");
-
 ThreadStoreData GetThreadStoreData()
 {
-    TargetPointer threadStore = Target.ReadGlobalPointer("s_pThreadStore");
-    var runtimeThreadStore = new ThreadStore(Target, threadStore);
+    TargetPointer threadStore = target.ReadGlobalPointer("ThreadStore");
 
-    TargetPointer firstThread = ThreadListReader.GetHead(runtimeThreadStore.SList.Pointer);
-
+    ulong threadLinkoffset = ... // offset from Thread data descriptor
     return new ThreadStoreData(
-        ThreadCount : runtimeThreadStore.m_ThreadCount,
-        FirstThread: firstThread,
-        FinalizerThread: Target.ReadGlobalPointer("g_pFinalizerThread"),
-        GCThread: Target.ReadGlobalPointer("g_pSuspensionThread"));
+        ThreadCount: target.Read<int>(threadStore + /* ThreadStore::ThreadCount offset */),
+        FirstThread: target.ReadPointer(threadStore + /* ThreadStore::FirstThreadLink offset */ - threadLinkoffset),
+        FinalizerThread: target.ReadGlobalPointer("FinalizerThread"),
+        GCThread: target.ReadGlobalPointer("GCThread"));
 }
 
 DacThreadStoreCounts GetThreadCounts()
 {
-    TargetPointer threadStore = Target.ReadGlobalPointer("s_pThreadStore");
-    var runtimeThreadStore = new ThreadStore(Target, threadStore);
+    TargetPointer threadStore = target.ReadGlobalPointer("ThreadStore");
 
     return new ThreadStoreCounts(
-        ThreadCount : runtimeThreadStore.m_ThreadCount,
-        UnstartedThreadCount : runtimeThreadStore.m_UnstartedThreadCount,
-        BackgroundThreadCount : runtimeThreadStore.m_BackgroundThreadCount,
-        PendingThreadCount : runtimeThreadStore.m_PendingThreadCount,
-        DeadThreadCount: runtimeThreadStore.m_DeadThreadCount,
+        UnstartedThreadCount: target.Read<int>(threadStore + /* ThreadStore::UnstartedCount offset */),
+        BackgroundThreadCount: target.Read<int>(threadStore + /* ThreadStore::BackgroundCount offset */),,
+        PendingThreadCount: target.Read<int>(threadStore + /* ThreadStore::PendingCount offset */),,
+        DeadThreadCount: target.Read<int>(threadStore + /* ThreadStore::DeadCount offset */),,
 }
 
-ThreadData GetThreadData(TargetPointer threadPointer)
+ThreadData GetThreadData(TargetPointer address)
 {
-    var runtimeThread = new Thread(Target, threadPointer);
+    var runtimeThread = new Thread(target, threadPointer);
 
-    TargetPointer firstNestedException = TargetPointer.Null;
-    if (Target.ReadGlobalInt32("FEATURE_EH_FUNCLETS"))
+    // Exception tracker is a pointer when EH funclets are enabled
+    TargetPointer exceptionTrackerAddr = target.ReadGlobal<byte>("FeatureEHFunclets") != 0
+        ? target.ReadPointer(address + /* Thread::ExceptionTracker offset */)
+        : address + /* Thread::ExceptionTracker offset */;
+    TargetPointer firstNestedException = exceptionTrackerAddr != TargetPointer.Null
+        ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::PreviousNestedInfo offset*/)
+        : TargetPointer.Null;
+
+    TargetPointer allocContextPointer = TargetPointer.Null;
+    TargetPointer allocContextLimit = TargetPointer.Null;
+    TargetPointer threadLocals = target.ReadPointer(address + /* Thread::RuntimeThreadLocals offset */);
+    if (threadLocals != TargetPointer.Null)
     {
-        if (runtimeThread.m_ExceptionState.m_pCurrentTracker != TargetPointer.Null)
-        {
-            firstNestedException = new ExceptionTrackerBase(Target, runtimeThread.m_ExceptionState.m_pCurrentTracker).m_pPrevNestedInfo;
-        }
-    }
-    else
-    {
-        firstNestedException = runtimeThread.m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo;
+        allocContextPointer = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Pointer offset */);
+        allocContextLimit = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Limit offset */);
     }
 
+    ulong threadLinkoffset = ... // offset from Thread data descriptor
     return new ThreadData(
-        ThreadId : runtimeThread.m_ThreadId,
-        OsThreadId : (OsThreadId)runtimeThread.m_OSThreadId,
-        State : (ThreadState)runtimeThread.m_State,
-        PreemptiveGCDisabled : thread.m_fPreemptiveGCDisabled != 0,
-        AllocContextPointer : thread.m_alloc_context.alloc_ptr,
-        AllocContextLimit : thread.m_alloc_context.alloc_limit,
-        Frame : thread.m_pFrame,
-        TEB : thread.Has_m_pTEB ? thread.m_pTEB : TargetPointer.Null,
-        LastThrownObjectHandle : new DacGCHandle(thread.m_LastThrownObjectHandle),
+        Id: target.Read<uint>(address + /* Thread::Id offset */),
+        OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
+        State: target.Read<uint>(address + /* Thread::State offset */),
+        PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
+        AllocContextPointer: allocContextPointer,
+        AllocContextLimit: allocContextLimit,
+        Frame: target.ReadPointer(address + /* Thread::Frame offset */),
+        TEB : /* Has Thread::TEB offset */ ? target.ReadPointer(address + /* Thread::TEB offset */) : TargetPointer.Null,
+        LastThrownObjectHandle : target.ReadPointer(address + /* Thread::LastThrownObject offset */),
         FirstNestedException : firstNestedException,
-        NextThread : ThreadListReader.GetHead.GetNext(threadPointer)
+        NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
     );
 }
 
-TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out TargetPointer nextNestedException)
+TargetPointer IThread.IdToThread(uint id)
 {
-    if (nestedExceptionPointer == TargetPointer.Null)
-    {
-        throw new InvalidArgumentException();
-    }
-    if (Target.ReadGlobalInt32("FEATURE_EH_FUNCLETS"))
-    {
-        var exData = new ExceptionTrackerBase(Target, nestedExceptionPointer);
-        nextNestedException = exData.m_pPrevNestedInfo;
-        return Contracts.GCHandle.GetObject(exData.m_hThrowable);
-    }
-    else
-    {
-        var exData = new ExInfo(Target, nestedExceptionPointer);
-        nextNestedException = exData.m_pPrevNestedInfo;
-        return Contracts.GCHandle.GetObject(exData.m_hThrowable);
-    }
-}
-
-TargetPointer GetManagedThreadObject(TargetPointer threadPointer)
-{
-    var runtimeThread = new Thread(Target, threadPointer);
-    return Contracts.GCHandle.GetObject(new DacGCHandle(runtimeThread.m_ExposedObject));
+    TargetPointer idDispenserPointer = target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
+    TargetPointer idDispenser = target.ReadPointer(idDispenserPointer);
+    uint HighestId = target.ReadPointer(idDispenser + /* IdDispenser::HighestId offset */);
+    TargetPointer threadPtr = TargetPointer.Null;
+    if (id < HighestId)
+        threadPtr = target.ReadPointer(idDispenser + /* IdDispenser::IdToThread offset + (index into IdToThread array * size of array elements (== size of target pointer)) */);
+    return threadPtr;
 }
 ```

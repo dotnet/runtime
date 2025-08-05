@@ -546,9 +546,9 @@ namespace Microsoft.Extensions.DependencyInjection
         public void NotNullServiceKey_IsKeyedServiceTrue(ServiceDescriptor serviceDescriptor)
         {
             Assert.True(serviceDescriptor.IsKeyedService);
-            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.ImplementationInstance);
-            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.ImplementationType);
-            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.ImplementationFactory);
+            Assert.Null(serviceDescriptor.ImplementationInstance);
+            Assert.Null(serviceDescriptor.ImplementationType);
+            Assert.Null(serviceDescriptor.ImplementationFactory);
         }
     }
 }

@@ -66,7 +66,7 @@ namespace System.Net
             _memoryBlob = (Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO*)Marshal.UnsafeAddrOfPinnedArrayElement(_backingBuffer, 0);
         }
 
-        internal unsafe void IOCompleted(uint errorCode, uint numBytes)
+        internal void IOCompleted(uint errorCode, uint numBytes)
         {
             IOCompleted(this, errorCode, numBytes);
         }
@@ -123,7 +123,7 @@ namespace System.Net
                             {
                                 byte[] certEncoded = new byte[pClientCertInfo->CertEncodedSize];
                                 Marshal.Copy((IntPtr)pClientCertInfo->pCertEncoded, certEncoded, 0, certEncoded.Length);
-                                result = httpListenerRequest.ClientCertificate = new X509Certificate2(certEncoded);
+                                result = httpListenerRequest.ClientCertificate = X509CertificateLoader.LoadCertificate(certEncoded);
                             }
                             catch (CryptographicException exception)
                             {

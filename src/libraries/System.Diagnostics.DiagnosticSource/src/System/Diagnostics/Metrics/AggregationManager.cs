@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Metrics
 {
-    [UnsupportedOSPlatform("browser")]
     [SecuritySafeCritical]
     internal sealed class AggregationManager
     {
@@ -29,30 +28,37 @@ namespace System.Diagnostics.Metrics
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
+#if OS_ISBROWSER_SUPPORT
+        private Timer? _pollingTimer;
+#endif
         private readonly MeterListener _listener;
         private int _currentTimeSeries;
         private int _currentHistograms;
-        private readonly Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
+        private readonly Action<Instrument, LabeledAggregationStatistics, InstrumentState?> _collectMeasurement;
         private readonly Action<DateTime, DateTime> _beginCollection;
         private readonly Action<DateTime, DateTime> _endCollection;
-        private readonly Action<Instrument> _beginInstrumentMeasurements;
-        private readonly Action<Instrument> _endInstrumentMeasurements;
-        private readonly Action<Instrument> _instrumentPublished;
+        private readonly Action<Instrument, InstrumentState> _beginInstrumentMeasurements;
+        private readonly Action<Instrument, InstrumentState> _endInstrumentMeasurements;
+        private readonly Action<Instrument, InstrumentState?> _instrumentPublished;
         private readonly Action _initialInstrumentEnumerationComplete;
         private readonly Action<Exception> _collectionError;
         private readonly Action _timeSeriesLimitReached;
         private readonly Action _histogramLimitReached;
         private readonly Action<Exception> _observableInstrumentCallbackError;
+        private DateTime _startTime;
+        private DateTime _intervalStartTime;
+        private DateTime _nextIntervalStartTime;
+        private Func<Aggregator?> _histogramAggregatorFactory = () => new ExponentialHistogramAggregator(s_defaultHistogramConfig);
 
         public AggregationManager(
             int maxTimeSeries,
             int maxHistograms,
-            Action<Instrument, LabeledAggregationStatistics> collectMeasurement,
+            Action<Instrument, LabeledAggregationStatistics, InstrumentState?> collectMeasurement,
             Action<DateTime, DateTime> beginCollection,
             Action<DateTime, DateTime> endCollection,
-            Action<Instrument> beginInstrumentMeasurements,
-            Action<Instrument> endInstrumentMeasurements,
-            Action<Instrument> instrumentPublished,
+            Action<Instrument, InstrumentState> beginInstrumentMeasurements,
+            Action<Instrument, InstrumentState> endInstrumentMeasurements,
+            Action<Instrument, InstrumentState?> instrumentPublished,
             Action initialInstrumentEnumerationComplete,
             Action<Exception> collectionError,
             Action timeSeriesLimitReached,
@@ -88,12 +94,23 @@ namespace System.Diagnostics.Metrics
 
         public void Include(string meterName)
         {
-            Include(i => i.Meter.Name == meterName);
+            Include(i => i.Meter.Name.Equals(meterName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void IncludeAll()
+        {
+            Include(i => true);
+        }
+
+        public void IncludePrefix(string meterNamePrefix)
+        {
+            Include(i => i.Meter.Name.StartsWith(meterNamePrefix, StringComparison.OrdinalIgnoreCase));
         }
 
         public void Include(string meterName, string instrumentName)
         {
-            Include(i => i.Meter.Name == meterName && i.Name == instrumentName);
+            Include(i => i.Meter.Name.Equals(meterName, StringComparison.OrdinalIgnoreCase)
+                && i.Name.Equals(instrumentName, StringComparison.OrdinalIgnoreCase));
         }
 
         private void Include(Predicate<Instrument> instrumentFilter)
@@ -101,6 +118,16 @@ namespace System.Diagnostics.Metrics
             lock (this)
             {
                 _instrumentConfigFuncs.Add(instrumentFilter);
+            }
+        }
+
+        public void SetHistogramAggregation(Func<Aggregator?> histogramAggregatorFactory)
+        {
+            lock (this)
+            {
+                // While this operation is atomic, we use a lock to ensure thread safety when it's accessed by other parts of the code.
+                // Using lock(this) guarantees that no other thread is interacting with the field concurrently.
+                _histogramAggregatorFactory = histogramAggregatorFactory;
             }
         }
 
@@ -118,17 +145,18 @@ namespace System.Diagnostics.Metrics
         private void CompletedMeasurements(Instrument instrument, object? cookie)
         {
             _instruments.Remove(instrument);
-            _endInstrumentMeasurements(instrument);
+            Debug.Assert(cookie is not null);
+            _endInstrumentMeasurements(instrument, (InstrumentState)cookie);
             RemoveInstrumentState(instrument);
         }
 
         private void PublishedInstrument(Instrument instrument, MeterListener _)
         {
-            _instrumentPublished(instrument);
             InstrumentState? state = GetInstrumentState(instrument);
+            _instrumentPublished(instrument, state);
             if (state != null)
             {
-                _beginInstrumentMeasurements(instrument);
+                _beginInstrumentMeasurements(instrument, state);
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. IDictionary.TryAdd() is not available in one of the builds
                 if (!_instruments.ContainsKey(instrument))
 #pragma warning restore CA1864
@@ -148,15 +176,28 @@ namespace System.Diagnostics.Metrics
             Debug.Assert(_collectThread == null && !_cts.IsCancellationRequested);
             Debug.Assert(CollectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
 
-            // This explicitly uses a Thread and not a Task so that metrics still work
-            // even when an app is experiencing thread-pool starvation. Although we
-            // can't make in-proc metrics robust to everything, this is a common enough
-            // problem in .NET apps that it feels worthwhile to take the precaution.
-            _collectThread = new Thread(() => CollectWorker(_cts.Token));
-            _collectThread.IsBackground = true;
-            _collectThread.Name = "MetricsEventSource CollectWorker";
-            _collectThread.Start();
+            _intervalStartTime = _nextIntervalStartTime = _startTime = DateTime.UtcNow;
+#if OS_ISBROWSER_SUPPORT
+            if (OperatingSystem.IsBrowser())
+            {
+                TimeSpan delayTime = CalculateDelayTime(CollectionPeriod.TotalSeconds);
+                _pollingTimer = new Timer(CollectOnTimer, null, (int)delayTime.TotalMilliseconds, 0);
+            }
+            else
+#endif
+            {
+                // This explicitly uses a Thread and not a Task so that metrics still work
+                // even when an app is experiencing thread-pool starvation. Although we
+                // can't make in-proc metrics robust to everything, this is a common enough
+                // problem in .NET apps that it feels worthwhile to take the precaution.
+                _collectThread = new Thread(CollectWorker);
+                _collectThread.IsBackground = true;
+                _collectThread.Name = "MetricsEventSource CollectWorker";
+    #pragma warning disable CA1416 // 'Thread.Start' is unsupported on: 'browser', there the actual implementation is in AggregationManager.Wasm.cs
+                _collectThread.Start();
+    #pragma warning restore CA1416
 
+            }
             _listener.Start();
             _initialInstrumentEnumerationComplete();
         }
@@ -175,46 +216,54 @@ namespace System.Diagnostics.Metrics
             _initialInstrumentEnumerationComplete();
         }
 
-        private void CollectWorker(CancellationToken cancelToken)
+        private TimeSpan CalculateDelayTime(double collectionIntervalSecs)
+        {
+            _intervalStartTime = _nextIntervalStartTime;
+
+            // intervals end at startTime + X*collectionIntervalSecs. Under normal
+            // circumstance X increases by 1 each interval, but if the time it
+            // takes to do collection is very large then we might need to skip
+            // ahead multiple intervals to catch back up.
+            //
+            DateTime now = DateTime.UtcNow;
+            double secsSinceStart = (now - _startTime).TotalSeconds;
+            double alignUpSecsSinceStart = Math.Ceiling(secsSinceStart / collectionIntervalSecs) *
+                collectionIntervalSecs;
+            _nextIntervalStartTime = _startTime.AddSeconds(alignUpSecsSinceStart);
+
+            // The delay timer precision isn't exact. We might have a situation
+            // where in the previous loop iterations intervalStartTime=20.00,
+            // nextIntervalStartTime=21.00, the timer was supposed to delay for 1s but
+            // it exited early so we looped around and DateTime.Now=20.99.
+            // Aligning up from DateTime.Now would give us 21.00 again so we also need to skip
+            // forward one time interval
+            DateTime minNextInterval = _intervalStartTime.AddSeconds(collectionIntervalSecs);
+            if (_nextIntervalStartTime <= minNextInterval)
+            {
+                _nextIntervalStartTime = minNextInterval;
+            }
+            return _nextIntervalStartTime - now;
+        }
+
+        private void CollectWorker()
         {
             try
             {
                 double collectionIntervalSecs = -1;
+                CancellationToken cancelToken;
                 lock (this)
                 {
                     collectionIntervalSecs = CollectionPeriod.TotalSeconds;
+                    cancelToken = _cts.Token;
                 }
                 Debug.Assert(collectionIntervalSecs >= MinCollectionTimeSecs);
 
                 DateTime startTime = DateTime.UtcNow;
                 DateTime intervalStartTime = startTime;
-                while (!cancelToken.IsCancellationRequested)
+                while (!_cts.Token.IsCancellationRequested)
                 {
-                    // intervals end at startTime + X*collectionIntervalSecs. Under normal
-                    // circumstance X increases by 1 each interval, but if the time it
-                    // takes to do collection is very large then we might need to skip
-                    // ahead multiple intervals to catch back up.
-                    //
-                    DateTime now = DateTime.UtcNow;
-                    double secsSinceStart = (now - startTime).TotalSeconds;
-                    double alignUpSecsSinceStart = Math.Ceiling(secsSinceStart / collectionIntervalSecs) *
-                        collectionIntervalSecs;
-                    DateTime nextIntervalStartTime = startTime.AddSeconds(alignUpSecsSinceStart);
-
-                    // The delay timer precision isn't exact. We might have a situation
-                    // where in the previous loop iterations intervalStartTime=20.00,
-                    // nextIntervalStartTime=21.00, the timer was supposed to delay for 1s but
-                    // it exited early so we looped around and DateTime.Now=20.99.
-                    // Aligning up from DateTime.Now would give us 21.00 again so we also need to skip
-                    // forward one time interval
-                    DateTime minNextInterval = intervalStartTime.AddSeconds(collectionIntervalSecs);
-                    if (nextIntervalStartTime <= minNextInterval)
-                    {
-                        nextIntervalStartTime = minNextInterval;
-                    }
-
                     // pause until the interval is complete
-                    TimeSpan delayTime = nextIntervalStartTime - now;
+                    TimeSpan delayTime = CalculateDelayTime(collectionIntervalSecs);
                     if (cancelToken.WaitHandle.WaitOne(delayTime))
                     {
                         // don't do collection if timer may not have run to completion
@@ -222,10 +271,9 @@ namespace System.Diagnostics.Metrics
                     }
 
                     // collect statistics for the completed interval
-                    _beginCollection(intervalStartTime, nextIntervalStartTime);
+                    _beginCollection(_intervalStartTime, _nextIntervalStartTime);
                     Collect();
-                    _endCollection(intervalStartTime, nextIntervalStartTime);
-                    intervalStartTime = nextIntervalStartTime;
+                    _endCollection(_intervalStartTime, _nextIntervalStartTime);
                 }
             }
             catch (Exception e)
@@ -234,12 +282,49 @@ namespace System.Diagnostics.Metrics
             }
         }
 
+#if OS_ISBROWSER_SUPPORT
+        private void CollectOnTimer(object? _)
+        {
+            try
+            {
+                // this is single-threaded so we don't need to lock
+                CancellationToken cancelToken = _cts.Token;
+                double collectionIntervalSecs = CollectionPeriod.TotalSeconds;
+
+                if (cancelToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                // collect statistics for the completed interval
+                _beginCollection(_intervalStartTime, _nextIntervalStartTime);
+                Collect();
+                _endCollection(_intervalStartTime, _nextIntervalStartTime);
+
+                TimeSpan delayTime = CalculateDelayTime(collectionIntervalSecs);
+                // schedule the next collection
+                _pollingTimer!.Change((int)delayTime.TotalMilliseconds, 0);
+            }
+            catch (Exception e)
+            {
+                _collectionError(e);
+            }
+        }
+#endif
+
         public void Dispose()
         {
             _cts.Cancel();
-            if (_collectThread != null)
+#if OS_ISBROWSER_SUPPORT
+            if (OperatingSystem.IsBrowser())
             {
-                _collectThread.Join();
+                _pollingTimer?.Dispose();
+                _pollingTimer = null;
+            }
+            else
+#endif
+            {
+                _collectThread?.Join();
                 _collectThread = null;
             }
             _listener.Dispose();
@@ -326,6 +411,16 @@ namespace System.Diagnostics.Metrics
                     }
                 };
             }
+            else if (genericDefType == typeof(Gauge<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new SynchronousLastValue() : null;
+                    }
+                };
+            }
             else if (genericDefType == typeof(Histogram<>))
             {
                 return () =>
@@ -333,9 +428,7 @@ namespace System.Diagnostics.Metrics
                     lock (this)
                     {
                         // checking currentHistograms first because avoiding unexpected increment of TimeSeries count.
-                        return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ?
-                            null :
-                            new ExponentialHistogramAggregator(s_defaultHistogramConfig);
+                        return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ? null : _histogramAggregatorFactory();
                     }
                 };
             }
@@ -418,7 +511,7 @@ namespace System.Diagnostics.Metrics
             {
                 kv.Value.Collect(kv.Key, (LabeledAggregationStatistics labeledAggStats) =>
                 {
-                    _collectMeasurement(kv.Key, labeledAggStats);
+                    _collectMeasurement(kv.Key, labeledAggStats, kv.Value);
                 });
             }
         }

@@ -41,7 +41,7 @@ Each IR instruction is represented by a MonoInst structure. The fields of the st
 
 -   ins-\>opcode contains the opcode of the instruction. It is always set.
 
--   ins-\>dreg, ins-\>sreg1, ins-\>sreg2 contain the the destination and source vregs of the instruction. If the instruction doesn't have a destination/and our source, the corresponding field is set to -1.
+-   ins-\>dreg, ins-\>sreg1, ins-\>sreg2 contain the destination and source vregs of the instruction. If the instruction doesn't have a destination/and our source, the corresponding field is set to -1.
 
 -   ins-\>backend is used for various purposes:
     -   for MonoInst's representing vtype variables, it indicates that the variable is in unmanaged format (used during marshalling)
@@ -96,7 +96,7 @@ The JIT allocates a large number of vregs. Most of these are created during the 
 ### Transitioning between the two states
 
 -   Most vregs start out being local. Others, like the ones representing the arguments and locals of a method, start out being global.
--   Some transformations done by the JIT can break the invariant that an lvreg is local to a basic block. There is a separate pass, mono_handle_global_vregs (), which verifies this invariant and transforms lvregs into global vregs if neccesary. This pass also does the opposite transformation, by transforming global vregs used only in one bblock into an lvreg.
+-   Some transformations done by the JIT can break the invariant that an lvreg is local to a basic block. There is a separate pass, mono_handle_global_vregs (), which verifies this invariant and transforms lvregs into global vregs if necessary. This pass also does the opposite transformation, by transforming global vregs used only in one bblock into an lvreg.
 -   If an address of a vreg needs to be taken, the vreg is transformed into a global vreg.
 
 JIT Passes

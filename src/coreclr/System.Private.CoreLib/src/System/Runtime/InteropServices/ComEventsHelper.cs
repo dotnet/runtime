@@ -75,7 +75,7 @@
 // ComEventsRetValIssue:
 // Issue: normally, COM events would not return any value. However, it may happen as described in
 // http://support.microsoft.com/kb/810228. Such design might represent a problem for us - e.g. what is
-// the return value of a chain of delegates - is it the value of the last call in the chain or the the
+// the return value of a chain of delegates - is it the value of the last call in the chain or the
 // first one? As the above KB article indicates, in cases where OM has events returning values, it is
 // suggested that people implement their event sink by explicitly implementing the source interface. This
 // means that the problem is already quite complex and we should not be dealing with it - see

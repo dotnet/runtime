@@ -229,9 +229,15 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+        public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, bool isTrailingHeader = false)
         {
-            return _currentStream.SendResponseHeadersAsync(statusCode, headers);
+            await _currentStream.SendResponseHeadersAsync(statusCode: isTrailingHeader ? null : statusCode, headers);
+
+            if (isTrailingHeader)
+            {
+                _currentStream.Stream.CompleteWrites();
+                await DisposeCurrentStream().ConfigureAwait(false);
+            }
         }
 
         public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
@@ -315,8 +321,11 @@ namespace System.Net.Test.Common
 
             // The client's control stream should throw QuicConnectionAbortedException, indicating that it was
             // aborted because the connection was closed (and was not explicitly closed or aborted prior to the connection being closed)
-            QuicException ex = await Assert.ThrowsAsync<QuicException>(async () => await _inboundControlStream.ReadFrameAsync().ConfigureAwait(false));
-            Assert.Equal(QuicError.ConnectionAborted, ex.QuicError);
+            if (_inboundControlStream is not null)
+            {
+                QuicException ex = await Assert.ThrowsAsync<QuicException>(async () => await _inboundControlStream.ReadFrameAsync().ConfigureAwait(false));
+                Assert.Equal(QuicError.ConnectionAborted, ex.QuicError);
+            }
 
             await CloseAsync(H3_NO_ERROR).ConfigureAwait(false);
         }

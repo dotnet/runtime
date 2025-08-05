@@ -14,8 +14,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 8500 // Allow taking address of managed types
-
 namespace System
 {
     /// <summary>Provides the base class for enumerations.</summary>
@@ -172,7 +170,7 @@ namespace System
         /// <param name="value">The underlying value for which we're searching.</param>
         /// <returns>The name of the value if found; otherwise, <see langword="null"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static string? GetNameInlined<TStorage>(EnumInfo<TStorage> enumInfo, TStorage value)
+        private static unsafe string? GetNameInlined<TStorage>(EnumInfo<TStorage> enumInfo, TStorage value)
             where TStorage : struct, INumber<TStorage>
         {
             string[] names = enumInfo.Names;
@@ -182,7 +180,7 @@ namespace System
             // in the array is where the corresponding name is stored.
             if (enumInfo.ValuesAreSequentialFromZero)
             {
-                if (Unsafe.SizeOf<TStorage>() <= sizeof(uint))
+                if (sizeof(TStorage) <= sizeof(uint))
                 {
                     // Special-case types types that are <= sizeof(int), as we can then eliminate a bounds check on the array.
                     uint uint32Value = uint.CreateTruncating(value);
@@ -913,7 +911,7 @@ namespace System
         }
 
         /// <summary>Core implementation for all {Try}Parse methods, both generic and non-generic, parsing either by value or by name.</summary>
-        private static unsafe bool TryParseByValueOrName<TUnderlying, TStorage>(
+        private static bool TryParseByValueOrName<TUnderlying, TStorage>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
             where TUnderlying : unmanaged, IBinaryIntegerParseAndFormatInfo<TUnderlying>
             where TStorage : unmanaged, IBinaryIntegerParseAndFormatInfo<TStorage>
@@ -940,7 +938,7 @@ namespace System
                     return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
                 }
 
-                NumberFormatInfo numberFormat = CultureInfo.InvariantCulture.NumberFormat;
+                NumberFormatInfo numberFormat = NumberFormatInfo.InvariantInfo;
                 const NumberStyles NumberStyle = NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite;
 
                 Number.ParsingStatus status = Number.TryParseBinaryIntegerStyle(value, NumberStyle, numberFormat, out result);
@@ -971,7 +969,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryParseRareTypeByValueOrName<TUnderlying, TStorage>(
+        private static bool TryParseRareTypeByValueOrName<TUnderlying, TStorage>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
             where TUnderlying : struct, INumber<TUnderlying>, IBitwiseOperators<TUnderlying, TUnderlying, TUnderlying>, IMinMaxValue<TUnderlying>
             where TStorage : struct, INumber<TStorage>, IBitwiseOperators<TStorage, TStorage, TStorage>, IMinMaxValue<TStorage>
@@ -1541,20 +1539,20 @@ namespace System
         {
             fixed (byte* ptr = &data)
             {
-                return string.Create(Unsafe.SizeOf<TStorage>() * 2, (IntPtr)ptr, (destination, intptr) =>
+                return string.Create(sizeof(TStorage) * 2, (IntPtr)ptr, (destination, intptr) =>
                 {
                     bool success = TryFormatNumberAsHex<TStorage>(ref *(byte*)intptr, destination, out int charsWritten);
                     Debug.Assert(success);
-                    Debug.Assert(charsWritten == Unsafe.SizeOf<TStorage>() * 2);
+                    Debug.Assert(charsWritten == sizeof(TStorage) * 2);
                 });
             }
         }
 
         /// <summary>Tries to format the data for the underlying value as hex into the destination span.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFormatNumberAsHex<TStorage>(ref byte data, Span<char> destination, out int charsWritten) where TStorage : struct
+        private static unsafe bool TryFormatNumberAsHex<TStorage>(ref byte data, Span<char> destination, out int charsWritten) where TStorage : struct
         {
-            if (Unsafe.SizeOf<TStorage>() * 2 <= destination.Length)
+            if (sizeof(TStorage) * 2 <= destination.Length)
             {
                 if (typeof(TStorage) == typeof(byte) ||
                     typeof(TStorage) == typeof(sbyte))
@@ -1604,7 +1602,7 @@ namespace System
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
                 }
 
-                charsWritten = Unsafe.SizeOf<TStorage>() * 2;
+                charsWritten = sizeof(TStorage) * 2;
                 return true;
             }
 
@@ -2206,8 +2204,6 @@ namespace System
                 case TypeCode.Byte: return ToObject(enumType, (byte)value);
                 case TypeCode.UInt16: return ToObject(enumType, (ushort)value);
                 case TypeCode.UInt64: return ToObject(enumType, (ulong)value);
-                case TypeCode.Single: return ToObject(enumType, BitConverter.SingleToInt32Bits((float)value));
-                case TypeCode.Double: return ToObject(enumType, BitConverter.DoubleToInt64Bits((double)value));
                 case TypeCode.Char: return ToObject(enumType, (char)value);
                 case TypeCode.Boolean: return ToObject(enumType, (bool)value ? 1L : 0L);
             };
@@ -2218,8 +2214,8 @@ namespace System
                 valueType = valueType.GetEnumUnderlyingType();
             }
 
-            if (valueType == typeof(nint)) ToObject(enumType, (nint)value);
-            if (valueType == typeof(nuint)) ToObject(enumType, (nuint)value);
+            if (valueType == typeof(nint)) return ToObject(enumType, (nint)value);
+            if (valueType == typeof(nuint)) return ToObject(enumType, (nuint)value);
 
             throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
         }

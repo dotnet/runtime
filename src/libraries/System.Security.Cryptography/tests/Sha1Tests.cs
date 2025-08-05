@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Sha1_VerifyLargeStream_MultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha1
             VerifyRepeating("0102030405060708", 1024, "fc8053215c935a5e9cdc51b94bb40b3e66128d41");
         }
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Sha1_VerifyLargeStream_NotMultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha1
             VerifyRepeating("0102030405060708", 1025, "18c6aa8d255c47941958729faaae9614c9793bb2");
         }
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task Sha1_VerifyLargeStream_NotMultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha1
             await VerifyRepeatingAsync("0102030405060708", 1025, "18c6aa8d255c47941958729faaae9614c9793bb2");
         }
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task Sha1_VerifyLargeStream_MultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha1
             await VerifyRepeatingAsync("0102030405060708", 1024, "fc8053215c935a5e9cdc51b94bb40b3e66128d41");
         }

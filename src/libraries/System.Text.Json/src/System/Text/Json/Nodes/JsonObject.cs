@@ -20,6 +20,8 @@ namespace System.Text.Json.Nodes
     {
         private JsonElement? _jsonElement;
 
+        internal override JsonElement? UnderlyingElement => _jsonElement;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonObject"/> class that is empty.
         /// </summary>
@@ -33,11 +35,8 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
-            bool isCaseInsensitive = IsCaseInsensitive(options);
-
-            JsonPropertyDictionary<JsonNode?> dictionary = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection
-                ? new(isCaseInsensitive, propertiesCollection.Count)
-                : new(isCaseInsensitive);
+            int capacity = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection ? propertiesCollection.Count : 0;
+            OrderedDictionary<string, JsonNode?> dictionary = CreateDictionary(options, capacity);
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
@@ -76,11 +75,14 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Gets or creates the underlying dictionary containing the properties of the object.
         /// </summary>
-        internal JsonPropertyDictionary<JsonNode?> Dictionary => _dictionary ?? InitializeDictionary();
+        private OrderedDictionary<string, JsonNode?> Dictionary => _dictionary ?? InitializeDictionary();
+
+        private protected override JsonNode? GetItem(int index) => GetAt(index).Value;
+        private protected override void SetItem(int index, JsonNode? value) => SetAt(index, value);
 
         internal override JsonNode DeepCloneCore()
         {
-            GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
             if (dictionary is null)
             {
@@ -89,10 +91,9 @@ namespace System.Text.Json.Nodes
                     : new JsonObject(Options);
             }
 
-            bool caseInsensitive = IsCaseInsensitive(Options);
             var jObject = new JsonObject(Options)
             {
-                _dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive, dictionary.Count)
+                _dictionary = CreateDictionary(Options, Count)
             };
 
             foreach (KeyValuePair<string, JsonNode?> item in dictionary)
@@ -105,7 +106,7 @@ namespace System.Text.Json.Nodes
 
         internal string GetPropertyName(JsonNode? node)
         {
-            KeyValuePair<string, JsonNode?>? item = Dictionary.FindValue(node);
+            KeyValuePair<string, JsonNode?>? item = FindValue(node);
             return item.HasValue ? item.Value.Key : string.Empty;
         }
 
@@ -114,21 +115,54 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <param name="propertyName">The name of the property to return.</param>
         /// <param name="jsonNode">The JSON value of the property with the specified name.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="propertyName"/> is <see langword="null"/>.
+        /// </exception>
         /// <returns>
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) =>
-            ((IDictionary<string, JsonNode?>)this).TryGetValue(propertyName, out jsonNode);
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) => TryGetPropertyValue(propertyName, out jsonNode, out _);
+
+        /// <summary>
+        ///   Gets the value associated with the specified property name.
+        /// </summary>
+        /// <param name="propertyName">The property name of the value to get.</param>
+        /// <param name="jsonNode">
+        ///   When this method returns, it contains the value associated with the specified property name, if the property name is found;
+        ///   otherwise <see langword="null"/>.
+        /// </param>
+        /// <param name="index">The index of <paramref name="propertyName"/> if found; otherwise, -1.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="propertyName"/> is <see langword="null"/>.
+        /// </exception>
+        /// <returns>
+        ///   <see langword="true"/> if the <see cref="JsonObject"/> contains an element with the specified property name; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode, out int index)
+        {
+            ArgumentNullException.ThrowIfNull(propertyName);
+
+#if NET9_0
+            index = Dictionary.IndexOf(propertyName);
+            if (index < 0)
+            {
+                jsonNode = null;
+                return false;
+            }
+
+            jsonNode = Dictionary.GetAt(index).Value;
+            return true;
+#else
+            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
+#endif
+        }
 
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
-            GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
             if (dictionary is null && jsonElement.HasValue)
             {
@@ -157,20 +191,20 @@ namespace System.Text.Json.Nodes
             }
         }
 
-        internal override JsonValueKind GetValueKindCore() => JsonValueKind.Object;
+        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Object;
 
-        internal override bool DeepEqualsCore(JsonNode? node)
+        internal override bool DeepEqualsCore(JsonNode node)
         {
             switch (node)
             {
-                case null or JsonArray:
+                case JsonArray:
                     return false;
                 case JsonValue value:
                     // JsonValue instances have special comparison semantics, dispatch to their implementation.
                     return value.DeepEqualsCore(this);
                 case JsonObject jsonObject:
-                    JsonPropertyDictionary<JsonNode?> currentDict = Dictionary;
-                    JsonPropertyDictionary<JsonNode?> otherDict = jsonObject.Dictionary;
+                    OrderedDictionary<string, JsonNode?> currentDict = Dictionary;
+                    OrderedDictionary<string, JsonNode?> otherDict = jsonObject.Dictionary;
 
                     if (currentDict.Count != otherDict.Count)
                     {
@@ -179,9 +213,7 @@ namespace System.Text.Json.Nodes
 
                     foreach (KeyValuePair<string, JsonNode?> item in currentDict)
                     {
-                        JsonNode? jsonNode = otherDict[item.Key];
-
-                        if (!DeepEquals(item.Value, jsonNode))
+                        if (!otherDict.TryGetValue(item.Key, out JsonNode? jsonNode) || !DeepEquals(item.Value, jsonNode))
                         {
                             return false;
                         }
@@ -196,6 +228,8 @@ namespace System.Text.Json.Nodes
 
         internal JsonNode? GetItem(string propertyName)
         {
+            ArgumentNullException.ThrowIfNull(propertyName);
+
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
                 return value;
@@ -211,7 +245,7 @@ namespace System.Text.Json.Nodes
 
             if (child != null)
             {
-                string propertyName = Dictionary.FindValue(child)!.Value.Key;
+                string propertyName = FindValue(child)!.Value.Key;
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Append("['");
@@ -228,14 +262,34 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            JsonNode? replacedValue = Dictionary.SetValue(propertyName, value, out bool valueAlreadyInDictionary);
+            ArgumentNullException.ThrowIfNull(propertyName);
 
-            if (!valueAlreadyInDictionary)
+            OrderedDictionary<string, JsonNode?> dict = Dictionary;
+
+            if (
+#if NET10_0_OR_GREATER
+                !dict.TryAdd(propertyName, value, out int index)
+#else
+                !dict.TryAdd(propertyName, value)
+#endif
+                )
             {
-                value?.AssignParent(this);
+#if !NET10_0_OR_GREATER
+                int index = dict.IndexOf(propertyName);
+#endif
+                Debug.Assert(index >= 0);
+                JsonNode? replacedValue = dict.GetAt(index).Value;
+
+                if (ReferenceEquals(value, replacedValue))
+                {
+                    return;
+                }
+
+                DetachParent(replacedValue);
+                dict.SetAt(index, value);
             }
 
-            DetachParent(replacedValue);
+            value?.AssignParent(this);
         }
 
         private void DetachParent(JsonNode? item)
@@ -246,6 +300,19 @@ namespace System.Text.Json.Nodes
             {
                 item.Parent = null;
             }
+        }
+
+        private KeyValuePair<string, JsonNode?>? FindValue(JsonNode? value)
+        {
+            foreach (KeyValuePair<string, JsonNode?> item in Dictionary)
+            {
+                if (ReferenceEquals(item.Value, value))
+                {
+                    return item;
+                }
+            }
+
+            return null;
         }
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"

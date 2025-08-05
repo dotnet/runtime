@@ -20,6 +20,12 @@ namespace System.Tests
             Assert.Equal(new Guid(0, 0, 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }), Guid.Empty);
         }
 
+        [Fact]
+        public static void AllBitsSet()
+        {
+            Assert.Equal("ffffffff-ffff-ffff-ffff-ffffffffffff", Guid.AllBitsSet.ToString("", CultureInfo.InvariantCulture));
+        }
+
         public static IEnumerable<object[]> Ctor_ByteArray_TestData()
         {
             yield return new object[] { new byte[16], Guid.Empty };
@@ -120,13 +126,58 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateVersion7()
+        {
+            DateTimeOffset timestamp = DateTimeOffset.UtcNow;
+            ReadOnlySpan<char> unix_ts_ms = timestamp.ToUnixTimeMilliseconds().ToString("x12", CultureInfo.InvariantCulture);
+
+            Guid guid = Guid.CreateVersion7(timestamp);
+            ReadOnlySpan<char> guidString = guid.ToString("", CultureInfo.InvariantCulture);
+
+            Assert.Equal(7, guid.Version);
+            Assert.True((guid.Variant == 0x8) || (guid.Variant == 0x9) || (guid.Variant == 0xA) || (guid.Variant == 0xB));
+
+            Assert.Equal(unix_ts_ms.Slice(0, 8), guidString.Slice(0, 8));
+            Assert.Equal('-', guidString[8]);
+            Assert.Equal(unix_ts_ms.Slice(8), guidString.Slice(9, 4));
+            Assert.Equal('-', guidString[13]);
+            Assert.Equal('7', guidString[14]);
+            Assert.Equal('-', guidString[18]);
+            Assert.True((guidString[19] == '8') || (guidString[19] == '9') || (guidString[19] == 'a') || (guidString[19] == 'b'));
+            Assert.Equal('-', guidString[23]);
+        }
+
+        [Fact]
+        public static void CreateVersion7ThrowsForPreUnixEpoch()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => Guid.CreateVersion7(DateTimeOffset.UnixEpoch - TimeSpan.FromMilliseconds(1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Guid.CreateVersion7(DateTimeOffset.MinValue));
+        }
+
+        [Fact]
         public static void NewGuid()
         {
             Guid guid1 = Guid.NewGuid();
             Assert.NotEqual(Guid.Empty, guid1);
+            Assert.Equal(4, guid1.Version);
+            Assert.True((guid1.Variant == 0x8) || (guid1.Variant == 0x9) || (guid1.Variant == 0xA) || (guid1.Variant == 0xB));
 
             Guid guid2 = Guid.NewGuid();
             Assert.NotEqual(guid1, guid2);
+            Assert.Equal(4, guid2.Version);
+            Assert.True((guid2.Variant == 0x8) || (guid2.Variant == 0x9) || (guid2.Variant == 0xA) || (guid2.Variant == 0xB));
+        }
+
+        [Fact]
+        public static void GuidVersionsAndVariants()
+        {
+            for (int i = 0; i <= 0xF; ++i)
+            {
+                Guid guid = new Guid($"00000000-0000-{i:X}000-{i:X}000-000000000000");
+
+                Assert.Equal(i, guid.Version);
+                Assert.Equal(i, guid.Variant);
+            }
         }
 
         [Fact]
@@ -275,7 +326,58 @@ namespace System.Tests
                 Assert.Equal(Guid.Empty, result);
             }
         }
-        
+
+        [Theory]
+        [MemberData(nameof(GuidStrings_Valid_TestData))]
+        public static void Parse_Utf8_ValidInput_Success(string input, string format, Guid expected)
+        {
+            //"use" parameter to avoid unused param error
+            //can't remove it from signature because the test data has it
+            System.Runtime.CompilerServices.Unsafe.IsNullRef(ref format);
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
+            Assert.Equal(expected, Guid.Parse(utf8Bytes));
+            Assert.Equal(expected, Guid.Parse(utf8Bytes, null));
+
+            Guid result;
+
+            Assert.True(Guid.TryParse(utf8Bytes, out result));
+            Assert.Equal(expected, result);
+
+            Assert.True(Guid.TryParse(utf8Bytes, null, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(GuidStrings_Invalid_TestData))]
+        public static void Parse_Utf8_InvalidInput_Fails(string input, Type exceptionType)
+        {
+            if (input == null)
+            {
+                return;
+            }
+
+            // Overflow exceptions throw as format exceptions in Parse
+            if (exceptionType.Equals(typeof(OverflowException)))
+            {
+                exceptionType = typeof(FormatException);
+            }
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
+            Assert.Throws(exceptionType, () => Guid.Parse(utf8Bytes));
+            Assert.Throws(exceptionType, () => Guid.Parse(utf8Bytes, null));
+
+            Guid result;
+
+            Assert.False(Guid.TryParse(utf8Bytes, out result));
+            Assert.Equal(Guid.Empty, result);
+
+            Assert.False(Guid.TryParse(utf8Bytes, null, out result));
+            Assert.Equal(Guid.Empty, result);
+        }
+
         public static IEnumerable<object[]> CompareTo_TestData()
         {
             yield return new object[] { s_testGuid, s_testGuid, 0 };
@@ -466,7 +568,7 @@ namespace System.Tests
             yield return new object[] { "+0Xddddd-+0Xd-+0Xd-+0Xd-+0Xddddddddd", "D", Guid.Parse("000ddddd-000d-000d-000d-000ddddddddd") };
 
             yield return new object[] { "{a8a110d5-fc49-43c5-bf46-802db8f843ff}", "B", s_testGuid };
-            yield return new object[] { "  \r \n \t {a8a110d5-fc49-43c5-bf46-802db8f843ff}   \r \n \t  ", "B", s_testGuid };
+            yield return new object[] { "  \r \n \t {a8a110d5-fc49-43c5-bf46-802db8f843ff} \u2003  \r \n \t  ", "B", s_testGuid };
 
             yield return new object[] { "{00000000-0000-0000-0000-000000000000}", "B", Guid.Empty };
             yield return new object[] { "{FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF}", "B", s_fullGuid };
@@ -477,7 +579,7 @@ namespace System.Tests
             yield return new object[] { "{+0Xddddd-+0Xd-+0Xd-+0Xd-+0Xddddddddd}", "B", Guid.Parse("000ddddd-000d-000d-000d-000ddddddddd") };
 
             yield return new object[] { "(a8a110d5-fc49-43c5-bf46-802db8f843ff)", "P", s_testGuid };
-            yield return new object[] { "  \r \n \t (a8a110d5-fc49-43c5-bf46-802db8f843ff)   \r \n \t  ", "P", s_testGuid };
+            yield return new object[] { "  \r \u3000 \n \t (a8a110d5-fc49-43c5-bf46-802db8f843ff)   \r \n \t  ", "P", s_testGuid };
 
             yield return new object[] { "(00000000-0000-0000-0000-000000000000)", "P", Guid.Empty };
             yield return new object[] { "(FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF)", "P", s_fullGuid };
@@ -488,7 +590,7 @@ namespace System.Tests
             yield return new object[] { "(+0Xddddd-+0Xd-+0Xd-+0Xd-+0Xddddddddd)", "P", Guid.Parse("000ddddd-000d-000d-000d-000ddddddddd") };
 
             yield return new object[] { "{0xa8a110d5,0xfc49,0x43c5,{0xbf,0x46,0x80,0x2d,0xb8,0xf8,0x43,0xff}}", "X", s_testGuid };
-            yield return new object[] { " { 0 x a 8\t a 1 1 0 d 5 , 0 x f c 4\r 9 , 0 x 4 3 c 5 , { 0 x b f , 0 x 4 6 , 0 x 8 0 , 0\n x 2 d , 0 x b 8 , 0 x f 8 , 0 x 4 3 , 0 x f f } }   ", "X", s_testGuid };
+            yield return new object[] { " { 0 x a 8\t a 1 1 0 d 5 , 0 x f c 4\r 9 , 0 x 4 3 c 5 , { \u3000 0 x b f , 0 x 4 6 , 0 x 8 0 , 0\n x 2 d , 0 x b 8 , 0 x f 8 , 0 x 4 3 , 0 x f f } }   ", "X", s_testGuid };
 
             yield return new object[] { "{0x0,0x0,0x0,{0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0}}", "X", Guid.Empty };
             yield return new object[] { "{0xFFFFFFFF,0xFFFF,0xFFFF,{0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF}}", "X", s_fullGuid };

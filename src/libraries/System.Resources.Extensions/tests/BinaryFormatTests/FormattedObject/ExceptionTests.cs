@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Resources.Extensions.BinaryFormat;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Resources.Extensions.Tests.Common;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
@@ -14,8 +14,8 @@ public class ExceptionTests : SerializationTest<FormattedObjectSerializer>
     {
         BinaryFormattedObject format = new(Serialize(new NotSupportedException()));
         var systemClass = (ClassRecord)format.RootRecord;
-        systemClass.TypeName.FullName.Should().Be(typeof(NotSupportedException).FullName);
-        systemClass.MemberNames.Should().BeEquivalentTo(
+        Assert.Equal(typeof(NotSupportedException).FullName, systemClass.TypeName.FullName);
+        Assert.Equal(
         [
             "ClassName",
             "Message",
@@ -29,19 +29,19 @@ public class ExceptionTests : SerializationTest<FormattedObjectSerializer>
             "HResult",
             "Source",
             "WatsonBuckets"
-        ]);
+        ], systemClass.MemberNames);
 
-        systemClass.GetString("ClassName").Should().Be("System.NotSupportedException");
-        systemClass.GetString("Message").Should().Be("Specified method is not supported.");
-        systemClass.GetRawValue("Data").Should().BeNull();
-        systemClass.GetRawValue("InnerException").Should().BeNull();
-        systemClass.GetRawValue("HelpURL").Should().BeNull();
-        systemClass.GetRawValue("StackTraceString").Should().BeNull();
-        systemClass.GetRawValue("RemoteStackTraceString").Should().BeNull();
-        systemClass.GetInt32("RemoteStackIndex").Should().Be(0);
-        systemClass.GetRawValue("ExceptionMethod").Should().BeNull();
-        systemClass.GetInt32("HResult").Should().Be(unchecked((int)0x80131515));
-        systemClass.GetRawValue("Source").Should().BeNull();
-        systemClass.GetRawValue("WatsonBuckets").Should().BeNull();
+        Assert.Equal("System.NotSupportedException", systemClass.GetString("ClassName"));
+        Assert.Equal("Specified method is not supported.", systemClass.GetString("Message"));
+        Assert.Null(systemClass.GetRawValue("Data"));
+        Assert.Null(systemClass.GetRawValue("InnerException"));
+        Assert.Null(systemClass.GetRawValue("HelpURL"));
+        Assert.Null(systemClass.GetRawValue("StackTraceString"));
+        Assert.Null(systemClass.GetRawValue("RemoteStackTraceString"));
+        Assert.Equal(0, systemClass.GetInt32("RemoteStackIndex"));
+        Assert.Null(systemClass.GetRawValue("ExceptionMethod"));
+        Assert.Equal(unchecked((int)0x80131515), systemClass.GetInt32("HResult"));
+        Assert.Null(systemClass.GetRawValue("Source"));
+        Assert.Null(systemClass.GetRawValue("WatsonBuckets"));
     }
 }

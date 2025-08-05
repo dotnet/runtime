@@ -559,14 +559,11 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
 
-    AppDomain* pDomain = SystemDomain::System()->DefaultDomain();
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
 
     pDomain->SetFriendlyName(wszFriendlyName);
 
-    ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)wszFriendlyName);
-
-    if (dwFlags & APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS)
-        pDomain->SetIgnoreUnhandledExceptions();
+    ETW::LoaderLog::DomainLoad((LPWSTR)wszFriendlyName);
 
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
@@ -639,7 +636,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sAppPaths));
     }
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) && !defined(FEATURE_STATICALLY_LINKED)
     if (!g_coreclr_embedded)
     {
         // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked
@@ -663,6 +660,15 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     *pAppDomainID=DefaultADID;
 
     m_fAppDomainCreated = TRUE;
+
+#ifdef FEATURE_PERFTRACING
+    // Initialize default event sources
+    {
+        GCX_COOP();
+        MethodDescCallSite initEventSources(METHOD__EVENT_SOURCE__INITIALIZE_DEFAULT_EVENT_SOURCES);
+        initEventSources.Call(NULL);
+    }
+#endif // FEATURE_PERFTRACING
 
     END_EXTERNAL_ENTRYPOINT;
 
@@ -749,7 +755,7 @@ HRESULT CorHost2::CreateDelegate(
         }
         else
         {
-            UMEntryThunk* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
+            UMEntryThunkData* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
             *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
         }
     }

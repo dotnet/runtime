@@ -19,6 +19,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="name">The locale name that ICU returns.</param>
         /// <param name="extension">The extension part in the original culture name.</param>
+        /// <param name="originalName">The original input culture name.</param>
         /// <param name="collationStart">The index of the collation in the name.</param>
         /// <remarks>
         /// BCP 47 specifications allow for extensions in the locale name, following the format language-script-region-extensions-collation. However,
@@ -29,7 +30,7 @@ namespace System.Globalization
         /// between names with extensions and those without. For example, we may have a name like en-US and en-US-u-xx. Although .NET doesn't support the extension xx,
         /// we still include it in the name to distinguish it from the name without the extension.
         /// </remarks>
-        private static string NormalizeCultureName(string name, ReadOnlySpan<char> extension, out int collationStart)
+        private static string NormalizeCultureName(string name, ReadOnlySpan<char> extension, string originalName, out int collationStart)
         {
             Debug.Assert(name is not null);
             Debug.Assert(name.Length <= ICU_ULOC_FULLNAME_CAPACITY);
@@ -38,6 +39,16 @@ namespace System.Globalization
             bool changed = false;
             Span<char> buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
             int bufferIndex = 0;
+
+            // Using `Undetermined` language (e.g. `und-US`), the returned name from ICU getName is `_US`. We return back the original language `und`
+            if (name.Length > 1 && (name[0] == '-' || name[0] == '_') && originalName.StartsWith("und", StringComparison.OrdinalIgnoreCase))
+            {
+                buffer[bufferIndex++] = 'u';
+                buffer[bufferIndex++] = 'n';
+                buffer[bufferIndex++] = 'd';
+
+                changed = true;
+            }
 
             for (int i = 0; i < name.Length && bufferIndex < ICU_ULOC_FULLNAME_CAPACITY; i++)
             {
@@ -141,7 +152,7 @@ namespace System.Globalization
 
             Debug.Assert(_sWindowsName != null);
 
-            _sRealName = NormalizeCultureName(_sWindowsName, indexOfExtensions > 0 ? _sRealName.AsSpan(indexOfExtensions) : ReadOnlySpan<char>.Empty, out int collationStart);
+            _sRealName = NormalizeCultureName(_sWindowsName, indexOfExtensions > 0 ? _sRealName.AsSpan(indexOfExtensions) : ReadOnlySpan<char>.Empty, _sRealName, out int collationStart);
 
             _iLanguage = LCID;
             if (_iLanguage == 0)
@@ -278,10 +289,10 @@ namespace System.Globalization
 
             if (secondaryGroupingSize == 0)
             {
-                return new int[] { primaryGroupingSize };
+                return [primaryGroupingSize];
             }
 
-            return new int[] { primaryGroupingSize, secondaryGroupingSize };
+            return [primaryGroupingSize, secondaryGroupingSize];
         }
 
         private string IcuGetTimeFormatString() => IcuGetTimeFormatString(shortFormat: false);
@@ -291,18 +302,34 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
 
-            char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
-
-            bool result = Interop.Globalization.GetLocaleTimeFormat(_sWindowsName, shortFormat, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
-            if (!result)
+            ReadOnlySpan<char> span;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
             {
-                // Failed, just use empty string
-                Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
-                return string.Empty;
+                string res = Interop.Globalization.GetLocaleTimeFormatNative(_sWindowsName, shortFormat);
+                if (string.IsNullOrEmpty(res))
+                {
+                    Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
+                    return string.Empty;
+                }
+                span = res.AsSpan();
+            }
+            else
+#endif
+            {
+                char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
+                bool result = Interop.Globalization.GetLocaleTimeFormat(_sWindowsName, shortFormat, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+                if (!result)
+                {
+                    // Failed, just use empty string
+                    Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
+                    return string.Empty;
+                }
+                span = new ReadOnlySpan<char>(buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+                span = span.Slice(0, span.IndexOf('\0'));
             }
 
-            var span = new ReadOnlySpan<char>(buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
-            return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
+            return ConvertIcuTimeFormatString(span);
         }
 
         // no support to lookup by region name, other than the hard-coded list in CultureData
@@ -348,33 +375,59 @@ namespace System.Globalization
                 char current = icuFormatString[i];
                 switch (current)
                 {
+                    case '\\':
+                        // The ICU format does not use backslashes to escape while the .NET format does
+                        result[resultPos++] = '\\';
+                        result[resultPos++] = '\\';
+                        break;
                     case '\'':
-                        result[resultPos++] = icuFormatString[i++];
-                        while (i < icuFormatString.Length)
+                        static bool HandleQuoteLiteral(ReadOnlySpan<char> icuFormatString, ref int i, Span<char> result, ref int resultPos)
+                        {
+                            if (i + 1 < icuFormatString.Length && icuFormatString[i + 1] == '\'')
+                            {
+                                result[resultPos++] = '\\';
+                                result[resultPos++] = '\'';
+                                i++;
+                                return true;
+                            }
+                            result[resultPos++] = '\'';
+                            return false;
+                        }
+
+                        if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos))
+                        {
+                            break;
+                        }
+                        i++;
+                        for (; i < icuFormatString.Length; i++)
                         {
                             current = icuFormatString[i];
-                            result[resultPos++] = current;
                             if (current == '\'')
                             {
+                                if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos))
+                                {
+                                    continue;
+                                }
                                 break;
                             }
-                            i++;
+                            if (current == '\\')
+                            {
+                                // The same backslash escaping mentioned above
+                                result[resultPos++] = '\\';
+                            }
+                            result[resultPos++] = current;
                         }
                         break;
 
-                    case ':':
-                    case '.':
                     case 'H':
                     case 'h':
                     case 'm':
                     case 's':
-                    case ' ':
-                    case '\u00A0': // no-break space
-                    case '\u202F': // narrow no-break space
                         result[resultPos++] = current;
                         break;
-
                     case 'a': // AM/PM
+                    case 'b': // am, pm, noon, midnight
+                    case 'B': // flexible day periods
                         if (!amPmAdded)
                         {
                             amPmAdded = true;
@@ -383,6 +436,13 @@ namespace System.Globalization
                         }
                         break;
 
+                    default:
+                        // Characters that are not ASCII letters are literal texts
+                        if (!char.IsAsciiLetter(current))
+                        {
+                            result[resultPos++] = current;
+                        }
+                        break;
                 }
             }
 
@@ -441,7 +501,7 @@ namespace System.Globalization
                         return ",,";
 
                     default:
-                        Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
+                        Debug.Fail("[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
                         break;
                 }
             }
@@ -472,12 +532,11 @@ namespace System.Globalization
                 bufferLength = Interop.Globalization.GetLocalesNative(null, 0);
             }
             else
+#endif
             {
                 bufferLength = Interop.Globalization.GetLocales(null, 0);
             }
-#else
-            bufferLength = Interop.Globalization.GetLocales(null, 0);
-#endif
+
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();
@@ -491,12 +550,11 @@ namespace System.Globalization
                 bufferLength = Interop.Globalization.GetLocalesNative(chars, bufferLength);
             }
             else
+#endif
             {
                 bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
             }
-#else
-            bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
-#endif
+
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();

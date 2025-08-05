@@ -17,6 +17,7 @@ namespace BinderTracingTests
     {
         public static void ValidateBindOperation(BindOperation expected, BindOperation actual)
         {
+            Console.WriteLine("ValidateBindOperation Started");
             ValidateAssemblyName(expected.AssemblyName, actual.AssemblyName, nameof(BindOperation.AssemblyName));
             Assert.Equal(expected.AssemblyPath ?? string.Empty, actual.AssemblyPath);
             Assert.Equal(expected.AssemblyLoadContext, actual.AssemblyLoadContext);
@@ -37,6 +38,7 @@ namespace BinderTracingTests
             ValidateProbedPaths(expected.ProbedPaths, actual.ProbedPaths);
 
             ValidateNestedBinds(expected.NestedBinds, actual.NestedBinds);
+            Console.WriteLine("ValidateBindOperation Finished");
         }
 
         public static string GetAssemblyInAppPath(string assemblyName)

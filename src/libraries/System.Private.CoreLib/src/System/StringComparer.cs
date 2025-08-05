@@ -88,10 +88,12 @@ namespace System
             {
                 case StringComparer stringComparer:
                     return stringComparer.IsWellKnownOrdinalComparerCore(out ignoreCase);
-                case GenericEqualityComparer<string>:
-                    // special-case EqualityComparer<string>.Default, which is Ordinal-equivalent
+
+                case StringEqualityComparer: // EqualityComparer<string>.Default
+                case GenericEqualityComparer<string>: // EqualityComparer<string>.Default serialized
                     ignoreCase = false;
                     return true;
+
                 default:
                     // unknown comparer
                     ignoreCase = default;
@@ -215,7 +217,9 @@ namespace System
         internal static readonly CultureAwareComparer InvariantCaseSensitiveInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.None);
         internal static readonly CultureAwareComparer InvariantIgnoreCaseInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.IgnoreCase);
 
-        private const CompareOptions ValidCompareMaskOffFlags = ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
+        private const CompareOptions ValidCompareMaskOffFlags =
+            ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType |
+              CompareOptions.IgnoreWidth | CompareOptions.NumericOrdering | CompareOptions.StringSort);
 
         private readonly CompareInfo _compareInfo; // Do not rename (binary serialization)
         private readonly CompareOptions _options;
@@ -273,7 +277,7 @@ namespace System
 
         bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
         {
-            // See explanation in StringEqualityComparer.Equals.
+            // See explanation in OrdinalComparer.Equals.
             if (span.IsEmpty && target is null)
             {
                 return false;
@@ -377,7 +381,15 @@ namespace System
 
         bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
         {
-            // See explanation in StringEqualityComparer.Equals.
+            // Dictionary<string, TValue> does not permit null keys, but it does permit string.Empty keys,
+            // so we'd like for ReadOnlySpan<char>.Empty (which contains a null ref) to map to string.Empty.
+            // However, HashSet<string> permits both string.Empty and null string keys, and ReadOnlySpan<char>.Empty
+            // shouldn't map to both, as that would break HashSet<string> lookups (e.g. the HashSet<string> could contain
+            // both null and empty strings, which are not equal to each other, yet removing a
+            // ReadOnlySpan<char>.Empty would only remove one of them?). That means we need to pick whether
+            // ReadOnlySpan<char>.Empty is equivalent to string empty or null, and because of dictionary, we
+            // should pick empty. That means if the span is empty (whether or not is has a null reference),
+            // this should return false if the target string is null.
             if (span.IsEmpty && target is null)
             {
                 return false;
@@ -399,7 +411,7 @@ namespace System
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is OrdinalComparer comparer))
+            if (obj is not OrdinalComparer comparer)
             {
                 return false;
             }
@@ -443,7 +455,7 @@ namespace System
 
         bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
         {
-            // See explanation in StringEqualityComparer.Equals.
+            // See explanation in OrdinalComparer.Equals.
             if (span.IsEmpty && target is null)
             {
                 return false;
@@ -525,7 +537,7 @@ namespace System
 
         bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
         {
-            // See explanation in StringEqualityComparer.Equals.
+            // See explanation in OrdinalComparer.Equals.
             if (span.IsEmpty && target is null)
             {
                 return false;

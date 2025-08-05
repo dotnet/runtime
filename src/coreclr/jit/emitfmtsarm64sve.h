@@ -221,7 +221,7 @@ IF_DEF(SVE_CR_3A,   IS_NONE, NONE) // SVE_CR_3A  ........xx...... ...gggnnnnnddd
 IF_DEF(SVE_CS_3A,   IS_NONE, NONE) // SVE_CS_3A  ........xx...... ...gggnnnnnddddd  -- SVE extract element to general register
 IF_DEF(SVE_CT_3A,   IS_NONE, NONE) // SVE_CT_3A  ................ ...gggnnnnnddddd  -- SVE reverse doublewords
 IF_DEF(SVE_CU_3A,   IS_NONE, NONE) // SVE_CU_3A  ........xx...... ...gggnnnnnddddd  -- SVE reverse within elements
-IF_DEF(SVE_CV_3A,   IS_NONE, NONE) // SVE_CV_3A  ........xx...... ...VVVnnnnnddddd  -- SVE vector splice (destructive)
+IF_DEF(SVE_CV_3A,   IS_NONE, NONE) // SVE_CV_3A  ........xx...... ...VVVnnnnnddddd  -- SVE vector splice (constructive)
 IF_DEF(SVE_CV_3B,   IS_NONE, NONE) // SVE_CV_3B  ........xx...... ...VVVmmmmmddddd  -- SVE vector splice (destructive)
 IF_DEF(SVE_CW_4A,   IS_NONE, NONE) // SVE_CW_4A  ........xx.mmmmm ..VVVVnnnnnddddd  -- SVE select vector elements (predicated)
 IF_DEF(SVE_CX_4A,   IS_NONE, NONE) // SVE_CX_4A  ........xx.mmmmm ...gggnnnnn.DDDD  -- SVE integer compare vectors

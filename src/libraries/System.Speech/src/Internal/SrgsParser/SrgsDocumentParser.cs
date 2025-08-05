@@ -344,7 +344,7 @@ namespace System.Speech.Internal.SrgsParser
             }
             else
             {
-                System.Diagnostics.Debug.Assert(false, "Unsupported Srgs element");
+                System.Diagnostics.Debug.Fail("Unsupported Srgs element");
                 XmlParser.ThrowSrgsException(SRID.InvalidElement);
             }
 

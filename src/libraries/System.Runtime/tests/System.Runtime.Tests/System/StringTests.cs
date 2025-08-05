@@ -210,6 +210,7 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.CurrentCulture, true)]
         [InlineData("Hello", 'E', StringComparison.CurrentCulture, false)]
         [InlineData("", 'H', StringComparison.CurrentCulture, false)]
+        [InlineData("", '\u0301', StringComparison.CurrentCulture, false)] // Using non-ASCII character to test ICU path
         // CurrentCultureIgnoreCase
         [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false)]
@@ -333,7 +334,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Contains_String_StringComparison_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Contains_String_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisonType));
@@ -803,8 +803,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Replace_StringComparison_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparison_ReturnsExpected(string original, string oldValue, string newValue, StringComparison comparisonType, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, comparisonType));
@@ -812,7 +810,6 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -872,8 +869,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Replace_StringComparisonCulture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void Replace_StringComparisonCulture_ReturnsExpected(string original, string oldValue, string newValue, bool ignoreCase, CultureInfo culture, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, ignoreCase, culture));
@@ -1048,7 +1043,7 @@ namespace System.Tests
             try
             {
                 // Unsafe.AsPointer is safe since it's pinned by the gc handle
-                Assert.Equal((IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in rChar)), gcHandle.AddrOfPinnedObject());
+                Assert.Equal((IntPtr)Unsafe.AsPointer(in rChar), gcHandle.AddrOfPinnedObject());
             }
             finally
             {

@@ -37,30 +37,6 @@ namespace System.Net.WebSockets
         private static readonly SearchValues<char> s_validSubprotocolChars =
             SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
-        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
-        {
-            string validStatesText = string.Empty;
-
-            if (validStates != null && validStates.Length > 0)
-            {
-                foreach (WebSocketState validState in validStates)
-                {
-                    if (currentState == validState)
-                    {
-                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                        ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
-                        return;
-                    }
-                }
-
-                validStatesText = string.Join(", ", validStates);
-            }
-
-            throw new WebSocketException(
-                WebSocketError.InvalidState,
-                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
-        }
-
         internal static void ValidateSubprotocol(string subProtocol)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(subProtocol);

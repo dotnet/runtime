@@ -25,7 +25,6 @@ namespace System.Net
         private readonly string? _cookedUrlPath;
         private readonly string? _cookedUrlQuery;
         private long _contentLength;
-        private Stream? _requestStream;
         private string? _httpMethod;
         private WebHeaderCollection? _webHeaders;
         private IPEndPoint? _localEndPoint;
@@ -206,7 +205,7 @@ namespace System.Net
             }
         }
 
-        public Stream InputStream => _requestStream ??= HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
+        public Stream InputStream => field ??= HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
 
         public bool IsAuthenticated
         {
@@ -477,7 +476,7 @@ namespace System.Net
                                     {
                                         byte[] certEncoded = new byte[pClientCertInfo->CertEncodedSize];
                                         Marshal.Copy((IntPtr)pClientCertInfo->pCertEncoded, certEncoded, 0, certEncoded.Length);
-                                        ClientCertificate = new X509Certificate2(certEncoded);
+                                        ClientCertificate = X509CertificateLoader.LoadCertificate(certEncoded);
                                     }
                                     catch (CryptographicException exception)
                                     {

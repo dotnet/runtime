@@ -34,21 +34,20 @@
              Link="Common\System\Net\Configuration.WebSockets.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
              Link="Common\System\Net\EventSourceTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs"
+             Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs"
              Link="Common\System\Net\Http\LoopbackProxyServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs"
              Link="Common\System\Net\Http\LoopbackServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs"
-             Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
-             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
+             Link="Common\System\Net\Http\TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="..\ClientWebSocketTestBase.cs" />
     <Compile Include="..\WebSocketHelper.cs" />
     <Compile Include="..\LoopbackHelper.cs" />
     <Compile Include="..\ResourceHelper.cs" />
-    <Compile Include="..\WebSocketData.cs" />
     <Compile Include="BrowserTimerThrottlingTest.cs" />
   </ItemGroup>
   <ItemGroup>

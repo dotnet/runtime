@@ -11,18 +11,21 @@ namespace Microsoft.Extensions.Configuration
     public class FileLoadExceptionContext
     {
         /// <summary>
-        /// The <see cref="FileConfigurationProvider"/> that caused the exception.
+        /// Gets or sets the <see cref="FileConfigurationProvider"/> that caused the exception.
         /// </summary>
         public FileConfigurationProvider Provider { get; set; } = null!;
 
         /// <summary>
-        /// The exception that occurred in Load.
+        /// Gets or sets the exception that occurred in Load.
         /// </summary>
         public Exception Exception { get; set; } = null!;
 
         /// <summary>
-        /// If true, the exception will not be rethrown.
+        /// Gets or sets a value that indicates whether the exception is rethrown.
         /// </summary>
+        /// <value>
+        /// <see langword="true" /> if the exception isn't rethrown; otherwise, <see langword="false" />.
+        /// </value>
         public bool Ignore { get; set; }
     }
 }

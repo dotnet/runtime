@@ -487,7 +487,7 @@ namespace System.Collections.Generic
                     while (Unsafe.IsAddressGreaterThan(ref rightRef, ref zeroRef) && LessThan(ref pivot, ref rightRef = ref Unsafe.Add(ref rightRef, -1))) ;
                 }
 
-                if (!Unsafe.IsAddressLessThan(ref leftRef, ref rightRef))
+                if (Unsafe.IsAddressGreaterThanOrEqualTo(ref leftRef, ref rightRef))
                 {
                     break;
                 }
@@ -500,9 +500,8 @@ namespace System.Collections.Generic
             {
                 Swap(ref leftRef, ref nextToLastRef);
             }
-#pragma warning disable 8500 // sizeof of managed types
+
             return (int)((nint)Unsafe.ByteOffset(ref zeroRef, ref leftRef) / sizeof(T));
-#pragma warning restore 8500
         }
 
         private static void HeapSort(Span<T> keys)

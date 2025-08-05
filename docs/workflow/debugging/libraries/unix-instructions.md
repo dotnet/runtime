@@ -1,7 +1,7 @@
-Debugging CoreFX on Unix
-==========================
+Debugging core .NET libraries on Unix
+=====================================
 
-CoreFX can be debugged on unix using both lldb and visual studio code
+.NET can be debugged on unix using both lldb and Visual Studio Code.
 
 ## Using lldb and SOS
 

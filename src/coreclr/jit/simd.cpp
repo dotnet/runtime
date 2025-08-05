@@ -130,6 +130,29 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
     return lvaSIMDInitTempVarNum;
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// Get, and allocate if necessary, the SIMD temp used for various operations.
+// The temp is allocated as the maximum sized type of all operations required.
+//
+// Arguments:
+//    simdType - Required SIMD type
+//
+// Returns:
+//    The temp number
+//
+unsigned Compiler::getFFRegisterVarNum()
+{
+    if (lvaFfrRegister == BAD_VAR_NUM)
+    {
+        lvaFfrRegister                                 = lvaGrabTemp(false DEBUGARG("Save the FFR value."));
+        lvaTable[lvaFfrRegister].lvType                = TYP_MASK;
+        lvaTable[lvaFfrRegister].lvUsedInSIMDIntrinsic = true;
+    }
+    return lvaFfrRegister;
+}
+#endif
+
 //----------------------------------------------------------------------------------
 // Return the base type and size of SIMD vector type given its type handle.
 //
@@ -146,7 +169,7 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
 //    to determine if this api needs to be called.
 //
 //    The type handle passed here can only be used in a subset of JIT-EE calls
-//    since it may be called by promotion during prejit of a method that does
+//    since it may be called by promotion during AOT of a method that does
 //    not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on
 //    the supported JIT-EE calls.
 //
@@ -414,9 +437,9 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
-                    // We must treat as a regular struct if AVX512F isn't supported
+                    // We must treat as a regular struct if AVX512 isn't supported
                     return CORINFO_TYPE_UNDEF;
                 }
 
@@ -604,15 +627,12 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
 
     GenTreeIndexAddr* op1IndexAddr = op1->AsIndir()->Addr()->AsIndexAddr();
     GenTreeIndexAddr* op2IndexAddr = op2->AsIndir()->Addr()->AsIndexAddr();
+    GenTree*          op1ArrayRef  = op1IndexAddr->Arr();
+    GenTree*          op2ArrayRef  = op2IndexAddr->Arr();
+    GenTree*          op1IndexNode = op1IndexAddr->Index();
+    GenTree*          op2IndexNode = op2IndexAddr->Index();
 
-    GenTree* op1ArrayRef = op1IndexAddr->Arr();
-    GenTree* op2ArrayRef = op2IndexAddr->Arr();
-    assert(op1ArrayRef->TypeGet() == TYP_REF);
-    assert(op2ArrayRef->TypeGet() == TYP_REF);
-
-    GenTree* op1IndexNode = op1IndexAddr->Index();
-    GenTree* op2IndexNode = op2IndexAddr->Index();
-    if ((op1IndexNode->OperGet() == GT_CNS_INT && op2IndexNode->OperGet() == GT_CNS_INT) &&
+    if ((op1IndexNode->OperIs(GT_CNS_INT) && op2IndexNode->OperIs(GT_CNS_INT)) &&
         (op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal))
     {
         if (op1ArrayRef->OperIs(GT_IND) && op2ArrayRef->OperIs(GT_IND))
@@ -726,7 +746,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
     //
     unsigned          arrayElementsCount = simdSize / genTypeSize(simdBaseType);
     GenTree*          checkIndexExpr     = gtNewIconNode(indexVal + arrayElementsCount - 1);
-    GenTreeArrLen*    arrLen = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
+    GenTreeArrLen*    arrLen             = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length);
     GenTreeBoundsChk* arrBndsChk =
         new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
 

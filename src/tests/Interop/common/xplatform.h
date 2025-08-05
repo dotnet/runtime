@@ -5,6 +5,7 @@
 #define __XPLAT_H__
 
 #include <platformdefines.h>
+#include <minipal/guid.h>
 
 #ifndef WINDOWS
 
@@ -43,34 +44,12 @@ typedef struct HSTRING__{
 // Declare the HSTRING handle for C/C++
 typedef HSTRING__* HSTRING;
 
-#ifndef GUID_DEFINED
-typedef struct _GUID {
-    uint32_t    Data1;    // NOTE: diff from Win32, for LP64
-    uint16_t    Data2;
-    uint16_t    Data3;
-    uint8_t     Data4[8];
-} GUID;
 typedef const GUID *LPCGUID;
-#define GUID_DEFINED
-#endif // !GUID_DEFINED
-
 #define REFGUID const GUID &
-
-extern "C++" {
-#if !defined _SYS_GUID_OPERATOR_EQ_ && !defined _NO_SYS_GUID_OPERATOR_EQ_
-#define _SYS_GUID_OPERATOR_EQ_
-inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
-    { return !memcmp(&rguid1, &rguid2, sizeof(GUID)); }
-inline int operator==(REFGUID guidOne, REFGUID guidOther)
-    { return IsEqualGUID(guidOne,guidOther); }
-inline int operator!=(REFGUID guidOne, REFGUID guidOther)
-    { return !IsEqualGUID(guidOne,guidOther); }
-#endif
-};
 
 typedef GUID IID;
 #define REFIID const IID &
-#define IsEqualIID(riid1, riid2) IsEqualGUID(riid1, riid2)
+#define IsEqualIID(riid1, riid2) riid1 == riid2
 
 #define __uuidof(type)      IID_##type
 

@@ -56,15 +56,15 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 {
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_AMD64)
     // Flush the store buffers on all CPUs, to ensure that they all see changes made
     // by the GC threads. This only matters on weak memory ordered processors as
     // the strong memory ordered processors wouldn't have reordered the relevant reads.
     // This is needed to synchronize threads that were running in preemptive mode while
     // the runtime was suspended and that will return to cooperative mode after the runtime
     // is restarted.
-    ::FlushProcessWriteBuffers();
-#endif //TARGET_ARM || TARGET_ARM64
+    PalFlushProcessWriteBuffers();
+#endif // !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
     SyncClean::CleanUp();
 
@@ -136,7 +136,17 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
 {
     FOREACH_THREAD(thread)
     {
-        (*fn) (thread->GetAllocContext(), param);
+        ee_alloc_context* palloc_context = thread->GetEEAllocContext();
+        gc_alloc_context* ac = palloc_context->GetGCAllocContext();
+        (*fn) (ac, param);
+        // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
+        // combined_limit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
+        // with no synchronization. If you need to change this code think carefully about how that concurrency
+        // may affect the results.
+        if (ac->alloc_limit == 0 && palloc_context->combined_limit != 0)
+        {
+            palloc_context->combined_limit = 0;
+        }
     }
     END_FOREACH_THREAD
 }
@@ -389,23 +399,23 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //     On architectures with strong ordering, we only need to prevent compiler reordering.
         //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
 
-#if defined(HOST_ARM64) || defined(HOST_ARM)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
-            FlushProcessWriteBuffers();
+            PalFlushProcessWriteBuffers();
         }
 #endif
 
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
 
-#if defined(HOST_ARM64) || defined(HOST_ARM)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
-            FlushProcessWriteBuffers();
+            PalFlushProcessWriteBuffers();
         }
 #endif
         return;
@@ -534,26 +544,42 @@ struct ThreadStubArguments
     void (*m_pRealStartRoutine)(void*);
     void* m_pRealContext;
     CLREventStatic m_ThreadStartedEvent;
+    const char* m_name;
 };
 
 static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, const char* name)
 {
-    UNREFERENCED_PARAMETER(name);
-
     ThreadStubArguments* threadStubArgs = new (nothrow) ThreadStubArguments();
     if (!threadStubArgs)
         return false;
 
     threadStubArgs->m_pRealStartRoutine = threadStart;
     threadStubArgs->m_pRealContext = arg;
+    if (name == nullptr)
+    {
+        threadStubArgs->m_name = nullptr;
+    }
+    else
+    {
+        size_t name_length = strlen(name);
+        char* name_copy = new (nothrow) char[name_length + 1];
+        if (name_copy == nullptr)
+        {
+            delete threadStubArgs;
+            return false;
+        }
+        strcpy(name_copy, name);
+        threadStubArgs->m_name = name_copy;
+    }
 
     // Helper used to wrap the start routine of GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> DWORD
+    auto threadStub = [](void* argument) -> uint32_t
         {
             ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
             ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
+            PalSetCurrentThreadName(pStartContext->m_name);
             auto realStartRoutine = pStartContext->m_pRealStartRoutine;
             void* realContext = pStartContext->m_pRealContext;
             delete pStartContext;
@@ -567,6 +593,7 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
     if (!PalStartBackgroundGCThread(threadStub, threadStubArgs))
     {
+        delete[] threadStubArgs->m_name;
         delete threadStubArgs;
         return false;
     }
@@ -576,14 +603,13 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
-    UNREFERENCED_PARAMETER(name);
-
     if (!is_suspendable)
         return CreateNonSuspendableThread(threadStart, arg, name);
 
     ThreadStubArguments threadStubArgs;
     threadStubArgs.m_pRealStartRoutine = threadStart;
     threadStubArgs.m_pRealContext = arg;
+    threadStubArgs.m_name = name;
 
     if (!threadStubArgs.m_ThreadStartedEvent.CreateAutoEventNoThrow(false))
     {
@@ -592,7 +618,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 
     // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> DWORD
+    auto threadStub = [](void* argument) -> uint32_t
         {
             ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
 
@@ -608,7 +634,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 
             auto realStartRoutine = pStartContext->m_pRealStartRoutine;
             void* realContext = pStartContext->m_pRealContext;
-
+            PalSetCurrentThreadName(pStartContext->m_name);
             pStartContext->m_ThreadStartedEvent.Set();
 
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
@@ -764,6 +790,11 @@ void GCToEEInterface::LogErrorToHost(const char *message)
 {
 }
 
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    return (uint64_t)thread->GetPalThreadIdForLogging();
+}
+
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     UNREFERENCED_PARAMETER(privateKey);
@@ -776,6 +807,13 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
 void GCToEEInterface::FreeStringConfigValue(const char* value)
 {
     delete[] value;
+}
+
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+#ifdef FEATURE_JAVAMARSHAL
+    JavaMarshalNative::TriggerClientBridgeProcessing(args);
+#endif
 }
 
 #endif // !DACCESS_COMPILE

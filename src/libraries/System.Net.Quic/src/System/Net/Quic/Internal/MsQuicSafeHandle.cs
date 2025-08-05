@@ -125,7 +125,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
         }
     }
 
-    protected override unsafe bool ReleaseHandle()
+    protected override bool ReleaseHandle()
     {
         base.ReleaseHandle();
         if (_context.IsAllocated)
@@ -145,7 +145,7 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     }
 }
 
-internal sealed class MsQuicConfigurationSafeHandle : MsQuicSafeHandle
+internal sealed class MsQuicConfigurationSafeHandle : MsQuicSafeHandle, ISafeHandleCachable
 {
     // MsQuicConfiguration handles are cached, so we need to keep track of the
     // number of times a handle is rented. Once we decide to dispose the handle,

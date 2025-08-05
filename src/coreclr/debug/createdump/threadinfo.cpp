@@ -32,6 +32,9 @@ GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
 #elif defined(__riscv)
     *ip = pContext->Pc;
     *sp = pContext->Sp;
+#elif defined(__loongarch64)
+    *ip = pContext->Pc;
+    *sp = pContext->Sp;
 #endif
 }
 
@@ -101,7 +104,7 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
 
         // Unwind the native frame adding all the memory accessed to the core dump via the read memory adapter.
         ULONG64 functionStart;
-        if (!PAL_VirtualUnwindOutOfProc(pContext, nullptr, &functionStart, baseAddress, ReadMemoryAdapter)) {
+        if (!PAL_VirtualUnwindOutOfProc(pContext, &functionStart, baseAddress, ReadMemoryAdapter)) {
             TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
             break;
         }

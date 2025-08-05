@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -225,10 +226,42 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
-                .Execute(expectedToFail: true)
+                .DisableDumps() // Expected to throw an exception
+                .Execute()
                 .Should().Fail()
                 .And.InitializeContextForConfig(component.RuntimeConfigJson)
                 .And.ExecuteFunctionPointerWithException(entryPoint, 1);
+        }
+
+        [Fact]
+        public void CallDelegateOnComponentContext_IgnoreWorkingDirectory()
+        {
+            using (TestArtifact cwd = TestArtifact.Create("cwd"))
+            {
+                // Validate that hosting components in the working directory will not be used
+                File.Copy(Binaries.CoreClr.MockPath, Path.Combine(cwd.Location, Binaries.CoreClr.FileName));
+                File.Copy(Binaries.HostPolicy.MockPath, Path.Combine(cwd.Location, Binaries.HostPolicy.FileName));
+
+                var component = sharedState.Component;
+                string[] args =
+                {
+                    ComponentLoadAssemblyAndGetFunctionPointerArg,
+                    sharedState.HostFxrPath,
+                    component.RuntimeConfigJson,
+                    component.AppDll,
+                    sharedState.ComponentTypeName,
+                    sharedState.ComponentEntryPoint1,
+                };
+
+                sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
+                    .WorkingDirectory(cwd.Location)
+                    .Execute()
+                    .Should().Pass()
+                    .And.InitializeContextForConfig(component.RuntimeConfigJson)
+                    .And.ExecuteFunctionPointer(sharedState.ComponentEntryPoint1, 1, 1)
+                    .And.ResolveHostPolicy(TestContext.BuiltDotNet)
+                    .And.ResolveCoreClr(TestContext.BuiltDotNet);
+            }
         }
 
         public class SharedTestState : SharedTestStateBase

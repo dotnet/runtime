@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -33,10 +35,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, string value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (options.DictionaryKeyPolicy != null && !isWritingExtensionDataProperty)
             {
@@ -50,5 +49,7 @@ namespace System.Text.Json.Serialization.Converters
 
             writer.WritePropertyName(value);
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.String };
     }
 }

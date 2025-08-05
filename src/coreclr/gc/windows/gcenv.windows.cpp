@@ -969,7 +969,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 // Remarks:
 //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
 //  specified, it returns amount of actual physical memory.
-uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted, bool refresh)
+uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
     if (is_restricted)
         *is_restricted = false;
@@ -1317,31 +1317,6 @@ static DWORD GCThreadStub(void* param)
     function(threadParam);
 
     return 0;
-}
-
-// Initialize the critical section
-bool CLRCriticalSection::Initialize()
-{
-    ::InitializeCriticalSection(&m_cs);
-    return true;
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    ::DeleteCriticalSection(&m_cs);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    ::EnterCriticalSection(&m_cs);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    ::LeaveCriticalSection(&m_cs);
 }
 
 // WindowsEvent is an implementation of GCEvent that forwards

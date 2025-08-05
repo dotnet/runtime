@@ -35,6 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include <errno.h>
 #include <signal.h>
+#include <dlfcn.h>
 
 #if !HAVE_MACH_EXCEPTIONS
 #include "pal/init.h"
@@ -43,11 +44,13 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/utils.h"
 
 #include <string.h>
-#include <sys/ucontext.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 #include <sys/mman.h>
 
+#if HAVE_SYS_UCONTEXT_H
+#include <sys/ucontext.h>
+#endif // HAVE_SYS_UCONTEXT_H
 
 #endif // !HAVE_MACH_EXCEPTIONS
 #include "pal/context.h"
@@ -74,6 +77,9 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
 #ifdef INJECT_ACTIVATION_SIGNAL
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
 extern void* g_InvokeActivationHandlerReturnAddress;
+#ifdef __APPLE__
+bool g_canSendSignalToDispatchQueueThreads = false;
+#endif // __APPLE__
 #endif
 
 static void sigill_handler(int code, siginfo_t *siginfo, void *context);
@@ -182,12 +188,17 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGINT, sigint_handler, &g_previous_sigint, 0 /* additionalFlags */, true /* skipIgnored */);
         handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit, 0 /* additionalFlags */, true /* skipIgnored */);
 
-#if HAVE_MACH_EXCEPTIONS
+#if HAVE_MACH_EXCEPTIONS || !HAVE_SIGALTSTACK
         handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
 #else
         handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
+        int additionalFlagsForSigSegv = 0;
+#ifndef TARGET_SUNOS
+        // On platforms that support signal handlers that don't return,
         // SIGSEGV handler runs on a separate stack so that we can handle stack overflow
-        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, SA_ONSTACK);
+        additionalFlagsForSigSegv |= SA_ONSTACK;
+#endif
+        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, additionalFlagsForSigSegv);
 
         if (!pthrCurrent->EnsureSignalAlternateStack())
         {
@@ -195,7 +206,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         }
 
         // Allocate the minimal stack necessary for handling stack overflow
-        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 7 * 4096;
+        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 9 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
         stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
@@ -208,6 +219,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             return FALSE;
         }
 
+#ifndef TARGET_WASM
         // create a guard page for the alternate stack
         int st = mprotect((void*)g_stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE);
         if (st != 0)
@@ -215,6 +227,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
             return FALSE;
         }
+#endif // TARGET_WASM
 
         g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
 #endif // HAVE_MACH_EXCEPTIONS
@@ -239,6 +252,27 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 #ifdef INJECT_ACTIVATION_SIGNAL
     if (flags & PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
     {
+#ifdef __APPLE__
+        void *libSystem = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY);
+        if (libSystem != NULL)
+        {
+            int (*dispatch_allow_send_signals_ptr)(int) = (int (*)(int))dlsym(libSystem, "dispatch_allow_send_signals");
+            if (dispatch_allow_send_signals_ptr != NULL)
+            {
+                int st = dispatch_allow_send_signals_ptr(INJECT_ACTIVATION_SIGNAL);
+                g_canSendSignalToDispatchQueueThreads = (st == 0);
+            }
+        }
+
+        // TODO: Once our CI tools can get upgraded to xcode >= 15.4, replace the code above by this:
+        // if (__builtin_available(macOS 14.4, *))
+        // {
+        //    // Allow sending the activation signal to dispatch queue threads
+        //    int st = dispatch_allow_send_signals(INJECT_ACTIVATION_SIGNAL);
+        //    g_canSendSignalToDispatchQueueThreads = (st == 0);
+        // }
+#endif // __APPLE__
+
         handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
         g_registered_activation_handler = true;
     }
@@ -254,7 +288,7 @@ Function :
     Restore default signal handlers
 
 Parameters :
-    None
+    isChildProcess - indicates that it is called from a child process fork
 
     (no return value)
 
@@ -263,34 +297,42 @@ reason for this function is that during PAL_Terminate, we reach a point where
 SEH isn't possible anymore (handle manager is off, etc). Past that point,
 we can't avoid crashing on a signal.
 --*/
-void SEHCleanupSignals()
+void SEHCleanupSignals(bool isChildProcess)
 {
     TRACE("Restoring default signal handlers\n");
 
-    if (g_registered_signal_handlers)
+    if (isChildProcess)
     {
-        restore_signal(SIGILL, &g_previous_sigill);
+        if (g_registered_signal_handlers)
+        {
+            restore_signal(SIGILL, &g_previous_sigill);
 #if !HAVE_MACH_EXCEPTIONS
-        restore_signal(SIGTRAP, &g_previous_sigtrap);
+            restore_signal(SIGTRAP, &g_previous_sigtrap);
 #endif
-        restore_signal(SIGFPE, &g_previous_sigfpe);
-        restore_signal(SIGBUS, &g_previous_sigbus);
-        restore_signal(SIGABRT, &g_previous_sigabrt);
-        restore_signal(SIGSEGV, &g_previous_sigsegv);
-        restore_signal(SIGINT, &g_previous_sigint);
-        restore_signal(SIGQUIT, &g_previous_sigquit);
-    }
+            restore_signal(SIGFPE, &g_previous_sigfpe);
+            restore_signal(SIGBUS, &g_previous_sigbus);
+            restore_signal(SIGSEGV, &g_previous_sigsegv);
+            restore_signal(SIGINT, &g_previous_sigint);
+            restore_signal(SIGQUIT, &g_previous_sigquit);
+        }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
-    if (g_registered_activation_handler)
-    {
-        restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
-    }
+        if (g_registered_activation_handler)
+        {
+            restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
+        }
 #endif
 
-    if (g_registered_sigterm_handler)
+        if (g_registered_sigterm_handler)
+        {
+            restore_signal(SIGTERM, &g_previous_sigterm);
+        }
+    }
+
+    // Restore only the SIGABRT so that abort that ends up the process can actually end it
+    if (g_registered_signal_handlers)
     {
-        restore_signal(SIGTERM, &g_previous_sigterm);
+        restore_signal(SIGABRT, &g_previous_sigabrt);
     }
 }
 
@@ -311,7 +353,7 @@ Return :
 --*/
 bool IsRunningOnAlternateStack(void *context)
 {
-#if HAVE_MACH_EXCEPTIONS
+#if HAVE_MACH_EXCEPTIONS || defined(TARGET_SUNOS)
     return false;
 #else
     bool isRunningOnAlternateStack;
@@ -471,6 +513,32 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
+void UnmaskActivationSignal()
+{
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
+    if (sigmaskRet != 0)
+    {
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
+}
+
+void MaskActivationSignal()
+{
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_BLOCK, &signal_set, NULL);
+    if (sigmaskRet != 0)
+    {
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
+}
+
 #if !HAVE_MACH_EXCEPTIONS
 
 /*++
@@ -492,29 +560,23 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     // fault. We must disassemble the instruction at record.ExceptionAddress
     // to correctly fill in this value.
 
-    // Unmask the activation signal now that we are running on the original stack of the thread
-    sigset_t signal_set;
-    sigemptyset(&signal_set);
-    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
-
-    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
-    if (sigmaskRet != 0)
+    if (code != (SIGSEGV | StackOverflowFlag))
     {
-        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+        // Unmask the activation signal now that we are running on the original stack of the thread
+        // except for the stack overflow case when we are actually running on a special stack overflow
+        // stack.
+        UnmaskActivationSignal();
     }
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
 
     // We are going to return to the alternate stack, so block the activation signal again
-    sigmaskRet = pthread_sigmask(SIG_BLOCK, &signal_set, NULL);
-    if (sigmaskRet != 0)
-    {
-        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
-    }
+    MaskActivationSignal();
 
     RtlRestoreContext(&returnPoint->context, NULL);
 }
 
+#if HAVE_SIGALTSTACK
 /*++
 Function :
     SwitchStackAndExecuteHandler
@@ -527,7 +589,13 @@ Parameters :
          If sp == 0, execute it on the original stack where the signal has occurred.
 Return :
     The return value from the signal handler
+
+Note:
+    This function is marked as noinline to reduce the stack frame space of the caller, the
+    sigsegv_handler. The sigsegv_handler is running on an alternate stack and we want to
+    avoid running out of stack space in case there are multiple PALs in the process.
 --*/
+__attribute__((noinline))
 static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *context, size_t sp)
 {
     // Establish a return point in case the common_signal_handler returns
@@ -549,8 +617,15 @@ static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *con
 
     return pReturnPoint->returnFromHandler;
 }
+#endif
 
 #endif // !HAVE_MACH_EXCEPTIONS
+
+// Temporary locals to debug issue https://github.com/dotnet/runtime/issues/110173
+static SIZE_T stackOverflowThreadId = -1;
+static const char StackOverflowOnTheSameThreadMessage[] = "Stack overflow occurred on the same thread again!\n";
+static const char StackOverflowHandlerReturnedMessage[] = "Stack overflow handler has returned, invoking previous action!\n";
+//
 
 /*++
 Function :
@@ -578,50 +653,73 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         {
             if (GetCurrentPalThread())
             {
+#if defined(TARGET_TVOS)
+                (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                PROCAbort(SIGSEGV, siginfo);
+#else // TARGET_TVOS
                 size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
                 if (handlerStackTop == 0)
                 {
                     // We have only one stack for handling stack overflow preallocated. We let only the first thread that hits stack overflow to
                     // run the exception handling code on that stack (which ends up just dumping the stack trace and aborting the process).
                     // Other threads are held spinning and sleeping here until the process exits.
+
+                    // Temporary check to debug issue https://github.com/dotnet/runtime/issues/110173
+                    if (stackOverflowThreadId == THREADSilentGetCurrentThreadId())
+                    {
+                        (void)!write(STDERR_FILENO, StackOverflowOnTheSameThreadMessage, sizeof(StackOverflowOnTheSameThreadMessage) - 1);
+                    }
+
                     while (true)
                     {
                         sleep(1);
                     }
+                }
+                else
+                {
+                    stackOverflowThreadId = THREADSilentGetCurrentThreadId();
                 }
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
                     PROCAbort(SIGSEGV, siginfo);
                 }
+                (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
+#endif // TARGET_TVOS
             }
             else
             {
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort(SIGSEGV, siginfo);
             }
-        }
 
-        // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
-        // hardware signal handler on the original stack.
-
-        if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
-        {
-            if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
-            {
-                return;
-            }
+            // The current executable (shared library) doesn't have hardware exception handler installed or opted to not to
+            // handle it. So this handler will invoke the previously installed handler at the end of this function.
         }
         else
         {
-            // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
-            // by coreclr. In both cases, we execute the common_signal_handler directly.
-            // If thread isn't created by coreclr and has alternate signal stack GetCurrentPalThread() will return NULL too.
-            // But since in this case we don't handle hardware exceptions (IsSafeToHandleHardwareException returns false)
-            // we can call common_signal_handler on the alternate stack.
-            if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+            // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
+            // hardware signal handler on the original stack.
+
+#if HAVE_SIGALTSTACK
+            if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
             {
-                return;
+                if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
+                {
+                    return;
+                }
+            }
+            else
+#endif
+            {
+                // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
+                // by coreclr. In both cases, we execute the common_signal_handler directly.
+                // If thread isn't created by coreclr and has alternate signal stack GetCurrentPalThread() will return NULL too.
+                // But since in this case we don't handle hardware exceptions (IsSafeToHandleHardwareException returns false)
+                // we can call common_signal_handler on the alternate stack.
+                if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+                {
+                    return;
+                }
             }
         }
     }
@@ -755,15 +853,9 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         {
             PROCCreateCrashDumpIfEnabled(code, siginfo, false);
         }
-        // g_pSynchronizationManager shouldn't be null if PAL is initialized.
-        _ASSERTE(g_pSynchronizationManager != nullptr);
+    }
 
-        g_pSynchronizationManager->SendTerminationRequestToWorkerThread();
-    }
-    else
-    {
-        restore_signal_and_resend(SIGTERM, &g_previous_sigterm);
-    }
+    restore_signal_and_resend(SIGTERM, &g_previous_sigterm);
 }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
@@ -786,7 +878,7 @@ Parameters :
 __attribute__((noinline))
 static void InvokeActivationHandler(CONTEXT *pWinContext)
 {
-    g_InvokeActivationHandlerReturnAddress = __builtin_return_address(0);
+    g_InvokeActivationHandlerReturnAddress = _ReturnAddress();
     g_activationFunction(pWinContext);
 }
 
@@ -824,7 +916,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
         contextFlags |= CONTEXT_XSTATE;
 #endif
 
@@ -886,14 +978,23 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     // the process exits.
 
 #ifdef __APPLE__
-    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
-    if (status == ENOTSUP)
+    if (!g_canSendSignalToDispatchQueueThreads)
     {
-        return ERROR_NOT_SUPPORTED;
+        // On macOS older than 14.4, pthread_kill is not allowed to sent a signal to dispatch queue threads
+        if (status == ENOTSUP)
+        {
+            return ERROR_NOT_SUPPORTED;
+        }
     }
 #endif
 
-    if ((status != 0) && (status != EAGAIN))
+    // ESRCH may happen on some OSes when the thread is exiting.
+    if (status == EAGAIN || status == ESRCH)
+    {
+        return ERROR_CANCELLED;
+    }
+
+    if (status != 0)
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
@@ -1005,7 +1106,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 

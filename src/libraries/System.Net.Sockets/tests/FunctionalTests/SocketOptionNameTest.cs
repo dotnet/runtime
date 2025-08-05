@@ -12,9 +12,13 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public partial class SocketOptionNameTest
     {
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
+        // Does not work on Nano and Qemu and AzureLinux has firewall enabled by default
+        private static readonly bool CanRunMulticastTests = !(PlatformDetection.IsWindowsNanoServer || PlatformDetection.IsWindowsServerCore ||
+                                                              PlatformDetection.IsAzureLinux || PlatformDetection.IsQemuLinux);
 
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption()
@@ -51,6 +55,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/104547", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void MulticastOption_CreateSocketSetGetOption_GroupAndInterfaceIndex_SetSucceeds_GetThrows()
         {
             int interfaceIndex = 0;
@@ -64,7 +69,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ConditionalFact(nameof(CanRunMulticastTests))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113827", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
@@ -120,7 +126,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
+        [ConditionalFact(nameof(CanRunMulticastTests))]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
@@ -236,11 +242,8 @@ namespace System.Net.Sockets.Tests
                     Assert.ThrowsAny<Exception>(() => client.Connect(server.LocalEndPoint));
                 }
 
-                // Verify via Select that there's an error
-                const int FailedTimeout = 10 * 1000 * 1000; // 10 seconds
-                var errorList = new List<Socket> { client };
-                Socket.Select(null, null, errorList, FailedTimeout);
-                Assert.Equal(1, errorList.Count);
+                // Verify via Poll that there's an error
+                Assert.True(client.Poll(10_000_000, SelectMode.SelectError));
 
                 // Get the last error and validate it's what's expected
                 int errorCode;
@@ -720,6 +723,7 @@ namespace System.Net.Sockets.Tests
 
     [Collection(nameof(DisableParallelization))]
     // Set of tests to not run  together with any other tests.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class NoParallelTests
     {
         [Fact]

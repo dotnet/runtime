@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -2493,12 +2494,57 @@ namespace System.Net.Http.Tests
                     static headers => headers.TryAddWithoutValidation("h", new[] { "i", "j" }),
                 };
 
-                foreach (Action<HttpRequestHeaders> action in actions.OrderBy(_ => Random.Shared.Next()))
+                foreach (Action<HttpRequestHeaders> action in actions.Shuffle())
                 {
                     action(headers);
                 }
 
                 return headers;
+            }
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task ConcurrentReads_ReturnTheSameParsedValues(bool useDictionary, bool useTypedProperty)
+        {
+            HttpContentHeaders dummyValues = new ByteArrayContent([]).Headers;
+            if (useDictionary)
+            {
+                for (int i = 0; i < HttpHeaders.ArrayThreshold; i++)
+                {
+                    Assert.True(dummyValues.TryAddWithoutValidation($"foo-{i}", "Foo"));
+                }
+            }
+
+            Stopwatch s = Stopwatch.StartNew();
+
+            while (s.ElapsedMilliseconds < 100)
+            {
+                HttpContentHeaders headers = new ByteArrayContent([]).Headers;
+
+                headers.AddHeaders(dummyValues);
+
+                Assert.True(headers.TryAddWithoutValidation("Content-Type", "application/json; charset=utf-8"));
+
+                if (useTypedProperty)
+                {
+                    Task<MediaTypeHeaderValue> task = Task.Run(() => headers.ContentType);
+                    MediaTypeHeaderValue contentType1 = headers.ContentType;
+                    MediaTypeHeaderValue contentType2 = await task;
+
+                    Assert.Same(contentType1, contentType2);
+                }
+                else
+                {
+                    Task task = Task.Run(() => headers.Count()); // Force enumeration
+                    MediaTypeHeaderValue contentType1 = headers.ContentType;
+                    await task;
+
+                    Assert.Same(contentType1, headers.ContentType);
+                }
             }
         }
 
@@ -2516,6 +2562,8 @@ namespace System.Net.Http.Tests
         [InlineData("invalid\r")]
         [InlineData("\r\n")]
         [InlineData("invalid\r\n")]
+        [InlineData("\0")]
+        [InlineData("invalid\0")]
         public void TryGetValues_InvalidValuesContainingNewLines_ShouldNotRemoveInvalidValueAndShouldReturnRequestedValue(string value)
         {
             const string Name = "custom";

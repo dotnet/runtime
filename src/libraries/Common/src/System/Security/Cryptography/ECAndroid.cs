@@ -46,9 +46,9 @@ namespace System.Security.Cryptography
 
         internal void SetKey(SafeEcKeyHandle key)
         {
-            Debug.Assert(key != null, "key != null");
-            Debug.Assert(!key.IsInvalid, "!key.IsInvalid");
-            Debug.Assert(!key.IsClosed, "!key.IsClosed");
+            Debug.Assert(key != null);
+            Debug.Assert(!key.IsInvalid);
+            Debug.Assert(!key.IsClosed);
 
             FreeKey();
             _key = new Lazy<SafeEcKeyHandle>(key);

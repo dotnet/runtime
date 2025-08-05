@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a frozen set implementation where strings are grouped by their lengths.</summary>
-    internal sealed class LengthBucketsFrozenSet : FrozenSetInternalBase<string, LengthBucketsFrozenSet.GSW>
+    internal sealed partial class LengthBucketsFrozenSet : FrozenSetInternalBase<string, LengthBucketsFrozenSet.GSW>
     {
         private readonly int[] _lengthBuckets;
         private readonly int _minLength;
@@ -95,7 +95,7 @@ namespace System.Collections.Frozen
                             }
                             else
                             {
-                                // -1 is used to indicate a null, when it's casted to unit it becomes > items.Length
+                                // -1 is used to indicate a null, when it's casted to uint it becomes > items.Length
                                 break;
                             }
                         }

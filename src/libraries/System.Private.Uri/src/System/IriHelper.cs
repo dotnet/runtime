@@ -88,6 +88,8 @@ namespace System
         //
         internal static unsafe string EscapeUnescapeIri(char* pInput, int start, int end, UriComponents component)
         {
+            Debug.Assert(end >= 0 && start >= 0 && start <= end);
+
             int size = end - start;
             var dest = size <= Uri.StackallocThreshold
                 ? new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold])
@@ -180,7 +182,7 @@ namespace System
                         }
 
                         int bytesWritten = rune.EncodeToUtf8(maxUtf8EncodedSpan);
-                        Span<byte> encodedBytes = maxUtf8EncodedSpan.Slice(0, bytesWritten);
+                        ReadOnlySpan<byte> encodedBytes = maxUtf8EncodedSpan.Slice(0, bytesWritten);
 
                         foreach (byte b in encodedBytes)
                         {

@@ -354,7 +354,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
             else // Any Unix
             {
-                Assert.Equal(new CryptographicException("message").HResult, ex.HResult);
+                const int COR_E_SYSTEM = -2146233087;
+                const int CRYPT_E_BAD_DECODE = -2146885630;
+
+                if (ex.HResult != CRYPT_E_BAD_DECODE)
+                {
+                    Assert.Equal(COR_E_SYSTEM, ex.HResult);
+                }
             }
         }
 

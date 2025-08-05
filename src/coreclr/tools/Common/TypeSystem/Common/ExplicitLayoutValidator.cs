@@ -60,12 +60,12 @@ namespace Internal.TypeSystem
                 else if (fieldType.IsValueType)
                 {
                     MetadataType mdType = (MetadataType)fieldType;
-                    if (!mdType.ContainsGCPointers && !mdType.IsByRefLike)
+                    if (!mdType.ContainsGCPointers && !mdType.ContainsByRefs)
                     {
                         // Plain value type, mark the entire range as NonORef
                         return FieldLayoutTag.NonORef;
                     }
-                    Debug.Fail("We should recurse on value types with GC pointers or ByRefLike types");
+                    Debug.Fail("We should recurse on value types with GC pointers or byrefs");
                     return FieldLayoutTag.Empty;
                 }
                 else
@@ -74,20 +74,16 @@ namespace Internal.TypeSystem
                 }
             }
 
-            protected override bool NeedsRecursiveLayout(int offset, TypeDesc fieldType)
+            protected override bool NeedsRecursiveLayout(TypeDesc fieldType)
             {
-                if (!fieldType.IsValueType || !((MetadataType)fieldType).ContainsGCPointers && !fieldType.IsByRefLike)
+                if (!fieldType.IsValueType)
                 {
                     return false;
                 }
 
-                if (offset % PointerSize != 0)
-                {
-                    // Misaligned struct with GC pointers or ByRef
-                    ThrowFieldLayoutError(offset);
-                }
-
-                return true;
+                // Valuetypes with GC references or byrefs need to be checked for overlaps and alignment
+                MetadataType mdType = (MetadataType)fieldType;
+                return mdType.ContainsGCPointers || mdType.ContainsByRefs;
             }
 
             private void ThrowFieldLayoutError(int offset)

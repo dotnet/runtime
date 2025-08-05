@@ -30,7 +30,7 @@ public class Runtime_39823
         try
         {
             TestUnusedObjCopy((IntsWrapped*)0);
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
         }
         catch
         {

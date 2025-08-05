@@ -17,7 +17,10 @@
 
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
-LoaderAllocator::LoaderAllocator(bool collectible) : 
+LoaderAllocator::LoaderAllocator(bool collectible) :
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+    m_dynamicHelpersRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
     m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
@@ -28,10 +31,11 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pLowFrequencyHeap = NULL;
     m_pHighFrequencyHeap = NULL;
     m_pStubHeap = NULL;
-    m_pPrecodeHeap = NULL;
     m_pExecutableHeap = NULL;
 #ifdef FEATURE_READYTORUN
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
     m_pDynamicHelpersHeap = NULL;
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     m_pFuncPtrStubs = NULL;
     m_hLoaderAllocatorObjectHandle = (OBJECTHANDLE)NULL;
@@ -62,11 +66,14 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_fUnloaded = false;
     m_fMarked = false;
     m_pLoaderAllocatorDestroyNext = NULL;
-    m_pDomain = NULL;
     m_pCodeHeapInitialAlloc = NULL;
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
+#ifdef FEATURE_INTERPRETER
+    m_pLastUsedInterpreterCodeHeap = NULL;
+    m_pLastUsedInterpreterDynamicCodeHeap = NULL;
+#endif // FEATURE_INTERPRETER
     m_pJumpStubCache = NULL;
     m_IsCollectible = collectible;
 
@@ -200,14 +207,14 @@ BOOL LoaderAllocator::CheckAddReference_Unlocked(LoaderAllocator *pOtherLA)
     {
         THROWS;
         MODE_ANY;
+        PRECONDITION(pOtherLA != this);
+        PRECONDITION(IsCollectible());
+        PRECONDITION(Id()->GetType() == LAT_Assembly);
     }
     CONTRACTL_END;
 
-    // This must be checked before calling this function
-    _ASSERTE(pOtherLA != this);
-
     // This function requires the that loader allocator lock have been taken.
-    _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->OwnedByCurrentThread());
+    _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->OwnedByCurrentThread());
 
     if (m_LoaderAllocatorReferences.Lookup(pOtherLA) == NULL)
     {
@@ -238,7 +245,7 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
     CONTRACTL_END;
 
     // Check if this lock can be taken in all places that the function is called
-    _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
+    _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
 
     if (!IsCollectible())
         return FALSE;
@@ -249,7 +256,8 @@ BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
     if (!pOtherLA->IsCollectible())
         return FALSE;
 
-    CrstHolder ch(GetDomain()->GetLoaderAllocatorReferencesLock());
+    _ASSERTE(Id()->GetType() == LAT_Assembly);
+    CrstHolder ch(GetAppDomain()->GetLoaderAllocatorReferencesLock());
     return CheckAddReference_Unlocked(pOtherLA);
 }
 
@@ -265,12 +273,13 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
     BOOL fNewReferenceNeeded = FALSE;
 
     // Check if this lock can be taken in all places that the function is called
-    _ASSERTE(GetDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
+    _ASSERTE(GetAppDomain()->GetLoaderAllocatorReferencesLock()->Debug_CanTake());
 
     if (!IsCollectible())
         return FALSE;
 
-    CrstHolder ch(GetDomain()->GetLoaderAllocatorReferencesLock());
+    _ASSERTE(Id()->GetType() == LAT_Assembly);
+    CrstHolder ch(GetAppDomain()->GetLoaderAllocatorReferencesLock());
 
     if (pDefiningModule != NULL)
     {
@@ -356,24 +365,21 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         AppDomain::AssemblyIterator iData;
         iData = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-        while (iData.Next_Unlocked(pDomainAssembly.This()))
+        while (iData.Next_Unlocked(pAssembly.This()))
         {
-            // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetAssembly();
-
             if (pAssembly != NULL)
             {
                 LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
                 if (pLoaderAllocator->IsCollectible())
                 {
-                    printf("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
+                    minipal_log_print_info("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
                     LoaderAllocatorSet::Iterator iter = pLoaderAllocator->m_LoaderAllocatorReferences.Begin();
                     while (iter != pLoaderAllocator->m_LoaderAllocatorReferences.End())
                     {
                         LoaderAllocator * pAllocator = *iter;
-                        printf("LARefTo: %p\n", pAllocator);
+                        minipal_log_print_info("LARefTo: %p\n", pAllocator);
                         iter++;
                     }
                 }
@@ -390,13 +396,10 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-        while (i.Next_Unlocked(pDomainAssembly.This()))
+        while (i.Next_Unlocked(pAssembly.This()))
         {
-            // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetAssembly();
-
             if (pAssembly != NULL)
             {
                 LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
@@ -413,11 +416,8 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
-        while (i.Next_Unlocked(pDomainAssembly.This()))
+        while (i.Next_Unlocked(pAssembly.This()))
         {
-            // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetAssembly();
-
             if (pAssembly != NULL)
             {
                 LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
@@ -480,7 +480,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 pAppDomain->RemoveFileFromCache(domainAssemblyToRemove->GetPEAssembly());
                 AssemblySpec spec;
                 spec.InitializeSpec(domainAssemblyToRemove->GetPEAssembly());
-                VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove));
+                VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove->GetAssembly()));
             }
 
             domainAssemblyIt++;
@@ -501,16 +501,17 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
+        PRECONDITION(pOriginalLoaderAllocator != NULL);
+        PRECONDITION(pOriginalLoaderAllocator->IsCollectible());
+        PRECONDITION(pOriginalLoaderAllocator->Id()->GetType() == LAT_Assembly);
     }
     CONTRACTL_END;
 
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
 
-    AppDomain* pAppDomain = (AppDomain*)pOriginalLoaderAllocator->GetDomain();
+    AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
     // Collect all LoaderAllocators that don't have anymore DomainAssemblies alive
     // Note: that it may not collect our pOriginalLoaderAllocator in case this
@@ -538,7 +539,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
             // Call AssemblyUnloadStarted event
             domainAssemblyIt->GetAssembly()->StartUnload();
             // Notify the debugger
-            domainAssemblyIt->NotifyDebuggerUnload();
+            domainAssemblyIt->GetAssembly()->NotifyDebuggerUnload();
             domainAssemblyIt++;
         }
 
@@ -573,7 +574,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         // (Also debugging NULL AVs if someone uses it accidentally is so much easier)
         pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete = NULL;
 
-        pDomainLoaderAllocatorDestroyIterator->ReleaseManagedAssemblyLoadContext();
+        pDomainLoaderAllocatorDestroyIterator->ReleaseAssemblyLoadContext();
 
         // The native objects in dependent handles may refer to the virtual call stub manager's heaps, so clear the dependent
         // handles first
@@ -600,8 +601,9 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
                         // is inappropriate, we can introduce a new flag or hijack an unused one.
             ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_APPDOMAIN_SHUTDOWN);
 
-            // drop the cast cache while still in COOP mode.
+            // drop the cast and virtual resolution caches while still in COOP mode.
             CastCache::FlushCurrentCache();
+            FlushVirtualFunctionPointerCaches();
         }
 
         ExecutionManager::Unload(pDomainLoaderAllocatorDestroyIterator);
@@ -609,7 +611,6 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 
         // TODO: Do we really want to perform this on each LoaderAllocator?
         MethodTable::ClearMethodDataCache();
-        ClearJitGenericHandleCache();
 
         if (!IsAtProcessExit())
         {
@@ -769,7 +770,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
             do
             {
                 {
-                    CrstHolder ch(&m_crstLoaderAllocator);
+                    CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
                     gc.handleTable = gc.loaderAllocator->GetHandleTable();
 
@@ -781,7 +782,6 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
                         retVal = (UINT_PTR)((freeHandleIndex + 1) << 1);
                         break;
                     }
-
                     slotsUsed = gc.loaderAllocator->GetSlotsUsed();
 
                     if (slotsUsed > MAX_LOADERALLOCATOR_HANDLE)
@@ -808,7 +808,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
                 gc.handleTable = (PTRARRAYREF)AllocateObjectArray(newSize, g_pObjectClass);
 
                 {
-                    CrstHolder ch(&m_crstLoaderAllocator);
+                    CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
                     if (gc.loaderAllocator->GetHandleTable() == gc.handleTableOld)
                     {
@@ -843,7 +843,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
     }
     else
     {
-        OBJECTREF* pRef = GetDomain()->AllocateObjRefPtrsInLargeTable(1);
+        OBJECTREF* pRef = AppDomain::GetCurrentDomain()->AllocateObjRefPtrsInLargeTable(1);
         SetObjectReference(pRef, gc.value);
         retVal = (((UINT_PTR)pRef) + 1);
     }
@@ -886,7 +886,7 @@ void LoaderAllocator::FreeHandle(LOADERHANDLE handle)
         // The slot value doesn't have the low bit set, so it is an index to the handle table.
         // In this case, push the index of the handle to the stack of freed indexes for
         // reuse.
-        CrstHolder ch(&m_crstLoaderAllocator);
+        CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
         UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
         // The Push can fail due to OOM. Ignore this failure, it is better than crashing. The
@@ -937,7 +937,7 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     else
     {
         /* The handle table is read locklessly, be careful */
-        CrstHolder ch(&m_crstLoaderAllocator);
+        CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
         _ASSERTE(!ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle));
 
@@ -983,7 +983,7 @@ void LoaderAllocator::SetHandleValue(LOADERHANDLE handle, OBJECTREF value)
     else
     {
         // The handle table is read locklessly, be careful
-        CrstHolder ch(&m_crstLoaderAllocator);
+        CrstHolder ch(&m_crstLoaderAllocatorHandleTable);
 
         _ASSERTE(!ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle));
 
@@ -1023,7 +1023,7 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
 
     initLoaderAllocator.Call(args);
 
-    m_hLoaderAllocatorObjectHandle = GetDomain()->CreateLongWeakHandle(*pKeepLoaderAllocatorAlive);
+    m_hLoaderAllocatorObjectHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(*pKeepLoaderAllocatorAlive);
 
     RegisterHandleForCleanup(m_hLoaderAllocatorObjectHandle);
 }
@@ -1058,13 +1058,12 @@ void LoaderAllocator::ActivateManagedTracking()
 #define COLLECTIBLE_CODEHEAP_SIZE                  (10 * GetOsPageSize())
 #define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * GetOsPageSize())
 
-void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
+void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 {
     STANDARD_VM_CONTRACT;
 
-    m_pDomain = pDomain;
-
     m_crstLoaderAllocator.Init(CrstLoaderAllocator, (CrstFlags)CRST_UNSAFE_COOPGC);
+    m_crstLoaderAllocatorHandleTable.Init(CrstLeafLock, (CrstFlags)CRST_UNSAFE_COOPGC);
     m_InteropDataCrst.Init(CrstInteropData, CRST_REENTRANCY);
 #ifdef FEATURE_COMINTEROP
     m_ComCallWrapperCrst.Init(CrstCOMCallWrapper);
@@ -1078,6 +1077,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     DWORD dwLowFrequencyHeapReserveSize;
     DWORD dwHighFrequencyHeapReserveSize;
+    DWORD dwStaticsHeapReserveSize;
     DWORD dwStubHeapReserveSize;
     DWORD dwExecutableHeapReserveSize;
     DWORD dwCodeHeapReserveSize;
@@ -1092,12 +1092,14 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         dwStubHeapReserveSize          = COLLECTIBLE_STUB_HEAP_SIZE;
         dwCodeHeapReserveSize          = COLLECTIBLE_CODEHEAP_SIZE;
         dwVSDHeapReserveSize           = COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE;
+        dwStaticsHeapReserveSize       = 0;
     }
     else
     {
         dwLowFrequencyHeapReserveSize  = LOW_FREQUENCY_HEAP_RESERVE_SIZE;
         dwHighFrequencyHeapReserveSize = HIGH_FREQUENCY_HEAP_RESERVE_SIZE;
         dwStubHeapReserveSize          = STUB_HEAP_RESERVE_SIZE;
+        dwStaticsHeapReserveSize       = STATIC_FIELD_HEAP_RESERVE_SIZE;
 
         // Non-collectible assemblies do not reserve space for these heaps.
         dwCodeHeapReserveSize = 0;
@@ -1116,6 +1118,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     DWORD dwTotalReserveMemSize = dwLowFrequencyHeapReserveSize
                                 + dwHighFrequencyHeapReserveSize
+                                + dwStaticsHeapReserveSize
                                 + dwStubHeapReserveSize
                                 + dwCodeHeapReserveSize
                                 + dwVSDHeapReserveSize
@@ -1163,7 +1166,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
                                                                       NULL,
-                                                                      UnlockedLoaderHeap::HeapKind::Executable
+                                                                      LoaderHeapImplementationKind::Executable
                                                                       );
         initReservedMem += dwExecutableHeapReserveSize;
     }
@@ -1177,40 +1180,48 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     if (IsCollectible())
         m_pLowFrequencyHeap = m_pHighFrequencyHeap;
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    m_pHighFrequencyHeap->m_fPermitStubsWithUnwindInfo = TRUE;
-#endif
+    if (dwStaticsHeapReserveSize != 0)
+    {
+        m_pStaticsHeap = new (&m_StaticsHeapInstance) LoaderHeap(STATIC_FIELD_HEAP_RESERVE_SIZE,
+                                                                 STATIC_FIELD_HEAP_COMMIT_SIZE,
+                                                                 initReservedMem,
+                                                                 dwStaticsHeapReserveSize);
+        initReservedMem += dwStaticsHeapReserveSize;
+    }
+    else
+    {
+        _ASSERTE(m_pHighFrequencyHeap != NULL);
+        m_pStaticsHeap = m_pHighFrequencyHeap;
+    }
 
     m_pStubHeap = new (&m_StubHeapInstance) LoaderHeap(STUB_HEAP_RESERVE_SIZE,
                                                        STUB_HEAP_COMMIT_SIZE,
                                                        initReservedMem,
                                                        dwStubHeapReserveSize,
                                                        STUBMANAGER_RANGELIST(StubLinkStubManager),
-                                                       UnlockedLoaderHeap::HeapKind::Executable);
+                                                       LoaderHeapImplementationKind::Executable);
 
     initReservedMem += dwStubHeapReserveSize;
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    m_pStubHeap->m_fPermitStubsWithUnwindInfo = TRUE;
-#endif
-
-    m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
-
-    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                           2 * GetStubCodePageSize(),
+    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
                                                                            &m_stubPrecodeRangeList,
-                                                                           UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                            false /* fUnlocked */,
-                                                                           StubPrecode::GenerateCodePage,
-                                                                           StubPrecode::CodeSize);
+                                                                           &s_stubPrecodeHeapConfig);
 
-    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                       2 * GetStubCodePageSize(),
-                                                                       &m_fixupPrecodeRangeList,
-                                                                       UnlockedLoaderHeap::HeapKind::Interleaved,
+#if defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
+    if (IsCollectible())
+    {
+        m_pDynamicHelpersStubHeap = m_pNewStubPrecodeHeap;
+    }
+    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) InterleavedLoaderHeap(
+                                                                               &m_dynamicHelpersRangeList,
+                                                                               false /* fUnlocked */,
+                                                                               &s_stubPrecodeHeapConfig);
+#endif // defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
+
+    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) InterleavedLoaderHeap(&m_fixupPrecodeRangeList,
                                                                        false /* fUnlocked */,
-                                                                       FixupPrecode::GenerateCodePage,
-                                                                       FixupPrecode::CodeSize);
+                                                                       &s_fixupStubPrecodeHeapConfig);
 
     // Initialize the EE marshaling data to NULL.
     m_pMarshalingData = NULL;
@@ -1237,6 +1248,8 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
 
 #ifdef FEATURE_READYTORUN
+
+#ifndef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
 {
     CONTRACTL {
@@ -1252,6 +1265,7 @@ PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
     }
     return m_pDynamicHelpersHeap;
 }
+#endif // !FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
 
 FuncPtrStubs * LoaderAllocator::GetFuncPtrStubs()
@@ -1368,51 +1382,54 @@ void LoaderAllocator::Terminate()
         m_pLowFrequencyHeap = NULL;
     }
 
+    if ((m_pStaticsHeap != NULL) && (m_pStaticsHeap != m_pHighFrequencyHeap))
+    {
+        m_pStaticsHeap->~LoaderHeap();
+        m_pStaticsHeap = NULL;
+    }
+
     if (m_pHighFrequencyHeap != NULL)
     {
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        UnregisterUnwindInfoInLoaderHeap(m_pHighFrequencyHeap);
-#endif
-
         m_pHighFrequencyHeap->~LoaderHeap();
         m_pHighFrequencyHeap = NULL;
     }
 
     if (m_pStubHeap != NULL)
     {
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        UnregisterUnwindInfoInLoaderHeap(m_pStubHeap);
-#endif
-
         m_pStubHeap->~LoaderHeap();
         m_pStubHeap = NULL;
     }
 
-    if (m_pPrecodeHeap != NULL)
-    {
-        m_pPrecodeHeap->~CodeFragmentHeap();
-        m_pPrecodeHeap = NULL;
-    }
-
     if (m_pFixupPrecodeHeap != NULL)
     {
-        m_pFixupPrecodeHeap->~LoaderHeap();
+        m_pFixupPrecodeHeap->~InterleavedLoaderHeap();
         m_pFixupPrecodeHeap = NULL;
     }
 
+    #ifdef FEATURE_READYTORUN
+    #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+        if (m_pDynamicHelpersStubHeap != NULL)
+        {
+            if (m_pDynamicHelpersStubHeap != m_pNewStubPrecodeHeap)
+            {
+                m_pDynamicHelpersStubHeap->~InterleavedLoaderHeap();
+            }
+            m_pDynamicHelpersStubHeap = NULL;
+        }
+    #else
+        if (m_pDynamicHelpersHeap != NULL)
+        {
+            delete m_pDynamicHelpersHeap;
+            m_pDynamicHelpersHeap = NULL;
+        }
+    #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    #endif
+
     if (m_pNewStubPrecodeHeap != NULL)
     {
-        m_pNewStubPrecodeHeap->~LoaderHeap();
+        m_pNewStubPrecodeHeap->~InterleavedLoaderHeap();
         m_pNewStubPrecodeHeap = NULL;
     }
-
-#ifdef FEATURE_READYTORUN
-    if (m_pDynamicHelpersHeap != NULL)
-    {
-        delete m_pDynamicHelpersHeap;
-        m_pDynamicHelpersHeap = NULL;
-    }
-#endif
 
     if (m_pFuncPtrStubs != NULL)
     {
@@ -1420,7 +1437,6 @@ void LoaderAllocator::Terminate()
         m_pFuncPtrStubs = NULL;
     }
 
-    // This was the block reserved by BaseDomain::Init for the loaderheaps.
     if (m_InitialReservedMemForLoaderHeaps)
     {
         ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps);
@@ -1462,23 +1478,30 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pHighFrequencyHeap->EnumMemoryRegions(flags);
     }
+    if (m_pStaticsHeap.IsValid())
+    {
+        m_pStaticsHeap->EnumMemoryRegions(flags);
+    }
     if (m_pStubHeap.IsValid())
     {
         m_pStubHeap->EnumMemoryRegions(flags);
-    }
-    if (m_pPrecodeHeap.IsValid())
-    {
-        m_pPrecodeHeap->EnumMemoryRegions(flags);
     }
     if (m_pExecutableHeap.IsValid())
     {
         m_pExecutableHeap->EnumMemoryRegions(flags);
     }
 #ifdef FEATURE_READYTORUN
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    if (m_pDynamicHelpersStubHeap.IsValid() && m_pDynamicHelpersStubHeap != m_pNewStubPrecodeHeap)
+    {
+        m_pDynamicHelpersStubHeap->EnumMemoryRegions(flags);
+    }
+#else
     if (m_pDynamicHelpersHeap.IsValid())
     {
         m_pDynamicHelpersHeap->EnumMemoryRegions(flags);
     }
+#endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif
     if (m_pFixupPrecodeHeap.IsValid())
     {
@@ -1501,6 +1524,8 @@ SIZE_T LoaderAllocator::EstimateSize()
     SIZE_T retval=0;
     if(m_pHighFrequencyHeap)
         retval+=m_pHighFrequencyHeap->GetSize();
+    if(m_pStaticsHeap)
+        retval+=m_pStaticsHeap->GetSize();
     if(m_pLowFrequencyHeap)
         retval+=m_pLowFrequencyHeap->GetSize();
     if(m_pStubHeap)
@@ -1591,14 +1616,14 @@ DispatchToken LoaderAllocator::GetDispatchToken(
     return DispatchToken::CreateDispatchToken(typeId, slotNumber);
 }
 
-void LoaderAllocator::InitVirtualCallStubManager(BaseDomain * pDomain)
+void LoaderAllocator::InitVirtualCallStubManager()
 {
     STANDARD_VM_CONTRACT;
 
     NewHolder<VirtualCallStubManager> pMgr(new VirtualCallStubManager());
 
     // Init the manager, including all heaps and such.
-    pMgr->Init(pDomain, this);
+    pMgr->Init(this);
 
     m_pVirtualCallStubManager = pMgr;
 
@@ -1682,18 +1707,18 @@ BOOL AssemblyLoaderAllocator::CanUnload()
 DomainAssemblyIterator::DomainAssemblyIterator(DomainAssembly* pFirstAssembly)
 {
     pCurrentAssembly = pFirstAssembly;
-    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextDomainAssemblyInSameALC() : NULL;
+    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetAssembly()->GetNextAssemblyInSameALC() : NULL;
 }
 
 void DomainAssemblyIterator::operator++()
 {
     pCurrentAssembly = pNextAssembly;
-    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextDomainAssemblyInSameALC() : NULL;
+    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetAssembly()->GetNextAssemblyInSameALC() : NULL;
 }
 
 #ifndef DACCESS_COMPILE
 
-void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
+void AssemblyLoaderAllocator::Init()
 {
     m_Id.Init();
 
@@ -1701,7 +1726,7 @@ void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
     // GC mode, in case the caller requires that
     m_dependentHandleToNativeObjectSetCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
 
-    LoaderAllocator::Init((BaseDomain *)pAppDomain);
+    LoaderAllocator::Init(NULL /*pExecutableHeapMemory*/);
     if (IsCollectible())
     {
         // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support
@@ -1901,10 +1926,17 @@ void AssemblyLoaderAllocator::CleanupHandles()
         NOTHROW;
         MODE_ANY;
         CAN_TAKE_LOCK;
+        PRECONDITION(IsCollectible());
+        PRECONDITION(Id()->GetType() == LAT_Assembly);
     }
     CONTRACTL_END;
 
-    _ASSERTE(GetDomain()->IsAppDomain());
+
+    if (m_hLoaderAllocatorObjectHandle != NULL)
+    {
+        GCX_COOP();
+        FreeTLSIndicesForLoaderAllocator(this);
+    }
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
@@ -2020,12 +2052,12 @@ void LoaderAllocator::CleanupFailedTypeInit()
         return;
     }
 
-    _ASSERTE(GetDomain()->IsAppDomain());
+    _ASSERTE(Id()->GetType() == LAT_Assembly);
 
     // This method doesn't take a lock around loader allocator state access, because
     // it's supposed to be called only during cleanup. However, the domain-level state
     // might be accessed by multiple threads.
-    ListLock *pLock = GetDomain()->GetClassInitLock();
+    ListLock *pLock = AppDomain::GetCurrentDomain()->GetClassInitLock();
 
     while (!m_failedTypeInitCleanupList.IsEmpty())
     {
@@ -2036,7 +2068,7 @@ void LoaderAllocator::CleanupFailedTypeInit()
     }
 }
 
-void AssemblyLoaderAllocator::ReleaseManagedAssemblyLoadContext()
+void AssemblyLoaderAllocator::ReleaseAssemblyLoadContext()
 {
     CONTRACTL
     {
@@ -2128,17 +2160,17 @@ void LoaderAllocator::AssociateMemoryWithLoaderAllocator(BYTE *start, const BYTE
 }
 
 /* static */
-PTR_LoaderAllocator LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(TADDR ptr)
+void LoaderAllocator::GcReportAssociatedLoaderAllocators_Unsafe(TADDR ptr, promote_func* fn, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
 
     GlobalLoaderAllocator* pGlobalAllocator = (GlobalLoaderAllocator*)SystemDomain::GetGlobalLoaderAllocator();
-    LoaderAllocator* pLoaderAllocator;
-    if (pGlobalAllocator->m_memoryAssociations.IsInRangeWorker_Unlocked(ptr, reinterpret_cast<TADDR *>(&pLoaderAllocator)))
-    {
-        return pLoaderAllocator;
-    }
-    return NULL;
+    pGlobalAllocator->m_memoryAssociations.ForEachInRangeWorker_Unlocked(ptr,
+        [fn, sc](TADDR laAddr)
+        {
+            GcReportLoaderAllocator(fn, sc, (LoaderAllocator*)laAddr);
+        }
+    );
 }
 
 
@@ -2216,6 +2248,140 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
 }
 #endif //
 #endif // FEATURE_ON_STACK_REPLACEMENT
+
+#ifndef DACCESS_COMPILE
+void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem, bool isClassInitedByUpdatingStaticPointer)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    if (cbMem == 0)
+        return;
+
+    if (IsCollectible())
+    {
+        GCX_COOP();
+        uint32_t doubleSlots = AlignUp(cbMem, sizeof(double)) / sizeof(double);
+        BASEARRAYREF ptrArray = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_R8, doubleSlots);
+        GCPROTECT_BEGIN(ptrArray);
+        // Keep this allocation alive till the LoaderAllocator is collected
+        AllocateHandle(ptrArray);
+        CrstHolder cs(&m_crstLoaderAllocator);
+        {
+            if (pStaticsInfo->GetNonGCStaticsPointer() == NULL)
+            {
+                GCX_FORBID();
+                // Allocating a weak interior handle is a tricky thing.
+                // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
+                // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
+                // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
+                //
+                // We work around these details by the following means
+                // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
+                // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
+                // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
+                // 4. Registration for cleanup cannot trigger a GC
+                // 5. We then unconditionally set the statics pointer.
+                WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pNonGCStatics);
+                RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+                weakHandleHolder.SuppressRelease();
+                bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)ptrArray->GetDataPtr(), isClassInitedByUpdatingStaticPointer);
+                _ASSERTE(didUpdateStaticsPointer);
+            }
+        }
+        GCPROTECT_END();
+    }
+    else
+    {
+        uint32_t initialcbMem = cbMem;
+        if (initialcbMem >= 8)
+        {
+            cbMem = ALIGN_UP(cbMem, sizeof(double));
+#ifndef TARGET_64BIT
+            cbMem += 4; // We need to align the memory to 8 bytes so that static doubles, and static int64's work
+                        // and this allocator doesn't guarantee 8 byte alignment, so allocate 4 bytes extra, and alignup.
+                        // Technically this isn't necessary on X86, but it's simpler to do it unconditionally.
+#endif
+        }
+        else
+        {
+            // Always allocate in multiples of pointer size
+            cbMem = ALIGN_UP(cbMem, sizeof(TADDR));
+        }
+        uint8_t* pbMem = (uint8_t*)(void*)GetStaticsHeap()->AllocMem(S_SIZE_T(cbMem));
+#ifndef TARGET_64BIT // Second part of alignment work
+        if (initialcbMem >= 8)
+        {
+            pbMem = (uint8_t*)ALIGN_UP(pbMem, 8);
+        }
+#endif
+        pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */false, (TADDR)pbMem, isClassInitedByUpdatingStaticPointer);
+    }
+}
+
+void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cSlots, MethodTable* pMTToFillWithStaticBoxes, bool isClassInitedByUpdatingStaticPointer)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    if (cSlots == 0)
+        return;
+
+    if (IsCollectible())
+    {
+        GCX_COOP();
+        BASEARRAYREF ptrArray = (BASEARRAYREF)AllocateObjectArray(cSlots, g_pObjectClass, /* bAllocateInPinnedHeap = */FALSE);
+        GCPROTECT_BEGIN(ptrArray);
+        if (pMTToFillWithStaticBoxes != NULL)
+        {
+            OBJECTREF* pArray = (OBJECTREF*)ptrArray->GetDataPtr();
+            GCPROTECT_BEGININTERIOR(pArray);
+            pMTToFillWithStaticBoxes->AllocateRegularStaticBoxes(&pArray);
+            GCPROTECT_END();
+        }
+        // Keep this allocation alive till the LoaderAllocator is collected
+        AllocateHandle(ptrArray);
+        CrstHolder cs(&m_crstLoaderAllocator);
+        {
+            if (pStaticsInfo->GetGCStaticsPointer() == NULL)
+            {
+                GCX_FORBID();
+                // Allocating a weak interior handle is a tricky thing.
+                // 1. If there are multiple weak interior handles that point at a given interior pointer location, there will be heap corruption
+                // 2. If the interior handle is created, but not registered for cleanup, it is a memory leak
+                // 3. Since the weak interior handle doesn't actually keep the object alive, it needs to be kept alive by some other means
+                //
+                // We work around these details by the following means
+                // 1. We use a LOADERHANDLE to keep the object alive until the LoaderAllocator is freed.
+                // 2. We hold the crstLoaderAllocatorLock, and double check to wnsure that the data is ready to be filled in
+                // 3. We create the weak interior handle, and register it for cleanup (which can fail with an OOM) before updating the statics data to have the pointer
+                // 4. Registration for cleanup cannot trigger a GC
+                // 5. We then unconditionally set the statics pointer.
+                WeakInteriorHandleHolder weakHandleHolder = GetAppDomain()->CreateWeakInteriorHandle(ptrArray, &pStaticsInfo->m_pGCStatics);
+                RegisterHandleForCleanupLocked(weakHandleHolder.GetValue());
+                weakHandleHolder.SuppressRelease();
+                bool didUpdateStaticsPointer = pStaticsInfo->InterlockedUpdateStaticsPointer(/* isGCPointer */true, (TADDR)ptrArray->GetDataPtr(), isClassInitedByUpdatingStaticPointer);
+                _ASSERTE(didUpdateStaticsPointer);
+            }
+        }
+        GCPROTECT_END();
+    }
+    else
+    {
+        AppDomain::GetCurrentDomain()->AllocateObjRefPtrsInLargeTable(cSlots, pStaticsInfo, pMTToFillWithStaticBoxes, isClassInitedByUpdatingStaticPointer);
+    }
+}
+#endif // !DACCESS_COMPILE
 
 
 #ifndef DACCESS_COMPILE

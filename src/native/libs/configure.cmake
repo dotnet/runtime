@@ -9,7 +9,7 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_APPLE)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
@@ -256,36 +256,6 @@ check_symbol_exists(
     HAVE_TIOCGWINSZ)
 
 check_symbol_exists(
-    TIOCSWINSZ
-    "sys/ioctl.h"
-    HAVE_TIOCSWINSZ)
-
-check_symbol_exists(
-    tcgetattr
-    termios.h
-    HAVE_TCGETATTR)
-
-check_symbol_exists(
-    tcsetattr
-    termios.h
-    HAVE_TCSETATTR)
-
-check_symbol_exists(
-    ECHO
-    "termios.h"
-    HAVE_ECHO)
-
-check_symbol_exists(
-    ICANON
-    "termios.h"
-    HAVE_ICANON)
-
-check_symbol_exists(
-    TCSANOW
-    "termios.h"
-    HAVE_TCSANOW)
-
-check_symbol_exists(
     cfsetspeed
     termios.h
     HAVE_CFSETSPEED)
@@ -361,10 +331,6 @@ check_struct_has_member(
     HAVE_STATVFS_BASETYPE)
 
 set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
-check_type_size(
-    "((struct dirent*)0)->d_name"
-    DIRENT_NAME_SIZE)
-set(CMAKE_EXTRA_INCLUDE_FILES)
 
 # statfs: Find whether this struct exists
 if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
@@ -411,21 +377,6 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
-    #include <dirent.h>
-    #include <stddef.h>
-    int main(void)
-    {
-        DIR* dir = NULL;
-        struct dirent* entry = NULL;
-        struct dirent* result;
-        readdir_r(dir, entry, &result);
-        return 0;
-    }
-    "
-    HAVE_READDIR_R)
-
-check_c_source_compiles(
-    "
     #include <sys/types.h>
     #include <sys/event.h>
     int main(void)
@@ -437,18 +388,6 @@ check_c_source_compiles(
     }
     "
     KEVENT_HAS_VOID_UDATA)
-
-check_struct_has_member(
-    "struct fd_set"
-    fds_bits
-    "sys/select.h"
-    HAVE_FDS_BITS)
-
-check_struct_has_member(
-    "struct fd_set"
-    __fds_bits
-    "sys/select.h"
-    HAVE_PRIVATE_FDS_BITS)
 
 # do not use sendfile() on iOS/tvOS, it causes SIGSYS at runtime on devices
 if(NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
@@ -509,6 +448,18 @@ check_symbol_exists(
     epoll_create1
     sys/epoll.h
     HAVE_EPOLL)
+
+check_symbol_exists(
+    gethostname
+    unistd.h
+    HAVE_GETHOSTNAME)
+
+check_symbol_exists(
+    getnameinfo
+    netdb.h
+    HAVE_GETNAMEINFO)
+
+check_struct_has_member("struct sockaddr_un" sun_path "sys/types.h;sys/un.h" HAVE_SOCKADDR_UN_SUN_PATH)
 
 check_symbol_exists(
     accept4
@@ -614,7 +565,10 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
-elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+elseif(CLR_CMAKE_TARGET_WASI)
+    set(HAVE_FORK 0)
+    unset(HAVE_GETNAMEINFO) # WASIp2 libc has empty function with TODO and abort()
+elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()
     check_symbol_exists(
@@ -730,23 +684,6 @@ check_symbol_exists(
 
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
-
-check_c_source_compiles(
-    "
-    #include <stddef.h>
-    #include <sys/socket.h>
-
-    int main(void)
-    {
-        int fd = -1;
-        struct sockaddr* addr = NULL;
-        socklen_t addrLen = 0;
-
-        int err = bind(fd, addr, addrLen);
-        return 0;
-    }
-    "
-    BIND_ADDRLEN_UNSIGNED)
 
 check_c_source_compiles(
     "
@@ -948,10 +885,6 @@ check_include_files(
     "pthread.h"
     HAVE_PTHREAD_H)
 
-check_include_files(
-    "sys/statfs.h"
-    HAVE_SYS_STATFS_H)
-
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(HAVE_IOS_NET_IFMEDIA_H 1)
@@ -1014,10 +947,6 @@ check_include_files(
     HAVE_SYS_MNTENT_H)
 
 check_include_files(
-    "mntent.h"
-    HAVE_MNTENT_H)
-
-check_include_files(
     "stdint.h;net/if_media.h"
     HAVE_NET_IFMEDIA_H)
 
@@ -1042,11 +971,6 @@ check_symbol_exists(
     getdomainname
     unistd.h
     HAVE_GETDOMAINNAME)
-
-check_symbol_exists(
-    uname
-    sys/utsname.h
-    HAVE_UNAME)
 
 # getdomainname on OSX takes an 'int' instead of a 'size_t'
 # check if compiling with 'size_t' would cause a warning

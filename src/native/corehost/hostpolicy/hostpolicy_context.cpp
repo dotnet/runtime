@@ -70,11 +70,13 @@ namespace
             return SystemResolveDllImport(entry_point_name);
         }
 
+#if !defined(TARGET_OSX)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
             return CryptoResolveDllImport(entry_point_name);
         }
-#endif
+#endif // !defined(TARGET_OSX)
+#endif // !defined(_WIN32)
 
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
         {
@@ -118,6 +120,18 @@ namespace
         if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
         {
             return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
+        }
+
+        if (::strcmp(key, HOST_PROPERTY_BUNDLE_EXTRACTION_PATH) == 0)
+        {
+            if (!bundle::info_t::is_single_file_bundle())
+                return -1;
+
+            auto bundle = bundle::runner_t::app();
+            if (bundle->extraction_path().empty())
+                return -1;
+
+            return pal::pal_utf8string(bundle->extraction_path(), value_buffer, value_buffer_size);
         }
 
         // Properties from runtime initialization
@@ -204,13 +218,13 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     }
 
     clr_path = probe_paths.coreclr;
-    if (clr_path.empty() || !pal::realpath(&clr_path))
+    if (clr_path.empty() || !pal::fullpath(&clr_path))
     {
         // in a single-file case we may not need coreclr,
         // otherwise fail early.
         if (!bundle::info_t::is_single_file_bundle())
         {
-            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
+            trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting DOTNET_HOST_TRACE environment variable to 1"));
             return StatusCode::CoreClrResolveFailure;
         }
 

@@ -29,6 +29,7 @@
              Link="System\Drawing\ColorConverterCommon.cs" />
     <Compile Include="$(CommonPath)System\Drawing\ColorTable.cs"
              Link="System\Drawing\ColorTable.cs" />
+    <Compile Include="$(CommonPath)System\Experimentals.cs" Link="Common\System\Experimentals.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -36,18 +37,22 @@
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetSysColor.cs"
              Link="Common\Interop\Windows\User32\Interop.GetSysColor.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.HIGHCONTRASTW.cs"
+             Link="Common\Interop\Windows\User32\Interop.HIGHCONTRASTW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.Win32SystemColors.cs"
              Link="Common\Interop\Windows\User32\Interop.Win32SystemColors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.SystemParametersInfo.cs"
+             Link="Common\Interop\Windows\User32\Interop.SystemParametersInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ObjectModel\src\System.ObjectModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
 
 </Project>

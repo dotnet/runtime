@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1219,6 +1220,10 @@ namespace System.Tests
 
             // Single[] -> primitive[]
             yield return new object[] { new float[] { 1, 2.2f, 3 }, 0, new double[3], 0, 3, new double[] { 1, 2.2f, 3 } };
+
+            // SByteEnum[] -> primitive[]
+            yield return new object[] { new SByteEnum[] { (SByteEnum)1, (SByteEnum)2, (SByteEnum)3 }, 0, new int[3], 0, 3, new int[] { 1, 2, 3 } };
+            yield return new object[] { new SByteEnum[] { (SByteEnum)1, (SByteEnum)2, (SByteEnum)3 }, 0, new Int32Enum[3], 0, 3, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 } };
         }
 
         public static IEnumerable<object[]> Copy_SZArray_UnreliableConversion_CanPerform_TestData()
@@ -1581,6 +1586,12 @@ namespace System.Tests
 
             // ValueType[] -> InterfaceNotImplementedByValueType[] never works
             yield return new object[] { new StructWithNonGenericInterface1[1], new NonGenericInterface2[1] };
+
+            // ValueType[] -> ValueType[] never works
+            yield return new object[] { new StructWithNonGenericInterface1[1], new StructWithNonGenericInterface1_2[1] };
+
+            // ValueType[] -> Nullable[] never works
+            yield return new object[] { new int[1], new int?[1] };
         }
 
         [Theory]
@@ -1598,12 +1609,30 @@ namespace System.Tests
         }
 
         [Fact]
+        public static unsafe void Copy_CompatiblePointers()
+        {
+            // Can copy between compatible pointers
+            uint*[] uintPointerArray = new uint*[1];
+            Array.ConstrainedCopy(new int*[1] { (int*)0x12345678 }, 0, uintPointerArray, 0, 1);
+            Assert.Equal((UIntPtr)0x12345678, (UIntPtr)uintPointerArray[0]);
+        }
+
+        [Fact]
         public static void Copy_SourceAndDestinationPointers_ThrowsArrayTypeMismatchException()
         {
             unsafe
             {
+                // Can't copy between pointer and object
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new void*[1], new object[1], 0));
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new object[1], new void*[1], 0));
+
+                // Can't copy between pointer and interface
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new IConvertible[1], 1));
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new IConvertible[1], new int*[1], 1));
+
+                // Can't copy between incompatible pointer types
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new bool*[1], 0));
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new void*[1], 0));
             }
         }
 
@@ -4153,6 +4182,11 @@ namespace System.Tests
             var arr5 = new int[3];
             arr5.SetValue(SByteEnum.MinusTwo, new int[] { 1 });
             Assert.Equal(-2, arr5[1]);
+
+            // Casting enum to underlying type
+            var arr6 = new int[3];
+            arr6.SetValue(Int32Enum.Case3, new int[] { 1 });
+            Assert.Equal(2, arr6[1]);
         }
 
         [Fact]
@@ -4169,6 +4203,10 @@ namespace System.Tests
             // T -> Nullable<T>  T must be exact
             var arr3 = new int?[3];
             Assert.Throws<InvalidCastException>(() => arr3.SetValue((short)42, new int[] { 1 }));
+
+            // Converting enum to same size with wrong signed-ness
+            var arr4 = new uint[3];
+            AssertExtensions.Throws<ArgumentException>(null, () => arr4.SetValue(Int32Enum.Case3, new int[] { 1 }));
         }
 
         [Fact]

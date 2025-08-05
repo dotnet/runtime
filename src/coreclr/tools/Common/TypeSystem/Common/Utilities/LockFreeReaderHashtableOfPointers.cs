@@ -9,6 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Debug = System.Diagnostics.Debug;
 
+#nullable disable
+
 namespace Internal.TypeSystem
 {
     /// <summary>

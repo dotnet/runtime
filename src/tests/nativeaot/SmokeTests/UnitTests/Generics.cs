@@ -57,6 +57,10 @@ class Generics
         TestGvmLookupDependency.Run();
         Test99198Regression.Run();
         Test102259Regression.Run();
+        Test104913Regression.Run();
+        Test105397Regression.Run();
+        Test105880Regression.Run();
+        Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -2356,9 +2360,29 @@ class Generics
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DeepAV(int x)
+        {
+            if (x > 0)
+                DeepAV(x - 1);
+
+            // Call an instance method on something we never allocated, but overrides a used virtual.
+            // This asserted the compiler when trying to build a template for Unused<__Canon>.
+            ((Unused<object>)s_ref).Blagh();
+        }
+
         public static void Run()
         {
             new Used().DoStuff();
+
+            for (int i = 0; i < 10; i++)
+            try
+            {
+                DeepAV(i);
+            }
+            catch (NullReferenceException)
+            {
+            }
 
             try
             {
@@ -3261,6 +3285,7 @@ class Generics
 
         class GenClass<T> { }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object RecurseOverStruct<T>(int count) where T : new()
         {
             if (count > 0)
@@ -3269,6 +3294,7 @@ class Generics
             return new T();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object RecurseOverClass<T>(int count) where T : new()
         {
             if (count > 0)
@@ -3276,6 +3302,9 @@ class Generics
 
             return new T();
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int RecurseOverArray<T>(int iter) => iter > 0 ? RecurseOverArray<T[]>(iter - 1) : 0;
 
         public static void Run()
         {
@@ -3301,6 +3330,8 @@ class Generics
 
             if (!caughtException)
                 throw new Exception();
+
+            RecurseOverArray<object>(2);
         }
     }
 
@@ -3573,6 +3604,98 @@ class Generics
         public static void Run()
         {
             new Gen<object>();
+        }
+    }
+
+    class Test104913Regression
+    {
+        interface IFoo
+        {
+            (Type, Type) InvokeInstance<T>() where T : IBar;
+        }
+
+        class Foo : IFoo
+        {
+            public (Type, Type) InvokeInstance<T>() where T : IBar
+                => (typeof(T), T.InvokeStatic<int>());
+        }
+
+        interface IBar
+        {
+            static abstract Type InvokeStatic<T>();
+        }
+
+        class Bar : IBar
+        {
+            public static Type InvokeStatic<T>()
+                => typeof(T);
+        }
+
+        public static void Run()
+        {
+            (Type t1, Type t2) = ((IFoo)new Foo()).InvokeInstance<Bar>();
+            if (t1 != typeof(Bar) || t2 != typeof(int))
+                throw new Exception();
+        }
+    }
+
+    class Test105397Regression
+    {
+        interface IEnumerable<T> { }
+
+        interface ITest<TResult>
+        {
+            TReturn UsingDatabaseResult<TState, TReturn>(TState state, Func<TResult, TState, TReturn> @using);
+        }
+        class Test<TResult> : ITest<TResult>
+        {
+            public TReturn UsingDatabaseResult<TState, TReturn>(TState state, Func<TResult, TState, TReturn> @using)
+            {
+                return default;
+            }
+        }
+
+        struct GenStruct<T> { }
+
+        public static void Run()
+        {
+            ITest<object> t = new Test<object>();
+            t.UsingDatabaseResult<IEnumerable<IEnumerable<GenStruct<double>>>, int>(null, (x, y) => 1);
+        }
+    }
+
+    class Test105880Regression
+    {
+        public interface IFoo<T>
+        {
+            static abstract void Method<U>();
+        }
+
+        interface IBar<T> : IFoo<T>
+        {
+            static void IFoo<T>.Method<U>() => Console.WriteLine();
+        }
+
+        class Baz : IBar<Atom> { }
+
+        public struct Atom { }
+
+        public static void Run()
+        {
+            Console.WriteLine(new Baz());
+        }
+    }
+
+    class Test115442Regression
+    {
+        public readonly struct TypeBuilder<T1, T2>
+        {
+            public TypeBuilder<(T1, T2), T3> Add<T3>() => default;
+        }
+
+        public static void Run()
+        {
+            typeof(TypeBuilder<int, int>).GetMethod("Add").MakeGenericMethod(typeof(int)).Invoke(default(TypeBuilder<int, int>), []);
         }
     }
 

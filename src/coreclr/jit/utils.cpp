@@ -23,8 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "opcode.h"
 #include "jitstd/algorithm.h"
-
-#include <dn-u16.h> // for u16_strtod
+#include "minipal/time.h"
 
 /*****************************************************************************/
 
@@ -284,14 +283,14 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  */
 const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
            ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));
 #else
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)));
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     if (strlen(sep) > 0)
     {
@@ -308,7 +307,7 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
     {
         regMaskTP regBit = genRegMask(regNum);
 
-        if ((regMask & regBit) != 0)
+        if ((regMask & regBit).IsNonEmpty())
         {
             // We have a register to display. It gets displayed now if:
             // 1. This is the first register to display of a new range of registers (possibly because
@@ -436,10 +435,9 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
 
     sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
     sep = dspRegRange(regMask, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
-
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     sep = dspRegRange(regMask, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     printf("]");
 
@@ -760,7 +758,7 @@ bool ConfigMethodRange::Contains(unsigned hash)
 //    because of bad characters or too many entries, or had values
 //    that were too large to represent.
 
-void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
+void ConfigMethodRange::InitRanges(const char* rangeStr, unsigned capacity)
 {
     // Make sure that the memory was zero initialized
     assert(m_inited == 0 || m_inited == 1);
@@ -782,34 +780,34 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
     m_ranges             = (Range*)jitHost->allocateMemory(capacity * sizeof(Range));
     m_entries            = capacity;
 
-    const WCHAR* p           = rangeStr;
-    unsigned     lastRange   = 0;
-    bool         setHighPart = false;
+    const char* p           = rangeStr;
+    unsigned    lastRange   = 0;
+    bool        setHighPart = false;
 
     while ((*p != 0) && (lastRange < m_entries))
     {
-        while ((*p == L' ') || (*p == L','))
+        while ((*p == ' ') || (*p == ','))
         {
             p++;
         }
 
         int i = 0;
 
-        while (((L'0' <= *p) && (*p <= L'9')) || ((L'A' <= *p) && (*p <= L'F')) || ((L'a' <= *p) && (*p <= L'f')))
+        while ((('0' <= *p) && (*p <= '9')) || (('A' <= *p) && (*p <= 'F')) || (('a' <= *p) && (*p <= 'f')))
         {
             int n = 0;
 
-            if ((L'0' <= *p) && (*p <= L'9'))
+            if (('0' <= *p) && (*p <= '9'))
             {
-                n = (*p++) - L'0';
+                n = (*p++) - '0';
             }
-            else if ((L'A' <= *p) && (*p <= L'F'))
+            else if (('A' <= *p) && (*p <= 'F'))
             {
-                n = (*p++) - L'A' + 10;
+                n = (*p++) - 'A' + 10;
             }
-            else if ((L'a' <= *p) && (*p <= L'f'))
+            else if (('a' <= *p) && (*p <= 'f'))
             {
-                n = (*p++) - L'a' + 10;
+                n = (*p++) - 'a' + 10;
             }
 
             int j = 16 * i + n;
@@ -843,13 +841,13 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
         // Must have been looking for the low part of a range
         m_ranges[lastRange].m_low = i;
 
-        while (*p == L' ')
+        while (*p == ' ')
         {
             p++;
         }
 
         // Was that the low part of a low-high pair?
-        if (*p == L'-')
+        if (*p == '-')
         {
             // Yep, skip the dash and set high part next time around.
             p++;
@@ -922,22 +920,22 @@ void ConfigMethodRange::Dump()
 //    Values are separated decimal with no whitespace.
 //    Separators are any digit not '-' or '0-9'
 //
-void ConfigIntArray::Init(const WCHAR* str)
+void ConfigIntArray::Init(const char* str)
 {
     // Count the number of values
     //
-    const WCHAR* p         = str;
-    unsigned     numValues = 0;
+    const char* p         = str;
+    unsigned    numValues = 0;
     while (*p != 0)
     {
-        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        if ((*p == '-') || (('0' <= *p) && (*p <= '9')))
         {
-            if (*p == L'-')
+            if (*p == '-')
             {
                 p++;
             }
 
-            while ((L'0' <= *p) && (*p <= L'9'))
+            while (('0' <= *p) && (*p <= '9'))
             {
                 p++;
             }
@@ -959,17 +957,17 @@ void ConfigIntArray::Init(const WCHAR* str)
     bool isNegative   = false;
     while (*p != 0)
     {
-        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        if ((*p == '-') || (('0' <= *p) && (*p <= '9')))
         {
-            if (*p == L'-')
+            if (*p == '-')
             {
                 isNegative = true;
                 p++;
             }
 
-            while ((L'0' <= *p) && (*p <= L'9'))
+            while (('0' <= *p) && (*p <= '9'))
             {
-                currentValue = currentValue * 10 + (*p++) - L'0';
+                currentValue = currentValue * 10 + (*p++) - '0';
             }
 
             if (isNegative)
@@ -1020,21 +1018,21 @@ void ConfigIntArray::Dump()
 //    Values are comma, tab or space separated.
 //    Consecutive separators are ignored
 //
-void ConfigDoubleArray::Init(const WCHAR* str)
+void ConfigDoubleArray::Init(const char* str)
 {
     // Count the number of values
     //
-    const WCHAR* p         = str;
-    unsigned     numValues = 0;
+    const char* p         = str;
+    unsigned    numValues = 0;
     while (*p != 0)
     {
-        if (*p == L',')
+        if (*p == ',')
         {
             p++;
             continue;
         }
-        WCHAR* pNext = nullptr;
-        u16_strtod(p, &pNext);
+        char* pNext = nullptr;
+        strtod(p, &pNext);
         if (errno == 0)
         {
             numValues++;
@@ -1048,14 +1046,14 @@ void ConfigDoubleArray::Init(const WCHAR* str)
     numValues = 0;
     while (*p != 0)
     {
-        if (*p == L',')
+        if (*p == ',')
         {
             p++;
             continue;
         }
 
-        WCHAR* pNext = nullptr;
-        double val   = u16_strtod(p, &pNext);
+        char*  pNext = nullptr;
+        double val   = strtod(p, &pNext);
         if (errno == 0)
         {
             m_values[numValues++] = val;
@@ -1089,7 +1087,7 @@ void ConfigDoubleArray::Dump()
 
 #endif // defined(DEBUG)
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 void Counter::dump(FILE* output)
 {
@@ -1217,8 +1215,8 @@ void NodeCounts::record(genTreeOps oper)
 
 struct DumpOnShutdownEntry
 {
-    const char* Name;
-    Dumpable*   Dumpable;
+    const char*     Name;
+    class Dumpable* Dumpable;
 };
 
 static DumpOnShutdownEntry s_dumpOnShutdown[16];
@@ -1255,7 +1253,7 @@ void DumpOnShutdown::DumpAll()
     }
 }
 
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /*****************************************************************************
  * Fixed bit vector class
@@ -1520,6 +1518,8 @@ void HelperCallProperties::init()
         bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
+        bool isNoEscape    = false; // true if none of the GC ref arguments can escape
+        bool isNoGC        = false; // true if the helper cannot trigger GC
 
         switch (helper)
         {
@@ -1527,18 +1527,17 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LLSH:
             case CORINFO_HELP_LRSH:
             case CORINFO_HELP_LRSZ:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_LMUL:
+            case CORINFO_HELP_LNG2FLT:
             case CORINFO_HELP_LNG2DBL:
+            case CORINFO_HELP_ULNG2FLT:
             case CORINFO_HELP_ULNG2DBL:
-            case CORINFO_HELP_DBL2INT:
             case CORINFO_HELP_DBL2LNG:
-            case CORINFO_HELP_DBL2UINT:
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
-            case CORINFO_HELP_FLTROUND:
-            case CORINFO_HELP_DBLROUND:
-
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -1597,7 +1596,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
-            case CORINFO_HELP_NEWARR_1_OBJ:
+            case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 
                 isAllocator   = true;
@@ -1626,8 +1625,6 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
-            case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
@@ -1660,6 +1657,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHKCASTANY:
             case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
             case CORINFO_HELP_READYTORUN_CHKCAST:
+            case CORINFO_HELP_UNBOX_TYPETEST:
 
                 // These throw for a failing cast
                 // But if given a null input arg will return null
@@ -1668,8 +1666,18 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_LDELEMA_REF:
+                isNoEscape = true;
+                isPure     = true;
+                break;
 
+            case CORINFO_HELP_MEMCPY:
+            case CORINFO_HELP_MEMZERO:
+            case CORINFO_HELP_MEMSET:
+            case CORINFO_HELP_NATIVE_MEMSET:
+                isNoEscape = true;
+                break;
+
+            case CORINFO_HELP_LDELEMA_REF:
                 isPure = true;
                 break;
 
@@ -1692,20 +1700,17 @@ void HelperCallProperties::init()
             // Helpers that load the base address for static variables.
             // We divide these between those that may and may not invoke
             // static class constructors.
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
-            case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
@@ -1720,12 +1725,28 @@ void HelperCallProperties::init()
                 mayRunCctor   = true;
                 break;
 
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_INITCLASS:
+            case CORINFO_HELP_INITINSTCLASS:
+                isPure      = true;
+                mayRunCctor = true;
+                break;
+
+            case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+                isNoGC = true;
+                FALLTHROUGH;
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
@@ -1735,30 +1756,41 @@ void HelperCallProperties::init()
                 nonNullReturn = true;
                 break;
 
+#ifdef TARGET_X86
+            case CORINFO_HELP_ASSIGN_REF_EAX:
+            case CORINFO_HELP_ASSIGN_REF_ECX:
+            case CORINFO_HELP_ASSIGN_REF_EBX:
+            case CORINFO_HELP_ASSIGN_REF_EBP:
+            case CORINFO_HELP_ASSIGN_REF_ESI:
+            case CORINFO_HELP_ASSIGN_REF_EDI:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+#endif
             // GC Write barrier support
             // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
+                isNoGC = true;
+                FALLTHROUGH;
+            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_BULK_WRITEBARRIER:
-
                 mutatesHeap = true;
                 break;
 
             // Accessing fields (write)
-            case CORINFO_HELP_SETFIELD32:
-            case CORINFO_HELP_SETFIELD64:
-            case CORINFO_HELP_SETFIELDOBJ:
-            case CORINFO_HELP_SETFIELDSTRUCT:
-            case CORINFO_HELP_SETFIELDFLOAT:
-            case CORINFO_HELP_SETFIELDDOUBLE:
             case CORINFO_HELP_ARRADDR_ST:
-
                 mutatesHeap = true;
                 break;
 
             // These helper calls always throw an exception
+            case CORINFO_HELP_FAIL_FAST:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_OVERFLOW:
             case CORINFO_HELP_VERIFICATION:
             case CORINFO_HELP_RNGCHKFAIL:
@@ -1771,17 +1803,10 @@ void HelperCallProperties::init()
             case CORINFO_HELP_THROW_NOT_IMPLEMENTED:
             case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
             case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
-            case CORINFO_HELP_FAIL_FAST:
             case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
             case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
             case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
-
                 alwaysThrow = true;
-                break;
-
-            // These helper calls may throw an exception
-            case CORINFO_HELP_MON_EXIT_STATIC:
-
                 break;
 
             // This is a debugging aid; it simply returns a constant address.
@@ -1790,26 +1815,34 @@ void HelperCallProperties::init()
                 noThrow = true;
                 break;
 
+            case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER: // Never present on stack at the time of GC.
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
-            case CORINFO_HELP_BBT_FCN_ENTER:
             case CORINFO_HELP_POLL_GC:
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
-            case CORINFO_HELP_MON_ENTER_STATIC:
-            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
-            case CORINFO_HELP_GETFIELDADDR:
-            case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-
                 noThrow = true;
                 break;
 
-            // Not sure how to handle optimization involving the rest of these  helpers
-            default:
+            case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
+            case CORINFO_HELP_STACK_PROBE:
+            case CORINFO_HELP_CHECK_OBJ:
+            case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            case CORINFO_HELP_PROF_FCN_LEAVE:
+            case CORINFO_HELP_PROF_FCN_ENTER:
+            case CORINFO_HELP_PROF_FCN_TAILCALL:
+                isNoGC      = true;
+                mutatesHeap = true; // Conservatively.
+                break;
 
-                // The most pessimistic results are returned for these helpers
+            default:
+                // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;
                 break;
         }
@@ -1821,6 +1854,8 @@ void HelperCallProperties::init()
         m_isAllocator[helper]   = isAllocator;
         m_mutatesHeap[helper]   = mutatesHeap;
         m_mayRunCctor[helper]   = mayRunCctor;
+        m_isNoEscape[helper]    = isNoEscape;
+        m_isNoGC[helper]        = isNoGC;
     }
 }
 
@@ -1833,18 +1868,18 @@ void HelperCallProperties::init()
 //
 // You must use ';' as a separator; whitespace no longer works
 
-AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
+AssemblyNamesList2::AssemblyNamesList2(const char* list, HostAllocator alloc)
     : m_alloc(alloc)
 {
-    WCHAR          prevChar   = '?';     // dummy
-    LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
+    char           prevChar   = '?';     // dummy
+    const char*    nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
     AssemblyName** ppPrevLink = &m_pNames;
 
-    for (LPWSTR listWalk = const_cast<LPWSTR>(list); prevChar != '\0'; prevChar = *listWalk, listWalk++)
+    for (const char* listWalk = list; prevChar != '\0'; prevChar = *listWalk, listWalk++)
     {
-        WCHAR curChar = *listWalk;
+        char curChar = *listWalk;
 
-        if (curChar == W(';') || curChar == W('\0'))
+        if (curChar == ';' || curChar == '\0')
         {
             // Found separator or end of string
             if (nameStart)
@@ -1853,29 +1888,15 @@ AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
 
                 AssemblyName* newName = new (m_alloc) AssemblyName();
 
-                // Null out the current character so we can do zero-terminated string work; we'll restore it later.
-                *listWalk = W('\0');
+                ptrdiff_t nameLen       = listWalk - nameStart;
+                newName->m_assemblyName = new (m_alloc) char[nameLen + 1];
+                memcpy(newName->m_assemblyName, nameStart, nameLen * sizeof(char));
+                newName->m_assemblyName[nameLen] = '\0';
 
-                // How much space do we need?
-                int convertedNameLenBytes =
-                    WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
-                newName->m_assemblyName = new (m_alloc) char[convertedNameLenBytes]; // convertedNameLenBytes includes
-                                                                                     // the trailing null character
-                if (WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
-                                        nullptr, nullptr) != 0)
-                {
-                    *ppPrevLink = newName;
-                    ppPrevLink  = &newName->m_next;
-                }
-                else
-                {
-                    // Failed to convert the string. Ignore this string (and leak the memory).
-                }
+                *ppPrevLink = newName;
+                ppPrevLink  = &newName->m_next;
 
                 nameStart = nullptr;
-
-                // Restore the current character.
-                *listWalk = curChar;
             }
         }
         else if (!nameStart)
@@ -1921,11 +1942,11 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
 // MethodSet
 //=============================================================================
 
-MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc)
+MethodSet::MethodSet(const char* filename, HostAllocator alloc)
     : m_pInfos(nullptr)
     , m_alloc(alloc)
 {
-    FILE* methodSetFile = _wfopen(filename, W("r"));
+    FILE* methodSetFile = fopen_utf8(filename, "r");
     if (methodSetFile == nullptr)
     {
         return;
@@ -2024,16 +2045,16 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc)
 
     if (fclose(methodSetFile))
     {
-        JITDUMP("Unable to close %ws\n", filename);
+        JITDUMP("Unable to close %s\n", filename);
     }
 
     if (m_pInfos == nullptr)
     {
-        JITDUMP("No methods read from %ws\n", filename);
+        JITDUMP("No methods read from %s\n", filename);
     }
     else
     {
-        JITDUMP("Methods read from %ws:\n", filename);
+        JITDUMP("Methods read from %s:\n", filename);
 
         int methodCount = 0;
         for (MethodInfo* pInfo = m_pInfos; pInfo != nullptr; pInfo = pInfo->m_next)
@@ -2176,22 +2197,15 @@ double CycleCount::ElapsedTime()
 
 bool PerfCounter::Start()
 {
-    bool result = QueryPerformanceFrequency(&beg) != 0;
-    if (!result)
-    {
-        return result;
-    }
-    freq = (double)beg.QuadPart / 1000.0;
-    (void)QueryPerformanceCounter(&beg);
-    return result;
+    freq = (double)minipal_hires_tick_frequency() / 1000.0;
+    beg  = minipal_hires_ticks();
+    return true;
 }
 
 // Return elapsed time from Start() in millis.
 double PerfCounter::ElapsedTime()
 {
-    LARGE_INTEGER li;
-    (void)QueryPerformanceCounter(&li);
-    return (double)(li.QuadPart - beg.QuadPart) / freq;
+    return (double)(minipal_hires_ticks() - beg) / freq;
 }
 
 #endif
@@ -2235,8 +2249,7 @@ double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 
 float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
-    double d = convertUInt64ToDouble(u64);
-    return (float)d;
+    return (float)u64;
 }
 
 uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)
@@ -4225,3 +4238,81 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
     }
 }
 } // namespace CheckedOps
+
+template <size_t bufferSize>
+class Utf16String
+{
+private:
+    WCHAR  m_bufferUnsafe[bufferSize];
+    WCHAR* m_pBuffer = nullptr;
+
+public:
+    Utf16String(const char* str)
+    {
+        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+        if (strBufferSize == 0)
+        {
+            return;
+        }
+
+        if (strBufferSize > bufferSize)
+        {
+            m_pBuffer = new WCHAR[strBufferSize];
+        }
+        else
+        {
+            m_pBuffer = m_bufferUnsafe;
+        }
+
+        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
+        {
+            if (m_pBuffer != m_bufferUnsafe)
+            {
+                delete[] m_pBuffer;
+            }
+
+            m_pBuffer = nullptr;
+        }
+    }
+
+    ~Utf16String()
+    {
+        if (m_pBuffer != m_bufferUnsafe)
+        {
+            delete[] m_pBuffer;
+            m_pBuffer = nullptr;
+        }
+    }
+
+    const WCHAR* Result()
+    {
+        return m_pBuffer;
+    }
+};
+
+//------------------------------------------------------------------------
+// fopen_utf8: Open the file at the specified UTF8 path with the specified mode.
+//
+// Arguments:
+//   path - UTF8 path
+//   mode - UTF8 mode
+//
+// Returns:
+//    Opened file handle
+//
+FILE* fopen_utf8(const char* path, const char* mode)
+{
+#ifdef HOST_WINDOWS
+    Utf16String<256> pathWide(path);
+    Utf16String<16>  modeWide(mode);
+
+    if ((pathWide.Result() == nullptr) || (modeWide.Result() == nullptr))
+    {
+        return nullptr;
+    }
+
+    return _wfopen(pathWide.Result(), modeWide.Result());
+#else
+    return fopen(path, mode);
+#endif
+}

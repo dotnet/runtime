@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test_finalizearray 
 {
@@ -37,7 +38,8 @@ public class Test_finalizearray
         }
     }
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         CreateObj temp = new CreateObj();
         temp.RunTest();
 

@@ -23,6 +23,10 @@ namespace System.Security.Cryptography.X509Certificates
         private const string PfxOrdinalWildcard = "." + PfxWildcard;
 
         private static string? s_userStoreRoot;
+        private static readonly PbeParameters s_storePbeParameters = new PbeParameters(
+            PbeEncryptionAlgorithm.Aes256Cbc,
+            HashAlgorithmName.SHA256,
+            iterationCount: 1);
 
         private readonly string _storePath;
 
@@ -85,7 +89,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 try
                 {
-                    var cert = new X509Certificate2(filePath);
+                    X509Certificate2 cert = X509CertificateLoader.LoadPkcs12FromFile(filePath, null);
 
                     // If we haven't already loaded a cert .Equal to this one, copy it to the collection.
                     if (loadedCerts.Add(cert))
@@ -154,7 +158,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     try
                     {
-                        using (X509Certificate2 fromFile = new X509Certificate2(existingFilename))
+                        using (X509Certificate2 fromFile = X509CertificateLoader.LoadPkcs12FromFile(existingFilename, null))
                         {
                             if (fromFile.HasPrivateKey)
                             {
@@ -212,7 +216,7 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException(SR.Format(SR.Cryptography_InvalidFilePermissions, stream.Name));
                     }
 
-                    byte[] pkcs12 = copy.Export(X509ContentType.Pkcs12)!;
+                    byte[] pkcs12 = copy.ExportPkcs12(s_storePbeParameters, null);
                     stream.Write(pkcs12, 0, pkcs12.Length);
                 }
             }
@@ -264,7 +268,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 try
                 {
-                    using (X509Certificate2 candidate = new X509Certificate2(maybeMatch))
+                    using (X509Certificate2 candidate = X509CertificateLoader.LoadPkcs12FromFile(maybeMatch, null))
                     {
                         if (candidate.Equals(cert))
                         {

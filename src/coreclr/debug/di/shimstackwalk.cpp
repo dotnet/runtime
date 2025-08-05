@@ -155,7 +155,8 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
     // returning false above. We need to check the exception state to make sure we don't
     // track the chain in this case. Since we know the type of Frame we are dealing with, 
     // we can make a more accurate determination of whether we should track the chain.
-    if (GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION) 
+    // However if we are interop debugging and the thread is hijacked, we should track the chain.
+    if (!pswInfo->ExhaustedAllInternalFrames() && !m_pProcess->IsUnmanagedThreadHijacked(m_pThread) && GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION) 
         return FALSE;
 
     return TRUE;
@@ -1201,7 +1202,7 @@ BOOL ShimStackWalk::CheckInternalFrame(ICorDebugFrame *     pNextStackFrame,
     // Special handling for the case where a managed method contains a M2U internal frame.
     // Normally only IL stubs contain M2U internal frames, but we may have inlined pinvoke calls in
     // optimized code.  In that case, we would have an InlinedCallFrame in a normal managed method on x86.
-    // On WIN64, we would have a normal NDirectMethodFrame* in a normal managed method.
+    // On WIN64, we would have a normal PInvokeMethodFrame* in a normal managed method.
     if (pStackWalkInfo->m_internalFrameType == STUBFRAME_M2U)
     {
         // create a temporary ICDStackWalk

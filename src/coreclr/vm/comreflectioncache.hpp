@@ -26,6 +26,7 @@ public:
 
     void Init();
 
+#ifndef DACCESS_COMPILE
     BOOL GetFromCache(Element *pElement, CacheType& rv)
     {
         CONTRACTL
@@ -102,6 +103,7 @@ public:
         AdjustStamp(TRUE);
         this->LeaveWrite();
     }
+#endif // !DACCESS_COMPILE
 
 private:
     // Lock must have been taken before calling this.
@@ -141,6 +143,7 @@ private:
         return CacheSize;
     }
 
+#ifndef DACCESS_COMPILE
     void AdjustStamp(BOOL hasWriterLock)
     {
         CONTRACTL
@@ -170,6 +173,7 @@ private:
         if (!hasWriterLock)
             this->LeaveWrite();
     }
+#endif // !DACCESS_COMPILE
 
     void UpdateHashTable(SIZE_T hash, int slot)
     {

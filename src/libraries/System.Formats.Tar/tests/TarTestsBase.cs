@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -60,6 +61,8 @@ namespace System.Formats.Tar.Tests
 
         protected const string TestGName = "group";
         protected const string TestUName = "user";
+        protected const int RootUidGid = 0;
+        protected const string RootUNameGName = "root";
 
         // The metadata of the entries inside the asset archives are all set to these values
         protected const int AssetGid = 3579;
@@ -97,6 +100,8 @@ namespace System.Formats.Tar.Tests
         internal const char Separator = '/';
         internal const int MaxPathComponent = 255;
         internal const long LegacyMaxFileSize = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
+        internal const byte ExpectedOffsetDataSingleByte = 5;
+        internal readonly byte[] ExpectedOffsetDataMultiByte = [9, 8, 7, 6];
 
         private static readonly string[] V7TestCaseNames = new[]
         {
@@ -132,7 +137,6 @@ namespace System.Formats.Tar.Tests
             "gnu",
             "hardlink",
             "nil-uid",
-            "pax-bad-hdr-file",
             "pax-bad-mtime-file",
             "pax-global-records",
             "pax-nul-path",
@@ -218,6 +222,15 @@ namespace System.Formats.Tar.Tests
             8);
         }
 
+        private static decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
+            ((decimal)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+
+        protected static string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
+        {
+            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
+            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
+        }
+
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
             Path.Join(Directory.GetCurrentDirectory(), "unarchived",
             testCaseName);
@@ -253,7 +266,7 @@ namespace System.Formats.Tar.Tests
         protected static MemoryStream GetStrangeTarMemoryStream(string testCaseName) =>
             GetMemoryStream(GetStrangeTarFilePath(testCaseName));
 
-        private static MemoryStream GetMemoryStream(string path)
+        protected static MemoryStream GetMemoryStream(string path)
         {
             MemoryStream ms = new();
             using (FileStream fs = File.OpenRead(path))
@@ -311,6 +324,9 @@ namespace System.Formats.Tar.Tests
 
         protected void SetCommonProperties(TarEntry entry, bool isDirectory = false)
         {
+            // The octal format limits the range.
+            bool formatIsOctalOnly = entry.Format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
+
             // Length (Data is checked outside this method)
             Assert.Equal(0, entry.Length);
 
@@ -329,7 +345,14 @@ namespace System.Formats.Tar.Tests
             DateTimeOffset approxNow = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(6));
             Assert.True(entry.ModificationTime > approxNow);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum allowed is UnixEpoch, not MinValue
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum allowed is UnixEpoch, not MinValue
+            }
+            else
+            {
+                entry.ModificationTime = default;
+            }
             entry.ModificationTime = TestModificationTime;
 
             // Name
@@ -479,15 +502,56 @@ namespace System.Formats.Tar.Tests
             return entryType;
         }
 
-        protected static TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
-            => targetFormat switch
+        protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName, bool setATimeCTime = false)
+        {
+            TarEntry entry = (targetFormat, setATimeCTime) switch
             {
-                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
-                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
-                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
-                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
+                (TarEntryFormat.V7, _) => new V7TarEntry(entryType, entryName),
+                (TarEntryFormat.Ustar, _) => new UstarTarEntry(entryType, entryName),
+                (TarEntryFormat.Pax, true) => new PaxTarEntry(entryType, entryName, CreateATimeCTimeExtendedAttributes()),
+                (TarEntryFormat.Pax, false) => new PaxTarEntry(entryType, entryName),
+                (TarEntryFormat.Gnu, _) => new GnuTarEntry(entryType, entryName),
                 _ => throw new InvalidDataException($"Unexpected format: {targetFormat}")
             };
+
+            if (entry is GnuTarEntry gnuTarEntry)
+            {
+                if (setATimeCTime)
+                {
+                    gnuTarEntry.AccessTime = TestAccessTime;
+                    gnuTarEntry.ChangeTime = TestChangeTime;
+                }
+                else
+                {
+                    Assert.Equal(default, gnuTarEntry.AccessTime);
+                    Assert.Equal(default, gnuTarEntry.ChangeTime);
+                }
+            }
+            else if (entry is PaxTarEntry paxTarEntry)
+            {
+                if (setATimeCTime)
+                {
+                    Assert.Contains("ctime", paxTarEntry.ExtendedAttributes);
+                    Assert.Contains("atime", paxTarEntry.ExtendedAttributes);
+                }
+                else
+                {
+                    Assert.DoesNotContain("ctime", paxTarEntry.ExtendedAttributes);
+                    Assert.DoesNotContain("atime", paxTarEntry.ExtendedAttributes);
+                }
+            }
+
+            return entry;
+        }
+
+        private Dictionary<string, string> CreateATimeCTimeExtendedAttributes()
+        {
+            return new Dictionary<string, string>()
+            {
+                { "atime", GetTimestampStringFromDateTimeOffset(TestAccessTime) },
+                { "ctime", GetTimestampStringFromDateTimeOffset(TestChangeTime) },
+            };
+        }
 
         public static IEnumerable<object[]> GetTestTarFormats()
         {
@@ -712,7 +776,7 @@ namespace System.Formats.Tar.Tests
             // this is 256 but is supported because prefix is not required to end in separator.
             yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(OneByteCharacter, 100);
 
-            // non-ascii prefix + name 
+            // non-ascii prefix + name
             yield return Repeat(TwoBytesCharacter, 155 / 2) + Separator + Repeat(OneByteCharacter, 100);
             yield return Repeat(FourBytesCharacter, 155 / 4) + Separator + Repeat(OneByteCharacter, 100);
 
@@ -786,6 +850,26 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        internal static int GetChecksum(byte[] value)
+        {
+            int count = 0;
+            foreach (byte c in value)
+            {
+                count += c;
+            }
+            return count;
+        }
+
+        internal static int GetChecksum(string value)
+        {
+            int count = 0;
+            foreach (char c in value)
+            {
+                count += c;
+            }
+            return count;
+        }
+
         internal static string Repeat(char c, int count)
         {
             return new string(c, count);
@@ -803,7 +887,7 @@ namespace System.Formats.Tar.Tests
             Unlimited
         }
 
-        internal static void WriteTarArchiveWithOneEntry(Stream s, TarEntryFormat entryFormat, TarEntryType entryType)
+        internal void WriteTarArchiveWithOneEntry(Stream s, TarEntryFormat entryFormat, TarEntryType entryType)
         {
             using TarWriter writer = new(s, leaveOpen: true);
 

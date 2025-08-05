@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using static Interop.BCrypt;
 
 namespace System.Security.Cryptography
@@ -75,6 +76,100 @@ namespace System.Security.Cryptography
             }
 
             return blob;
+        }
+
+        internal static ECParameters ExportExplicitParameters(CngKey key, bool includePrivateParameters)
+        {
+            if (includePrivateParameters)
+            {
+                return ExportPrivateExplicitParameters(key);
+            }
+            else
+            {
+                byte[] blob = ExportFullKeyBlob(key, includePrivateParameters: false);
+                ECParameters ecparams = default;
+                ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters: false);
+                return ecparams;
+            }
+        }
+
+        internal static ECParameters ExportParameters(CngKey key, bool includePrivateParameters)
+        {
+            ECParameters ecparams = default;
+
+            const string TemporaryExportPassword = "DotnetExportPhrase";
+            string? curveName = key.GetCurveName(out string? oidValue);
+
+            if (string.IsNullOrEmpty(curveName))
+            {
+                if (includePrivateParameters)
+                {
+                    ecparams = ExportPrivateExplicitParameters(key);
+                }
+                else
+                {
+                    byte[] fullKeyBlob = ExportFullKeyBlob(key, includePrivateParameters: false);
+                    ECCng.ExportPrimeCurveParameters(ref ecparams, fullKeyBlob, includePrivateParameters: false);
+                }
+            }
+            else
+            {
+                bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(key);
+
+                if (includePrivateParameters && encryptedOnlyExport)
+                {
+                    byte[] exported = key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
+                    EccKeyFormatHelper.ReadEncryptedPkcs8(
+                        exported,
+                        TemporaryExportPassword,
+                        out _,
+                        out ecparams);
+                }
+                else
+                {
+                    byte[] keyBlob = ExportKeyBlob(key, includePrivateParameters);
+                    ECCng.ExportNamedCurveParameters(ref ecparams, keyBlob, includePrivateParameters);
+                    ecparams.Curve = ECCurve.CreateFromOid(new Oid(oidValue, curveName));
+                }
+            }
+
+            return ecparams;
+        }
+
+        private static ECParameters ExportPrivateExplicitParameters(CngKey key)
+        {
+            bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(key);
+
+            ECParameters ecparams = default;
+
+            if (encryptedOnlyExport)
+            {
+                // We can't ask CNG for the explicit parameters when performing a PKCS#8 export. Instead,
+                // we ask CNG for the explicit parameters for the public part only, since the parameters are public.
+                // Then we ask CNG by encrypted PKCS#8 for the private parameters (D) and combine the explicit public
+                // key along with the private key.
+                const string TemporaryExportPassword = "DotnetExportPhrase";
+                byte[] publicKeyBlob = ExportFullKeyBlob(key, includePrivateParameters: false);
+                ExportPrimeCurveParameters(ref ecparams, publicKeyBlob, includePrivateParameters: false);
+
+                byte[] exported = key.ExportPkcs8KeyBlob(TemporaryExportPassword, 1);
+                EccKeyFormatHelper.ReadEncryptedPkcs8(
+                    exported,
+                    TemporaryExportPassword,
+                    out _,
+                    out ECParameters localParameters);
+
+                Debug.Assert(ecparams.Q.X.AsSpan().SequenceEqual(localParameters.Q.X));
+                Debug.Assert(ecparams.Q.Y.AsSpan().SequenceEqual(localParameters.Q.Y));
+                ecparams.D = localParameters.D;
+            }
+            else
+            {
+                byte[] blob = ExportFullKeyBlob(key, includePrivateParameters: true);
+                ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters: true);
+            }
+
+            return ecparams;
         }
 
         private static unsafe void FixupGenericBlob(byte[] blob)

@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static System.Linq.Utilities;
 
@@ -31,15 +33,19 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    list.Add(selector(item));
+                    builder.Add(selector(item));
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override int GetCount(bool onlyIfCheap)
@@ -226,48 +232,64 @@ namespace System.Linq
                 found = true;
                 return _selector(_source[^1]);
             }
+
+            public override bool Contains(TResult value)
+            {
+                foreach (TSource item in _source)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(item), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
-        private sealed partial class RangeSelectIterator<TResult> : Iterator<TResult>
+        private sealed class RangeSelectIterator<T, TResult> : Iterator<TResult> where T : INumber<T>
         {
-            private readonly int _start;
-            private readonly int _end;
-            private readonly Func<int, TResult> _selector;
+            private readonly T _start;
+            private readonly T _end;
+            private readonly Func<T, TResult> _selector;
 
-            public RangeSelectIterator(int start, int end, Func<int, TResult> selector)
+            public RangeSelectIterator(T start, T end, Func<T, TResult> selector)
             {
-                Debug.Assert(start < end);
-                Debug.Assert((uint)(end - start) <= (uint)int.MaxValue);
+                Debug.Assert(start is not null);
+                Debug.Assert(end is not null);
                 Debug.Assert(selector is not null);
+                Debug.Assert(uint.CreateTruncating(end - start) <= (uint)int.MaxValue);
 
                 _start = start;
                 _end = end;
                 _selector = selector;
             }
 
+            private int Count => int.CreateTruncating(_end - _start);
+
             private protected override Iterator<TResult> Clone() =>
-                new RangeSelectIterator<TResult>(_start, _end, _selector);
+                new RangeSelectIterator<T, TResult>(_start, _end, _selector);
 
             public override bool MoveNext()
             {
-                if (_state < 1 || _state == (_end - _start + 1))
+                if (_state < 1 || _state == (Count + 1))
                 {
                     Dispose();
                     return false;
                 }
 
                 int index = _state++ - 1;
-                Debug.Assert(_start < _end - index);
-                _current = _selector(_start + index);
+                Debug.Assert(_start < _end - T.CreateChecked(index));
+                _current = _selector(_start + T.CreateTruncating(index));
                 return true;
             }
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new RangeSelectIterator<TResult2>(_start, _end, CombineSelectors(_selector, selector));
+                new RangeSelectIterator<T, TResult2>(_start, _end, CombineSelectors(_selector, selector));
 
             public override TResult[] ToArray()
             {
-                var results = new TResult[_end - _start];
+                var results = new TResult[Count];
                 Fill(results, _start, _selector);
 
                 return results;
@@ -275,13 +297,14 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                var results = new List<TResult>(_end - _start);
-                Fill(SetCountAndGetSpan(results, _end - _start), _start, _selector);
+                int count = Count;
+                var results = new List<TResult>(count);
+                Fill(SetCountAndGetSpan(results, count), _start, _selector);
 
                 return results;
             }
 
-            private static void Fill(Span<TResult> results, int start, Func<int, TResult> func)
+            private static void Fill(Span<TResult> results, T start, Func<T, TResult> func)
             {
                 for (int i = 0; i < results.Length; i++, start++)
                 {
@@ -295,45 +318,45 @@ namespace System.Linq
                 // run it provided `onlyIfCheap` is false.
                 if (!onlyIfCheap)
                 {
-                    for (int i = _start; i != _end; i++)
+                    for (T i = _start; i != _end; i++)
                     {
                         _selector(i);
                     }
                 }
 
-                return _end - _start;
+                return Count;
             }
 
             public override Iterator<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
 
-                if (count >= (_end - _start))
+                if (count >= Count)
                 {
                     return null;
                 }
 
-                return new RangeSelectIterator<TResult>(_start + count, _end, _selector);
+                return new RangeSelectIterator<T, TResult>(_start + T.CreateTruncating(count), _end, _selector);
             }
 
             public override Iterator<TResult> Take(int count)
             {
                 Debug.Assert(count > 0);
 
-                if (count >= (_end - _start))
+                if (count >= Count)
                 {
                     return this;
                 }
 
-                return new RangeSelectIterator<TResult>(_start, _start + count, _selector);
+                return new RangeSelectIterator<T, TResult>(_start, _start + T.CreateTruncating(count), _selector);
             }
 
             public override TResult? TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index < (uint)(_end - _start))
+                if ((uint)index < (uint)Count)
                 {
                     found = true;
-                    return _selector(_start + index);
+                    return _selector(_start + T.CreateTruncating(index));
                 }
 
                 found = false;
@@ -351,7 +374,20 @@ namespace System.Linq
             {
                 Debug.Assert(_end > _start);
                 found = true;
-                return _selector(_end - 1);
+                return _selector(_end - T.One);
+            }
+
+            public override bool Contains(TResult value)
+            {
+                for (T i = _start; i != _end; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(i), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -454,6 +490,21 @@ namespace System.Linq
 
                 found = false;
                 return default;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                int count = _source.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -558,6 +609,21 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TResult value)
+            {
+                int count = _source.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         /// <summary>
@@ -657,7 +723,7 @@ namespace System.Linq
                 return sourceFound ? _selector(input!) : default!;
             }
 
-            private TResult[] LazyToArray()
+            private TResult[] ToArrayNoPresizing()
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
@@ -691,10 +757,29 @@ namespace System.Linq
                 int count = _source.GetCount(onlyIfCheap: true);
                 return count switch
                 {
-                    -1 => LazyToArray(),
+                    -1 => ToArrayNoPresizing(),
                     0 => [],
                     _ => PreallocatingToArray(count),
                 };
+            }
+
+            private List<TResult> ToListNoPresizing()
+            {
+                Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
+
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
+
+                Func<TSource, TResult> selector = _selector;
+                foreach (TSource input in _source)
+                {
+                    builder.Add(selector(input));
+                }
+
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override List<TResult> ToList()
@@ -704,14 +789,10 @@ namespace System.Linq
                 switch (count)
                 {
                     case -1:
-                        list = new List<TResult>();
-                        foreach (TSource input in _source)
-                        {
-                            list.Add(_selector(input));
-                        }
+                        list = ToListNoPresizing();
                         break;
                     case 0:
-                        list = new List<TResult>();
+                        list = [];
                         break;
                     default:
                         list = new List<TResult>(count);
@@ -888,7 +969,7 @@ namespace System.Linq
                 int count = Count;
                 if (count == 0)
                 {
-                    return new List<TResult>();
+                    return [];
                 }
 
                 List<TResult> list = new List<TResult>(count);
@@ -922,6 +1003,22 @@ namespace System.Linq
                 }
 
                 return count;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                int count = Count;
+
+                int end = _minIndexInclusive + count;
+                for (int i = _minIndexInclusive; i != end; ++i)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

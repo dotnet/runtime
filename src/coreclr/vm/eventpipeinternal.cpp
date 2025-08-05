@@ -9,6 +9,9 @@
 #include "pal.h"
 #endif // TARGET_UNIX
 
+#include <minipal/guid.h>
+#include <minipal/time.h>
+
 #ifdef FEATURE_PERFTRACING
 
 extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
@@ -44,7 +47,10 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
             nullptr,
             nullptr,
             nullptr);
-        EventPipeAdapter::StartStreaming(sessionID);
+        if (sessionID != 0)
+        {
+            EventPipeAdapter::StartStreaming(sessionID);
+        }
     }
     END_QCALL;
 
@@ -74,7 +80,7 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, Eve
         {
             pSessionInfo->StartTimeAsUTCFileTime = EventPipeAdapter::GetSessionStartTime(pSession);
             pSessionInfo->StartTimeStamp.QuadPart = EventPipeAdapter::GetSessionStartTimestamp(pSession);
-            QueryPerformanceFrequency(&pSessionInfo->TimeStampFrequency);
+            pSessionInfo->TimeStampFrequency.QuadPart = minipal_hires_tick_frequency();
             retVal = true;
         }
     }
@@ -116,7 +122,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
 
     BEGIN_QCALL;
 
-    _ASSERTE(provHandle != NULL);
+    _ASSERTE(provHandle != (INT_PTR)NULL);
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
     pEvent = EventPipeAdapter::AddEvent(pProvider, eventID, keywords, eventVersion, (EventPipeEventLevel)level, /* needStack = */ true, (BYTE *)pMetadata, metadataLength);
     _ASSERTE(pEvent != NULL);
@@ -187,7 +193,7 @@ extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t contr
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
 
-            CoCreateGuid(pActivityId);
+            minipal_guid_v4_create(pActivityId);
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:
@@ -200,7 +206,7 @@ extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t contr
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_SET_ID:
 
             *pActivityId = *pThread->GetActivityId();
-            CoCreateGuid(&currentActivityId);
+            minipal_guid_v4_create(&currentActivityId);
             pThread->SetActivityId(&currentActivityId);
             break;
 
@@ -223,7 +229,7 @@ extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    _ASSERTE(eventHandle != NULL);
+    _ASSERTE(eventHandle != (INT_PTR)NULL);
     EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
     EventPipeAdapter::WriteEvent(pEvent, pEventData, eventDataCount, pActivityId, pRelatedActivityId);
 

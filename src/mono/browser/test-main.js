@@ -117,7 +117,7 @@ function initRunArgs(runArgs) {
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
-    runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/blazor.boot.json' : runArgs.configSrc;
+    runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/dotnet.boot.js' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
     runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
@@ -129,10 +129,7 @@ function processArguments(incomingArguments, runArgs) {
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
-        if (currentArg.startsWith("--profile=")) {
-            const arg = currentArg.substring("--profile=".length);
-            runArgs.profilers.push(arg);
-        } else if (currentArg.startsWith("--setenv=")) {
+        if (currentArg.startsWith("--setenv=")) {
             const arg = currentArg.substring("--setenv=".length);
             const parts = arg.split('=');
             if (parts.length != 2)
@@ -195,16 +192,19 @@ function processArguments(incomingArguments, runArgs) {
 
 // we may have dependencies on NPM packages, depending on the test case
 // some of them polyfill for browser built-in stuff
-function loadNodeModules(config, require, modulesToLoad) {
-    modulesToLoad.split(',').forEach(module => {
+async function loadNodeModules(config, modulesToLoad) {
+    await Promise.all(modulesToLoad.split(',').map(async module => {
         const { 0: moduleName, 1: globalAlias } = module.split(':');
 
-        let message = `Loading npm '${moduleName}'`;
-        let moduleExport = require(moduleName);
+        let message = `Loading npm '${moduleName} ${globalAlias}'`;
+        let moduleExport = await import(moduleName);
 
         if (globalAlias) {
             message += ` and attaching to global as '${globalAlias}'`;
             globalThis[globalAlias] = moduleExport;
+        } else if (moduleName == "ws") {
+            message += ' and attaching to global';
+            globalThis.WebSocket = moduleExport.WebSocket;
         } else if (moduleName == "node-fetch") {
             message += ' and attaching to global';
             globalThis.fetch = moduleExport.default;
@@ -217,7 +217,7 @@ function loadNodeModules(config, require, modulesToLoad) {
         }
 
         console.log(message);
-    });
+    }));
     // Must be after loading npm modules.
     config.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
 }
@@ -274,8 +274,8 @@ function configureRuntime(dotnet, runArgs) {
         const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
         if (modulesToLoad) {
             dotnet.withModuleConfig({
-                onConfigLoaded: (config, { INTERNAL }) => {
-                    loadNodeModules(config, INTERNAL.require, modulesToLoad)
+                onConfigLoaded: async (config) => {
+                    await loadNodeModules(config, modulesToLoad)
                 }
             })
         }
@@ -331,12 +331,6 @@ async function run() {
 
         console.info("Initializing dotnet version " + App.runtime.runtimeBuildInfo.productVersion + " commit hash " + App.runtime.runtimeBuildInfo.gitHash);
 
-        for (let i = 0; i < runArgs.profilers.length; ++i) {
-            const init = App.runtime.Module.cwrap('mono_wasm_load_profiler_' + runArgs.profilers[i], 'void', ['string']);
-            init("");
-        }
-
-
         if (runArgs.applicationArguments[0] == "--regression") {
             const exec_regression = App.runtime.Module.cwrap('mono_wasm_exec_regression', 'number', ['number', 'string']);
 
@@ -365,7 +359,7 @@ async function run() {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
-                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result}`);
+                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
                 mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {

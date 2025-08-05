@@ -48,6 +48,14 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
 }
 
+// Given a handle, returns an OBJECTREF for the object it refers to.
+inline _UNCHECKED_OBJECTREF ObjectFromHandleUnchecked(OBJECTHANDLE handle)
+{
+    _ASSERTE(handle);
+
+    return (*PTR_UNCHECKED_OBJECTREF(handle));
+}
+
 // Quick inline check for whether a handle is null
 inline BOOL IsHandleNullUnchecked(OBJECTHANDLE handle)
 {
@@ -118,23 +126,6 @@ inline OBJECTHANDLE CreateRefcountedHandle(IGCHandleStore* store, OBJECTREF obje
     return CreateHandleCommon(store, object, HNDTYPE_REFCOUNTED);
 }
 
-inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object)
-{
-    return CreateHandleCommon(store, object, HNDTYPE_SIZEDREF);
-}
-
-inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object, int heapToAffinitizeTo)
-{
-    OBJECTHANDLE hnd = store->CreateHandleOfType(OBJECTREFToObject(object), HNDTYPE_SIZEDREF, heapToAffinitizeTo);
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    DiagHandleCreated(hnd, object);
-    return hnd;
-}
-
 inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF primary, OBJECTREF secondary)
 {
     OBJECTHANDLE hnd = store->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
@@ -150,6 +141,18 @@ inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF prima
 inline OBJECTHANDLE CreateWeakInteriorHandle(IGCHandleStore* store, OBJECTREF primary, void* interiorPointerLocation)
 {
     OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(primary), HNDTYPE_WEAK_INTERIOR_POINTER, interiorPointerLocation);
+    if (!hnd)
+    {
+        COMPlusThrowOM();
+    }
+
+    DiagHandleCreated(hnd, primary);
+    return hnd;
+}
+
+inline OBJECTHANDLE CreateCrossReferenceHandle(IGCHandleStore* store, OBJECTREF primary, void* userContext)
+{
+    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(primary), HNDTYPE_CROSSREFERENCE, userContext);
     if (!hnd)
     {
         COMPlusThrowOM();

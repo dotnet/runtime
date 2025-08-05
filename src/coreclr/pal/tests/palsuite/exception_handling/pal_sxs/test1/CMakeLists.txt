@@ -1,3 +1,5 @@
+if(NOT CLR_CMAKE_HOST_BROWSER)
+
 if(CLR_CMAKE_HOST_UNIX)
     add_definitions(-DFEATURE_ENABLE_HARDWARE_EXCEPTIONS)
 endif(CLR_CMAKE_HOST_UNIX)
@@ -5,16 +7,14 @@ endif(CLR_CMAKE_HOST_UNIX)
 # Set the RPATH of paltest_pal_sxs_test1 so that it can find dependencies without needing to set LD_LIBRARY
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if(CORECLR_SET_RPATH)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   if(CLR_CMAKE_HOST_OSX)
     set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "@loader_path")
-  endif(CLR_CMAKE_HOST_OSX)
-  if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_HAIKU)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_HAIKU)
+  endif(CLR_CMAKE_HOST_OSX)
 endif(CORECLR_SET_RPATH)
 
 # Test DLL1
@@ -97,3 +97,5 @@ install (TARGETS paltest_pal_sxs_test1 DESTINATION paltests/exception_handling/p
 install (TARGETS paltest_pal_sxs_test1_dll1 DESTINATION paltests/exception_handling/pal_sxs/test1 COMPONENT paltests EXCLUDE_FROM_ALL)
 install (TARGETS paltest_pal_sxs_test1_dll2 DESTINATION paltests/exception_handling/pal_sxs/test1 COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltest_pal_sxs_test1 paltest_pal_sxs_test1_dll1 paltest_pal_sxs_test1_dll2)
+
+endif(NOT CLR_CMAKE_HOST_BROWSER)

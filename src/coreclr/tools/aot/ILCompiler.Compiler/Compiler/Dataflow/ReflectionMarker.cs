@@ -89,12 +89,40 @@ namespace ILCompiler.Dataflow
 
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
-                referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
+                referencedModules, needsAssemblyName, out bool failedBecauseNotFullyQualified);
             if (foundType == null)
             {
-                if (needsAssemblyName && typeWasNotFoundInAssemblyNorBaseLibrary)
-                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
+                if (failedBecauseNotFullyQualified)
+                {
+                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeNameIsNotAssemblyQualified, typeName);
+                }
+                type = default;
+                return false;
+            }
 
+            if (_enabled)
+            {
+                foreach (ModuleDesc referencedModule in referencedModules)
+                {
+                    // Also add module metadata in case this reference was through a type forward
+                    if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
+                        _dependencies.Add(Factory.ModuleMetadata(referencedModule), reason);
+                }
+
+                MarkType(diagnosticContext.Origin, foundType, reason);
+            }
+
+            type = foundType;
+            return true;
+        }
+
+        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, [NotNullWhen(true)] out TypeDesc? type)
+        {
+            List<ModuleDesc> referencedModules = new();
+            TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, assembly, assembly.Context,
+                referencedModules, needsAssemblyName: false, out _);
+            if (foundType == null)
+            {
                 type = default;
                 return false;
             }
@@ -206,15 +234,9 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            if (type.HasStaticConstructor)
-                CheckAndWarnOnReflectionAccess(origin, type.GetStaticConstructor());
-
-            if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && Factory.PreinitializationManager.HasLazyStaticConstructor(type))
-            {
-                // Mark the GC static base - it contains a pointer to the class constructor, but also info
-                // about whether the class constructor already executed and it's what is looked at at runtime.
-                _dependencies.Add(Factory.TypeNonGCStaticsSymbol((MetadataType)type), "RunClassConstructor reference");
-            }
+            MethodDesc cctor = type.GetStaticConstructor();
+            if (cctor != null)
+                MarkMethod(origin, cctor, reason);
         }
 
         internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind = AccessKind.Unspecified)
@@ -330,9 +352,6 @@ namespace ILCompiler.Dataflow
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
             }
-
-            // We decided to not warn on reflection access to compiler-generated methods:
-            // https://github.com/dotnet/runtime/issues/85042
         }
 
         private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)

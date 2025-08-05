@@ -17,10 +17,10 @@ namespace System.Runtime.InteropServices
 
         public CurrencyWrapper(object obj)
         {
-            if (!(obj is decimal))
+            if (obj is not decimal d)
                 throw new ArgumentException(SR.Arg_MustBeDecimal, nameof(obj));
 
-            WrappedObject = (decimal)obj;
+            WrappedObject = d;
         }
 
         public decimal WrappedObject { get; }

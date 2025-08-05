@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -22,7 +21,6 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(password != null);
 
             ICertificatePal? singleCert;
-            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             if (OpenSslX509CertificateReader.TryReadX509Der(rawData, out singleCert) ||
                 OpenSslX509CertificateReader.TryReadX509Pem(rawData, out singleCert))
@@ -35,30 +33,39 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             List<ICertificatePal>? certPals;
-            Exception? openSslException;
 
             if (OpenSslPkcsFormatReader.TryReadPkcs7Der(rawData, out certPals) ||
-                OpenSslPkcsFormatReader.TryReadPkcs7Pem(rawData, out certPals) ||
-                OpenSslPkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, readingFromFile: false, out certPals, out openSslException))
+                OpenSslPkcsFormatReader.TryReadPkcs7Pem(rawData, out certPals))
             {
                 Debug.Assert(certPals != null);
 
                 return ListToLoaderPal(certPals);
             }
 
-            Debug.Assert(openSslException != null);
-            throw openSslException;
+            try
+            {
+                return new CollectionBasedLoader(
+                    X509CertificateLoader.LoadPkcs12Collection(
+                        rawData,
+                        password.DangerousGetSpan(),
+                        keyStorageFlags,
+                        X509Certificate.GetPkcs12Limits(fromFile: false, password)));
+            }
+            catch (Pkcs12LoadLimitExceededException e)
+            {
+                throw new CryptographicException(
+                    SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                    e);
+            }
         }
 
         internal static partial ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
-
             using (SafeBioHandle bio = Interop.Crypto.BioNewFile(fileName, "rb"))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
-                return FromBio(fileName, bio, password, ephemeralSpecified);
+                return FromBio(fileName, bio, password, keyStorageFlags);
             }
         }
 
@@ -66,7 +73,7 @@ namespace System.Security.Cryptography.X509Certificates
             string fileName,
             SafeBioHandle bio,
             SafePasswordHandle password,
-            bool ephemeralSpecified)
+            X509KeyStorageFlags keyStorageFlags)
         {
             int bioPosition = Interop.Crypto.BioTell(bio);
             Debug.Assert(bioPosition >= 0);
@@ -104,29 +111,21 @@ namespace System.Security.Cryptography.X509Certificates
                 return ListToLoaderPal(certPals);
             }
 
-            // Rewind, try again.
-            OpenSslX509CertificateReader.RewindBio(bio, bioPosition);
-
-            // Capture the exception so in case of failure, the call to BioSeek does not override it.
-            Exception? openSslException;
-            byte[] data = File.ReadAllBytes(fileName);
-            if (OpenSslPkcsFormatReader.TryReadPkcs12(data, password, ephemeralSpecified, readingFromFile: true, out certPals, out openSslException))
+            try
             {
-                return ListToLoaderPal(certPals);
+                return new CollectionBasedLoader(
+                    X509CertificateLoader.LoadPkcs12CollectionFromFile(
+                        fileName,
+                        password.DangerousGetSpan(),
+                        keyStorageFlags,
+                        X509Certificate.GetPkcs12Limits(fromFile: true, password)));
             }
-
-            // Since we aren't going to finish reading, leaving the buffer where it was when we got
-            // it seems better than leaving it in some arbitrary other position.
-            //
-            // Use BioSeek directly for the last seek attempt, because any failure here should instead
-            // report the already created (but not yet thrown) exception.
-            if (Interop.Crypto.BioSeek(bio, bioPosition) < 0)
+            catch (Pkcs12LoadLimitExceededException e)
             {
-                Interop.Crypto.ErrClearError();
+                throw new CryptographicException(
+                    SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                    e);
             }
-
-            Debug.Assert(openSslException != null);
-            throw openSslException;
         }
 
         internal static partial IExportPal FromCertificate(ICertificatePalCore cert)

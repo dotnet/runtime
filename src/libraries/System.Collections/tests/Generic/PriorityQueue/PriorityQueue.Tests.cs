@@ -266,6 +266,33 @@ namespace System.Collections.Tests
             Assert.Null(removedPriority);
         }
 
+        [Fact]
+        public void PriorityQueue_LargeCollection_Remove_ShouldPreserveHeapInvariant()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/107292
+
+            PriorityQueue<int, int> queue = new();
+            for (int i = 19; i >= 0; i--)
+            {
+                queue.Enqueue(i, i);
+            }
+
+            queue.Remove(10, out int _, out int _);
+
+            List<int> sortedValues = queue.UnorderedItems
+                .OrderBy(e => e.Priority)
+                .Select(e => e.Element)
+                .ToList();
+
+            List<int> dequeuedValues = new();
+            while (queue.Count > 0)
+            {
+                dequeuedValues.Add(queue.Dequeue());
+            }
+
+            Assert.Equal(sortedValues, dequeuedValues);
+        }
+
         #region EnsureCapacity, TrimExcess
 
         [Fact]

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using Xunit;
 using static System.Formats.Tar.Tests.TarTestsBase;
 
@@ -269,14 +270,24 @@ namespace System.Formats.Tar.Tests
         [InlineData("gnu-multi-hdrs")] // Multiple consecutive GNU metadata entries
         [InlineData("neg-size")] // Garbage chars
         [InlineData("invalid-go17")] // Many octal fields are all zero chars
-        [InlineData("issue11169")] // Checksum with null in the middle
+        [InlineData("issue11169")] // Extended header uses spaces instead of newlines to separate records
+        [InlineData("pax-bad-hdr-file")] // Extended header record is not terminated by newline
         [InlineData("issue10968")] // Garbage chars
-        [InlineData("writer-big")] // The size field contains an euro char
         public void Throw_ArchivesWithRandomChars(string testCaseName)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
             using TarReader reader = new TarReader(archiveStream);
             Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void Throw_ArchiveIsShort()
+        {
+            // writer-big has a header for a 16G file but not its contents.
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big");
+            using TarReader reader = new TarReader(archiveStream);
+            // MemoryStream throws when we try to change its Position past its Length.
+            Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetNextEntry());
         }
 
         [Fact]
@@ -305,6 +316,32 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, testFolderName, testCaseName);
             using TarReader reader = new TarReader(archiveStream);
             Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void ReaderIgnoresFieldValueAfterTrailingNull()
+        {
+            // Fields in the tar archives are terminated by a trailing null.
+            // When reading these fields the reader must ignore all bytes past that null.
+
+            // Construct an archive that has a filename with some data after the trailing null.
+            const string FileName = "  filename  ";
+            const string FileNameWithDataPastTrailingNull = $"{FileName}\0nonesense";
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                var entry = new UstarTarEntry(TarEntryType.RegularFile, FileNameWithDataPastTrailingNull);
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+            // Check the writer serialized the complete name passed to the constructor.
+            bool archiveIsExpected = ms.ToArray().IndexOf(Encoding.UTF8.GetBytes(FileNameWithDataPastTrailingNull)) != -1;
+            Assert.True(archiveIsExpected);
+
+            // Verify the reader doesn't return the data past the trailing null.
+            using TarReader reader = new(ms);
+            TarEntry firstEntry = reader.GetNextEntry();
+            Assert.Equal(FileName, firstEntry.Name);
         }
 
         [Fact]

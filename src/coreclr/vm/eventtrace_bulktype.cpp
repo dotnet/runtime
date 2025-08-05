@@ -509,19 +509,19 @@ void BulkStaticsLogger::LogAllStatics()
     CONTRACTL_END;
 
     {
+        // TODO: This code does not appear to find all generic instantiations of types, and thus does not log ALL statics
         AppDomain *domain = ::GetAppDomain(); // There is only 1 AppDomain, so no iterator here.
 
         AppDomain::AssemblyIterator assemblyIter = domain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded|kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (assemblyIter.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (assemblyIter.Next(pAssembly.This()))
         {
             // Make sure the assembly is loaded.
-            if (!pDomainAssembly->IsLoaded())
+            if (!pAssembly->IsLoaded())
                 continue;
 
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             // Get the domain module from the module/appdomain pair.
-            Module *module = pDomainAssembly->GetModule();
+            Module *module = pAssembly->GetModule();
             if (module == NULL)
                 continue;
 
@@ -530,11 +530,7 @@ void BulkStaticsLogger::LogAllStatics()
                 continue;
 
             // Ensure the module has fully loaded.
-            if (!domainAssembly->IsActive())
-                continue;
-
-            DomainLocalModule *domainModule = module->GetDomainLocalModule();
-            if (domainModule == NULL)
+            if (!pAssembly->IsActive())
                 continue;
 
             // Now iterate all types with
@@ -566,7 +562,7 @@ void BulkStaticsLogger::LogAllStatics()
                     if (fieldType != ELEMENT_TYPE_CLASS && fieldType != ELEMENT_TYPE_VALUETYPE)
                         continue;
 
-                    BYTE *base = field->GetBaseInDomainLocalModule(domainModule);
+                    BYTE *base = field->GetBase();
                     if (base == NULL)
                         continue;
 
@@ -749,11 +745,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         pVal->Clear();
         fSucceeded = TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     if (!fSucceeded)
         return -1;
 
@@ -788,11 +780,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             pVal->rgTypeParameters.Append((ULONGLONG) th.GetArrayElementTypeHandle().AsTAddr());
             fSucceeded = TRUE;
         }
-        EX_CATCH
-        {
-            fSucceeded = FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_SWALLOW_NONTERMINAL
         if (!fSucceeded)
             return -1;
     }
@@ -808,11 +796,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
                 pVal->rgTypeParameters.Append((ULONGLONG) pTypeDesc->GetTypeParam().AsTAddr());
                 fSucceeded = TRUE;
             }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL
             if (!fSucceeded)
                 return -1;
         }
@@ -847,11 +831,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
                 }
                 fSucceeded = TRUE;
             }
-            EX_CATCH
-            {
-                fSucceeded = FALSE;
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_SWALLOW_NONTERMINAL
             if (!fSucceeded)
                 return -1;
         }
@@ -888,8 +868,9 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         // If this failed, the name remains empty, which is ok; the event just
         // won't have a name in it.
         pVal->sName.Clear();
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     // Now that we know the full size of this type's data, see if it fits in our
     // batch or whether we need to flush
@@ -983,11 +964,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSyst
         }
         fSucceeded = TRUE;
     }
-    EX_CATCH
-    {
-        fSucceeded = FALSE;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_SWALLOW_NONTERMINAL
     if (!fSucceeded)
         return;
 

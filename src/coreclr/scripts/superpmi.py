@@ -20,29 +20,31 @@ import argparse
 import asyncio
 import csv
 import datetime
+import json
 import locale
 import logging
 import math
-import os
 import multiprocessing
+import os
 import platform
+import queue
+import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
-import queue
-import re
+import time
 import urllib
 import urllib.request
 import zipfile
-import time
 
 from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
     create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
-    get_deepest_existing_directory
+    get_deepest_existing_directory, run_command
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -125,6 +127,14 @@ Utility command to merge MCH files. This is a thin wrapper around
 'mcs -merge -recursive -dedup -thin' followed by 'mcs -toc'.
 """
 
+summarize_description = """\
+Summarize multiple .json summaries created by --summary_as_json into a single .md file.
+"""
+
+summary_type_help = "Type of summaries: asmdiffs or tpdiff"
+
+summaries_help = "List of .json files to summarize"
+
 spmi_log_file_help = "Write SuperPMI tool output to a log file. Requires --sequential."
 
 jit_ee_version_help = """\
@@ -136,13 +146,13 @@ to get that version. Otherwise, use "unknown-jit-ee-version".
 
 host_os_help = "OS (windows, osx, linux). Default: current OS."
 
-arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
+arch_help = "Architecture (x64, x86, arm, arm64, loongarch64, riscv64). Default: current architecture."
 
 target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
 
-target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64). Passed as asm diffs target to SuperPMI. Default: current architecture."
+target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64, loongarch64, riscv64). Passed as asm diffs target to SuperPMI. Default: current architecture."
 
-mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64). Default: target architecture."
+mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64, loongarch64, riscv64). Default: target architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
@@ -278,6 +288,7 @@ superpmi_common_parser.add_argument("--break_on_assert", action="store_true", he
 superpmi_common_parser.add_argument("--break_on_error", action="store_true", help=break_on_error_help)
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
+superpmi_common_parser.add_argument("--parallelism", help="Specify amount of parallelism")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
@@ -304,6 +315,7 @@ collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="P
 collect_parser.add_argument("--disable_r2r", action="store_true", help="Sets DOTNET_ReadyToRun=0 when doing collection to cause ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 collect_parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
+collect_parser.add_argument("--jitoptrepeat_all", action="store_true", help="Sets DOTNET_JitOptRepeat=* when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
 
 # Allow for continuing a collection in progress
@@ -320,6 +332,8 @@ collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help
 
 replay_common_parser = argparse.ArgumentParser(add_help=False)
 
+# NOTE: When adding arguments here, also make sure that they are set when collect does its replay:
+# see the "collect" case in setup_args.
 replay_common_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
@@ -328,6 +342,7 @@ replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
+replay_common_parser.add_argument("-details", help="Specify full path to details file")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -344,6 +359,7 @@ base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the b
 base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
 base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
 base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
+base_diff_parser.add_argument("--summary_as_json", action="store_true", help="Produce a .json file with summary information that can be summarized to markdown later")
 
 # subparser for asmdiffs
 asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
@@ -364,7 +380,6 @@ add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
 
 upload_parser.add_argument("-mch_files", metavar="MCH_FILE", required=True, nargs='+', help=upload_mch_files_help)
-upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
 upload_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
@@ -400,6 +415,14 @@ merge_mch_parser = subparsers.add_parser("merge-mch", description=merge_mch_desc
 merge_mch_parser.add_argument("-output_mch_path", required=True, help="Location to place the final MCH file.")
 merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_help)
 merge_mch_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
+
+# subparser for summarize
+
+summarize_parser = subparsers.add_parser("summarize", description=summarize_description, parents=[core_root_parser])
+
+summarize_parser.add_argument("-summary_type", required=True, help=summary_type_help)
+summarize_parser.add_argument("-summaries", required=True, nargs='+', help=summaries_help)
+summarize_parser.add_argument("-output_long_summary_path", help="Path to output long summary to")
 
 ################################################################################
 # Helper functions
@@ -677,11 +700,6 @@ class SuperPMICollect:
 
         if coreclr_args.crossgen2:
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
-            if coreclr_args.dotnet_tool_path is None:
-                self.crossgen2_driver_tool = self.corerun
-            else:
-                self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
-            logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
 
         if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
@@ -847,6 +865,9 @@ class SuperPMICollect:
                 dotnet_env["TieredPGO"] = "1"
             else:
                 dotnet_env["TieredCompilation"] = "0"
+
+            if self.coreclr_args.jitoptrepeat_all:
+                dotnet_env["JitOptRepeat"] = "*"
 
             if self.coreclr_args.disable_r2r:
                 dotnet_env["ReadyToRun"] = "0"
@@ -1071,7 +1092,7 @@ class SuperPMICollect:
                     # Log what is in the response file
                     write_file_to_log(rsp_filepath)
 
-                    command = [self.crossgen2_driver_tool, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
+                    command = [self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
@@ -1191,6 +1212,9 @@ class SuperPMICollect:
                         if line.startswith("--exportsfile:"):
                             arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--exportsfile:"):]))
                             return f"--exportsfile:{arg_path}"
+                        elif line.startswith("--sourcelink:"):
+                            arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--sourcelink:"):]))
+                            return f"--sourcelink:{arg_path}"
                         elif line.startswith("--descriptor:"):
                             arg_path = os.path.join(test_directory, os.path.basename(line[len("--descriptor:"):]))
                             return f"--descriptor:{arg_path}"
@@ -1453,22 +1477,36 @@ class SuperPMICollect:
 # SuperPMI Replay helpers
 ################################################################################
 
-
-def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics):
-    """ Print a description of a superpmi return (error) code. If the return code is
-        zero, meaning success, don't print anything.
+def print_superpmi_error_result(return_code, coreclr_args):
+    """ Print a description of a superpmi return error code.
         Note that Python treats process return codes (at least on Windows) as
         unsigned integers, so compare against both signed and unsigned numbers for
         those return codes.
     """
+
     if return_code == 0:
-        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Overall"]["Successful compiles"]))
+        pass # Success
     elif return_code == -1 or return_code == 4294967295:
-        logging.error("General fatal error")
+        logging.error("General fatal error, please check the log for more details.")
     elif return_code == -2 or return_code == 4294967294:
-        logging.error("JIT failed to initialize")
+        logging.error("JIT failed to initialize, please check the log for more details.")
     elif return_code == 1:
         logging.warning("Compilation failures")
+    elif return_code == 2:
+        pass # Diffs
+    elif return_code == 3:
+        pass # Misses
+    elif return_code == 139 and coreclr_args.host_os != "windows":
+        logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault), please check the log for more details.")
+    else:
+        logging.error("Unknown error code %s, please check the log for more details.", return_code)
+
+def print_superpmi_success_result(return_code, base_metrics, diff_metrics):
+    """ Print a description of a superpmi return success code.
+    """
+
+    if return_code == 0:
+        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Overall"]["Successful compiles"]))
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
@@ -1483,12 +1521,6 @@ def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics)
                 logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
             else:
                 logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
-
-    elif return_code == 139 and coreclr_args.host_os != "windows":
-        logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
-    else:
-        logging.error("Unknown error code %s", return_code)
-
 
 def print_fail_mcl_file_method_numbers(fail_mcl_file):
     """ Given a SuperPMI ".mcl" file (containing a list of failure indices), print out the method numbers.
@@ -1587,15 +1619,27 @@ def report_replay_asserts(asserts, output_mch_file):
 
     if asserts:
         logging.info("============================== Assertions:")
+        assertion_num = 0
+        assertion_count = len(asserts.items())
         for assertion_key, assertion_value in asserts.items():
-            logging.info("%s", assertion_key)
+            assertion_num += 1
+            assertion_instance_count = len(assertion_value)
+            logging.info("=== Assertion #%s/%s (count: %s): %s", assertion_num, assertion_count, assertion_instance_count, assertion_key)
             # Sort the values by increasing il size
             sorted_instances = sorted(assertion_value, key=lambda d: d['il'])
+            instance_num = 0
+            # Arbitrary maximum number of instances to show to avoid too much output. Note that all the assertions are in the log file,
+            # just not summarized.
+            instance_max = 25
             for instance in sorted_instances:
                 if output_mch_file:
                     logging.info("  %s # %s : IL size %s", instance['mch_file'], instance['mc_num'], instance['il'])
                 else:
                     logging.info("  # %s : IL size %s", instance['mc_num'], instance['il'])
+                instance_num += 1
+                if instance_num >= instance_max:
+                    logging.info("  ... omitting %s instances", assertion_instance_count - instance_num)
+                    break
 
 
 ################################################################################
@@ -1667,7 +1711,10 @@ class SuperPMIReplay:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                common_flags += [ "-p" ]
+                if not self.coreclr_args.parallelism:
+                    common_flags += [ "-p" ]
+                else:
+                    common_flags += [ "-p", self.coreclr_args.parallelism ]
 
             if self.coreclr_args.break_on_assert:
                 common_flags += [ "-boa" ]
@@ -1710,7 +1757,11 @@ class SuperPMIReplay:
                 flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
-                details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+
+                if self.coreclr_args.details:
+                  details_info_file = self.coreclr_args.details
+                else:
+                  details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 flags += [
                     "-f", fail_mcl_file,  # Failing mc List
@@ -1719,9 +1770,10 @@ class SuperPMIReplay:
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 (return_code, replay_output) = run_and_log_return_output(command)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
                 replay_metrics = self.aggregate_replay_metrics(details_info_file)
-                print_superpmi_result(return_code, self.coreclr_args, replay_metrics, None)
+                print_superpmi_success_result(return_code, replay_metrics, None)
 
                 if return_code != 0:
                     # Don't report as replay failure missing data (return code 3).
@@ -1861,14 +1913,23 @@ def format_pct(pct, num_decimals = 2):
 def compute_and_format_pct(base, diff):
     return format_pct(compute_pct(base, diff))
 
-def write_jit_options(coreclr_args, write_fh):
+def write_jit_options(base_options, diff_options, write_fh):
     """ If any custom JIT options are specified then write their values out to a summmary
 
     Args:
-        coreclr_args: args class instance
+        base_options: base JIT options
+        diff_options: diff JIT options
         write_fh: file to output to
 
     """
+
+    if len(base_options) > 0:
+        write_fh.write("Base JIT options: {}\n\n".format(";".join(base_options)))
+
+    if len(diff_options) > 0:
+        write_fh.write("Diff JIT options: {}\n\n".format(";".join(diff_options)))
+
+def get_base_diff_jit_options(coreclr_args):
     base_options = []
     diff_options = []
 
@@ -1882,11 +1943,7 @@ def write_jit_options(coreclr_args, write_fh):
     if coreclr_args.diff_jit_option:
         diff_options += coreclr_args.diff_jit_option
 
-    if len(base_options) > 0:
-        write_fh.write("Base JIT options: {}\n\n".format(";".join(base_options)))
-
-    if len(diff_options) > 0:
-        write_fh.write("Diff JIT options: {}\n\n".format(";".join(diff_options)))
+    return (base_options, diff_options)
 
 class DetailsSection:
     def __init__(self, write_fh, summary_text):
@@ -1917,7 +1974,7 @@ def aggregate_diff_metrics(details_file):
     # Project out these fields for the saved diffs, to use for further
     # processing. Saving everything into memory is costly on memory when there
     # are a large number of diffs.
-    diffs_fields = ["Context", "Context size", "Base size", "Diff size", "Base PerfScore", "Diff PerfScore"]
+    diffs_fields = ["Context", "Method full name", "Context size", "Base ActualCodeBytes", "Diff ActualCodeBytes", "Base PerfScore", "Diff PerfScore"]
     diffs = []
 
     for row in read_csv(details_file):
@@ -1948,8 +2005,8 @@ def aggregate_diff_metrics(details_file):
             diff_dict["Failing compiles"] += 1
 
         if base_result == "Success" and diff_result == "Success":
-            base_size = int(row["Base size"])
-            diff_size = int(row["Diff size"])
+            base_size = int(row["Base ActualCodeBytes"])
+            diff_size = int(row["Diff ActualCodeBytes"])
             base_dict["Diffed code bytes"] += base_size
             diff_dict["Diffed code bytes"] += diff_size
 
@@ -2172,7 +2229,10 @@ class SuperPMIReplayAsmDiffs:
                 flags += diff_option_flags
 
                 if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                    flags += [ "-p" ]
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [ "-boa" ]
@@ -2203,9 +2263,11 @@ class SuperPMIReplayAsmDiffs:
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
-                print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
+                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_success_result(return_code, base_metrics, diff_metrics)
+
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
                 if return_code != 0:
@@ -2423,7 +2485,7 @@ class SuperPMIReplayAsmDiffs:
 
                     # If we are not specifying custom metrics then print a summary here, otherwise leave the summarization up to jit-analyze.
                     if self.coreclr_args.metrics is None:
-                        base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
+                        base_diff_sizes = [(int(r["Base ActualCodeBytes"]), int(r["Diff ActualCodeBytes"])) for r in diffs]
                         (num_size_improvements, num_size_regressions, num_size_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
 
                         num_diffs_str = "{:,d} contexts with diffs".format(len(diffs))
@@ -2509,21 +2571,33 @@ class SuperPMIReplayAsmDiffs:
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
 
-            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
-            if os.path.isfile(overall_md_summary_file):
-                os.remove(overall_md_summary_file)
+            summarizable_asm_diffs = self.create_summarizable_asm_diffs(asm_diffs)
+            (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
 
-            with open(overall_md_summary_file, "w") as write_fh:
-                self.write_asmdiffs_markdown_summary(write_fh, asm_diffs, True)
-                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+            if self.coreclr_args.summary_as_json:
+                overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "json")
+                if os.path.isfile(overall_json_summary_file):
+                    os.remove(overall_json_summary_file)
 
-            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_short_summary", "md")
-            if os.path.isfile(short_md_summary_file):
-                os.remove(short_md_summary_file)
+                with open(overall_json_summary_file, "w") as write_fh:
+                    json.dump((base_jit_options, diff_jit_options, summarizable_asm_diffs), write_fh)
+                    logging.info("  Summary JSON file: %s", overall_json_summary_file)
+            else:
+                overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
+                if os.path.isfile(overall_md_summary_file):
+                    os.remove(overall_md_summary_file)
 
-            with open(short_md_summary_file, "w") as write_fh:
-                self.write_asmdiffs_markdown_summary(write_fh, asm_diffs, False)
-                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+                with open(overall_md_summary_file, "w") as write_fh:
+                    write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
+                    logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+                short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_short_summary", "md")
+                if os.path.isfile(short_md_summary_file):
+                    os.remove(short_md_summary_file)
+
+                with open(short_md_summary_file, "w") as write_fh:
+                    write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
+                    logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 
         # Report the set of MCH files with asm diffs and replay failures.
 
@@ -2542,253 +2616,69 @@ class SuperPMIReplayAsmDiffs:
         return result
         ################################################################################################ end of replay_with_asm_diffs()
 
-    def write_asmdiffs_markdown_summary(self, write_fh, asm_diffs, include_details):
-        """ Write a markdown summary file of the diffs that were found.
+    def create_summarizable_asm_diffs(self, asm_diffs):
+        """ Convert the information for each collection into a format that we
+        can summarize (either immediately or externally)
 
         Args:
-            write_fh  : file handle for file to output to
-            asm_diffs : list of tuples: (mch_name, base_metrics, diff_metrics, diffs_info, jit_analyze_summary_file, examples_to_put_in_summary)
+            asm_diffs : list of tuples (mch_name, base_metrics, diffs_metrics, diffs_info, jit_analyze_summary_file, examples_to_put_in_summary)
+                        where examples_to_put_in_summary is a list of tuples (diff_info_row, base_dasm_path, diff_dasm_path)
 
+        Returns:
+            List of tuples (mch_name, base_Metrics, diffs_metrics, diffs_info, jit_analyze_summary, examples_to_put_in_summary)
+            where examples_to_put_in_summary is a list of tuples (func_name, diff_info_row, diff_text)
         """
 
-        def sum_base(row, col):
-            return sum(base_metrics[row][col] for (_, base_metrics, _, _, _, _) in asm_diffs)
-
-        def sum_diff(row, col):
-            return sum(diff_metrics[row][col] for (_, _, diff_metrics, _, _, _) in asm_diffs)
-
-        diffed_contexts = sum_diff("Overall", "Diffed contexts")
-        diffed_minopts_contexts = sum_diff("MinOpts", "Diffed contexts")
-        diffed_opts_contexts = sum_diff("FullOpts", "Diffed contexts")
-        missing_base_contexts = sum_base("Overall", "Missing compiles")
-        missing_diff_contexts = sum_diff("Overall", "Missing compiles")
-        total_contexts = missing_base_contexts + sum_base("Overall", "Successful compiles") + sum_base("Overall", "Failing compiles")
-
-        def write_top_context_section():
-            num_contexts_color = "#1460aa"
-            write_fh.write("Diffs are based on {} contexts ({} MinOpts, {} FullOpts).\n\n".format(
-                html_color(num_contexts_color, "{:,d}".format(diffed_contexts)),
-                html_color(num_contexts_color, "{:,d}".format(diffed_minopts_contexts)),
-                html_color(num_contexts_color, "{:,d}".format(diffed_opts_contexts))))
-
-            if missing_base_contexts > 0 or missing_diff_contexts > 0:
-                missed_color = "#d35400"
-                if missing_base_contexts == missing_diff_contexts:
-                    write_fh.write("{} contexts: {}\n\n".format(
-                        html_color(missed_color, "MISSED"),
-                        html_color(missed_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100))))
-                else:
-                    base_color = missed_color if missing_base_contexts > 0 else "green"
-                    diff_color = missed_color if missing_diff_contexts > 0 else "green"
-                    write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
-                        html_color(missed_color, "MISSED"),
-                        html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100)),
-                        html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / total_contexts * 100))))
-
-            write_jit_options(self.coreclr_args, write_fh)
-
-        def has_diffs(row):
-            return row["Contexts with diffs"] > 0
-
-        any_diffs = any(has_diffs(diff_metrics["Overall"]) for (_, _, diff_metrics, _, _, _) in asm_diffs)
-        # Exclude entire diffs section?
-        if any_diffs:
-            def write_pivot_section(row):
-                # Exclude this particular Overall/MinOpts/FullOpts table?
-                if not any(has_diffs(diff_metrics[row]) for (_, _, diff_metrics, _, _, _) in asm_diffs):
-                    return
-
-                sum_base = sum(base_metrics[row]["Diffed code bytes"] for (_, base_metrics, _, _, _, _) in asm_diffs)
-                sum_diff = sum(diff_metrics[row]["Diffed code bytes"] for (_, _, diff_metrics, _, _, _) in asm_diffs)
-
-                with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
-                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|PerfScore in Diffs\n")
-                    write_fh.write("|---|--:|--:|--:|\n")
-                    for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
-                        # Exclude this particular row?
-                        if not has_diffs(diff_metrics[row]):
-                            continue
-
-                        write_fh.write("|{}|{:,d}|{}|{}|\n".format(
-                            mch_file,
-                            base_metrics[row]["Diffed code bytes"],
-                            format_delta(
-                                base_metrics[row]["Diffed code bytes"],
-                                diff_metrics[row]["Diffed code bytes"]),
-                            format_pct(diff_metrics[row]["Relative PerfScore Geomean (Diffs)"] * 100 - 100)))
-
-            write_top_context_section()
-            write_pivot_section("Overall")
-            write_pivot_section("MinOpts")
-            write_pivot_section("FullOpts")
-
-            if include_details:
-                # Next add a section with example diffs for each collection.
-                self.write_example_diffs_to_markdown_summary(write_fh, asm_diffs)
-        elif include_details:
-            write_top_context_section()
-            write_fh.write("No diffs found.\n")
-
-        if include_details:
-            # Next write a detailed section
-            with DetailsSection(write_fh, "Details"):
-                if any_diffs:
-                    write_fh.write("#### Size improvements/regressions per collection\n\n")
-                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
-                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
-
-                    def write_row(name, diffs):
-                        base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
-                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
-                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
-                            name,
-                            len(diffs),
-                            html_color("green", "{:,d}".format(num_improvements)),
-                            html_color("red", "{:,d}".format(num_regressions)),
-                            html_color("blue", "{:,d}".format(num_same)),
-                            html_color("green", "-{:,d}".format(byte_improvements)),
-                            html_color("red", "+{:,d}".format(byte_regressions))))
-
-                    for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
-                        write_row(mch_file, diffs)
-
-                    if len(asm_diffs) > 1:
-                        write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
-
-                    write_fh.write("\n---\n\n")
-                    write_fh.write("#### PerfScore improvements/regressions per collection\n\n")
-                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same PerfScore|Improvements (PerfScore)|Regressions (PerfScore)|PerfScore Overall in FullOpts|\n")
-                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
-
-                    def write_ps_row(name, diffs, perfscore_geomean):
-                        base_diff_perfscores = [(float(r["Base PerfScore"]), float(r["Diff PerfScore"])) for r in diffs]
-                        (num_improvements, num_regressions, num_same, ps_improvements, ps_regressions) = calculate_perfscore_improvements_regressions(base_diff_perfscores)
-                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
-                            name,
-                            len(diffs),
-                            html_color("green", "{:,d}".format(num_improvements)),
-                            html_color("red", "{:,d}".format(num_regressions)),
-                            html_color("blue", "{:,d}".format(num_same)),
-                            format_pct(ps_improvements * 100),
-                            format_pct(ps_regressions * 100),
-                            format_pct(perfscore_geomean * 100, 4)))
-
-                    for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
-                        write_ps_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] - 1)
-
-                    write_fh.write("\n---\n\n")
-
-                write_fh.write("#### Context information\n\n")
-                write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
-                write_fh.write("|---|--:|--:|--:|--:|--:|\n")
-
-                rows = [(mch_file,
-                            diff_metrics["Overall"]["Diffed contexts"],
-                            diff_metrics["MinOpts"]["Diffed contexts"],
-                            diff_metrics["FullOpts"]["Diffed contexts"],
-                            base_metrics["Overall"]["Missing compiles"],
-                            diff_metrics["Overall"]["Missing compiles"],
-                            base_metrics["Overall"]["Successful compiles"] + base_metrics["Overall"]["Failing compiles"] + base_metrics["Overall"]["Missing compiles"])
-                            for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
-
-                def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
-                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
-                        name,
-                        diffed_contexts,
-                        num_minopts,
-                        num_fullopts,
-                        num_missed_base,
-                        num_missed_base / total_num_contexts * 100,
-                        num_missed_diff,
-                        num_missed_diff / total_num_contexts * 100))
-
-                for t in rows:
-                    write_row(*t)
-
-                if len(rows) > 1:
-                    def sum_row(index):
-                        return sum(r[index] for r in rows)
-
-                    write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5), sum_row(6))
-
-                write_fh.write("\n\n")
-
-                if any(has_diff for (_, _, _, has_diff, _, _) in asm_diffs):
-                    write_fh.write("---\n\n")
-                    write_fh.write("#### jit-analyze output\n")
-
-                    for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file, _) in asm_diffs:
-                        if not has_diffs or jit_analyze_summary_file is None:
-                            continue
-
-                        with open(jit_analyze_summary_file, "r") as read_fh:
-                            with DetailsSection(write_fh, mch_file):
-                                write_fh.write("To reproduce these diffs on Windows {0}:\n".format(self.coreclr_args.arch))
-                                write_fh.write("```\n")
-                                write_fh.write("superpmi.py asmdiffs -target_os {0} -target_arch {1} -arch {2}\n".format(self.coreclr_args.target_os, self.coreclr_args.target_arch, self.coreclr_args.arch))
-                                write_fh.write("```\n\n")
-
-                                shutil.copyfileobj(read_fh, write_fh)
-
-    def write_example_diffs_to_markdown_summary(self, write_fh, asm_diffs):
-        """ Write a section with example diffs to the markdown summary.
-
-        Args:
-            write_fh  : file handle for file to output to
-            asm_diffs : list of tuples: (mch_name, base_metrics, diff_metrics, diffs_info, jit_analyze_summary_file, examples_to_put_in_summary)
-
-        """
+        summarizable_asm_diffs = []
 
         git_exe = "git.exe" if platform.system() == "Windows" else "git"
         path_var = os.environ.get("PATH")
         git_path = find_file(git_exe, path_var.split(os.pathsep)) if path_var is not None else None
 
-        if git_path is None:
-            write_fh.write("\nCould not find a git executable in PATH to create example diffs.\n\n")
-            return
+        for (mch_file, base_metrics, diff_metrics, diffs, jit_analyze_file, examples_to_put_in_summary) in asm_diffs:
+            if jit_analyze_file:
+                with open(jit_analyze_file, "r") as read_fh:
+                    jit_analyze_result = read_fh.read()
+            else:
+                jit_analyze_result = None
 
-        with DetailsSection(write_fh, "Example diffs"):
-            for (collection_name, _, _, _, _, examples_to_put_in_summary) in asm_diffs:
-                if not any(examples_to_put_in_summary):
-                    continue
+            example_diffs = []
+            for (diff, base_dasm_path, diff_dasm_path) in examples_to_put_in_summary:
+                context_num = int(diff["Context"])
+                func_name = str(context_num) + ".dasm"
 
-                with DetailsSection(write_fh, collection_name):
-                    for (diff, base_dasm_path, diff_dasm_path) in examples_to_put_in_summary:
-                        context_num = int(diff["Context"])
-                        func_name = str(context_num) + ".dasm"
+                assert(os.path.exists(base_dasm_path) and os.path.exists(diff_dasm_path))
 
-                        if not os.path.exists(base_dasm_path) or not os.path.exists(diff_dasm_path):
-                            write_fh.write("Did not find base/diff .dasm files for context {}; cannot display example diff\n\n".format(context_num))
-                            continue
+                with open(base_dasm_path) as f:
+                    first_line = f.readline().rstrip()
+                    if first_line and first_line.startswith("; Assembly listing for method "):
+                        func_name += " - " + first_line[len("; Assembly listing for method "):]
 
-                        with open(base_dasm_path) as f:
-                            first_line = f.readline().rstrip()
-                            if first_line and first_line.startswith("; Assembly listing for method "):
-                                func_name += " - " + first_line[len("; Assembly listing for method "):]
+                diff_text = None
+                if git_path is None:
+                    diff_text = "Could not find a git executable in PATH"
+                else:
+                    git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
+                    git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
+                    (stdout, _) = git_diff_proc.communicate()
+                    code = git_diff_proc.returncode
+                    diff_lines = stdout.decode().splitlines()
+                    diff_lines = diff_lines[4:] # Exclude patch header
 
-                        git_diff_command = [ git_path, "diff", "--diff-algorithm=histogram", "--no-index", "--", base_dasm_path, diff_dasm_path ]
-                        git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
-                        (stdout, _) = git_diff_proc.communicate()
-                        code = git_diff_proc.returncode
-                        diff_lines = stdout.decode().splitlines()
-                        diff_lines = diff_lines[4:] # Exclude patch header
+                    if code == 0 or len(diff_lines) <= 0:
+                        diff_text = "No diffs found?"
+                    else:
+                        if len(diff_lines) > 250:
+                            diff_lines = diff_lines[:250]
+                            diff_lines.append("...")
 
-                        base_size = int(diff["Base size"])
-                        diff_size = int(diff["Diff size"])
-                        with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
-                            if code == 0 or len(diff_lines) <= 0:
-                                write_fh.write("No diffs found?\n\n")
-                            else:
-                                write_fh.write("```diff\n")
-                                if len(diff_lines) > 250:
-                                    diff_lines = diff_lines[:250]
-                                    diff_lines.append("...")
+                        diff_text = "```diff\n" + "\n".join(diff_lines) + "\n```"
 
-                                for line in diff_lines:
-                                    write_fh.write(line)
-                                    write_fh.write("\n")
+                example_diffs.append((func_name, diff, diff_text))
 
-                                write_fh.write("\n```\n")
+            summarizable_asm_diffs.append((mch_file, base_metrics, diff_metrics, diffs, jit_analyze_result, example_diffs))
+
+        return summarizable_asm_diffs
 
     def pick_contexts_to_disassemble(self, diffs):
         """ Given information about diffs, pick the context numbers to create .dasm files for and examples to show diffs for.
@@ -2818,8 +2708,8 @@ class SuperPMIReplayAsmDiffs:
             display_subset("Smallest {} contexts with binary differences:", smallest_contexts)
 
             if self.coreclr_args.metrics is None:
-                base_metric_name = "Base size"
-                diff_metric_name = "Diff size"
+                base_metric_name = "Base ActualCodeBytes"
+                diff_metric_name = "Diff ActualCodeBytes"
             else:
                 base_metric_name = "Base PerfScore"
                 diff_metric_name = "Diff PerfScore"
@@ -2850,23 +2740,257 @@ class SuperPMIReplayAsmDiffs:
             display_subset("Top {} regressions, percentage-wise:", top_regressions_pct)
 
             # 20 contexts without size diffs (possibly GC info diffs), sorted by size
-            zero_size_diffs = filter(lambda r: int(r["Diff size"]) == int(r["Base size"]), diffs)
+            zero_size_diffs = filter(lambda r: int(r["Diff ActualCodeBytes"]) == int(r["Base ActualCodeBytes"]), diffs)
             smallest_zero_size_contexts = sorted(zero_size_diffs, key=lambda r: int(r["Context size"]))[:20]
 
             display_subset("Smallest {} zero sized diffs:", smallest_zero_size_contexts)
 
-            by_diff_size_pct_examples = [diff for diff in by_diff_size_pct if abs(int(diff['Diff size']) - int(diff['Base size'])) < 50]
-            if len(by_diff_size_pct_examples) == 0:
-                by_diff_size_pct_examples = by_diff_size_pct
+            # Prefer to show small diffs over large percentage wise diffs; sort by this additionally.
+            # sorted is stable, so for multiple small diffs this will keep them in order of percentage wise improvement/regression.
+            def is_small_diff(row):
+                if abs(int(row['Diff ActualCodeBytes']) - int(row['Base ActualCodeBytes'])) < 50:
+                    return 0
 
-            example_improvements = by_diff_size_pct_examples[:3]
-            example_regressions = by_diff_size_pct_examples[3:][-3:]
+                return 1
+
+            by_small_then_improvement = sorted(by_diff_size_pct, key=is_small_diff)
+            by_small_then_regression = sorted(reversed(by_diff_size_pct), key=is_small_diff)
+
+            def pick_examples(diffs, picked_contexts):
+                seen = set()
+                def try_add_seen(row):
+                    len_before = len(seen)
+                    seen.add(row["Method full name"])
+                    return len_before < len(seen)
+
+                result = []
+                for row in diffs:
+                    if row["Context"] in picked_contexts or not try_add_seen(row):
+                        continue
+
+                    result.append(row)
+                    if len(result) >= 3:
+                        break
+
+                return result
+
+            example_improvements = pick_examples(by_small_then_improvement, set())
+
+            example_improvement_contexts = set(row["Context"] for row in example_improvements)
+            example_regressions = pick_examples(by_small_then_regression, example_improvement_contexts)
+
             contexts = smallest_contexts + top_improvements + top_regressions + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
             examples = example_improvements + example_regressions
 
         final_contexts_indices = list(set(int(r["Context"]) for r in contexts))
         final_contexts_indices.sort()
         return (final_contexts_indices, examples)
+
+def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, asm_diffs, include_details):
+    """ Write a markdown summary file of the diffs that were found.
+
+    Args:
+        write_fh  : file handle for file to output to
+        base_jit_options: list of options used for base JIT
+        diff_jit_options: list of options used for diff JIT
+        asm_diffs : list of tuples: (mch_name, base_metrics, diff_metrics, diffs_info, jit_analyze_summary, examples_to_put_in_summary)
+
+    """
+
+    def sum_base(row, col):
+        return sum(base_metrics[row][col] for (_, base_metrics, _, _, _, _) in asm_diffs)
+
+    def sum_diff(row, col):
+        return sum(diff_metrics[row][col] for (_, _, diff_metrics, _, _, _) in asm_diffs)
+
+    diffed_contexts = sum_diff("Overall", "Diffed contexts")
+    diffed_minopts_contexts = sum_diff("MinOpts", "Diffed contexts")
+    diffed_opts_contexts = sum_diff("FullOpts", "Diffed contexts")
+    missing_base_contexts = sum_base("Overall", "Missing compiles")
+    missing_diff_contexts = sum_diff("Overall", "Missing compiles")
+    total_contexts = missing_base_contexts + sum_base("Overall", "Successful compiles") + sum_base("Overall", "Failing compiles")
+
+    def write_top_context_section():
+        num_contexts_color = "#1460aa"
+        write_fh.write("Diffs are based on {} contexts ({} MinOpts, {} FullOpts).\n\n".format(
+            html_color(num_contexts_color, "{:,d}".format(diffed_contexts)),
+            html_color(num_contexts_color, "{:,d}".format(diffed_minopts_contexts)),
+            html_color(num_contexts_color, "{:,d}".format(diffed_opts_contexts))))
+
+        if missing_base_contexts > 0 or missing_diff_contexts > 0:
+            missed_color = "#d35400"
+            if missing_base_contexts == missing_diff_contexts:
+                write_fh.write("{} contexts: {}\n\n".format(
+                    html_color(missed_color, "MISSED"),
+                    html_color(missed_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100))))
+            else:
+                base_color = missed_color if missing_base_contexts > 0 else "green"
+                diff_color = missed_color if missing_diff_contexts > 0 else "green"
+                write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
+                    html_color(missed_color, "MISSED"),
+                    html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / total_contexts * 100)),
+                    html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / total_contexts * 100))))
+
+        write_jit_options(base_jit_options, diff_jit_options, write_fh)
+
+    def has_diffs(row):
+        return row["Contexts with diffs"] > 0
+
+    any_diffs = any(has_diffs(diff_metrics["Overall"]) for (_, _, diff_metrics, _, _, _) in asm_diffs)
+    # Exclude entire diffs section?
+    if any_diffs:
+        def write_pivot_section(row):
+            # Exclude this particular Overall/MinOpts/FullOpts table?
+            if not any(has_diffs(diff_metrics[row]) for (_, _, diff_metrics, _, _, _) in asm_diffs):
+                return
+
+            sum_base = sum(base_metrics[row]["Diffed code bytes"] for (_, base_metrics, _, _, _, _) in asm_diffs)
+            sum_diff = sum(diff_metrics[row]["Diffed code bytes"] for (_, _, diff_metrics, _, _, _) in asm_diffs)
+
+            with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
+                write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|PerfScore in Diffs\n")
+                write_fh.write("|---|--:|--:|--:|\n")
+                for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
+                    # Exclude this particular row?
+                    if not has_diffs(diff_metrics[row]):
+                        continue
+
+                    write_fh.write("|{}|{:,d}|{}|{}|\n".format(
+                        mch_file,
+                        base_metrics[row]["Diffed code bytes"],
+                        format_delta(
+                            base_metrics[row]["Diffed code bytes"],
+                            diff_metrics[row]["Diffed code bytes"]),
+                        format_pct(diff_metrics[row]["Relative PerfScore Geomean (Diffs)"] * 100 - 100)))
+
+        write_top_context_section()
+        write_pivot_section("Overall")
+        write_pivot_section("MinOpts")
+        write_pivot_section("FullOpts")
+
+        if include_details:
+            # Next add a section with example diffs for each collection.
+            write_example_diffs_to_markdown_summary(write_fh, asm_diffs)
+    elif include_details:
+        write_top_context_section()
+        write_fh.write("No diffs found.\n")
+
+    if include_details:
+        # Next write a detailed section
+        with DetailsSection(write_fh, "Details"):
+            if any_diffs:
+                write_fh.write("#### Size improvements/regressions per collection\n\n")
+                write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
+                write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
+
+                def write_row(name, diffs):
+                    base_diff_sizes = [(int(r["Base ActualCodeBytes"]), int(r["Diff ActualCodeBytes"])) for r in diffs]
+                    (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
+                    write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
+                        name,
+                        len(diffs),
+                        html_color("green", "{:,d}".format(num_improvements)),
+                        html_color("red", "{:,d}".format(num_regressions)),
+                        html_color("blue", "{:,d}".format(num_same)),
+                        html_color("green", "-{:,d}".format(byte_improvements)),
+                        html_color("red", "+{:,d}".format(byte_regressions))))
+
+                for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
+                    write_row(mch_file, diffs)
+
+                if len(asm_diffs) > 1:
+                    write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
+
+                write_fh.write("\n---\n\n")
+                write_fh.write("#### PerfScore improvements/regressions per collection\n\n")
+                write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same PerfScore|Improvements (PerfScore)|Regressions (PerfScore)|PerfScore Overall in FullOpts|\n")
+                write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
+
+                def write_ps_row(name, diffs, perfscore_geomean):
+                    base_diff_perfscores = [(float(r["Base PerfScore"]), float(r["Diff PerfScore"])) for r in diffs]
+                    (num_improvements, num_regressions, num_same, ps_improvements, ps_regressions) = calculate_perfscore_improvements_regressions(base_diff_perfscores)
+                    write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
+                        name,
+                        len(diffs),
+                        html_color("green", "{:,d}".format(num_improvements)),
+                        html_color("red", "{:,d}".format(num_regressions)),
+                        html_color("blue", "{:,d}".format(num_same)),
+                        format_pct(ps_improvements * 100),
+                        format_pct(ps_regressions * 100),
+                        format_pct(perfscore_geomean * 100, 4)))
+
+                for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
+                    write_ps_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] - 1)
+
+                write_fh.write("\n---\n\n")
+
+            write_fh.write("#### Context information\n\n")
+            write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
+            write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+
+            rows = [(mch_file,
+                        diff_metrics["Overall"]["Diffed contexts"],
+                        diff_metrics["MinOpts"]["Diffed contexts"],
+                        diff_metrics["FullOpts"]["Diffed contexts"],
+                        base_metrics["Overall"]["Missing compiles"],
+                        diff_metrics["Overall"]["Missing compiles"],
+                        base_metrics["Overall"]["Successful compiles"] + base_metrics["Overall"]["Failing compiles"] + base_metrics["Overall"]["Missing compiles"])
+                        for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
+
+            def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
+                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
+                    name,
+                    diffed_contexts,
+                    num_minopts,
+                    num_fullopts,
+                    num_missed_base,
+                    num_missed_base / total_num_contexts * 100,
+                    num_missed_diff,
+                    num_missed_diff / total_num_contexts * 100))
+
+            for t in rows:
+                write_row(*t)
+
+            if len(rows) > 1:
+                def sum_row(index):
+                    return sum(r[index] for r in rows)
+
+                write_row("", sum_row(1), sum_row(2), sum_row(3), sum_row(4), sum_row(5), sum_row(6))
+
+            write_fh.write("\n\n")
+
+            if any(has_diff for (_, _, _, has_diff, _, _) in asm_diffs):
+                write_fh.write("---\n\n")
+                write_fh.write("#### jit-analyze output\n")
+
+                for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary, _) in asm_diffs:
+                    if not has_diffs or jit_analyze_summary is None:
+                        continue
+
+                    with DetailsSection(write_fh, mch_file):
+                        write_fh.write(jit_analyze_summary)
+
+def write_example_diffs_to_markdown_summary(write_fh, asm_diffs):
+    """ Write a section with example diffs to the markdown summary.
+
+    Args:
+        write_fh  : file handle for file to output to
+        asm_diffs : list of tuples: (mch_name, base_metrics, diff_metrics, diffs_info, jit_analyze_summary, examples_to_put_in_summary)
+                    where examples_to_put_in_summary is a list of tuples (func_name, diff_info_row, diff_text)
+
+    """
+
+    with DetailsSection(write_fh, "Example diffs"):
+        for (collection_name, _, _, _, _, examples_to_put_in_summary) in asm_diffs:
+            if not any(examples_to_put_in_summary):
+                continue
+
+            with DetailsSection(write_fh, collection_name):
+                for (func_name, diff, diff_text) in examples_to_put_in_summary:
+                    base_size = int(diff["Base ActualCodeBytes"])
+                    diff_size = int(diff["Diff ActualCodeBytes"])
+                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
+                        write_fh.write(diff_text)
 
 ################################################################################
 # SuperPMI Replay/TP diff
@@ -2975,6 +3099,7 @@ class SuperPMIReplayThroughputDiff:
                 ]
                 flags = [
                     "-applyDiff",
+                    "-v", "ewi",
                     "-details", detailed_info_file,
                 ]
                 flags += target_flags
@@ -2982,7 +3107,10 @@ class SuperPMIReplayThroughputDiff:
                 flags += diff_option_flags
 
                 if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                    flags += [ "-p" ]
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [ "-boa" ]
@@ -3006,11 +3134,10 @@ class SuperPMIReplayThroughputDiff:
                     command = [self.pin_path] + pin_options + ["--"] + [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                if return_code != 0:
-                    command_string = " ".join(command)
-                    logging.debug("'%s': Error return code: %s", command_string, return_code)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
                 (base_metrics, diff_metrics, _) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 if base_metrics is not None and diff_metrics is not None:
                     base_instructions = base_metrics["Overall"]["Diff executed instructions"]
@@ -3044,108 +3171,120 @@ class SuperPMIReplayThroughputDiff:
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
 
-            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_summary", "md")
+            (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
 
-            if os.path.isfile(overall_md_summary_file):
-                os.remove(overall_md_summary_file)
+            if self.coreclr_args.summary_as_json:
+                overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_summary", "json")
+                if os.path.isfile(overall_json_summary_file):
+                    os.remove(overall_json_summary_file)
 
-            with open(overall_md_summary_file, "w") as write_fh:
-                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, True)
-                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+                with open(overall_json_summary_file, "w") as write_fh:
+                    json.dump((base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs), write_fh)
+                    logging.info("  Summary JSON file: %s", overall_json_summary_file)
+            else:
+                overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_summary", "md")
 
-            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_short_summary", "md")
+                if os.path.isfile(overall_md_summary_file):
+                    os.remove(overall_md_summary_file)
 
-            if os.path.isfile(short_md_summary_file):
-                os.remove(short_md_summary_file)
+                with open(overall_md_summary_file, "w") as write_fh:
+                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, True)
+                    logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-            with open(short_md_summary_file, "w") as write_fh:
-                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, False)
-                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
+                short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_short_summary", "md")
+
+                if os.path.isfile(short_md_summary_file):
+                    os.remove(short_md_summary_file)
+
+                with open(short_md_summary_file, "w") as write_fh:
+                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, False)
+                    logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
 
         return True
         ################################################################################################ end of replay_with_throughput_diff()
 
-    def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded, include_details):
 
-        def write_top_context_section():
-            if not base_jit_build_string_decoded:
-                write_fh.write("{} Could not decode base JIT build string".format(html_color("red", "Warning:")))
-            if not diff_jit_build_string_decoded:
-                write_fh.write("{} Could not decode diff JIT build string".format(html_color("red", "Warning:")))
-            if base_jit_build_string_decoded and diff_jit_build_string_decoded:
-                (base_jit_compiler_version, base_jit_with_native_pgo) = base_jit_build_string_decoded
-                (diff_jit_compiler_version, diff_jit_with_native_pgo) = diff_jit_build_string_decoded
+def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, include_details):
 
-                if base_jit_compiler_version != diff_jit_compiler_version:
-                    write_fh.write("{} Different compilers used for base and diff JITs. Results may be misleading.\n".format(html_color("red", "Warning:")))
-                    write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
-                    write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+    def write_top_context_section():
+        if not base_jit_build_string_decoded:
+            write_fh.write("{} Could not decode base JIT build string".format(html_color("red", "Warning:")))
+        if not diff_jit_build_string_decoded:
+            write_fh.write("{} Could not decode diff JIT build string".format(html_color("red", "Warning:")))
+        if base_jit_build_string_decoded and diff_jit_build_string_decoded:
+            (base_jit_compiler_version, base_jit_with_native_pgo) = base_jit_build_string_decoded
+            (diff_jit_compiler_version, diff_jit_with_native_pgo) = diff_jit_build_string_decoded
 
-                if base_jit_with_native_pgo:
-                    write_fh.write("{} Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
-                if diff_jit_with_native_pgo:
-                    write_fh.write("{} Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
+            if base_jit_compiler_version != diff_jit_compiler_version:
+                write_fh.write("{} Different compilers used for base and diff JITs. Results may be misleading.\n".format(html_color("red", "Warning:")))
+                write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+                write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
 
-            write_jit_options(self.coreclr_args, write_fh)
+            if base_jit_with_native_pgo:
+                write_fh.write("{} Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
+            if diff_jit_with_native_pgo:
+                write_fh.write("{} Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
 
-        # We write two tables, an overview one with just significantly
-        # impacted collections and a detailed one that includes raw
-        # instruction count and all collections.
-        def is_significant_pct(base, diff):
-            if base == 0:
-                return diff != 0
+        write_jit_options(base_jit_options, diff_jit_options, write_fh)
 
-            return round((diff - base) / base * 100, 2) != 0
+    # We write two tables, an overview one with just significantly
+    # impacted collections and a detailed one that includes raw
+    # instruction count and all collections.
+    def is_significant_pct(base, diff):
+        if base == 0:
+            return diff != 0
 
-        def is_significant(row, base, diff):
-            return is_significant_pct(base[row]["Diff executed instructions"], diff[row]["Diff executed instructions"])
+        return round((diff - base) / base * 100, 2) != 0
 
-        if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
-            def write_pivot_section(row):
-                if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
-                    return
+    def is_significant(row, base, diff):
+        return is_significant_pct(base[row]["Diff executed instructions"], diff[row]["Diff executed instructions"])
 
-                pcts = [compute_pct(base_metrics[row]["Diff executed instructions"], diff_metrics[row]["Diff executed instructions"]) for (_, base_metrics, diff_metrics) in tp_diffs]
-                min_pct_str = format_pct(min(pcts))
-                max_pct_str = format_pct(max(pcts))
-                if min_pct_str == max_pct_str:
-                    tp_summary = "{} ({})".format(row, min_pct_str)
-                else:
-                    tp_summary = "{} ({} to {})".format(row, min_pct_str, max_pct_str)
+    if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
+        def write_pivot_section(row):
+            if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
+                return
 
-                with DetailsSection(write_fh, tp_summary):
-                    write_fh.write("|Collection|PDIFF|\n")
-                    write_fh.write("|---|--:|\n")
-                    for mch_file, base, diff in tp_diffs:
-                        base_instructions = base[row]["Diff executed instructions"]
-                        diff_instructions = diff[row]["Diff executed instructions"]
+            pcts = [compute_pct(base_metrics[row]["Diff executed instructions"], diff_metrics[row]["Diff executed instructions"]) for (_, base_metrics, diff_metrics) in tp_diffs]
+            min_pct_str = format_pct(min(pcts))
+            max_pct_str = format_pct(max(pcts))
+            if min_pct_str == max_pct_str:
+                tp_summary = "{} ({})".format(row, min_pct_str)
+            else:
+                tp_summary = "{} ({} to {})".format(row, min_pct_str, max_pct_str)
 
-                        if is_significant(row, base, diff):
-                            write_fh.write("|{}|{}|\n".format(
-                                mch_file,
-                                compute_and_format_pct(base_instructions, diff_instructions)))
+            with DetailsSection(write_fh, tp_summary):
+                write_fh.write("|Collection|PDIFF|\n")
+                write_fh.write("|---|--:|\n")
+                for mch_file, base, diff in tp_diffs:
+                    base_instructions = base[row]["Diff executed instructions"]
+                    diff_instructions = diff[row]["Diff executed instructions"]
 
-            write_top_context_section()
-            write_pivot_section("Overall")
-            write_pivot_section("MinOpts")
-            write_pivot_section("FullOpts")
-        elif include_details:
-            write_top_context_section()
-            write_fh.write("No significant throughput differences found\n")
-
-        if include_details:
-            with DetailsSection(write_fh, "Details"):
-                for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
-                    write_fh.write("{} contexts:\n\n".format(disp))
-                    write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
-                    write_fh.write("|---|--:|--:|--:|\n")
-                    for mch_file, base, diff in tp_diffs:
-                        base_instructions = base[row]["Diff executed instructions"]
-                        diff_instructions = diff[row]["Diff executed instructions"]
-                        write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
-                            mch_file, base_instructions, diff_instructions,
+                    if is_significant(row, base, diff):
+                        write_fh.write("|{}|{}|\n".format(
+                            mch_file,
                             compute_and_format_pct(base_instructions, diff_instructions)))
-                    write_fh.write("\n")
+
+        write_top_context_section()
+        write_pivot_section("Overall")
+        write_pivot_section("MinOpts")
+        write_pivot_section("FullOpts")
+    elif include_details:
+        write_top_context_section()
+        write_fh.write("No significant throughput differences found\n")
+
+    if include_details:
+        with DetailsSection(write_fh, "Details"):
+            for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+                write_fh.write("{} contexts:\n\n".format(disp))
+                write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
+                write_fh.write("|---|--:|--:|--:|\n")
+                for mch_file, base, diff in tp_diffs:
+                    base_instructions = base[row]["Diff executed instructions"]
+                    diff_instructions = diff[row]["Diff executed instructions"]
+                    write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
+                        mch_file, base_instructions, diff_instructions,
+                        compute_and_format_pct(base_instructions, diff_instructions)))
+                write_fh.write("\n")
 
 ################################################################################
 # Argument handling helpers
@@ -3759,28 +3898,75 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
+    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     blob_filter_string =  "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
-    # Determine if a URL in Azure Storage should be allowed. The path looks like:
-    #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
-    # Filter to just the current jit-ee-guid, OS, and architecture.
-    # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
-    # If there are filters, only download those matching files.
-    def filter_superpmi_collections(path):
-        path = path.lower()
-        return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
+    path_var = os.environ.get("PATH")
+    azcopy_exe = "azcopy.exe" if platform.system() == "Windows" else "azcopy"
+    azcopy_path = find_file(azcopy_exe, path_var.split(os.pathsep)) if path_var is not None else None
 
-    paths = list_superpmi_collections_container(filter_superpmi_collections)
-    if paths is None or len(paths) == 0:
-        print("No Azure Storage MCH files to download from {}".format(blob_filter_string))
-        return []
+    if azcopy_path is None or authenticate_using_azure:
+        # Determine if a URL in Azure Storage should be allowed. The path looks like:
+        #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
+        # Filter to just the current jit-ee-guid, OS, and architecture.
+        # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
+        # If there are filters, only download those matching files.
+        def filter_superpmi_collections(path):
+            path = path.lower()
+            return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
 
-    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
-    urls = [blob_url_prefix + path for path in paths]
+        paths = list_superpmi_collections_container(filter_superpmi_collections)
+        if paths is None or len(paths) == 0:
+            print("No Azure Storage MCH files to download from {}".format(blob_filter_string))
+            return []
 
-    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
-    return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
+        urls = [blob_url_prefix + path for path in paths]
 
+        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+        return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
+    else:
+        logging.info("azcopy was found in PATH; will use azcopy for download")
+        local_paths = []
+        with TempDir() as temp_location:
+            source_url = "{}{}*".format(blob_url_prefix, blob_filter_string)
+            cli = [azcopy_path, "cp", source_url, temp_location]
+            if coreclr_args.filter is not None:
+                cli.append("--include-pattern")
+                cli.append(";".join("*" + filter_name + "*" for filter_name in coreclr_args.filter))
+    
+            # Log to a file to get "tee-like" behavior (streaming output in the console)
+            azcopy_log_path = os.path.join(temp_location, "azcopy.log")
+            run_command(cli, _output_file=azcopy_log_path)
+            os.remove(azcopy_log_path)
+
+            for file in os.listdir(temp_location):
+                download_path = os.path.join(temp_location, file)
+                if file.lower().endswith(".zip") or file.lower().endswith(".tar.gz"):
+                    logging.info("Uncompress %s => %s", download_path, target_dir)
+
+                    if file.lower().endswith(".zip"):
+                        with zipfile.ZipFile(download_path, "r") as zip:
+                            zip.extractall(target_dir)
+                            archive_names = zip.namelist()
+                    else:
+                        with tarfile.open(download_path, "r") as tar:
+                            tar.extractall(target_dir)
+                            archive_names = tar.getnames()
+
+                    for archive_name in archive_names:
+                        if archive_name.endswith("/"):
+                            # Directory
+                            continue
+
+                        target_path = os.path.join(target_dir, archive_name.replace("/", os.path.sep))
+                        local_paths.append(target_path)
+                else:
+                    logging.info("Copy %s => %s", download_path, target_dir)
+                    target_path = os.path.join(target_dir, file)
+                    shutil.copy2(download_path, target_path)
+                    local_paths.append(target_path)
+
+        return local_paths
 
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.
@@ -3789,8 +3975,8 @@ def upload_mch(coreclr_args):
         coreclr_args (CoreclrArguments): parsed args
     """
 
-    require_azure_storage_libraries(need_azure_identity=False)
-    from jitutil import BlobServiceClient
+    require_azure_storage_libraries(need_azure_identity=True)
+    from jitutil import BlobServiceClient, AzureCliCredential
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -3826,7 +4012,9 @@ def upload_mch(coreclr_args):
     for item in files_to_upload:
         logging.info("  %s", item)
 
-    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
+    default_credential = AzureCliCredential()
+
+    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
 
     total_bytes_uploaded = 0
@@ -4049,6 +4237,66 @@ def merge_mch(coreclr_args):
 
     return True
 
+def summarize_json_summaries(coreclr_args):
+    logging.info("Summarizing {} files:".format(coreclr_args.summary_type))
+    for file in coreclr_args.summaries:
+        logging.info("  {}".format(file))
+
+    file_name_prefix = "diff" if coreclr_args.summary_type == "asmdiffs" else "tpdiff"
+
+    if coreclr_args.output_long_summary_path:
+        overall_md_summary_file = coreclr_args.output_long_summary_path
+    else:
+        overall_md_summary_file = create_unique_file_name(coreclr_args.spmi_location, file_name_prefix + "_summary", "md")
+        if os.path.isfile(overall_md_summary_file):
+            os.remove(overall_md_summary_file)
+
+    short_md_summary_file = create_unique_file_name(coreclr_args.spmi_location, file_name_prefix + "_short_summary", "md")
+    if os.path.isfile(short_md_summary_file):
+        os.remove(short_md_summary_file)
+
+    if coreclr_args.summary_type == "asmdiffs":
+        base_jit_options = []
+        diff_jit_options = []
+        summarizable_asm_diffs = []
+
+        for json_file in coreclr_args.summaries:
+            with open(json_file, "r") as fh:
+                (base_jit_options, diff_jit_options, asm_diffs) = json.load(fh)
+                summarizable_asm_diffs.extend(asm_diffs)
+
+        # Sort by collection name
+        summarizable_asm_diffs.sort(key=lambda t: t[0])
+
+        with open(overall_md_summary_file, "w") as write_fh:
+            write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        with open(short_md_summary_file, "w") as write_fh:
+            write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
+            logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+    else:
+        base_jit_build_string_decoded = ""
+        diff_jit_build_string_decoded = ""
+        base_jit_options = []
+        diff_jit_options = []
+        summarizable_tp_diffs = []
+
+        for json_file in coreclr_args.summaries:
+            with open(json_file, "r") as fh:
+                (base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs) = json.load(fh)
+                summarizable_tp_diffs.extend(tp_diffs)
+
+        # Sort by collection name
+        summarizable_tp_diffs.sort(key=lambda t: t[0])
+
+        with open(overall_md_summary_file, "w") as write_fh:
+            write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, True)
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        with open(short_md_summary_file, "w") as write_fh:
+            write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, False)
+            logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 
 def get_mch_files_for_replay(local_mch_paths, filters):
     """ Given a list of local MCH files, and any specified filters (in coreclr_args.filter),
@@ -4173,8 +4421,8 @@ def process_base_jit_path_arg(coreclr_args):
             baseline_hash = coreclr_args.base_git_hash
 
         if coreclr_args.base_git_hash is None:
-            # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
+            # Enumerate the last 20 changes, starting with the baseline, that included JIT and JIT-EE GUID changes.
+            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
@@ -4378,6 +4626,9 @@ def setup_args(args):
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
 
+    # Log the original command-line
+    logging.debug("Command line: %s", " ".join(sys.argv))
+
     # Finish verifying the arguments
 
     def setup_jit_ee_version_arg(jit_ee_version):
@@ -4426,6 +4677,15 @@ def setup_args(args):
                             lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
                             modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
 
+        # For LoongArch64, RiscV64, assume we are doing altjit cross-compilation and set mch_arch to 'arch', and target_os to Linux.
+        if coreclr_args.target_arch == "loongarch64" or coreclr_args.target_arch == "riscv64":
+            if coreclr_args.target_os == coreclr_args.host_os and coreclr_args.target_os != "linux":
+                logging.warning("Overriding 'target_os' to 'linux'")
+                coreclr_args.target_os = "linux"
+            if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
+                logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
+                coreclr_args.mch_arch = coreclr_args.arch
+
     def verify_superpmi_common_args():
 
         coreclr_args.verify(args,
@@ -4447,6 +4707,11 @@ def setup_args(args):
                             "sequential",
                             lambda unused: True,
                             "Unable to set sequential.")
+
+        coreclr_args.verify(args,
+                            "parallelism",
+                            lambda unused: True,
+                            "Unable to set parallelism.")
 
         coreclr_args.verify(args,
                             "error_limit",
@@ -4546,6 +4811,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set diff_jit_option.")
 
+        coreclr_args.verify(args,
+                            "summary_as_json",
+                            lambda unused: True,
+                            "Unable to set summary_as_json")
+
         if coreclr_args.jitoption:
             for o in coreclr_args.jitoption:
                 if o.startswith("DOTNET_"):
@@ -4597,6 +4867,11 @@ def setup_args(args):
                             "produce_repro",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set produce_repro")
+
+        coreclr_args.verify(args,
+                            "details",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set details")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -4713,6 +4988,11 @@ def setup_args(args):
                             "Unable to set tiered_pgo")
 
         coreclr_args.verify(args,
+                            "jitoptrepeat_all",
+                            lambda unused: True,
+                            "Unable to set jitoptrepeat_all")
+
+        coreclr_args.verify(args,
                             "pmi_path",
                             lambda unused: True,
                             "Unable to set pmi_path")
@@ -4761,24 +5041,14 @@ def setup_args(args):
 
         if coreclr_args.crossgen2:
             # Can we find crossgen2?
-            crossgen2_tool_name = "crossgen2.dll"
+            crossgen2_tool_name = "crossgen2.exe" if platform.system() == "Windows" else "crossgen2"
             crossgen2_tool_path = os.path.abspath(os.path.join(coreclr_args.core_root, "crossgen2", crossgen2_tool_name))
             if not os.path.exists(crossgen2_tool_path):
                 print("`--crossgen2` is specified, but couldn't find " + crossgen2_tool_path + ". (Is it built?)")
                 sys.exit(1)
 
-            # Which dotnet will we use to run it?
-            dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
-            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
-            if not os.path.exists(dotnet_tool_path):
-                dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
-                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
-
             coreclr_args.crossgen2_tool_path = crossgen2_tool_path
-            coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
-            if coreclr_args.dotnet_tool_path is not None:
-                logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
 
         if coreclr_args.nativeaot:
             # Can we find nativeaot?
@@ -4838,6 +5108,11 @@ def setup_args(args):
                             "jitoption",
                             lambda unused: True,
                             "Unable to set jitoption")
+
+        coreclr_args.verify(args,
+                            "details",
+                            lambda unused: True,
+                            "Unable to set details")
 
         jit_in_product_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
@@ -5006,12 +5281,6 @@ def setup_args(args):
         verify_jit_ee_version_arg()
 
         coreclr_args.verify(args,
-                            "az_storage_key",
-                            lambda item: item is not None,
-                            "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
-                            modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
-
-        coreclr_args.verify(args,
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
@@ -5033,12 +5302,6 @@ def setup_args(args):
 
         if not os.path.isdir(coreclr_args.private_store):
             print("Error: private store directory '" + coreclr_args.private_store + "' not found.")
-            sys.exit(1)
-
-        # Safety measure: don't allow CLRJIT_AZ_KEY to be set if we are uploading to a private store.
-        # Note that this should be safe anyway, since we're publishing something private, not public.
-        if "CLRJIT_AZ_KEY" in os.environ:
-            print("Error: environment variable CLRJIT_AZ_KEY is set, but command is `upload-private`, not `upload`. That is not allowed.")
             sys.exit(1)
 
     elif coreclr_args.mode == "download":
@@ -5099,6 +5362,23 @@ def setup_args(args):
                             "ci",
                             lambda unused: True,
                             "Unable to set ci.")
+
+    elif coreclr_args.mode == "summarize":
+
+        coreclr_args.verify(args,
+                            "summary_type",
+                            lambda unused: True,
+                            "Unable to set summary_type")
+
+        coreclr_args.verify(args,
+                            "summaries",
+                            lambda unused: True,
+                            "Unable to set summaries")
+
+        coreclr_args.verify(args,
+                            "output_long_summary_path",
+                            lambda unused: True,
+                            "Unable to set output_long_summary_path")
 
     if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "download":
         if hasattr(coreclr_args, "private_store") and coreclr_args.private_store is not None:
@@ -5307,6 +5587,9 @@ def main(args):
     elif coreclr_args.mode == "merge-mch":
         success = merge_mch(coreclr_args)
 
+    elif coreclr_args.mode == "summarize":
+        summarize_json_summaries(coreclr_args)
+
     else:
         raise NotImplementedError(coreclr_args.mode)
 
@@ -5315,7 +5598,6 @@ def main(args):
 ################################################################################
 # __main__
 ################################################################################
-
 
 if __name__ == "__main__":
     args = parser.parse_args()

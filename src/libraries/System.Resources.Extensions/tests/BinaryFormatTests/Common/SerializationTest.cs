@@ -3,11 +3,12 @@
 
 using System.Buffers;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Runtime.Serialization.Formatters;
 
 namespace System.Resources.Extensions.Tests.Common;
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public abstract class SerializationTest<TSerializer> where TSerializer : ISerializer
 {
     public static TheoryData<FormatterTypeStyle, FormatterAssemblyStyle> FormatterOptions => new()
@@ -89,7 +90,7 @@ public abstract class SerializationTest<TSerializer> where TSerializer : ISerial
 
     protected static void WriteSerializedStreamHeader(BinaryWriter writer, int major = 1, int minor = 0)
     {
-        writer.Write((byte)RecordType.SerializedStreamHeader);
+        writer.Write((byte)SerializationRecordType.SerializedStreamHeader);
         writer.Write(1); // root ID
         writer.Write(1); // header ID
         writer.Write(major); // major version
@@ -98,14 +99,14 @@ public abstract class SerializationTest<TSerializer> where TSerializer : ISerial
 
     protected static void WriteBinaryLibrary(BinaryWriter writer, int objectId, string libraryName)
     {
-        writer.Write((byte)RecordType.BinaryLibrary);
+        writer.Write((byte)SerializationRecordType.BinaryLibrary);
         writer.Write(objectId);
         writer.Write(libraryName);
     }
 
     protected static void WriteClassInfo(BinaryWriter writer, int objectId, string typeName, params string[] memberNames)
     {
-        writer.Write((byte)RecordType.ClassWithMembersAndTypes);
+        writer.Write((byte)SerializationRecordType.ClassWithMembersAndTypes);
         writer.Write(objectId);
         writer.Write(typeName);
         writer.Write(memberNames.Length);
@@ -125,12 +126,12 @@ public abstract class SerializationTest<TSerializer> where TSerializer : ISerial
 
     protected static void WriteMemberReference(BinaryWriter writer, int referencedObjectId)
     {
-        writer.Write((byte)RecordType.MemberReference);
+        writer.Write((byte)SerializationRecordType.MemberReference);
         writer.Write(referencedObjectId);
     }
 
     protected static void WriteMessageEnd(BinaryWriter writer)
     {
-        writer.Write((byte)RecordType.MessageEnd);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
     }
 }

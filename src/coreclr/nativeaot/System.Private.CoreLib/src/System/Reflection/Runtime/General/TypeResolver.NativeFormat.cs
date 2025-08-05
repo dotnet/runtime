@@ -138,7 +138,7 @@ namespace System.Reflection.Runtime.General
                         RuntimeTypeInfo? genericTypeDefinition = sig.GenericType.TryResolve(reader, typeContext, ref exception);
                         if (genericTypeDefinition == null)
                             return null;
-                        LowLevelList<RuntimeTypeInfo> genericTypeArguments = new LowLevelList<RuntimeTypeInfo>();
+                        ArrayBuilder<RuntimeTypeInfo> genericTypeArguments = new ArrayBuilder<RuntimeTypeInfo>(sig.GenericTypeArguments.Count);
                         foreach (Handle genericTypeArgumentHandle in sig.GenericTypeArguments)
                         {
                             RuntimeTypeInfo? genericTypeArgument = genericTypeArgumentHandle.TryResolve(reader, typeContext, ref exception);
@@ -195,7 +195,7 @@ namespace System.Reflection.Runtime.General
                 Type? resolvedType = outerTypeInfo.GetNestedType(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
                 if (resolvedType == null)
                 {
-                    exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly);
+                    exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly.FullName);
                     return null;
                 }
                 return resolvedType.ToRuntimeTypeInfo();

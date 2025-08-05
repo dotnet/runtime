@@ -3,21 +3,20 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
-using static Interop;
 
 namespace System.Numerics
 {
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on generic vectors.</summary>
     [Intrinsic]
-    public static unsafe partial class Vector
+    public static partial class Vector
     {
-        internal static readonly nuint Alignment = (sizeof(Vector<byte>) == sizeof(Vector128<byte>)) ? (uint)(Vector128.Alignment) : (uint)(Vector256.Alignment);
+        internal static int Alignment => Vector<byte>.Count;
 
         /// <summary>Gets a value that indicates whether vector operations are subject to hardware acceleration through JIT intrinsic support.</summary>
         /// <value><see langword="true" /> if vector operations are subject to hardware acceleration; otherwise, <see langword="false" />.</value>
-        /// <remarks>Vector operations are subject to hardware acceleration on systems that support Single Instruction, Multiple Data (SIMD) instructions and the RyuJIT just-in-time compiler is used to compile managed code.</remarks>
+        /// <remarks>Vector operations are subject to hardware acceleration on systems that support single instruction, multiple data (SIMD) instructions and when the RyuJIT just-in-time compiler is used to compile managed code.</remarks>
         public static bool IsHardwareAccelerated
         {
             [Intrinsic]
@@ -54,13 +53,56 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Adds two vectors to compute their sum.</summary>
-        /// <param name="left">The vector to add with <paramref name="right" />.</param>
-        /// <param name="right">The vector to add with <paramref name="left" />.</param>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <inheritdoc cref="Vector128.Add{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector<T> Add<T>(Vector<T> left, Vector<T> right) => left + right;
+
+        /// <inheritdoc cref="Vector128.AddSaturate{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> AddSaturate<T>(Vector<T> left, Vector<T> right)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return left + right;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.AddSaturate(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.All{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool All<T>(Vector<T> vector, T value) => vector == Create(value);
+
+        /// <inheritdoc cref="Vector128.AllWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AllWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return All(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return All(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return All(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
@@ -69,6 +111,30 @@ namespace System.Numerics
         /// <returns>The bitwise-and of <paramref name="left" /> and the ones-complement of <paramref name="right" />.</returns>
         [Intrinsic]
         public static Vector<T> AndNot<T>(Vector<T> left, Vector<T> right) => left & ~right;
+
+        /// <inheritdoc cref="Vector128.Any{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Any<T>(Vector<T> vector, T value) => EqualsAny(vector, Create(value));
+
+        /// <inheritdoc cref="Vector128.AnyWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AnyWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Any(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Any(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return Any(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{U}" />.</summary>
         /// <typeparam name="TFrom">The type of the input vector.</typeparam>
@@ -83,109 +149,105 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TTo>();
 
-#if MONO
-            return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
-#else
             return Unsafe.BitCast<Vector<TFrom>, Vector<TTo>>(vector);
-#endif
         }
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Byte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Byte&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Byte}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Byte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<byte> AsVectorByte<T>(Vector<T> value) => value.As<T, byte>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Double}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Double}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Double&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<double> AsVectorDouble<T>(Vector<T> value) => value.As<T, double>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int16&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int16}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<short> AsVectorInt16<T>(Vector<T> value) => value.As<T, short>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int32&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int32}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<int> AsVectorInt32<T>(Vector<T> value) => value.As<T, int>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int64&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int64}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<long> AsVectorInt64<T>(Vector<T> value) => value.As<T, long>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;IntPtr&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;IntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<nint> AsVectorNInt<T>(Vector<T> value) => value.As<T, nint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UIntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UIntPtr&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UIntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UIntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<nuint> AsVectorNUInt<T>(Vector<T> value) => value.As<T, nuint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{SByte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;SByte&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{SByte}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;SByte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<sbyte> AsVectorSByte<T>(Vector<T> value) => value.As<T, sbyte>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Single}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Single&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector<float> AsVectorSingle<T>(Vector<T> value) => value.As<T, float>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt16&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt16}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<ushort> AsVectorUInt16<T>(Vector<T> value) => value.As<T, ushort>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt32&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt32}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<uint> AsVectorUInt32<T>(Vector<T> value) => value.As<T, uint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt64&gt;" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt64}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -195,7 +257,7 @@ namespace System.Numerics
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         public static Vector<T> BitwiseAnd<T>(Vector<T> left, Vector<T> right) => left & right;
 
@@ -203,14 +265,48 @@ namespace System.Numerics
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         public static Vector<T> BitwiseOr<T>(Vector<T> left, Vector<T> right) => left | right;
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its ceiling computed.</param>
+        /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> Ceiling<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Ceiling(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="value">The vector that will have its ceiling computed.</param>
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="value" />.</returns>
-        /// <seealso cref="Math.Ceiling(double)" />
+        /// <seealso cref="double.Ceiling(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> Ceiling(Vector<double> value)
@@ -229,7 +325,7 @@ namespace System.Numerics
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="value">The vector that will have its ceiling computed.</param>
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="value" />.</returns>
-        /// <seealso cref="MathF.Ceiling(float)" />
+        /// <seealso cref="float.Ceiling(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> Ceiling(Vector<float> value)
@@ -245,12 +341,29 @@ namespace System.Numerics
             return result;
         }
 
+        /// <inheritdoc cref="Vector128.Clamp{T}(Vector128{T}, Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        public static Vector<T> Clamp<T>(Vector<T> value, Vector<T> min, Vector<T> max)
+        {
+            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
+            return Min(Max(value, min), max);
+        }
+
+        /// <inheritdoc cref="Vector128.ClampNative{T}(Vector128{T}, Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        public static Vector<T> ClampNative<T>(Vector<T> value, Vector<T> min, Vector<T> max)
+        {
+            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
+            return MinNative(MaxNative(value, min), max);
+        }
+
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
         /// <param name="left">The vector that is selected when the corresponding bit in <paramref name="condition" /> is one.</param>
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
+        /// <remarks>The returned vector is equivalent to <paramref name="condition" /> <c>?</c> <paramref name="left" /> <c>:</c> <paramref name="right" /> on a per-bit basis.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> ConditionalSelect<T>(Vector<T> condition, Vector<T> left, Vector<T> right) => (left & condition) | AndNot(right, condition);
@@ -260,6 +373,7 @@ namespace System.Numerics
         /// <param name="left">The vector that is selected when the corresponding bit in <paramref name="condition" /> is one.</param>
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
+        /// <remarks>The returned vector is equivalent to <paramref name="condition" /> <c>?</c> <paramref name="left" /> <c>:</c> <paramref name="right" /> on a per-bit basis.</remarks>
         [Intrinsic]
         public static Vector<float> ConditionalSelect(Vector<int> condition, Vector<float> left, Vector<float> right) => ConditionalSelect(condition.As<int, float>(), left, right);
 
@@ -268,19 +382,23 @@ namespace System.Numerics
         /// <param name="left">The vector that is selected when the corresponding bit in <paramref name="condition" /> is one.</param>
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
+        /// <remarks>The returned vector is equivalent to <paramref name="condition" /> <c>?</c> <paramref name="left" /> <c>:</c> <paramref name="right" /> on a per-bit basis.</remarks>
         [Intrinsic]
         public static Vector<double> ConditionalSelect(Vector<long> condition, Vector<double> left, Vector<double> right) => ConditionalSelect(condition.As<long, double>(), left, right);
 
-        /// <summary>Converts a <see cref="Vector{Int64}" /> to a <see cref="Vector{Double}" />.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Int64&gt;" /> to a <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> ConvertToDouble(Vector<long> value)
         {
-            if (Avx2.IsSupported)
+            if (Vector<double>.Count == Vector512<double>.Count)
             {
-                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector512.ConvertToDouble(value.AsVector512()).AsVector();
+            }
+            else if (Vector<double>.Count == Vector256<double>.Count)
+            {
                 return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
             else
@@ -290,7 +408,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector{UInt64}" /> to a <see cref="Vector{Double}" />.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;UInt64&gt;" /> to a <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -298,9 +416,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> ConvertToDouble(Vector<ulong> value)
         {
-            if (Avx2.IsSupported)
+            if (Vector<double>.Count == Vector512<double>.Count)
             {
-                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector512.ConvertToDouble(value.AsVector512()).AsVector();
+            }
+            else if (Vector<double>.Count == Vector256<double>.Count)
+            {
                 return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
             else
@@ -310,7 +431,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Single&gt;" /> to a <see langword="Vector&lt;Int32&gt;" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -327,7 +448,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Single&gt;" /> to a <see langword="Vector&lt;Int32&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -344,7 +465,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Double&gt;" /> to a <see langword="Vector&lt;Int64&gt;" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -361,7 +482,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Double&gt;" /> to a <see langword="Vector&lt;Int64&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -378,7 +499,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Int32}" /> to a <see cref="Vector{Single}" />.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Int32&gt;" /> to a <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -395,7 +516,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{UInt32}" /> to a <see cref="Vector{Single}" />.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;UInt32&gt;" /> to a <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -403,9 +524,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> ConvertToSingle(Vector<uint> value)
         {
-            if (Avx2.IsSupported)
+            if (Vector<float>.Count == Vector512<float>.Count)
             {
-                Debug.Assert(Vector<float>.Count == Vector256<float>.Count);
+                return Vector512.ConvertToSingle(value.AsVector512()).AsVector();
+            }
+            else if (Vector<float>.Count == Vector256<float>.Count)
+            {
                 return Vector256.ConvertToSingle(value.AsVector256()).AsVector();
             }
             else
@@ -415,7 +539,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Single&gt;" /> to a <see langword="Vector&lt;UInt32&gt;" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -433,7 +557,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Single&gt;" /> to a <see langword="Vector&lt;UInt32&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -451,7 +575,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" /> using saturation on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Double&gt;" /> to a <see langword="Vector&lt;UInt64&gt;" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -469,7 +593,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <summary>Converts a <see langword="Vector&lt;Double&gt;" /> to a <see langword="Vector&lt;UInt64&gt;" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -487,14 +611,238 @@ namespace System.Numerics
             return result;
         }
 
+        internal static Vector<T> Cos<T>(Vector<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Cos(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Cos(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Cos(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.CosDouble<Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return Cos<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Cos(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Cos(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.CosSingle<Vector<float>, Vector<int>, Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return Cos<float>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.CopySign{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> CopySign<T>(Vector<T> value, Vector<T> sign)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return value;
+            }
+            else if (IsHardwareAccelerated)
+            {
+                return VectorMath.CopySign<Vector<T>, T>(value, sign);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T element = Scalar<T>.CopySign(value.GetElementUnsafe(index), sign.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, element);
+                }
+
+                return result;
+            }
+        }
+
+
+
+        /// <inheritdoc cref="Vector128.Count{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Count<T>(Vector<T> vector, T value)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.Count(vector.AsVector512(), value);
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.Count(vector.AsVector256(), value);
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.Count(vector.AsVector128(), value);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.CountWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Count(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Count(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return Count(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance with all elements initialized to the specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector<T> Create<T>(T value)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="values">The readonly span from which the vector is created.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
+        /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> Create<T>(ReadOnlySpan<T> values)
+        {
+            if (values.Length < Vector<T>.Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
+            }
+            return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector<T> CreateScalar<T>(T value)
+        {
+            Vector<T> result = Vector<T>.Zero;
+            result.SetElementUnsafe(0, value);
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> CreateScalarUnsafe<T>(T value)
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            Unsafe.SkipInit(out Vector<T> result);
+
+            result.SetElementUnsafe(0, value);
+            return result;
+        }
+
         /// <summary>Creates a new <see cref="Vector{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="start">The value that element 0 will be initialized to.</param>
         /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
-        /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the value of the previous element plus <paramref name="step" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> CreateSequence<T>(T start, T step) => (Vector<T>.Indices * step) + new Vector<T>(start);
+        public static Vector<T> CreateSequence<T>(T start, T step) => (Vector<T>.Indices * step) + Create(start);
+
+        internal static Vector<T> DegreesToRadians<T>(Vector<T> degrees)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.DegreesToRadians(degrees.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> DegreesToRadians(Vector<double> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector<double>, double>(degrees);
+            }
+            else
+            {
+                return DegreesToRadians<double>(degrees);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> DegreesToRadians(Vector<float> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector<float>, float>(degrees);
+            }
+            else
+            {
+                return DegreesToRadians<float>(degrees);
+            }
+        }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -596,10 +944,86 @@ namespace System.Numerics
             return false;
         }
 
+        internal static Vector<T> Exp<T>(Vector<T> vector)
+            where T : IExponentialFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Exp(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Exp(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Exp(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector<double>, Vector<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Exp(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Exp(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector<float>, Vector<uint>, Vector<double>, Vector<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<float>(vector);
+            }
+        }
+
+        /// <summary>Computes the floor of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its floor computed.</param>
+        /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> Floor<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Floor(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="value">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="value" />.</returns>
-        /// <seealso cref="Math.Floor(double)" />
+        /// <seealso cref="double.Floor(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> Floor(Vector<double> value)
@@ -618,7 +1042,7 @@ namespace System.Numerics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="value">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="value" />.</returns>
-        /// <seealso cref="MathF.Floor(float)" />
+        /// <seealso cref="float.Floor(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> Floor(Vector<float> value)
@@ -634,14 +1058,14 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Computes (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</summary>
+        /// <summary>Computes (<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" />, rounded as one ternary operation.</summary>
         /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
         /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
         /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
-        /// <returns>(<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</returns>
+        /// <returns>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" />, rounded as one ternary operation.</returns>
         /// <remarks>
-        ///   <para>This computes (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, adds <paramref name="addend" /> to that result as if to infinite precision, and finally rounds to the nearest representable value.</para>
-        ///   <para>This differs from the non-fused sequence which would compute (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend" /> to the rounded result as if to infinite precision, and finally round to the nearest representable value.</para>
+        ///   <para>This computes (<paramref name="left" /> * <paramref name="right" />) as if to infinite precision, adds <paramref name="addend" /> to that result as if to infinite precision, and finally rounds to the nearest representable value.</para>
+        ///   <para>This differs from the non-fused sequence which would compute (<paramref name="left" /> * <paramref name="right" />) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend" /> to the rounded result as if to infinite precision, and finally round to the nearest representable value.</para>
         /// </remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -658,14 +1082,14 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Computes (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</summary>
+        /// <summary>Computes (<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" />, rounded as one ternary operation.</summary>
         /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
         /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
         /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
-        /// <returns>(<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</returns>
+        /// <returns>(<paramref name="left" /> * <paramref name="right" />) + <paramref name="addend" />, rounded as one ternary operation.</returns>
         /// <remarks>
-        ///   <para>This computes (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, adds <paramref name="addend" /> to that result as if to infinite precision, and finally rounds to the nearest representable value.</para>
-        ///   <para>This differs from the non-fused sequence which would compute (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend" /> to the rounded result as if to infinite precision, and finally round to the nearest representable value.</para>
+        ///   <para>This computes (<paramref name="left" /> * <paramref name="right" />) as if to infinite precision, adds <paramref name="addend" /> to that result as if to infinite precision, and finally rounds to the nearest representable value.</para>
+        ///   <para>This differs from the non-fused sequence which would compute (<paramref name="left" /> * <paramref name="right" />) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend" /> to the rounded result as if to infinite precision, and finally round to the nearest representable value.</para>
         /// </remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -877,6 +1301,385 @@ namespace System.Numerics
             return false;
         }
 
+        internal static Vector<T> Hypot<T>(Vector<T> x, Vector<T> y)
+            where T : IRootFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Hypot(x.GetElementUnsafe(index), y.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Hypot(Vector128{double}, Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Hypot(Vector<double> x, Vector<double> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotDouble<Vector<double>, Vector<ulong>>(x, y);
+            }
+            else
+            {
+                return Hypot<double>(x, y);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Hypot(Vector128{float}, Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Hypot(Vector<float> x, Vector<float> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotSingle<Vector<float>, Vector<double>>(x, y);
+            }
+            else
+            {
+                return Hypot<float>(x, y);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.IndexOf{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf<T>(Vector<T> vector, T value)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.IndexOf(vector.AsVector512(), value);
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.IndexOf(vector.AsVector256(), value);
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.IndexOf(vector.AsVector128(), value);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.IndexOfWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return IndexOf(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return IndexOf(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return IndexOf(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.IsEvenInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsEvenInteger<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return VectorMath.IsEvenIntegerSingle<Vector<float>, Vector<uint>>(vector.As<T, float>()).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return VectorMath.IsEvenIntegerDouble<Vector<double>, Vector<ulong>>(vector.As<T, double>()).As<double, T>();
+            }
+            return IsZero(vector & Vector<T>.One);
+        }
+
+        /// <inheritdoc cref="Vector128.IsFinite{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsFinite<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return ~IsZero(AndNot(Create<uint>(float.PositiveInfinityBits), vector.As<T, uint>())).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return ~IsZero(AndNot(Create<ulong>(double.PositiveInfinityBits), vector.As<T, ulong>())).As<ulong, T>();
+            }
+            return Vector<T>.AllBitsSet;
+        }
+
+        /// <inheritdoc cref="Vector128.IsInfinity{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsInfinity<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return IsPositiveInfinity(Abs(vector));
+            }
+            return Vector<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsInteger<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return IsFinite(vector) & Equals(vector, Truncate(vector));
+            }
+            return Vector<T>.AllBitsSet;
+        }
+
+        /// <inheritdoc cref="Vector128.IsNaN{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsNaN<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return ~Equals(vector, vector);
+            }
+            return Vector<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsNegative{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsNegative<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return Vector<T>.Zero;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return LessThan(vector.As<T, int>(), Vector<int>.Zero).As<int, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(vector.As<T, long>(), Vector<long>.Zero).As<long, T>();
+            }
+            else
+            {
+                return LessThan(vector, Vector<T>.Zero);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.IsNegativeInfinity{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsNegativeInfinity<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Equals(vector, Create(float.NegativeInfinity).As<float, T>());
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Equals(vector, Create(double.NegativeInfinity).As<double, T>());
+            }
+            return Vector<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsNormal{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsNormal<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LessThan(Abs(vector).As<T, uint>() - Create<uint>(float.SmallestNormalBits), Create<uint>(float.PositiveInfinityBits - float.SmallestNormalBits)).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(Abs(vector).As<T, ulong>() - Create<ulong>(double.SmallestNormalBits), Create<ulong>(double.PositiveInfinityBits - double.SmallestNormalBits)).As<ulong, T>();
+            }
+            return ~IsZero(vector);
+        }
+
+        /// <inheritdoc cref="Vector128.IsOddInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsOddInteger<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return VectorMath.IsOddIntegerSingle<Vector<float>, Vector<uint>>(vector.As<T, float>()).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return VectorMath.IsOddIntegerDouble<Vector<double>, Vector<ulong>>(vector.As<T, double>()).As<double, T>();
+            }
+            return ~IsZero(vector & Vector<T>.One);
+        }
+
+        /// <inheritdoc cref="Vector128.IsPositive{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsPositive<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return Vector<T>.AllBitsSet;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return GreaterThanOrEqual(vector.As<T, int>(), Vector<int>.Zero).As<int, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return GreaterThanOrEqual(vector.As<T, long>(), Vector<long>.Zero).As<long, T>();
+            }
+            else
+            {
+                return GreaterThanOrEqual(vector, Vector<T>.Zero);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.IsPositiveInfinity{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsPositiveInfinity<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Equals(vector, Create(float.PositiveInfinity).As<float, T>());
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Equals(vector, Create(double.PositiveInfinity).As<double, T>());
+            }
+            return Vector<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsSubnormal{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsSubnormal<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LessThan(Abs(vector).As<T, uint>() - Vector<uint>.One, Create<uint>(float.MaxTrailingSignificand)).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(Abs(vector).As<T, ulong>() - Vector<ulong>.One, Create<ulong>(double.MaxTrailingSignificand)).As<ulong, T>();
+            }
+            return Vector<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsZero{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsZero<T>(Vector<T> vector) => Equals(vector, Vector<T>.Zero);
+
+        /// <inheritdoc cref="Vector128.LastIndexOf{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOf<T>(Vector<T> vector, T value)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.LastIndexOf(vector.AsVector512(), value);
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.LastIndexOf(vector.AsVector256(), value);
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.LastIndexOf(vector.AsVector128(), value);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.LastIndexOfWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LastIndexOf(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LastIndexOf(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return LastIndexOf(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
+        internal static Vector<T> Lerp<T>(Vector<T> x, Vector<T> y, Vector<T> amount)
+            where T : IFloatingPointIeee754<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Lerp(x.GetElementUnsafe(index), y.GetElementUnsafe(index), amount.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
+        /// <param name="x">The first vector.</param>
+        /// <param name="y">The second vector.</param>
+        /// <param name="amount">A value between 0 and 1 that indicates the weight of <paramref name="y" />.</param>
+        /// <returns>The interpolated vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Lerp(Vector<double> x, Vector<double> y, Vector<double> amount)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Lerp<Vector<double>, double>(x, y, amount);
+            }
+            else
+            {
+                return Lerp<double>(x, y, amount);
+            }
+        }
+
+        /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
+        /// <param name="x">The first vector.</param>
+        /// <param name="y">The second vector.</param>
+        /// <param name="amount">A value between 0 and 1 that indicates the weight of <paramref name="y" />.</param>
+        /// <returns>The interpolated vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Lerp(Vector<float> x, Vector<float> y, Vector<float> amount)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Lerp<Vector<float>, float>(x, y, amount);
+            }
+            else
+            {
+                return Lerp<float>(x, y, amount);
+            }
+        }
+
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
@@ -1053,7 +1856,6 @@ namespace System.Numerics
             return false;
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1061,7 +1863,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector<T> Load<T>(T* source) => LoadUnsafe(ref *source);
+        public static unsafe Vector<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1071,11 +1873,11 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> LoadAligned<T>(T* source)
+        public static unsafe Vector<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
-            if (((nuint)(source) % Alignment) != 0)
+            if (((nuint)(source) % (uint)(Alignment)) != 0)
             {
                 ThrowHelper.ThrowAccessViolationException();
             }
@@ -1091,8 +1893,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+        public static unsafe Vector<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1124,44 +1925,318 @@ namespace System.Numerics
             return Unsafe.ReadUnaligned<Vector<T>>(in address);
         }
 
-        /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
-        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
-        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <returns>A vector whose elements are the maximum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Max<T>(Vector<T> left, Vector<T> right)
+        internal static Vector<T> Log<T>(Vector<T> vector)
+            where T : ILogarithmicFunctions<T>
         {
             Unsafe.SkipInit(out Vector<T> result);
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                T value = Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? left.GetElementUnsafe(index) : right.GetElementUnsafe(index);
+                T value = T.Log(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
             return result;
         }
 
-        /// <summary>Computes the minimum of two vectors on a per-element basis.</summary>
-        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
-        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <returns>A vector whose elements are the minimum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
-        [Intrinsic]
+        /// <inheritdoc cref="Vector128.Log(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Min<T>(Vector<T> left, Vector<T> right)
+        public static Vector<double> Log(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector<double>, Vector<long>, Vector<ulong>>(vector);
+            }
+            else
+            {
+                return Log<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Log(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector<float>, Vector<int>, Vector<uint>>(vector);
+            }
+            else
+            {
+                return Log<float>(vector);
+            }
+        }
+
+        internal static Vector<T> Log2<T>(Vector<T> vector)
+            where T : ILogarithmicFunctions<T>
         {
             Unsafe.SkipInit(out Vector<T> result);
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                T value = Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? left.GetElementUnsafe(index) : right.GetElementUnsafe(index);
+                T value = T.Log2(vector.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
             return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Log2(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector<double>, Vector<long>, Vector<ulong>>(vector);
+            }
+            else
+            {
+                return Log2<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Log2(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector<float>, Vector<int>, Vector<uint>>(vector);
+            }
+            else
+            {
+                return Log2<float>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Max{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> Max<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Max<Vector<T>, T>(left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Max(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.MaxMagnitude{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> MaxMagnitude<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxMagnitude<Vector<T>, T>(left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.MaxMagnitude(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.MaxMagnitudeNumber{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> MaxMagnitudeNumber<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxMagnitudeNumber<Vector<T>, T>(left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.MaxMagnitudeNumber(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.MaxNative{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> MaxNative<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return ConditionalSelect(GreaterThan(left, right), left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? left.GetElementUnsafe(index) : right.GetElementUnsafe(index);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.MaxNumber{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> MaxNumber<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxNumber<Vector<T>, T>(left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.MaxNumber(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Min{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> Min<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Min<Vector<T>, T>(left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Min(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.MinMagnitude{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> MinMagnitude<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinMagnitude<Vector<T>, T>(left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.MinMagnitude(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.MinMagnitudeNumber{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> MinMagnitudeNumber<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinMagnitudeNumber<Vector<T>, T>(left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.MinMagnitudeNumber(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.MinNative{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> MinNative<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return ConditionalSelect(LessThan(left, right), left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? left.GetElementUnsafe(index) : right.GetElementUnsafe(index);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.MinNumber{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> MinNumber<T>(Vector<T> left, Vector<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinNumber<Vector<T>, T>(left, right);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.MinNumber(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -1187,6 +2262,21 @@ namespace System.Numerics
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         public static Vector<T> Multiply<T>(T left, Vector<T> right) => right * left;
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> MultiplyAddEstimate<T>(Vector<T> left, Vector<T> right, Vector<T> addend)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = Scalar<T>.MultiplyAddEstimate(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{double}, Vector128{double}, Vector128{double})" />
         [Intrinsic]
@@ -1220,184 +2310,143 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Narrows two <see cref="Vector{Double}"/> instances into one <see cref="Vector{Single}" />.</summary>
-        /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector{Single}"/> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<float> Narrow(Vector<double> low, Vector<double> high)
+        internal static Vector<TResult> Narrow<TSource, TResult>(Vector<TSource> low, Vector<TSource> high)
+            where TSource : INumber<TSource>
+            where TResult : INumber<TResult>
         {
-            Unsafe.SkipInit(out Vector<float> result);
+            Unsafe.SkipInit(out Vector<TResult> result);
 
-            for (int i = 0; i < Vector<double>.Count; i++)
+            for (int i = 0; i < Vector<TSource>.Count; i++)
             {
-                float value = (float)low.GetElementUnsafe(i);
+                TResult value = TResult.CreateTruncating(low.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
-            for (int i = Vector<double>.Count; i < Vector<float>.Count; i++)
+            for (int i = Vector<TSource>.Count; i < Vector<TResult>.Count; i++)
             {
-                float value = (float)high.GetElementUnsafe(i - Vector<double>.Count);
+                TResult value = TResult.CreateTruncating(high.GetElementUnsafe(i - Vector<TSource>.Count));
                 result.SetElementUnsafe(i, value);
             }
 
             return result;
         }
 
-        /// <summary>Narrows two <see cref="Vector{Int16}"/> instances into one <see cref="Vector{SByte}" />.</summary>
-        /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector{SByte}"/> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{double}, Vector128{double})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Narrow(Vector<double> low, Vector<double> high)
+            => Narrow<double, float>(low, high);
+
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{short}, Vector128{short})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<sbyte> Narrow(Vector<short> low, Vector<short> high)
-        {
-            Unsafe.SkipInit(out Vector<sbyte> result);
+            => Narrow<short, sbyte>(low, high);
 
-            for (int i = 0; i < Vector<short>.Count; i++)
-            {
-                sbyte value = (sbyte)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector<short>.Count; i < Vector<sbyte>.Count; i++)
-            {
-                sbyte value = (sbyte)high.GetElementUnsafe(i - Vector<short>.Count);
-                result.SetElementUnsafe(i, value);
-            }
-
-            return result;
-        }
-
-        /// <summary>Narrows two <see cref="Vector{Int32}"/> instances into one <see cref="Vector{Int16}" />.</summary>
-        /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector{Int16}"/> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{int}, Vector128{int})"/>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> Narrow(Vector<int> low, Vector<int> high)
-        {
-            Unsafe.SkipInit(out Vector<short> result);
+            => Narrow<int, short>(low, high);
 
-            for (int i = 0; i < Vector<int>.Count; i++)
-            {
-                short value = (short)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector<int>.Count; i < Vector<short>.Count; i++)
-            {
-                short value = (short)high.GetElementUnsafe(i - Vector<int>.Count);
-                result.SetElementUnsafe(i, value);
-            }
-
-            return result;
-        }
-
-        /// <summary>Narrows two <see cref="Vector{Int64}"/> instances into one <see cref="Vector{Int32}" />.</summary>
-        /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector{Int32}"/> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{long}, Vector128{long})"/>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> Narrow(Vector<long> low, Vector<long> high)
-        {
-            Unsafe.SkipInit(out Vector<int> result);
+            => Narrow<long, int>(low, high);
 
-            for (int i = 0; i < Vector<long>.Count; i++)
-            {
-                int value = (int)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector<long>.Count; i < Vector<int>.Count; i++)
-            {
-                int value = (int)high.GetElementUnsafe(i - Vector<long>.Count);
-                result.SetElementUnsafe(i, value);
-            }
-
-            return result;
-        }
-
-        /// <summary>Narrows two <see cref="Vector{UInt16}"/> instances into one <see cref="Vector{Byte}" />.</summary>
-        /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector{Byte}"/> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{ushort}, Vector128{ushort})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<byte> Narrow(Vector<ushort> low, Vector<ushort> high)
-        {
-            Unsafe.SkipInit(out Vector<byte> result);
+            => Narrow<ushort, byte>(low, high);
 
-            for (int i = 0; i < Vector<ushort>.Count; i++)
-            {
-                byte value = (byte)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector<ushort>.Count; i < Vector<byte>.Count; i++)
-            {
-                byte value = (byte)high.GetElementUnsafe(i - Vector<ushort>.Count);
-                result.SetElementUnsafe(i, value);
-            }
-
-            return result;
-        }
-
-        /// <summary>Narrows two <see cref="Vector{UInt32}"/> instances into one <see cref="Vector{UInt16}" />.</summary>
-        /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector{UInt16}"/> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{uint}, Vector128{uint})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ushort> Narrow(Vector<uint> low, Vector<uint> high)
-        {
-            Unsafe.SkipInit(out Vector<ushort> result);
+            => Narrow<uint, ushort>(low, high);
 
-            for (int i = 0; i < Vector<uint>.Count; i++)
-            {
-                ushort value = (ushort)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
-            }
-
-            for (int i = Vector<uint>.Count; i < Vector<ushort>.Count; i++)
-            {
-                ushort value = (ushort)high.GetElementUnsafe(i - Vector<uint>.Count);
-                result.SetElementUnsafe(i, value);
-            }
-
-            return result;
-        }
-
-        /// <summary>Narrows two <see cref="Vector{UInt64}"/> instances into one <see cref="Vector{UInt32}" />.</summary>
-        /// <param name="low">The vector that will be narrowed to the lower half of the result vector.</param>
-        /// <param name="high">The vector that will be narrowed to the upper half of the result vector.</param>
-        /// <returns>A <see cref="Vector{UInt32}"/> containing elements narrowed from <paramref name="low" /> and <paramref name="high" />.</returns>
+        /// <inheritdoc cref="Vector128.Narrow(Vector128{ulong}, Vector128{ulong})"/>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> Narrow(Vector<ulong> low, Vector<ulong> high)
-        {
-            Unsafe.SkipInit(out Vector<uint> result);
+            => Narrow<ulong, uint>(low, high);
 
-            for (int i = 0; i < Vector<ulong>.Count; i++)
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<TResult> NarrowWithSaturation<TSource, TResult>(Vector<TSource> low, Vector<TSource> high)
+            where TSource : INumber<TSource>
+            where TResult : INumber<TResult>
+        {
+            Unsafe.SkipInit(out Vector<TResult> result);
+
+            for (int i = 0; i < Vector<TSource>.Count; i++)
             {
-                uint value = (uint)low.GetElementUnsafe(i);
+                TResult value = TResult.CreateSaturating(low.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
-            for (int i = Vector<ulong>.Count; i < Vector<uint>.Count; i++)
+            for (int i = Vector<TSource>.Count; i < Vector<TResult>.Count; i++)
             {
-                uint value = (uint)high.GetElementUnsafe(i - Vector<ulong>.Count);
+                TResult value = TResult.CreateSaturating(high.GetElementUnsafe(i - Vector<TSource>.Count));
                 result.SetElementUnsafe(i, value);
             }
 
             return result;
         }
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{double}, Vector128{double})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> NarrowWithSaturation(Vector<double> low, Vector<double> high)
+            => NarrowWithSaturation<double, float>(low, high);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{short}, Vector128{short})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<sbyte> NarrowWithSaturation(Vector<short> low, Vector<short> high)
+            => NarrowWithSaturation<short, sbyte>(low, high);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{int}, Vector128{int})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<short> NarrowWithSaturation(Vector<int> low, Vector<int> high)
+            => NarrowWithSaturation<int, short>(low, high);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{long}, Vector128{long})"/>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<int> NarrowWithSaturation(Vector<long> low, Vector<long> high)
+            => NarrowWithSaturation<long, int>(low, high);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{ushort}, Vector128{ushort})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<byte> NarrowWithSaturation(Vector<ushort> low, Vector<ushort> high)
+            => NarrowWithSaturation<ushort, byte>(low, high);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{uint}, Vector128{uint})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<ushort> NarrowWithSaturation(Vector<uint> low, Vector<uint> high)
+            => NarrowWithSaturation<uint, ushort>(low, high);
+
+        /// <inheritdoc cref="Vector128.NarrowWithSaturation(Vector128{ulong}, Vector128{ulong})"/>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<uint> NarrowWithSaturation(Vector<ulong> low, Vector<ulong> high)
+            => NarrowWithSaturation<ulong, uint>(low, high);
 
         /// <summary>Computes the unary negation of a vector.</summary>
         /// <param name="value">The vector to negate.</param>
@@ -1406,12 +2455,125 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector<T> Negate<T>(Vector<T> value) => -value;
 
+        /// <inheritdoc cref="Vector128.None{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool None<T>(Vector<T> vector, T value) => !EqualsAny(vector, Create(value));
+
+        /// <inheritdoc cref="Vector128.NoneWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool NoneWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return None(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return None(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return None(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="value">The vector whose ones-complement is to be computed.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
         public static Vector<T> OnesComplement<T>(Vector<T> value) => ~value;
+
+        internal static Vector<T> RadiansToDegrees<T>(Vector<T> radians)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.RadiansToDegrees(radians.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.RadiansToDegrees(Vector128{double})" />
+        [Intrinsic]
+        public static Vector<double> RadiansToDegrees(Vector<double> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector<double>, double>(radians);
+            }
+            else
+            {
+                return RadiansToDegrees<double>(radians);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.RadiansToDegrees(Vector128{float})" />
+        [Intrinsic]
+        public static Vector<float> RadiansToDegrees(Vector<float> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector<float>, float>(radians);
+            }
+            else
+            {
+                return RadiansToDegrees<float>(radians);
+            }
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> Round<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Round(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Round(Vector128{double})" />
+        [Intrinsic]
+        public static Vector<double> Round(Vector<double> vector) => Round<double>(vector);
+
+        /// <inheritdoc cref="Vector128.Round(Vector128{float})" />
+        [Intrinsic]
+        public static Vector<float> Round(Vector<float> vector) => Round<float>(vector);
+
+        /// <inheritdoc cref="Vector128.Round(Vector128{double}, MidpointRounding)" />
+        [Intrinsic]
+        public static Vector<double> Round(Vector<double> vector, MidpointRounding mode) => VectorMath.RoundDouble(vector, mode);
+
+        /// <inheritdoc cref="Vector128.Round(Vector128{float}, MidpointRounding)" />
+        [Intrinsic]
+        public static Vector<float> Round(Vector<float> vector, MidpointRounding mode) => VectorMath.RoundSingle(vector, mode);
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -1480,6 +2642,24 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static Vector<uint> ShiftLeft(Vector<uint> value, int shiftCount) => value << shiftCount;
 
+        [Intrinsic]
+        internal static Vector<uint> ShiftLeft(Vector<uint> vector, Vector<uint> shiftCount)
+        {
+            if (Vector<uint>.Count == Vector512<uint>.Count)
+            {
+                return Vector512.ShiftLeft(vector.AsVector512(), shiftCount.AsVector512()).AsVector();
+            }
+            else if (Vector<uint>.Count == Vector256<uint>.Count)
+            {
+                return Vector256.ShiftLeft(vector.AsVector256(), shiftCount.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<uint>.Count == Vector128<uint>.Count);
+                return Vector128.ShiftLeft(vector.AsVector128(), shiftCount.AsVector128()).AsVector();
+            }
+        }
+
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
@@ -1487,6 +2667,24 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<ulong> ShiftLeft(Vector<ulong> value, int shiftCount) => value << shiftCount;
+
+        [Intrinsic]
+        internal static Vector<ulong> ShiftLeft(Vector<ulong> vector, Vector<ulong> shiftCount)
+        {
+            if (Vector<ulong>.Count == Vector512<ulong>.Count)
+            {
+                return Vector512.ShiftLeft(vector.AsVector512(), shiftCount.AsVector512()).AsVector();
+            }
+            else if (Vector<ulong>.Count == Vector256<ulong>.Count)
+            {
+                return Vector256.ShiftLeft(vector.AsVector256(), shiftCount.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<ulong>.Count == Vector128<ulong>.Count);
+                return Vector128.ShiftLeft(vector.AsVector128(), shiftCount.AsVector128()).AsVector();
+            }
+        }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -1599,6 +2797,92 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static Vector<ulong> ShiftRightLogical(Vector<ulong> value, int shiftCount) => value >>> shiftCount;
 
+        internal static Vector<T> Sin<T>(Vector<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Sin(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Sin(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Sin(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinDouble<Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return Sin<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Sin(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Sin(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinSingle<Vector<float>, Vector<int>, Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return Sin<float>(vector);
+            }
+        }
+
+        internal static (Vector<T> Sin, Vector<T> Cos) SinCos<T>(Vector<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> sinResult);
+            Unsafe.SkipInit(out Vector<T> cosResult);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                (T sinValue, T cosValue) = T.SinCos(vector.GetElementUnsafe(index));
+                sinResult.SetElementUnsafe(index, sinValue);
+                cosResult.SetElementUnsafe(index, cosValue);
+            }
+
+            return (sinResult, cosResult);
+        }
+
+        /// <inheritdoc cref="Vector128.SinCos(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector<double> Sin, Vector<double> Cos) SinCos(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinCosDouble<Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return SinCos<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.SinCos(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector<float> Sin, Vector<float> Cos) SinCos(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinCosSingle<Vector<float>, Vector<int>, Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return SinCos<float>(vector);
+            }
+        }
+
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>
         /// <param name="value">The vector whose square root is to be computed.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1618,7 +2902,6 @@ namespace System.Numerics
             return result;
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -1626,7 +2909,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void Store<T>(this Vector<T> source, T* destination) => source.StoreUnsafe(ref *destination);
+        public static unsafe void Store<T>(this Vector<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1636,11 +2919,11 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAligned<T>(this Vector<T> source, T* destination)
+        public static unsafe void StoreAligned<T>(this Vector<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
-            if (((nuint)destination % Alignment) != 0)
+            if (((nuint)destination % (uint)(Alignment)) != 0)
             {
                 ThrowHelper.ThrowAccessViolationException();
             }
@@ -1656,8 +2939,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination) => source.StoreAligned(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+        public static unsafe void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1689,13 +2971,32 @@ namespace System.Numerics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
-        /// <summary>Subtracts two vectors to compute their difference.</summary>
-        /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
-        /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <inheritdoc cref="Vector128.Subtract{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector<T> Subtract<T>(Vector<T> left, Vector<T> right) => left - right;
+
+        /// <inheritdoc cref="Vector128.SubtractSaturate{T}(Vector128{T}, Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> SubtractSaturate<T>(Vector<T> left, Vector<T> right)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return left - right;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.SubtractSaturate(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
 
         /// <summary>
         /// Returns the sum of all elements inside the vector.
@@ -1726,7 +3027,88 @@ namespace System.Numerics
             return vector.GetElementUnsafe(0);
         }
 
-        /// <summary>Widens a <see cref="Vector{Byte}" /> into two <see cref="Vector{UInt16} " />.</summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> Truncate<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Truncate(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Truncate(Vector128{double})" />
+        [Intrinsic]
+        public static Vector<double> Truncate(Vector<double> vector) => Truncate<double>(vector);
+
+        /// <inheritdoc cref="Vector128.Truncate(Vector128{float})" />
+        [Intrinsic]
+        public static Vector<float> Truncate(Vector<float> vector) => Truncate<float>(vector);
+
+        /// <summary>Widens a <see langword="Vector&lt;Byte&gt;" /> into two <see cref="Vector{UInt16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<ushort> Lower, Vector<ushort> Upper) Widen(Vector<byte> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see langword="Vector&lt;Int16&gt;" /> into two <see cref="Vector{Int32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<int> Lower, Vector<int> Upper) Widen(Vector<short> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see langword="Vector&lt;Int32&gt;" /> into two <see cref="Vector{Int64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<long> Lower, Vector<long> Upper) Widen(Vector<int> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see langword="Vector&lt;SByte&gt;" /> into two <see cref="Vector{Int16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<short> Lower, Vector<short> Upper) Widen(Vector<sbyte> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see langword="Vector&lt;Single&gt;" /> into two <see cref="Vector{Double} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<double> Lower, Vector<double> Upper) Widen(Vector<float> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see langword="Vector&lt;UInt16&gt;" /> into two <see cref="Vector{UInt32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<uint> Lower, Vector<uint> Upper) Widen(Vector<ushort> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see langword="Vector&lt;UInt32&gt;" /> into two <see cref="Vector{UInt64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<ulong> Lower, Vector<ulong> Upper) Widen(Vector<uint> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see langword="Vector&lt;Byte&gt;" /> into two <see cref="Vector{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -1738,7 +3120,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see cref="Vector{Int16}" /> into two <see cref="Vector{Int32} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Int16&gt;" /> into two <see cref="Vector{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -1749,7 +3131,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see cref="Vector{Int32}" /> into two <see cref="Vector{Int64} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Int32&gt;" /> into two <see cref="Vector{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -1760,7 +3142,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see cref="Vector{SByte}" /> into two <see cref="Vector{Int16} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;SByte&gt;" /> into two <see cref="Vector{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -1772,7 +3154,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see cref="Vector{Single}" /> into two <see cref="Vector{Double} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;Single&gt;" /> into two <see cref="Vector{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -1783,7 +3165,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see cref="Vector{UInt16}" /> into two <see cref="Vector{UInt32} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;UInt16&gt;" /> into two <see cref="Vector{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -1795,7 +3177,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens a <see cref="Vector{UInt32}" /> into two <see cref="Vector{UInt64} " />.</summary>
+        /// <summary>Widens a <see langword="Vector&lt;UInt32&gt;" /> into two <see cref="Vector{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <param name="low">A vector that will contain the widened result of the lower half of <paramref name="source" />.</param>
         /// <param name="high">A vector that will contain the widened result of the upper half of <paramref name="source" />.</param>
@@ -1807,7 +3189,7 @@ namespace System.Numerics
             high = WidenUpper(source);
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector{Byte}" /> into a <see cref="Vector{UInt16} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;Byte&gt;" /> into a <see cref="Vector{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1826,7 +3208,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector{Int16}" /> into a <see cref="Vector{Int32} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;Int16&gt;" /> into a <see cref="Vector{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1844,7 +3226,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector{Int32}" /> into a <see cref="Vector{Int64} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;Int32&gt;" /> into a <see cref="Vector{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1862,7 +3244,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector{SByte}" /> into a <see cref="Vector{Int16} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;SByte&gt;" /> into a <see cref="Vector{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1881,7 +3263,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector{Single}" /> into a <see cref="Vector{Double} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;Single&gt;" /> into a <see cref="Vector{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1899,7 +3281,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector{UInt16}" /> into a <see cref="Vector{UInt32} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;UInt16&gt;" /> into a <see cref="Vector{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1918,7 +3300,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector{UInt32}" /> into a <see cref="Vector{UInt64} " />.</summary>
+        /// <summary>Widens the lower half of a <see langword="Vector&lt;UInt32&gt;" /> into a <see cref="Vector{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1937,7 +3319,7 @@ namespace System.Numerics
             return lower;
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector{Byte}" /> into a <see cref="Vector{UInt16} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;Byte&gt;" /> into a <see cref="Vector{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1956,7 +3338,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector{Int16}" /> into a <see cref="Vector{Int32} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;Int16&gt;" /> into a <see cref="Vector{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1974,7 +3356,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector{Int32}" /> into a <see cref="Vector{Int64} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;Int32&gt;" /> into a <see cref="Vector{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -1992,7 +3374,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector{SByte}" /> into a <see cref="Vector{Int16} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;SByte&gt;" /> into a <see cref="Vector{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2011,7 +3393,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector{Single}" /> into a <see cref="Vector{Double} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;Single&gt;" /> into a <see cref="Vector{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2029,7 +3411,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector{UInt16}" /> into a <see cref="Vector{UInt32} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;UInt16&gt;" /> into a <see cref="Vector{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2048,7 +3430,7 @@ namespace System.Numerics
             return upper;
         }
 
-        /// <summary>Widens the upper half of a <see cref="Vector{UInt32}" /> into a <see cref="Vector{UInt64} " />.</summary>
+        /// <summary>Widens the upper half of a <see langword="Vector&lt;UInt32&gt;" /> into a <see cref="Vector{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]

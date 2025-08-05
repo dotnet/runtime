@@ -7,6 +7,35 @@
 
 // sets up vars for GC
 
+#include "common.h"
+#include "gcenv.h"
+
+#include "gc.h"
+#include "gcscan.h"
+#include "gchandletableimpl.h"
+#include "gceventstatus.h"
+
+#ifdef __INTELLISENSE__
+#if defined(FEATURE_SVR_GC)
+
+#define SERVER_GC 1
+
+#else // defined(FEATURE_SVR_GC)
+
+#ifdef SERVER_GC
+#undef SERVER_GC
+#endif
+
+#endif // defined(FEATURE_SVR_GC)
+#endif // __INTELLISENSE__
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
+#include "gcimpl.h"
 #include "gcpriv.h"
 
 #ifndef DACCESS_COMPILE
@@ -221,8 +250,6 @@ size_t GCHeap::GetLastGCDuration(int generation)
     return (size_t)(dd_gc_elapsed_time (hp->dynamic_data_of (generation)) / 1000);
 }
 
-uint64_t GetHighPrecisionTimeStamp();
-
 size_t GCHeap::GetNow()
 {
     return (size_t)(GetHighPrecisionTimeStamp() / 1000);
@@ -308,16 +335,12 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount,
                                          uint8_t* object_address,
                                          size_t object_size)
 {
-#ifdef FEATURE_NATIVEAOT
-    FIRE_EVENT(GCAllocationTick_V1, (uint32_t)allocation_amount, (uint32_t)gen_to_oh (gen_number));
-#else
     FIRE_EVENT(GCAllocationTick_V4,
                 allocation_amount,
                 (uint32_t)gen_to_oh (gen_number),
                 heap_number,
                 object_address,
                 object_size);
-#endif //FEATURE_NATIVEAOT
 }
 
 void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
@@ -544,4 +567,4 @@ uint64_t GCHeap::GetGenerationBudget(int generation)
 
 #endif // !DACCESS_COMPILE
 
-
+}

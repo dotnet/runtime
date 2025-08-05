@@ -136,7 +136,7 @@ namespace Sample
 
         public class TextInfoToTitleCase : TextInfoMeasurement
         {
-            public override string Name => "TextInfo ToTileCase";
+            public override string Name => "TextInfo ToTitleCase";
             public override void RunStep() => textInfo.ToTitleCase(str);
         }
 

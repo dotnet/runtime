@@ -8,10 +8,10 @@ namespace System
     public partial class Buffer
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void __ZeroMemory(void* b, nuint byteLength);
+        private static extern unsafe void ZeroMemoryInternal(void* b, nuint byteLength);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
+        private static extern unsafe void MemmoveInternal(byte* dest, byte* src, nuint len);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void BulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint len, IntPtr type_handle);
@@ -21,13 +21,11 @@ namespace System
         {
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-#pragma warning disable 8500 // sizeof of managed types
                 // Blittable memmove
                 SpanHelpers.Memmove(
                     ref Unsafe.As<T, byte>(ref destination),
                     ref Unsafe.As<T, byte>(ref source),
                     elementCount * (nuint)sizeof(T));
-#pragma warning restore 8500
             }
             else if (elementCount > 0)
             {

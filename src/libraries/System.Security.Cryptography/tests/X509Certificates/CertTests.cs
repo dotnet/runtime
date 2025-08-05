@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.InteropServices;
+using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Dsa.Tests;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using System.Threading;
-using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 using Xunit.Abstractions;
@@ -126,6 +125,51 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     ECParameters originalParameters = ecdh.ExportParameters(true);
                     AssertExtensions.SequenceEqual(originalParameters.D, certParameters.D);
                 }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_MLKem()
+        {
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKem key = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem512PrivateKeySeed))
+            using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(key))
+            using (MLKem certKey = certWithKey.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(certKey);
+                byte[] expectedKey = MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey;
+                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportDecapsulationKey());
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_MLDsa()
+        {
+            string pem = PemEncoding.WriteString("CERTIFICATE", MLDsaTestsData.IetfMLDsa44.Certificate);
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(pem))
+            using (MLDsa key = MLDsa.ImportPkcs8PrivateKey(MLDsaTestsData.IetfMLDsa44.Pkcs8PrivateKey_Seed))
+            using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(key))
+            using (MLDsa certKey = certWithKey.GetMLDsaPrivateKey())
+            {
+                Assert.NotNull(certKey);
+                byte[] expectedKey = MLDsaTestsData.IetfMLDsa44.PrivateKey;
+                byte[] actualKey = certKey.ExportMLDsaPrivateKey();
+                AssertExtensions.SequenceEqual(expectedKey, actualKey);
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_SlhDsa()
+        {
+            string pem = PemEncoding.WriteString("CERTIFICATE", SlhDsaTestData.IetfSlhDsaSha2_128sCertificate);
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(pem))
+            using (SlhDsa key = SlhDsa.ImportPkcs8PrivateKey(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8))
+            using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(key))
+            using (SlhDsa certKey = certWithKey.GetSlhDsaPrivateKey())
+            {
+                Assert.NotNull(certKey);
+                byte[] expectedKey = SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue;
+                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportSlhDsaPrivateKey());
             }
         }
 
@@ -864,7 +908,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.", ~TestPlatforms.Browser)]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
         {
-            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP256))
+            using (CngKeyWrapper platformKey = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(CngAlgorithm.ECDsaP256))
             using (ECDsaCng ecdsa = new ECDsaCng(platformKey.Key))
             {
                 CertificateRequest req = new CertificateRequest("CN=potato", ecdsa, HashAlgorithmName.SHA256);
@@ -885,7 +929,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.", ~TestPlatforms.Browser)]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey()
         {
-            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.Rsa))
+            using (CngKeyWrapper platformKey = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(CngAlgorithm.Rsa))
             using (RSACng rsa = new RSACng(platformKey.Key))
             {
                 CertificateRequest req = new CertificateRequest("CN=potato", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);

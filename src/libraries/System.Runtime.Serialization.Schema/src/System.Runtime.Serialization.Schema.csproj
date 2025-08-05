@@ -2,13 +2,14 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum)</TargetFrameworks>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for importing and exporting xsd schemas for DataContractSerializer.
 
 Commonly Used Types:
 System.Runtime.Serialization.Schema.XsdDataContractExporter
 System.Runtime.Serialization.Schema.XsdDataContractImporter</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,11 +2,12 @@ param(
   [Parameter(Mandatory=$true)][int] $BuildId,
   [Parameter(Mandatory=$true)][int] $PublishingInfraVersion,
   [Parameter(Mandatory=$true)][string] $AzdoToken,
-  [Parameter(Mandatory=$true)][string] $MaestroToken,
   [Parameter(Mandatory=$false)][string] $MaestroApiEndPoint = 'https://maestro.dot.net',
   [Parameter(Mandatory=$true)][string] $WaitPublishingFinish,
   [Parameter(Mandatory=$false)][string] $ArtifactsPublishingAdditionalParameters,
-  [Parameter(Mandatory=$false)][string] $SymbolPublishingAdditionalParameters
+  [Parameter(Mandatory=$false)][string] $SymbolPublishingAdditionalParameters,
+  [Parameter(Mandatory=$false)][string] $RequireDefaultChannels,
+  [Parameter(Mandatory=$false)][string] $SkipAssetsPublishing
 )
 
 try {
@@ -34,16 +35,24 @@ try {
   if ("false" -eq $WaitPublishingFinish) {
     $optionalParams.Add("--no-wait") | Out-Null
   }
+  
+  if ("true" -eq $RequireDefaultChannels) {
+    $optionalParams.Add("--default-channels-required") | Out-Null
+  }
+
+  if ("true" -eq $SkipAssetsPublishing) {
+    $optionalParams.Add("--skip-assets-publishing") | Out-Null
+  }
 
   & $darc add-build-to-channel `
-  --id $buildId `
-  --publishing-infra-version $PublishingInfraVersion `
-  --default-channels `
-  --source-branch main `
-  --azdev-pat $AzdoToken `
-  --bar-uri $MaestroApiEndPoint `
-  --password $MaestroToken `
-  --disable-interactive-auth `
+    --id $buildId `
+    --publishing-infra-version $PublishingInfraVersion `
+    --default-channels `
+    --source-branch main `
+    --azdev-pat "$AzdoToken" `
+    --bar-uri "$MaestroApiEndPoint" `
+    --ci `
+    --verbose `
 	@optionalParams
 
   if ($LastExitCode -ne 0) {

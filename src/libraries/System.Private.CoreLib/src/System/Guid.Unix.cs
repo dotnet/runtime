@@ -21,20 +21,14 @@ namespace System
             Interop.GetRandomBytes((byte*)&g, sizeof(Guid));
 #endif
 
-            const ushort VersionMask = 0xF000;
-            const ushort RandomGuidVersion = 0x4000;
-
-            const byte ClockSeqHiAndReservedMask = 0xC0;
-            const byte ClockSeqHiAndReservedValue = 0x80;
-
             // Modify bits indicating the type of the GUID
 
             unchecked
             {
                 // time_hi_and_version
-                Unsafe.AsRef(in g._c) = (short)((g._c & ~VersionMask) | RandomGuidVersion);
+                Unsafe.AsRef(in g._c) = (short)((g._c & ~VersionMask) | Version4Value);
                 // clock_seq_hi_and_reserved
-                Unsafe.AsRef(in g._d) = (byte)((g._d & ~ClockSeqHiAndReservedMask) | ClockSeqHiAndReservedValue);
+                Unsafe.AsRef(in g._d) = (byte)((g._d & ~Variant10xxMask) | Variant10xxValue);
             }
 
             return g;

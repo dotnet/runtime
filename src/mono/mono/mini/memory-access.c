@@ -556,17 +556,9 @@ mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mo
 {
 	int align = (ins_flag & MONO_INST_UNALIGNED) ? 1 : TARGET_SIZEOF_VOID_P;
 
-	/*
-	 * FIXME: It's unclear whether we should be emitting both the acquire
-	 * and release barriers for cpblk. It is technically both a load and
-	 * store operation, so it seems like that's the sensible thing to do.
-	 *
-	 * FIXME: We emit full barriers on both sides of the operation for
-	 * simplicity. We should have a separate atomic memcpy method instead.
-	 */
 	if (ins_flag & MONO_INST_VOLATILE) {
-		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+		/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 	}
 
 	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST)) {
@@ -577,7 +569,7 @@ mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mo
 
 	if (ins_flag & MONO_INST_VOLATILE) {
 		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 	}
 }
 
@@ -612,24 +604,16 @@ mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClas
 	if (ins_flag & MONO_INST_UNALIGNED)
 		explicit_align = 1;
 
-	/*
-	 * FIXME: It's unclear whether we should be emitting both the acquire
-	 * and release barriers for cpblk. It is technically both a load and
-	 * store operation, so it seems like that's the sensible thing to do.
-	 *
-	 * FIXME: We emit full barriers on both sides of the operation for
-	 * simplicity. We should have a separate atomic memcpy method instead.
-	 */
 	if (ins_flag & MONO_INST_VOLATILE) {
-		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+		/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 	}
 
 	mini_emit_memory_copy_internal (cfg, dest, src, klass, explicit_align, native, (ins_flag & MONO_INST_STACK_STORE) != 0);
 
 	if (ins_flag & MONO_INST_VOLATILE) {
 		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 	}
 }
 #else /* !DISABLE_JIT */

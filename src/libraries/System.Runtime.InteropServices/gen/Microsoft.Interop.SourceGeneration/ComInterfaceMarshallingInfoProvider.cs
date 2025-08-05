@@ -34,7 +34,7 @@ namespace Microsoft.Interop
         {
             INamedTypeSymbol? comInterfaceMarshaller = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata);
             if (comInterfaceMarshaller is null)
-                return new MissingSupportMarshallingInfo();
+                return NoMarshallingInfo.Instance;
 
             comInterfaceMarshaller = comInterfaceMarshaller.Construct(interfaceType);
 
@@ -48,7 +48,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            return new MissingSupportMarshallingInfo();
+            return NoMarshallingInfo.Instance;
         }
     }
 }

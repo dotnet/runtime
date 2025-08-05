@@ -39,7 +39,7 @@ namespace ILCompiler.Metadata
                 }
                 else
                 {
-                    Debug.Assert(false, "Multi-module assemblies");
+                    Debug.Fail("Multi-module assemblies");
                 }
             }
         }

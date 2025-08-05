@@ -5,4 +5,8 @@ EXPORTS
             DllCanUnloadNow         PRIVATE
             PassCallbackToProfiler  PRIVATE
             DoPInvoke               PRIVATE
+            DoPInvokeWithCallbackOnOtherThread PRIVATE
+            SwitchJitOptimization   PRIVATE
+            SwitchInlining  PRIVATE
+            GetInlineCount          PRIVATE
 

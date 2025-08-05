@@ -707,6 +707,11 @@ namespace ILCompiler
 
         public sealed override bool GeneratesPInvoke(MethodDesc method)
         {
+            // Marshalling behavior isn't modeled as protected by R2R rules, so prevent inlining of marshalling
+            // defined outside of the version bubble.
+            if (!VersionsWithMethodBody(method))
+                return false;
+
             return !Marshaller.IsMarshallingRequired(method);
         }
 
@@ -860,7 +865,7 @@ namespace ILCompiler
                 return true;
             }
 
-            Debug.Assert(false, "Unhandled form of type in VersionsWithTypeReference");
+            Debug.Fail("Unhandled form of type in VersionsWithTypeReference");
             return false;
         }
 

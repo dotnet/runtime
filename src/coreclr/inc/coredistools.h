@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//===--------- coredistools.h - Disassembly tools for CoreClr ------------===//
-//
-//  Core Disassembly Tools API Version 1.4.0
+//===--------- coredistools.h - Disassembly tools for CoreClr ------------===
+//  Core Disassembly Tools API
 //  Disassembly tools required by CoreCLR for utilities like
 //  GCStress, SuperPMI, and R2RDump.
-//===----------------------------------------------------------------------===//
+//===---------------------------------------------------------------------===
 
 #if !defined(_COREDISTOOLS_H_)
 #define _COREDISTOOLS_H_
@@ -42,7 +41,8 @@ enum TargetArch {
     Target_X64,
     Target_Thumb,
     Target_Arm64,
-    Target_LoongArch64
+    Target_LoongArch64,
+    Target_RiscV64,
 };
 
 struct CorDisasm;

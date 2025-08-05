@@ -85,6 +85,60 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void Parse_TryGetPropertyValueWithIndex()
+        {
+            JsonObject jObject = JsonNode.Parse(JsonNodeTests.ExpectedDomJson).AsObject();
+
+            JsonNode? node;
+            int index;
+
+            Assert.True(jObject.TryGetPropertyValue("MyString", out node, out index));
+            Assert.Equal("Hello!", node.GetValue<string>());
+            Assert.Equal(0, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyNull", out node, out index));
+            Assert.Null(node);
+            Assert.Equal(1, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyBoolean", out node, out index));
+            Assert.False(node.GetValue<bool>());
+            Assert.Equal(2, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyArray", out node, out index));
+            Assert.IsType<JsonArray>(node);
+            Assert.Equal(3, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyInt", out node, out index));
+            Assert.Equal(43, node.GetValue<int>());
+            Assert.Equal(4, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyDateTime", out node, out index));
+            Assert.Equal("2020-07-08T00:00:00", node.GetValue<string>());
+            Assert.Equal(5, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyGuid", out node, out index));
+            Assert.Equal("ed957609-cdfe-412f-88c1-02daca1b4f51", node.AsValue().GetValue<Guid>().ToString());
+            Assert.Equal(6, index);
+
+            Assert.True(jObject.TryGetPropertyValue("MyObject", out node, out index));
+            Assert.IsType<JsonObject>(node);
+            Assert.Equal(7, index);
+        }
+
+        [Fact]
+        public static void Parse_TryGetPropertyValueFail()
+        {
+            JsonObject jObject = JsonNode.Parse(JsonNodeTests.ExpectedDomJson).AsObject();
+
+            JsonNode? node;
+            int index;
+
+            Assert.False(jObject.TryGetPropertyValue("NonExistentKey", out node, out index));
+            Assert.Null(node);
+            Assert.Equal(-1, index);
+        }
+
+        [Fact]
         public static void Parse_TryGetValue()
         {
             Assert.True(JsonNode.Parse("\"Hello\"").AsValue().TryGetValue(out string? _));
@@ -159,17 +213,6 @@ namespace System.Text.Json.Nodes.Tests
             FieldInfo jsonDictionaryField = typeof(JsonObject).GetField("_dictionary", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(jsonDictionaryField);
 
-            Type jsonPropertyDictionaryType = typeof(JsonObject).Assembly.GetType("System.Text.Json.JsonPropertyDictionary`1");
-            Assert.NotNull(jsonPropertyDictionaryType);
-
-            jsonPropertyDictionaryType = jsonPropertyDictionaryType.MakeGenericType(new Type[] { typeof(JsonNode) });
-
-            FieldInfo listField = jsonPropertyDictionaryType.GetField("_propertyList", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(listField);
-
-            FieldInfo dictionaryField = jsonPropertyDictionaryType.GetField("_propertyDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(dictionaryField);
-
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
             {
                 // Only JsonElement is present.
@@ -186,8 +229,6 @@ namespace System.Text.Json.Nodes.Tests
                 jsonDictionary = jsonDictionaryField.GetValue(node);
                 Assert.NotNull(jsonDictionary);
 
-                Assert.NotNull(listField.GetValue(jsonDictionary));
-                Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
                 Test();
 
                 void Test()
@@ -217,8 +258,6 @@ namespace System.Text.Json.Nodes.Tests
                 jsonDictionary = jsonDictionaryField.GetValue(node);
                 Assert.NotNull(jsonDictionary);
 
-                Assert.NotNull(listField.GetValue(jsonDictionary));
-                Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
                 Test();
 
                 void Test()

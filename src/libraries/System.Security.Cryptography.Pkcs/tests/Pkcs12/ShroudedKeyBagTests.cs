@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                     Assert.True(rsa2.TrySignData(
                         keyBag.EncryptedPkcs8PrivateKey.Span,
                         sig,
-                        HashAlgorithmName.MD5,
+                        HashAlgorithmName.SHA256,
                         RSASignaturePadding.Pkcs1,
                         out int sigLen));
 
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                     Assert.True(rsa.VerifyData(
                         keyBag.EncryptedPkcs8PrivateKey.Span,
                         sig,
-                        HashAlgorithmName.MD5,
+                        HashAlgorithmName.SHA256,
                         RSASignaturePadding.Pkcs1));
                 }
             }
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                     Assert.True(rsa2.TrySignData(
                         keyBag.EncryptedPkcs8PrivateKey.Span,
                         sig,
-                        HashAlgorithmName.MD5,
+                        HashAlgorithmName.SHA256,
                         RSASignaturePadding.Pkcs1,
                         out int sigLen));
 
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                     Assert.True(rsa.VerifyData(
                         keyBag.EncryptedPkcs8PrivateKey.Span,
                         sig,
-                        HashAlgorithmName.MD5,
+                        HashAlgorithmName.SHA256,
                         RSASignaturePadding.Pkcs1));
                 }
             }

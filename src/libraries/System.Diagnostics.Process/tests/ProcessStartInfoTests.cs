@@ -235,6 +235,8 @@ namespace System.Diagnostics.Tests
         {
             const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
             Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
+            const string EmptyEnvVar = "TestEnvironmentOfChildProcess_Empty";
+            Environment.SetEnvironmentVariable(EmptyEnvVar, "");
             try
             {
                 // Schedule a process to see what env vars it gets.  Have it write out those variables
@@ -274,6 +276,31 @@ namespace System.Diagnostics.Tests
             finally
             {
                 Environment.SetEnvironmentVariable(ExtraEnvVar, null);
+                Environment.SetEnvironmentVariable(EmptyEnvVar, null);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EnvironmentNullValue()
+        {
+            const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
+            Environment.SetEnvironmentVariable(NullEnvVar, "");
+            try
+            {
+                Process p = CreateProcess(() =>
+                {
+                    // Verify that setting the value to null in StartInfo is going to remove the process environment.
+                    Assert.Null(Environment.GetEnvironmentVariable(NullEnvVar));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+                p.StartInfo.Environment[NullEnvVar] = null;
+                Assert.Null(p.StartInfo.Environment[NullEnvVar]);
+                p.Start();
+                Assert.True(p.WaitForExit(WaitInMS));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(NullEnvVar, null);
             }
         }
 
@@ -878,6 +905,29 @@ namespace System.Diagnostics.Tests
             });
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CreateNewProcessGroup_SetWindows_GetReturnsExpected()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            Assert.False(psi.CreateNewProcessGroup);
+
+            psi.CreateNewProcessGroup = true;
+            Assert.True(psi.CreateNewProcessGroup);
+
+            psi.CreateNewProcessGroup = false;
+            Assert.False(psi.CreateNewProcessGroup);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CreateNewProcessGroup_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.CreateNewProcessGroup);
+            Assert.Throws<PlatformNotSupportedException>(() => info.CreateNewProcessGroup = true);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -1240,13 +1290,13 @@ namespace System.Diagnostics.Tests
                 FileName = tempFile
             };
 
-            int expected = ERROR_BAD_EXE_FORMAT;
-
-            // Windows Nano bug see https://github.com/dotnet/runtime/issues/17919
-            if (PlatformDetection.IsWindowsNanoServer)
-                expected = ERROR_SUCCESS;
-
-            Assert.Equal(expected, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
+            int errorCode = Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode;
+            
+            if (!PlatformDetection.IsWindowsNanoServer)
+            {
+                // We can not rely on the error code returned on Windows Nano https://github.com/dotnet/runtime/issues/17919
+                Assert.Equal(ERROR_BAD_EXE_FORMAT, errorCode);
+            }
         }
 
         [Fact]

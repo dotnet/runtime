@@ -19,8 +19,11 @@
 ################################################################################
 
 import argparse
+import json
 import logging
 import os
+import urllib
+import xml.etree.ElementTree as ET
 
 from coreclr_arguments import *
 from jitutil import copy_directory, set_pipeline_variable, run_command, TempDir, download_files
@@ -35,6 +38,7 @@ parser.add_argument("-checked_directory", help="Path to the directory containing
 parser.add_argument("-release_directory", help="Path to the directory containing built release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
 
 is_windows = platform.system() == "Windows"
+is_macos = platform.system() == "Darwin"
 target_windows = True
 
 
@@ -108,10 +112,6 @@ def setup_args(args):
             print("release_directory doesn't exist")
             sys.exit(1)
 
-    if coreclr_args.platform.lower() != "windows" and do_asmdiffs:
-        print("asmdiffs currently only implemented for windows")
-        sys.exit(1)
-
     global target_windows
     target_windows = coreclr_args.platform.lower() == "windows"
 
@@ -129,10 +129,10 @@ def match_jit_files(full_path):
     file_name = os.path.basename(full_path)
 
     if target_windows:
-        if file_name.startswith("clrjit_") and file_name.endswith(".dll") and file_name.find("osx") == -1:
+        if file_name.startswith("clrjit_") and file_name.endswith(".dll"):
             return True
     else:
-        if file_name.startswith("libclrjit_") and file_name.endswith(".so") and file_name.find("_win_") == -1 and file_name.find("_arm_") == -1:
+        if file_name.startswith("libclrjit_") and (file_name.endswith(".so") or file_name.endswith(".dylib")):
             return True
 
     return False
@@ -179,10 +179,12 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
 
             # NOTE: we currently only support running on Windows x86/x64 (we don't pass the target OS)
             RID = None
-            if coreclr_args.arch == "x86":
-                RID = "win-x86"
-            if coreclr_args.arch == "x64":
-                RID = "win-x64"
+            rid_platform = coreclr_args.platform.lower()
+            if rid_platform == "windows":
+                rid_platform = "win"
+
+            rid_arch = coreclr_args.arch
+            RID = f"{rid_platform}-{rid_arch}"
 
             # Set dotnet path to run build
             os.environ["PATH"] = os.path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
@@ -200,31 +202,96 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
         # Details: https://bugs.python.org/issue26660
         print('Ignoring PermissionError: {0}'.format(pe_error))
 
-    jit_analyze_tool = os.path.join(jit_analyze_build_directory, "jit-analyze.exe")
+    jit_analyze_tool = os.path.join(jit_analyze_build_directory, "jit-analyze.exe" if is_windows else "jit-analyze")
     if not os.path.isfile(jit_analyze_tool):
         print('Error: {} not found'.format(jit_analyze_tool))
         return 1
 
+def build_partitions(partitions_dir, do_asmdiffs, bin_path, host_bitness):
+    mcs_path = os.path.join(bin_path, "mcs.exe" if is_windows else "mcs")
+    if is_macos:
+        # Hack: the target is arm64, but the build machine is x64. We build SPMI for x64 because of that,
+        # but it exists at a different path.
+        mcs_path = os.path.join(bin_path, "..", "osx.x64.Checked", "mcs")
+    assert(os.path.exists(mcs_path))
+
+    command = [mcs_path, "-printJITEEVersion"]
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+    stdout_jit_ee_version, _ = proc.communicate()
+    return_code = proc.returncode
+    if return_code == 0:
+        jit_ee_version = stdout_jit_ee_version.decode('utf-8').strip()
+        jit_ee_version = jit_ee_version.lower()
+    else:
+        raise Exception("Could not determine JIT-EE version")
+
+    print("JIT-EE version determined to be {}".format(jit_ee_version))
+
+    az_account_name = "clrjit2"
+    az_superpmi_container_name = "superpmi"
+    az_blob_storage_account_uri = "https://" + az_account_name + ".blob.core.windows.net/"
+    az_blob_storage_superpmi_container_uri = az_blob_storage_account_uri + az_superpmi_container_name
+    az_collections_root_folder = "collections"
+    prefix = az_collections_root_folder + "/" + jit_ee_version
+    prefix_urlencoded = urllib.parse.quote(prefix)
+    list_superpmi_container_uri = az_blob_storage_superpmi_container_uri + "?restype=container&comp=list&prefix=" + prefix_urlencoded + "/"
+
+    try:
+        contents = urllib.request.urlopen(list_superpmi_container_uri).read().decode('utf-8')
+    except Exception as exception:
+        raise Exception("Didn't find any collections using %s", list_superpmi_container_uri)
+
+    elem = ET.fromstring(contents)
+
+    if not target_windows and not do_asmdiffs:
+        targets = [("linux", "x64")]
+    elif host_bitness == 64:
+        targets = [("windows", "x64"), ("windows", "arm64"), ("linux", "x64"), ("linux", "arm64"), ("osx", "arm64")]
+    else:
+        targets = [("windows", "x86"), ("linux", "arm")]
+
+    targets = [(target_os, arch, []) for (target_os, arch) in targets]
+
+    for blob in elem.findall(".//Blob"):
+        name = blob.find("Name").text
+        for (target_os, arch, collections) in targets:
+            name_pref = prefix + "/" + target_os + "/" + arch + "/"
+            if name.startswith(name_pref) and name.removesuffix(".zip").endswith(".mch"):
+                url = blob.find("Url").text
+                col_name = name[len(name_pref):].removesuffix(".zip")
+                collections.append({ "target_os": target_os, "target_arch": arch, "col_name": col_name, "col_url": url })
+
+    if not os.path.exists(partitions_dir):
+        os.makedirs(partitions_dir)
+
+    for (target_os, arch, collections) in targets:
+        partition_index = 0
+        for col in sorted(collections, key=lambda col: col["col_name"]):
+            json_path = os.path.join(partitions_dir, "{}-{}-{}.json".format(target_os, arch, partition_index))
+            print("Partition {}-{}-{}: {}".format(target_os, arch, partition_index, col["col_name"]))
+            partition_index += 1
+            with open(json_path, "w") as file:
+                file.write(json.dumps(col))
 
 def main(main_args):
     """ Prepare the Helix data for SuperPMI diffs Azure DevOps pipeline.
 
     The Helix correlation payload directory is created and populated as follows:
 
-    <source_directory>\payload -- the correlation payload directory
-        -- contains the *.py scripts from <source_directory>\src\coreclr\scripts
+    <source_directory>/payload -- the correlation payload directory
+        -- contains the *.py scripts from <source_directory>/src/coreclr/scripts
         -- contains superpmi.exe, mcs.exe from the target-specific build
-    <source_directory>\payload\base
+    <source_directory>/payload/base
         -- contains the baseline JITs (under checked and release folders)
-    <source_directory>\payload\diff
+    <source_directory>/payload/diff
         -- contains the diff JITs (under checked and release folders)
     For `type == asmdiffs`:
-        <source_directory>\payload\jit-analyze
+        <source_directory>/payload/jit-analyze
             -- contains the self-contained jit-analyze build (from dotnet/jitutils)
-        <source_directory>\payload\git
+        <source_directory>/payload/git
             -- contains a Portable ("xcopy installable") `git` tool, downloaded from:
             https://netcorenativeassets.blob.core.windows.net/resource-packages/external/windows/git/Git-2.32.0-64-bit.zip
-            This is needed by jit-analyze to do `git diff` on the generated asm. The `<source_directory>\payload\git\cmd`
+            This is needed by jit-analyze to do `git diff` on the generated asm. The `<source_directory>/payload/git/cmd`
             directory is added to the PATH.
             NOTE: this only runs on Windows.
 
@@ -385,6 +452,11 @@ def main(main_args):
 
     if do_asmdiffs:
         build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_directory)
+
+    ######## Generate partition information
+
+    partitions_dir = os.path.join(correlation_payload_directory, "partitions")
+    build_partitions(partitions_dir, do_asmdiffs, checked_directory if use_checked else release_directory, 64 if coreclr_args.arch in ["x64", "arm64"] else 32)
 
     ######## Set pipeline variables
 

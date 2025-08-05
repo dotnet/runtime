@@ -579,7 +579,8 @@ namespace System.Collections.Immutable
             /// <param name="length">The number of elements to remove.</param>
             public void RemoveRange(int index, int length)
             {
-                Requires.Range(index >= 0 && index + length <= _count, nameof(index));
+                Requires.Range(index >= 0 && index <= _count, nameof(index));
+                Requires.Range(length >= 0 && index <= _count - length, nameof(length));
 
                 if (length == 0)
                 {
@@ -1094,6 +1095,9 @@ namespace System.Collections.Immutable
 
                 _count -= indicesToRemove.Count;
             }
+
+            /// <summary>Gets a <see cref="Memory{T}"/> for the filled portion of the backing array.</summary>
+            internal Memory<T> AsMemory() => new(_elements, 0, _count);
         }
     }
 }

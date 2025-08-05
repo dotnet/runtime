@@ -4,7 +4,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NuGetTargetMoniker>$(NetCoreAppCurrentToolTargetFrameworkMoniker)</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>$(NetCoreAppToolCurrent)</NuGetTargetMonikerShort>
-    <RunAnalyzers>false</RunAnalyzers>
+    <Nullable>enable</Nullable>
+    <RunAnalyzers>true</RunAnalyzers>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

@@ -41,6 +41,7 @@ namespace System.Security.Cryptography
         internal const string SigningCertificate = "1.2.840.113549.1.9.16.2.12";
         internal const string SigningCertificateV2 = "1.2.840.113549.1.9.16.2.47";
         internal const string DocumentName = "1.3.6.1.4.1.311.88.2.1";
+        internal const string Pkcs9FriendlyName = "1.2.840.113549.1.9.20";
         internal const string LocalKeyId = "1.2.840.113549.1.9.21";
         internal const string EnrollCertTypeExtension = "1.3.6.1.4.1.311.20.2";
         internal const string UserPrincipalName = "1.3.6.1.4.1.311.20.2.3";
@@ -50,6 +51,8 @@ namespace System.Security.Cryptography
         internal const string OcspEndpoint = "1.3.6.1.5.5.7.48.1";
         internal const string CertificateAuthorityIssuers = "1.3.6.1.5.5.7.48.2";
         internal const string Pkcs9ExtensionRequest = "1.2.840.113549.1.9.14";
+        internal const string MsPkcs12KeyProviderName = "1.3.6.1.4.1.311.17.1";
+        internal const string MsPkcs12MachineKeySet = "1.3.6.1.4.1.311.17.2";
 
         // Key wrap algorithms
         internal const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";
@@ -63,6 +66,7 @@ namespace System.Security.Cryptography
         internal const string Pkcs7Hashed = "1.2.840.113549.1.7.5";
         internal const string Pkcs7Encrypted = "1.2.840.113549.1.7.6";
 
+        // Hash algorithms
         internal const string Md5 = "1.2.840.113549.2.5";
         internal const string Sha1 = "1.3.14.3.2.26";
         internal const string Sha256 = "2.16.840.1.101.3.4.2.1";
@@ -71,6 +75,8 @@ namespace System.Security.Cryptography
         internal const string Sha3_256 = "2.16.840.1.101.3.4.2.8";
         internal const string Sha3_384 = "2.16.840.1.101.3.4.2.9";
         internal const string Sha3_512 = "2.16.840.1.101.3.4.2.10";
+        internal const string Shake128 = "2.16.840.1.101.3.4.2.11";
+        internal const string Shake256 = "2.16.840.1.101.3.4.2.12";
 
         // DSA CMS uses the combined signature+digest OID
         internal const string DsaWithSha1 = "1.2.840.10040.4.3";
@@ -94,20 +100,109 @@ namespace System.Security.Cryptography
         internal const string ECDsaWithSha3_384 = "2.16.840.1.101.3.4.3.11";
         internal const string ECDsaWithSha3_512 = "2.16.840.1.101.3.4.3.12";
 
+        internal const string MLDsa44 = "2.16.840.1.101.3.4.3.17";
+        internal const string MLDsa65 = "2.16.840.1.101.3.4.3.18";
+        internal const string MLDsa87 = "2.16.840.1.101.3.4.3.19";
+        internal const string MLDsa44PreHashSha512 = "2.16.840.1.101.3.4.3.32";
+        internal const string MLDsa65PreHashSha512 = "2.16.840.1.101.3.4.3.33";
+        internal const string MLDsa87PreHashSha512 = "2.16.840.1.101.3.4.3.34";
+
+        internal const string SlhDsaSha2_128s = "2.16.840.1.101.3.4.3.20";
+        internal const string SlhDsaSha2_128f = "2.16.840.1.101.3.4.3.21";
+        internal const string SlhDsaSha2_192s = "2.16.840.1.101.3.4.3.22";
+        internal const string SlhDsaSha2_192f = "2.16.840.1.101.3.4.3.23";
+        internal const string SlhDsaSha2_256s = "2.16.840.1.101.3.4.3.24";
+        internal const string SlhDsaSha2_256f = "2.16.840.1.101.3.4.3.25";
+        internal const string SlhDsaShake128s = "2.16.840.1.101.3.4.3.26";
+        internal const string SlhDsaShake128f = "2.16.840.1.101.3.4.3.27";
+        internal const string SlhDsaShake192s = "2.16.840.1.101.3.4.3.28";
+        internal const string SlhDsaShake192f = "2.16.840.1.101.3.4.3.29";
+        internal const string SlhDsaShake256s = "2.16.840.1.101.3.4.3.30";
+        internal const string SlhDsaShake256f = "2.16.840.1.101.3.4.3.31";
+        internal const string SlhDsaSha2_128sPreHashSha256 = "2.16.840.1.101.3.4.3.35";
+        internal const string SlhDsaSha2_128fPreHashSha256 = "2.16.840.1.101.3.4.3.36";
+        internal const string SlhDsaSha2_192sPreHashSha512 = "2.16.840.1.101.3.4.3.37";
+        internal const string SlhDsaSha2_192fPreHashSha512 = "2.16.840.1.101.3.4.3.38";
+        internal const string SlhDsaSha2_256sPreHashSha512 = "2.16.840.1.101.3.4.3.39";
+        internal const string SlhDsaSha2_256fPreHashSha512 = "2.16.840.1.101.3.4.3.40";
+        internal const string SlhDsaShake128sPreHashShake128 = "2.16.840.1.101.3.4.3.41";
+        internal const string SlhDsaShake128fPreHashShake128 = "2.16.840.1.101.3.4.3.42";
+        internal const string SlhDsaShake192sPreHashShake256 = "2.16.840.1.101.3.4.3.43";
+        internal const string SlhDsaShake192fPreHashShake256 = "2.16.840.1.101.3.4.3.44";
+        internal const string SlhDsaShake256sPreHashShake256 = "2.16.840.1.101.3.4.3.45";
+        internal const string SlhDsaShake256fPreHashShake256 = "2.16.840.1.101.3.4.3.46";
+
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
         internal const string PSpecified = "1.2.840.113549.1.1.9";
+
+        internal const string MLDsa44WithRSA2048PssPreHashSha256 = "2.16.840.1.114027.80.9.0";
+        internal const string MLDsa44WithRSA2048Pkcs15PreHashSha256 = "2.16.840.1.114027.80.9.1";
+        internal const string MLDsa44WithEd25519PreHashSha512 = "2.16.840.1.114027.80.9.2";
+        internal const string MLDsa44WithECDsaP256PreHashSha256 = "2.16.840.1.114027.80.9.3";
+        internal const string MLDsa65WithRSA3072PssPreHashSha512 = "2.16.840.1.114027.80.9.4";
+        internal const string MLDsa65WithRSA3072Pkcs15PreHashSha512 = "2.16.840.1.114027.80.9.5";
+        internal const string MLDsa65WithRSA4096PssPreHashSha512 = "2.16.840.1.114027.80.9.6";
+        internal const string MLDsa65WithRSA4096Pkcs15PreHashSha512 = "2.16.840.1.114027.80.9.7";
+        internal const string MLDsa65WithECDsaP256PreHashSha512 = "2.16.840.1.114027.80.9.8";
+        internal const string MLDsa65WithECDsaP384PreHashSha512 = "2.16.840.1.114027.80.9.9";
+        internal const string MLDsa65WithECDsaBrainpoolP256r1PreHashSha512 = "2.16.840.1.114027.80.9.10";
+        internal const string MLDsa65WithEd25519PreHashSha512 = "2.16.840.1.114027.80.9.11";
+        internal const string MLDsa87WithECDsaP384PreHashSha512 = "2.16.840.1.114027.80.9.12";
+        internal const string MLDsa87WithECDsaBrainpoolP384r1PreHashSha512 = "2.16.840.1.114027.80.9.13";
+        internal const string MLDsa87WithEd448PreHashShake256_512 = "2.16.840.1.114027.80.9.14";
+        internal const string MLDsa87WithRSA3072PssPreHashSha512 = "2.16.840.1.114027.80.9.15";
+        internal const string MLDsa87WithRSA4096PssPreHashSha512 = "2.16.840.1.114027.80.9.16";
+        internal const string MLDsa87WithECDsaP521PreHashSha512 = "2.16.840.1.114027.80.9.17";
 
         // PKCS#7
         internal const string NoSignature = "1.3.6.1.5.5.7.6.2";
 
-        // X500 Names
-        internal const string CommonName = "2.5.4.3";
-        internal const string CountryOrRegionName = "2.5.4.6";
-        internal const string LocalityName = "2.5.4.7";
-        internal const string StateOrProvinceName = "2.5.4.8";
-        internal const string Organization = "2.5.4.10";
-        internal const string OrganizationalUnit = "2.5.4.11";
-        internal const string EmailAddress = "1.2.840.113549.1.9.1";
+        // X500 Names - T-REC X.520-201910
+        internal const string KnowledgeInformation = "2.5.4.2"; // 6.1.1 - id-at-knowledgeInformation
+        internal const string CommonName = "2.5.4.3"; // 6.2.2 - id-at-commonName
+        internal const string Surname = "2.5.4.4"; // 6.2.3 - id-at-surname
+        internal const string SerialNumber = "2.5.4.5"; // 6.2.9 - id-at-serialNumber
+        internal const string CountryOrRegionName = "2.5.4.6"; // 6.3.1 - id-at-countryName
+        internal const string LocalityName = "2.5.4.7"; // 6.3.4 - id-at-localityName
+        internal const string StateOrProvinceName = "2.5.4.8"; // 6.3.5 - id-at-stateOrProvinceName
+        internal const string StreetAddress = "2.5.4.9"; // 6.3.6 - id-at-streetAddress
+        internal const string Organization = "2.5.4.10"; // 6.4.1 - id-at-organizationName
+        internal const string OrganizationalUnit = "2.5.4.11"; // 6.4.2 - id-at-organizationalUnitName
+        internal const string Title = "2.5.4.12"; // 6.4.3 - id-at-title
+        internal const string Description = "2.5.4.13"; // 6.5.1 - id-at-description
+        internal const string BusinessCategory = "2.5.4.15"; // 6.5.4 - id-at-businessCategory
+        internal const string PostalCode = "2.5.4.17"; // 6.6.2 - id-at-postalCode
+        internal const string PostOfficeBox = "2.5.4.18"; // 6.6.3 - id-at-postOfficeBox
+        internal const string PhysicalDeliveryOfficeName = "2.5.4.19"; // 6.6.4 - id-at-physicalDeliveryOfficeName
+        internal const string TelephoneNumber = "2.5.4.20"; // 6.7.1 - id-at-telephoneNumber
+        internal const string X121Address = "2.5.4.24"; // 6.7.5 - id-at-x121Address
+        internal const string InternationalISDNNumber = "2.5.4.25"; // 6.7.6 - id-at-internationalISDNNumber
+        internal const string DestinationIndicator = "2.5.4.27"; // 6.7.8 - id-at-destinationIndicator
+        internal const string Name = "2.5.4.41"; // 6.2.1 - id-at-name
+        internal const string GivenName = "2.5.4.42"; // 6.2.4 - id-at-givenName
+        internal const string Initials = "2.5.4.43"; // 6.2.5 - id-at-initials
+        internal const string GenerationQualifier = "2.5.4.44"; // 6.2.6 - id-at-generationQualifier
+        internal const string DnQualifier = "2.5.4.46"; // 6.2.8 - id-at-dnQualifier
+        internal const string HouseIdentifier = "2.5.4.51"; // 6.3.7 - id-at-houseIdentifier
+        internal const string DmdName = "2.5.4.54"; // 6.11.1 - id-at-dmdName
+        internal const string Pseudonym = "2.5.4.65"; // 6.2.10 - id-at-pseudonym
+        internal const string UiiInUrn = "2.5.4.80"; // 6.13.3 - id-at-uiiInUrn
+        internal const string ContentUrl = "2.5.4.81"; // 6.13.4 - id-at-contentUrl
+        internal const string Uri = "2.5.4.83"; // 6.2.12 - id-at-uri
+        internal const string Urn = "2.5.4.86"; // 6.2.13 - id-at-urn
+        internal const string Url = "2.5.4.87"; // 6.2.14 - id-at-url
+        internal const string UrnC = "2.5.4.89"; // 6.12.4 - id-at-urnC
+        internal const string EpcInUrn = "2.5.4.94"; // 6.13.9 - id-at-epcInUrn
+        internal const string LdapUrl = "2.5.4.95"; // 6.13.10 - id-at-ldapUrl
+        internal const string OrganizationIdentifier = "2.5.4.97"; // 6.4.4 - id-at-organizationIdentifier
+        internal const string CountryOrRegionName3C = "2.5.4.98"; // 6.3.2 - id-at-countryCode3c
+        internal const string CountryOrRegionName3N = "2.5.4.99"; // 6.3.3 - id-at-countryCode3n
+        internal const string DnsName = "2.5.4.100"; // 6.2.15 - id-at-dnsName
+        internal const string IntEmail = "2.5.4.104"; // 6.2.16 - id-at-intEmail
+        internal const string JabberId = "2.5.4.105"; // 6.2.17 - id-at-jid
+
+        // RFC 2985
+        internal const string EmailAddress = "1.2.840.113549.1.9.1"; //  B.3.5
 
         // Cert Extensions
         internal const string BasicConstraints = "2.5.29.10";
@@ -170,5 +265,13 @@ namespace System.Security.Cryptography
 
         // LDAP
         internal const string DomainComponent = "0.9.2342.19200300.100.1.25";
+
+        // ML-KEM
+        // id-alg-ml-kem-512
+        internal const string MlKem512 = "2.16.840.1.101.3.4.4.1";
+        // id-alg-ml-kem-768
+        internal const string MlKem768 = "2.16.840.1.101.3.4.4.2";
+        // id-alg-ml-kem-1024
+        internal const string MlKem1024 = "2.16.840.1.101.3.4.4.3";
     }
 }

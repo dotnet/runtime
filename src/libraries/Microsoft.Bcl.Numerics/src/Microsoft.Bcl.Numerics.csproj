@@ -3,23 +3,23 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
-
     <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
     <PackageDescription>Provides the System.MathF for .NET Standard 2.0</PackageDescription>
-    <!-- Disabling baseline validation since this is a brand new package.
-         Once this package has shipped a stable version, the following line
-         should be removed in order to re-enable validation. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.1'">
-    <Compile Include="System\MathF.cs" />
-  </ItemGroup>
-
-   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-    <Compile Include="System\Microsoft.Bcl.Numerics.Forwards.cs" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+      <ItemGroup>
+        <Compile Include="Microsoft.Bcl.Numerics.Forwards.cs" />
+      </ItemGroup>
+    </When>
+  
+    <Otherwise>
+      <ItemGroup>
+        <Compile Include="System\MathF.cs" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
 </Project>

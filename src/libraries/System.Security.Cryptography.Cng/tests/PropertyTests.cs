@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             CngAlgorithm cngAlgorithm = new CngAlgorithm(algorithm);
 
-            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(cngAlgorithm))
+            using (CngKeyWrapper platformKey = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(cngAlgorithm))
             {
                 Assert.Equal(256, platformKey.Key.KeySize);
             }
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             CngAlgorithm cngAlgorithm = new CngAlgorithm(algorithm);
 
-            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(cngAlgorithm))
+            using (CngKeyWrapper platformKey = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(cngAlgorithm))
             {
                 Assert.Equal(384, platformKey.Key.KeySize);
             }
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Cng.Tests
         public static void CreatePersisted_PlatformRsaKeyHasKeySize(int keySize)
         {
             CngProperty keyLengthProperty = new CngProperty("Length", BitConverter.GetBytes(keySize), CngPropertyOptions.None);
-            CngPlatformProviderKey platformKey = new CngPlatformProviderKey(
+            CngKeyWrapper platformKey = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(
                 CngAlgorithm.Rsa,
                 keySuffix: keySize.ToString(),
                 additionalParameters: keyLengthProperty);

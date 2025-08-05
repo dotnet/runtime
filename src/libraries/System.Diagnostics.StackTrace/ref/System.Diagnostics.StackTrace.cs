@@ -159,6 +159,15 @@ namespace System.Diagnostics.SymbolStore
 #endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Diagnostics
 {
+    public sealed partial class DiagnosticMethodInfo
+    {
+        private DiagnosticMethodInfo() { }
+        public string Name { get { throw null; } }
+        public string DeclaringTypeName { get { throw null; } }
+        public string DeclaringAssemblyName { get { throw null; } }
+        public static DiagnosticMethodInfo? Create(System.Delegate @delegate) { throw null; }
+        public static DiagnosticMethodInfo? Create(System.Diagnostics.StackFrame frame) { throw null; }
+    }
     public partial class StackFrame
     {
         public const int OFFSET_UNKNOWN = -1;
@@ -172,7 +181,7 @@ namespace System.Diagnostics
         public virtual int GetFileLineNumber() { throw null; }
         public virtual string? GetFileName() { throw null; }
         public virtual int GetILOffset() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed. Consider using DiagnosticMethodInfo.Create instead")]
         public virtual System.Reflection.MethodBase? GetMethod() { throw null; }
         public virtual int GetNativeOffset() { throw null; }
         public override string ToString() { throw null; }

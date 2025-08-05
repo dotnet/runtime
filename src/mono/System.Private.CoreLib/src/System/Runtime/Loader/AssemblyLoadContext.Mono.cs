@@ -118,13 +118,8 @@ namespace System.Runtime.Loader
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Assembly[] InternalGetLoadedAssemblies();
 
-        internal static Assembly? DoAssemblyResolve(string name)
-        {
-            return AssemblyResolve?.Invoke(null, new ResolveEventArgs(name));
-        }
-
         // Invoked by Mono to resolve using the load method.
-        private static Assembly? MonoResolveUsingLoad(IntPtr gchALC, string assemblyName)
+        private static RuntimeAssembly? MonoResolveUsingLoad(IntPtr gchALC, string assemblyName)
         {
             return Resolve(gchALC, new AssemblyName(assemblyName));
         }
@@ -132,39 +127,39 @@ namespace System.Runtime.Loader
         // Invoked by Mono to resolve using the Resolving event after
         // trying the Load override and default load context without
         // success.
-        private static Assembly? MonoResolveUsingResolvingEvent(IntPtr gchALC, string assemblyName)
+        private static RuntimeAssembly? MonoResolveUsingResolvingEvent(IntPtr gchALC, string assemblyName)
         {
             AssemblyLoadContext context = GetAssemblyLoadContext(gchALC);
             return context.ResolveUsingEvent(new AssemblyName(assemblyName));
         }
 
         // Invoked by Mono to resolve requests to load satellite assemblies.
-        private static Assembly? MonoResolveUsingResolveSatelliteAssembly(IntPtr gchALC, string assemblyName)
+        private static RuntimeAssembly? MonoResolveUsingResolveSatelliteAssembly(IntPtr gchALC, string assemblyName)
         {
             AssemblyLoadContext context = GetAssemblyLoadContext(gchALC);
             return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 
-        private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext)
+        private static AssemblyLoadContext GetAssemblyLoadContext(IntPtr gchAssemblyLoadContext)
         {
             AssemblyLoadContext context;
             // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchManagedAssemblyLoadContext == IntPtr.Zero)
+            if (gchAssemblyLoadContext == IntPtr.Zero)
                 context = Default;
             else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
             return context;
         }
 
-        private static void MonoResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext, ref IntPtr dll)
+        private static void MonoResolveUnmanagedDll(string unmanagedDllName, IntPtr gchAssemblyLoadContext, ref IntPtr dll)
         {
-            AssemblyLoadContext context = GetAssemblyLoadContext(gchManagedAssemblyLoadContext);
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchAssemblyLoadContext);
             dll = context.LoadUnmanagedDll(unmanagedDllName);
         }
 
-        private static void MonoResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchManagedAssemblyLoadContext, ref IntPtr dll)
+        private static void MonoResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchAssemblyLoadContext, ref IntPtr dll)
         {
-            AssemblyLoadContext context = GetAssemblyLoadContext(gchManagedAssemblyLoadContext);
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchAssemblyLoadContext);
             dll = context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
         }
 

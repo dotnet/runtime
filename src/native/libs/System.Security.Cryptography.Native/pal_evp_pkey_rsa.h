@@ -31,6 +31,7 @@ Decrypt source into destination using the specified RSA key (wrapped in an EVP_P
 Returns the number of bytes written to destination, -1 on error.
 */
 PALEXPORT int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
+                                          void* extraHandle,
                                           const uint8_t* source,
                                           int32_t sourceLen,
                                           RsaPaddingMode padding,
@@ -44,6 +45,7 @@ Encrypt source into destination using the specified RSA key (wrapped in an EVP_P
 Returns the number of bytes written to destination, -1 on error.
 */
 PALEXPORT int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
+                                          void* extraHandle,
                                           const uint8_t* source,
                                           int32_t sourceLen,
                                           RsaPaddingMode padding,
@@ -58,6 +60,7 @@ Complete the RSA signature generation for the specified hash using the provided 
 Returns the number of bytes written to destination, -1 on error.
 */
 PALEXPORT int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                           void* extraHandle,
                                            RsaPaddingMode padding,
                                            const EVP_MD* digest,
                                            const uint8_t* hash,
@@ -72,10 +75,10 @@ and padding/digest options.
 Returns 1 on a verified signature, 0 on a mismatched signature, -1 on error.
 */
 PALEXPORT int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
+                                             void* extraHandle,
                                              RsaPaddingMode padding,
                                              const EVP_MD* digest,
                                              const uint8_t* hash,
                                              int32_t hashLen,
                                              const uint8_t* signature,
                                              int32_t signatureLen);
-

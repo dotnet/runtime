@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Collections.Immutable
 {
@@ -27,7 +28,7 @@ namespace System.Collections.Immutable
         /// </para>
         /// </remarks>
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableDictionaryBuilderDebuggerProxy<,>))]
+        [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
         public sealed class Builder : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
         {
             /// <summary>
@@ -55,11 +56,6 @@ namespace System.Collections.Immutable
             /// A number that increments every time the builder changes its contents.
             /// </summary>
             private int _version;
-
-            /// <summary>
-            /// The object callers may use to synchronize access to this collection.
-            /// </summary>
-            private object? _syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableDictionary{TKey, TValue}.Builder"/> class.
@@ -251,18 +247,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <returns>An object that can be used to synchronize access to the <see cref="ICollection"/>.</returns>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            object ICollection.SyncRoot
-            {
-                get
-                {
-                    if (_syncRoot == null)
-                    {
-                        Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
-                    }
-
-                    return _syncRoot;
-                }
-            }
+            object ICollection.SyncRoot =>
+                 field ?? Interlocked.CompareExchange(ref field, new object(), null) ?? field;
 
             /// <summary>
             /// Gets a value indicating whether access to the <see cref="ICollection"/> is synchronized (thread safe).
@@ -708,37 +694,5 @@ namespace System.Collections.Immutable
                 return result.CountAdjustment != 0;
             }
         }
-    }
-
-    /// <summary>
-    /// A simple view of the immutable collection that the debugger can show to the developer.
-    /// </summary>
-    internal sealed class ImmutableDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
-    {
-        /// <summary>
-        /// The collection to be enumerated.
-        /// </summary>
-        private readonly ImmutableDictionary<TKey, TValue>.Builder _map;
-
-        /// <summary>
-        /// The simple view of the collection.
-        /// </summary>
-        private KeyValuePair<TKey, TValue>[]? _contents;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.
-        /// </summary>
-        /// <param name="map">The collection to display in the debugger</param>
-        public ImmutableDictionaryBuilderDebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)
-        {
-            Requires.NotNull(map, nameof(map));
-            _map = map;
-        }
-
-        /// <summary>
-        /// Gets a simple debugger-viewable collection.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<TKey, TValue>[] Contents => _contents ??= _map.ToArray(_map.Count);
     }
 }

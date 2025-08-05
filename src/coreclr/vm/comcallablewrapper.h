@@ -952,7 +952,7 @@ public:
     void Neuter();
     void ClearHandle();
 
-    // fast access to wrapper for a com+ object,
+    // fast access to wrapper for a CLR object,
     // inline check, and call out of line to create, out of line version might cause gc
     //to be enabled
     static ComCallWrapper* __stdcall InlineGetWrapper(OBJECTREF* pObj);
@@ -1619,7 +1619,7 @@ inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppO
     }
     CONTRACT_END;
 
-    // get the wrapper for this com+ object
+    // get the wrapper for this CLR object
     ComCallWrapper* pWrap = GetWrapperForObject(*ppObj);
 
     if (NULL == pWrap)

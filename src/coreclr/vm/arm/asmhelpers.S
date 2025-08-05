@@ -135,41 +135,8 @@ CallDescrWorkerInternalReturnAddressOffset:
 
 // ------------------------------------------------------------------
 
-// void LazyMachStateCaptureState(struct LazyMachState *pState)//
-    LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-
-        // marks that this is not yet valid
-        mov     r1, #0
-        str     r1, [r0, #MachState__isValid]
-
-        str     lr, [r0, #LazyMachState_captureIp]
-        str     sp, [r0, #LazyMachState_captureSp]
-
-        add     r1, r0, #LazyMachState_captureR4_R11
-        stm     r1, {r4-r11}
-
-        mov     pc, lr
-
-    LEAF_END LazyMachStateCaptureState, _TEXT
-
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-    LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-        cmp     r0, #0
-        beq     LOCAL_LABEL(LNullThis)
-
-        ldr     r12, [r0, #DelegateObject___methodPtr]
-        ldr     r0, [r0, #DelegateObject___target]
-
-        bx      r12
-
-LOCAL_LABEL(LNullThis):
-        mov     r0, #CORINFO_NullReferenceException_ASM
-        b       C_FUNC(JIT_InternalThrow)
-
-    LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 //
-// r12 = UMEntryThunk*
+// r12 = UMEntryThunkData*
 //
         NESTED_ENTRY TheUMEntryPrestub,_TEXT,NoHandler
 
@@ -211,24 +178,6 @@ LOCAL_LABEL(LNullThis):
         NESTED_END ThePreStub, _TEXT
 
 // ------------------------------------------------------------------
-        NESTED_ENTRY ThePreStubCompactARM, _TEXT, NoHandler
-
-        // r12 - address of compact entry point + PC_REG_RELATIVE_OFFSET
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        mov         r0, r12
-
-        bl          C_FUNC(PreStubGetMethodDescForCompactEntryPoint)
-
-        mov         r12, r0                                          // pMethodDesc
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
-        b           C_FUNC(ThePreStub)
-
-        NESTED_END ThePreStubCompactARM, _TEXT
-// ------------------------------------------------------------------
 // This method does nothing. It's just a fixed function for the debugger to put a breakpoint on.
         LEAF_ENTRY ThePreStubPatch, _TEXT
         nop
@@ -238,8 +187,8 @@ ThePreStubPatchLabel:
         LEAF_END ThePreStubPatch, _TEXT
 
 // ------------------------------------------------------------------
-// The call in ndirect import precode points to this function.
-        NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
+// The call in PInvokeImportPrecode points to this function.
+        NESTED_ENTRY PInvokeImportThunk, _TEXT, NoHandler
 
         PROLOG_PUSH "{r0-r4,r7,r8,lr}"                  // Spill general argument registers, return address and
         PROLOG_STACK_SAVE_OFFSET r7, #20
@@ -249,17 +198,17 @@ ThePreStubPatchLabel:
         CHECK_STACK_ALIGNMENT
 
         mov     r0, r12
-        bl      C_FUNC(NDirectImportWorker)
+        bl      C_FUNC(PInvokeImportWorker)
         mov     r12, r0
 
         EPILOG_VPOP {d0-d7}
         EPILOG_POP "{r0-r4,r7,r8,lr}"
 
-        // If we got back from NDirectImportWorker, the MD has been successfully
+        // If we got back from PInvokeImportWorker, the MD has been successfully
         // linked. Proceed to execute the original DLL call.
         bx r12
 
-        NESTED_END NDirectImportThunk, _TEXT
+        NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
 // void ResolveWorkerAsmStub(r0, r1, r2, r3, r4:IndirectionCellAndFlags, r12:DispatchToken)
@@ -293,46 +242,6 @@ ThePreStubPatchLabel:
         b           C_FUNC(ResolveWorkerAsmStub)
 
         NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
-
-        //
-        // If a preserved register were pushed onto the stack between
-        // the managed caller and the H_M_F, _R4_R11 will point to its
-        // location on the stack and it would have been updated on the
-        // stack by the GC already and it will be popped back into the
-        // appropriate register when the appropriate epilog is run.
-        //
-        // Otherwise, the register is preserved across all the code
-        // in this HCALL or FCALL, so we need to update those registers
-        // here because the GC will have updated our copies in the
-        // frame.
-        //
-        // So, if _R4_R11 points into the MachState, we need to update
-        // the register here.  That's what this macro does.
-        //
-
-        .macro RestoreRegMS regIndex, reg
-
-        // Incoming:
-        //
-        // R0 = address of MachState
-        //
-        // $regIndex: Index of the register (R4-R11). For R4, index is 4.
-        //            For R5, index is 5, and so on.
-        //
-        // $reg: Register name (e.g. R4, R5, etc)
-        //
-        // Get the address of the specified captured register from machine state
-        add     r2, r0, #(MachState__captureR4_R11 + ((\regIndex-4)*4))
-
-        // Get the address of the specified preserved register from machine state
-        ldr     r3, [r0, #(MachState___R4_R11 + ((\regIndex-4)*4))]
-
-        cmp     r2, r3
-        bne     0f
-        ldr     \reg, [r2]
-0:
-
-        .endm
 
 #ifdef PROFILING_SUPPORTED
 
@@ -368,7 +277,7 @@ LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     PROLOG_PUSH "{r0,r3,r9,r12}"
 
-    // for the 5 arguments that do not need popped plus 4 bytes of alignment 
+    // for the 5 arguments that do not need popped plus 4 bytes of alignment
     alloc_stack 6*4
 
     // push fp regs
@@ -396,7 +305,7 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // clear hiddenArg
     movw        r2, #0
     str         r2, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg]
-    
+
     // set the flag to indicate what hook this is
     movw        r2, \flags
     str         r2, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags]
@@ -423,38 +332,6 @@ GenerateProfileHelper ProfileLeave, PROFILE_LEAVE
 GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 #endif
-
-// EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-//         INDEBUG_COMMA(HelperMethodFrame *pFrame)
-//         MachState *pState
-//         )
-        LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-
-#ifdef _DEBUG
-        mov r0, r1
-#endif
-
-        // If machine state is invalid, then simply exit
-        ldr r1, [r0, #MachState__isValid]
-        cmp r1, #0
-        beq LOCAL_LABEL(Done)
-
-        RestoreRegMS 4, R4
-        RestoreRegMS 5, R5
-        RestoreRegMS 6, R6
-        RestoreRegMS 7, R7
-        RestoreRegMS 8, R8
-        RestoreRegMS 9, R9
-        RestoreRegMS 10, R10
-        RestoreRegMS 11, R11
-LOCAL_LABEL(Done):
-        // Its imperative that the return value of HelperMethodFrameRestoreState is zero
-        // as it is used in the state machine to loop until it becomes zero.
-        // Refer to HELPER_METHOD_FRAME_END macro for details.
-        mov r0,#0
-        bx lr
-
-        LEAF_END HelperMethodFrameRestoreState, _TEXT
 
 #if 0
 // ------------------------------------------------------------------
@@ -586,71 +463,6 @@ LOCAL_LABEL(stackProbe_loop):
     NESTED_END JIT_RareDisableHelper, _TEXT
 
 
-#ifdef FEATURE_CORECLR
-//
-// JIT Static access helpers for single appdomain case
-//
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
-
-    // If class is not initialized, bail to C++ helper
-    add     r2, r0, #DomainLocalModule__m_pDataBlob
-    ldrb    r2, [r2, r1]
-    tst     r2, #1
-    beq     LOCAL_LABEL(CallCppHelper1)
-
-    bx      lr
-
-LOCAL_LABEL(CallCppHelper1):
-    // Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b     C_FUNC(JIT_GetSharedNonGCStaticBase_Helper)
-    LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-    bx lr
-    LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-
-    // If class is not initialized, bail to C++ helper
-    add     r2, r0, #DomainLocalModule__m_pDataBlob
-    ldrb    r2, [r2, r1]
-    tst     r2, #1
-    beq     LOCAL_LABEL(CallCppHelper3)
-
-    ldr     r0, [r0, #DomainLocalModule__m_pGCStatics]
-    bx lr
-
-LOCAL_LABEL(CallCppHelper3):
-    // Tail call Jit_GetSharedGCStaticBase_Helper
-    b     C_FUNC(JIT_GetSharedGCStaticBase_Helper)
-    LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-    ldr     r0, [r0, #DomainLocalModule__m_pGCStatics]
-    bx lr
-    LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-#endif
-
-
 #define __wbScratch r3
 #define pShadow r7
 
@@ -660,6 +472,9 @@ LOCAL_LABEL(CallCppHelper3):
         __\name\()__g_ephemeral_low_offset = 0xffff
         __\name\()__g_ephemeral_high_offset = 0xffff
         __\name\()__g_card_table_offset = 0xffff
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        __\name\()__g_sw_ww_table_offset = 0xffff
+#endif
      .endm
 
     .macro LOAD_GC_GLOBAL name, regName, globalName
@@ -702,6 +517,28 @@ LOCAL_LABEL(CallCppHelper3):
 0:
     .endm
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    .macro UPDATE_WRITE_WATCH_TABLE name, ptrReg, mp, tmpReg
+
+        LOAD_GC_GLOBAL \name, __wbScratch, g_write_watch_table
+        cbz __wbScratch, 2f
+        add __wbScratch, __wbScratch, \ptrReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
+
+        .if(\mp)
+            ldrb \tmpReg, [__wbScratch]
+            cmp \tmpReg, #0xff
+            itt ne
+            movne \tmpReg, 0xff
+            strbne \tmpReg, [__wbScratch]
+        .else
+            mov \tmpReg, #0xff
+            strb \tmpReg, [__wbScratch]
+        .endif
+
+2:
+    .endm
+#endif
+
     .macro CHECK_GC_HEAP_RANGE name, ptrReg, label
         LOAD_GC_GLOBAL \name, __wbScratch, g_lowest_address
         cmp \ptrReg, __wbScratch
@@ -720,6 +557,9 @@ LOCAL_LABEL(CallCppHelper3):
 
         str r1, [r0]
         UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
+#endif
         UPDATE_CARD_TABLE \name, r0, r1, \mp, \post, r0
         bx lr
     LEAF_END_MARKED \name, _TEXT
@@ -731,6 +571,9 @@ LOCAL_LABEL(CallCppHelper3):
         str r1, [r0]
         CHECK_GC_HEAP_RANGE \name, r0, 1f
         UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        UPDATE_WRITE_WATCH_TABLE \name, r0, 0, r12
+#endif
         UPDATE_CARD_TABLE \name, r0, r1, 0, \post, r0
 1:
         bx lr
@@ -744,6 +587,9 @@ LOCAL_LABEL(CallCppHelper3):
         str r1, [r0]
         CHECK_GC_HEAP_RANGE \name, r0, 1f
         UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        UPDATE_WRITE_WATCH_TABLE \name, r0, 1, r12
+#endif
         UPDATE_CARD_TABLE \name, r0, r1, 1, \post, r0
         bx lr
 1:
@@ -763,6 +609,9 @@ LOCAL_LABEL(CallCppHelper3):
         str r2, [r0]
         CHECK_GC_HEAP_RANGE \name, r0, 1f
         UPDATE_GC_SHADOW \name, r0, r2
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
+#endif
         UPDATE_CARD_TABLE \name, r0, r2, \mp, \post, r2
 1:
         add r0, #4
@@ -780,6 +629,9 @@ LOCAL_LABEL(CallCppHelper3):
         .word __\name\()__g_ephemeral_low_offset
         .word __\name\()__g_ephemeral_high_offset
         .word __\name\()__g_card_table_offset
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        .word __\name\()__g_write_watch_table_offset
+#endif
     .endm
 
     // There 4 versions of each write barriers. A 2x2 combination of multi-proc/single-proc and pre/post grow version
@@ -877,7 +729,6 @@ DelayLoad_MethodCall:
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     bx r12
 
     NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
@@ -944,22 +795,19 @@ DelayLoad_Helper\suffix:
 // ------------------------------------------------------------------
 // Hijack function for functions which return a value type
         NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-        PROLOG_PUSH "{r0,r4-r11,lr}"
+        // saving r1 as well, as it can have partial return value when return is > 32 bits
+        PROLOG_PUSH "{r0,r1,r2,r4-r11,lr}"
 
         PROLOG_VPUSH "{d0-d3}"    // saving as d0-d3 can have the floating point return value
-        PROLOG_PUSH "{r1}"        // saving as r1 can have partial return value when return is > 32 bits
-        alloc_stack 4             // 8 byte align
 
         CHECK_STACK_ALIGNMENT
 
-        add r0, sp, #40
+        add r0, sp, #32
         bl C_FUNC(OnHijackWorker)
 
-        free_stack 4
-        EPILOG_POP "{r1}"
         EPILOG_VPOP "{d0-d3}"
 
-        EPILOG_POP "{r0,r4-r11,pc}"
+        EPILOG_POP "{r0,r1,r2,r4-r11,pc}"
         NESTED_END OnHijackTripThread, _TEXT
 #endif
 
@@ -1014,3 +862,38 @@ ProbeLoop:
     NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+    LEAF_ENTRY JIT_PollGC, _TEXT
+#if defined(__clang__)
+        ldr     r2, =g_TrapReturningThreads-(1f+4)
+1:
+        add     r2, pc
+#else
+        ldr     r2, =g_TrapReturningThreads
+#endif
+        ldr     r2, [r2]
+        cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
+        bx lr
+LOCAL_LABEL(JIT_PollGCRarePath):
+#if defined(__clang__)
+        ldr     r2, =g_pPollGC-(1f+4)
+1:
+        add     r2, pc
+#else
+        ldr     r2, =g_pPollGC
+#endif
+        ldr     r2, [r2]
+        EPILOG_BRANCH_REG r2
+    LEAF_END JIT_PollGC, _TEXT
+
+
+//x0 -This pointer
+//x1 -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    ldr  r12, [r12, #ThisPtrRetBufPrecodeData__Target]
+    // Use XOR swap technique to set avoid the need to spill to the stack
+    eor  r0, r0, r1
+    eor  r1, r0, r1
+    eor  r0, r0, r1
+    EPILOG_BRANCH_REG r12
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

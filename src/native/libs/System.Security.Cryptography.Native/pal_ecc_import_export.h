@@ -56,6 +56,23 @@ PALEXPORT int32_t CryptoNative_EcKeyCreateByKeyParameters(
     uint8_t* d, int32_t dLength);
 
 /*
+Gets the NID of the curve name as an oid value for the specified EVP_PKEY.
+
+Returns 1 upon success, otherwise 0.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyGetEcGroupNid(const EVP_PKEY *pkey, int32_t* nidName);
+
+/*
+Returns the EC curve type of the given EVP_PKEY.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
+    const EVP_PKEY* pkey,
+    int32_t includePrivate,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD);
+
+/*
 Returns the new EC_KEY instance using the explicit parameters.
 */
 PALEXPORT EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
@@ -71,3 +88,22 @@ PALEXPORT EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     uint8_t* order, int32_t nLength,
     uint8_t* cofactor, int32_t hLength,
     uint8_t* seed, int32_t sLength);
+
+/*
+Returns the ECC curve parameters of the given EVP_PKEY.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
+    const EVP_PKEY* pkey,
+    int32_t includePrivate,
+    ECCurveType* curveType,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD,
+    BIGNUM** p, int32_t* cbP,
+    BIGNUM** a, int32_t* cbA,
+    BIGNUM** b, int32_t* cbB,
+    BIGNUM** gx, int32_t* cbGx,
+    BIGNUM** gy, int32_t* cbGy,
+    BIGNUM** order, int32_t* cbOrder,
+    BIGNUM** cofactor, int32_t* cbCofactor,
+    BIGNUM** seed, int32_t* cbSeed);

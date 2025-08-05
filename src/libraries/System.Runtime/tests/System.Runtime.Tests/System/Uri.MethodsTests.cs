@@ -395,20 +395,28 @@ namespace System.Tests
         {
             Uri uri2 = obj as Uri;
 
-            if (uri1 != null)
+            if (uri1 is not null)
             {
                 Assert.Equal(expected, uri1.Equals(obj));
 
-                if (uri2 != null && expected)
+                if (uri2 is not null)
                 {
-                    Assert.Equal(uri1.GetHashCode(), uri2.GetHashCode());
+                    Assert.Equal(expected, uri1.Equals(uri2));
+                    Assert.Equal(expected, uri2.Equals(uri1));
+
+                    if (expected)
+                    {
+                        Assert.Equal(uri1.GetHashCode(), uri2.GetHashCode());
+                    }
                 }
             }
 
-            if (!(obj is string))
+            if (obj is not string)
             {
                 Assert.Equal(expected, uri1 == uri2);
+                Assert.Equal(expected, uri2 == uri1);
                 Assert.Equal(!expected, uri1 != uri2);
+                Assert.Equal(!expected, uri2 != uri1);
             }
         }
 
@@ -435,7 +443,7 @@ namespace System.Tests
         public void EscapeUriString_Long_Success()
         {
             string s;
-            const int LongCount = 65520 + 1;
+            const int LongCount = 100_000;
 
             s = new string('a', LongCount);
             Assert.Equal(s, Uri.EscapeUriString(s));

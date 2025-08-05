@@ -75,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitSUB(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3);
+                            encoder.EmitLDAR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3);
                             encoder.EmitCMP(encoder.TargetRegister.Arg2, 0);
                             encoder.EmitRETIfEqual();
 
@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
 
                             encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
+                            encoder.EmitLDAR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
                             encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual();
 
@@ -186,6 +186,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // These are all simple: just get the thing from the dictionary and we're done
                 case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.NecessaryTypeHandle:
                 case ReadyToRunHelperId.MethodHandle:
                 case ReadyToRunHelperId.FieldHandle:
                 case ReadyToRunHelperId.MethodDictionary:

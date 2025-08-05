@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Security;
+using System.Threading;
 
 namespace System.Diagnostics.Metrics
 {
@@ -14,16 +15,19 @@ namespace System.Diagnostics.Metrics
 
         // This can be called concurrently with Update()
         public abstract void Collect(Instrument instrument, Action<LabeledAggregationStatistics> aggregationVisitFunc);
-    }
 
+        public abstract int ID { get; }
+    }
 
     internal sealed class InstrumentState<TAggregator> : InstrumentState
         where TAggregator : Aggregator
     {
         private AggregatorStore<TAggregator> _aggregatorStore;
+        private static int s_idCounter;
 
         public InstrumentState(Func<TAggregator?> createAggregatorFunc)
         {
+            ID = Interlocked.Increment(ref s_idCounter);
             _aggregatorStore = new AggregatorStore<TAggregator>(createAggregatorFunc);
         }
 
@@ -38,5 +42,7 @@ namespace System.Diagnostics.Metrics
             TAggregator? aggregator = _aggregatorStore.GetAggregator(labels);
             aggregator?.Update(measurement);
         }
+
+        public override int ID { get; }
     }
 }

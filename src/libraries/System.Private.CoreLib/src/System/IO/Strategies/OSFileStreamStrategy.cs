@@ -74,7 +74,7 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public sealed override unsafe long Length => _fileHandle.GetFileLength();
+        public sealed override long Length => _fileHandle.GetFileLength();
 
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
@@ -184,9 +184,9 @@ namespace System.IO.Strategies
             SetLengthCore(value);
         }
 
-        protected unsafe void SetLengthCore(long value)
+        protected void SetLengthCore(long value)
         {
-            Debug.Assert(value >= 0, "value >= 0");
+            Debug.Assert(value >= 0);
 
             RandomAccess.SetFileLength(_fileHandle, value);
             Debug.Assert(!_fileHandle.TryGetCachedLength(out _), "If length can be cached (file opened for reading, not shared for writing), it should be impossible to modify file length");

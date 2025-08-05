@@ -58,7 +58,6 @@ extern "C" void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransit
 extern "C" void STDCALL GenericPInvokeCalliHelper(void);
 
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
-extern "C" void STDCALL ExternalMethodFixupPatchLabel(void);
 
 extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);
@@ -69,11 +68,6 @@ extern "C" void STDCALL DelayLoad_MethodCall();
 extern "C" void STDCALL DelayLoad_Helper();
 extern "C" void STDCALL DelayLoad_Helper_Obj();
 extern "C" void STDCALL DelayLoad_Helper_ObjObj();
-#endif
-
-#if (defined(TARGET_X86) || defined(TARGET_AMD64))
-extern "C" DWORD xmmYmmStateSupport();
-extern "C" DWORD avx512StateSupport();
 #endif
 
 #ifdef DACCESS_COMPILE

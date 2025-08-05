@@ -5,12 +5,16 @@
 // Generic functions to compute the hashcode value of types
 // ---------------------------------------------------------------------------
 
+using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Internal.NativeFormat
 {
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public static class TypeHashingAlgorithms
     {
         public struct HashCodeBuilder

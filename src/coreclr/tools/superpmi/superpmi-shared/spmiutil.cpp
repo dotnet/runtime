@@ -9,6 +9,9 @@
 #include "logging.h"
 #include "spmiutil.h"
 
+#include <minipal/debugger.h>
+#include <minipal/random.h>
+
 static bool breakOnDebugBreakorAV = false;
 
 bool BreakOnDebugBreakorAV()
@@ -35,12 +38,12 @@ void SetBreakOnException(bool value)
 
 void DebugBreakorAV(int val)
 {
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         if (val == 0)
-            __debugbreak();
+            DEBUG_BREAK;
         if (BreakOnDebugBreakorAV())
-            __debugbreak();
+            DEBUG_BREAK;
     }
 
     int exception_code = EXCEPTIONCODE_DebugBreakorAV + val;
@@ -233,13 +236,8 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 
     // Append a random string to improve uniqueness.
     //
-    unsigned randomNumber = 0;
-
-#ifdef TARGET_UNIX
-    PAL_Random(&randomNumber, sizeof(randomNumber));
-#else  // !TARGET_UNIX
-    rand_s(&randomNumber);
-#endif // !TARGET_UNIX
+    unsigned int randomNumber = 0;
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
 
     WCHAR randomString[randomStringLength + 1];
     FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);
@@ -477,6 +475,54 @@ void PutArm32MovtConstant(UINT32* p, unsigned con)
     instr = (instr & 0xfbf08f00) | (imm4 << 16) | (i << 26) | (imm3 << 12) | imm8;
     *(UINT16*)p       = (UINT16)(instr >> 16);
     *((UINT16*)p + 1) = (UINT16)instr;
+}
+
+//*****************************************************************************
+//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+INT64 GetRiscV64AuipcItype(UINT32 * pCode)
+{
+    enum
+    {
+        OpcodeAuipc = 0x00000017,
+        OpcodeAddi = 0x00000013,
+        OpcodeLd = 0x00003003,
+        OpcodeJalr = 0x00000067,
+        OpcodeUTypeMask = 0x0000007F,
+        OpcodeITypeMask = 0x0000307F,
+    };
+
+    UINT32 auipc = pCode[0];
+    _ASSERTE((auipc & OpcodeUTypeMask) == OpcodeAuipc);
+    int auipcRegDest = (auipc >> 7) & 0x1F;
+    _ASSERTE(auipcRegDest != 0);
+
+    INT64 hi20 = (INT32(auipc) >> 12) << 12;
+
+    UINT32 iType = pCode[1];
+    UINT32 opcode = iType & OpcodeITypeMask;
+    _ASSERTE(opcode == OpcodeAddi || opcode == OpcodeLd || opcode == OpcodeJalr);
+    int iTypeRegSrc = (iType >> 15) & 0x1F;
+    _ASSERTE(auipcRegDest == iTypeRegSrc);
+
+    INT64 lo12 = INT32(iType) >> 20;
+
+    return hi20 + lo12;
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset)
+{
+    INT32 lo12 = (offset << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+    INT32 hi20 = INT32(offset - lo12);
+    _ASSERTE(INT64(hi20) + INT64(lo12) == offset);
+
+    _ASSERTE(GetRiscV64AuipcItype(pCode) == 0);
+    pCode[0] |= hi20;
+    pCode[1] |= lo12 << 20;
+    _ASSERTE(GetRiscV64AuipcItype(pCode) == offset);
 }
 
 template<typename TPrint>

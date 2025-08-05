@@ -7,16 +7,16 @@ using System.IO;
 namespace Microsoft.Extensions.FileProviders.Physical
 {
     /// <summary>
-    /// Represents a file on a physical filesystem
+    /// Represents a file on a physical file system.
     /// </summary>
     public class PhysicalFileInfo : IFileInfo
     {
         private readonly FileInfo _info;
 
         /// <summary>
-        /// Initializes an instance of <see cref="PhysicalFileInfo"/> that wraps an instance of <see cref="System.IO.FileInfo"/>
+        /// Initializes an instance of <see cref="PhysicalFileInfo"/> that wraps an instance of <see cref="System.IO.FileInfo"/>.
         /// </summary>
-        /// <param name="info">The <see cref="System.IO.FileInfo"/></param>
+        /// <param name="info">The <see cref="System.IO.FileInfo"/>.</param>
         public PhysicalFileInfo(FileInfo info)
         {
             _info = info;
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         public DateTimeOffset LastModified => _info.LastWriteTimeUtc;
 
         /// <summary>
-        /// Always false.
+        /// Gets a value that's always <see langword="false"/>.
         /// </summary>
         public bool IsDirectory => false;
 

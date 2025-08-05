@@ -3,9 +3,6 @@
 
 ; ***********************************************************************
 ; File: JitHelpers_SingleAppDomain.asm
-;
-; Notes: JIT Static access helpers when coreclr host specifies single
-;        appdomain flag
 ; ***********************************************************************
 
 include AsmMacros.inc
@@ -14,45 +11,36 @@ include asmconstants.inc
 ; Min amount of stack space that a nested function should allocate.
 MIN_SIZE equ 28h
 
-extern JIT_GetSharedNonGCStaticBase_Helper:proc
-extern JIT_GetSharedGCStaticBase_Helper:proc
+EXTERN  g_pGetGCStaticBase:QWORD
+EXTERN  g_pGetNonGCStaticBase:QWORD
 
-LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
         ; If class is not initialized, bail to C++ helper
-        test    byte ptr [rcx + OFFSETOF__DomainLocalModule__m_pDataBlob + rdx], 1
-        jz      CallHelper
-        mov     rax, rcx
+        mov     rax, [rcx + OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+        test    al, 1
+        jnz     CallHelper
         REPRET
 
     align 16
     CallHelper:
-        ; Tail call JIT_GetSharedNonGCStaticBase_Helper
-        jmp     JIT_GetSharedNonGCStaticBase_Helper
-LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+        mov     rcx, [rcx + OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+        mov     rax, g_pGetNonGCStaticBase
+        TAILJMP_RAX
+LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
-LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-        mov     rax, rcx
-        ret
-LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
         ; If class is not initialized, bail to C++ helper
-        test    byte ptr [rcx + OFFSETOF__DomainLocalModule__m_pDataBlob + rdx], 1
-        jz      CallHelper
-
-        mov     rax, [rcx + OFFSETOF__DomainLocalModule__m_pGCStatics]
+        mov     rax,   [rcx + OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+        test    al, 1
+        jnz     CallHelper
         REPRET
 
     align 16
     CallHelper:
-        ; Tail call Jit_GetSharedGCStaticBase_Helper
-        jmp     JIT_GetSharedGCStaticBase_Helper
-LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-
-LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-        mov     rax, [rcx + OFFSETOF__DomainLocalModule__m_pGCStatics]
-        ret
-LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
+        mov     rcx, [rcx + OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+        mov     rax, g_pGetGCStaticBase
+        TAILJMP_RAX
+LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
         end
 

@@ -21,7 +21,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         Stream stream = Serialize(twoDimensions);
 
         object deserialized = Deserialize(stream);
-        deserialized.Should().BeEquivalentTo(twoDimensions);
+        Assert.Equal(twoDimensions, deserialized);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         // Raw data will be 0, 1, 10, 11 in memory and in the binary stream
         object deserialized = Deserialize(Serialize(twoDimensions));
 
-        deserialized.Should().BeEquivalentTo(twoDimensions);
+        Assert.Equal(twoDimensions, deserialized);
 
         int[,,] threeDimensions = new int[2, 2, 2];
         threeDimensions[0, 0, 0] = 888;
@@ -49,7 +49,85 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         threeDimensions[1, 1, 1] = 111;
 
         deserialized = Deserialize(Serialize(threeDimensions));
-        deserialized.Should().BeEquivalentTo(threeDimensions);
+        Assert.Equal(threeDimensions, deserialized);
+    }
+
+    [Serializable]
+    public class CustomComparable : IComparable, IEquatable<CustomComparable>
+    {
+        public int Integer;
+
+        public int CompareTo(object? obj)
+        {
+            CustomComparable other = (CustomComparable)obj;
+
+            return other.Integer.CompareTo(other.Integer);
+        }
+
+        public bool Equals(CustomComparable? other) => Integer == other.Integer;
+
+        public override int GetHashCode() => Integer;
+
+        public override bool Equals(object? obj) => obj is CustomComparable other && Equals(other);
+    }
+
+    [Fact]
+    public void MultiDimensionalArrayOfMultiDimensionalArrays_Integers()
+        => MultiDimensionalArrayOfMultiDimensionalArrays<int>(static (x, y) => x * y);
+
+    [Fact]
+    public void MultiDimensionalArrayOfMultiDimensionalArrays_Doubles()
+        => MultiDimensionalArrayOfMultiDimensionalArrays<double>(static (x, y) => x * y / 10);
+
+    [Fact]
+    public void MultiDimensionalArrayOfMultiDimensionalArrays_Strings()
+        => MultiDimensionalArrayOfMultiDimensionalArrays<string>(static (x, y) => $"{x},{y}");
+
+    [Fact]
+    public void MultiDimensionalArrayOfMultiDimensionalArrays_Abstraction()
+        => MultiDimensionalArrayOfMultiDimensionalArrays<IComparable>(static (x, y) => x switch
+        {
+            0 => x * y, // int
+            1 => x + (double)y / 10, // double
+            2 => $"{x},{y}", // string
+            _ => new CustomComparable() { Integer = x * y }
+        });
+
+    [Fact]
+    public void MultiDimensionalArrayOfMultiDimensionalArrays_Objects()
+        => MultiDimensionalArrayOfMultiDimensionalArrays<object>(static (x, y) => x switch
+        {
+            0 => x * y, // int
+            1 => x + (double)y / 10, // double
+            2 => $"{x},{y}", // string
+            _ => new CustomComparable() { Integer = x * y }
+        });
+
+    private static void MultiDimensionalArrayOfMultiDimensionalArrays<TValue>(Func<int, int, TValue> valueFactory)
+    {
+        TValue[,][,] input = new TValue[3, 3][,];
+        for (int i = 0; i < input.GetLength(0); i++)
+        {
+            for (int j = 0; j < input.GetLength(1); j++)
+            {
+                TValue[,] contained = new TValue[i + 1, j + 1];
+                for (int k = 0; k < contained.GetLength(0); k++)
+                {
+                    for (int l = 0; l < contained.GetLength(1); l++)
+                    {
+                        contained[k, l] = valueFactory(k, l);
+                    }
+                }
+
+                input[i, j] = contained;
+
+                object deserializedMd = Deserialize(Serialize(contained));
+                Assert.Equal(contained, deserializedMd);
+            }
+        }
+
+        object deserializedJagged = Deserialize(Serialize(input));
+        Assert.Equal(input, deserializedJagged);
     }
 
     [Fact]
@@ -58,19 +136,19 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         // Didn't even know this was possible.
         int[,] twoDimensionOneEmpty = new int[1, 0];
         object deserialized = Deserialize(Serialize(twoDimensionOneEmpty));
-        deserialized.Should().BeEquivalentTo(twoDimensionOneEmpty);
+        Assert.Equal(twoDimensionOneEmpty, deserialized);
 
         int[,] twoDimensionEmptyOne = new int[0, 1];
         deserialized = Deserialize(Serialize(twoDimensionEmptyOne));
-        deserialized.Should().BeEquivalentTo(twoDimensionEmptyOne);
+        Assert.Equal(twoDimensionEmptyOne, deserialized);
 
         int[,] twoDimensionEmpty = new int[0, 0];
         deserialized = Deserialize(Serialize(twoDimensionEmpty));
-        deserialized.Should().BeEquivalentTo(twoDimensionEmpty);
+        Assert.Equal(twoDimensionEmpty, deserialized);
 
         int[,,] threeDimension = new int[1, 0, 1];
         deserialized = Deserialize(Serialize(threeDimension));
-        deserialized.Should().BeEquivalentTo(threeDimension);
+        Assert.Equal(threeDimension, deserialized);
     }
 
     [Theory]
@@ -82,7 +160,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         InitArray(array);
 
         Array deserialized = (Array)Deserialize(Serialize(array));
-        deserialized.Should().BeEquivalentTo(deserialized);
+        Assert.Equal(array, deserialized);
     }
 
     public static TheoryData<int[]> DimensionLengthsTestData { get; } = new()
@@ -108,7 +186,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         InitArray(array);
 
         Array deserialized = (Array)Deserialize(Serialize(array));
-        deserialized.Should().BeEquivalentTo(deserialized);
+        Assert.Equal(array, deserialized);
     }
 
     private static void InitArray(Array array)

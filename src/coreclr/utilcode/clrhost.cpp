@@ -18,7 +18,25 @@ extern "C" IMAGE_DOS_HEADER __ImageBase;
 static void* pImageBase = NULL;
 #endif
 
+#ifdef DACCESS_COMPILE
+
+TADDR g_ClrModuleBase;
+
 void* GetClrModuleBase()
+{
+    return (void*)g_ClrModuleBase;
+}
+
+#else // DACCESS_COMPILE
+
+void* GetClrModuleBase()
+{
+    return GetCurrentModuleBase();
+}
+
+#endif // DACCESS_COMPILE
+
+void* GetCurrentModuleBase()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -44,7 +62,13 @@ DWORD GetClrModulePathName(SString& buffer)
 #ifdef HOST_WINDOWS
     return WszGetModuleFileName((HINSTANCE)GetClrModuleBase(), buffer);
 #else
-    return WszGetModuleFileName(PAL_GetPalHostModule(), buffer);
+#ifndef HOST_WASM
+    HMODULE hModule = PAL_GetPalHostModule();
+#else
+    // on wasm the PAL library is statically linked
+    HMODULE hModule = nullptr;
+#endif
+    return WszGetModuleFileName(hModule, buffer);
 #endif
 }
 

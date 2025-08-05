@@ -13,7 +13,7 @@ struct ArgBufferLayout;
 class TailCallHelp
 {
 public:
-    static FCDECL2(void*, AllocTailCallArgBuffer, INT32, void*);
+    static FCDECL2(void*, AllocTailCallArgBufferWorker, INT32, void*);
     static FCDECL2(void*, GetTailCallInfo, void**, void**);
 
     static void CreateTailCallHelperStubs(

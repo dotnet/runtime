@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -25,7 +25,7 @@ namespace System.Reflection.Metadata
         /// Positive value is array rank.
         /// Negative value is modifier encoded using constants defined in <see cref="TypeNameParserHelpers"/>.
         /// </summary>
-        private readonly sbyte _rankOrModifier;
+        private readonly int _rankOrModifier;
         /// <summary>
         /// To avoid the need of allocating a string for all declaring types (example: A+B+C+D+E+F+G),
         /// length of the name is stored and the fullName passed in ctor represents the full name of the nested type.
@@ -39,7 +39,7 @@ namespace System.Reflection.Metadata
 #else
         private readonly ImmutableArray<TypeName> _genericArguments;
 #endif
-        private string? _name, _fullName, _assemblyQualifiedName;
+        private string? _name, _namespace, _fullName, _assemblyQualifiedName;
 
         internal TypeName(string? fullName,
             AssemblyNameInfo? assemblyName,
@@ -50,7 +50,7 @@ namespace System.Reflection.Metadata
 #else
             ImmutableArray<TypeName>.Builder? genericTypeArguments = default,
 #endif
-            sbyte rankOrModifier = default,
+            int rankOrModifier = default,
             int nestedNameLength = -1)
         {
             _fullName = fullName;
@@ -69,6 +69,25 @@ namespace System.Reflection.Metadata
 #endif
         }
 
+#if SYSTEM_REFLECTION_METADATA
+        private TypeName(string? fullName,
+            AssemblyNameInfo? assemblyName,
+            TypeName? elementOrGenericType,
+            TypeName? declaringType,
+            ImmutableArray<TypeName> genericTypeArguments,
+            int rankOrModifier = default,
+            int nestedNameLength = -1)
+        {
+            _fullName = fullName;
+            AssemblyName = assemblyName;
+            _elementOrGenericType = elementOrGenericType;
+            _declaringType = declaringType;
+            _genericArguments = genericTypeArguments;
+            _rankOrModifier = rankOrModifier;
+            _nestedNameLength = nestedNameLength;
+        }
+#endif
+
         /// <summary>
         /// The assembly-qualified name of the type; e.g., "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".
         /// </summary>
@@ -76,7 +95,39 @@ namespace System.Reflection.Metadata
         /// If <see cref="AssemblyName"/> returns null, simply returns <see cref="FullName"/>.
         /// </remarks>
         public string AssemblyQualifiedName
-            => _assemblyQualifiedName ??= AssemblyName is null ? FullName : $"{FullName}, {AssemblyName.FullName}";
+        {
+            get
+            {
+                if (_assemblyQualifiedName is null)
+                {
+                    if (_fullName is not null && AssemblyName is null)
+                    {
+                        // _fullName may carry more information than FullName property, so we need to use FullName property.
+                        _assemblyQualifiedName = FullName;
+                    }
+                    else
+                    {
+                        ValueStringBuilder builder = new(stackalloc char[256]);
+                        AppendFullName(ref builder); // see recursion comments in AppendFullName
+                        if (AssemblyName is not null)
+                        {
+                            builder.Append(", ");
+                            AssemblyName.AppendFullName(ref builder);
+                        }
+                        _assemblyQualifiedName = builder.ToString();
+
+                        if (AssemblyName is null)
+                        {
+                            // If the type name was not created from a assembly-qualified name,
+                            // the FullName and AssemblyQualifiedName are the same.
+                            _fullName = _assemblyQualifiedName;
+                        }
+                    }
+                }
+
+                return _assemblyQualifiedName;
+            }
+        }
 
         /// <summary>
         /// Returns assembly name which contains this type, or null if this <see cref="TypeName"/> was not
@@ -125,25 +176,9 @@ namespace System.Reflection.Metadata
             {
                 if (_fullName is null)
                 {
-                    if (IsConstructedGenericType)
-                    {
-                        _fullName = TypeNameParserHelpers.GetGenericTypeFullName(GetGenericTypeDefinition().FullName.AsSpan(),
-#if SYSTEM_PRIVATE_CORELIB
-                            CollectionsMarshal.AsSpan(_genericArguments));
-#else
-                            _genericArguments.AsSpan());
-#endif
-                    }
-                    else if (IsArray || IsPointer || IsByRef)
-                    {
-                        ValueStringBuilder builder = new(stackalloc char[128]);
-                        builder.Append(GetElementType().FullName);
-                        _fullName = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
-                    }
-                    else
-                    {
-                        Debug.Fail("Pre-allocated full name should have been provided in the ctor");
-                    }
+                    ValueStringBuilder builder = new(stackalloc char[128]);
+                    AppendFullName(ref builder);
+                    _fullName = builder.ToString();
                 }
                 else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
                 {
@@ -153,6 +188,58 @@ namespace System.Reflection.Metadata
                 }
 
                 return _fullName!;
+            }
+        }
+
+        private void AppendFullName(ref ValueStringBuilder builder)
+        {
+            // This is a recursive method over potentially hostile input. Protection against DoS is offered
+            // via the [Try]Parse method and TypeNameParserOptions.MaxNodes property at construction time.
+            // This FullName property getter and related methods assume that this TypeName instance has an
+            // acceptable node count.
+            //
+            // The node count controls the total amount of work performed by this method, including:
+            // - The max possible stack depth due to the recursive methods calls.
+
+            if (_fullName is null)
+            {
+                if (IsConstructedGenericType)
+                {
+                    GetGenericTypeDefinition().AppendFullName(ref builder);
+                    builder.Append('[');
+                    foreach (TypeName genericArg in GetGenericArguments())
+                    {
+                        builder.Append('[');
+                        genericArg.AppendFullName(ref builder);
+                        // Generic arguments need to be always fully qualified.
+                        if (genericArg.AssemblyName is not null)
+                        {
+                            builder.Append(", ");
+                            genericArg.AssemblyName.AppendFullName(ref builder);
+                        }
+                        builder.Append("],");
+                    }
+                    builder[builder.Length - 1] = ']'; // replace ',' with ']'
+                }
+                else if (IsArray || IsPointer || IsByRef)
+                {
+                    GetElementType().AppendFullName(ref builder);
+                    TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+                }
+                else
+                {
+                    Debug.Fail("Pre-allocated full name should have been provided in the ctor");
+                }
+            }
+            else if (_nestedNameLength > 0 && _fullName.Length > _nestedNameLength) // Declaring types
+            {
+                // Stored fullName represents the full name of the nested type.
+                // Example: Namespace.Declaring+Nested
+                builder.Append(_fullName.AsSpan(0, _nestedNameLength));
+            }
+            else
+            {
+                builder.Append(_fullName);
             }
         }
 
@@ -187,6 +274,7 @@ namespace System.Reflection.Metadata
         /// This is because determining whether a type truly is a generic type requires loading the type
         /// and performing a runtime check.</para>
         /// </remarks>
+        [MemberNotNullWhen(false, nameof(_elementOrGenericType))]
         public bool IsSimple => _elementOrGenericType is null;
 
         /// <summary>
@@ -199,6 +287,7 @@ namespace System.Reflection.Metadata
         /// Returns true if this is a nested type (e.g., "Namespace.Declaring+Nested").
         /// For nested types <seealso cref="DeclaringType"/> returns their declaring type.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(_declaringType))]
         public bool IsNested => _declaringType is not null;
 
         /// <summary>
@@ -228,27 +317,96 @@ namespace System.Reflection.Metadata
             {
                 if (_name is null)
                 {
-                    if (IsConstructedGenericType)
-                    {
-                        _name = TypeNameParserHelpers.GetName(GetGenericTypeDefinition().FullName.AsSpan()).ToString();
-                    }
-                    else if (IsPointer || IsByRef || IsArray)
-                    {
-                        ValueStringBuilder builder = new(stackalloc char[64]);
-                        builder.Append(GetElementType().Name);
-                        _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
-                    }
-                    else if (_nestedNameLength > 0 && _fullName is not null)
-                    {
-                        _name = TypeNameParserHelpers.GetName(_fullName.AsSpan(0, _nestedNameLength)).ToString();
-                    }
-                    else
-                    {
-                        _name = TypeNameParserHelpers.GetName(FullName.AsSpan()).ToString();
-                    }
+                    ValueStringBuilder builder = new(stackalloc char[64]);
+                    AppendName(ref builder);
+                    _name = builder.ToString();
                 }
 
                 return _name;
+            }
+        }
+
+        private void AppendName(ref ValueStringBuilder builder)
+        {
+            // Lookups to Name and FullName might be recursive. See comments in AppendFullName method.
+
+            if (IsConstructedGenericType)
+            {
+                GetGenericTypeDefinition().AppendName(ref builder);
+            }
+            else if (IsPointer || IsByRef || IsArray)
+            {
+                GetElementType().AppendName(ref builder);
+                TypeNameParserHelpers.AppendRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
+            }
+            else
+            {
+                // _fullName can be null only in constructed generic or modified types, which we handled above.
+                Debug.Assert(_fullName is not null);
+                ReadOnlySpan<char> name = _fullName.AsSpan();
+                if (_nestedNameLength > 0)
+                {
+                    name = name.Slice(0, _nestedNameLength);
+                }
+                if (IsNested)
+                {
+                    // If the type is nested, we know the length of the declaring type's full name.
+                    // Get the characters after that plus one for the '+' separator.
+                    name = name.Slice(_declaringType._nestedNameLength + 1);
+                }
+                else if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(name) is int idx && idx >= 0)
+                {
+                    // If the type is not nested, find the namespace delimiter in the full name and return the substring after it.
+                    name = name.Slice(idx + 1);
+                }
+                builder.Append(name);
+            }
+        }
+
+        /// <summary>
+        /// The namespace of this type; e.g., "System".
+        /// </summary>
+        /// <exception cref="InvalidOperationException">This instance is a nested type.</exception>
+        public string Namespace
+        {
+            get
+            {
+                if (_namespace is null)
+                {
+                    TypeName rootTypeName = this;
+                    while (!rootTypeName.IsSimple)
+                    {
+                        rootTypeName = rootTypeName._elementOrGenericType;
+                    }
+
+                    if (rootTypeName.IsNested)
+                    {
+                        TypeNameParserHelpers.ThrowInvalidOperation_NestedTypeNamespace();
+                    }
+
+                    // By setting the namespace field at the root type name, we avoid recomputing it for all derived names.
+                    if (rootTypeName._namespace is null)
+                    {
+                        // At this point the type does not have a modifier applied to it, so it should have its full name set.
+                        Debug.Assert(rootTypeName._fullName is not null);
+                        ReadOnlySpan<char> rootFullName = rootTypeName._fullName.AsSpan();
+                        if (rootTypeName._nestedNameLength > 0)
+                        {
+                            rootFullName = rootFullName.Slice(0, rootTypeName._nestedNameLength);
+                        }
+                        if (TypeNameParserHelpers.IndexOfNamespaceDelimiter(rootFullName) is int idx && idx >= 0)
+                        {
+                            rootTypeName._namespace = rootFullName.Slice(0, idx).ToString();
+                        }
+                        else
+                        {
+                            rootTypeName._namespace = string.Empty;
+                        }
+                    }
+                    _namespace = rootTypeName._namespace;
+                }
+
+                return _namespace;
             }
         }
 
@@ -280,26 +438,32 @@ namespace System.Reflection.Metadata
         /// </list>
         /// </para>
         /// </remarks>
+        /// <exception cref="OverflowException">The total number of <see cref="TypeName"/> instances that are used to describe
+        /// this instance exceed <see cref="int.MaxValue"/>.</exception>
         public int GetNodeCount()
         {
+            // This method uses checked arithmetic to avoid silent overflows.
+            // It's impossible to parse a TypeName with NodeCount > int.MaxValue
+            // (TypeNameParseOptions.MaxNodes is an int), but it's possible
+            // to create such names with the Make* APIs.
             int result = 1;
 
-            if (IsNested)
+            if (IsArray || IsPointer || IsByRef)
             {
-                result += DeclaringType.GetNodeCount();
+                result = checked(result + GetElementType().GetNodeCount());
             }
             else if (IsConstructedGenericType)
             {
-                result++;
-            }
-            else if (IsArray || IsPointer || IsByRef)
-            {
-                result += GetElementType().GetNodeCount();
-            }
+                result = checked(result + GetGenericTypeDefinition().GetNodeCount());
 
-            foreach (TypeName genericArgument in GetGenericArguments())
+                foreach (TypeName genericArgument in GetGenericArguments())
+                {
+                    result = checked(result + genericArgument.GetNodeCount());
+                }
+            }
+            else if (IsNested)
             {
-                result += genericArgument.GetNodeCount();
+                result = checked(result + DeclaringType.GetNodeCount());
             }
 
             return result;
@@ -364,6 +528,25 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
+        /// Converts any escaped characters in the input type name or namespace.
+        /// </summary>
+        /// <param name="name">The input string containing the name to convert.</param>
+        /// <returns>A string of characters with any escaped characters converted to their unescaped form.</returns>
+        /// <remarks>
+        /// <para>The unescaped string can be used for looking up the type name or namespace in metadata.</para>
+        /// <para>This method removes escape characters even if they precede a character that does not require escaping.</para>
+        /// </remarks>
+        public static string Unescape(string name)
+        {
+            if (name is null)
+            {
+                TypeNameParserHelpers.ThrowArgumentNullException(nameof(name));
+            }
+
+            return TypeNameParserHelpers.Unescape(name);
+        }
+
+        /// <summary>
         /// Gets the number of dimensions in an array.
         /// </summary>
         /// <returns>An integer that contains the number of dimensions in the current type.</returns>
@@ -391,6 +574,113 @@ namespace System.Reflection.Metadata
         ReadOnlySpan<TypeName> GetGenericArguments() => CollectionsMarshal.AsSpan(_genericArguments);
 #else
         ImmutableArray<TypeName> GetGenericArguments() => _genericArguments;
+#endif
+
+#if SYSTEM_REFLECTION_METADATA
+        /// <summary>
+        /// Creates a new <see cref="TypeName" /> object that represents current simple name with provided assembly name.
+        /// </summary>
+        /// <param name="assemblyName">Assembly name.</param>
+        /// <returns>Created simple name.</returns>
+        /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
+        public TypeName WithAssemblyName(AssemblyNameInfo? assemblyName)
+        {
+            // Recursive method. See comments in FullName property getter for more information
+            // on how this is protected against attack.
+            //
+            // n.b. AssemblyNameInfo could also be hostile. The typical exploit is that a single
+            // long AssemblyNameInfo is associated with one or more simple TypeName objects,
+            // leading to an alg. complexity attack (DoS). It's important that TypeName doesn't
+            // actually *do* anything with the provided AssemblyNameInfo rather than store it.
+            // For example, don't use it inside a string concat operation unless the caller
+            // explicitly requested that to happen. If the input is hostile, the caller should
+            // never perform such concats in a loop.
+
+            if (!IsSimple)
+            {
+                TypeNameParserHelpers.ThrowInvalidOperation_NotSimpleName(FullName);
+            }
+
+            TypeName? declaringType = IsNested
+                ? DeclaringType.WithAssemblyName(assemblyName)
+                : null;
+
+            return new TypeName(fullName: _fullName,
+                assemblyName: assemblyName,
+                elementOrGenericType: null,
+                declaringType: declaringType,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
+                nestedNameLength: _nestedNameLength);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="TypeName" /> object representing a one-dimensional array
+        /// of the current type, with a lower bound of zero.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object representing a one-dimensional array
+        /// of the current type, with a lower bound of zero.
+        /// </returns>
+        public TypeName MakeSZArrayTypeName() => MakeElementTypeName(TypeNameParserHelpers.SZArray);
+
+        /// <summary>
+        /// Creates a <see cref="TypeName" /> object representing an array of the current type,
+        /// with the specified number of dimensions.
+        /// </summary>
+        /// <param name="rank">The number of dimensions for the array. This number must be more than zero and less than or equal to 32.</param>
+        /// <returns>
+        /// A <see cref="TypeName" /> object representing an array of the current type,
+        /// with the specified number of dimensions.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">rank is invalid. For example, 0 or negative.</exception>
+        public TypeName MakeArrayTypeName(int rank)
+            => rank <= 0
+                ? throw new ArgumentOutOfRangeException(nameof(rank))
+                : MakeElementTypeName(rank);
+
+        /// <summary>
+        /// Creates a <see cref="TypeName" /> object that represents a pointer to the current type.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object that represents a pointer to the current type.
+        /// </returns>
+        public TypeName MakePointerTypeName() => MakeElementTypeName(TypeNameParserHelpers.Pointer);
+
+        /// <summary>
+        /// Creates a <see cref="TypeName" /> object that represents a managed reference to the current type.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object that represents a managed reference to the current type.
+        /// </returns>
+        public TypeName MakeByRefTypeName() => MakeElementTypeName(TypeNameParserHelpers.ByRef);
+
+        /// <summary>
+        /// Creates a new constructed generic type name.
+        /// </summary>
+        /// <param name="typeArguments">An array of type names to be used as generic arguments of the current simple type name.</param>
+        /// <returns>
+        /// A <see cref="TypeName" /> representing the constructed type name formed by using the elements
+        /// of <paramref name="typeArguments"/> for the generic arguments of the current simple type name.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
+        public TypeName MakeGenericTypeName(ImmutableArray<TypeName> typeArguments)
+        {
+            if (!IsSimple)
+            {
+                TypeNameParserHelpers.ThrowInvalidOperation_NotSimpleName(FullName);
+            }
+
+            return new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, declaringType: _declaringType, genericTypeArguments: typeArguments);
+        }
+
+        private TypeName MakeElementTypeName(int rankOrModifier)
+            => new TypeName(
+                fullName: null,
+                assemblyName: AssemblyName,
+                elementOrGenericType: this,
+                declaringType: null,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
+                rankOrModifier: rankOrModifier);
 #endif
     }
 }

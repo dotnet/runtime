@@ -1,0 +1,117 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "Release",
+            "description": "Compile project with release build settings",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build/out/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": ["Linux"]
+                },
+                "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+                    "copySources": true,
+                    "rsyncCommandArgs": ["-t", "--delete", "--delete-excluded"],
+                    "copySourcesOptions": {
+                        "method": "rsync"
+                    }
+                }
+            }
+        },
+        {
+            "name": "Debug",
+            "description": "Compile project with debug build settings",
+            "inherits": "Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "ReleaseClang",
+            "displayName": "Release clang",
+            "inherits": "Release",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "DebugClang",
+            "inherits": "Debug",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "DebugGCC",
+            "inherits": "Debug",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "ReleaseGCC",
+            "inherits": "Release",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "Windows",
+            "displayName": "Debug VS",
+            "description": "Compile project with VS",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": ["Windows"]
+                }
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "Release",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "Release"
+        },
+        {
+            "name": "Debug",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "Debug"
+        },
+        {
+            "name": "Windows",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "Windows",
+            "configuration": "Debug",
+            "targets": ["ALL_BUILD"]
+        }
+    ]
+}

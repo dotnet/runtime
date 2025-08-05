@@ -44,7 +44,7 @@ namespace System.Net.WebSockets
         private ArraySegment<byte> _pinnedSendBuffer;
         private GCHandle _pinnedSendBufferHandle;
         private int _stateWhenDisposing = int.MinValue;
-        private int _sendBufferState;
+        private SendBufferState _sendBufferState;
 
         private WebSocketBuffer(ArraySegment<byte> internalBuffer, int receiveBufferSize, int sendBufferSize)
         {
@@ -170,7 +170,7 @@ namespace System.Net.WebSockets
         {
             bufferHasBeenPinned = false;
             WebSocketValidate.ValidateBuffer(payload.Array!, payload.Offset, payload.Count);
-            int previousState = Interlocked.Exchange(ref _sendBufferState, SendBufferState.SendPayloadSpecified);
+            SendBufferState previousState = Interlocked.Exchange(ref _sendBufferState, SendBufferState.SendPayloadSpecified);
 
             if (previousState != SendBufferState.None)
             {
@@ -274,7 +274,7 @@ namespace System.Net.WebSockets
         // This method is only thread safe for races between Abort and at most 1 uncompleted send operation
         internal void ReleasePinnedSendBuffer()
         {
-            int previousState = Interlocked.Exchange(ref _sendBufferState, SendBufferState.None);
+            SendBufferState previousState = Interlocked.Exchange(ref _sendBufferState, SendBufferState.None);
 
             if (previousState != SendBufferState.SendPayloadSpecified)
             {
@@ -662,10 +662,10 @@ namespace System.Net.WebSockets
             return 2 * receiveBufferSize + nativeSendBufferSize + NativeOverheadBufferSize + s_PropertyBufferSize;
         }
 
-        private static class SendBufferState
+        private enum SendBufferState
         {
-            public const int None = 0;
-            public const int SendPayloadSpecified = 1;
+            None = 0,
+            SendPayloadSpecified = 1,
         }
 
         private sealed class PayloadReceiveResult

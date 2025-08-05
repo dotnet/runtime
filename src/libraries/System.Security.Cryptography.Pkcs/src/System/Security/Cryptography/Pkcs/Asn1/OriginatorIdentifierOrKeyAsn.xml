@@ -12,10 +12,10 @@
         subjectKeyIdentifier[0] SubjectKeyIdentifier,
         originatorKey[1] OriginatorPublicKey
     }
-    
+
     DEFINITIONS IMPLICIT TAGS, so [0] is [0] IMPLICIT, and [1] is [1] IMPLICIT
   -->
-  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn" />
+  <asn:AsnType name="IssuerAndSerialNumber" typeName="System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn" />
   <asn:OctetString name="SubjectKeyIdentifier" implicitTag="0" />
   <asn:AsnType name="OriginatorKey" typeName="System.Security.Cryptography.Pkcs.Asn1.OriginatorPublicKeyAsn" implicitTag="1" />
 </asn:Choice>

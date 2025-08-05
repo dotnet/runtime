@@ -3,6 +3,7 @@
 
 #include "fx_resolver.h"
 #include "framework_info.h"
+#include "install_info.h"
 
 /**
 * When the framework is referenced more than once in a non-compatible way, display detailed error message
@@ -92,23 +93,9 @@ void fx_resolver_t::display_summary_of_frameworks(
 void fx_resolver_t::display_missing_framework_error(
     const pal::string_t& fx_name,
     const pal::string_t& fx_version,
-    const pal::string_t& fx_dir,
     const pal::string_t& dotnet_root,
     bool disable_multilevel_lookup)
 {
-    std::vector<framework_info> framework_infos;
-    pal::string_t fx_ver_dirs;
-    if (fx_dir.length())
-    {
-        fx_ver_dirs = fx_dir;
-        framework_info::get_all_framework_infos(get_directory(fx_dir), fx_name.c_str(), disable_multilevel_lookup, &framework_infos);
-    }
-    else
-    {
-        fx_ver_dirs = dotnet_root;
-    }
-
-    framework_info::get_all_framework_infos(dotnet_root, fx_name.c_str(), disable_multilevel_lookup, &framework_infos);
 
     // Display the error message about missing FX.
     if (fx_version.length())
@@ -122,6 +109,8 @@ void fx_resolver_t::display_missing_framework_error(
 
     trace::error(_X(".NET location: %s\n"), dotnet_root.c_str());
 
+    std::vector<framework_info> framework_infos;
+    framework_info::get_all_framework_infos(dotnet_root, fx_name.c_str(), disable_multilevel_lookup, &framework_infos);
     if (framework_infos.size())
     {
         trace::error(_X("The following frameworks were found:"));
@@ -133,6 +122,30 @@ void fx_resolver_t::display_missing_framework_error(
     else
     {
         trace::error(_X("No frameworks were found."));
+    }
+
+    std::vector<std::pair<pal::architecture, std::vector<framework_info>>> other_arch_framework_infos;
+    install_info::enumerate_other_architectures(
+        [&](pal::architecture arch, const pal::string_t& install_location, bool is_registered)
+        {
+            std::vector<framework_info> other_arch_infos;
+            framework_info::get_all_framework_infos(install_location, fx_name.c_str(), disable_multilevel_lookup, &other_arch_infos);
+            if (!other_arch_infos.empty())
+            {
+                other_arch_framework_infos.push_back(std::make_pair(arch, std::move(other_arch_infos)));
+            }
+        });
+    if (!other_arch_framework_infos.empty())
+    {
+        trace::error(_X("\nThe following frameworks for other architectures were found:"));
+        for (const auto& arch_info_pair : other_arch_framework_infos)
+        {
+            trace::error(_X("  %s"), get_arch_name(arch_info_pair.first));
+            for (const framework_info& info : arch_info_pair.second)
+            {
+                trace::error(_X("    %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
+            }
+        }
     }
 
     pal::string_t url = get_download_url(fx_name.c_str(), fx_version.c_str());

@@ -8,8 +8,6 @@
 #include "debugmacros.h"
 #include "interopconverter.h"
 
-struct VariantData;
-
 // Out of memory helper.
 #define IfNullThrow(EXPR) \
 do {if ((EXPR) == 0) {ThrowOutOfMemory();} } while (0)
@@ -33,21 +31,6 @@ enum DefaultInterfaceType
     DefaultInterfaceType_AutoDual       = 2,
     DefaultInterfaceType_AutoDispatch   = 3,
     DefaultInterfaceType_BaseComClass   = 4
-};
-
-// System.Drawing.Color struct definition.
-
-struct SYSTEMCOLOR
-{
-#ifdef HOST_64BIT
-    STRINGREF name;
-    INT64     value;
-#else
-    INT64     value;
-    STRINGREF name;
-#endif
-    short     knownColor;
-    short     state;
 };
 
 struct ComMethodTable;
@@ -170,23 +153,15 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
 // Called from EEStartup, to initialize com Interop specific data structures.
 void InitializeComInterop();
 
-#endif // FEATURE_COMINTEROP
-
 //--------------------------------------------------------------------------------
 // Clean up Helpers
 //--------------------------------------------------------------------------------
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 // called by syncblock, on the finalizer thread to do major cleanup
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
 
 // called by syncblock, during GC, do only minimal work
 void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
-
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS)
-
-#ifdef FEATURE_COMINTEROP
 
 // A wrapper that catches all exceptions - used in the OnThreadTerminate case.
 void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie);
@@ -276,13 +251,8 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch);
 void GetComSourceInterfacesForClass(MethodTable *pClassMT, CQuickArray<MethodTable *> &rItfList);
 
 //--------------------------------------------------------------------------------
-// This methods converts an IEnumVARIANT to a managed IEnumerator.
-OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT *pNativeEnum);
-
-//--------------------------------------------------------------------------------
-// These methods convert an OLE_COLOR to a System.Color and vice versa.
-void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor);
-OLE_COLOR ConvertSystemColorToOleColor(SYSTEMCOLOR *pSrcSysColor);
+// These methods convert an OLE_COLOR to a boxed Color object and vice versa.
+void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColor);
 OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj);
 
 //--------------------------------------------------------------------------------
@@ -327,7 +297,7 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD);
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
-// result will be returned as a COM+ Variant pointed to by pRetVal.
+// result will be returned as a CLR object pointed to by pRetVal.
 void IUInvokeDispMethod(
     REFLECTCLASSBASEREF* pRefClassObj,
     OBJECTREF* pTarget,
@@ -392,9 +362,6 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread = TRUE);
 
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
-
-#define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
-
 #else // FEATURE_COMINTEROP
 inline HRESULT EnsureComStartedNoThrow()
 {

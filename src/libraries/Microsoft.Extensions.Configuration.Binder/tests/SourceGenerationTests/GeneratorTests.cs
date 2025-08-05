@@ -20,8 +20,12 @@ using Xunit;
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/105311", typeof(ConfigurationBindingGeneratorTests), nameof(IsBigEndian))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
+        // The source hash applied to the [Interceptable] attribute treats chars as bytes which fails baseline comparisons on big-endian.
+        public static bool IsBigEndian => !BitConverter.IsLittleEndian;
+
         [Theory]
         [InlineData(LanguageVersion.CSharp11)]
         [InlineData(LanguageVersion.CSharp10)]
@@ -251,6 +255,76 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 Action ValidateSourceResult = expectOutput ? () => Assert.NotNull(result.GeneratedSource) : () => Assert.False(result.GeneratedSource.HasValue);
                 ValidateSourceResult();
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task ListOfTupleTest()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        var settingsSection = config.GetSection("Settings");
+
+                        Settings options = settingsSection.Get<Settings>()!;
+                    }
+                }
+
+                public class Settings
+                {
+                    public List<(string Item1, string? Item2)>? Items { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // Ensure the generated code can be compiled.
+            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
+            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
+            Assert.NotNull(emittedAssemblyImage);
+        }
+
+        /// <summary>
+        /// We binding the type "SslClientAuthenticationOptions" which has a property "CipherSuitesPolicy" of type "CipherSuitesPolicy". We can't bind this type.
+        /// This test is to ensure not including the property "CipherSuitesPolicy" in the generated code caused a build break.
+        /// </summary>
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task IgnoredUnBindablePropertiesTest()
+        {
+            string source = """
+                 using System;
+                 using System.Net.Security;
+                 using Microsoft.Extensions.Configuration;
+                 using System.Collections.Immutable;
+                 using System.Text;
+                 using System.Text.Json;
+
+                 public class Program
+                 {
+                     public static void Main()
+                     {
+                         ConfigurationBuilder configurationBuilder = new();
+                         IConfiguration config = configurationBuilder.Build();
+
+                         var obj = config.Get<SslClientAuthenticationOptions>();
+                      }
+                 }
+                 """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ImmutableArray<>), typeof(Encoding), typeof(JsonSerializer), typeof(System.Net.Security.AuthenticatedStream)));
+            Assert.NotNull(result.GeneratedSource);
+
+            Assert.DoesNotContain("CipherSuitesPolicy = ", result.GeneratedSource.Value.SourceText.ToString());
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]

@@ -47,16 +47,7 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
-        protected void RecordMeasurement(T measurement, in TagList tagList)
-        {
-            KeyValuePair<string, object?>[]? tags = tagList.Tags;
-            if (tags is not null)
-            {
-                RecordMeasurement(measurement, tags.AsSpan(0, tagList.Count));
-                return;
-            }
-
-            RecordMeasurement(measurement, MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in tagList.Tag1), tagList.Count));
-        }
+        protected void RecordMeasurement(T measurement, in TagList tagList) =>
+            RecordMeasurement(measurement, tagList.Tags);
     }
 }

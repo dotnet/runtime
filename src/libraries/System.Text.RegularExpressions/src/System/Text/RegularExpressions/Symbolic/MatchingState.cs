@@ -14,6 +14,7 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Node = node;
             PrevCharKind = prevCharKind;
+            NullabilityInfo = BuildNullabilityInfo();
         }
 
         /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
@@ -95,32 +96,43 @@ namespace System.Text.RegularExpressions.Symbolic
             return Node.CreateNfaDerivativeWithEffects(builder, minterm, context);
         }
 
+        /// <summary>Determines whether the node is nullable for the given context.</summary>
+        /// <remarks>
+        /// This is functionally equivalent to <see cref="SymbolicRegexNode{TSet}.IsNullableFor(uint)"/>, but using cached
+        /// answers stored in <see cref="NullabilityInfo"/>.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsNullableFor(uint nextCharKind)
         {
-            Debug.Assert(CharKind.IsValidCharKind(nextCharKind));
-            uint context = CharKind.Context(PrevCharKind, nextCharKind);
-            return Node.IsNullableFor(context);
+            Debug.Assert(nextCharKind is >= 0 and < CharKind.CharKindCount);
+            return (NullabilityInfo & (1 << (int)nextCharKind)) != 0;
         }
+
+        /// <summary>Gets the nullability info for the matching state.</summary>
+        /// <remarks>
+        /// <list>
+        /// <item>00000 -> node cannot be nullable</item>
+        /// <item>00001 -> nullable for General</item>
+        /// <item>00010 -> nullable for BeginningEnd</item>
+        /// <item>00100 -> nullable for NewLine</item>
+        /// <item>01000 -> nullable for NewLineS</item>
+        /// <item>10000 -> nullable for WordLetter</item>
+        /// </list>
+        /// </remarks>
+        internal int NullabilityInfo { get; }
 
         /// <summary>
         /// Builds a <see cref="StateFlags"/> with the relevant flags set.
         /// </summary>
-        /// <param name="solver">a solver for <typeparamref name="TSet"/></param>
         /// <param name="isInitial">whether this state is an initial state</param>
         /// <returns>the flags for this matching state</returns>
-        internal StateFlags BuildStateFlags(ISolver<TSet> solver, bool isInitial)
+        internal StateFlags BuildStateFlags(bool isInitial)
         {
             StateFlags info = 0;
 
             if (isInitial)
             {
                 info |= StateFlags.IsInitialFlag;
-            }
-
-            if (IsDeadend(solver))
-            {
-                info |= StateFlags.IsDeadendFlag;
             }
 
             if (Node.CanBeNullable)
@@ -138,6 +150,22 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             return info;
+        }
+
+        /// <summary>Builds the nullability information for the matching state.</summary>
+        /// <remarks>Nullability for each context is encoded in a bit. See <see cref="NullabilityInfo"/>.</remarks>
+        private byte BuildNullabilityInfo()
+        {
+            byte nullabilityInfo = 0;
+            if (Node.CanBeNullable)
+            {
+                for (uint charKind = 0; charKind < CharKind.CharKindCount; charKind++)
+                {
+                    nullabilityInfo |= (byte)(Node.IsNullableFor(CharKind.Context(PrevCharKind, charKind)) ? 1 << (int)charKind : 0);
+                }
+            }
+
+            return nullabilityInfo;
         }
 
         public override bool Equals(object? obj) =>

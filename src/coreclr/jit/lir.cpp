@@ -472,7 +472,7 @@ GenTree* LIR::Range::FirstNonCatchArgNode() const
         {
             continue;
         }
-        else if ((node->OperIs(GT_STORE_LCL_VAR)) && (node->gtGetOp1()->OperIs(GT_CATCH_ARG)))
+        else if (node->OperIs(GT_STORE_LCL_VAR) && (node->gtGetOp1()->OperIs(GT_CATCH_ARG)))
         {
             continue;
         }
@@ -1654,9 +1654,8 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
                 // It may be useful to remove these from being call operands, but that may also impact
                 // other code that relies on being able to reach all the operands from a call node.
                 // The argument of a JTRUE doesn't produce a value (just sets a flag).
-                assert(((node->OperGet() == GT_CALL) && def->OperIs(GT_PUTARG_STK)) ||
-                       ((node->OperGet() == GT_JTRUE) && (def->TypeGet() == TYP_VOID) &&
-                        ((def->gtFlags & GTF_SET_FLAGS) != 0)));
+                assert((node->OperIs(GT_CALL) && def->OperIs(GT_PUTARG_STK)) ||
+                       (node->OperIs(GT_JTRUE) && def->TypeIs(TYP_VOID) && ((def->gtFlags & GTF_SET_FLAGS) != 0)));
                 continue;
             }
 
@@ -1703,8 +1702,17 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         for (auto kvp : unusedDefs)
         {
             GenTree* node = kvp.Key();
-            assert(node->IsUnusedValue() && "found an unmarked unused value");
-            assert(!node->isContained() && "a contained node should have a user");
+            if (!node->IsUnusedValue())
+            {
+                JITDUMP("[%06u] is an unmarked unused value\n", Compiler::dspTreeID(node));
+                assert(!"Found an unmarked unused value");
+            }
+
+            if (node->isContained())
+            {
+                JITDUMP("[%06u] is a contained node with no user\n", Compiler::dspTreeID(node));
+                assert(!"A contained node should have a user");
+            }
         }
     }
 
@@ -1870,6 +1878,22 @@ GenTree* LIR::LastNode(GenTree** nodes, size_t numNodes)
     }
 
     return lastNode;
+}
+
+//------------------------------------------------------------------------
+// LIR::FirstNode:
+//    Given two nodes in the same block range, find which node appears first.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Node that appears first.
+//
+GenTree* LIR::FirstNode(GenTree* node1, GenTree* node2)
+{
+    return LastNode(node1, node2) == node1 ? node2 : node1;
 }
 
 #ifdef DEBUG

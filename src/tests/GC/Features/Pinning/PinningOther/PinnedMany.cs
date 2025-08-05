@@ -6,9 +6,11 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 public class Test_PinnedMany
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int NUM = 2500;
         int[][] arr = new int[NUM][];

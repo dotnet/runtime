@@ -7,13 +7,14 @@
 #define FEATURE_REFCOUNTED_HANDLES
 
  // Build support for obsolete handles types into standalone GC to make it usable with older runtimes
-#if defined(BUILD_AS_STANDALONE) && !defined(FEATURE_NATIVEAOT)
+#ifdef BUILD_AS_STANDALONE
 #define FEATURE_ASYNC_PINNED_HANDLES // No longer used in .NET 8+
 #define FEATURE_WEAK_NATIVE_COM_HANDLES // No longer used in .NET 8+
+#define FEATURE_SIZED_REF_HANDLES // No longer used in .NET 9+
 #endif
 
 #define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
-#define HANDLE_MAX_INTERNAL_TYPES       12
+#define HANDLE_MAX_INTERNAL_TYPES       13
 
 /*--------------------------------------------------------------------------*/
 

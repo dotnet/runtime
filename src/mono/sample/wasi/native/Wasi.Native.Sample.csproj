@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <NativeFileReference Include="local.c" />
+    <!-- workaround for https://github.com/dotnet/runtime/issues/106627 -->
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <Target Name="RunSample" DependsOnTargets="RunSampleWithWasmtime" />
 </Project>

@@ -15,12 +15,15 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Threading;
+using TestData = System.Text.Json.Serialization.Tests.TestData;
 
 namespace System.Text.Json.Tests
 {
     public static class JsonDocumentTests
     {
         private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };
+
+        private static readonly JsonDocumentOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
 
         private static readonly Dictionary<TestCaseType, string> s_expectedConcat =
             new Dictionary<TestCaseType, string>();
@@ -596,31 +599,31 @@ namespace System.Text.Json.Tests
                 case JsonValueKind.True:
                 case JsonValueKind.String:
                 case JsonValueKind.Number:
-                    {
-                        buf.Append(element.ToString());
-                        buf.Append(", ");
-                        break;
-                    }
+                {
+                    buf.Append(element.ToString());
+                    buf.Append(", ");
+                    break;
+                }
                 case JsonValueKind.Object:
+                {
+                    foreach (JsonProperty prop in element.EnumerateObject())
                     {
-                        foreach (JsonProperty prop in element.EnumerateObject())
-                        {
-                            buf.Append(prop.Name);
-                            buf.Append(", ");
-                            DepthFirstAppend(buf, prop.Value);
-                        }
-
-                        break;
+                        buf.Append(prop.Name);
+                        buf.Append(", ");
+                        DepthFirstAppend(buf, prop.Value);
                     }
+
+                    break;
+                }
                 case JsonValueKind.Array:
+                {
+                    foreach (JsonElement child in element.EnumerateArray())
                     {
-                        foreach (JsonElement child in element.EnumerateArray())
-                        {
-                            DepthFirstAppend(buf, child);
-                        }
-
-                        break;
+                        DepthFirstAppend(buf, child);
                     }
+
+                    break;
+                }
             }
         }
 
@@ -681,6 +684,7 @@ namespace System.Text.Json.Tests
                 string city = parsedObject.GetProperty("city").GetString();
                 int zip = parsedObject.GetProperty("zip").GetInt32();
 
+                Assert.Equal(7, parsedObject.GetPropertyCount());
                 Assert.True(parsedObject.TryGetProperty("age", out JsonElement age2));
                 Assert.Equal(30, age2.GetInt32());
 
@@ -704,6 +708,7 @@ namespace System.Text.Json.Tests
 
                 Assert.Equal(1, parsedObject.GetArrayLength());
                 JsonElement person = parsedObject[0];
+                Assert.Equal(5, person.GetPropertyCount());
                 double age = person.GetProperty("age").GetDouble();
                 string first = person.GetProperty("first").GetString();
                 string last = person.GetProperty("last").GetString();
@@ -902,6 +907,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -999,6 +1005,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1091,6 +1098,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1194,6 +1202,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1267,6 +1276,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1340,6 +1350,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1379,6 +1390,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetInt64());
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1462,6 +1474,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetInt64());
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1564,6 +1577,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1654,6 +1668,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
                 Assert.Throws<InvalidOperationException>(() => root.GetBoolean());
@@ -1735,6 +1750,7 @@ namespace System.Text.Json.Tests
 
                 Assert.Throws<ObjectDisposedException>(() => root.ValueKind);
                 Assert.Throws<ObjectDisposedException>(() => root.GetArrayLength());
+                Assert.Throws<ObjectDisposedException>(() => root.GetPropertyCount());
                 Assert.Throws<ObjectDisposedException>(() => root.EnumerateArray());
                 Assert.Throws<ObjectDisposedException>(() => root.EnumerateObject());
                 Assert.Throws<ObjectDisposedException>(() => root.GetDouble());
@@ -1793,6 +1809,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(JsonValueKind.Undefined, root.ValueKind);
 
             Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
+            Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
             Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
             Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
             Assert.Throws<InvalidOperationException>(() => root.GetDouble());
@@ -2442,6 +2459,7 @@ namespace System.Text.Json.Tests
 
             using (JsonDocument doc = JsonDocument.Parse(json))
             {
+                Assert.Equal(6, doc.RootElement.GetPropertyCount());
                 JsonElement.ObjectEnumerator enumerator = doc.RootElement.EnumerateObject();
                 Assert.True(enumerator.MoveNext(), "Move to first property");
                 JsonProperty property = enumerator.Current;
@@ -2449,6 +2467,7 @@ namespace System.Text.Json.Tests
                 Assert.Equal("  weird  property  name", property.Name);
                 string rawText = property.ToString();
                 int crCount = rawText.Count(c => c == '\r');
+                Assert.Equal(2, property.Value.GetPropertyCount());
                 Assert.Equal(128 + crCount, rawText.Length);
                 Assert.Equal('\"', rawText[0]);
                 Assert.Equal(' ', rawText[1]);
@@ -3407,6 +3426,77 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingJson()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             [43]"u8, options);
+
+            using JsonDocument doc1 = JsonDocument.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", doc1.RootElement.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            Assert.True(reader.Read());
+            using JsonDocument doc2 = JsonDocument.ParseValue(ref reader);
+            Assert.Equal("[43]", doc2.RootElement.GetRawText());
+
+            Assert.False(reader.Read());
+        }
+
+
+        [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingContent()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             <NotJson/>"u8, options);
+
+            using JsonDocument doc = JsonDocument.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", doc.RootElement.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => reader.Read());
+        }
+
+        [Theory]
+        [InlineData("""{ "foo" : [1], "test": false, "bar" : { "nested": 3 } }""", 3)]
+        [InlineData("""{ "foo" : [1,2,3,4] }""", 1)]
+        [InlineData("""{}""", 0)]
+        [InlineData("""{ "foo" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }, "test": true, "foo2" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }}""", 3)]
+        public static void TestGetPropertyCount(string json, int expectedCount)
+        {
+            JsonElement element = JsonElement.Parse(json);
+            Assert.Equal(expectedCount, element.GetPropertyCount());
+        }
+
+        [Fact]
+        public static void VerifyGetPropertyCountAndArrayLengthUsingEnumerateMethods()
+        {
+            using (JsonDocument doc = JsonDocument.Parse(SR.ProjectLockJson))
+            {
+                CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(doc.RootElement);
+            }
+
+            void CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(JsonElement elem)
+            {
+                if (elem.ValueKind == JsonValueKind.Object)
+                {
+                    Assert.Equal(elem.EnumerateObject().Count(), elem.GetPropertyCount());
+                    foreach (JsonProperty prop in elem.EnumerateObject())
+                    {
+                        CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(prop.Value);
+                    }
+                }
+                else if (elem.ValueKind == JsonValueKind.Array)
+                {
+                    Assert.Equal(elem.EnumerateArray().Count(), elem.GetArrayLength());
+                    foreach (JsonElement item in elem.EnumerateArray())
+                    {
+                        CheckPropertyCountAndArrayLengthAgainstEnumerateMethods(item);
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public static void EnsureResizeSucceeds()
         {
             // This test increases coverage, so it's based on a lot of implementation detail,
@@ -3746,6 +3836,165 @@ namespace System.Text.Json.Tests
             var jsonDocument = JsonSerializer.Deserialize<JsonDocument>("null");
             Assert.NotNull(jsonDocument);
             Assert.Equal(JsonValueKind.Null, jsonDocument.RootElement.ValueKind);
+        }
+
+        [Fact]
+        public static void JsonMarshal_GetRawUtf8Value_DisposedDocument_ThrowsObjectDisposedException()
+        {
+            JsonDocument jDoc = JsonDocument.Parse("{}");
+            JsonElement element = jDoc.RootElement;
+            jDoc.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => JsonMarshal.GetRawUtf8Value(element));
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void ParseJsonDocumentWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicateProperty(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void ParseJsonDocumentArrayWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicateProperty(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void ParseJsonDocumentDeeplyNestedWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicateProperty(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void ParseJsonDocumentClassWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"Object":{{jsonPayload}}}""";
+            AssertDuplicateProperty(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseJsonDocumentObjectWithDuplicateProperties(int count, int insertPosition)
+        {
+            string json = CreatePayload(count, insertPosition, "p1");
+            AssertDuplicateProperty(json, isValidJson: false);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseJsonDocumentEscapeWithDuplicateProperties(int count, int insertPosition)
+        {
+            string json = CreatePayload(count, insertPosition, """p\u0031""");
+            AssertDuplicateProperty(json, isValidJson: false);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseJsonDocumentObjectWithNoDuplicateProperties(int count, int insertPosition)
+        {
+            string json = CreatePayload(count, insertPosition, "notduplicate");
+            AssertDuplicateProperty(json, isValidJson: true);
+        }
+
+        [Theory]
+        [InlineData(3, 0)]
+        [InlineData(3, 2)]
+        [InlineData(100, 0)]
+        [InlineData(100, 99)]
+        public static void ParseJsonDocumentEscapeWithNoDuplicateProperties(int count, int insertPosition)
+        {
+            string json = CreatePayload(count, insertPosition, """notduplicate\u0030\u0030""");
+            AssertDuplicateProperty(json, isValidJson: true);
+        }
+
+        private static string CreatePayload(int count, int insertPosition, string insertProperty)
+        {
+            StringBuilder builder = new();
+            builder.Append("{");
+            for (int i = 0; i < count; i++)
+            {
+                if (i > 0)
+                    builder.AppendLine(",");
+
+                if (i == insertPosition)
+                    builder.Append($"""  "{insertProperty}":1""");
+                else
+                    builder.Append($"""  "p{i}":1""");
+            }
+            builder.Append("}");
+            return builder.ToString();
+        }
+
+        private static void AssertDuplicateProperty(string jsonPayload, bool isValidJson)
+        {
+            if (isValidJson)
+            {
+                using (JsonDocument.Parse(jsonPayload, s_noDuplicateParamsOptions)) { } // Assert no throw
+            }
+            else
+            {
+                Assert.Throws<JsonException>(() => JsonDocument.Parse(jsonPayload, s_noDuplicateParamsOptions));
+            }
+
+            using (JsonDocument.Parse(jsonPayload)) { } // Assert no throw
+        }
+
+        [Fact]
+        public static void ParseJsonDuplicatePropertiesErrorMessage()
+        {
+            string json = """{"a":1,"a":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "a");
+        }
+
+        [Fact]
+        public static void ParseJsonDuplicatePropertiesErrorMessageLong()
+        {
+            string json = """{"12345678901234567":1,"12345678901234567":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "123456789012345...");
+
+            json = """{"123456789012345":1,"123456789012345":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "123456789012345");
+
+            json = """{"1234567890123456":1,"1234567890123456":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "123456789012345...");
+        }
+
+        [Fact]
+        public static void ParseJsonDuplicatePropertiesErrorMessageEscaped()
+        {
+            string json = """{"0":1,"\u0030":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "'\u0030'");
+
+            json = """{"\u0030":1,"0":1}""";
+            AssertExtensions.ThrowsContains<JsonException>(
+                () => JsonDocument.Parse(json, s_noDuplicateParamsOptions),
+                "'0'");
         }
     }
 

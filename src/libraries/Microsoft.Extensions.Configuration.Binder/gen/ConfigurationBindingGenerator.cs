@@ -3,8 +3,12 @@
 
 //#define LAUNCH_DEBUGGER
 using System;
+using System.Diagnostics;
+using System.Reflection;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -62,6 +66,69 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 .WithTrackingName(GenSpecTrackingName);
 
             context.RegisterSourceOutput(genSpec, ReportDiagnosticsAndEmitSource);
+
+            if (!s_hasInitializedInterceptorVersion)
+            {
+                InterceptorVersion = DetermineInterceptableVersion();
+                s_hasInitializedInterceptorVersion = true;
+            }
+        }
+
+        internal static int InterceptorVersion { get; private set; }
+
+        // Used with v1 interceptor lightup approach:
+        private static bool s_hasInitializedInterceptorVersion;
+        internal static Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>? GetInterceptableLocationFunc { get; private set; }
+        internal static MethodInfo? InterceptableLocationVersionGetDisplayLocation { get; private set; }
+        internal static MethodInfo? InterceptableLocationDataGetter { get; private set; }
+        internal static MethodInfo? InterceptableLocationVersionGetter { get; private set; }
+
+        internal static int DetermineInterceptableVersion()
+        {
+            MethodInfo? getInterceptableLocationMethod = null;
+            int? interceptableVersion = null;
+
+#if UPDATE_BASELINES
+#pragma warning disable RS1035 // Do not use APIs banned for analyzers
+            string? interceptableVersionString = Environment.GetEnvironmentVariable("InterceptableAttributeVersion");
+#pragma warning restore RS1035
+            if (interceptableVersionString is not null)
+            {
+                if (int.TryParse(interceptableVersionString, out int version) && (version == 0 || version == 1))
+                {
+                    interceptableVersion = version;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Invalid InterceptableAttributeVersion value: {interceptableVersionString}");
+                }
+            }
+
+            if (interceptableVersion is null || interceptableVersion == 1)
+#endif
+            {
+                getInterceptableLocationMethod = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).GetMethod(
+                    "GetInterceptableLocation",
+                    BindingFlags.Static | BindingFlags.Public,
+                    binder: null,
+                    new Type[] { typeof(SemanticModel), typeof(InvocationExpressionSyntax), typeof(CancellationToken) },
+                    modifiers: Array.Empty<ParameterModifier>());
+
+                interceptableVersion = getInterceptableLocationMethod is null ? 0 : 1;
+            }
+
+            if (interceptableVersion == 1)
+            {
+                GetInterceptableLocationFunc = (Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>)
+                    getInterceptableLocationMethod.CreateDelegate(typeof(Func<SemanticModel, InvocationExpressionSyntax, CancellationToken, object>), target: null);
+
+                Type? interceptableLocationType = typeof(Microsoft.CodeAnalysis.CSharp.CSharpExtensions).Assembly.GetType("Microsoft.CodeAnalysis.CSharp.InterceptableLocation");
+                InterceptableLocationVersionGetDisplayLocation = interceptableLocationType.GetMethod("GetDisplayLocation", BindingFlags.Instance | BindingFlags.Public);
+                InterceptableLocationVersionGetter = interceptableLocationType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+                InterceptableLocationDataGetter = interceptableLocationType.GetProperty("Data", BindingFlags.Instance | BindingFlags.Public).GetGetMethod();
+            }
+
+            return interceptableVersion.Value;
         }
 
         /// <summary>

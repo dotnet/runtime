@@ -270,9 +270,9 @@ namespace Internal.JitInterface
 
             bool isType = nativeSchema[index + 1].InstrumentationKind == PgoInstrumentationKind.HandleHistogramTypes;
 
-            fixed(PgoInstrumentationSchema* pSchema = &nativeSchema[index])
+            fixed (PgoInstrumentationSchema* pSchema = &nativeSchema[index])
             {
-                fixed(byte* pInstrumentationData = &instrumentationData[0])
+                fixed (byte* pInstrumentationData = &instrumentationData[0])
                 {
                     // We're going to store only the most popular type/method to reduce size of the profile
                     LikelyClassMethodRecord* likelyClassMethods = stackalloc LikelyClassMethodRecord[1];
@@ -350,11 +350,9 @@ namespace Internal.JitInterface
             IntPtr exception;
             IntPtr nativeEntry;
             uint codeSize;
-#pragma warning disable CS8500 // takes address of managed type
             var result = JitCompileMethod(out exception,
                     _jit, (IntPtr)(&_this), _unmanagedCallbacks,
                     ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
-#pragma warning restore CS8500
             if (exception != IntPtr.Zero)
             {
                 if (_lastException != null)
@@ -451,7 +449,7 @@ namespace Internal.JitInterface
             var relocs = _codeRelocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) && !JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_ENABLE_CFG) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -480,13 +478,8 @@ namespace Internal.JitInterface
                 }
             }
 
-#pragma warning disable SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
-            _methodCodeNode.SetCode(objectData
-#if !SUPPORT_JIT && !READYTORUN
-                , isFoldable: (_compilation._compilationOptions & RyuJitCompilationOptions.MethodBodyFolding) != 0
-#endif
-                );
-#pragma warning restore SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
+            _methodCodeNode.SetCode(objectData);
+
 #if READYTORUN
             if (_methodColdCodeNode != null)
             {
@@ -1124,9 +1117,9 @@ namespace Internal.JitInterface
             // TODO: Cache inlining hits
             // Check for an inlining directive.
 
-            if (method.IsNoInlining)
+            if (method.IsNoInlining || method.IsNoOptimization)
             {
-                /* Function marked as not inlineable */
+                // NoOptimization implies NoInlining.
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
             else if (method.IsAggressiveInlining)
@@ -1255,10 +1248,32 @@ namespace Internal.JitInterface
             return meth1.GetTypicalMethodDefinition() == meth2.GetTypicalMethodDefinition();
         }
 
+        private CORINFO_CLASS_STRUCT_* getTypeDefinition(CORINFO_CLASS_STRUCT_* type)
+        {
+            return ObjectToHandle(HandleToObject(type).GetTypeDefinition());
+        }
+
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
+
+            EcmaModule rootModule = (MethodBeingCompiled.OwningType as MetadataType)?.Module as EcmaModule;
+            EcmaModule calleeModule = (calleeMethod.OwningType as MetadataType)?.Module as EcmaModule;
+
+            // If this inline crosses module boundaries, ensure the modules agree on exception wrapping behavior.
+            if ((rootModule != calleeModule) && (rootModule != null) && (calleeModule != null))
+            {
+                if (rootModule.IsWrapNonExceptionThrows != calleeModule.IsWrapNonExceptionThrows)
+                {
+                    var calleeIL = _compilation.GetMethodIL(calleeMethod);
+                    if (calleeIL.GetExceptionRegions().Length != 0)
+                    {
+                        // Fail inlining if root method and callee have different exception wrapping behavior
+                        return CorInfoInline.INLINE_FAIL;
+                    }
+                }
+            }
 
             if (_compilation.CanInline(callerMethod, calleeMethod))
             {
@@ -1268,6 +1283,10 @@ namespace Internal.JitInterface
             else
             {
                 // Call may not be inlined
+                //
+                // Note despite returning INLINE_NEVER here, in compilations where jitting is possible
+                // the jit may still be able to inline this method. So we rely on reportInliningDecision
+                // to not propagate this into metadata to short-circuit future inlining attempts.
                 return CorInfoInline.INLINE_NEVER;
             }
         }
@@ -1302,9 +1321,10 @@ namespace Internal.JitInterface
         {
             // Initialize OUT fields
             info->devirtualizedMethod = null;
-            info->requiresInstMethodTableArg = false;
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
+            info->isInstantiatingStub = false;
+            info->wasArrayInterfaceDevirt = false;
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1451,7 +1471,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->requiresInstMethodTableArg = false;
+            info->isInstantiatingStub = false;
             info->exactContext = contextFromType(owningType);
 
             return true;
@@ -1509,6 +1529,13 @@ namespace Internal.JitInterface
             return result != null ? ObjectToHandle(result) : null;
         }
 
+        private CORINFO_METHOD_STRUCT_* getInstantiatedEntry(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_STRUCT_** methodArg, CORINFO_CLASS_STRUCT_** classArg)
+        {
+            *methodArg = null;
+            *classArg = null;
+            return null;
+        }
+
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc comparand = HandleToObject(elemType);
@@ -1521,6 +1548,17 @@ namespace Internal.JitInterface
             TypeDesc comparand = HandleToObject(elemType);
             TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetEqualityComparerForType(comparand);
             return comparer != null ? ObjectToHandle(comparer) : null;
+        }
+
+        private CORINFO_CLASS_STRUCT_* getSZArrayHelperEnumeratorClass(CORINFO_CLASS_STRUCT_* elemType)
+        {
+            TypeDesc elementType = HandleToObject(elemType);
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
+            if (placeholderType == null)
+            {
+                return null;
+            }
+            return ObjectToHandle(placeholderType.MakeInstantiatedType(elementType));
         }
 
         private bool isIntrinsicType(CORINFO_CLASS_STRUCT_* classHnd)
@@ -1630,9 +1668,6 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
         }
-
-        private CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
 
         private static object ResolveTokenWithSubstitution(MethodILScope methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
         {
@@ -1939,7 +1974,7 @@ namespace Internal.JitInterface
             return PrintFromUtf16(HandleToObject(handle).ToString(), buffer, bufferSize, pRequiredBufferSize);
         }
 
-        private nuint PrintFromUtf16(ReadOnlySpan<char> utf16, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        internal static nuint PrintFromUtf16(ReadOnlySpan<char> utf16, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
             int written = 0;
             if (bufferSize > 0)
@@ -2003,6 +2038,12 @@ namespace Internal.JitInterface
             return index < (uint)inst.Length ? ObjectToHandle(inst[(int)index]) : null;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_CLASS_STRUCT_* getMethodInstantiationArgument(CORINFO_METHOD_STRUCT_* ftn, uint index)
+        {
+#pragma warning restore CA1822 // Mark members as static
+            return null;
+        }
 
         private nuint printClassName(CORINFO_CLASS_STRUCT_* cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
@@ -2097,12 +2138,17 @@ namespace Internal.JitInterface
             return (uint)result;
         }
 
-        private CORINFO_MODULE_STRUCT_* getClassModule(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("getClassModule"); }
-        private CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(CORINFO_MODULE_STRUCT_* mod)
-        { throw new NotImplementedException("getModuleAssembly"); }
-        private byte* getAssemblyName(CORINFO_ASSEMBLY_STRUCT_* assem)
-        { throw new NotImplementedException("getAssemblyName"); }
+        private byte* getClassAssemblyName(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type is MetadataType mdType)
+            {
+                return (byte*)GetPin(StringToUTF8(mdType.Module.Assembly.GetName().Name));
+            }
+
+            return null;
+        }
 
 #pragma warning disable CA1822 // Mark members as static
         private void* LongLifetimeMalloc(UIntPtr sz)
@@ -2118,8 +2164,10 @@ namespace Internal.JitInterface
             Marshal.FreeCoTaskMem((IntPtr)obj);
         }
 
-        private UIntPtr getClassModuleIdForStatics(CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
-        { throw new NotImplementedException("getClassModuleIdForStatics"); }
+        private UIntPtr getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        { throw new NotImplementedException("getClassStaticDynamicInfo"); }
+        private UIntPtr getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        { throw new NotImplementedException("getClassThreadStaticDynamicInfo"); }
 
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -2285,6 +2333,10 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(MetadataType type, byte* gcPtrs)
         {
             int result = 0;
+
+            if (type.MetadataBaseType is { ContainsGCPointers: true } baseType)
+                result += GatherClassGCLayout(baseType, gcPtrs);
+
             bool isInlineArray = type.IsInlineArray;
 
             foreach (var field in type.GetFields())
@@ -2355,14 +2407,8 @@ namespace Internal.JitInterface
             uint result = 0;
 
             MetadataType type = (MetadataType)HandleToObject(cls);
-
-            int pointerSize = PointerSize;
-
-            int ptrsCount = AlignmentHelper.AlignUp(type.InstanceFieldSize.AsInt, pointerSize) / pointerSize;
-
-            // Assume no GC pointers at first
-            for (int i = 0; i < ptrsCount; i++)
-                gcPtrs[i] = (byte)CorInfoGCType.TYPE_GC_NONE;
+            uint size = type.IsValueType ? getClassSize(cls) : getHeapClassSize(cls);
+            new Span<byte>(gcPtrs, (int)((size + PointerSize - 1) / PointerSize)).Clear();
 
             if (type.ContainsGCPointers || type.IsByRefLike)
             {
@@ -2632,17 +2678,15 @@ namespace Internal.JitInterface
             MethodDesc md = method == null ? MethodBeingCompiled : HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
+#if !READYTORUN
             if (
-#if READYTORUN
-                IsClassPreInited(type)
-#else
                 _isFallbackBodyCompilation ||
                 !_compilation.HasLazyStaticConstructor(type)
-#endif
                 )
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
+#endif
 
             MetadataType typeToInit = (MetadataType)type;
 
@@ -2889,18 +2933,13 @@ namespace Internal.JitInterface
             TypeDesc type1 = HandleToObject(cls1);
             TypeDesc type2 = HandleToObject(cls2);
 
-            // If we have a mixture of shared and unshared types,
-            // consider the unshared type as more specific.
-            bool isType1CanonSubtype = type1.IsCanonicalSubtype(CanonicalFormKind.Any);
-            bool isType2CanonSubtype = type2.IsCanonicalSubtype(CanonicalFormKind.Any);
-            if (isType1CanonSubtype != isType2CanonSubtype)
+            // If both types have the same type definition while
+            // hnd1 is shared and hnd2 is not - consider hnd2 more specific.
+            if (type1.HasSameTypeDefinition(type2))
             {
-                // Only one of type1 and type2 is shared.
-                // type2 is more specific if type1 is the shared type.
-                return isType1CanonSubtype;
+                return type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any);
             }
 
-            // Otherwise both types are either shared or not shared.
             // Look for a common parent type.
             TypeDesc merged = TypeExtensions.MergeTypesToCommonParent(type1, type2);
 
@@ -2941,6 +2980,18 @@ namespace Internal.JitInterface
                 return true;
 
             return _compilation.IsEffectivelySealed(type);
+        }
+
+        private TypeCompareState isGenericType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return TypeCompareState.May;
+            }
+
+            return type.HasInstantiation ? TypeCompareState.Must : TypeCompareState.MustNot;
         }
 
         private TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)
@@ -3069,7 +3120,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
@@ -3081,7 +3132,7 @@ namespace Internal.JitInterface
             return ObjectToHandle(fieldDesc.OwningType);
         }
 
-        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* memberParent)
+        private CorInfoType getFieldType(CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType, CORINFO_CLASS_STRUCT_* fieldOwnerHint)
         {
             FieldDesc fieldDesc = HandleToObject(field);
             TypeDesc fieldType = fieldDesc.FieldType;
@@ -3305,11 +3356,9 @@ namespace Internal.JitInterface
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private char* getJitTimeLogFilename()
-#pragma warning restore CA1822 // Mark members as static
+        private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
         {
-            return null;
+            throw new NotImplementedException();
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
@@ -3348,11 +3397,10 @@ namespace Internal.JitInterface
             return PrintFromUtf16(method.Name, buffer, bufferSize, requiredBufferSize);
         }
 
-        private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, out string enclosingClassName)
+        private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, string[] enclosingClassName)
         {
             className = null;
             namespaceName = null;
-            enclosingClassName = null;
 
             string result = method.Name;
 
@@ -3364,10 +3412,14 @@ namespace Internal.JitInterface
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
-                var containingType = owningType.ContainingType;
-                if (containingType != null)
+                DefType containingType = owningType;
+                for (int i = 0; i < enclosingClassName.Length; i++)
                 {
-                    enclosingClassName = containingType.Name;
+                    containingType = containingType.ContainingType;
+                    if (containingType == null)
+                        break;
+
+                    enclosingClassName[i] = containingType.Name;
                     namespaceName = containingType.Namespace;
                 }
             }
@@ -3375,9 +3427,12 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassName)
+        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassNames, nuint maxEnclosingClassNames)
         {
             MethodDesc method = HandleToObject(ftn);
+
+            for (nuint i = 0; i < maxEnclosingClassNames; i++)
+                enclosingClassNames[i] = null;
 
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
@@ -3387,15 +3442,18 @@ namespace Internal.JitInterface
                 if (className != null)
                     *className = reader.GetTypeNamePointer(owningType.Handle);
                 if (namespaceName != null)
-                *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
+                    *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
-                var containingType = owningType.ContainingType as EcmaType;
-                if (containingType != null)
+                EcmaType containingType = owningType;
+                for (nuint i = 0; i < maxEnclosingClassNames; i++)
                 {
-                    if (enclosingClassName != null)
-                        *enclosingClassName = reader.GetTypeNamePointer(containingType.Handle);
+                    containingType = containingType.ContainingType as EcmaType;
+                    if (containingType == null)
+                        break;
+
+                    enclosingClassNames[i] = reader.GetTypeNamePointer(containingType.Handle);
                     if (namespaceName != null)
                         *namespaceName = reader.GetTypeNamespacePointer(containingType.Handle);
                 }
@@ -3407,16 +3465,16 @@ namespace Internal.JitInterface
                 string result;
                 string classResult;
                 string namespaceResult;
-                string enclosingResult;
+                string[] enclosingResults = new string[maxEnclosingClassNames];
 
-                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, enclosingResults);
 
                 if (className != null)
                     *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
                 if (namespaceName != null)
                     *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
-                if (enclosingClassName != null)
-                    *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+                for (nuint i = 0; i < maxEnclosingClassNames; i++)
+                    enclosingClassNames[i] = enclosingResults[i] != null ? (byte*)GetPin(StringToUTF8(enclosingResults[i])) : null;
 
                 return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
             }
@@ -3440,39 +3498,70 @@ namespace Internal.JitInterface
             lowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(HandleToObject(structHnd));
         }
 
-        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        private void getFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING lowering)
         {
-            TypeDesc typeDesc = HandleToObject(cls);
-            return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
-        }
+            FpStructInRegistersInfo info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
+                HandleToObject(structHnd), _compilation.TypeSystemContext.Target.Architecture);
+            if (info.flags != FpStruct.UseIntCallConv)
+            {
+                lowering.byIntegerCallConv = false;
+                lowering.Offsets[0] = info.offset1st;
+                lowering.Offsets[1] = info.offset2nd;
+                lowering.numLoweredElements = ((info.flags & FpStruct.OnlyOne) != 0) ? 1 : 2;
 
-        private uint getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc typeDesc = HandleToObject(cls);
-            return RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(typeDesc);
+                if ((info.flags & (FpStruct.BothFloat | FpStruct.FloatInt | FpStruct.OnlyOne)) != 0)
+                    lowering.LoweredElements[0] = (info.SizeShift1st() == 3) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
+
+                if ((info.flags & (FpStruct.BothFloat | FpStruct.IntFloat)) != 0)
+                    lowering.LoweredElements[1] = (info.SizeShift2nd() == 3) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
+
+                if ((info.flags & (FpStruct.FloatInt | FpStruct.IntFloat)) != 0)
+                {
+                    int index = ((info.flags & FpStruct.FloatInt) != 0) ? 1 : 0;
+                    uint sizeShift = (index == 0) ? info.SizeShift1st() : info.SizeShift2nd();
+                    lowering.LoweredElements[index] = (CorInfoType)((int)CorInfoType.CORINFO_TYPE_BYTE + sizeShift * 2);
+
+                    // unittests
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 0 * 2 == (int)CorInfoType.CORINFO_TYPE_BYTE);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 1 * 2 == (int)CorInfoType.CORINFO_TYPE_SHORT);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 2 * 2 == (int)CorInfoType.CORINFO_TYPE_INT);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 3 * 2 == (int)CorInfoType.CORINFO_TYPE_LONG);
+                }
+            }
+            else
+            {
+                lowering.byIntegerCallConv = true;
+            }
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
-        private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
+        private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {
-            ISymbolNode entryPoint;
-            if (!_helperCache.TryGetValue(ftnNum, out entryPoint))
+            // We never return a method handle from the managed implementation of this method today
+            if (pMethod != null)
+                *pMethod = null;
+
+            if (pNativeEntrypoint != null)
             {
-                entryPoint = GetHelperFtnUncached(ftnNum);
-                _helperCache.Add(ftnNum, entryPoint);
-            }
-            if (entryPoint.RepresentsIndirectionCell)
-            {
-                ppIndirection = (void*)ObjectToHandle(entryPoint);
-                return null;
-            }
-            else
-            {
-                ppIndirection = null;
-                return (void*)ObjectToHandle(entryPoint);
+                ISymbolNode entryPoint;
+                if (!_helperCache.TryGetValue(ftnNum, out entryPoint))
+                {
+                    entryPoint = GetHelperFtnUncached(ftnNum);
+                    _helperCache.Add(ftnNum, entryPoint);
+                }
+                if (entryPoint.RepresentsIndirectionCell)
+                {
+                    pNativeEntrypoint->addr = (void*)ObjectToHandle(entryPoint);
+                    pNativeEntrypoint->accessType = InfoAccessType.IAT_PVALUE;
+                }
+                else
+                {
+                    pNativeEntrypoint->addr = (void*)ObjectToHandle(entryPoint);
+                    pNativeEntrypoint->accessType = InfoAccessType.IAT_VALUE;
+                }
             }
         }
 
@@ -3545,6 +3634,9 @@ namespace Internal.JitInterface
             }
         }
 
+        private void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
+        { throw new NotImplementedException("GetCookieForInterpreterCalliSig"); }
+
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
 #pragma warning disable CA1822 // Mark members as static
@@ -3567,9 +3659,6 @@ namespace Internal.JitInterface
             constLookup.accessType = symbol.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
             return constLookup;
         }
-
-        private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
-        { throw new NotImplementedException("getClassDomainID"); }
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {
@@ -3607,6 +3696,13 @@ namespace Internal.JitInterface
 #else
             return false;
 #endif
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return null;
         }
 
         private byte[] _code;
@@ -3898,6 +3994,8 @@ namespace Internal.JitInterface
                     const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
                     const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
                     const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+                    const ushort IMAGE_REL_ARM64_SECREL_LOW12A = 9;
+                    const ushort IMAGE_REL_ARM64_SECREL_HIGH12A = 0xA;
                     const ushort IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21 = 0x107;
                     const ushort IMAGE_REL_ARM64_TLSDESC_LD64_LO12 = 0x108;
                     const ushort IMAGE_REL_ARM64_TLSDESC_ADD_LO12 = 0x109;
@@ -3920,6 +4018,10 @@ namespace Internal.JitInterface
                             return RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12;
                         case IMAGE_REL_ARM64_TLSDESC_CALL:
                             return RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL;
+                        case IMAGE_REL_ARM64_SECREL_HIGH12A:
+                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A;
+                        case IMAGE_REL_ARM64_SECREL_LOW12A:
+                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A;
                         default:
                             Debug.Fail("Invalid RelocType: " + fRelocType);
                             return 0;
@@ -4120,9 +4222,8 @@ namespace Internal.JitInterface
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
             // Set the rest of the flags that don't make sense to expose publicly.
-            flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
+            flags.Set(CorJitFlag.CORJIT_FLAG_AOT);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
-            flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
@@ -4131,11 +4232,8 @@ namespace Internal.JitInterface
             {
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
-                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
-
-                    if ((_compilation.InstructionSetSupport.Flags & InstructionSetSupportFlags.Vector512Throttling) != 0)
-                        flags.Set(CorJitFlag.CORJIT_FLAG_VECTOR512_THROTTLING);
+                    Debug.Assert(InstructionSet.X86_X86Base == InstructionSet.X64_X86Base);
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_X86Base));
                     break;
 
                 case TargetArchitecture.ARM64:
@@ -4332,11 +4430,52 @@ namespace Internal.JitInterface
                 // By policy we code review all changes into corelib, such that failing to use an instruction
                 // set is not a reason to not support usage of it. Except for functions which check if a given
                 // feature is supported or hardware accelerated.
-                if (!isMethodDefinedInCoreLib() ||
-                    MethodBeingCompiled.Name == "get_IsSupported" ||
-                    MethodBeingCompiled.Name == "get_IsHardwareAccelerated")
+                if (!isMethodDefinedInCoreLib())
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
+                }
+                else
+                {
+                    // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+                    // but, they all prefix the qualified name of the interface first, so we'll check for that and
+                    // skip the prefix before trying to resolve the method.
+                    ReadOnlySpan<char> methodName = MethodBeingCompiled.Name.AsSpan();
+
+                    if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System."))
+                    {
+                        ReadOnlySpan<char> partialMethodName = methodName.Slice(45);
+
+                        if (partialMethodName.StartsWith("Numerics.Vector"))
+                        {
+                            partialMethodName = partialMethodName.Slice(15);
+
+                            if (partialMethodName.StartsWith("<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(7);
+                            }
+                        }
+                        if (partialMethodName.StartsWith("Runtime.Intrinsics.Vector"))
+                        {
+                            partialMethodName = partialMethodName.Slice(25);
+
+                            if (partialMethodName.StartsWith("64<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(9);
+                            }
+                            else if (partialMethodName.StartsWith("128<T>,T>.") ||
+                                    partialMethodName.StartsWith("256<T>,T>.") ||
+                                    partialMethodName.StartsWith("512<T>,T>."))
+                            {
+                                methodName = partialMethodName.Slice(10);
+                            }
+                        }
+                    }
+
+                    if (methodName.Equals("get_IsSupported", StringComparison.Ordinal) ||
+                        methodName.Equals("get_IsHardwareAccelerated", StringComparison.Ordinal))
+                    {
+                        _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
+                    }
                 }
             }
             return supportEnabled;
@@ -4370,6 +4509,11 @@ namespace Internal.JitInterface
                 }
             }
             return false;
+        }
+
+        private CORINFO_METHOD_STRUCT_* getSpecialCopyHelper(CORINFO_CLASS_STRUCT_* type)
+        {
+            throw new NotImplementedException("getSpecialCopyHelper");
         }
     }
 }

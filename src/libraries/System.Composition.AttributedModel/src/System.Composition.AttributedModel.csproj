@@ -5,13 +5,7 @@
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides common attributes used by System.Composition types.
-
-Commonly Used Types:
-System.Composition.ExportAttribute
-System.Composition.ImportAttribute
-System.Composition.Convention.AttributedModelProvider</PackageDescription>
-
+    <PackageDescription>Provides the foundational attributes that allow you to declare parts for composition, such as imports, exports, and metadata with the Managed Extensibility Framework (MEF).</PackageDescription>
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>

@@ -39,9 +39,7 @@ class Object;
 #include "classnames.h"
 #include "objectnative.h"
 #include "finalizerthread.h"
-
-// static
-SLIST_HEADER RCW::s_RCWStandbyList;
+#include "dynamicinterfacecastable.h"
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
@@ -64,7 +62,7 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 
     SString strMessage;
     SString strResource;
-    WCHAR strClsid[GUID_STR_BUFFER_LEN];
+    WCHAR strClsid[MINIPAL_GUID_BUFFER_LEN];
     SString strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
@@ -109,7 +107,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     if (FAILED(SafeQueryInterface(pClassFact, IID_IClassFactory2, (IUnknown**)&pClassFact2))
         || m_pClassMT == NULL)
     {
-        FrameWithCookie<DebuggerExitFrame> __def;
+        DebuggerExitFrame __def;
         {
             GCX_PREEMP();
             hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
@@ -195,7 +193,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         // Create the instance
         if (SUCCEEDED(hr))
         {
-            FrameWithCookie<DebuggerExitFrame> __def;
+            DebuggerExitFrame __def;
             {
                 GCX_PREEMP();
                 if (fDesignTime || bstrKey == NULL)
@@ -252,7 +250,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
 
 //-------------------------------------------------------------
 // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-// create a COM+ instance that aggregates a COM instance
+// create a CLR instance that aggregates a COM instance
 
 OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged)
 {
@@ -321,7 +319,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         if (pCallbackMT && !pCallbackMT->IsComImport())
             bUseDelegate = TRUE;
 
-        FrameWithCookie<DebuggerExitFrame> __def;
+        DebuggerExitFrame __def;
 
         // get the IUnknown interface for the managed object
         pOuter = ComCallWrapper::GetComIPFromCCW(pComWrap, IID_IUnknown, NULL);
@@ -504,7 +502,7 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     {
         SString strMessage;
         SString strResource;
-        WCHAR strClsid[GUID_STR_BUFFER_LEN];
+        WCHAR strClsid[MINIPAL_GUID_BUFFER_LEN];
         SString strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
@@ -943,7 +941,7 @@ VOID RCWCleanupList::AddWrapper(RCW* pRCW)
     CONTRACTL_END;
 
     // For the global cleanup list, this is called only from the finalizer thread
-    _ASSERTE(this != g_pRCWCleanupList || GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(this != g_pRCWCleanupList || FinalizerThread::IsCurrentThreadFinalizer());
 
     {
         CrstHolder ch(&m_lock);
@@ -1004,7 +1002,7 @@ VOID RCWCleanupList::CleanupAllWrappers()
         MODE_ANY;
 
         // For the global cleanup list, this is called only from the finalizer thread
-        PRECONDITION( (this != g_pRCWCleanupList) || (GetThread() == FinalizerThread::GetFinalizerThread()));
+        PRECONDITION( (this != g_pRCWCleanupList) || FinalizerThread::IsCurrentThreadFinalizer());
     }
     CONTRACTL_END;
 
@@ -1291,19 +1289,6 @@ const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
     GC_PRESSURE_REMOTE,          // GCPressureSize_Remote
 };
 
-// Deletes all items in code:s_RCWStandbyList.
-void RCW::FlushStandbyList()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PSLIST_ENTRY pEntry = InterlockedFlushSList(&RCW::s_RCWStandbyList);
-    while (pEntry)
-    {
-        PSLIST_ENTRY pNextEntry = pEntry->Next;
-        delete (RCW *)pEntry;
-        pEntry = pNextEntry;
-    }
-}
 //--------------------------------------------------------------------------------
 // The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
 RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT)
@@ -1343,16 +1328,7 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     CONTRACT_END;
 
     // now allocate the wrapper
-    RCW *pWrap = (RCW *)InterlockedPopEntrySList(&RCW::s_RCWStandbyList);
-    if (pWrap != NULL)
-    {
-        // cache hit - reinitialize the data structure
-        new (pWrap) RCW();
-    }
-    else
-    {
-        pWrap = new RCW();
-    }
+    RCW *pWrap = new RCW();
 
     AppDomain * pAppDomain = GetAppDomain();
     ULONG cbRef = SafeAddRefPreemp(pUnk);
@@ -1490,30 +1466,15 @@ RCW::MarshalingType RCW::GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT
     }
     CONTRACTL_END;
 
-    PTR_EEClass pClass = pClassMT->GetClass();
+    // Check whether the COM object can be marshaled. Hence we query for INoMarshal
+    SafeComHolderPreemp<INoMarshal> pNoMarshal;
+    HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_INoMarshal, (IUnknown**)&pNoMarshal);
+    LogInteropQI(pUnk, IID_INoMarshal, hr, "RCW::GetMarshalingType: QI for INoMarshal");
 
-    // Skip attributes on interfaces as any object could implement those interface
-    if (!pClass->IsInterface() && pClass->IsMarshalingTypeSet())
-    {
-        MarshalingType mType;
-        ( pClass ->IsMarshalingTypeFreeThreaded() ) ? mType = MarshalingType_FreeThreaded
-            : (pClass->IsMarshalingTypeInhibit() ? mType = MarshalingType_Inhibit
-            : mType = MarshalingType_Standard);
-        return mType;
-    }
-    // MarshalingBehavior is not set and hence we will have to find the behavior using the QI
-    else
-    {
-        // Check whether the COM object can be marshaled. Hence we query for INoMarshal
-        SafeComHolderPreemp<INoMarshal> pNoMarshal;
-        HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_INoMarshal, (IUnknown**)&pNoMarshal);
-        LogInteropQI(pUnk, IID_INoMarshal, hr, "RCW::GetMarshalingType: QI for INoMarshal");
-
-        if (SUCCEEDED(hr))
-            return MarshalingType_Inhibit;
-        if (IUnkEntry::IsComponentFreeThreaded(pUnk))
-            return MarshalingType_FreeThreaded;
-    }
+    if (SUCCEEDED(hr))
+        return MarshalingType_Inhibit;
+    if (IUnkEntry::IsComponentFreeThreaded(pUnk))
+        return MarshalingType_FreeThreaded;
     return MarshalingType_Unknown;
 }
 
@@ -1709,7 +1670,7 @@ void RCW::MinorCleanup()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && g_fProcessDetach ));
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
 
@@ -1778,7 +1739,7 @@ void RCW::Cleanup()
 #endif
 
     // If there's no thread currently working with the RCW, this call will release helper fields on IUnkEntry
-    // and recycle the entire RCW structure, i.e. insert it in the standby list to be reused or free the memory.
+    // and delete the entire RCW structure.
     // If a thread still keeps a ref-count on the RCW, it will release it when it's done. Keeping the structure
     // and the helper fields alive reduces the chances of memory corruption in race scenarios.
     DecrementUseCount();
@@ -2299,87 +2260,6 @@ void RCW::ReleaseAllInterfaces()
     }
 }
 
-//---------------------------------------------------------------------
-// Returns true if the RCW supports given "standard managed" interface.
-bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pItfMT));
-    }
-    CONTRACTL_END;
-
-    //
-    // Handle casts to normal managed standard interfaces.
-    //
-
-    // Check to see if the interface is a managed standard interface.
-    IID *pNativeIID = MngStdInterfaceMap::GetNativeIIDForType(pItfMT);
-    if (pNativeIID != NULL)
-    {
-        // It is a managed standard interface so we need to check to see if the COM component
-        // implements the native interface associated with it.
-        SafeComHolder<IUnknown> pNativeItf = NULL;
-
-        // QI for the native interface.
-        SafeQueryInterfaceRemoteAware(*pNativeIID, &pNativeItf);
-
-        // If the component supports the native interface then we can say it implements the
-        // standard interface.
-        if (pNativeItf)
-            return true;
-    }
-    else
-    {
-        //
-        // Handle casts to IEnumerable.
-        //
-
-        // If the requested interface is IEnumerable then we need to check to see if the
-        // COM object implements IDispatch and has a member with DISPID_NEWENUM.
-        if (pItfMT == CoreLibBinder::GetClass(CLASS__IENUMERABLE))
-        {
-            SafeComHolder<IDispatch> pDisp = GetIDispatch();
-            if (pDisp)
-            {
-                DISPPARAMS DispParams = {0, 0, NULL, NULL};
-                VariantHolder VarResult;
-
-                // Initialize the return variant.
-                SafeVariantInit(&VarResult);
-
-                HRESULT hr = E_FAIL;
-                {
-                    // We are about to make a call to COM so switch to preemptive GC.
-                    GCX_PREEMP();
-
-                    // Call invoke with DISPID_NEWENUM to see if such a member exists.
-                    hr = pDisp->Invoke(
-                                        DISPID_NEWENUM,
-                                        IID_NULL,
-                                        LOCALE_USER_DEFAULT,
-                                        DISPATCH_METHOD | DISPATCH_PROPERTYGET,
-                                        &DispParams,
-                                        &VarResult,
-                                        NULL,
-                                        NULL
-                                      );
-                }
-
-                // If the invoke succeeded then the component has a member DISPID_NEWENUM
-                // so we can expose it as an IEnumerable.
-                if (SUCCEEDED(hr))
-                    return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 //--------------------------------------------------------------------------------
 // OBJECTREF ComObject::CreateComObjectRef(MethodTable* pMT)
 //  returns NULL for out of memory scenarios
@@ -2491,7 +2371,7 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
                 }
             }
         }
-        else if (pRCW->SupportsMngStdInterface(pIntfTable))
+        else if (DynamicInterfaceCastable::IsInstanceOf(&oref, { pIntfTable }, FALSE))
         {
             bSupportsItf = true;
         }
@@ -2607,7 +2487,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         }
 
         // Convert the IID to a string.
-        WCHAR strIID[GUID_STR_BUFFER_LEN];
+        WCHAR strIID[MINIPAL_GUID_BUFFER_LEN];
         GuidToLPWSTR(iid, strIID);
 
         // Obtain the textual description of the HRESULT.
@@ -2625,7 +2505,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             pSrcItfClass->GetGuid(&SrcItfIID, TRUE);
 
             // Convert the source interface IID to a string.
-            WCHAR strSrcItfIID[GUID_STR_BUFFER_LEN];
+            WCHAR strSrcItfIID[MINIPAL_GUID_BUFFER_LEN];
             GuidToLPWSTR(SrcItfIID, strSrcItfIID);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
@@ -2635,27 +2515,6 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_IENUMERABLE,
                 strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(), strCastToName.GetUnicode(), strIID);
-        }
-        else if ((pNativeIID = MngStdInterfaceMap::GetNativeIIDForType(thCastTo)) != NULL)
-        {
-            // Convert the source interface IID to a string.
-            WCHAR strNativeItfIID[GUID_STR_BUFFER_LEN];
-            GuidToLPWSTR(*pNativeIID, strNativeItfIID);
-
-            // Query for the interface to determine the failure HRESULT.
-            HRESULT hr2 = pRCW->SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pItf);
-
-            // If this function was called, it means the QI call failed in the past. If it
-            // no longer fails now, we still need to throw, so throw a generic invalid cast exception.
-            if (SUCCEEDED(hr2))
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
-
-            // Obtain the textual description of the 2nd HRESULT.
-            SString strHR2Description;
-            GetHRMsg(hr2, strHR2Description);
-
-            COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_MNGSTDITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
-                strCastToName.GetUnicode(), strIID, strNativeItfIID, strHR2Description.GetUnicode());
         }
         else
         {

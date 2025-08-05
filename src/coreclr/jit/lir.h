@@ -284,6 +284,20 @@ public:
         void InsertAtBeginning(Range&& range);
         void InsertAtEnd(Range&& range);
 
+        template <typename... Trees>
+        void InsertAtBeginning(GenTree* tree, Trees&&... rest)
+        {
+            InsertAtBeginning(std::forward<Trees>(rest)...);
+            InsertAtBeginning(tree);
+        }
+
+        template <typename... Trees>
+        void InsertAtEnd(GenTree* tree, Trees&&... rest)
+        {
+            InsertAtEnd(tree);
+            InsertAtEnd(std::forward<Trees>(rest)...);
+        }
+
         void  Remove(GenTree* node, bool markOperandsUnused = false);
         Range Remove(GenTree* firstNode, GenTree* lastNode);
         Range Remove(ReadOnlyRange&& range);
@@ -317,6 +331,7 @@ public:
 
     static GenTree* LastNode(GenTree* node1, GenTree* node2);
     static GenTree* LastNode(GenTree** nodes, size_t numNodes);
+    static GenTree* FirstNode(GenTree* node1, GenTree* node2);
 };
 
 inline void GenTree::SetUnusedValue()

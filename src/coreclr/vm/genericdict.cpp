@@ -233,7 +233,7 @@ BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocat
             }
 
             // A lock should be taken by FindToken before being allowed to use an empty slot in the layout
-            _ASSERT(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+            _ASSERT(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
 
             PVOID pResultSignature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, slot);
             pDictLayout->m_slots[iSlot].m_signature = pResultSignature;
@@ -270,7 +270,7 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
     {
         STANDARD_VM_CHECK;
         INJECT_FAULT(ThrowOutOfMemory(););
-        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+        PRECONDITION(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
         PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
     }
     CONTRACTL_END
@@ -280,15 +280,13 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
 
 #ifdef _DEBUG
     // Stress debug mode by increasing size by only 1 slot for the first 10 slots.
-    DWORD newSize = pCurrentDictLayout->m_numSlots > 10 ? (DWORD)pCurrentDictLayout->m_numSlots * 2 : pCurrentDictLayout->m_numSlots + 1;
-    if (!FitsIn<WORD>(newSize))
+    DWORD newSize = pCurrentDictLayout->m_numSlots > 10 ? ((DWORD)pCurrentDictLayout->m_numSlots) * 2 : pCurrentDictLayout->m_numSlots + 1;
+#else
+    DWORD newSize = ((DWORD)pCurrentDictLayout->m_numSlots) * 2;
+#endif
+    if (!FitsIn<WORD>(newSize + static_cast<WORD>(numGenericArgs)))
         return NULL;
     DictionaryLayout* pNewDictionaryLayout = Allocate((WORD)newSize, pAllocator, NULL);
-#else
-    if (!FitsIn<WORD>((DWORD)pCurrentDictLayout->m_numSlots * 2))
-        return NULL;
-    DictionaryLayout* pNewDictionaryLayout = Allocate(pCurrentDictLayout->m_numSlots * 2, pAllocator, NULL);
-#endif
 
     pNewDictionaryLayout->m_numInitialSlots = pCurrentDictLayout->m_numInitialSlots;
 
@@ -337,7 +335,7 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
     if (FindTokenWorker(pAllocator, pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
         return TRUE;
 
-    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
@@ -384,7 +382,7 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
     if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
         return TRUE;
 
-    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
@@ -502,7 +500,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
         // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
 
         // Take lock and check for size again, just in case another thread already resized the dictionary
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         pDictionary = pMD->GetMethodDictionary();
         currentDictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
@@ -560,7 +558,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
         // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
 
         // Take lock and check for size again, just in case another thread already resized the dictionary
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         pDictionary = pMT->GetDictionary();
         currentDictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
@@ -700,26 +698,26 @@ Dictionary::PopulateEntry(
         BYTE fixupKind = *pBlob++;
 
         ModuleBase * pInfoModule = pModule;
-        if (fixupKind & ENCODE_MODULE_OVERRIDE)
+        if (fixupKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-            fixupKind &= ~ENCODE_MODULE_OVERRIDE;
+            fixupKind &= ~READYTORUN_FIXUP_ModuleOverride;
         }
 
-        _ASSERTE(fixupKind == ENCODE_DICTIONARY_LOOKUP_THISOBJ ||
-                 fixupKind == ENCODE_DICTIONARY_LOOKUP_TYPE ||
-                 fixupKind == ENCODE_DICTIONARY_LOOKUP_METHOD);
+        _ASSERTE(fixupKind == READYTORUN_FIXUP_ThisObjDictionaryLookup ||
+                 fixupKind == READYTORUN_FIXUP_TypeDictionaryLookup ||
+                 fixupKind == READYTORUN_FIXUP_MethodDictionaryLookup);
 
-        if (fixupKind == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
+        if (fixupKind == READYTORUN_FIXUP_ThisObjDictionaryLookup)
         {
             SigPointer p(pBlob);
             p.SkipExactlyOne();
             pBlob = p.GetPtr();
         }
 
-        BYTE signatureKind = *pBlob++;
-        if (signatureKind & ENCODE_MODULE_OVERRIDE)
+        ReadyToRunFixupKind signatureKind = (ReadyToRunFixupKind)*pBlob++;
+        if (signatureKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             ModuleBase * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
@@ -728,20 +726,20 @@ Dictionary::PopulateEntry(
                 pInfoModule = pSignatureModule;
             }
             _ASSERTE(pInfoModule == pSignatureModule);
-            signatureKind &= ~ENCODE_MODULE_OVERRIDE;
+            signatureKind = (ReadyToRunFixupKind)(signatureKind & ~READYTORUN_FIXUP_ModuleOverride);
         }
 
-        switch ((CORCOMPILE_FIXUP_BLOB_KIND) signatureKind)
+        switch (signatureKind)
         {
-            case ENCODE_DECLARINGTYPE_HANDLE:   kind = DeclaringTypeHandleSlot; break;
-            case ENCODE_TYPE_HANDLE:            kind = TypeHandleSlot; break;
-            case ENCODE_FIELD_HANDLE:           kind = FieldDescSlot; break;
-            case ENCODE_METHOD_HANDLE:          kind = MethodDescSlot; break;
-            case ENCODE_METHOD_ENTRY:           kind = MethodEntrySlot; break;
-            case ENCODE_VIRTUAL_ENTRY:          kind = DispatchStubAddrSlot; break;
+            case READYTORUN_FIXUP_DeclaringTypeHandle:   kind = DeclaringTypeHandleSlot; break;
+            case READYTORUN_FIXUP_TypeHandle:            kind = TypeHandleSlot; break;
+            case READYTORUN_FIXUP_FieldHandle:           kind = FieldDescSlot; break;
+            case READYTORUN_FIXUP_MethodHandle:          kind = MethodDescSlot; break;
+            case READYTORUN_FIXUP_MethodEntry:           kind = MethodEntrySlot; break;
+            case READYTORUN_FIXUP_VirtualEntry:          kind = DispatchStubAddrSlot; break;
 
             default:
-                _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
+                _ASSERTE(!"Unexpected ReadyToRunFixupKind");
                 ThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
@@ -783,7 +781,7 @@ Dictionary::PopulateEntry(
 
 #if _DEBUG
         // Lock is needed because dictionary pointers can get updated during dictionary size expansion
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         // MethodTable is expected to be normalized
         Dictionary* pDictionary = pMT->GetDictionary();
@@ -891,6 +889,7 @@ Dictionary::PopulateEntry(
 
             uint32_t methodSlot = -1;
             BOOL fRequiresDispatchStub = 0;
+            BOOL isAsyncVariant = 0;
 
             if (isReadyToRunModule)
             {
@@ -902,6 +901,7 @@ Dictionary::PopulateEntry(
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0) || (kind == MethodEntrySlot);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+                isAsyncVariant = ((methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0);
 
                 if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
                 {
@@ -952,6 +952,10 @@ Dictionary::PopulateEntry(
                         _ASSERTE(pZapSigContext->pInfoModule->IsFullModule());
                         pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pZapSigContext->pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
                     }
+                    if (isAsyncVariant)
+                    {
+                        pMethod = pMethod->GetAsyncOtherVariant();
+                    }
                 }
 
                 if (ownerType.IsNull())
@@ -995,6 +999,7 @@ Dictionary::PopulateEntry(
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+                isAsyncVariant = ((methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0);
 
                 if ((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) != 0)
                 {
@@ -1036,6 +1041,12 @@ Dictionary::PopulateEntry(
 
                     // The RID map should have been filled out if we fully loaded the class
                     pMethod = pMethodDefMT->GetModule()->LookupMethodDef(token);
+
+                    if (isAsyncVariant)
+                    {
+                        pMethod = pMethod->GetAsyncOtherVariant();
+                    }
+
                     _ASSERTE(pMethod != NULL);
                     pMethod->CheckRestore();
                 }
@@ -1043,7 +1054,8 @@ Dictionary::PopulateEntry(
 
             if (fRequiresDispatchStub)
             {
-                // Generate a dispatch stub and store it in the dictionary.
+                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
+                // Generate a dispatch stub and gather a slot.
                 //
                 // We generate an indirection so we don't have to write to the dictionary
                 // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
@@ -1055,22 +1067,16 @@ Dictionary::PopulateEntry(
                 // dictionary entry to the  caller, still using "call [eax]", and then the
                 // stub dispatch mechanism can update the dictitonary itself and we don't
                 // need an indirection.
-                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
-
-                VirtualCallStubManager * pMgr = pDictLoaderAllocator->GetVirtualCallStubManager();
-
+                //
                 // We indirect through a cell so that updates can take place atomically.
                 // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
-                // are allocated in the domain of the dicitonary.
-                //
-                // In the case of overflow (where there is no dictionary, just a global hash table) then
-                // the entry will be placed in the overflow hash table (JitGenericHandleCache).  This
-                // is partitioned according to domain, i.e. is scraped each time an AppDomain gets unloaded.
-                PCODE addr = pMgr->GetCallStub(ownerType, methodSlot);
+                // are allocated in the domain of the dictionary.
 
-                result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
+                result = (CORINFO_GENERIC_HANDLE)GenerateDispatchStubCellEntrySlot(pDictLoaderAllocator, ownerType, methodSlot, NULL);
                 break;
             }
+
+            _ASSERTE((!!isAsyncVariant) == pMethod->IsAsyncVariantMethod());
 
             Instantiation inst;
 
@@ -1115,6 +1121,8 @@ Dictionary::PopulateEntry(
                 isUnboxingStub,
                 inst,
                 (!isInstantiatingStub && !isUnboxingStub));
+
+            _ASSERTE((!!isAsyncVariant) == pMethod->IsAsyncVariantMethod());
 
             if (kind == ConstrainedMethodEntrySlot)
             {
@@ -1284,6 +1292,8 @@ Dictionary::PopulateEntry(
 
         MemoryBarrier();
 
+        _ASSERTE(slotIndex != 0); // Technically this assert is invalid, but it will only happen if growing the dictionary layout attempts to grow beyond the capacity
+                                  // of a 16 bit unsigned integer. This is highly unlikely to happen in practice, but possible, and will result in extremely degraded performance.
         if (slotIndex != 0)
         {
             Dictionary* pDictionary;

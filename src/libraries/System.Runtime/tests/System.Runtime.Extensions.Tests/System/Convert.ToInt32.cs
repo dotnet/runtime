@@ -127,9 +127,9 @@ namespace System.Tests
         [Fact]
         public void FromStringWithBase()
         {
-            string[] testValues = { null, null, null, null, "7FFFFFFF", "2147483647", "17777777777", "1111111111111111111111111111111", "80000000", "-2147483648", "20000000000", "10000000000000000000000000000000", };
-            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, };
-            int[] expectedValues = { 0, 0, 0, 0, int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue, int.MinValue, int.MinValue, int.MinValue, int.MinValue, };
+            string[] testValues = { null, null, null, null, "7FFFFFFF", "2147483647", "17777777777", "1111111111111111111111111111111", "80000000", "-2147483648", "20000000000", "10000000000000000000000000000000", "0x7fffffff", "0X7FFFFFFF" };
+            int[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, 16, 16 };
+            int[] expectedValues = { 0, 0, 0, 0, int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue, int.MinValue, int.MinValue, int.MinValue, int.MinValue, int.MaxValue, int.MaxValue };
             VerifyFromStringWithBase(Convert.ToInt32, testValues, testBases, expectedValues);
 
             string[] overflowValues = { "2147483648", "-2147483649", "111111111111111111111111111111111", "1FFFFffff", "777777777777" };

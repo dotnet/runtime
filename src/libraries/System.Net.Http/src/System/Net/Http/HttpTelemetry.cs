@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Text;
 using System.Threading;
 
 namespace System.Net.Http
@@ -37,6 +38,9 @@ namespace System.Net.Http
         private void RequestStart(string scheme, string host, int port, string pathAndQuery, byte versionMajor, byte versionMinor, HttpVersionPolicy versionPolicy)
         {
             Interlocked.Increment(ref _startedRequests);
+
+            pathAndQuery = UriRedactionHelper.GetRedactedPathAndQuery(pathAndQuery);
+
             WriteEvent(eventId: 1, scheme, host, port, pathAndQuery, versionMajor, versionMinor, versionPolicy);
         }
 
@@ -170,9 +174,19 @@ namespace System.Net.Http
         }
 
         [Event(16, Level = EventLevel.Informational)]
-        public void Redirect(string redirectUri)
+        private void Redirect(string redirectUri)
         {
             WriteEvent(eventId: 16, redirectUri);
+        }
+
+        [NonEvent]
+        public void Redirect(Uri redirectUri)
+        {
+            Debug.Assert(redirectUri.IsAbsoluteUri);
+
+            string uriString = UriRedactionHelper.GetRedactedUriString(redirectUri);
+
+            Redirect(uriString);
         }
 
         [NonEvent]

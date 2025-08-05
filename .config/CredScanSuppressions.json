@@ -7,7 +7,7 @@
                 "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/DSA/DSAKeyPemTests.cs",
                 "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyPemTests.cs",
                 "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyPemTests.cs",
-                "src/libraries/System.Security.Cryptography/tests/X509Certificates/TestData.cs",
+                "src/libraries/Common/tests/System/Security/Cryptography/X509Certificates/TestData.cs",
                 "src/tests/FunctionalTests/Android/Device_Emulator/gRPC/grpc-dotnet/testassets/Certs/InteropTests/server1.key"
             ],
             "placeholder": [

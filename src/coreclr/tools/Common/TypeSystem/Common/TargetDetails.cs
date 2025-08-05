@@ -348,5 +348,17 @@ namespace Internal.TypeSystem
         /// CodeDelta - encapsulate the fact that ARM requires a thumb bit
         /// </summary>
         public int CodeDelta { get => (Architecture == TargetArchitecture.ARM) ? 1 : 0; }
+
+        /// <summary>
+        /// Encapsulates the fact that some architectures require 8-byte (larger than pointer
+        /// size) alignment on some value types and arrays.
+        /// </summary>
+        public bool SupportsAlign8
+        {
+            get
+            {
+                return Architecture is TargetArchitecture.ARM or TargetArchitecture.Wasm32;
+            }
+        }
     }
 }

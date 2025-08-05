@@ -58,6 +58,4 @@ variables:
                 ne(variables['isExtraPlatformsBuild'], true),
                 eq(variables['isRollingBuild'], true))) ]
 
-- template: /eng/pipelines/common/perf-variables.yml
-
 - template: /eng/common/${{ parameters.templatePath }}/variables/pool-providers.yml

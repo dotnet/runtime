@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
@@ -101,7 +102,8 @@ namespace System.Runtime.CompilerServices.Tests
             RuntimeTypeHandle t = typeof(HasCctor).TypeHandle;
             RuntimeHelpers.RunClassConstructor(t);
             Assert.Equal("Hello", HasCctorReceiver.S);
-            return;
+            // Should not throw
+            RuntimeHelpers.RunClassConstructor(typeof(GenericHasCctor<>).TypeHandle);
         }
 
         internal class HasCctor
@@ -117,6 +119,30 @@ namespace System.Runtime.CompilerServices.Tests
             public static string S;
         }
 
+        internal class GenericHasCctor<T>
+        {
+            static GenericHasCctor()
+            {
+                Thread.Yield(); // Make sure the preinitialization optimization doesn't eat this.
+            }
+        }
+
+        [ComImport]
+        [Guid("00000000-0000-0000-0000-000000000000")]
+        interface ComInterface
+        {
+            void Func();
+        }
+
+        // This class is used to test the PrepareMethod API with COM interop on non-Windows platforms.
+        [ComImport]
+        [Guid("00000000-0000-0000-0000-000000000000")]
+        class ComClass : ComInterface
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            public extern void Func();
+        }
+
         [Fact]
         public static void PrepareMethod()
         {
@@ -128,6 +154,16 @@ namespace System.Runtime.CompilerServices.Tests
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
+            }
+
+            try
+            {
+                // This is expected to either succeed or throw PlatformNotSupportedException depending on the platform
+                // and runtime flavor
+                RuntimeHelpers.PrepareMethod(typeof(ComClass).GetMethod("Func").MethodHandle);
+            }
+            catch (PlatformNotSupportedException)
+            {
             }
         }
 
@@ -381,10 +417,10 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(a, RuntimeHelpers.GetSubArray(a, range));
 
             range = new Range(Index.FromStart(1), Index.FromEnd(5));
-            Assert.Equal(new int [] { 2, 3, 4, 5}, RuntimeHelpers.GetSubArray(a, range));
+            Assert.Equal(new int[] { 2, 3, 4, 5 }, RuntimeHelpers.GetSubArray(a, range));
 
             range = new Range(Index.FromStart(0), Index.FromStart(a.Length + 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { int[] array = RuntimeHelpers.GetSubArray(a, range); });
         }
 
         [Fact]
@@ -444,6 +480,11 @@ namespace System.Runtime.CompilerServices.Tests
         private ref struct RefStructWithRef
         {
             public ref int a;
+
+            internal RefStructWithRef(ref int aVal)
+            {
+                a = ref aVal;
+            }
         }
 
         private ref struct RefStructWithNestedRef
@@ -489,7 +530,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(8, RuntimeHelpers.SizeOf(typeof(double).TypeHandle));
             Assert.Equal(3, RuntimeHelpers.SizeOf(typeof(Byte3).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(void*).TypeHandle));
-            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate* <void>).TypeHandle));
+            Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(delegate*<void>).TypeHandle));
             Assert.Equal(nint.Size, RuntimeHelpers.SizeOf(typeof(int).MakeByRefType().TypeHandle));
             Assert.Throws<ArgumentNullException>(() => RuntimeHelpers.SizeOf(default));
             Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.SizeOf(typeof(List<>).TypeHandle));

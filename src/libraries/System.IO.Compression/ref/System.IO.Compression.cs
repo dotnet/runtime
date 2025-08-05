@@ -24,6 +24,7 @@ namespace System.IO.Compression
         public DeflateStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public DeflateStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }
         public DeflateStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, bool leaveOpen) { }
+        public DeflateStream(System.IO.Stream stream, System.IO.Compression.ZLibCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public System.IO.Stream BaseStream { get { throw null; } }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
@@ -59,6 +60,7 @@ namespace System.IO.Compression
         public GZipStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public GZipStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }
         public GZipStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, bool leaveOpen) { }
+        public GZipStream(System.IO.Stream stream, System.IO.Compression.ZLibCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public System.IO.Stream BaseStream { get { throw null; } }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
@@ -88,7 +90,7 @@ namespace System.IO.Compression
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
-    public partial class ZipArchive : System.IDisposable
+    public partial class ZipArchive : System.IAsyncDisposable, System.IDisposable
     {
         public ZipArchive(System.IO.Stream stream) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode) { }
@@ -98,10 +100,13 @@ namespace System.IO.Compression
         public string Comment { get { throw null; } set { } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.IO.Compression.ZipArchiveEntry> Entries { get { throw null; } }
         public System.IO.Compression.ZipArchiveMode Mode { get { throw null; } }
+        public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchive> CreateAsync(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public System.IO.Compression.ZipArchiveEntry? GetEntry(string entryName) { throw null; }
     }
     public partial class ZipArchiveEntry
@@ -121,6 +126,7 @@ namespace System.IO.Compression
         public string Name { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum ZipArchiveMode
@@ -129,12 +135,27 @@ namespace System.IO.Compression
         Create = 1,
         Update = 2,
     }
+    public sealed partial class ZLibCompressionOptions
+    {
+        public ZLibCompressionOptions() { }
+        public int CompressionLevel { get { throw null; } set { } }
+        public System.IO.Compression.ZLibCompressionStrategy CompressionStrategy { get { throw null; } set { } }
+    }
+    public enum ZLibCompressionStrategy
+    {
+        Default = 0,
+        Filtered = 1,
+        HuffmanOnly = 2,
+        RunLengthEncoding = 3,
+        Fixed = 4,
+    }
     public sealed partial class ZLibStream : System.IO.Stream
     {
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, bool leaveOpen) { }
+        public ZLibStream(System.IO.Stream stream, System.IO.Compression.ZLibCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public System.IO.Stream BaseStream { get { throw null; } }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }

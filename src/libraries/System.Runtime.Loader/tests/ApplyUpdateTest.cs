@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void LambdaBodyChange()
         {
             ApplyUpdateUtil.TestCase(static () =>
@@ -70,7 +70,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void LambdaCapturesThis()
         {
             // Tests that changes to the body of a lambda that captures 'this' is supported.
@@ -98,7 +98,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void FirstCallAfterUpdate()
         {
             /* Tests that updating a method that has not been called before works correctly and that
@@ -202,7 +202,7 @@ namespace System.Reflection.Metadata
 
                 Type preUpdateTy = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete");
                 Assert.NotNull(preUpdateTy);
-                
+
                 // before the update the type has a MyDeleteAttribute on it
                 Attribute[] cattrs = Attribute.GetCustomAttributes(preUpdateTy, attrType);
                 Assert.NotNull(cattrs);
@@ -323,7 +323,46 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76702", TestRuntimes.CoreCLR)]
+        // FieldRVA update tests are not supported on the Mono runtime.
+        //[ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported), nameof (ApplyUpdateUtil.IsNotMonoRuntime))]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        void TestAddFieldRVA()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.AddFieldRVA).Assembly;
+
+                {
+                    var lrosLen = ApplyUpdate.Test.AddFieldRVA.LocalReadOnlySpan();
+                    Assert.Equal(-1, lrosLen);
+                    var mfaLen = ApplyUpdate.Test.AddFieldRVA.MemberFieldArray();
+                    Assert.Equal(-1, mfaLen);
+                    // var lsarosLen = ApplyUpdate.Test.AddFieldRVA.LocalStackAllocReadOnlySpan();
+                    // Assert.Equal(-1, mfaLen);
+                    var utf8ros = ApplyUpdate.Test.AddFieldRVA.Utf8LiteralReadOnlySpan();
+                    Assert.Equal(1, utf8ros.Length);
+                    var strlit = ApplyUpdate.Test.AddFieldRVA.StringLiteral();
+                    Assert.Equal("0", strlit);
+                }
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                {
+                    var lrosLen = ApplyUpdate.Test.AddFieldRVA.LocalReadOnlySpan();
+                    Assert.Equal(3, lrosLen);
+                    var mfaLen = ApplyUpdate.Test.AddFieldRVA.MemberFieldArray();
+                    Assert.Equal(4, mfaLen);
+                    // var lsarosLen = ApplyUpdate.Test.AddFieldRVA.LocalStackAllocReadOnlySpan();
+                    // Assert.Equal(5, mfaLen);
+                    var utf8ros = ApplyUpdate.Test.AddFieldRVA.Utf8LiteralReadOnlySpan();
+                    Assert.Equal(6, utf8ros.Length);
+                    var strlit = ApplyUpdate.Test.AddFieldRVA.StringLiteral();
+                    Assert.Equal("1234567", strlit);
+                }
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116624", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddInstanceField()
         {
@@ -355,7 +394,7 @@ namespace System.Reflection.Metadata
 
                 Assert.Equal (6, x2.GetIntArrayLength());
                 Assert.Equal (7, x2.GetIntArrayElt (3));
-                
+
                 // now check that reflection can get/set the new fields
                 var fi = x2.GetType().GetField("NewStructField");
 
@@ -425,7 +464,7 @@ namespace System.Reflection.Metadata
                 // token is in that range.  If more code is added, revise this test.
 
                 Assert.True ((addedEventToken & 0x00ffffff) < 4);
-                
+
                 fi = x2.GetType().GetField("AddedDateTime");
                 Assert.NotNull(fi);
                 var dt = DateTime.Now;
@@ -815,7 +854,7 @@ namespace System.Reflection.Metadata
                     Assert.NotNull(parm.ParameterType);
                     Assert.Equal(parmPos, parm.Position);
                     Assert.NotNull(parm.Name);
-                    
+
                     var cas = parm.GetCustomAttributes(false);
                     foreach (var ca in cas) {
                         Assert.NotNull (ca);
@@ -868,7 +907,7 @@ namespace System.Reflection.Metadata
                 var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<double>();
 
                 Assert.Equal (0.0, y.GetField());
-                
+
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 // there are two updates - the first adds the fields, the second one updates the
@@ -899,7 +938,7 @@ namespace System.Reflection.Metadata
                 var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<double>(45.0);
 
                 Assert.Equal (0.0, y.GetIt());
-                
+
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 var fi = x.GetType().GetField("myAddedField", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -951,7 +990,7 @@ namespace System.Reflection.Metadata
                 Assert.Equal("abcd", x.ExistingMethod("abcd"));
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
-            
+
                 InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => x.ExistingMethod("spqr"));
 
                 Assert.Equal("spqr", exn.Message);
@@ -983,5 +1022,25 @@ namespace System.Reflection.Metadata
                 Assert.True(frame1Name == null || frame1Name.Contains("NewMethodThrows.cs"));
             });
         }
-    }       
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        void TestIncreaseMetadataRowSize()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                // Get the custom attribtues from a newly-added type and method
+                // and check that they are the expected ones.
+                var assm = typeof(ApplyUpdate.Test.IncreaseMetadataRowSize).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                var r = ApplyUpdate.Test.IncreaseMetadataRowSize.VeryLooooooooooooooooooooooooooooooooongMethodNameToPushTheStringBlobOver64k_1();
+                Assert.Equal(50000, r);
+                MethodInfo mi = typeof(ApplyUpdate.Test.IncreaseMetadataRowSize).GetMethod("VeryLooooooooooooooooooooooooooooooooongMethodNameToPushTheStringBlobOver64k_800");
+                ParameterInfo[] pars = mi.GetParameters();
+                Assert.Equal("x800", pars[0].Name);
+            });
+        }
+    }
 }

@@ -1,0 +1,501 @@
+#
+## Licensed to the .NET Foundation under one or more agreements.
+## The .NET Foundation licenses this file to you under the MIT license.
+#
+# This file generates support for the .net runtime to emit events via the 
+# EventHeader format specified at https://github.com/microsoft/LinuxTracepoints/blob/main/libeventheader-tracepoint/include/eventheader/eventheader.h
+# 
+# It uses the LinuxTracepoints library included in this repo at src/native/External/LinuxTracepoints.
+# 
+# The support is accomplished with the following:
+# 
+#   In clretwall.h all methods have user_events specific code added like the following.
+#       inline BOOL EventEnabledGCStart(void) {return EventPipeEventEnabledGCStart() || UserEventsEventEnabledGCStart() || (XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCStart());}
+# 
+#       inline ULONG FireEtwGCStart(
+#           const unsigned int  Count,
+#           const unsigned int  Reason,
+#           LPCGUID ActivityId = nullptr,
+#           LPCGUID RelatedActivityId = nullptr
+#       )
+#       {
+#           ULONG status = EventPipeWriteEventGCStart(Count,Reason,ActivityId,RelatedActivityId);
+#           status &= UserEventsWriteEventGCStart(Count,Reason,ActivityId,RelatedActivityId);
+#           status &= FireEtXplatGCStart(Count,Reason);
+#           return status;
+#       }
+# 
+#   The clretwall.h file is generate in the genEventing.py script.
+# 
+#   This script outputs one file for each provider, with each event on the provider having a method for
+#   checking if the event is enabled and a method for firing the event.
+#       BOOL UserEventsEventEnabledGCStart(void)
+#       {
+#           return IsUserEventsEnabled() && TraceLoggingProviderEnabled(DotNETRuntime, 4, 1);
+#       }
+# 
+#       extern "C" ULONG UserEventsWriteEventGCStart(
+#           const unsigned int Count,
+#           const unsigned int Reason,
+#           LPCGUID ActivityId,
+#           LPCGUID RelatedActivityId)
+#       {
+#           if (!UserEventsEventEnabledGCStart())
+#               return ERROR_SUCCESS;
+#           TraceLoggingWriteActivity(DotNETRuntime, "GCStart", ActivityId, RelatedActivityId, TraceLoggingLevel(4), TraceLoggingKeyword(1),
+#           TraceLoggingUInt32(Count),
+#           TraceLoggingUInt32(Reason)
+#           );
+#           return ERROR_SUCCESS;
+#       }
+#    
+#    We also generate a function to check if a given keyword/level is enabled for each provider:
+#    
+#        bool DotNETRuntimeEnabledByKeyword(uint8_t level, uint64_t keyword)
+#        {
+#            if (!IsUserEventsEnabled())
+#            {
+#                return false;
+#            }
+#    
+#            switch (level)
+#            {
+#                case (0):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 0, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (1):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 1, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (2):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 2, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (3):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 3, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (4):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 4, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (5):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 5, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#    
+#            }
+#            return false;
+#        }
+
+from __future__ import print_function
+from genEventing import *
+import os
+import xml.dom.minidom as DOM
+from utilities import open_for_update, parseExclusionList, parseInclusionList
+
+stdprolog_cpp = """// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************
+
+DO NOT MODIFY. AUTOGENERATED FILE.
+This file is generated using the logic from <root>/src/scripts/genUserEvent.py
+
+******************************************************************/
+
+"""
+
+stdprolog_cmake = """#
+#
+#******************************************************************
+
+#DO NOT MODIFY. AUTOGENERATED FILE.
+#This file is generated using the logic from <root>/src/scripts/genUserEvent.py
+
+#******************************************************************
+
+"""
+
+userevent_dirname = "userevents"
+
+def generateMethodSignatureEnabled(eventName, runtimeFlavor, providerName, eventLevel, eventKeywords):
+    return "%s UserEventsEventEnabled%s(void)" % (getEventPipeDataTypeMapping(runtimeFlavor)["BOOL"], eventName,)#mayhbe add in genEventing.py
+
+def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
+    sig_pieces = []
+
+    if extern: sig_pieces.append('extern "C" ')
+    sig_pieces.append("%s UserEventsWriteEvent" % (getEventPipeDataTypeMapping(runtimeFlavor)["ULONG"]))
+    sig_pieces.append(eventName)
+    sig_pieces.append("(")
+
+    if template:
+        sig_pieces.append("\n")
+        fnSig = template.signature
+        for paramName in fnSig.paramlist:
+            fnparam = fnSig.getParam(paramName)
+            wintypeName = fnparam.winType
+            typewName = getPalDataTypeMapping(runtimeFlavor)[wintypeName]
+            winCount = fnparam.count
+            countw = getPalDataTypeMapping(runtimeFlavor)[winCount]
+
+            if paramName in template.structs:
+                sig_pieces.append(
+                    "%sint %s_ElementSize,\n" %
+                    (lindent, paramName))
+
+            sig_pieces.append(lindent)
+            sig_pieces.append(typewName)
+            if countw != " ":
+                sig_pieces.append(countw)
+
+            sig_pieces.append(" ")
+            sig_pieces.append(fnparam.name)
+            sig_pieces.append(",\n")
+
+    sig_pieces.append(lindent)
+    sig_pieces.append("%s ActivityId,\n" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"]))
+    sig_pieces.append(lindent)
+    sig_pieces.append("%s RelatedActivityId" % (getEventPipeDataTypeMapping(runtimeFlavor)["LPCGUID"]))
+    sig_pieces.append(")")
+    return ''.join(sig_pieces)
+def formatGuid(providerGuid):
+    providerGuid = providerGuid[1:-1]
+    guidParts = providerGuid.split('-')
+    lastPart = guidParts[-1]
+    guidParts = guidParts[:-1]
+    nextLastPart = guidParts[-1]
+    guidParts = guidParts[:-1]
+    nextLastPartSplit = [nextLastPart[i:i+2] for i in range(0, len(nextLastPart), 2)]
+    lastPartSplit = [lastPart[i:i+2] for i in range(0, len(lastPart), 2)]
+    guidParts.extend(nextLastPartSplit)
+    guidParts.extend(lastPartSplit)
+    guidParts[0] = "0x" + guidParts[0]
+    return ", 0x".join(guidParts)
+
+def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, thisProviderKeywords, inclusionList, exclusionList):
+    WriteEventImpl = []
+    # User Event Provider Declaration
+    providerGuid = formatGuid(providerNode.getAttribute('guid'))
+    WriteEventImpl.append("TRACELOGGING_DEFINE_PROVIDER(%s, \"%s\", (%s));\n\n" % (providerPrettyName, providerName, providerGuid))
+    WriteEventImpl.append("""void Init%s()
+{
+    int err = TraceLoggingRegister(%s);
+    _ASSERTE(err == 0);
+}\n\n""" % (providerPrettyName, providerPrettyName))
+    WriteEventImpl.append("""bool %sEnabledByKeyword(uint8_t level, uint64_t keyword)
+{
+    if (!IsUserEventsEnabled())
+    {
+        return false;
+    }
+
+    switch (level)
+    {\n""" % (providerPrettyName))
+
+    for level in range(6):
+        # first case, 0 keyword
+        WriteEventImpl.append("        case (%s):\n" % (level))
+        WriteEventImpl.append("            if (keyword == 0)\n")
+        WriteEventImpl.append("            {\n")
+        WriteEventImpl.append("                if (TraceLoggingProviderEnabled(%s, %s, 0)) return true;\n" % (providerPrettyName, level))
+        WriteEventImpl.append("            }\n")
+
+        # rest of keywords, only generate ones we know about via keywordMap in order to not define
+        # bogus events. (TraceLoggingProviderEnable registers the event to check if it is set or not)
+        for keyword in thisProviderKeywords:
+            WriteEventImpl.append("            if (keyword == 0x%x)\n" % (keyword))
+            WriteEventImpl.append("            {\n")
+            WriteEventImpl.append("                if (TraceLoggingProviderEnabled(%s, %s, 0x%x)) return true;\n" % (providerPrettyName, level, keyword))
+            WriteEventImpl.append("            }\n")
+
+        WriteEventImpl.append("            break;\n")
+
+    WriteEventImpl.append("""
+    }
+    return false;
+}\n\n""")
+     #&& TraceLoggingProviderEnabled(%s, level, keyword);
+
+    for eventNode in eventNodes:
+        eventName = eventNode.getAttribute('symbol')
+        templateName = eventNode.getAttribute('template')
+        eventLevel = eventNode.getAttribute('level')
+        eventKeywords = eventNode.getAttribute('keywords')
+        eventKeywordsMask = generateEventKeywords(eventKeywords)
+
+
+        if not includeEvent(inclusionList, providerName, eventName):
+            continue
+
+        eventIsEnabledFunc = "TraceLoggingProviderEnabled"
+
+        # generate UserEventEnabled function
+        eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor, providerName, eventLevel, eventKeywords) + """
+{
+    return IsUserEventsEnabled() && %s(%s, %s, %s);
+}
+
+""" % (eventIsEnabledFunc, providerPrettyName, getUserEventLogLevelMapping(runtimeFlavor)[eventLevel], eventKeywordsMask)
+        WriteEventImpl.append(eventEnabledImpl)
+
+            # generate UserEventWriteEvent function
+        fnptype = []
+
+        if templateName:
+            template = allTemplates[templateName]
+        else:
+            template = None
+
+        fnptype.append(generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor))
+        fnptype.append("\n{\n")
+        checking = """    if (!UserEventsEventEnabled%s())
+        return ERROR_SUCCESS;
+""" % (eventName)
+
+        fnptype.append(checking)
+
+        WriteEventImpl.extend(fnptype)
+
+        if template:
+            body = generateWriteEventBody(template, providerPrettyName, eventName, runtimeFlavor, eventLevel, eventKeywordsMask)
+            WriteEventImpl.append(body)
+            WriteEventImpl.append("}\n\n")
+        else:
+            if runtimeFlavor.coreclr:
+                WriteEventImpl.append(
+                    "    TraceLoggingWriteActivity(%s, \"%s\"" %(providerPrettyName, eventName) +
+                    ", ActivityId, RelatedActivityId);\n")
+                WriteEventImpl.append("    return ERROR_SUCCESS;\n")
+                WriteEventImpl.append("}\n\n")
+            elif (runtimeFlavor.mono or runtimeFlavor.nativeaot):
+                WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
+    return ''.join(WriteEventImpl)
+
+def generateWriteEventBody(template, providerPrettyName, eventName, runtimeFlavor, eventLevel, eventKeywordsMask):
+    #each of the if/else in this function is a different type of template, or a template containing specific args
+    fnSig = template.signature
+    pack_list = []
+    #need the providerNode to get the first arg for TraceLoggingWrite
+    pack_list.append("    TraceLoggingWriteActivity(%s, \"%s\", ActivityId, RelatedActivityId, TraceLoggingLevel(%s), TraceLoggingKeyword(%s)" % (providerPrettyName, eventName, getUserEventLogLevelMapping(runtimeFlavor)[eventLevel], eventKeywordsMask))
+
+    for paramName in fnSig.paramlist:
+        parameter = fnSig.getParam(paramName)
+        if paramName in template.structs:
+            size = "(int)%s_ElementSize * (int)%s" % (
+                paramName, parameter.prop)
+            pack_list.append("    TraceLoggingBinary(%s, %s)" % (parameter, size))
+        elif paramName in template.arrays:
+            size = "sizeof(%s) * (int)%s" % (
+                getArrayDataTypeMapping(runtimeFlavor)[parameter.winType],
+                parameter.prop)
+        elif parameter.winType == "win:GUID":
+            pack_list.append("    %s((uint8_t *)%s)" % (getUserEventDataTypeMapping(runtimeFlavor)[parameter.winType], parameter.name))
+        else:
+            pack_list.append("    %s(%s)" % (getUserEventDataTypeMapping(runtimeFlavor)[parameter.winType], parameter.name))
+    code = ",\n".join(pack_list)  + "\n    );\n    return ERROR_SUCCESS;\n" #+ "\n\n"
+    return code
+
+
+
+keywordMap = {}
+
+def generateEventKeywords(eventKeywords):
+    mask = 0
+    # split keywords if there are multiple
+    allKeywords = eventKeywords.split()
+
+    for singleKeyword in allKeywords:
+        mask = mask | keywordMap[singleKeyword]
+
+    return mask
+
+def getCoreCLRUserEventImplFilePrefix():
+    return """#include "common.h"
+#include <stdint.h>
+#include <eventheader/TraceLoggingProvider.h>
+#include <user_events.h>
+"""
+
+def getCoreCLRUserEventImplFileSuffix():
+    return ""
+
+def getMonoUserEventImplFilePrefix():
+    return ""
+
+def getMonoUserEventImplFileSuffix():
+    return ""
+
+def getAotUserEventImplFilePrefix():
+    return ""
+
+def getAotUserEventImplFileSuffix():
+    return ""
+
+def generateUserEventImplFiles(
+        etwmanifest, userevent_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
+    tree = DOM.parse(etwmanifest)
+
+    for providerNode in tree.getElementsByTagName('provider'):
+        providerName = providerNode.getAttribute('name')
+        if not includeProvider(providerName, runtimeFlavor):
+            continue
+
+        providerPrettyName = providerName.replace("Windows-", '')
+        providerPrettyName = providerPrettyName.replace("Microsoft-", '')
+
+        providerName_File = providerPrettyName.replace('-', '')
+        if target_cpp:
+            providerName_File = providerName_File + ".cpp"
+        else:
+            providerName_File = providerName_File + ".c"
+
+        providerName_File = providerName_File.lower()
+
+        usereventfile = os.path.join(userevent_directory, providerName_File)
+
+        providerPrettyName = providerPrettyName.replace('-', '_')
+
+        thisProviderKeywords = []
+        for keywordNode in providerNode.getElementsByTagName('keyword'):
+            mask = int(keywordNode.getAttribute('mask'), 0)
+            thisProviderKeywords.append(mask)
+
+        if dryRun:
+            print(usereventfile)
+        else:
+            with open_for_update(usereventfile) as usereventImpl:
+                usereventImpl.write(stdprolog_cpp)
+                header = ""
+                if runtimeFlavor.coreclr:
+                    header = getCoreCLRUserEventImplFilePrefix()
+                elif runtimeFlavor.mono:
+                    header = getMonoUserEventImplFilePrefix()
+                elif runtimeFlavor.nativeaot:
+                    header = getAotUserEventImplFilePrefix()
+
+                usereventImpl.write(header + "\n")
+
+                templateNodes = providerNode.getElementsByTagName('template')
+                allTemplates = parseTemplateNodes(templateNodes)
+                eventNodes = providerNode.getElementsByTagName('event')
+                usereventImpl.write(
+                    generateClrUserEventWriteEventsImpl(
+                        providerNode,
+                        providerPrettyName,
+                        providerName,
+                        eventNodes,
+                        allTemplates,
+                        extern,
+                        target_cpp,
+                        runtimeFlavor,
+                        thisProviderKeywords,
+                        inclusionList,
+                        exclusionList) + "\n")
+
+                if runtimeFlavor.coreclr:
+                    usereventImpl.write(getCoreCLRUserEventImplFileSuffix())
+                elif runtimeFlavor.mono:
+                    usereventImpl.write(getMonoUserEventImplFileSuffix())
+                elif runtimeFlavor.nativeaot and providerName=="Microsoft-Windows-DotNETRuntime":
+                    usereventImpl.write(getAotUserEventImplFileSuffix())
+
+def generateUserEventFiles(
+        etwmanifest, intermediate, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
+    if runtimeFlavor.nativeaot or runtimeFlavor.mono:
+        raise Exception("genUserEvents.py only supports coreclr currently.")
+    
+    userevent_directory = os.path.join(intermediate, userevent_dirname)
+    tree = DOM.parse(etwmanifest)
+
+    if not os.path.exists(userevent_directory):
+        os.makedirs(userevent_directory)
+
+    # generate all keywords
+    for keywordNode in tree.getElementsByTagName('keyword'):
+        keywordName = keywordNode.getAttribute('name')
+        keywordMask = keywordNode.getAttribute('mask')
+        keywordMap[keywordName] = int(keywordMask, 0)
+
+    # generate file for each provider
+    generateUserEventImplFiles(
+        etwmanifest,
+        userevent_directory,
+        extern,
+        target_cpp,
+        runtimeFlavor,
+        inclusionList,
+        exclusionList,
+        dryRun
+    )
+
+import argparse
+import sys
+
+def main(argv):
+
+    # parse the command line
+    parser = argparse.ArgumentParser(
+        description="Generates the Code required to instrument userevent logging mechanism")
+
+    required = parser.add_argument_group('required arguments')
+    required.add_argument('--man', type=str, required=True,
+                          help='full path to manifest containing the description of events')
+    required.add_argument('--exc',  type=str, required=True,
+                                    help='full path to exclusion list')
+    required.add_argument('--inc',  type=str,default="",
+                                    help='full path to inclusion list')
+    required.add_argument('--intermediate', type=str, required=True,
+                          help='full path to eventprovider  intermediate directory')
+    required.add_argument('--runtimeflavor', type=str,default="CoreCLR",
+                          help='runtime flavor')
+    required.add_argument('--nonextern', action='store_true',
+                          help='if specified, will generate files to be compiled into the CLR rather than extern' )
+    required.add_argument('--dry-run', action='store_true',
+                                    help='if specified, will output the names of the generated files instead of generating the files' )
+    args, unknown = parser.parse_known_args(argv)
+    if unknown:
+        print('Unknown argument(s): ', ', '.join(unknown))
+        return 1
+
+    sClrEtwAllMan = args.man
+    exclusion_filename = args.exc
+    inclusion_filename = args.inc
+    intermediate = args.intermediate
+    runtimeFlavor = RuntimeFlavor(args.runtimeflavor)
+    extern = not args.nonextern
+    dryRun = args.dry_run
+
+    target_cpp = True
+    if runtimeFlavor.mono:
+        extern = False
+        target_cpp = False
+
+    inclusion_list = parseInclusionList(inclusion_filename)
+    exclusion_list = parseExclusionList(exclusion_filename)
+
+    generateUserEventFiles(sClrEtwAllMan, intermediate, extern, target_cpp, runtimeFlavor, inclusion_list, exclusion_list, dryRun)
+
+if __name__ == '__main__':
+    return_code = main(sys.argv[1:])
+    sys.exit(return_code)

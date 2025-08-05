@@ -26,7 +26,6 @@ namespace System.Globalization
             True = 2
         }
 
-        private string? _listSeparator;
         private bool _isReadOnly;
 
         private readonly string _cultureName;
@@ -124,13 +123,13 @@ namespace System.Globalization
         /// </summary>
         public string ListSeparator
         {
-            get => _listSeparator ??= _cultureData.ListSeparator;
+            get => field ??= _cultureData.ListSeparator;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
-                _listSeparator = value;
+                field = value;
             }
         }
 
@@ -184,7 +183,6 @@ namespace System.Globalization
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-
             char dst = default;
             ChangeCaseCore(&c, 1, &dst, 1, toUpper);
             return dst;
@@ -516,7 +514,7 @@ namespace System.Globalization
         /// influence which letter or letters of a "word" are uppercased when titlecasing strings.  For example
         /// "l'arbre" is considered two words in French, whereas "can't" is considered one word in English.
         /// </summary>
-        public unsafe string ToTitleCase(string str)
+        public string ToTitleCase(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
 
@@ -704,13 +702,7 @@ namespace System.Globalization
                 NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 return;
             }
-#if TARGET_BROWSER
-            if (GlobalizationMode.Hybrid)
-            {
-                JsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
-                return;
-            }
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
                 ChangeCaseNative(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);

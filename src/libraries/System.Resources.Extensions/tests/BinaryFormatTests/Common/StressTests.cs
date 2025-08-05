@@ -23,7 +23,7 @@ public abstract class StressTests<T> : SerializationTest<T> where T : ISerialize
         }
 
         SimpleNode deserialized = (SimpleNode)Deserialize(Serialize(root));
-        deserialized.Next.Should().NotBeNull();
-        deserialized.Next.Should().NotBeSameAs(deserialized);
+        Assert.NotNull(deserialized.Next);
+        Assert.NotSame(deserialized, deserialized.Next);
     }
 }

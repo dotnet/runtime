@@ -84,7 +84,7 @@ struct MachExceptionInfo
     mach_exception_data_type_t Subcodes[2];
 #if defined(HOST_AMD64)
     x86_thread_state_t ThreadState;
-    x86_float_state_t FloatState;
+    x86_avx512_state_t FloatState;
     x86_debug_state_t DebugState;
 #elif defined(HOST_ARM64)
     arm_thread_state64_t ThreadState;
@@ -186,11 +186,6 @@ public:
     void ReplyToNotification(MachMessage& message, kern_return_t eResult);
 
 private:
-    // The maximum size in bytes of any Mach message we can send or receive. Calculating an exact size for
-    // this is non trivial (basically because of the security trailers that Mach appends) but the current
-    // value has proven to be more than enough so far.
-    static const size_t kcbMaxMessageSize = 1500;
-
     // The following are structures describing the formats of the Mach messages we understand.
 
     // Request to set the register context on a particular thread.
@@ -297,6 +292,9 @@ private:
             exception_raise_state_identity_reply_64_t           raise_state_identity_reply_64;
         } data;
     } __attribute__((packed));;
+
+    // The maximum size in bytes of any Mach message we can send or receive including possible trailers
+    static const size_t kcbMaxMessageSize = sizeof(mach_message_t) + MAX_TRAILER_SIZE;
 
     // Re-initializes this data structure (to the same state as default construction, containing no message).
     void ResetMessage();

@@ -9,11 +9,7 @@ namespace System.Globalization
     {
         private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId)
         {
-#if TARGET_BROWSER
-            return GlobalizationMode.Hybrid ?
-                JSLoadCalendarDataFromBrowser(localeName, calendarId) :
-                IcuLoadCalendarDataFromSystem(localeName, calendarId);
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ?
                 LoadCalendarDataFromNative(localeName, calendarId) :
                 IcuLoadCalendarDataFromSystem(localeName, calendarId);

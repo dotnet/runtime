@@ -288,21 +288,17 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray requiredPropertiesSet)
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray assignedOrNotRequiredPropertiesSet)
         {
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
-            Debug.Assert(parent.PropertyCache != null);
-
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
             const int CutOffLength = 60;
 
-            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
+            foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                JsonPropertyInfo property = kvp.Value;
-
-                if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
+                if (assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
                 {
                     continue;
                 }
@@ -325,6 +321,46 @@ namespace System.Text.Json
             }
 
             throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, listOfMissingPropertiesBuilder.ToString()));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(JsonPropertyInfo property)
+        {
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_JsonPropertyInfo, property.Name, property.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed()
+        {
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(string name)
+        {
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(ReadOnlySpan<byte> nameBytes)
+        {
+            string name = JsonHelpers.Utf8GetString(nameBytes);
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
+        }
+
+        private static string Truncate(ReadOnlySpan<char> str)
+        {
+            const int MaxLength = 15;
+
+            if (str.Length <= MaxLength)
+            {
+                return str.ToString();
+            }
+
+            Span<char> builder = stackalloc char[MaxLength + 3];
+            str.Slice(0, MaxLength).CopyTo(builder);
+            builder[MaxLength] = builder[MaxLength + 1] = builder[MaxLength + 2] = '.';
+            return builder.ToString();
         }
 
         [DoesNotReturn]
@@ -416,6 +452,12 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(JsonTypeInfoKind kind)
         {
             throw new InvalidOperationException(SR.Format(SR.InvalidJsonTypeInfoOperationForKind, kind));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonTypeInfoOnDeserializingCallbacksNotSupported(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.OnDeserializingCallbacksNotSupported, type));
         }
 
         [DoesNotReturn]
@@ -562,9 +604,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(scoped ref ReadStack state, in Utf8JsonReader reader, NotSupportedException ex)
+        public static void ThrowNotSupportedException(scoped ref ReadStack state, in Utf8JsonReader reader, Exception innerException)
         {
-            string message = ex.Message;
+            string message = innerException.Message;
 
             // The caller should check to ensure path is not already set.
             Debug.Assert(!message.Contains(" Path: "));
@@ -586,13 +628,13 @@ namespace System.Text.Json
             long bytePositionInLine = reader.CurrentState._bytePositionInLine;
             message += $" Path: {state.JsonPath()} | LineNumber: {lineNumber} | BytePositionInLine: {bytePositionInLine}.";
 
-            throw new NotSupportedException(message, ex);
+            throw new NotSupportedException(message, innerException);
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(ref WriteStack state, NotSupportedException ex)
+        public static void ThrowNotSupportedException(ref WriteStack state, Exception innerException)
         {
-            string message = ex.Message;
+            string message = innerException.Message;
 
             // The caller should check to ensure path is not already set.
             Debug.Assert(!message.Contains(" Path: "));
@@ -612,7 +654,7 @@ namespace System.Text.Json
 
             message += $" Path: {state.PropertyPath()}.";
 
-            throw new NotSupportedException(message, ex);
+            throw new NotSupportedException(message, innerException);
         }
 
         [DoesNotReturn]
@@ -902,15 +944,21 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PropertyConflictsWithMetadataPropertyName(Type type, string propertyName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_PropertyConflictsWithMetadataPropertyName, type, propertyName));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_PolymorphicTypeConfigurationDoesNotSpecifyDerivedTypes(Type baseType)
         {
             throw new InvalidOperationException(SR.Format(SR.Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes, baseType));
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(Type enumType, string enumName)
+        public static void ThrowInvalidOperationException_UnsupportedEnumIdentifier(Type enumType, string? enumName)
         {
-            throw new InvalidOperationException(SR.Format(SR.InvalidEnumTypeWithSpecialChar, enumType.Name, enumName));
+            throw new InvalidOperationException(SR.Format(SR.UnsupportedEnumIdentifier, enumType.Name, enumName));
         }
 
         [DoesNotReturn]
@@ -932,9 +980,27 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowOperationCanceledException_PipeReadCanceled()
+        {
+            throw new OperationCanceledException(SR.PipeReaderCanceled);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
         {
             throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_JsonSchemaExporterDoesNotSupportReferenceHandlerPreserve()
+        {
+            throw new NotSupportedException(SR.JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonSchemaExporterDepthTooLarge()
+        {
+            throw new InvalidOperationException(SR.JsonSchemaExporter_DepthTooLarge);
         }
     }
 }

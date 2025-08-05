@@ -21,14 +21,14 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             await WithVirtualConnection(async (server, client) =>
                 {
-                    Task clientJob = Task.Run(() => {
+                    Task clientJob = Task.Run(() =>
+                    {
                         client.AuthenticateAsClient(hostName);
                     });
 
@@ -80,7 +80,8 @@ namespace System.Net.Security.Tests
             using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
                              client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
-                Task clientJob = Task.Run(() => {
+                Task clientJob = Task.Run(() =>
+                {
                     client.AuthenticateAsClient(hostName);
                     Assert.Fail("RemoteCertificateValidationCallback called when AuthenticateAsServerAsync was expected to fail.");
                 });
@@ -128,7 +129,8 @@ namespace System.Net.Security.Tests
             using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
                              client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
-                Task clientJob = Task.Run(() => {
+                Task clientJob = Task.Run(() =>
+                {
                     client.AuthenticateAsClient(hostName);
                 });
 
@@ -148,7 +150,8 @@ namespace System.Net.Security.Tests
         {
             await WithVirtualConnection(async (server, client) =>
             {
-                Task clientJob = Task.Run(() => {
+                Task clientJob = Task.Run(() =>
+                {
                     Assert.Throws<IOException>(() =>
                         client.AuthenticateAsClient("test")
                     );
@@ -190,8 +193,8 @@ namespace System.Net.Security.Tests
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
             {
-                    TargetHost = target,
-                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                TargetHost = target,
+                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
             };
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
             {
@@ -237,56 +240,52 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task UnencodedHostName_ValidatesCertificate()
         {
             string rawHostname = "räksmörgås.josefsson.org";
             string punycodeHostname = "xn--rksmrgs-5wao1o.josefsson.org";
 
-            var (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates(punycodeHostname);
-            try
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(punycodeHostname);
+
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
             {
-                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
-                {
-                    ServerCertificateContext = SslStreamCertificateContext.Create(serverCert, serverChain),
-                };
+                ServerCertificateContext = pkiHolder.CreateSslStreamCertificateContext(),
+            };
 
-                SslClientAuthenticationOptions clientOptions = new ()
-                {
-                    TargetHost = rawHostname,
-                    CertificateChainPolicy = new X509ChainPolicy()
-                    {
-                        RevocationMode = X509RevocationMode.NoCheck,
-                        TrustMode = X509ChainTrustMode.CustomRootTrust,
-                        CustomTrustStore = { serverChain[serverChain.Count - 1] }
-                    }
-                };
-
-                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                                client.AuthenticateAsClientAsync(clientOptions, default),
-                                server.AuthenticateAsServerAsync(serverOptions, default));
-
-                await TestHelper.PingPong(client, server, default);
-                Assert.Equal(rawHostname, server.TargetHostName);
-                Assert.Equal(rawHostname, client.TargetHostName);
-            }
-            finally
+            SslClientAuthenticationOptions clientOptions = new()
             {
-                serverCert.Dispose();
-                foreach (var c in serverChain) c.Dispose();
-                TestHelper.CleanupCertificates(rawHostname);
-            }
+                TargetHost = rawHostname,
+                CertificateChainPolicy = new X509ChainPolicy()
+                {
+                    RevocationMode = X509RevocationMode.NoCheck,
+                    TrustMode = X509ChainTrustMode.CustomRootTrust,
+                    CustomTrustStore = { pkiHolder.IssuerChain[^1] }
+                }
+            };
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                            client.AuthenticateAsClientAsync(clientOptions, default),
+                            server.AuthenticateAsServerAsync(serverOptions, default));
+
+            await TestHelper.PingPong(client, server, default);
+            Assert.Equal(rawHostname, server.TargetHostName);
+            Assert.Equal(rawHostname, client.TargetHostName);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("www-.volal.cz")]
         [InlineData("www-.colorhexa.com")]
         [InlineData("xn--www-7m0a.thegratuit.com")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Safe invalid IDN hostnames are not supported on Android")]
         public async Task SslStream_SafeInvalidIdn_Success(string name)
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("Safe invalid IDN hostnames are not supported on Network.framework");
+            }
+
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             using (client)
             using (server)
@@ -335,7 +334,8 @@ namespace System.Net.Security.Tests
 
         private static Func<Task> WithAggregateExceptionUnwrapping(Func<Task> a)
         {
-            return async () => {
+            return async () =>
+            {
                 try
                 {
                     await a();
@@ -369,11 +369,21 @@ namespace System.Net.Security.Tests
 
         public static IEnumerable<object[]> HostNameData()
         {
+            if (OperatingSystem.IsAndroid())
+            {
+                yield return new object[] { "localhost" };
+                yield return new object[] { "dot.net" };
+                // max allowed hostname length is 63
+                yield return new object[] { $"{new string('a', 59)}.net" };
+                yield return new object[] { "\u017C\u00F3\u0142\u0107g\u0119\u015Bl\u0105ja\u017A\u0144.\u7EA2\u70E7.\u7167\u308A\u713C\u304D" };
+                yield break;
+            }
+
             yield return new object[] { "a" };
             yield return new object[] { "test" };
             // max allowed hostname length is 63
             yield return new object[] { new string('a', 63) };
-            yield return new object[] { "\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144. \u7EA2\u70E7. \u7167\u308A\u713C\u304D" };
+            yield return new object[] { "\u017C\u00F3\u0142\u0107g\u0119\u015Bl\u0105ja\u017A\u0144.\u7EA2\u70E7.\u7167\u308A\u713C\u304D" };
         }
     }
 }

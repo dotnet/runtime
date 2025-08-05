@@ -7,5 +7,4 @@
 
 #include "objidl.h"
 #include "servprov.h"
-#include "oaidl.h"
 

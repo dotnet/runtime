@@ -16,7 +16,7 @@ void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, va_l
     _vsnprintf_s(buffer, 8192, 8191, message, args);
 
     if (BreakOnException())
-        __debugbreak();
+        DEBUG_BREAK;
 
     ULONG_PTR exArgs[1];
     exArgs[0] = (ULONG_PTR)buffer;
@@ -42,7 +42,7 @@ void MSC_ONLY(__declspec(noreturn)) ThrowSpmiException(DWORD exceptionCode, cons
 void MSC_ONLY(__declspec(noreturn)) ThrowRecordedException(DWORD innerExceptionCode)
 {
     if (BreakOnException())
-        __debugbreak();
+        DEBUG_BREAK;
 
     ULONG_PTR args[1];
     args[0] = (ULONG_PTR)innerExceptionCode;

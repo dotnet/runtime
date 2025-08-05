@@ -88,7 +88,7 @@ namespace System
         internal const string SuppressIldasmAttributeMessage = "SuppressIldasmAttribute has no effect in .NET 6.0+.";
         internal const string SuppressIldasmAttributeDiagId = "SYSLIB0025";
 
-        internal const string X509CertificateImmutableMessage = "X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.";
+        internal const string X509CertificateImmutableMessage = "X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.";
         internal const string X509CertificateImmutableDiagId = "SYSLIB0026";
 
         internal const string PublicKeyPropertyMessage = "PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.";
@@ -133,8 +133,7 @@ namespace System
         internal const string EncryptionPolicyMessage = "EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.";
         internal const string EncryptionPolicyDiagId = "SYSLIB0040";
 
-        internal const string Rfc2898OutdatedCtorMessage = "The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.";
-        internal const string Rfc2898OutdatedCtorDiagId = "SYSLIB0041";
+        // SYSLIB0041 is no longer used and is superseded by SYSLIB0060.
 
         internal const string EccXmlExportImportMessage = "ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.";
         internal const string EccXmlExportImportDiagId = "SYSLIB0042";
@@ -180,5 +179,26 @@ namespace System
 
         internal const string LoadFromHashAlgorithmMessage = "LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.";
         internal const string LoadFromHashAlgorithmDiagId = "SYSLIB0056";
+
+        internal const string X509CtorCertDataObsoleteMessage = "Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.";
+        internal const string X509CtorCertDataObsoleteDiagId = "SYSLIB0057";
+
+        internal const string TlsCipherAlgorithmEnumsMessage = "KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.";
+        internal const string TlsCipherAlgorithmEnumsDiagId = "SYSLIB0058";
+
+        internal const string SystemEventsEventsThreadShutdownMessage = "SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead.";
+        internal const string SystemEventsEventsThreadShutdownDiagId = "SYSLIB0059";
+
+        internal const string Rfc2898DeriveBytesCtorMessage = "The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.";
+        internal const string Rfc2898DeriveBytesCtorDiagId = "SYSLIB0060";
+
+        internal const string QueryableMinByMaxByTSourceObsoleteMessage = "The Queryable MinBy and MaxBy taking an IComparer<TSource> are obsolete. Use the new ones that take an IComparer<TKey>.";
+        internal const string QueryableMinByMaxByTSourceObsoleteDiagId = "SYSLIB0061";
+
+        internal const string XsltSettingsEnableScriptMessage = "XSLT Script blocks are not supported.";
+        internal const string XsltSettingsEnableScriptDiagId = "SYSLIB0062";
+
+        // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
+        // Keep new const identifiers above this comment.
     }
 }

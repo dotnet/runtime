@@ -115,7 +115,7 @@ HRESULT GCProfiler::ObjectReferences(ObjectID objectId, ClassID classId, ULONG c
     for (ULONG i = 0; i < cObjectRefs; ++i)
     {
         ObjectID obj = objectRefIds[i];
-        if (obj != NULL)
+        if (obj != 0)
         {
             _objectReferencesSeen.insert(obj);
         }
@@ -131,7 +131,7 @@ HRESULT GCProfiler::RootReferences(ULONG cRootRefs, ObjectID rootRefIds[])
     for (ULONG i = 0; i < cRootRefs; ++i)
     {
         ObjectID obj = rootRefIds[i];
-        if (obj != NULL)
+        if (obj != 0)
         {
             _rootReferencesSeen.insert(obj);
         }

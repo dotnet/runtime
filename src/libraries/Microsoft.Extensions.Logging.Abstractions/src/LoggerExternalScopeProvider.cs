@@ -7,7 +7,7 @@ using System.Threading;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Default implementation of <see cref="IExternalScopeProvider"/>
+    /// Default implementation of <see cref="IExternalScopeProvider"/>.
     /// </summary>
     public class LoggerExternalScopeProvider : IExternalScopeProvider
     {

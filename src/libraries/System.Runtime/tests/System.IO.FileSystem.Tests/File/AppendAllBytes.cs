@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO.Tests;
 using System.Linq;
 using System.Text;
 using Xunit;
@@ -10,13 +9,13 @@ namespace System.IO.Tests
 {
     public class File_AppendAllBytes : FileSystemTest
     {
-
         [Fact]
         public void NullParameters()
         {
             string path = GetTestFilePath();
 
             Assert.Throws<ArgumentNullException>(() => File.AppendAllBytes(null, new byte[0]));
+            Assert.Throws<ArgumentNullException>(() => File.AppendAllBytes(null, ReadOnlySpan<byte>.Empty));
             Assert.Throws<ArgumentNullException>(() => File.AppendAllBytes(path, null));
         }
 
@@ -24,12 +23,14 @@ namespace System.IO.Tests
         public void NonExistentPath()
         {
             Assert.Throws<DirectoryNotFoundException>(() => File.AppendAllBytes(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), new byte[0]));
+            Assert.Throws<DirectoryNotFoundException>(() => File.AppendAllBytes(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), ReadOnlySpan<byte>.Empty));
         }
 
         [Fact]
         public void InvalidParameters()
         {
             Assert.Throws<ArgumentException>(() => File.AppendAllBytes(string.Empty, new byte[0]));
+            Assert.Throws<ArgumentException>(() => File.AppendAllBytes(string.Empty, ReadOnlySpan<byte>.Empty));
         }
 
 
@@ -43,10 +44,11 @@ namespace System.IO.Tests
 
             File.WriteAllBytes(path, initialBytes);
             File.AppendAllBytes(path, additionalBytes);
+            File.AppendAllBytes(path, additionalBytes.AsSpan());
 
             byte[] result = File.ReadAllBytes(path);
 
-            byte[] expectedBytes = initialBytes.Concat(additionalBytes).ToArray();
+            byte[] expectedBytes = initialBytes.Concat(additionalBytes).Concat(additionalBytes).ToArray();
 
             Assert.True(result.SequenceEqual(expectedBytes));
         }
@@ -58,6 +60,7 @@ namespace System.IO.Tests
             string path = GetTestFilePath();
             Assert.False(File.Exists(path));
             File.AppendAllBytes(path, new byte[0]);
+            File.AppendAllBytes(path, ReadOnlySpan<byte>.Empty);
             Assert.True(File.Exists(path));
             Assert.Empty(File.ReadAllBytes(path));
         }
@@ -71,6 +74,7 @@ namespace System.IO.Tests
             using (File.Create(path))
             {
                 Assert.Throws<IOException>(() => File.AppendAllBytes(path, bytes));
+                Assert.Throws<IOException>(() => File.AppendAllBytes(path, bytes.AsSpan()));
             }
         }
 
@@ -97,6 +101,7 @@ namespace System.IO.Tests
                 else
                 {
                     Assert.Throws<UnauthorizedAccessException>(() => File.AppendAllBytes(path, dataToAppend));
+                    Assert.Throws<UnauthorizedAccessException>(() => File.AppendAllBytes(path, dataToAppend.AsSpan()));
                 }
             }
             finally

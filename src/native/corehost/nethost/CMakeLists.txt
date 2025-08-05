@@ -34,7 +34,7 @@ if (WIN32)
 endif(WIN32)
 
 target_link_libraries(nethost PRIVATE hostmisc fxr_resolver)
-target_link_libraries(libnethost PRIVATE hostmisc fxr_resolver)
+target_link_libraries(libnethost PRIVATE hostmisc::public fxr_resolver)
 target_compile_definitions(nethost PRIVATE FEATURE_LIBHOST NETHOST_EXPORT)
 target_compile_definitions(libnethost PRIVATE FEATURE_LIBHOST NETHOST_EXPORT)
 
@@ -55,9 +55,6 @@ if (MSVC)
     # LTCG must be disabled to ensure that non-MSVC toolchains can work with it.
 
     set_target_properties(libnethost PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
-    string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELEASE ${CMAKE_STATIC_LINKER_FLAGS_RELEASE})
-    string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO})
 endif()
 
 # Only Windows creates a symbols file for static libs.

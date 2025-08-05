@@ -108,7 +108,6 @@ upload_parser = subparsers.add_parser("upload", description=upload_description, 
 
 upload_parser.add_argument("-git_hash", required=True, help=git_hash_help)
 upload_parser.add_argument("--use_latest_jit_change", action="store_true", help=use_latest_jit_change_help)
-upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
 # subparser for download
@@ -209,8 +208,8 @@ def process_git_hash_arg(coreclr_args, return_first_hash=False):
         baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
         logging.info("Baseline hash: %s", baseline_hash)
 
-        # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-        command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
+        # Enumerate the last 20 changes, starting with the baseline, that included JIT and JIT-EE GUID changes.
+        command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
         logging.debug("Invoking: {}".format(" ".join(command)))
         proc = subprocess.Popen(command, stdout=subprocess.PIPE)
         stdout_change_list, _ = proc.communicate()
@@ -436,8 +435,8 @@ def upload_command(coreclr_args):
         # from the root of the runtime repo.
 
         with ChangeDir(coreclr_args.runtime_repo_location):
-            # Enumerate the last change, starting with the jit_git_hash, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", jit_git_hash, "-1", "--", "src/coreclr/jit/*" ]
+            # Enumerate the last change, starting with the jit_git_hash, that included JIT and JIT-EE GUID changes.
+            command = [ "git", "log", "--pretty=format:%H", jit_git_hash, "-1", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
             logging.info("Invoking: {}".format(" ".join(command)))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
@@ -458,14 +457,18 @@ def upload_command(coreclr_args):
 
     try:
         from azure.storage.blob import BlobServiceClient
+        from azure.identity import AzureCliCredential
 
     except:
         logging.warning("Please install:")
         logging.warning("  pip install azure-storage-blob")
+        logging.warning("  pip install azure-identiy")
         logging.warning("See also https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-python")
-        raise RuntimeError("Missing azure storage package.")
+        raise RuntimeError("Missing azure storage or identity packages.")
 
-    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
+    default_credential = AzureCliCredential()
+
+    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}/{}".format(az_builds_root_folder, jit_git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type)
 
     total_bytes_uploaded = 0
@@ -622,12 +625,6 @@ def setup_args(args):
                             "use_latest_jit_change",
                             lambda unused: True,
                             "Unable to set use_latest_jit_change")
-
-        coreclr_args.verify(args,
-                            "az_storage_key",
-                            lambda item: item is not None,
-                            "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
-                            modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
 
         coreclr_args.verify(args,
                             "skip_cleanup",

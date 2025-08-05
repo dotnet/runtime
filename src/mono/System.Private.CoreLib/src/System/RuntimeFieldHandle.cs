@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -82,6 +83,19 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe void SetValueDirect(RuntimeFieldInfo field, RuntimeType fieldType, void* pTypedRef, object value, RuntimeType? contextType);
+
+        internal static ref byte GetFieldDataReference(object target, RuntimeFieldInfo field)
+            => ref GetFieldDataReferenceInternal(target, field.FieldHandle.Value);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern ref byte GetFieldDataReferenceInternal(object target, IntPtr field);
+
+        internal static ref byte GetFieldDataReference(ref byte target, RuntimeFieldInfo field)
+        {
+            Debug.Assert(!Unsafe.IsNullRef(ref target));
+            int offset = field.GetFieldOffset();
+            return ref Unsafe.AddByteOffset(ref target, offset);
+        }
     }
 
 }

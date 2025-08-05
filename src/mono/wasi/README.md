@@ -34,13 +34,42 @@ If you don't need to modify runtime configuration, you can omit this step. In ca
 error : Could not find wasi-sdk. Either set $(WASI_SDK_PATH), or use workloads to get the sdk. SDK is required for building native files.
 ```
 
-you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable `WASI_SDK_PATH` or MSBuild property `WasiSdkRoot` to a location where you extract it.
+you will need to separately download a WASI SDK from https://github.com/WebAssembly/wasi-sdk and point an environment variable `WASI_SDK_PATH` to a location where you extract it.
 
 ### Optional build flags
 
 - `WasmSingleFileBundle` - bundle all assets into the `.wasm`. The output file name will match the project name.
 - `InvariantGlobalization` - remove globalization support, decrease the publish size.
 - More details can be found at https://github.com/dotnet/runtime/blob/main/src/mono/wasm/build/WasmApp.Common.targets and https://github.com/dotnet/runtime/blob/main/src/mono/wasi/build/WasiApp.targets
+
+## Properties That Trigger Relinking
+
+### What is Relinking?
+
+Relinking in WASI builds refers to regenerating the native WASI runtime artifacts (such as `dotnet.native.wasi`, etc.) to reflect changes in configuration, features, or source. This process is essential for producing correct, optimized binaries for WASI environments.
+
+### Properties That Trigger Relinking in `wasi.proj`
+
+The following MSBuild properties will trigger a relinking during the WASI build process:
+
+- **`WasiBuildNative`** - `/p:WasiBuildNative=true` - Forces a rebuild of all native WASI binaries, regardless of detected changes.
+- **`WasiRelinkNative`** - `/p:WasiRelinkNative=true` - Explicitly requests relinking of native WASI artifacts.
+- **`RunAOTCompilation`** - `/p:RunAOTCompilation=true` - Enables AOT compilation for WASI. Changing this property requires relinking for correct WASI output.
+- **`WasmSingleFileBundle`** - `/p:WasmSingleFileBundle=true` - Bundles all assets into the `.wasm` file, requiring native relinking.
+- **`EnableDiagnostics`** - `/p:EnableDiagnostics=true` - Enables or disables diagnostic features in the native runtime.
+- **`WasmProfilers`** - `/p:WasmProfilers=...` - Changes profiler configuration in the native runtime.
+- **`WasmEnableSIMD`** - `/p:WasmEnableSIMD=true` - Enables or disables SIMD instruction support.
+- **`WasiBuildArgs`** - Any change to `/p:WasiBuildArgs=...` (custom build flags or feature toggles) can trigger a relink.
+- **Configuration/Target Architecture** - Changing `/p:Configuration=Debug|Release` or `/p:RuntimeIdentifier=wasi-wasm`, etc., may require relinking.
+
+#### Notes
+
+- Correct relinking ensures WASI binaries are up-to-date and accurately reflect the intended configuration.
+- Avoid unnecessary relinking for faster incremental builds.
+- The relink logic is defined in `wasi.proj` and supporting MSBuild files.
+- Source changes to native sources in `src/mono/wasi` or related directories will always trigger a relink.
+
+For more detailed WASI build and configuration guidance, see the [WASI build documentation](../../../docs/workflow/building/libraries/webassembly-instructions.md).
 
 ## How it works
 

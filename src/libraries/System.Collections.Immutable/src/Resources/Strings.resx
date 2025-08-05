@@ -105,4 +105,7 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
+    <value>The collection, in conjunction with its comparer, does not support the specified alternate key type.</value>
+  </data>
 </root>

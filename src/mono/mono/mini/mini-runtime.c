@@ -663,8 +663,8 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		addr = mono_compile_method_checked (wrapper, error);
 		mono_error_assert_ok (error);
 		mono_memory_barrier ();
-		callinfo->wrapper = addr;
-		return addr;
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->wrapper, (gpointer)addr, NULL);
+		return (gconstpointer)mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper);
 	} else {
 		if (callinfo->trampoline)
 			return callinfo->trampoline;
@@ -672,13 +672,10 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		mono_error_assert_ok (error);
 		trampoline = mono_create_ftnptr ((gpointer)trampoline);
 
-		mono_loader_lock ();
-		if (!callinfo->trampoline) {
-			callinfo->trampoline = trampoline;
-		}
-		mono_loader_unlock ();
+		
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->trampoline, (gpointer)trampoline, NULL);
 
-		return callinfo->trampoline;
+		return (gconstpointer)mono_atomic_load_ptr ((volatile gpointer*)&callinfo->trampoline);
 	}
 }
 
@@ -2856,18 +2853,10 @@ lookup_start:
 	p = mono_create_ftnptr (code);
 
 	if (callinfo) {
-		// FIXME Locking here is somewhat historical due to mono_register_jit_icall_wrapper taking loader lock.
-		// atomic_compare_exchange should suffice.
-		mono_loader_lock ();
-		mono_jit_lock ();
-		if (!callinfo->wrapper) {
-			callinfo->wrapper = p;
-		}
-		mono_jit_unlock ();
-		mono_loader_unlock ();
+		mono_atomic_cas_ptr ((volatile void*)&callinfo->wrapper, p, NULL);
+		p = mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper);
 	}
 
-	// FIXME p or callinfo->wrapper or does not matter?
 	return p;
 }
 
@@ -2949,6 +2938,11 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 static gpointer
 get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error)
 {
+	if (method->is_generic || mono_class_is_gtd (method->klass)) {
+		mono_error_set_generic_error (error, "System", "InvalidOperationException", "");
+		return NULL;
+	}
+
 	if (!mono_llvm_only) {
 		gpointer res = mono_jit_compile_method (method, error);
 		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
@@ -3902,7 +3896,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -3912,7 +3907,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	} else {
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -4500,7 +4496,7 @@ init_class (MonoClass *klass)
 	}
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
@@ -4932,6 +4928,7 @@ register_icalls (void)
 	 * so on.
 	 */
 	register_icall (mono_profiler_raise_method_enter, mono_icall_sig_void_ptr_ptr, TRUE);
+	register_icall (mono_profiler_raise_method_samplepoint, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_method_leave, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_method_tail_call, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_exception_clause, mono_icall_sig_void_ptr_int_int_object, TRUE);

@@ -25,9 +25,6 @@
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
-     <!-- Override InformationalVersion during servicing as it's returned via public api. --> 
-    <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion> 
-    <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion> 
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
 
     <!-- Disable nullability-related warnings -->
@@ -74,7 +71,10 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
+    <FeatureJavaMarshal>true</FeatureJavaMarshal>
+    <DefineConstants>FEATURE_JAVAMARSHAL;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
@@ -88,6 +88,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'loongarch64'">
+    <DefineConstants>TARGET_64BIT;TARGET_LOONGARCH64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
+    <DefineConstants>TARGET_64BIT;TARGET_RISCV64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>

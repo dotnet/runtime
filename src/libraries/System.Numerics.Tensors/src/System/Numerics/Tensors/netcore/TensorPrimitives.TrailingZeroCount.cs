@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-
 namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
@@ -50,23 +48,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-                if (PopCountOperator<T>.Vectorizable)
-                {
-                    return PopCountOperator<T>.Invoke(~x & (x - Vector256<T>.One));
-                }
-
-                return Vector256.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
+                Debug.Assert(PopCountOperator<T>.Vectorizable);
+                return PopCountOperator<T>.Invoke(~x & (x - Vector256<T>.One));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x)
             {
-                if (PopCountOperator<T>.Vectorizable)
-                {
-                    return PopCountOperator<T>.Invoke(~x & (x - Vector512<T>.One));
-                }
-
-                return Vector512.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
+                Debug.Assert(PopCountOperator<T>.Vectorizable);
+                return PopCountOperator<T>.Invoke(~x & (x - Vector512<T>.One));
             }
         }
     }

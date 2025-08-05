@@ -26,7 +26,7 @@ namespace System.Drawing
         {
             if (value is string strValue)
             {
-                string text = strValue.Trim();
+                ReadOnlySpan<char> text = strValue.AsSpan().Trim();
                 if (text.Length == 0)
                 {
                     return null;
@@ -35,24 +35,19 @@ namespace System.Drawing
                 // Parse 2 integer values.
                 culture ??= CultureInfo.CurrentCulture;
 
-                char sep = culture.TextInfo.ListSeparator[0];
-                string[] tokens = text.Split(sep);
-                int[] values = new int[tokens.Length];
-                TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
-                for (int i = 0; i < values.Length; i++)
+                string sep = culture.TextInfo.ListSeparator;
+                Span<Range> ranges = stackalloc Range[3];
+                int rangesCount = text.Split(ranges, sep);
+                if (rangesCount != 2)
                 {
-                    // Note: ConvertFromString will raise exception if value cannot be converted.
-                    values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i])!;
+                    throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, text.ToString(), $"x{sep} y"));
                 }
 
-                if (values.Length == 2)
-                {
-                    return new Point(values[0], values[1]);
-                }
-                else
-                {
-                    throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, text, "x, y"));
-                }
+                TypeConverter converter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
+                int x = (int)converter.ConvertFromString(context, culture, strValue[ranges[0]])!;
+                int y = (int)converter.ConvertFromString(context, culture, strValue[ranges[1]])!;
+
+                return new Point(x, y);
             }
 
             return base.ConvertFrom(context, culture, value);
@@ -68,20 +63,18 @@ namespace System.Drawing
                 {
                     culture ??= CultureInfo.CurrentCulture;
 
-                    string sep = culture.TextInfo.ListSeparator + " ";
+                    string sep = culture.TextInfo.ListSeparator;
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
 
                     // Note: ConvertFromString will raise exception if value cannot be converted.
-                    var args = new string?[]
-                    {
-                        intConverter.ConvertToString(context, culture, pt.X),
-                        intConverter.ConvertToString(context, culture, pt.Y)
-                    };
-                    return string.Join(sep, args);
+                    string? x = intConverter.ConvertToString(context, culture, pt.X);
+                    string? y = intConverter.ConvertToString(context, culture, pt.Y);
+
+                    return $"{x}{sep} {y}";
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo? ctor = typeof(Point).GetConstructor(new Type[] { typeof(int), typeof(int) });
+                    ConstructorInfo? ctor = typeof(Point).GetConstructor([typeof(int), typeof(int)]);
                     if (ctor != null)
                     {
                         return new InstanceDescriptor(ctor, new object[] { pt.X, pt.Y });
@@ -109,7 +102,7 @@ namespace System.Drawing
 
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
-        private static readonly string[] s_propertySort = { "X", "Y" };
+        private static readonly string[] s_propertySort = ["X", "Y"];
 
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes)

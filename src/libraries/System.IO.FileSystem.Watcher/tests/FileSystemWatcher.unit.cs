@@ -258,6 +258,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_InternalBufferSize()
         {
             FileSystemWatcher watcher = new FileSystemWatcher();
@@ -362,6 +363,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]  // Casing matters on Linux
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_OnCreatedWithMismatchedCasingGivesExpectedFullPath()
         {
             using (var fsw = new FileSystemWatcher(TestDirectory))
@@ -454,6 +456,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix FSW don't trigger on a file rename.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Windows_OnRenameGivesExpectedFullPath()
         {
             string file = CreateTestFile(TestDirectory, "file");
@@ -567,6 +570,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_WatchingAliasedFolderResolvesToRealPathWhenWatching()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
@@ -930,6 +934,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Delete_MultipleFilters()
         {
             // Check delete events against multiple filters
@@ -954,6 +959,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Create_MultipleFilters()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -978,6 +984,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Create_Filter_Ctor()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -1001,6 +1008,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Delete_MultipleFilters()
         {
             using var tempDir = new TempDirectory();
@@ -1020,6 +1028,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Create_MultipleFilters()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -1042,6 +1051,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -1093,6 +1103,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Linux)]  // Reads MaxUsersWatches from Linux OS files
         [OuterLoop("This test will use all available watchers and can cause failures in other concurrent tests or system processes.")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_CreateManyConcurrentWatches()
         {
             int maxUserWatches = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_watches"));

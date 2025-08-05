@@ -1,11 +1,5 @@
 function(clr_unknown_arch)
-    if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 hosts are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
-    elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, ARM64 and I386 hosts are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
-    else()
-        message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
-    endif()
+    message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
 endfunction()
 
 # C to MASM include file translator
@@ -221,7 +215,7 @@ function(preprocess_file inputFilename outputFilename)
   get_compile_definitions(PREPROCESS_DEFINITIONS)
   get_include_directories(PREPROCESS_INCLUDE_DIRECTORIES)
   get_source_file_property(SOURCE_FILE_DEFINITIONS ${inputFilename} COMPILE_DEFINITIONS)
-  
+
   foreach(DEFINITION IN LISTS SOURCE_FILE_DEFINITIONS)
     list(APPEND PREPROCESS_DEFINITIONS -D${DEFINITION})
   endforeach()
@@ -319,7 +313,7 @@ function(add_component componentName)
   else()
     set(componentTargetName "${componentName}")
   endif()
-  if (${ARGC} EQUAL 3 AND "${ARG2}" STREQUAL "EXCLUDE_FROM_ALL")
+  if (${ARGC} EQUAL 3 AND "${ARGV2}" STREQUAL "EXCLUDE_FROM_ALL")
     set(exclude_from_all_flag "EXCLUDE_FROM_ALL")
   endif()
   get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
@@ -338,39 +332,66 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CLR_CMAKE_TARGET_APPLE)
-    set(SCRIPT_NAME generateexportedsymbols.sh)
+  # Win32 may be false when cross compiling
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.ps1)
+
+    add_custom_command(
+      OUTPUT ${outputFilename}
+      COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File "${SCRIPT_NAME}" ${INPUT_LIST} >${outputFilename}
+      DEPENDS ${INPUT_LIST} ${SCRIPT_NAME}
+      COMMENT "Generating exports file ${outputFilename}"
+    )
   else()
-    set(SCRIPT_NAME generateversionscript.sh)
+    if(CLR_CMAKE_TARGET_APPLE)
+      set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateexportedsymbols.sh)
+    else()
+      set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.sh)
+    endif()
+
+    add_custom_command(
+      OUTPUT ${outputFilename}
+      COMMAND ${SCRIPT_NAME} ${INPUT_LIST} >${outputFilename}
+      DEPENDS ${INPUT_LIST} ${SCRIPT_NAME}
+      COMMENT "Generating exports file ${outputFilename}"
+    )
   endif()
 
-  add_custom_command(
-    OUTPUT ${outputFilename}
-    COMMAND ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME} ${INPUT_LIST} >${outputFilename}
-    DEPENDS ${INPUT_LIST} ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME}
-    COMMENT "Generating exports file ${outputFilename}"
-  )
   set_source_files_properties(${outputFilename}
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
 function(generate_exports_file_prefix inputFilename outputFilename prefix)
-
   if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
-    set(SCRIPT_NAME generateversionscript.sh)
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+      set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.ps1)
+    else()
+      set(SCRIPT_NAME ${CLR_ENG_NATIVE_DIR}/generateversionscript.sh)
+    endif()
+
     if (NOT ${prefix} STREQUAL "")
         set(EXTRA_ARGS ${prefix})
     endif()
   endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
-  add_custom_command(
-    OUTPUT ${outputFilename}
-    COMMAND ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME} ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
-    DEPENDS ${inputFilename} ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME}
-    COMMENT "Generating exports file ${outputFilename}"
-  )
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    add_custom_command(
+      OUTPUT ${outputFilename}
+      COMMAND powershell -NoProfile -ExecutionPolicy ByPass -File \"${SCRIPT_NAME}\" ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
+      DEPENDS ${inputFilename} ${SCRIPT_NAME}
+      COMMENT "Generating exports file ${outputFilename}"
+    )
+  else()
+    add_custom_command(
+      OUTPUT ${outputFilename}
+      COMMAND ${SCRIPT_NAME} ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
+      DEPENDS ${inputFilename} ${SCRIPT_NAME}
+      COMMENT "Generating exports file ${outputFilename}"
+    )
+  endif()
   set_source_files_properties(${outputFilename}
                               PROPERTIES GENERATED TRUE)
 endfunction()
@@ -445,16 +466,28 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${strip_command}
         )
     else (CLR_CMAKE_TARGET_APPLE)
-
-      add_custom_command(
-        TARGET ${targetName}
-        POST_BUILD
-        VERBATIM
-        COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
-        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
-        COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+      # Win32 may be false when cross compiling
+      if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        add_custom_command(
+          TARGET ${targetName}
+          POST_BUILD
+          VERBATIM
+          COMMAND powershell -C "echo Stripping symbols from $(Split-Path -Path '${strip_source_file}' -Leaf) into $(Split-Path -Path '${strip_destination_file}' -Leaf)"
+          COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+          COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
+          COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         )
+      else()
+        add_custom_command(
+          TARGET ${targetName}
+          POST_BUILD
+          VERBATIM
+          COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
+          COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+          COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
+          COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+        )
+      endif()
     endif (CLR_CMAKE_TARGET_APPLE)
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
@@ -489,7 +522,8 @@ endfunction()
 
 function(install_symbol_file symbol_file destination_path)
   if(CLR_CMAKE_TARGET_WIN32)
-      install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
+      cmake_path(SET DEST NORMALIZE "${destination_path}/PDB")
+      install(FILES ${symbol_file} DESTINATION ${DEST} ${ARGN})
   else()
       install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
   endif()
@@ -508,17 +542,17 @@ function(install_static_library targetName destination component)
   if (WIN32)
     set_target_properties(${targetName} PROPERTIES
         COMPILE_PDB_NAME "${targetName}"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${targetName}>"
     )
     install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
   endif()
 endfunction()
 
-# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName])
+# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName] [OPTIONAL])
 function(install_clr)
   set(multiValueArgs TARGETS DESTINATIONS)
   set(singleValueArgs COMPONENT)
-  set(options "")
+  set(options OPTIONAL)
   cmake_parse_arguments(INSTALL_CLR "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
@@ -553,12 +587,18 @@ function(install_clr)
       get_symbol_file_name(${targetName} symbolFile)
     endif()
 
+    if (${INSTALL_CLR_OPTIONAL})
+      set(INSTALL_CLR_OPTIONAL "OPTIONAL")
+    else()
+      set(INSTALL_CLR_OPTIONAL "")
+    endif()
+
     foreach(destination ${destinations})
       # We don't need to install the export libraries for our DLLs
       # since they won't be directly linked against.
-      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
       if (NOT "${symbolFile}" STREQUAL "")
-        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
       endif()
 
       if(CLR_CMAKE_PGO_INSTRUMENT)
@@ -637,7 +677,7 @@ endfunction()
 function(add_sanitizer_runtime_support targetName)
   # Add sanitizer support functions.
   if (CLR_CMAKE_ENABLE_ASAN)
-    target_sources(${targetName} PRIVATE "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:${CLR_SRC_NATIVE_DIR}/minipal/asansupport.cpp>")
+    target_link_libraries(${targetName} PRIVATE $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:minipal_sanitizer_support>)
   endif()
 endfunction()
 
@@ -676,4 +716,16 @@ function(adhoc_sign_with_entitlements targetName entitlementsFile)
         TARGET ${targetName}
         POST_BUILD
         COMMAND codesign -s - -f --entitlements ${entitlementsFile} $<TARGET_FILE:${targetName}>)
+endfunction()
+
+function(esrp_sign targetName)
+    if ("${CLR_CMAKE_ESRP_CLIENT}" STREQUAL "")
+        return()
+    endif()
+
+    add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sign-with-dac-certificate.ps1" -esrpClient ${CLR_CMAKE_ESRP_CLIENT} $<TARGET_FILE:${targetName}>
+    )
 endfunction()

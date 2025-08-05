@@ -106,41 +106,15 @@ namespace System.Diagnostics.Tracing
         /// </param>
         public void AddScalar(string name, TraceLoggingDataType type)
         {
-            int size;
-            switch ((TraceLoggingDataType)((int)type & Statics.InTypeMask))
+            var size = (TraceLoggingDataType)((int)type & Statics.InTypeMask) switch
             {
-                case TraceLoggingDataType.Int8:
-                case TraceLoggingDataType.UInt8:
-                case TraceLoggingDataType.Char8:
-                    size = 1;
-                    break;
-                case TraceLoggingDataType.Int16:
-                case TraceLoggingDataType.UInt16:
-                case TraceLoggingDataType.Char16:
-                    size = 2;
-                    break;
-                case TraceLoggingDataType.Int32:
-                case TraceLoggingDataType.UInt32:
-                case TraceLoggingDataType.HexInt32:
-                case TraceLoggingDataType.Float:
-                case TraceLoggingDataType.Boolean32:
-                    size = 4;
-                    break;
-                case TraceLoggingDataType.Int64:
-                case TraceLoggingDataType.UInt64:
-                case TraceLoggingDataType.HexInt64:
-                case TraceLoggingDataType.Double:
-                case TraceLoggingDataType.FileTime:
-                    size = 8;
-                    break;
-                case TraceLoggingDataType.Guid:
-                case TraceLoggingDataType.SystemTime:
-                    size = 16;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type));
-            }
-
+                TraceLoggingDataType.Int8 or TraceLoggingDataType.UInt8 or TraceLoggingDataType.Char8 => 1,
+                TraceLoggingDataType.Int16 or TraceLoggingDataType.UInt16 or TraceLoggingDataType.Char16 => 2,
+                TraceLoggingDataType.Int32 or TraceLoggingDataType.UInt32 or TraceLoggingDataType.HexInt32 or TraceLoggingDataType.Float or TraceLoggingDataType.Boolean32 => 4,
+                TraceLoggingDataType.Int64 or TraceLoggingDataType.UInt64 or TraceLoggingDataType.HexInt64 or TraceLoggingDataType.Double or TraceLoggingDataType.FileTime => 8,
+                TraceLoggingDataType.Guid or TraceLoggingDataType.SystemTime => 16,
+                _ => throw new ArgumentOutOfRangeException(nameof(type)),
+            };
             this.impl.AddScalar(size);
             this.AddField(new FieldMetadata(name, type, this.Tags, this.BeginningBufferedArray));
         }

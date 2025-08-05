@@ -11,6 +11,9 @@ namespace System.Net.Mime
             /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data consists of url-encoded key-value pairs.</summary>
             public const string FormUrlEncoded = "application/x-www-form-urlencoded";
 
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in gzip format.</summary>
+            public const string GZip = "application/gzip";
+
             /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in JSON format.</summary>
             public const string Json = "application/json";
 
@@ -52,6 +55,9 @@ namespace System.Net.Mime
 
             /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in XML patch format.</summary>
             public const string XmlPatch = "application/xml-patch+xml";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in YAML format.</summary>
+            public const string Yaml = "application/yaml";
 
             /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is compressed.</summary>
             public const string Zip = "application/zip";
@@ -118,6 +124,12 @@ namespace System.Net.Mime
 
             /// <summary>Specifies that the <see cref="MediaTypeNames.Multipart"/> data is in form data format.</summary>
             public const string FormData = "multipart/form-data";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Multipart"/> data is in mixed format.</summary>
+            public const string Mixed = "multipart/mixed";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Multipart"/> data is in related format.</summary>
+            public const string Related = "multipart/related";
         }
 
         /// <summary>Specifies the kind of text data in an email message attachment.</summary>
@@ -128,6 +140,9 @@ namespace System.Net.Mime
 
             /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in CSV format.</summary>
             public const string Csv = "text/csv";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in event stream format.</summary>
+            public const string EventStream = "text/event-stream";
 
             /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in HTML format.</summary>
             public const string Html = "text/html";

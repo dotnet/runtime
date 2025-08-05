@@ -36,7 +36,7 @@ namespace System.Collections.Immutable.Tests
         /// Verifies that a binary tree is balanced according to AVL rules.
         /// </summary>
         /// <param name="node">The root node of the binary tree.</param>
-        internal static void VerifyBalanced(this IBinaryTree node)
+        internal static void VerifyBalanced(this BinaryTreeProxy node)
         {
             if (node.Left != null)
             {
@@ -66,8 +66,8 @@ namespace System.Collections.Immutable.Tests
         /// Verifies that a binary tree is no taller than necessary to store the data if it were optimally balanced.
         /// </summary>
         /// <param name="node">The root node.</param>
-        /// <param name="count">The number of nodes in the tree. May be <c>null</c> if <see cref="IBinaryTree.Count"/> is functional.</param>
-        internal static void VerifyHeightIsWithinTolerance(this IBinaryTree node, int? count = null)
+        /// <param name="count">The number of nodes in the tree. May be <c>null</c> if <see cref="BinaryTreeProxy.Count"/> is functional.</param>
+        internal static void VerifyHeightIsWithinTolerance(this BinaryTreeProxy node, int? count = null)
         {
             // http://en.wikipedia.org/wiki/AVL_tree
             double heightMustBeLessThan = Math.Log(2, s_GoldenRatio) * Math.Log(Math.Sqrt(5) * ((count ?? node.Count) + 2), 2) - 2;

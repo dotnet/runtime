@@ -43,7 +43,7 @@ namespace System.Net.Http.Headers
 
             idx += alpnProtocolNameLength;
 
-            if (alpnProtocolName == "clear")
+            if (alpnProtocolName == AltSvcHeaderValue.ClearString)
             {
                 if (idx != value.Length)
                 {
@@ -190,9 +190,9 @@ namespace System.Net.Http.Headers
 
             if (tokenLength == 0)
             {
-                result = null;
+                result = "";
                 readLength = 0;
-                return false;
+                return true;
             }
 
             ReadOnlySpan<char> span = value.AsSpan(startIndex, tokenLength);
@@ -202,51 +202,34 @@ namespace System.Net.Http.Headers
             // Special-case expected values to avoid allocating one-off strings.
             switch (span.Length)
             {
-                case 2:
-                    if (span[0] == 'h')
+                case 2 when span is "h3":
+                    result = "h3";
+                    return true;
+
+                case 2 when span is "h2":
+                    result = "h2";
+                    return true;
+
+                case 3 when span is "h2c":
+                    result = "h2c";
+                    readLength = 3;
+                    return true;
+
+                case 5 when span is "clear":
+                    result = "clear";
+                    return true;
+
+                case 10 when span.StartsWith("http%2F1."):
+                    char ch = span[9];
+                    if (ch == '1')
                     {
-                        char ch = span[1];
-                        if (ch == '3')
-                        {
-                            result = "h3";
-                            return true;
-                        }
-                        if (ch == '2')
-                        {
-                            result = "h2";
-                            return true;
-                        }
-                    }
-                    break;
-                case 3:
-                    if (span[0] == 'h' && span[1] == '2' && span[2] == 'c')
-                    {
-                        result = "h2c";
-                        readLength = 3;
+                        result = "http/1.1";
                         return true;
                     }
-                    break;
-                case 5:
-                    if (span is "clear")
+                    if (ch == '0')
                     {
-                        result = "clear";
+                        result = "http/1.0";
                         return true;
-                    }
-                    break;
-                case 10:
-                    if (span.StartsWith("http%2F1."))
-                    {
-                        char ch = span[9];
-                        if (ch == '1')
-                        {
-                            result = "http/1.1";
-                            return true;
-                        }
-                        if (ch == '0')
-                        {
-                            result = "http/1.0";
-                            return true;
-                        }
                     }
                     break;
             }
@@ -259,13 +242,15 @@ namespace System.Net.Http.Headers
         {
             int idx = value.IndexOf('%');
 
-            if (idx == -1)
+            if (idx < 0)
             {
                 result = new string(value);
                 return true;
             }
 
-            var builder = new ValueStringBuilder(value.Length <= 128 ? stackalloc char[128] : new char[value.Length]);
+            var builder = value.Length <= 128 ?
+                new ValueStringBuilder(stackalloc char[128]) :
+                new ValueStringBuilder(value.Length);
 
             do
             {
@@ -274,13 +259,14 @@ namespace System.Net.Http.Headers
                     builder.Append(value.Slice(0, idx));
                 }
 
-                if ((value.Length - idx) < 3 || !TryReadAlpnHexDigit(value[1], out int hi) || !TryReadAlpnHexDigit(value[2], out int lo))
+                if ((value.Length - idx) < 3 || !TryReadAlpnHexDigit(value[idx + 1], out int hi) || !TryReadAlpnHexDigit(value[idx + 2], out int lo))
                 {
+                    builder.Dispose();
                     result = null;
                     return false;
                 }
 
-                builder.Append((char)((hi << 8) | lo));
+                builder.Append((char)((hi << 4) | lo));
 
                 value = value.Slice(idx + 3);
                 idx = value.IndexOf('%');
@@ -293,7 +279,7 @@ namespace System.Net.Http.Headers
             }
 
             result = builder.ToString();
-            return true;
+            return !HttpRuleParser.ContainsNewLineOrNull(result);
         }
 
         /// <summary>

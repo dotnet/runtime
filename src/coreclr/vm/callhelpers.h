@@ -28,6 +28,13 @@ struct CallDescrData
 #endif
     UINT32                      fpReturnSize;
     PCODE                       pTarget;
+#ifdef TARGET_WASM
+    // method description is used to compile the method with the interpreter
+    MethodDesc*                 pMD;
+    // size of the arguments and the transition block are used to execute the method with the interpreter
+    size_t                      nArgsSize;
+    TransitionBlock*            pTransitionBlock;
+#endif
 
 #ifdef CALLDESCR_RETBUFFARGREG
     // Pointer to return buffer arg location
@@ -72,6 +79,13 @@ void * DispatchCallSimple(
                     DWORD numStackSlotsToCopy,
                     PCODE pTargetAddress,
                     DWORD dwDispatchCallSimpleFlags);
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+// Copy structs returned according to floating-point calling convention from 'returnRegs' containing struct fields
+// (each returned in one register) as they are filled by CallDescrWorkerInternal, to the final destination in memory
+// 'dest' respecting the struct's layout described in 'info'.
+void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info, bool handleGcRefs);
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 bool IsCerRootMethod(MethodDesc *pMD);
 
@@ -146,12 +160,7 @@ private:
         m_argIt.ForceSigWalk();
 }
 
-#ifdef FEATURE_INTERPRETER
-public:
-    void CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue, bool transitionToPreemptive = false);
-#else
     void CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue);
-#endif
 
 public:
     // Used to avoid touching metadata for CoreLib methods.
@@ -292,27 +301,6 @@ public:
         m_argIt.ForceSigWalk();
     }
 
-#ifdef FEATURE_INTERPRETER
-    MethodDescCallSite(MethodDesc* pMD, MetaSig* pSig, PCODE pCallTarget) :
-        m_pMD(pMD),
-        m_pCallTarget(pCallTarget),
-        m_methodSig(*pSig),
-        m_argIt(pSig, pMD)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        m_pMD->EnsureActive();
-
-        m_argIt.ForceSigWalk();
-    }
-#endif // FEATURE_INTERPRETER
-
     MetaSig* GetMetaSig()
     {
         return &m_methodSig;
@@ -401,7 +389,7 @@ public:
         // Invoke a method. Arguments are packaged up in right->left order
         // which each array element corresponding to one argument.
         //
-        // Can throw a COM+ exception.
+        // Can throw a CLR exception.
         //
         // All the appropriate "virtual" semantics (include thunking like context
         // proxies) occurs inside Call.
@@ -466,7 +454,6 @@ public:
         MDCALLDEF_VOID(     CallWithValueTypes, TRUE)
         MDCALLDEF_ARGSLOT(  CallWithValueTypes, _RetArgSlot)
         MDCALLDEF_REFTYPE(  CallWithValueTypes, TRUE,   _RetOBJECTREF,  Object*,    OBJECTREF)
-        MDCALLDEF(          CallWithValueTypes, TRUE,   _RetOleColor,   OLE_COLOR,  OTHER_ELEMENT_TYPE)
 #undef OTHER_ELEMENT_TYPE
 #undef MDCALL_ARG_SIG_STD_RETTYPES
 #undef MDCALLDEF

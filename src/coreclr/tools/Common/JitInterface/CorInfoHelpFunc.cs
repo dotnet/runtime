@@ -28,20 +28,18 @@ namespace Internal.JitInterface
         CORINFO_HELP_LMOD,
         CORINFO_HELP_ULDIV,
         CORINFO_HELP_ULMOD,
+        CORINFO_HELP_LNG2FLT,               // Convert a signed int64 to a float
         CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
+        CORINFO_HELP_ULNG2FLT,              // Convert a unsigned int64 to a float
         CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
-        CORINFO_HELP_DBL2INT,
         CORINFO_HELP_DBL2INT_OVF,
         CORINFO_HELP_DBL2LNG,
         CORINFO_HELP_DBL2LNG_OVF,
-        CORINFO_HELP_DBL2UINT,
         CORINFO_HELP_DBL2UINT_OVF,
         CORINFO_HELP_DBL2ULNG,
         CORINFO_HELP_DBL2ULNG_OVF,
         CORINFO_HELP_FLTREM,
         CORINFO_HELP_DBLREM,
-        CORINFO_HELP_FLTROUND,
-        CORINFO_HELP_DBLROUND,
 
         /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
            which is the right helper to use to allocate an object of a given type. */
@@ -57,7 +55,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEW_MDARR_RARE, // rare multi-dim array helper (Rank == 1)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
         CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
-        CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
+        CORINFO_HELP_NEWARR_1_PTR,      // optimized arrays of pointer sized elements
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
         CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
@@ -87,6 +85,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
         CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
         CORINFO_HELP_UNBOX,
+        CORINFO_HELP_UNBOX_TYPETEST,
         CORINFO_HELP_UNBOX_NULLABLE,    // special form of unboxing for Nullable<T>
         CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
@@ -97,6 +96,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_THROW,             // Throw an exception object
         CORINFO_HELP_RETHROW,           // Rethrow the currently active exception
+        CORINFO_HELP_THROWEXACT,        // Throw an exception object, preserving stack trace
         CORINFO_HELP_USER_BREAKPOINT,   // For a user program to break to the debugger
         CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
         CORINFO_HELP_OVERFLOW,          // throw an overflow exception
@@ -116,9 +116,6 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_MON_ENTER,
         CORINFO_HELP_MON_EXIT,
-        CORINFO_HELP_MON_ENTER_STATIC,
-        CORINFO_HELP_MON_EXIT_STATIC,
-
         CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
         CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
                                               // in its ManagedClassObject
@@ -128,7 +125,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_STOP_FOR_GC,       // Call GC (force a GC)
         CORINFO_HELP_POLL_GC,           // Ask GC if it wants to collect
 
-        CORINFO_HELP_STRESS_GC,         // Force a GC, but then update the JITTED code to be a noop call
         CORINFO_HELP_CHECK_OBJ,         // confirm that ECX is a valid object pointer (debugging only)
 
         /* GC Write barrier support */
@@ -140,27 +136,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_ASSIGN_BYREF,
         CORINFO_HELP_BULK_WRITEBARRIER,
 
-
         /* Accessing fields */
-
-        // For COM object support (using COM get/set routines to update object)
-        // and EnC and cross-context support
-        CORINFO_HELP_GETFIELD8,
-        CORINFO_HELP_SETFIELD8,
-        CORINFO_HELP_GETFIELD16,
-        CORINFO_HELP_SETFIELD16,
-        CORINFO_HELP_GETFIELD32,
-        CORINFO_HELP_SETFIELD32,
-        CORINFO_HELP_GETFIELD64,
-        CORINFO_HELP_SETFIELD64,
-        CORINFO_HELP_GETFIELDOBJ,
-        CORINFO_HELP_SETFIELDOBJ,
-        CORINFO_HELP_GETFIELDSTRUCT,
-        CORINFO_HELP_SETFIELDSTRUCT,
-        CORINFO_HELP_GETFIELDFLOAT,
-        CORINFO_HELP_SETFIELDFLOAT,
-        CORINFO_HELP_GETFIELDDOUBLE,
-        CORINFO_HELP_SETFIELDDOUBLE,
 
         CORINFO_HELP_GETFIELDADDR,
         CORINFO_HELP_GETSTATICFIELDADDR,
@@ -170,29 +146,32 @@ namespace Internal.JitInterface
         // ICorClassInfo::getSharedStaticsOrCCtorHelper to determine which helper to use
 
         // Helpers for regular statics
-        CORINFO_HELP_GETGENERICS_GCSTATIC_BASE,
-        CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_GCSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS,
-        CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS,
-        // Helper to class initialize shared generic with dynamicclass, but not get static field address
-        CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS,
+        CORINFO_HELP_GET_GCSTATIC_BASE,
+        CORINFO_HELP_GET_NONGCSTATIC_BASE,
+        CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE,
+        CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE,
+        CORINFO_HELP_GETPINNED_GCSTATIC_BASE,
+        CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE,
+        CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR,
 
         // Helpers for thread statics
-        CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE,
-        CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
-        CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
-        CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
-
+        CORINFO_HELP_GET_GCTHREADSTATIC_BASE,
+        CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE,
+        CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE,
+        CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR,
+        CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
         /* Debugger */
 
         CORINFO_HELP_DBG_IS_JUST_MY_CODE,    // Check if this is "JustMyCode" and needs to be stepped through.
@@ -203,8 +182,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_PROF_FCN_TAILCALL,     // record the completionof current method through tailcall (caller)
 
         /* Miscellaneous */
-
-        CORINFO_HELP_BBT_FCN_ENTER,         // record the entry to a method for collecting Tuning data
 
         CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
         CORINFO_HELP_TAILCALL,              // Perform a tail call
@@ -220,9 +197,7 @@ namespace Internal.JitInterface
                                             // not safe for unbounded size, does not trigger GC)
 
         CORINFO_HELP_RUNTIMEHANDLE_METHOD,  // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG, // determine a type/field/method handle at run-time, with IBC logging
         CORINFO_HELP_RUNTIMEHANDLE_CLASS,    // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG, // determine a type/field/method handle at run-time, with IBC logging
 
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
@@ -294,7 +269,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
         CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
-        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+        CORINFO_HELP_PATCHPOINT_FORCED,         // Notify runtime that code has reached a part of the method that needs to transition
 
         CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
         CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
@@ -309,6 +284,10 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
+
+        CORINFO_HELP_ALLOC_CONTINUATION,
+        CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
+        CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
         CORINFO_HELP_COUNT,
     }

@@ -363,17 +363,13 @@ namespace System.Text.Json
                     }
                     _tokenType = JsonTokenType.Number;
                     _consumed += numberOfBytes;
-                    return true;
                 }
                 else if (!ConsumeValueMultiSegment(first))
                 {
                     return false;
                 }
 
-                if (_tokenType == JsonTokenType.StartObject || _tokenType == JsonTokenType.StartArray)
-                {
-                    _isNotPrimitive = true;
-                }
+                _isNotPrimitive = _tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray;
                 // Intentionally fall out of the if-block to return true
             }
             return true;
@@ -552,7 +548,7 @@ namespace System.Text.Json
             {
                 _bytePositionInLine += FindMismatch(span, literal);
 
-                int amountToWrite = Math.Min(span.Length, (int)_bytePositionInLine + 1);
+                int amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
                 span.Slice(0, amountToWrite).CopyTo(readSoFar);
                 written += amountToWrite;
                 goto Throw;
@@ -562,7 +558,7 @@ namespace System.Text.Json
                 if (!literal.StartsWith(span))
                 {
                     _bytePositionInLine += FindMismatch(span, literal);
-                    int amountToWrite = Math.Min(span.Length, (int)_bytePositionInLine + 1);
+                    int amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
                     span.Slice(0, amountToWrite).CopyTo(readSoFar);
                     written += amountToWrite;
                     goto Throw;
@@ -609,7 +605,7 @@ namespace System.Text.Json
                     {
                         _bytePositionInLine += FindMismatch(span, leftToMatch);
 
-                        amountToWrite = Math.Min(span.Length, (int)_bytePositionInLine + 1);
+                        amountToWrite = AmountToWrite(span, _bytePositionInLine, readSoFar, written);
                         span.Slice(0, amountToWrite).CopyTo(readSoFar.Slice(written));
                         written += amountToWrite;
 
@@ -619,6 +615,13 @@ namespace System.Text.Json
                     leftToMatch = leftToMatch.Slice(span.Length);
                     alreadyMatched = span.Length;
                 }
+            }
+
+            static int AmountToWrite(ReadOnlySpan<byte> span, long bytePositionInLine, ReadOnlySpan<byte> readSoFar, int written)
+            {
+                return Math.Min(
+                    readSoFar.Length - written,
+                    Math.Min(span.Length, (int)bytePositionInLine + 1));
             }
         Throw:
             _totalConsumed = prevTotalConsumed;
@@ -1580,6 +1583,11 @@ namespace System.Text.Json
 
             if (_bitStack.CurrentDepth == 0)
             {
+                if (_readerOptions.AllowMultipleValues)
+                {
+                    return ReadFirstTokenMultiSegment(marker) ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
+                }
+
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
 
@@ -1711,6 +1719,11 @@ namespace System.Text.Json
 
             if (_bitStack.CurrentDepth == 0 && _tokenType != JsonTokenType.None)
             {
+                if (_readerOptions.AllowMultipleValues)
+                {
+                    return ReadFirstTokenMultiSegment(first) ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
+                }
+
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, first);
             }
 
@@ -2064,6 +2077,11 @@ namespace System.Text.Json
             }
             else if (_bitStack.CurrentDepth == 0)
             {
+                if (_readerOptions.AllowMultipleValues)
+                {
+                    return ReadFirstTokenMultiSegment(marker) ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
+                }
+
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
             else if (marker == JsonConstants.ListSeparator)

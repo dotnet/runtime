@@ -292,7 +292,7 @@ namespace System.Threading.Tasks.Dataflow
                     break;
 
                 default:
-                    Debug.Assert(false, "The task should have been in a final state.");
+                    Debug.Fail("The task should have been in a final state.");
                     break;
             }
 
@@ -547,10 +547,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception is null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
 
             _target.Complete(exception, dropPendingMessages: true);
         }

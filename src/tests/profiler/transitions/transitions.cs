@@ -32,7 +32,7 @@ namespace Profiler.Tests
         public static int BlittablePInvokeToBlittableInteropDelegate()
         {
             InteropDelegate del = DoDelegateReversePInvoke;
-            
+
             DoPInvoke((delegate* unmanaged<int,int>)Marshal.GetFunctionPointerForDelegate(del), 13);
             GC.KeepAlive(del);
 
@@ -42,8 +42,18 @@ namespace Profiler.Tests
         public static int NonBlittablePInvokeToNonBlittableInteropDelegate()
         {
             InteropDelegateNonBlittable del = DoDelegateReversePInvokeNonBlittable;
-            
+
             DoPInvokeNonBlitable((delegate* unmanaged<int,int>)Marshal.GetFunctionPointerForDelegate(del), true);
+            GC.KeepAlive(del);
+
+            return 100;
+        }
+
+        public static int BlittablePInvokeToBlittableInteropDelegateOnOtherThread()
+        {
+            InteropDelegate del = DoDelegateReversePInvoke;
+
+            DoPInvokeWithCallbackOnOtherThread((delegate* unmanaged<int,int>)Marshal.GetFunctionPointerForDelegate(del), 13);
             GC.KeepAlive(del);
 
             return 100;
@@ -61,6 +71,9 @@ namespace Profiler.Tests
         [DllImport("Profiler", EntryPoint = nameof(DoPInvoke))]
         public static extern void DoPInvokeNonBlitable(delegate* unmanaged<int,int> callback, bool i);
 
+        [DllImport("Profiler")]
+        public static extern void DoPInvokeWithCallbackOnOtherThread(delegate* unmanaged<int,int> callback, int i);
+
         public static int BlittablePInvokeToUnmanagedCallersOnly()
         {
             DoPInvoke(&DoReversePInvoke, 13);
@@ -71,6 +84,13 @@ namespace Profiler.Tests
         public static int NonBlittablePInvokeToUnmanagedCallersOnly()
         {
             DoPInvokeNonBlitable(&DoReversePInvoke, true);
+
+            return 100;
+        }
+
+        public static int BlittablePInvokeToUnmanagedCallersOnlyOnOtherThread()
+        {
+            DoPInvokeWithCallbackOnOtherThread(&DoReversePInvoke, 13);
 
             return 100;
         }
@@ -89,6 +109,10 @@ namespace Profiler.Tests
                         return NonBlittablePInvokeToUnmanagedCallersOnly();
                     case nameof(NonBlittablePInvokeToNonBlittableInteropDelegate):
                         return NonBlittablePInvokeToNonBlittableInteropDelegate();
+                    case nameof(BlittablePInvokeToUnmanagedCallersOnlyOnOtherThread):
+                        return BlittablePInvokeToUnmanagedCallersOnlyOnOtherThread();
+                    case nameof(BlittablePInvokeToBlittableInteropDelegateOnOtherThread):
+                        return BlittablePInvokeToBlittableInteropDelegateOnOtherThread();
                 }
             }
 
@@ -104,12 +128,22 @@ namespace Profiler.Tests
 
             if (!RunProfilerTest(nameof(NonBlittablePInvokeToUnmanagedCallersOnly), nameof(DoPInvokeNonBlitable), nameof(DoReversePInvoke)))
             {
-                return 101;
+                return 103;
             }
 
             if (!RunProfilerTest(nameof(NonBlittablePInvokeToNonBlittableInteropDelegate), nameof(DoPInvokeNonBlitable), "Invoke"))
             {
-                return 102;
+                return 104;
+            }
+
+            if (!RunProfilerTest(nameof(BlittablePInvokeToUnmanagedCallersOnlyOnOtherThread), nameof(DoPInvokeWithCallbackOnOtherThread), nameof(DoReversePInvoke)))
+            {
+                return 105;
+            }
+
+            if (!RunProfilerTest(nameof(BlittablePInvokeToBlittableInteropDelegateOnOtherThread), nameof(DoPInvokeWithCallbackOnOtherThread), "Invoke"))
+            {
+                return 106;
             }
 
             return 100;

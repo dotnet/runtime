@@ -10,6 +10,9 @@ namespace System.Buffers
     /// </summary>
     public static partial class BoundedMemory
     {
+        public static bool UnixBoundsEnabled { get; set; }
+        private static readonly int SystemPageSize = Environment.SystemPageSize;
+
         /// <summary>
         /// Allocates a new <see cref="BoundedMemory{T}"/> region which is immediately preceded by
         /// or immediately followed by a poison (MEM_NOACCESS) page. If <paramref name="placement"/>
@@ -82,10 +85,15 @@ namespace System.Buffers
             {
                 return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
             }
-            else
+#if NETFRAMEWORK
+            return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
+#else
+            else if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
             {
-                return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
+                return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
             }
+            return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
+#endif
         }
     }
 }

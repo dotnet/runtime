@@ -18,13 +18,14 @@ namespace System.ComponentModel
         /// This is the default value.
         /// </summary>
         private object? _value;
+        private static readonly object? s_throwSentinel = IDesignerHost.IsSupported ? null : new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class, converting the
         /// specified value to the specified type, and using the U.S. English culture as the
         /// translation context.
         /// </summary>
-        public AmbientValueAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, string value)
+        public AmbientValueAttribute([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type, string value)
         {
             // The try/catch here is because attributes should never throw exceptions. We would fail to
             // load an otherwise normal class.
@@ -32,6 +33,7 @@ namespace System.ComponentModel
             Debug.Assert(IDesignerHost.IsSupported, "Runtime instantiation of this attribute is not allowed with trimming.");
             if (!IDesignerHost.IsSupported)
             {
+                _value = s_throwSentinel;
                 return;
             }
 
@@ -40,7 +42,7 @@ namespace System.ComponentModel
                 _value = TypeDescriptorGetConverter(type).ConvertFromInvariantString(value);
 
                 [RequiresUnreferencedCode("AmbientValueAttribute usage of TypeConverter is not compatible with trimming.")]
-                static TypeConverter TypeDescriptorGetConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type) => TypeDescriptor.GetConverter(type);
+                static TypeConverter TypeDescriptorGetConverter([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type type) => TypeDescriptor.GetConverter(type);
             }
             catch
             {
@@ -142,7 +144,7 @@ namespace System.ComponentModel
         public object? Value {
             get
             {
-                if (!IDesignerHost.IsSupported)
+                if (!IDesignerHost.IsSupported  && ReferenceEquals(_value, s_throwSentinel))
                 {
                     throw new ArgumentException(SR.RuntimeInstanceNotAllowed);
                 }

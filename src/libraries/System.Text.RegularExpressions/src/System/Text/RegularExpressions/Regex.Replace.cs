@@ -3,8 +3,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-#pragma warning disable CS8500 // takes address of managed type
-
 namespace System.Text.RegularExpressions
 {
     // Callback class
@@ -218,7 +216,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Creates a string from all the segments in the builder and then disposes of the builder.</summary>
-        internal static unsafe string SegmentsToStringAndDispose(ref StructListBuilder<ReadOnlyMemory<char>> segments)
+        internal static string SegmentsToStringAndDispose(ref StructListBuilder<ReadOnlyMemory<char>> segments)
         {
             Span<ReadOnlyMemory<char>> span = segments.AsSpan();
 

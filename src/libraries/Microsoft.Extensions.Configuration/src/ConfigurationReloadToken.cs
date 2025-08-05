@@ -9,22 +9,22 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Implements <see cref="IChangeToken"/>
+    /// Propagates notifications that a configuration change has occurred.
     /// </summary>
     public class ConfigurationReloadToken : IChangeToken
     {
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 
         /// <summary>
-        /// Indicates if this token will proactively raise callbacks. Callbacks are still guaranteed to be invoked, eventually.
+        /// Gets a value that indicates whether this token proactively raises callbacks. Callbacks are still guaranteed to be invoked, eventually.
         /// </summary>
-        /// <returns>True if the token will proactively raise callbacks.</returns>
+        /// <returns><see langword="true" /> if the token proactively raises callbacks.</returns>
         public bool ActiveChangeCallbacks { get; private set; } = true;
 
         /// <summary>
         /// Gets a value that indicates if a change has occurred.
         /// </summary>
-        /// <returns>True if a change has occurred.</returns>
+        /// <returns><see langword="true" /> if a change has occurred.</returns>
         public bool HasChanged => _cts.IsCancellationRequested;
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Used to trigger the change token when a reload occurs.
+        /// Triggers the change token when a reload occurs.
         /// </summary>
         public void OnReload() => _cts.Cancel();
     }

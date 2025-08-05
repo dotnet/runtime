@@ -2,13 +2,17 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="AggressiveAttributeTrimmingTest.cs">
-      <EnabledProperties>_AggressiveAttributeTrimming</EnabledProperties>
-      <DisabledProperties>SuppressTrimAnalysisWarnings;TrimmerSingleWarn</DisabledProperties>
-    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadGenericPrincipalTest.cs" />
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
       <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerSupportTrue.cs">
+      <EnabledProperties>DebuggerSupport</EnabledProperties>
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerSupportFalse.cs">
+      <DisabledProperties>DebuggerSupport</DisabledProperties>
+      <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" >
       <EnabledProperties>DebuggerSupport</EnabledProperties>
@@ -16,7 +20,9 @@
     <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" >
       <EnabledProperties>DebuggerSupport</EnabledProperties>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
+    <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs">
+      <EnabledProperties>_DefaultValueAttributeSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
@@ -30,6 +36,14 @@
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
       <DisabledProperties>HybridGlobalization</DisabledProperties>
       <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantTimezoneFalse.cs">
+      <DisabledProperties>InvariantTimezone</DisabledProperties>
+      <DisabledFeatureSwitches>System.TimeZoneInfo.Invariant</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantTimezoneTrue.cs">
+      <EnabledProperties>InvariantTimezone</EnabledProperties>
+      <EnabledFeatureSwitches>System.TimeZoneInfo.Invariant</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
@@ -56,21 +70,13 @@
       <!-- Reflection.Emit doesn't work with native AOT -->
       <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
-      <DisabledProperties>NullabilityInfoContextSupport</DisabledProperties>
-    </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
-      <EnabledProperties>NullabilityInfoContextSupport</EnabledProperties>
-    </TestConsoleAppSourceFiles>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
-      <DisabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</DisabledFeatureSwitches>
-      <!-- https://github.com/dotnet/runtime/issues/101591 -->
-      <NativeAotIncompatible>true</NativeAotIncompatible>
+      <DisabledProperties>UseWindowsThreadPool</DisabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
-      <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
+      <EnabledProperties>UseWindowsThreadPool</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

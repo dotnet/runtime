@@ -15,6 +15,7 @@
 #include "ex.h"
 #define DONOT_DEFINE_ETW_CALLBACK
 #include "eventtracebase.h"
+#include "minipal/time.h"
 
  #if !defined(STRESS_LOG_READONLY)
 #ifdef HOST_WINDOWS
@@ -34,25 +35,35 @@ thread_local bool t_triedToCreateThreadStressLog;
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-__forceinline __declspec(naked) uint64_t getTimeStamp() {
-    STATIC_CONTRACT_LEAF;
-
-   __asm {
-        RDTSC   // read time stamp counter
-        ret
-    };
-}
-
-#else // HOST_X86
+__forceinline
+#ifdef HOST_WINDOWS
+__declspec(naked)
+#else
+__attribute__((naked))
+#endif
 uint64_t getTimeStamp() {
     STATIC_CONTRACT_LEAF;
 
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
+#ifdef HOST_WINDOWS
+    __asm {
+        RDTSC   // read time stamp counter
+        ret
+    }
+#else
+    __asm (
+        "rdtsc\n\t"   // read time stamp counter
+        "ret\n\t"
+    );
+#endif
 
-    QueryPerformanceCounter(&ret);
+}
 
-    return ret.QuadPart;
+#else // HOST_X86
+uint64_t getTimeStamp()
+{
+    STATIC_CONTRACT_LEAF;
+
+    return (uint64_t)minipal_hires_ticks();
 }
 
 #endif // HOST_X86
@@ -113,10 +124,7 @@ uint64_t getTickFrequency()
 */
 uint64_t getTickFrequency()
 {
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    QueryPerformanceFrequency(&ret);
-    return ret.QuadPart;
+    return (uint64_t)minipal_hires_tick_frequency();
 }
 
 #endif // HOST_X86
@@ -297,6 +305,9 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
 void StressLog::AddModule(uint8_t* moduleBase)
 {
+#ifdef TARGET_WASM
+    return; // no modules on wasm
+#endif
     unsigned moduleIndex = 0;
 #ifdef MEMORY_MAPPED_STRESSLOG
     StressLogHeader* hdr = theLog.stressLogHeader;
@@ -375,9 +386,9 @@ void StressLog::Terminate(BOOL fProcessDetach) {
         lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
                                 // we want all the other threads to notice that facilitiesToLog is now zero
 
-                // This is not strictly threadsafe, since there is no way of insuring when all the
+                // This is not strictly threadsafe, since there is no way of ensuring when all the
                 // threads are out of logMsg.  In practice, since they can no longer enter logMsg
-                // and there are no blocking operations in logMsg, simply sleeping will insure
+                // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
         ClrSleepEx(2, FALSE);
         lockh.Acquire();

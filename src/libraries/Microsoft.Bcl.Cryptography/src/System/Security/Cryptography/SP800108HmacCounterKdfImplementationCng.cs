@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
             else
             {
                 // CNG requires a non-null pointer even when the length is zero.
-                symmetricKeyMaterial = stackalloc byte[] { 0 };
+                symmetricKeyMaterial = [0];
                 symmetricKeyMaterialLength = 0;
             }
 
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
             else
             {
                 // CNG requires a non-null pointer even when the length is zero.
-                symmetricKeyMaterial = stackalloc byte[] { 0 };
+                symmetricKeyMaterial = [0];
                 symmetricKeyMaterialLength = 0;
             }
 

@@ -10,10 +10,6 @@
 
 #include "clrtypes.h"
 
-#include "strsafe.h"
-
-#include "clr/str.h"
-
 namespace clr
 {
     namespace fs

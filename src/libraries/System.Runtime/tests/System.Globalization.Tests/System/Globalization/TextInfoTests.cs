@@ -274,15 +274,7 @@ namespace System.Globalization.Tests
                 // we also don't preform.
                 // Greek Capital Letter Sigma (does not case to U+03C2 with "final sigma" rule).
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
-                if (PlatformDetection.IsHybridGlobalizationOnBrowser)
-                {
-                    // JS is using "final sigma" rule correctly - it's costly to unify it with ICU's behavior
-                    yield return new object[] { cultureName, "O\u03A3", "o\u03C2" };
-                }
-                else
-                {
-                    yield return new object[] { cultureName, "O\u03A3", "o\u03C3" };
-                }
+                yield return new object[] { cultureName, "O\u03A3", "o\u03C3" };
             }
 
             foreach (string cultureName in GetTestLocales())

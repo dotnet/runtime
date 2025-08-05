@@ -7,8 +7,6 @@
 **
 ** Purpose: Native methods on System.Debug.Debugger
 **
-**
-
 ===========================================================*/
 
 #include "common.h"
@@ -40,12 +38,12 @@
 //    Else if a native debugger is attached, this should send a native break event (kernel32!DebugBreak)
 //    Else, this should invoke Watson.
 //
-FCIMPL0(void, DebugDebugger::Break)
+extern "C" void QCALLTYPE DebugDebugger_Break()
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
 #ifdef DEBUGGING_SUPPORTED
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
 
 #ifdef _DEBUG
     {
@@ -68,26 +66,22 @@ FCIMPL0(void, DebugDebugger::Break)
         // A managed debugger is already attached -- let it handle the event.
         g_pDebugInterface->SendUserBreakpoint(GetThread());
     }
-    else if (IsDebuggerPresent())
+    else if (minipal_is_native_debugger_present())
     {
         // No managed debugger, but a native debug is attached. Explicitly fire a native user breakpoint.
         // Don't rely on Watson support since that may have a different policy.
 
-        // Toggle to preemptive before firing the debug event. This allows the debugger to suspend this
+        // Confirm we're in preemptive before firing the debug event. This allows the debugger to suspend this
         // thread at the debug event.
-        GCX_PREEMP();
+        _ASSERTE(!GetThread()->PreemptiveGCDisabled());
 
         // This becomes an unmanaged breakpoint, such as int 3.
         DebugBreak();
     }
-    else
-    {
-    }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 #endif // DEBUGGING_SUPPORTED
 }
-FCIMPLEND
 
 extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 {
@@ -108,43 +102,6 @@ extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 
     return FALSE;
 }
-
-FCIMPL0(FC_BOOL_RET, DebugDebugger::IsDebuggerAttached)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_RET();
-
-#ifdef DEBUGGING_SUPPORTED
-    FC_RETURN_BOOL(CORDebuggerAttached());
-#else // DEBUGGING_SUPPORTED
-    FC_RETURN_BOOL(FALSE);
-#endif
-}
-FCIMPLEND
-
-namespace
-{
-    BOOL IsLoggingHelper()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-    #ifdef DEBUGGING_SUPPORTED
-        if (CORDebuggerAttached())
-        {
-            return (g_pDebugInterface->IsLoggingEnabled());
-        }
-    #endif // DEBUGGING_SUPPORTED
-        return FALSE;
-    }
-}
-
 
 // Log to managed debugger.
 // It will send a managed log event, which will faithfully send the two string parameters here without
@@ -190,7 +147,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // for the given category
     if (CORDebuggerAttached())
     {
-        if (IsLoggingHelper() )
+        if (g_pDebugInterface->IsLoggingEnabled() )
         {
             // Copy log message and category into our own SString to protect against GC
             // Strings may contain embedded nulls, but we need to handle null-terminated
@@ -220,54 +177,146 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
 #endif // DEBUGGING_SUPPORTED
 }
 
-FCIMPL0(FC_BOOL_RET, DebugDebugger::IsLogging)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_RET();
-
-    FC_RETURN_BOOL(IsLoggingHelper());
-}
-FCIMPLEND
-
-FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
-        StackFrameHelper* pStackFrameHelperUNSAFE,
-        INT32 iSkip,
-        CLR_BOOL fNeedFileInfo,
-        Object* pExceptionUNSAFE
-       )
+static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pStackFrameHelperUNSAFE));
-        PRECONDITION(CheckPointer(pExceptionUNSAFE, NULL_OK));
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    STACKFRAMEHELPERREF pStackFrameHelper   = (STACKFRAMEHELPERREF)ObjectToOBJECTREF(pStackFrameHelperUNSAFE);
-    OBJECTREF           pException          = ObjectToOBJECTREF(pExceptionUNSAFE);
-    PTRARRAYREF         dynamicMethodArrayOrig = NULL;
+    // <REVISIT_TODO>@todo: How do we know what kind of frame we have?</REVISIT_TODO>
+    //        Can we always assume FramedMethodFrame?
+    //        NOT AT ALL!!!, but we can assume it's a function
+    //                       because we asked the stackwalker for it!
+    MethodDesc* pFunc = pCf->GetFunction();
 
-    HELPER_METHOD_FRAME_BEGIN_2(pStackFrameHelper, pException);
+    DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
+    if (pData->cElements >= pData->cElementsAllocated)
+    {
+        DebugStackTrace::Element* pTemp = new (nothrow) DebugStackTrace::Element[2*pData->cElementsAllocated];
+        if (pTemp == NULL)
+        {
+            return SWA_ABORT;
+        }
 
-    GCPROTECT_BEGIN(dynamicMethodArrayOrig);
+        memcpy(pTemp, pData->pElements, pData->cElementsAllocated * sizeof(DebugStackTrace::Element));
 
-    ASSERT(iSkip >= 0);
+        delete [] pData->pElements;
 
-    GetStackFramesData data;
+        pData->pElements = pTemp;
+        pData->cElementsAllocated *= 2;
+    }
+
+    PCODE ip;
+    DWORD dwNativeOffset;
+
+    if (pCf->IsFrameless())
+    {
+        // Real method with jitted code.
+        dwNativeOffset = pCf->GetRelOffset();
+        ip = GetControlPC(pCf->GetRegisterSet());
+    }
+    else
+    {
+        ip = (PCODE)NULL;
+        dwNativeOffset = 0;
+    }
+
+    // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
+    INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
+
+    pData->pElements[pData->cElements].InitPass1(
+            dwNativeOffset,
+            pFunc,
+            ip,
+            flags);
+
+    // We'll init the IL offsets outside the TSL lock.
+
+    ++pData->cElements;
+
+    // check if we already have the number of frames that the user had asked for
+    if ((pData->NumFramesRequested != 0) && (pData->NumFramesRequested <= pData->cElements))
+    {
+        return SWA_ABORT;
+    }
+
+    return SWA_CONTINUE;
+}
+
+static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        GC_TRIGGERS;
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    ASSERT (pData != NULL);
+
+    pData->cElements = 0;
+
+    // if the caller specified (< 20) frames are required, then allocate
+    // only that many
+    if ((pData->NumFramesRequested > 0) && (pData->NumFramesRequested < 20))
+    {
+        pData->cElementsAllocated = pData->NumFramesRequested;
+    }
+    else
+    {
+        pData->cElementsAllocated = 20;
+    }
+
+    // Allocate memory for the initial 'n' frames
+    pData->pElements = new DebugStackTrace::Element[pData->cElementsAllocated];
+    GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, NULL);
+
+    // Do a 2nd pass outside of any locks.
+    // This will compute IL offsets.
+    for (INT32 i = 0; i < pData->cElements; i++)
+    {
+        pData->pElements[i].InitPass2();
+    }
+}
+
+extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
+    QCall::ObjectHandleOnStack stackFrameHelper,
+    BOOL fNeedFileInfo,
+    QCall::ObjectHandleOnStack exception)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct
+    {
+        STACKFRAMEHELPERREF pStackFrameHelper;
+        OBJECTREF pException;
+        PTRARRAYREF dynamicMethodArrayOrig;
+    } gc{};
+    gc.pStackFrameHelper = NULL;
+    gc.pException = NULL;
+    gc.dynamicMethodArrayOrig = NULL;
+    GCPROTECT_BEGIN(gc);
+    gc.pStackFrameHelper = (STACKFRAMEHELPERREF)stackFrameHelper.Get();
+    gc.pException = exception.Get();
+
+    DebugStackTrace::GetStackFramesData data;
 
     data.pDomain = GetAppDomain();
 
-    data.skip = iSkip;
+    data.NumFramesRequested = gc.pStackFrameHelper->iFrameCount;
 
-    data.NumFramesRequested = pStackFrameHelper->iFrameCount;
-
-    if (pException == NULL)
+    if (gc.pException == NULL)
     {
-        // Thread is NULL if it's the current thread.
-        data.TargetThread = pStackFrameHelper->targetThread;
-        GetStackFrames(NULL, (void*)-1, &data);
+        GetStackFrames(&data);
     }
     else
     {
@@ -276,10 +325,14 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         // is thrown again (resetting the dynamic method array reference in the object)
         // that may result in resolver objects getting collected before they can be reachable again
         // (from the code below).
-        GetStackFramesFromException(&pException, &data, &dynamicMethodArrayOrig);
+        DebugStackTrace::GetStackFramesFromException(&gc.pException, &data, &gc.dynamicMethodArrayOrig);
     }
 
-    if (data.cElements != 0)
+    if (data.cElements == 0)
+    {
+        gc.pStackFrameHelper->iFrameCount = 0;
+    }
+    else
     {
 #if defined(FEATURE_ISYM_READER) && defined(FEATURE_COMINTEROP)
         if (fNeedFileInfo)
@@ -291,59 +344,59 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 
         // Allocate memory for the MethodInfo objects
         BASEARRAYREF methodInfoArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgMethodHandle), (OBJECTREF)methodInfoArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgMethodHandle), (OBJECTREF)methodInfoArray);
 
         // Allocate memory for the Offsets
         OBJECTREF offsets = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiOffset), (OBJECTREF)offsets);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiOffset), (OBJECTREF)offsets);
 
         // Allocate memory for the ILOffsets
         OBJECTREF ilOffsets = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiILOffset), (OBJECTREF)ilOffsets);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiILOffset), (OBJECTREF)ilOffsets);
 
         // Allocate memory for the array of assembly file names
         PTRARRAYREF assemblyPathArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pStringClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssemblyPath), (OBJECTREF)assemblyPathArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgAssemblyPath), (OBJECTREF)assemblyPathArray);
 
         // Allocate memory for the array of assemblies
         PTRARRAYREF assemblyArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pObjectClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssembly), (OBJECTREF)assemblyArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgAssembly), (OBJECTREF)assemblyArray);
 
         // Allocate memory for the LoadedPeAddress
         BASEARRAYREF loadedPeAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgLoadedPeAddress), (OBJECTREF)loadedPeAddressArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgLoadedPeAddress), (OBJECTREF)loadedPeAddressArray);
 
         // Allocate memory for the LoadedPeSize
         OBJECTREF loadedPeSizeArray = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLoadedPeSize), (OBJECTREF)loadedPeSizeArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiLoadedPeSize), (OBJECTREF)loadedPeSizeArray);
 
         // Allocate memory for the IsFileLayout flags
         OBJECTREF isFileLayouts = AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiIsFileLayout), (OBJECTREF)isFileLayouts);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiIsFileLayout), (OBJECTREF)isFileLayouts);
 
         // Allocate memory for the InMemoryPdbAddress
         BASEARRAYREF inMemoryPdbAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgInMemoryPdbAddress), (OBJECTREF)inMemoryPdbAddressArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgInMemoryPdbAddress), (OBJECTREF)inMemoryPdbAddressArray);
 
         // Allocate memory for the InMemoryPdbSize
         OBJECTREF inMemoryPdbSizeArray = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiInMemoryPdbSize), (OBJECTREF)inMemoryPdbSizeArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiInMemoryPdbSize), (OBJECTREF)inMemoryPdbSizeArray);
 
         // Allocate memory for the MethodTokens
         OBJECTREF methodTokens = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiMethodToken), (OBJECTREF)methodTokens);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiMethodToken), (OBJECTREF)methodTokens);
 
         // Allocate memory for the Filename string objects
         PTRARRAYREF filenameArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pStringClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgFilename), (OBJECTREF)filenameArray);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgFilename), (OBJECTREF)filenameArray);
 
         // Allocate memory for the LineNumbers
         OBJECTREF lineNumbers = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLineNumber), (OBJECTREF)lineNumbers);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiLineNumber), (OBJECTREF)lineNumbers);
 
         // Allocate memory for the ColumnNumbers
         OBJECTREF columnNumbers = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers);
+        SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers);
 
         // Allocate memory for the flag indicating if this frame represents the last one from a foreign
         // exception stack trace provided we have any such frames. Otherwise, set it to null.
@@ -357,11 +410,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         {
             IsLastFrameFromForeignStackTraceFlags = AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, data.cElements);
 
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), (OBJECTREF)IsLastFrameFromForeignStackTraceFlags);
+            SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), (OBJECTREF)IsLastFrameFromForeignStackTraceFlags);
         }
         else
         {
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), NULL);
+            SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), NULL);
         }
 
         // Determine if there are any dynamic methods in the stack trace.  If there are,
@@ -385,7 +438,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         if (iNumDynamics)
         {
             PTRARRAYREF dynamicDataArray = (PTRARRAYREF) AllocateObjectArray(iNumDynamics, g_pObjectClass);
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->dynamicMethods), (OBJECTREF)dynamicDataArray);
+            SetObjectReference( (OBJECTREF *)&(gc.pStackFrameHelper->dynamicMethods), (OBJECTREF)dynamicDataArray);
         }
 
         int iNumValidFrames = 0;
@@ -401,25 +454,25 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             _ASSERTE(pFunc->IsRuntimeMethodHandle());
 
             // Method handle
-            size_t *pElem = (size_t*)pStackFrameHelper->rgMethodHandle->GetDataPtr();
+            size_t *pElem = (size_t*)gc.pStackFrameHelper->rgMethodHandle->GetDataPtr();
             pElem[iNumValidFrames] = (size_t)pFunc;
 
             // Native offset
-            CLR_I4 *pI4 = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiOffset)->GetDirectPointerToNonObjectElements();
+            CLR_I4 *pI4 = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiOffset)->GetDirectPointerToNonObjectElements();
             pI4[iNumValidFrames] = data.pElements[i].dwOffset;
 
             // IL offset
-            CLR_I4 *pILI4 = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
+            CLR_I4 *pILI4 = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
 
             // Assembly
             OBJECTREF pAssembly = pFunc->GetAssembly()->GetExposedObject();
-            pStackFrameHelper->rgAssembly->SetAt(iNumValidFrames, pAssembly);
+            gc.pStackFrameHelper->rgAssembly->SetAt(iNumValidFrames, pAssembly);
 
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
             {
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
-                CLR_U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
+                CLR_U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (CLR_U1 *)((BOOLARRAYREF)gc.pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
                                             ->GetDirectPointerToNonObjectElements();
                 pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (CLR_U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
             }
@@ -436,13 +489,13 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     OBJECTREF pResolver = pDMD->GetLCGMethodResolver()->GetManagedResolver();
                     _ASSERTE(pResolver != NULL);
 
-                    ((PTRARRAYREF)pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pResolver);
+                    ((PTRARRAYREF)gc.pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pResolver);
                 }
                 else if (pMethod->GetMethodTable()->Collectible())
                 {
                     OBJECTREF pLoaderAllocator = pMethod->GetMethodTable()->GetLoaderAllocator()->GetExposedObject();
                     _ASSERTE(pLoaderAllocator != NULL);
-                    ((PTRARRAYREF)pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pLoaderAllocator);
+                    ((PTRARRAYREF)gc.pStackFrameHelper->dynamicMethods)->SetAt(iCurDynamic++, pLoaderAllocator);
                 }
             }
 
@@ -658,15 +711,15 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     if (fFileInfoSet)
                     {
                         // Set the line and column numbers
-                        CLR_I4 *pI4Line = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
+                        CLR_I4 *pI4Line = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
                         pI4Line[iNumValidFrames] = sourceLine;
 
-                        CLR_I4 *pI4Column = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
+                        CLR_I4 *pI4Column = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
                         pI4Column[iNumValidFrames] = sourceColumn;
 
                         // Set the file name
                         OBJECTREF obj = (OBJECTREF) StringObject::NewString(wszFileName);
-                        pStackFrameHelper->rgFilename->SetAt(iNumValidFrames, obj);
+                        gc.pStackFrameHelper->rgFilename->SetAt(iNumValidFrames, obj);
                     }
                 }
 
@@ -676,7 +729,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 #endif // FEATURE_ISYM_READER
                 {
                     // Save MethodToken for the function
-                    CLR_I4 *pMethodToken = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
+                    CLR_I4 *pMethodToken = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
                     pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
 
                     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
@@ -686,17 +739,17 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     PTR_CVOID peAddress = pPEAssembly->GetLoadedImageContents(&peSize);
 
                     // Save the PE address and size
-                    PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
+                    PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)gc.pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
                     pLoadedPeAddress[iNumValidFrames] = peAddress;
 
-                    CLR_I4 *pLoadedPeSize = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
+                    CLR_I4 *pLoadedPeSize = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
                     pLoadedPeSize[iNumValidFrames] = (CLR_I4)peSize;
 
                     // Set flag indicating PE file in memory has the on disk layout
-                    if (!pPEAssembly->IsDynamic())
+                    if (!pPEAssembly->IsReflectionEmit())
                     {
                         // This flag is only available for non-dynamic assemblies.
-                        CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
+                        CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)gc.pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
                         pIsFileLayout[iNumValidFrames] = (CLR_U1) pPEAssembly->GetLoadedLayout()->IsFlat();
                     }
 
@@ -707,10 +760,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                         MemoryRange range = stream->GetRawBuffer();
 
                         // Save the in-memory PDB address and size
-                        PTR_VOID *pInMemoryPdbAddress = (PTR_VOID *)pStackFrameHelper->rgInMemoryPdbAddress->GetDataPtr();
+                        PTR_VOID *pInMemoryPdbAddress = (PTR_VOID *)gc.pStackFrameHelper->rgInMemoryPdbAddress->GetDataPtr();
                         pInMemoryPdbAddress[iNumValidFrames] = range.StartAddress();
 
-                        CLR_I4 *pInMemoryPdbSize = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
+                        CLR_I4 *pInMemoryPdbSize = (CLR_I4 *)((I4ARRAYREF)gc.pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
                         pInMemoryPdbSize[iNumValidFrames] = (CLR_I4)range.Size();
                     }
                     else
@@ -720,7 +773,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                         if (!assemblyPath.IsEmpty())
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath.GetUnicode());
-                            pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
+                            gc.pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
                         }
                     }
                 }
@@ -729,20 +782,15 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             iNumValidFrames++;
         }
 
-        pStackFrameHelper->iFrameCount = iNumValidFrames;
-    }
-    else
-    {
-        pStackFrameHelper->iFrameCount = 0;
+        gc.pStackFrameHelper->iFrameCount = iNumValidFrames;
     }
 
     GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
+extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
 {
     QCALL_CONTRACT;
 
@@ -770,242 +818,64 @@ typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the custom notification object being sent
-FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
+extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pData = ObjectToOBJECTREF(dataUNSAFE);
+    QCALL_CONTRACT;
 
 #ifdef DEBUGGING_SUPPORTED
     // Send notification only if the debugger is attached
-    if (CORDebuggerAttached() )
+    if (!CORDebuggerAttached())
+        return;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    Thread * pThread = GetThread();
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
+
+    StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(data.Get());
+    MethodTable* pMT = data.Get()->GetGCSafeMethodTable();
+    Module* pModule = pMT->GetModule();
+    DomainAssembly* pDomainAssembly = pModule->GetDomainAssembly();
+    mdTypeDef classToken = pMT->GetCl();
+
+    pThread->SetThreadCurrNotification(objHandle);
+    g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainAssembly, classToken);
+    pThread->ClearThreadCurrNotification();
+
+    if (pThread->IsAbortRequested())
     {
-        HELPER_METHOD_FRAME_BEGIN_PROTECT(pData);
-
-        Thread * pThread = GetThread();
-        AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
-
-        StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(pData);
-        MethodTable * pMT = pData->GetGCSafeMethodTable();
-        Module * pModule = pMT->GetModule();
-        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-        mdTypeDef classToken = pMT->GetCl();
-
-        pThread->SetThreadCurrNotification(objHandle);
-        g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainAssembly, classToken);
-        pThread->ClearThreadCurrNotification();
-
-        if (pThread->IsAbortRequested())
-        {
-            pThread->HandleThreadAbort();
-        }
-
-        HELPER_METHOD_FRAME_END();
+        pThread->HandleThreadAbort();
     }
 
+    END_QCALL;
+#endif // DEBUGGING_SUPPORTED
+}
+
+extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+#ifdef DEBUGGING_SUPPORTED
+    if (CORDebuggerAttached())
+    {
+        return g_pDebugInterface->IsLoggingEnabled();
+    }
 #endif // DEBUGGING_SUPPORTED
 
-}
-FCIMPLEND
-
-
-void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
-                                           void* pStopStack,
-                                           GetStackFramesData *pData
-                                          )
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    ASSERT (pData != NULL);
-
-    pData->cElements = 0;
-
-    // if the caller specified (< 20) frames are required, then allocate
-    // only that many
-    if ((pData->NumFramesRequested > 0) && (pData->NumFramesRequested < 20))
-    {
-        pData->cElementsAllocated = pData->NumFramesRequested;
-    }
-    else
-    {
-        pData->cElementsAllocated = 20;
-    }
-
-    // Allocate memory for the initial 'n' frames
-    pData->pElements = new DebugStackTraceElement[pData->cElementsAllocated];
-
-    if (pData->TargetThread == NULL ||
-        pData->TargetThread->GetInternal() == GetThread())
-    {
-        // Null target thread specifies current thread.
-        GetThread()->StackWalkFrames(GetStackFramesCallback, pData, FUNCTIONSONLY | QUICKUNWIND, pStartFrame);
-    }
-    else
-    {
-        Thread *pThread = pData->TargetThread->GetInternal();
-        _ASSERTE (pThread != NULL);
-
-        // Here's the timeline for the TS_SyncSuspended bit.
-        // 0) TS_SyncSuspended is not set.
-        // 1) The suspending thread grabs the thread store lock
-        //    then puts in place trip wires for the suspendee (if it is in managed code)
-        //    and releases the thread store lock.
-        // 2) The suspending thread waits for the "SafeEvent".
-        // 3) The suspendee continues execution until it tries to enter preemptive mode.
-        //    If it trips over the wires put in place by the suspending thread,
-        //    it will try to enter preemptive mode.
-        // 4) The suspendee sets TS_SyncSuspended and the "SafeEvent".
-        // 5) AT THIS POINT, IT IS SAFE TO WALK THE SUSPENDEE'S STACK.
-        // 6) The suspendee clears the TS_SyncSuspended flag.
-        //
-        // In other words, it is safe to trace the thread's stack IF we're holding the
-        // thread store lock AND TS_SyncSuspended is set.
-        //
-        // This is because:
-        // - If we were not holding the thread store lock, the thread could be resumed
-        //   underneath us.
-        // - When TS_SyncSuspended is set, we race against it resuming execution.
-
-        ThreadStoreLockHolder tsl;
-
-        // We erect a barrier so that if the thread tries to disable preemptive GC,
-        // it could resume execution of managed code during our stack walk.
-        TSSuspendHolder shTrap;
-
-        Thread::ThreadState state = pThread->GetSnapshotState();
-        if (state & (Thread::TS_Unstarted|Thread::TS_Dead|Thread::TS_Detached))
-        {
-            goto LSafeToTrace;
-        }
-
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_BAD_STATE);
-
-    LSafeToTrace:
-        pThread->StackWalkFrames(GetStackFramesCallback,
-                                 pData,
-                                 FUNCTIONSONLY|ALLOW_ASYNC_STACK_WALK,
-                                 pStartFrame);
-    }
-
-    // Do a 2nd pass outside of any locks.
-    // This will compute IL offsets.
-    for (INT32 i = 0; i < pData->cElements; i++)
-    {
-        pData->pElements[i].InitPass2();
-    }
-
+    return FALSE;
 }
 
-
-void DebugStackTrace::GetStackFrames(Frame *pStartFrame,
-                                     void* pStopStack,
-                                     GetStackFramesData *pData
-                                    )
+extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    GetStackFramesHelper(pStartFrame, pStopStack, pData);
-}
-
-
-StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    GetStackFramesData* pData = (GetStackFramesData*)data;
-
-    if (pData->skip > 0)
-    {
-        pData->skip--;
-        return SWA_CONTINUE;
-    }
-
-    // <REVISIT_TODO>@todo: How do we know what kind of frame we have?</REVISIT_TODO>
-    //        Can we always assume FramedMethodFrame?
-    //        NOT AT ALL!!!, but we can assume it's a function
-    //                       because we asked the stackwalker for it!
-    MethodDesc* pFunc = pCf->GetFunction();
-
-    if (pData->cElements >= pData->cElementsAllocated)
-    {
-
-        DebugStackTraceElement* pTemp = new (nothrow) DebugStackTraceElement[2*pData->cElementsAllocated];
-
-        if (!pTemp)
-        {
-            return SWA_ABORT;
-        }
-
-        memcpy(pTemp, pData->pElements, pData->cElementsAllocated * sizeof(DebugStackTraceElement));
-
-        delete [] pData->pElements;
-
-        pData->pElements = pTemp;
-        pData->cElementsAllocated *= 2;
-    }
-
-    PCODE ip;
-    DWORD dwNativeOffset;
-
-    if (pCf->IsFrameless())
-    {
-        // Real method with jitted code.
-        dwNativeOffset = pCf->GetRelOffset();
-        ip = GetControlPC(pCf->GetRegisterSet());
-    }
-    else
-    {
-        ip = (PCODE)NULL;
-        dwNativeOffset = 0;
-    }
-
-    // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
-    INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
-
-    pData->pElements[pData->cElements].InitPass1(
-            dwNativeOffset,
-            pFunc,
-            ip,
-            flags);
-
-    // We'll init the IL offsets outside the TSL lock.
-
-    ++pData->cElements;
-
-    // Since we may be asynchronously walking another thread's stack,
-    // check (frequently) for stack-buffer-overrun corruptions after
-    // any long operation
-    pCf->CheckGSCookies();
-
-    // check if we already have the number of frames that the user had asked for
-    if ((pData->NumFramesRequested != 0) && (pData->NumFramesRequested <= pData->cElements))
-    {
-        return SWA_ABORT;
-    }
-
-    return SWA_CONTINUE;
+#ifdef DEBUGGING_SUPPORTED
+    return CORDebuggerAttached();
+#else
+    return FALSE;
+#endif
 }
 #endif // !DACCESS_COMPILE
 
@@ -1044,9 +914,9 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
     // Now get the _stackTrace reference
     StackTraceArray traceData;
-    EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
 
     GCPROTECT_BEGIN(traceData);
+        EXCEPTIONREF(*e)->GetStackTrace(traceData, pDynamicMethodArray);
         // The number of frame info elements in the stack trace info
         pData->cElements = static_cast<int>(traceData.Size());
 
@@ -1057,7 +927,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
         if (pData->cElements != 0)
         {
             // Allocate the memory to contain the data
-            pData->pElements = new DebugStackTraceElement[pData->cElements];
+            pData->pElements = new Element[pData->cElements];
 
             // Fill in the data
             for (unsigned i = 0; i < (unsigned)pData->cElements; i++)
@@ -1087,7 +957,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 #if defined(DACCESS_COMPILE) && defined(TARGET_AMD64)
                 // Compensate for a bug in the old EH that for a frame that faulted
                 // has the ip pointing to an address before the faulting instruction
-                if (g_isNewExceptionHandlingEnabled && (i == 0) && ((cur.flags & STEF_IP_ADJUSTED) == 0))
+                if ((i == 0) && ((cur.flags & STEF_IP_ADJUSTED) == 0))
                 {
                     ip -= 1;
                 }
@@ -1123,7 +993,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
 // Init a stack-trace element.
 // Initialization done potentially under the TSL.
-void DebugStackTrace::DebugStackTraceElement::InitPass1(
+void DebugStackTrace::Element::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
     PCODE ip,
@@ -1134,7 +1004,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     _ASSERTE(pFunc != NULL);
 
     // May have a null IP for ecall frames. If IP is null, then dwNativeOffset should be 0 too.
-    _ASSERTE ( (ip != NULL) || (dwNativeOffset == 0) );
+    _ASSERTE ( (ip != (PCODE)NULL) || (dwNativeOffset == 0) );
 
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;
@@ -1143,14 +1013,538 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
 }
 
 #ifndef DACCESS_COMPILE
+// This is an implementation of a cache of the Native->IL offset mappings used by managed stack traces. It exists for the following reasons:
+// 1. When a large server experiences a large number of exceptions due to some other system failing, it can cause a tremendous number of stack traces to be generated, if customers are attempting to log.
+// 2. The native->IL offset mapping is somewhat expensive to compute, and it is not necessary to compute it repeatedly for the same IP.
+// 3. Often when these mappings are needed, the system is under stress, and throwing on MANY different threads with similar callstacks, so the cost of having locking around the cache may be significant.
+//
+// The cache is implemented as a simple hash table, where the key is the IP + fAdjustOffset
+// flag, and the value is the IL offset. We use a version number to indicate when the cache
+// is being updated, and to indicate that a found value is valid, and we use a simple linear
+// probing algorithm to find the entry in the cache.
+//
+// The replacement policy is randomized, and there are s_stackWalkCacheWalk(8) possible buckets to check before giving up.
+//
+// Since the cache entries are greater than a single pointer, we use a simple version locking scheme to protect readers.
 
-// Initialization done outside the TSL.
-// This may need to call locking operations that aren't safe under the TSL.
-void DebugStackTrace::DebugStackTraceElement::InitPass2()
+struct StackWalkNativeToILCacheEntry
+{
+    void* ip = NULL; // The IP of the native code
+    uint32_t ilOffset = 0; // The IL offset, with the adjust offset flag set if the native offset was adjusted by STACKWALK_CONTROLPC_ADJUST_OFFSET
+};
+
+static LONG s_stackWalkNativeToILCacheVersion = 0;
+static DWORD s_stackWalkCacheSize = 0; // This is the total size of the cache (We use a pointer+4 bytes for each entry, so on 64bit platforms 12KB of memory)
+const DWORD s_stackWalkCacheWalk = 8; // Walk up to this many entries in the cache before giving up
+const DWORD s_stackWalkCacheAdjustOffsetFlag = 0x80000000; // 2^31, put into the IL offset portion of the cache entry to check if the native offset was adjusted by STACKWALK_CONTROLPC_ADJUST_OFFSET
+static StackWalkNativeToILCacheEntry* s_stackWalkCache = NULL;
+
+bool CheckNativeToILCacheCore(void* ip, bool fAdjustOffset, uint32_t* pILOffset)
+{
+    // Check the cache for the IP
+    int hashCode = MixPointerIntoHash(ip);
+    StackWalkNativeToILCacheEntry* cacheTable = VolatileLoad(&s_stackWalkCache);
+    
+    if (cacheTable == NULL)
+    {
+        // Cache is not initialized
+        return false;
+    }
+    DWORD cacheSize = VolatileLoadWithoutBarrier(&s_stackWalkCacheSize);
+    int index = hashCode % cacheSize;
+
+    DWORD count = 0;
+    do
+    {
+        if (VolatileLoadWithoutBarrier(&cacheTable[index].ip) == ip)
+        {
+            // Cache hit
+            uint32_t dwILOffset = VolatileLoad(&cacheTable[index].ilOffset); // It is IMPORTANT that this load have a barrier after it, so that the version check in the containing funciton is safe.
+            if (fAdjustOffset != ((dwILOffset & s_stackWalkCacheAdjustOffsetFlag) == s_stackWalkCacheAdjustOffsetFlag))
+            {
+                continue; // The cache entry did not match on the adjust offset flag, so move to the next entry.
+            }
+
+            dwILOffset &= ~s_stackWalkCacheAdjustOffsetFlag; // Clear the adjust offset flag
+            *pILOffset = dwILOffset;
+            return true;
+        }
+    } while (index = (index + 1) % cacheSize, count++ < s_stackWalkCacheWalk);
+
+    return false; // Not found in cache
+}
+
+bool CheckNativeToILCache(void* ip, bool fAdjustOffset, uint32_t* pILOffset)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    LONG versionStart = VolatileLoad(&s_stackWalkNativeToILCacheVersion);
+
+    if ((versionStart & 1) == 1)
+    {
+        // Cache is being updated, so we cannot use it
+        return false;
+    }
+
+    if (CheckNativeToILCacheCore(ip, fAdjustOffset, pILOffset))
+    {
+        // When looking in the cache, the last load from the cache is a VolatileLoad, which allows a load here to check the version in the cache
+        LONG versionEnd = VolatileLoadWithoutBarrier(&s_stackWalkNativeToILCacheVersion);
+        if (versionEnd == versionStart)
+        {
+            // Cache was not updated while we were checking it, so we can use it
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void InsertIntoNativeToILCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset)
 {
     CONTRACTL
     {
-        MODE_ANY;
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    uint32_t dwILOffsetCheck;
+    if (CheckNativeToILCache(ip, fAdjustOffset, &dwILOffsetCheck))
+    {
+        // The entry already exists, so we don't need to insert it again
+        _ASSERTE(dwILOffsetCheck == dwILOffset);
+        return;
+    }
+
+    // Insert the IP and IL offset into the cache
+    
+    LONG versionStart = VolatileLoadWithoutBarrier(&s_stackWalkNativeToILCacheVersion);
+    if ((versionStart & 1) == 1)
+    {
+        // Cache is being updated by someone else, so we can't modify it
+        return;
+    }
+
+    if (versionStart != InterlockedCompareExchange(&s_stackWalkNativeToILCacheVersion, versionStart | 1, versionStart))
+    {
+        // Someone else updated the cache version while we were attempting to take the lock, so abort updating the cache
+        return;
+    }
+    // Now we have the lock, so we can safely update the cache
+
+    if (s_stackWalkCache == NULL)
+    {
+        // Initialize the cache if it is not already initialized
+        DWORD cacheSize = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_NativeToILOffsetCacheSize);
+        if (cacheSize < 1)
+        {
+            cacheSize = 1; // Ensure cache size is at least 1 to prevent division-by-zero
+        }
+        VolatileStore(&s_stackWalkCacheSize, cacheSize);
+        VolatileStore(&s_stackWalkCache, new(nothrow)StackWalkNativeToILCacheEntry[cacheSize]);
+
+        if (s_stackWalkCache == NULL)
+        {
+            // Failed to allocate memory for the cache, so we cannot insert into it
+            // Abort the cache update
+            VolatileStore(&s_stackWalkNativeToILCacheVersion, versionStart);
+            return;
+        }
+    }
+
+    // First check to see if the cache already has an entry
+    uint32_t dwILOffsetFound;
+    if (CheckNativeToILCacheCore(ip, fAdjustOffset, &dwILOffsetFound))
+    {
+        // The entry already exists, so we don't need to insert it again
+        _ASSERTE(dwILOffsetFound == dwILOffset);
+
+        // Store back the original version to indicate that the cache has not been updated, and is ready for use.
+        VolatileStore(&s_stackWalkNativeToILCacheVersion, versionStart);
+    }
+    else
+    {
+        // Insert the IP and IL offset into the cache
+
+        int hashCode = MixPointerIntoHash(ip);
+
+        // Insert the entry into a psuedo-random location in the set of cache entries. The idea is to attempt to be somewhat collision resistant
+        int index = (hashCode + (MixOneValueIntoHash(versionStart) % s_stackWalkCacheWalk)) % s_stackWalkCacheSize;
+
+        s_stackWalkCache[index].ip = ip;
+        s_stackWalkCache[index].ilOffset = dwILOffset | (fAdjustOffset ? s_stackWalkCacheAdjustOffsetFlag : 0);
+
+        // Increment the version to indicate that the cache has been updated, and is ready for use.
+        VolatileStore(&s_stackWalkNativeToILCacheVersion, versionStart + 2);
+    }
+}
+
+
+struct WalkILOffsetsData
+{
+    WalkILOffsetsData(DWORD dwSearchNativeOffset, bool skipPrologsParam = false)
+        : dwSearchNativeOffset(dwSearchNativeOffset),
+        skipPrologs(skipPrologsParam)
+    {
+    }
+    DWORD prevILOffsetFound = 0;
+    DWORD dwILOffsetFound = 0;
+    DWORD dwCurrentNativeOffset = 0;
+    int greatestILOffsetFound = 0;
+    const DWORD dwSearchNativeOffset;
+
+    DWORD dwFinalILOffset = 0;
+    const bool skipPrologs;
+    bool skipPrologCase = false;
+    bool firstCall = true;
+    bool epilogCase = false;
+};
+
+// This callback is used to walk the IL offsets for a given method, and find the IL offset that corresponds to a given native offset.
+size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+{
+    WalkILOffsetsData *pWalkData = (WalkILOffsetsData *)pContext;
+    // Callbacks into this api are sorted by native offset, but not sorted by IL offset.
+    // In addition, there are several special IL offsets that are not actual IL offsets.
+
+    if ((int32_t)pOffsetMapping->ilOffset > pWalkData->greatestILOffsetFound)
+    {
+        // Calculate the greatest IL offset found so far. We use this as the IL offset for epilogs
+        pWalkData->greatestILOffsetFound = (int)pOffsetMapping->ilOffset;
+    }
+
+    // Also, ignore all the CALL_INSTRUCTION mappings since they are not relevant for the standard Native-IL mapping
+
+    if ((pOffsetMapping->source & (DWORD)ICorDebugInfo::CALL_INSTRUCTION) == (DWORD)ICorDebugInfo::CALL_INSTRUCTION)
+    {
+        // This is a call instruction mapping, so we don't care about it.
+        return 0;
+    }
+
+    if (pWalkData->epilogCase)
+    {
+        if (pOffsetMapping->nativeOffset == 0xFFFFFFFF)
+        {
+            pWalkData->dwFinalILOffset = pWalkData->greatestILOffsetFound;
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    // The general rule is that we need to find the lowest IL offset that applies to the given native offset
+    // An IL offset in the mapping of ICorDebugInfo::NO_MAPPING indicates that the IL offset we report should be 0
+    // An IL offset in the mapping of ICorDebugInfo::PROLOG indicates that we should report the "next" IL offset.
+    // An IL offset in the mapping of ICorDebugInfo::EPILOG indicates that we should report the "previous" IL offset.
+
+    if (pWalkData->firstCall)
+    {
+        pWalkData->firstCall = false;
+        // This is the first time we are called, so set the current native offset to the one we are looking for
+        pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+        if (pOffsetMapping->nativeOffset > pWalkData->dwSearchNativeOffset)
+        {
+            // We are looking for an IL offset, and all IL offsets are are about portions of the method that are after the native offset we were passed initially.
+            // Treat this like a PROLOG and set the IL offset to 0
+            pWalkData->dwFinalILOffset = 0;
+            return 1; 
+        }
+        pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
+    }
+    else
+    {
+        // If the current native offset is less than the one we are looking for, then we need to set the IL offset
+        // to the one we are looking for.
+        if (pOffsetMapping->nativeOffset > pWalkData->dwCurrentNativeOffset)
+        {
+            if (pWalkData->skipPrologCase)
+            {
+                if (pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::NO_MAPPING &&
+                    pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::PROLOG && 
+                    pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::EPILOG)
+                {
+                    // We found a valid IL offset after the prolog, so set the final IL offset to the one we found
+                    pWalkData->dwFinalILOffset = pWalkData->dwILOffsetFound;
+                }
+                else
+                {
+                    pWalkData->dwFinalILOffset = 0;
+                }
+                return 1;
+            }
+            if (pOffsetMapping->nativeOffset > pWalkData->dwSearchNativeOffset)
+            {
+                // We were searching for the IL offset, and we found it (unless we were in a PROLOG)
+                if (pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::EPILOG)
+                {
+                    // We found we were in an EPILOG. Report the last il offset reported as part of the method.
+                    pWalkData->epilogCase = true;
+                    if (pOffsetMapping->nativeOffset == 0xFFFFFFFF)
+                    {
+                        pWalkData->dwFinalILOffset = pWalkData->greatestILOffsetFound;
+                        return 1;
+                    }
+                }
+                else if (pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::NO_MAPPING)
+                {
+                    pWalkData->dwFinalILOffset = 0;
+                    return 1;
+                }
+                else if (!(pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::PROLOG))
+                {
+                    pWalkData->dwFinalILOffset = pWalkData->dwILOffsetFound;
+                    return 1;
+                }
+                else
+                {
+                    // PROLOG case
+                    if (pWalkData->skipPrologs)
+                    {
+                        _ASSERTE(pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::PROLOG);
+                        pWalkData->skipPrologCase = true;
+                    }
+                    else
+                    {
+                        pWalkData->dwFinalILOffset = 0;
+                        return 1;
+                    }
+                }
+            }
+            pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+            pWalkData->prevILOffsetFound = pWalkData->dwILOffsetFound;
+            pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
+        }
+        else if (((int32_t)pOffsetMapping->ilOffset < (int32_t)pWalkData->dwILOffsetFound) && (pOffsetMapping->ilOffset != (DWORD)ICorDebugInfo::NO_MAPPING))
+        {
+            // We found a new IL offset that is less than the one we are looking for
+            pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
+        }
+    }
+
+    return 0;
+}
+
+#ifndef DACCESS_COMPILE
+#ifdef DEBUG
+size_t WalkILOffsetsCallback_Printer(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+{
+    printf("IL Offset: %d, Native Offset: %d, %s%s%s%s%s\n",
+          pOffsetMapping->ilOffset,
+          pOffsetMapping->nativeOffset,
+          pOffsetMapping->source & ICorDebugInfo::SEQUENCE_POINT ? "SEQUENCE_POINT " : "",
+          pOffsetMapping->source & ICorDebugInfo::STACK_EMPTY ? "STACK_EMPTY " : "",
+          pOffsetMapping->source & ICorDebugInfo::CALL_SITE ? "CALL_SITE " : "",
+          pOffsetMapping->source & ICorDebugInfo::NATIVE_END_OFFSET_UNKNOWN ? "NATIVE_END_OFFSET_UNKNOWN " : "",
+          pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION ? "CALL_INSTRUCTION " : "");
+    return 0;
+}
+
+void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
+{
+    EECodeInfo codeInfo((PCODE)ip);
+    if (!codeInfo.IsValid())
+    {
+        return;
+    }
+    DWORD dwNativeOffset = codeInfo.GetRelOffset();
+
+    DWORD dwILOffsetDebugInterface = 0;
+    DWORD dwILOffsetWalk = 0;
+    
+    bool bResGetILOffsetFromNative = g_pDebugInterface->GetILOffsetFromNative(
+        pFunc,
+        (LPCBYTE)ip,
+        dwNativeOffset,
+        &dwILOffsetDebugInterface);
+        
+    WalkILOffsetsData data(dwNativeOffset);
+    TADDR startAddress = codeInfo.GetStartAddress();
+    DebugInfoRequest request;
+    request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+    bool bWalkILOffsets;
+    
+    if (pFunc->IsDynamicMethod())
+    {
+        bWalkILOffsets = false;
+    }
+    else
+    {
+        bWalkILOffsets = codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, &data, WalkILOffsetsCallback);
+        if (bWalkILOffsets)
+            dwILOffsetWalk = data.dwFinalILOffset;
+        else
+        {
+            dwILOffsetWalk = 0;
+            bWalkILOffsets = true;
+        }
+    }
+
+    if (bWalkILOffsets && bResGetILOffsetFromNative)
+    {
+        if (dwILOffsetWalk != dwILOffsetDebugInterface)
+        {
+            printf("Mismatch in IL offsets for %p at IP %p Native Offset %d:\n", pFunc, ip, dwNativeOffset);
+            printf("  Debug Interface IL Offset: %d\n", dwILOffsetDebugInterface);
+            printf("  Walk IL Offsets IL Offset: %d\n", dwILOffsetWalk);
+            codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, NULL, WalkILOffsetsCallback_Printer);
+        }
+        _ASSERTE(dwILOffsetWalk == dwILOffsetDebugInterface);
+    }
+
+    if (bWalkILOffsets != bResGetILOffsetFromNative)
+    {
+        printf("Mismatch in IL offsets validity for %p at IP %p Native Offset %d:\n", pFunc, ip, dwNativeOffset);
+        printf("  Debug Interface IL Offset: %d Valid = %s\n", dwILOffsetDebugInterface, bResGetILOffsetFromNative ? "true" : "false");
+        printf("  Walk IL Offsets IL Offset: %d Valid = %s\n", dwILOffsetWalk, bWalkILOffsets ? "true" : "false");
+        codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, NULL, WalkILOffsetsCallback_Printer);
+        _ASSERTE(bWalkILOffsets == bResGetILOffsetFromNative);
+    }
+}
+
+void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, uint8_t* ipHotStart, size_t hotLen)
+{
+    LIMITED_METHOD_CONTRACT;
+    {
+        USHORT cMap;
+        NewArrayHolder<UINT> rguiILOffset;
+        NewArrayHolder<UINT> rguiNativeOffset;
+
+        if (pFunc->IsWrapperStub() || pFunc->IsDynamicMethod())
+        {
+            return;
+        }
+
+        // This is the limit on how big the il-to-native map can get, as measured by number
+        // of entries in each parallel array (IL offset array and native offset array).
+        // This number was chosen to ensure the overall event stays under the Windows limit
+        // of 64K
+        const USHORT kMapEntriesMax = 7000;
+
+        HRESULT hr = g_pDebugInterface->GetILToNativeMappingIntoArrays(
+        pFunc,
+        PINSTRToPCODE((TADDR)ipHotStart),
+        kMapEntriesMax,
+        &cMap,
+        &rguiILOffset,
+        &rguiNativeOffset);
+
+        if (FAILED(hr))
+        {
+            printf("Failed to get IL to Native mapping for %p: %x\n", pFunc, hr);
+            return;
+        }
+
+        EECodeInfo codeInfo((PCODE)ipHotStart);
+        if (!codeInfo.IsValid())
+        {
+            return;
+        }
+        TADDR startAddress = codeInfo.GetStartAddress();
+        DebugInfoRequest request;
+        request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+
+        ILToNativeMapArrays context(kMapEntriesMax);
+        codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, &context, ComputeILOffsetArrays);
+
+        uint32_t cMapWalk;
+        uint32_t* rguiILOffsetWalk;
+        uint32_t* rguiNativeOffsetWalk;
+
+        context.GetArrays(&cMapWalk, &rguiNativeOffsetWalk, &rguiILOffsetWalk);
+
+        bool failure = false;
+
+        if (cMapWalk != cMap)
+        {
+            printf("Mismatch in IL to Native mapping count for %p: Expected %d, got %d\n", pFunc, cMap, cMapWalk);
+            failure = true;
+        }
+
+        if (cMapWalk == cMap)
+        {
+            for (uint32_t i = 0; i < cMapWalk; i++)
+            {
+                // We should never have a prolog or epilog entry in the map.
+                if ((rguiILOffsetWalk[i] != rguiILOffset[i]) || rguiNativeOffsetWalk[i] != rguiNativeOffset[i])
+                {
+                    printf("Mismatch in IL to Native mapping at index %d\n", (int)i);
+                    failure = true;
+                    break;
+                }
+            }
+        }
+
+        if (failure)
+        {
+            codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, NULL, WalkILOffsetsCallback_Printer);
+
+            printf("cMap: %d\n", cMap);
+            printf("cMapWalk: %d\n", cMapWalk);
+
+            uint32_t i = 0;
+            for (i = 0; i < cMap && i < cMapWalk; i++)
+            {
+                if ((rguiILOffsetWalk[i] != rguiILOffset[i]) || rguiNativeOffsetWalk[i] != rguiNativeOffset[i])
+                {
+                    printf("MISMATCH - ");
+                }
+
+                printf("IL Offset: %d, IL Offset(walk): %d, Native Offset: %d Native Offset(walk): %d\n", (int)rguiILOffset[i], (int)rguiILOffsetWalk[i], (int)rguiNativeOffset[i], (int)rguiNativeOffsetWalk[i]);
+            }
+
+            for (; i < cMap; i++)
+            {
+                printf("IL Offset: %d, Native Offset: %d\n", (int)rguiILOffsetWalk[i], (int)rguiNativeOffsetWalk[i]);
+            }
+
+            for (; i < cMapWalk; i++)
+            {
+                printf("IL Offset(walk): %d, Native Offset(walk): %d\n", (int)rguiILOffsetWalk[i], (int)rguiNativeOffsetWalk[i]);
+            }
+            _ASSERTE(!failure);
+        }
+    }
+
+    uint8_t *ip;
+    if (ipColdStart != NULL)
+    {
+        size_t step = coldLen / 100;
+        if (step == 0)
+        {
+            step = 1; // Ensure we step at least once
+        }
+        for (ip = ipColdStart; ip <= (ipColdStart + coldLen);ip += step)
+        {
+            ValidateILOffset(pFunc, ip);
+        }
+    }
+
+    if (ipHotStart != NULL)
+    {
+        size_t step = hotLen / 100;
+        if (step == 0)
+        {
+            step = 1; // Ensure we step at least once
+        }
+        for (ip = ipHotStart; ip <= (ipHotStart + hotLen);ip += step)
+        {
+            ValidateILOffset(pFunc, ip);
+        }
+    }
+}
+#endif // DEBUG
+
+#endif // !DACCESS_COMPILE
+
+// Initialization done outside the TSL.
+// This may need to call locking operations that aren't safe under the TSL.
+void DebugStackTrace::Element::InitPass2()
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
         GC_TRIGGERS;
         THROWS;
     }
@@ -1160,36 +1554,50 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
     bool bRes = false;
 
-#ifdef DEBUGGING_SUPPORTED
-    // Calculate the IL offset using the debugging services
-    if ((this->ip != (PCODE)NULL) && g_pDebugInterface)
-    {
-        // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
-        // adjusted in certain cases when calculating the IL offset.
-        //
-        // The dwOffset of the stack frame points to either:
-        //
-        // 1) The instruction that caused a hardware exception (div by zero, null ref, etc).
-        // 2) The instruction after the call to an internal runtime function (FCALL like IL_Throw, IL_Rethrow,
-        //    JIT_OverFlow, etc.) that caused a software exception.
-        // 3) The instruction after the call to a managed function (non-leaf node).
-        //
-        // #2 and #3 are the cases that need to adjust dwOffset because they point after the call instruction
-        // and may point to the next (incorrect) IL instruction/source line. If STEF_IP_ADJUSTED is set,
-        // IP/dwOffset has already be decremented so don't decrement it again.
-        //
-        // When the dwOffset needs to be adjusted it is a lot simpler to decrement instead of trying to figure out
-        // the beginning of the instruction. It is enough for GetILOffsetFromNative to return the IL offset of the
-        // instruction throwing the exception.
-        bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
-        bRes = g_pDebugInterface->GetILOffsetFromNative(
-            pFunc,
-            (LPCBYTE)this->ip,
-            fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
-            &this->dwILOffset);
-    }
+    bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
 
-#endif // !DEBUGGING_SUPPORTED
+    // Check the cache!
+    uint32_t dwILOffsetFromCache;
+    if (CheckNativeToILCache((void*)this->ip, fAdjustOffset, &dwILOffsetFromCache))
+    {
+        this->dwILOffset = dwILOffsetFromCache;
+        bRes = true;
+    }
+    else
+    {
+        // Get IL Offset from the JitManager directly
+        EECodeInfo codeInfo(this->ip);
+
+        // We are allowed to get a result for non-dynamic methods only, other methods will either have good data, or be returned as IL offset 0.
+        if (codeInfo.IsValid() && !codeInfo.GetMethodDesc()->IsDynamicMethod())
+        {
+            TADDR startAddress = codeInfo.GetStartAddress();
+            WalkILOffsetsData data(fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset);
+            DebugInfoRequest request;
+            request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+            if (!codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, &data, WalkILOffsetsCallback))
+            {
+                data.dwFinalILOffset = 0; // If we didn't find any IL offsets, set the final IL offset to 0
+            }
+
+            this->dwILOffset = data.dwFinalILOffset;
+            bRes = true;
+
+            MethodDesc* pMD = codeInfo.GetMethodDesc();
+            if (!pMD->IsLCGMethod() && !pMD->GetLoaderAllocator()->IsCollectible())
+            {
+                // Only insert into the cache if the value found will not change throughout the lifetime of the process.
+                InsertIntoNativeToILCache(
+                    (void*)this->ip,
+                    fAdjustOffset,
+                    this->dwILOffset);
+            }
+        }
+        else
+        {
+            bRes = false;
+        }
+    }
 
     // If there was no mapping information, then set to an invalid value
     if (!bRes)
@@ -1198,4 +1606,192 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
     }
 }
 
+int32_t ILToNativeMapArrays::CompareILOffsets(uint32_t ilOffsetA, uint32_t ilOffsetB)
+{
+    if (ilOffsetA == ilOffsetB)
+    {
+        return 0; 
+    }
+
+    if (ilOffsetA == (uint32_t)ICorDebugInfo::PROLOG)
+    {
+        // Prolog entries are always at the start of the list.
+        return -1;
+    }
+    if (ilOffsetB == (uint32_t)ICorDebugInfo::PROLOG)
+    {
+        // Prolog entries are always at the start of the list.
+        return 1;
+    }
+    else if (ilOffsetA == (uint32_t)ICorDebugInfo::NO_MAPPING)
+    {
+        // No mappings are always at the end of the list.
+        return 1;
+    }
+    else if (ilOffsetB == (uint32_t)ICorDebugInfo::NO_MAPPING)
+    {
+        // No mappings are always at the end of the list.
+        return -1;
+    }
+    else if (ilOffsetA == (uint32_t)ICorDebugInfo::EPILOG)
+    {
+        // Epilog entries are always just before the NO_MAPPING regions
+        return 1;
+    }
+    else if (ilOffsetB == (uint32_t)ICorDebugInfo::EPILOG)
+    {
+        // Epilog entries are always just before the NO_MAPPING regions
+        return -1;
+    }
+    else if (ilOffsetA < ilOffsetB)
+    {
+        return -1;
+    }
+    else
+    {
+        return 1;
+    }
+}
+bool ILToNativeMapArrays::CompareLessOffsets(uint32_t ilOffsetA, uint32_t nativeOffsetA, uint32_t ilOffsetB, uint32_t nativeOffsetB)
+{
+    int32_t ilOffsetCompare = CompareILOffsets(ilOffsetA, ilOffsetB);
+    _ASSERTE(CompareILOffsets(ilOffsetB, ilOffsetA) == -ilOffsetCompare);
+
+    if (ilOffsetCompare != 0)
+    {
+        // If IL offsets are not equal, then we can return the result of the IL offset comparison.
+        return ilOffsetCompare < 0;
+    }
+    return nativeOffsetA < nativeOffsetB;
+}
+
+bool ILToNativeMapArrays::CompareGreaterOffsets(uint32_t ilOffsetA, uint32_t nativeOffsetA, uint32_t ilOffsetB, uint32_t nativeOffsetB)
+{
+    int32_t ilOffsetCompare = CompareILOffsets(ilOffsetA, ilOffsetB);
+    _ASSERTE(CompareILOffsets(ilOffsetB, ilOffsetA) == -ilOffsetCompare);
+
+    if (ilOffsetCompare != 0)
+    {
+        // If IL offsets are not equal, then we can return the result of the IL offset comparison.
+        return ilOffsetCompare > 0;
+    }
+    return nativeOffsetA > nativeOffsetB;
+}
+
+void ILToNativeMapArrays::Swap(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t i, int32_t j)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    uint32_t tempNative = rguiNativeOffset[i];
+    uint32_t tempIL = rguiILOffset[i];
+    rguiNativeOffset[i] = rguiNativeOffset[j];
+    rguiILOffset[i] = rguiILOffset[j];
+    rguiNativeOffset[j] = tempNative;
+    rguiILOffset[j] = tempIL;
+}
+
+void ILToNativeMapArrays::Copy(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t i, int32_t j)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    rguiNativeOffset[i] = rguiNativeOffset[j];
+    rguiILOffset[i] = rguiILOffset[j];
+}
+
+int32_t ILToNativeMapArrays::Partition(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t low, int32_t high)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Choose the pivot as the middle element and 
+    // pull the pivot the the end of the array.
+    Swap(rguiNativeOffset, rguiILOffset, low + (high - low) / 2, high);
+
+    uint32_t pivotNative = rguiNativeOffset[high];
+    uint32_t pivotIL = rguiILOffset[high];
+    int i = low - 1;
+
+    for (int j = low; j < high; j++)
+    {
+        if (CompareLessOffsets(rguiILOffset[j], rguiNativeOffset[j], pivotIL, pivotNative))
+        {
+            i++;
+            Swap(rguiNativeOffset, rguiILOffset, j, i);
+        }
+    }
+
+    // Place pivot in the correct position
+    Swap(rguiNativeOffset, rguiILOffset, i+1, high);
+    return i + 1;
+}
+
+void ILToNativeMapArrays::QuickSort(uint32_t* rguiNativeOffset, uint32_t *rguiILOffset, int32_t low, int32_t high, int32_t stackDepth)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if ((stackDepth > 5) || (high - low) < 10)
+    {
+        for (int i = low + 1; i <= high; i++)
+        {
+            uint32_t keyNative = rguiNativeOffset[i];
+            uint32_t keyIL = rguiILOffset[i];
+            int j = i - 1;
+
+            // Move elements of rguiNativeOffset[low..i-1], that are greater than keyNative,
+            // to one position ahead of their current position
+            while (j >= low && CompareGreaterOffsets(rguiILOffset[j], rguiNativeOffset[j], keyIL, keyNative))
+            {
+                Copy(rguiNativeOffset, rguiILOffset, j + 1, j);
+                j--;
+            }
+            rguiNativeOffset[j + 1] = keyNative;
+            rguiILOffset[j + 1] = keyIL;
+        }
+    }
+    else
+    {
+        int pi = Partition(rguiNativeOffset, rguiILOffset, low, high);
+
+        // Recursively sort elements before and after partition
+        QuickSort(rguiNativeOffset, rguiILOffset, low, pi - 1, stackDepth + 1);
+        QuickSort(rguiNativeOffset, rguiILOffset, pi + 1, high, stackDepth + 1);
+    }
+}
+
+void ILToNativeMapArrays::AddEntry(ICorDebugInfo::OffsetMapping *pOffsetMapping)
+{
+    if ((pOffsetMapping->source & ICorDebugInfo::CALL_INSTRUCTION) != ICorDebugInfo::CALL_INSTRUCTION)
+    {
+        if (callInstrSequence < 2)
+        {
+            // Check to see if we should prefer to drop this mapping in favor of a future mapping.
+            if ((m_rguiILOffset.GetCount() > 0) && 
+                (m_rguiILOffset[m_rguiILOffset.GetCount() - 1] == pOffsetMapping->ilOffset))
+            {
+                callInstrSequence = 0;
+                return;
+            }
+        }
+        m_rguiNativeOffset.Append(pOffsetMapping->nativeOffset);
+        m_rguiILOffset.Append(pOffsetMapping->ilOffset);
+
+        callInstrSequence = 0;
+    }
+    else
+    {
+        callInstrSequence++;
+    }
+}
+
+// This callback is used to walk the IL offsets for a given method, and produce a pair of arrays that contain the IL and native offsets for the method.
+size_t ComputeILOffsetArrays(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+{
+    if (pOffsetMapping->nativeOffset == 0xFFFFFFFF)
+    {
+        // This is a special case for the end of the method, where the native offset is 0xFFFFFFFF.
+        return 1;
+    }
+    ILToNativeMapArrays* pArrays = (ILToNativeMapArrays*)pContext;
+    pArrays->AddEntry(pOffsetMapping);
+    return 0;
+}
 #endif // !DACCESS_COMPILE

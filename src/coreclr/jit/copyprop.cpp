@@ -46,24 +46,31 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
     {
         for (GenTree* const tree : stmt->TreeList())
         {
-            GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
+            if (!tree->OperIsSsaDef())
             {
-                if (lclDefNode->HasCompositeSsaName())
+                continue;
+            }
+
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                if (lcl->HasCompositeSsaName())
                 {
-                    LclVarDsc* varDsc = lvaGetDesc(lclDefNode);
+                    LclVarDsc* varDsc = lvaGetDesc(lcl);
                     assert(varDsc->lvPromoted);
 
                     for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
                     {
-                        popDef(varDsc->lvFieldLclStart + index, lclDefNode->GetSsaNum(this, index));
+                        popDef(varDsc->lvFieldLclStart + index, lcl->GetSsaNum(this, index));
                     }
                 }
                 else
                 {
-                    popDef(lclDefNode->GetLclNum(), lclDefNode->GetSsaNum());
+                    popDef(lcl->GetLclNum(), lcl->GetSsaNum());
                 }
-            }
+
+                return GenTree::VisitResult::Continue;
+            };
+
+            tree->VisitLocalDefNodes(this, visitDef);
         }
     }
 }
@@ -161,9 +168,10 @@ bool Compiler::optCopyProp(
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
     assert(tree->GetLclNum() == lclNum);
 
-    bool       madeChanges = false;
-    LclVarDsc* varDsc      = lvaGetDesc(lclNum);
-    ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
+    bool                madeChanges = false;
+    LclVarDsc* const    varDsc      = lvaGetDesc(lclNum);
+    LclSsaVarDsc* const varSsaDsc   = varDsc->GetPerSsaData(tree->GetSsaNum());
+    ValueNum const      lclDefVN    = varSsaDsc->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
@@ -188,8 +196,12 @@ bool Compiler::optCopyProp(
         ValueNum newLclDefVN = newLclSsaDef->m_vnPair.GetConservative();
         assert(newLclDefVN != ValueNumStore::NoVN);
 
+        // If VNs don't match, they still can be the same entity, but we currently
+        // don't have tools to prove it. So we skip this case.
         if (newLclDefVN != lclDefVN)
         {
+            JITDUMP("orig [%06u] copy [%06u] VNs proved equivalent\n", dspTreeID(tree),
+                    dspTreeID(newLclDef.GetDefNode()));
             continue;
         }
 
@@ -259,6 +271,24 @@ bool Compiler::optCopyProp(
 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
+
+        // Update VN to match, and propagate up through any enclosing commas.
+        // (we could in principle try updating through other parents, but
+        // we lack VN's context for memory, so can't get them all).
+        //
+        if (newLclDefVN != lclDefVN)
+        {
+            tree->SetVNs(newLclSsaDef->m_vnPair);
+            GenTree* parent = tree->gtGetParent(nullptr);
+
+            while ((parent != nullptr) && parent->OperIs(GT_COMMA))
+            {
+                JITDUMP(" Updating COMMA parent VN [%06u]\n", dspTreeID(parent));
+                ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(parent->AsOp()->gtOp1->gtVNPair);
+                parent->SetVNs(vnStore->VNPWithExc(parent->AsOp()->gtOp2->gtVNPair, op1Xvnp));
+                parent = parent->gtGetParent(nullptr);
+            }
+        }
         gtUpdateSideEffects(stmt, tree);
         newLclSsaDef->AddUse(block);
 
@@ -281,11 +311,10 @@ bool Compiler::optCopyProp(
 // optCopyPropPushDef: Push the new live SSA def on the stack for "lclNode".
 //
 // Arguments:
-//    defNode    - The definition node for this def (store/GT_CALL) (will be "nullptr" for "use" defs)
 //    lclNode    - The local tree representing "the def"
 //    curSsaName - The map of local numbers to stacks of their defs
 //
-void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
+void Compiler::optCopyPropPushDef(GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
 {
     unsigned lclNum = lclNode->GetLclNum();
 
@@ -334,12 +363,6 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
     else if (lclNode->HasSsaName())
     {
         unsigned ssaNum = lclNode->GetSsaNum();
-        if ((defNode != nullptr) && defNode->IsPhiDefn())
-        {
-            // TODO-CQ: design better heuristics for propagation and remove this.
-            ssaNum = SsaConfig::RESERVED_SSA_NUM;
-        }
-
         pushDef(lclNum, ssaNum);
     }
 }
@@ -383,10 +406,14 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
         {
             treeLifeUpdater.UpdateLife(tree);
 
-            GenTreeLclVarCommon* lclDefNode = nullptr;
-            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
+            if (tree->OperIsSsaDef())
             {
-                optCopyPropPushDef(tree, lclDefNode, curSsaName);
+                auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                    optCopyPropPushDef(lcl, curSsaName);
+                    return GenTree::VisitResult::Continue;
+                };
+
+                tree->VisitLocalDefNodes(this, visitDef);
             }
             else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
             {
@@ -396,7 +423,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                 // live definition. Since they are always live, we'll do it only once.
                 if ((lvaGetDesc(lclNum)->lvIsParam || (lclNum == info.compThisArg)) && !curSsaName->Lookup(lclNum))
                 {
-                    optCopyPropPushDef(nullptr, tree->AsLclVarCommon(), curSsaName);
+                    optCopyPropPushDef(tree->AsLclVarCommon(), curSsaName);
                 }
 
                 // TODO-Review: EH successor/predecessor iteration seems broken.

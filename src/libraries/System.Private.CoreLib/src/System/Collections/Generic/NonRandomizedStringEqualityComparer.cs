@@ -20,7 +20,7 @@ namespace System.Collections.Generic
         // that was passed in to the ctor. The caller chooses one of these singletons so that the
         // GetUnderlyingEqualityComparer method can return the correct value.
 
-        private static readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new DefaultComparer(EqualityComparer<string?>.Default);
+        private static readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new OrdinalComparer(EqualityComparer<string?>.Default);
         private static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinal = new OrdinalComparer(StringComparer.Ordinal);
         private static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinalIgnoreCase = new OrdinalIgnoreCaseComparer(StringComparer.OrdinalIgnoreCase);
 
@@ -74,27 +74,6 @@ namespace System.Collections.Generic
             info.SetType(typeof(GenericEqualityComparer<string>));
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/102906:
-        // This custom class exists because EqualityComparer<string>.Default doesn't implement IAlternateEqualityComparer<ROS<char>, string>.
-        // If OrdinalComparer were used, then a dictionary created with a null/Default comparer would be using a comparer that does
-        // implement IAlternateEqualityComparer<ROS<char>, string>, but only until it hits a collision and switches to the randomized comparer.
-        // Once EqualityComparer<string>.Default implements IAlternateEqualityComparer<ROS<char>, string>, we can remove this class, and change
-        // WrappedAroundDefaultComparer to be an instance of OrdinalComparer.
-        private sealed class DefaultComparer : NonRandomizedStringEqualityComparer
-        {
-            internal DefaultComparer(IEqualityComparer<string?> wrappedComparer) : base(wrappedComparer)
-            {
-            }
-
-            public override bool Equals(string? x, string? y) => string.Equals(x, y);
-
-            public override int GetHashCode(string? obj)
-            {
-                Debug.Assert(obj != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
-                return obj.GetNonRandomizedHashCode();
-            }
-        }
-
         private sealed class OrdinalComparer : NonRandomizedStringEqualityComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>
         {
             internal OrdinalComparer(IEqualityComparer<string?> wrappedComparer) : base(wrappedComparer)
@@ -133,7 +112,7 @@ namespace System.Collections.Generic
             {
             }
 
-            public override bool Equals(string? x, string? y) => string.EqualsOrdinalIgnoreCase(x, y);
+            public override bool Equals(string? x, string? y) => string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
 
             public override int GetHashCode(string? obj)
             {

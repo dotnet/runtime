@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;</TargetFrameworks>
+    <!-- hardcode version to avoid breaking tests which embed the string length and are broken by bumping to 10.0.0.0 -->
+    <AssemblyVersion>9.0.0.0</AssemblyVersion>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <!--
      Turning off a number of warnings that would otherwise litter this project due to special
      test type cases for binary formatting.
@@ -18,38 +21,40 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="TestResources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>TestResources.resx</DependentUpon>
-    </Compile>
+    <Compile Update="TestResources.Designer.cs"
+             DesignTime="True"
+             AutoGen="True"
+             DependentUpon="TestResources.resx" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="TestResources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>TestResources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
+    <EmbeddedResource Update="TestResources.resx"
+                      Generator="ResXFileCodeGenerator"
+                      LastGenOutput="TestResources.Designer.cs" />
     <EmbeddedResource Include="TestResources.resx" LogicalName="TestResources.resources" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
-    <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
     <ProjectReference Include="..\..\src\System.Resources.Extensions.csproj" />
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
-  
-  <!-- when System.Runtime.Serialization.BinaryFormat gets approved, this whole block will be repalced with a reference to package -->
+
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\System.Runtime.Serialization.BinaryFormat\src\**\*.cs" LinkBase="System.Runtime.Serialization.BinaryFormat" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Hashing\src\System.IO.Hashing.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)\System.Resources.Extensions\src\System\Resources\Extensions\BinaryFormat\**\*.cs" LinkBase="System.Resources.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\System.Formats.Nrbf\src\System\Formats\Nrbf\PrimitiveType.cs" Link="PrimitiveType.cs" />
+    <Compile Include="..\..\..\System.Formats.Nrbf\src\System\Formats\Nrbf\BinaryType.cs" Link="BinaryType.cs" />
   </ItemGroup>
 
 </Project>

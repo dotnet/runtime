@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -187,6 +188,31 @@ namespace Microsoft.Extensions
                 init => _color = "the color is " + value;
             }
         }
+
+        public sealed class TreeElement : Dictionary<string, TreeElement>;
+
+        public record TypeWithRecursionThroughCollections
+        {
+            public TreeElement? Tree { get; set; }
+            public TreeElement?[]? Flat { get; set; }
+            public List<TreeElement>? List { get; set; }
+        }
+
+        public class TypeWithValueMutatorPropertySetter
+        {
+            private string _value = "Uninitialized";
+            public string Value
+            {
+                get { return _value; }
+                set
+                {
+                    _value = value == "Uninitialized" ? "Initialized" : value;
+                }
+            }
+            public ISet<string> SomeSet { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        public record RecordWithArrayParameter(string[] Array);
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
@@ -1065,5 +1091,92 @@ namespace Microsoft.Extensions
             public override int X { set => base.X = value + 1; }
         }
 
+        public class EnumerableNotCollection : IEnumerable<KeyValuePair<string, string>>
+        {
+            public string Names { get; set; }
+
+            public string[] Keywords { get; set; }
+
+            public bool Enabled { get; set; }
+
+            private IEnumerable<KeyValuePair<string, string>> enumerate()
+            {
+                yield return new KeyValuePair<string, string>(nameof(Names), Names);
+                yield return new KeyValuePair<string, string>(nameof(Keywords), string.Join(",", Keywords));
+                yield return new KeyValuePair<string, string>(nameof(Enabled), Enabled.ToString());
+            }
+
+            public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => enumerate().GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => enumerate().GetEnumerator();
+        }
+
+        public class ParsableValuesClass
+        {
+            public int? IntValue { get; set; }
+            public double? DoubleValue { get; set; }
+            public bool? BoolValue { get; set; }
+            public decimal? DecimalValue { get; set; }
+            public float? FloatValue { get; set; }
+            public long? LongValue { get; set; }
+            public short? ShortValue { get; set; }
+            public byte? ByteValue { get; set; }
+            public sbyte? SByteValue { get; set; }
+            public uint? UIntValue { get; set; }
+            public ushort? UShortValue { get; set; }
+            public ulong? ULongValue { get; set; }
+            public DateTime? DateTimeValue { get; set; }
+            public DateTimeOffset? DateTimeOffsetValue { get; set; }
+            public TimeSpan? TimeSpanValue { get; set; }
+            public Guid? GuidValue { get; set; }
+            public StringComparison? StringComparisonValue { get; set; }
+        }
+
+        public class OptionsWithCollectionsWithNullableEnum
+        {
+            // uses MyValue? dictionary values
+            public Dictionary<string, MyValue?> Dictionary { get; set; } = new();
+
+            // uses MyValue? List values
+            public List<MyValue?> List { get; set; } = new();
+        }
+
+        public enum MyValue
+        {
+            Value1,
+            Value2,
+            Value3
+        }
+
+        public class NullConfiguration
+        {
+            public NullConfiguration()
+            {
+                // Initialize with non-default value to ensure binding will override these values
+                StringProperty1 = "Initial Value 1";
+                StringProperty2 = "Initial Value 2";
+                StringProperty3 = "Initial Value 3";
+
+                IntProperty1 = 123;
+                IntProperty2 = 456;
+            }
+            public string? StringProperty1 { get; set; }
+            public string? StringProperty2 { get; set; }
+            public string? StringProperty3 { get; set; }
+
+            public int? IntProperty1 { get; set; }
+            public int? IntProperty2 { get; set; }
+        }
+
+        public class ArraysContainer
+        {
+            public string[] StringArray1 { get; set; }
+            public string[] StringArray2 { get; set; }
+            public string[] StringArray3 { get; set; }
+
+            public byte[] ByteArray1 { get; set; }
+            public byte[] ByteArray2 { get; set; }
+            public byte[] ByteArray3 { get; set; }
+        }
     }
 }

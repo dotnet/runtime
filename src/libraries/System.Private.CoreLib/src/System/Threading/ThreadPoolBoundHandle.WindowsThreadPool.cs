@@ -155,10 +155,7 @@ namespace System.Threading
 
             Win32ThreadPoolNativeOverlapped* overlapped = (Win32ThreadPoolNativeOverlapped*)overlappedPtr;
 
-            ThreadPoolBoundHandle? boundHandle = overlapped->Data._boundHandle;
-            if (boundHandle == null)
-                throw new InvalidOperationException(SR.Argument_NativeOverlappedAlreadyFree);
-
+            ThreadPoolBoundHandle boundHandle = overlapped->Data._boundHandle ?? throw new InvalidOperationException(SR.Argument_NativeOverlappedAlreadyFree);
             boundHandle.Release();
 
             if (NativeRuntimeEventSource.Log.IsEnabled())

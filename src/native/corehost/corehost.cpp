@@ -40,14 +40,27 @@
 #define EMBED_HASH_LO_PART_UTF8 "74e592c2fa383d4a3960714caef0c4f2"
 #define EMBED_HASH_FULL_UTF8    (EMBED_HASH_HI_PART_UTF8 EMBED_HASH_LO_PART_UTF8) // NUL terminated
 
+// This avoids compiler optimization which cause EMBED_HASH_HI_PART_UTF8 EMBED_HASH_LO_PART_UTF8
+// to be placed adjacent causing them to match EMBED_HASH_FULL_UTF8 when searched for replacing.
+// See https://github.com/dotnet/runtime/issues/109611 for more details.
+static bool compare_memory_nooptimization(volatile const char* a, volatile const char* b, size_t length)
+{
+    for (size_t i = 0; i < length; i++)
+    {
+        if (*a++ != *b++)
+            return false;
+    }
+    return true;
+}
+
 bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 {
     constexpr int EMBED_SZ = sizeof(EMBED_HASH_FULL_UTF8) / sizeof(EMBED_HASH_FULL_UTF8[0]);
     constexpr int EMBED_MAX = (EMBED_SZ > 1025 ? EMBED_SZ : 1025); // 1024 DLL name length, 1 NUL
 
     // Contains the EMBED_HASH_FULL_UTF8 value at compile time or the managed DLL name replaced by "dotnet build".
-    // Must not be 'const' because std::string(&embed[0]) below would bind to a const string ctor plus length
-    // where length is determined at compile time (=64) instead of the actual length of the string at runtime.
+    // Must not be 'const' because strlen below could be determined at compile time (=64) instead of the actual
+    // length of the string at runtime.
     static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
 
     static const char hi_part[] = EMBED_HASH_HI_PART_UTF8;
@@ -59,15 +72,23 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
         return false;
     }
 
+    size_t binding_len = strlen(&embed[0]);
+
+    // Check if the path exceeds the max allowed size
+    if (binding_len > EMBED_MAX - 1) // -1 for null terminator
+    {
+        trace::error(_X("The managed DLL bound to this executable is longer than the max allowed length (%d)"), EMBED_MAX - 1);
+        return false;
+    }
+
+    // Check if the value is the same as the placeholder
     // Since the single static string is replaced by editing the executable, a reference string is needed to do the compare.
     // So use two parts of the string that will be unaffected by the edit.
     size_t hi_len = (sizeof(hi_part) / sizeof(hi_part[0])) - 1;
     size_t lo_len = (sizeof(lo_part) / sizeof(lo_part[0])) - 1;
-
-    std::string binding(&embed[0]);
-    if ((binding.size() >= (hi_len + lo_len)) &&
-        binding.compare(0, hi_len, &hi_part[0]) == 0 &&
-        binding.compare(hi_len, lo_len, &lo_part[0]) == 0)
+    if (binding_len >= (hi_len + lo_len)
+        && compare_memory_nooptimization(&embed[0], hi_part, hi_len)
+        && compare_memory_nooptimization(&embed[hi_len], lo_part, lo_len))
     {
         trace::error(_X("This executable is not bound to a managed DLL to execute. The binding value is: '%s'"), app_dll->c_str());
         return false;
@@ -104,11 +125,13 @@ int exe_start(const int argc, const pal::char_t* argv[])
     initialize_static_createdump();
 #endif
 
+    // Use realpath to find the path of the host, resolving any symlinks.
+    // hostfxr (for dotnet) and the app dll (for apphost) are found relative to the host.
     pal::string_t host_path;
-    if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
+    if (!pal::get_own_executable_path(&host_path) || !pal::fullpath(&host_path))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path.c_str());
-        return StatusCode::CoreHostCurHostFindFailure;
+        return StatusCode::CurrentHostFindFailure;
     }
 
     pal::string_t app_path;
@@ -140,10 +163,10 @@ int exe_start(const int argc, const pal::char_t* argv[])
     {
         trace::info(_X("Detected Single-File app bundle"));
     }
-    else if (!pal::realpath(&app_path))
+    else if (!pal::fullpath(&app_path))
     {
         trace::error(_X("The application to execute does not exist: '%s'."), app_path.c_str());
-        return StatusCode::LibHostAppRootFindFailure;
+        return StatusCode::AppPathFindFailure;
     }
 
     app_root.assign(get_directory(app_path));
@@ -164,17 +187,17 @@ int exe_start(const int argc, const pal::char_t* argv[])
     if (argc <= 1)
     {
         trace::println();
-        trace::println(_X("Usage: dotnet [options]"));
         trace::println(_X("Usage: dotnet [path-to-application]"));
-        trace::println();
-        trace::println(_X("Options:"));
-        trace::println(_X("  -h|--help         Display help."));
-        trace::println(_X("  --info            Display .NET information."));
-        trace::println(_X("  --list-sdks       Display the installed SDKs."));
-        trace::println(_X("  --list-runtimes   Display the installed runtimes."));
+        trace::println(_X("Usage: dotnet [commands]"));
         trace::println();
         trace::println(_X("path-to-application:"));
         trace::println(_X("  The path to an application .dll file to execute."));
+        trace::println();
+        trace::println(_X("commands:"));
+        trace::println(_X("  -h|--help                         Display help."));
+        trace::println(_X("  --info                            Display .NET information."));
+        trace::println(_X("  --list-runtimes [--arch <arch>]   Display the installed runtimes matching the host or specified architecture. Example architectures: arm64, x64, x86."));
+        trace::println(_X("  --list-sdks [--arch <arch>]       Display the installed SDKs matching the host or specified architecture. Example architectures: arm64, x64, x86."));
         return StatusCode::InvalidArgFailure;
     }
 
@@ -189,9 +212,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     // Obtain the entrypoints.
     int rc = fxr.status_code();
     if (rc != StatusCode::Success)
-    {
         return rc;
-    }
 
 #if defined(FEATURE_APPHOST)
     if (bundle_marker_t::is_bundle())

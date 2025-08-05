@@ -35,6 +35,8 @@ namespace System.SpanTests
                 "abcd",
                 "aeio",
                 "aeiou",
+                "Aabc",
+                "Aabcd",
                 "abceiou",
                 "123456789",
                 "123456789123",
@@ -82,6 +84,11 @@ namespace System.SpanTests
             {
                 yield return Pair(value);
                 yield return Pair('a' + value);
+                yield return Pair('\0' + value);
+                yield return Pair('\u0001' + value);
+                yield return Pair('\u00FE' + value);
+                yield return Pair('\u00FF' + value);
+                yield return Pair('\uFF00' + value);
 
                 // Test some more duplicates
                 if (value.Length > 0)
@@ -458,7 +465,7 @@ namespace System.SpanTests
                     s_randomLatin1Chars[i] = (char)rng.Next(0, 256);
                 }
 
-                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars));
+                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars.AsSpan()));
 
                 s_randomAsciiBytes = Encoding.ASCII.GetBytes(s_randomAsciiChars);
 
@@ -526,17 +533,17 @@ namespace System.SpanTests
 
                 if (expectedIndex != indexOfAnyIndex)
                 {
-                    AssertionFailed(haystack, needle, expectedIndex, indexOfAnyIndex, nameof(indexOfAny));
+                    AssertionFailed(haystack, needle, searchValuesInstance, expectedIndex, indexOfAnyIndex, nameof(indexOfAny));
                 }
 
                 if (expectedIndex != searchValuesIndex)
                 {
-                    AssertionFailed(haystack, needle, expectedIndex, searchValuesIndex, nameof(searchValues));
+                    AssertionFailed(haystack, needle, searchValuesInstance, expectedIndex, searchValuesIndex, nameof(searchValues));
                 }
 
                 if ((expectedIndex >= 0) != searchValuesContainsResult)
                 {
-                    AssertionFailed(haystack, needle, expectedIndex, searchValuesContainsResult ? 0 : -1, nameof(searchValuesContainsResult));
+                    AssertionFailed(haystack, needle, searchValuesInstance, expectedIndex, searchValuesContainsResult ? 0 : -1, nameof(searchValuesContainsResult));
                 }
             }
 
@@ -546,13 +553,16 @@ namespace System.SpanTests
                 return slice.Slice(0, Math.Min(slice.Length, rng.Next(maxLength + 1)));
             }
 
-            private static void AssertionFailed<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needle, int expected, int actual, string approach)
+            private static void AssertionFailed<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needle, SearchValues<T> searchValues, int expected, int actual, string approach)
                 where T : INumber<T>
             {
+                Type implType = searchValues.GetType();
+                string impl = $"{implType.Name} [{string.Join(", ", implType.GenericTypeArguments.Select(t => t.Name))}]";
+
                 string readableHaystack = string.Join(", ", haystack.ToArray().Select(c => int.CreateChecked(c)));
                 string readableNeedle = string.Join(", ", needle.ToArray().Select(c => int.CreateChecked(c)));
 
-                Assert.Fail($"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
+                Assert.Fail($"Expected {expected}, got {approach}={actual} for impl='{impl}', needle='{readableNeedle}', haystack='{readableHaystack}'");
             }
         }
     }

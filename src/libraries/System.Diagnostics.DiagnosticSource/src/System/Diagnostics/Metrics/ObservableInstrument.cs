@@ -86,7 +86,7 @@ namespace System.Diagnostics.Metrics
                 return listOfMeasurementsFunc();
             }
 
-            Debug.Assert(false, "Execution shouldn't reach this point");
+            Debug.Fail("Execution shouldn't reach this point");
             return null;
         }
 

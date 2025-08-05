@@ -27,9 +27,9 @@ namespace System
             Debug.Assert(strA.Length == strB.Length);
 
             return SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<char, byte>(ref strA.GetRawStringData()),
-                    ref Unsafe.As<char, byte>(ref strB.GetRawStringData()),
-                    ((uint)strA.Length) * sizeof(char));
+                ref strA.GetRawStringDataAsUInt8(),
+                ref strB.GetRawStringDataAsUInt8(),
+                ((uint)strA.Length) * sizeof(char));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -44,26 +44,6 @@ namespace System
             return SpanHelpers.SequenceCompareTo(
                 ref Unsafe.Add(ref strA.GetRawStringData(), (nint)(uint)indexA /* force zero-extension */), countA,
                 ref Unsafe.Add(ref strB.GetRawStringData(), (nint)(uint)indexB /* force zero-extension */), countB);
-        }
-
-        internal static bool EqualsOrdinalIgnoreCase(string? strA, string? strB)
-        {
-            if (ReferenceEquals(strA, strB))
-            {
-                return true;
-            }
-
-            if (strA is null || strB is null)
-            {
-                return false;
-            }
-
-            if (strA.Length != strB.Length)
-            {
-                return false;
-            }
-
-            return EqualsOrdinalIgnoreCaseNoLengthCheck(strA, strB);
         }
 
         private static bool EqualsOrdinalIgnoreCaseNoLengthCheck(string strA, string strB)
@@ -509,7 +489,7 @@ namespace System
                 return 1;
             }
 
-            if (!(value is string other))
+            if (value is not string other)
             {
                 throw new ArgumentException(SR.Arg_MustBeString);
             }
@@ -539,7 +519,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -580,7 +560,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }
@@ -615,7 +595,7 @@ namespace System
             if (ReferenceEquals(this, obj))
                 return true;
 
-            if (!(obj is string str))
+            if (obj is not string str)
                 return false;
 
             if (this.Length != str.Length)
@@ -1056,7 +1036,7 @@ namespace System
         {
             int length = str.Length;
 
-            // We allocate one char more than the length to accomodate a null terminator.
+            // We allocate one char more than the length to accommodate a null terminator.
             // That lets the reading always be performed two characters at a time, as odd-length
             // inputs will have a final terminator to backstop the last read.
             char[]? borrowedArr = null;
@@ -1108,7 +1088,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -1138,8 +1118,8 @@ namespace System
                     return (value.Length == 1) ?
                             true :                 // First char is the same and thats all there is to compare
                             SpanHelpers.SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref this.GetRawStringData()),
-                                ref Unsafe.As<char, byte>(ref value.GetRawStringData()),
+                                ref this.GetRawStringDataAsUInt8(),
+                                ref value.GetRawStringDataAsUInt8(),
                                 ((nuint)value.Length) * 2);
 
                 case StringComparison.OrdinalIgnoreCase:
@@ -1158,7 +1138,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }

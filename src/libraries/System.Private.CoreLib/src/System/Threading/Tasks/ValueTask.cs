@@ -233,8 +233,8 @@ namespace System.Threading.Tasks
         {
             private static readonly Action<object?> s_completionAction = static state =>
             {
-                if (!(state is ValueTaskSourceAsTask vtst) ||
-                    !(vtst._source is IValueTaskSource source))
+                if (state is not ValueTaskSourceAsTask vtst ||
+                    vtst._source is not IValueTaskSource source)
                 {
                     // This could only happen if the IValueTaskSource passed the wrong state
                     // or if this callback were invoked multiple times such that the state
@@ -425,6 +425,7 @@ namespace System.Threading.Tasks
         /// <param name="continueOnCapturedContext">
         /// true to attempt to marshal the continuation back to the captured context; otherwise, false.
         /// </param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConfiguredValueTaskAwaitable ConfigureAwait(bool continueOnCapturedContext) =>
             new ConfiguredValueTaskAwaitable(new ValueTask(_obj, _token, continueOnCapturedContext));
@@ -640,8 +641,8 @@ namespace System.Threading.Tasks
         {
             private static readonly Action<object?> s_completionAction = static state =>
             {
-                if (!(state is ValueTaskSourceAsTask vtst) ||
-                    !(vtst._source is IValueTaskSource<TResult> source))
+                if (state is not ValueTaskSourceAsTask vtst ||
+                    vtst._source is not IValueTaskSource<TResult> source)
                 {
                     // This could only happen if the IValueTaskSource<TResult> passed the wrong state
                     // or if this callback were invoked multiple times such that the state
@@ -825,6 +826,7 @@ namespace System.Threading.Tasks
         /// <param name="continueOnCapturedContext">
         /// true to attempt to marshal the continuation back to the captured context; otherwise, false.
         /// </param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) =>
             new ConfiguredValueTaskAwaitable<TResult>(new ValueTask<TResult>(_obj, _result, _token, continueOnCapturedContext));

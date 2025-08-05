@@ -58,7 +58,7 @@ namespace System.Text
                     SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // Just call pointer version
-            fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
                 return GetCharCount(pBytes + index, count, flush);
         }
 
@@ -103,11 +103,13 @@ namespace System.Text
             int charCount = chars.Length - charIndex;
 
             // Just call pointer version
-            fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
-            fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars))
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
+            {
                 // Remember that charCount is # to decode, not size of array
                 return GetChars(pBytes + byteIndex, byteCount,
                                 pChars + charIndex, charCount, flush);
+            }
         }
 
         public override unsafe int GetChars(byte* bytes, int byteCount,
@@ -152,13 +154,11 @@ namespace System.Text
                       SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // Just call the pointer version (public overrides can't do this)
-            fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
             {
-                fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars))
-                {
-                    Convert(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, flush,
-                        out bytesUsed, out charsUsed, out completed);
-                }
+                Convert(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, flush,
+                    out bytesUsed, out charsUsed, out completed);
             }
         }
 

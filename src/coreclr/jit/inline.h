@@ -596,15 +596,25 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;
     CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
+    CORINFO_METHOD_HANDLE guardedMethodInstantiatedEntryHandle;
     unsigned              likelihood;
-    bool                  requiresInstMethodTableArg;
+    bool                  arrayInterface;
 
     CORINFO_METHOD_INFO methInfo;
 
     // the logical IL caller of this inlinee.
-    CORINFO_METHOD_HANDLE  ilCallerHandle;
-    CORINFO_CLASS_HANDLE   clsHandle;
-    CORINFO_CONTEXT_HANDLE exactContextHnd;
+    CORINFO_METHOD_HANDLE ilCallerHandle;
+    CORINFO_CLASS_HANDLE  clsHandle;
+
+    // Context handle to use when inlining.
+    //
+    CORINFO_CONTEXT_HANDLE exactContextHandle;
+
+    // Method and context handle of the call before any
+    // GDV/Inlining evaluation
+    //
+    CORINFO_METHOD_HANDLE  originalMethodHandle;
+    CORINFO_CONTEXT_HANDLE originalContextHandle;
 
     // The GT_RET_EXPR node linking back to the inline candidate.
     GenTreeRetExpr* retExpr;
@@ -613,10 +623,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned clsAttr;
     unsigned methAttr;
 
-    // actual IL offset of instruction that resulted in this inline candidate
-    IL_OFFSET              ilOffset;
     CorInfoInitClassResult initClassResult;
-    var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
 };
@@ -628,6 +635,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 struct LateDevirtualizationInfo
 {
     CORINFO_CONTEXT_HANDLE exactContextHnd;
+    InlineContext*         inlinersContext;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -706,6 +714,21 @@ struct InlineInfo
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
     Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
+};
+
+//------------------------------------------------------------------------
+// PgoInfo
+//   Schema and data for a method's PGO data.
+//
+struct PgoInfo
+{
+    PgoInfo();
+    PgoInfo(Compiler* compiler);
+    PgoInfo(InlineContext* inlineContext);
+
+    ICorJitInfo::PgoInstrumentationSchema* PgoSchema;      // pgo schema for method
+    BYTE*                                  PgoData;        // pgo data for the method
+    unsigned                               PgoSchemaCount; // count of schema elements
 };
 
 // InlineContext tracks the inline history in a method.
@@ -863,6 +886,21 @@ public:
     }
 #endif
 
+    const PgoInfo& GetPgoInfo()
+    {
+        return m_PgoInfo;
+    }
+
+    void SetPgoInfo(const PgoInfo& info)
+    {
+        m_PgoInfo = info;
+    }
+
+    bool HasPgoInfo() const
+    {
+        return (m_PgoInfo.PgoSchema != nullptr) && (m_PgoInfo.PgoSchemaCount > 0) && (m_PgoInfo.PgoData != nullptr);
+    }
+
 private:
     InlineContext(InlineStrategy* strategy);
 
@@ -873,6 +911,7 @@ private:
     const BYTE*            m_Code;             // address of IL buffer for the method
     CORINFO_METHOD_HANDLE  m_Callee;           // handle to the method
     CORINFO_CONTEXT_HANDLE m_RuntimeContext;   // handle to the exact context
+    PgoInfo                m_PgoInfo;          // profile data
     unsigned               m_ILSize;           // size of IL buffer for the method
     unsigned               m_ImportedILSize;   // estimated size of imported IL
     ILLocation             m_Location;         // inlining statement location within parent
@@ -1065,14 +1104,6 @@ private:
 
     // Accounting updates for a successful or failed inline.
     void NoteOutcome(InlineContext* context);
-
-    // Cap on allowable increase in jit time due to inlining.
-    // Multiplicative, so BUDGET = 10 means up to 10x increase
-    // in jit time.
-    enum
-    {
-        BUDGET = 10
-    };
 
     // Estimate the jit time change because of this inline.
     int EstimateTime(InlineContext* context);

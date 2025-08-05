@@ -40,76 +40,8 @@ namespace System.Reflection.Emit
         protected override void SetConstantCore(object? defaultValue)
         {
             _typeBuilder.ThrowIfCreated();
-            ValidateDefaultValueType(defaultValue, _fieldType);
             _defaultValue = defaultValue;
             _attributes |= FieldAttributes.HasDefault;
-        }
-
-        internal static void ValidateDefaultValueType(object? defaultValue, Type destinationType)
-        {
-            if (defaultValue == null)
-            {
-                // nullable value types can hold null value.
-                if (destinationType.IsValueType && !(destinationType.IsGenericType && destinationType.GetGenericTypeDefinition() == typeof(Nullable<>)))
-                {
-                    throw new ArgumentException(SR.Argument_ConstantNull);
-                }
-            }
-            else
-            {
-                Type sourceType = defaultValue.GetType();
-                // We should allow setting a constant value on a ByRef parameter
-                if (destinationType.IsByRef)
-                {
-                    destinationType = destinationType.GetElementType()!;
-                }
-
-                // Convert nullable types to their underlying type.
-                destinationType = Nullable.GetUnderlyingType(destinationType) ?? destinationType;
-
-                if (destinationType.IsEnum)
-                {
-                    Type underlyingType;
-                    if (destinationType is EnumBuilderImpl enumBldr)
-                    {
-                        underlyingType = enumBldr.GetEnumUnderlyingType();
-
-                        if (sourceType != enumBldr._typeBuilder.UnderlyingSystemType &&
-                            sourceType != underlyingType &&
-                            // If the source type is an enum, should not throw when the underlying types match
-                            sourceType.IsEnum &&
-                            sourceType.GetEnumUnderlyingType() != underlyingType)
-                        {
-                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
-                        }
-                    }
-                    else if (destinationType is TypeBuilderImpl typeBldr)
-                    {
-                        underlyingType = typeBldr.UnderlyingSystemType;
-
-                        if (underlyingType == null || (sourceType != typeBldr.UnderlyingSystemType && sourceType != underlyingType))
-                        {
-                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
-                        }
-                    }
-                    else
-                    {
-                        underlyingType = Enum.GetUnderlyingType(destinationType);
-
-                        if (sourceType != destinationType && sourceType != underlyingType)
-                        {
-                            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
-                        }
-                    }
-                }
-                else
-                {
-                    if (!destinationType.IsAssignableFrom(sourceType))
-                    {
-                        throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
-                    }
-                }
-            }
         }
 
         internal void SetData(byte[] data)

@@ -5,6 +5,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime;
+
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -15,6 +17,11 @@ namespace System
         internal RuntimeTypeHandle(IntPtr value)
         {
             _value = value;
+        }
+
+        unsafe internal RuntimeTypeHandle(MethodTable* value)
+            :this((IntPtr)value)
+        {
         }
 
         [Intrinsic]
@@ -33,6 +40,11 @@ namespace Internal.Runtime.CompilerHelpers
         private static RuntimeTypeHandle GetRuntimeTypeHandle(IntPtr pEEType)
         {
             return new RuntimeTypeHandle(pEEType);
+        }
+
+        private static Type GetRuntimeType(IntPtr pEEType)
+        {
+            return Type.GetTypeFromHandle(new RuntimeTypeHandle(pEEType));
         }
     }
 }

@@ -51,13 +51,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public static GenericLookupResult GetLookupSignature(NodeFactory factory, ReadyToRunHelperId id, object target)
         {
-            // Necessary type handle is not something you can put in a dictionary - someone should have normalized to TypeHandle
-            Debug.Assert(id != ReadyToRunHelperId.NecessaryTypeHandle);
-
             switch (id)
             {
                 case ReadyToRunHelperId.TypeHandle:
                     return factory.GenericLookup.Type((TypeDesc)target);
+                case ReadyToRunHelperId.NecessaryTypeHandle:
+                    return factory.GenericLookup.NecessaryType((TypeDesc)target);
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     // Check that we unwrapped the cases that could be unwrapped to prevent duplicate entries
                     Debug.Assert(factory.GenericLookup.Type((TypeDesc)target) != factory.GenericLookup.UnwrapNullableType((TypeDesc)target));
@@ -222,6 +221,13 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
+            if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                var delegateCreationInfo = (DelegateCreationInfo)_target;
+                MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
+            }
+
             return dependencies;
         }
 
@@ -297,6 +303,7 @@ namespace ILCompiler.DependencyAnalysis
             switch (_id)
             {
                 case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.NecessaryTypeHandle:
                 case ReadyToRunHelperId.GetGCStaticBase:
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                 case ReadyToRunHelperId.GetThreadStaticBase:

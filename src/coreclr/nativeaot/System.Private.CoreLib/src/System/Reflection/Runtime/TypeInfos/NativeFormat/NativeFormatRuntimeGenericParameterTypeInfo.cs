@@ -73,7 +73,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             get
             {
                 MetadataReader reader = Reader;
-                LowLevelList<QTypeDefRefOrSpec> constraints = new LowLevelList<QTypeDefRefOrSpec>();
+                ArrayBuilder<QTypeDefRefOrSpec> constraints = new ArrayBuilder<QTypeDefRefOrSpec>(_genericParameter.Constraints.Count);
                 foreach (Handle constraintHandle in _genericParameter.Constraints)
                 {
                     // We're skipping custom modifiers here because Roslyn generates

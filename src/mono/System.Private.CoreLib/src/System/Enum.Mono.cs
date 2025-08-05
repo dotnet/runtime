@@ -6,8 +6,6 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable 8500 // pointer to / sizeof managed types
-
 namespace System
 {
     public partial class Enum

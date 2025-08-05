@@ -387,7 +387,7 @@ public class Program
 
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Byte]", EqualityComparer<byte>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Int32]", EqualityComparer<int>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.String]", EqualityComparer<string>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.StringEqualityComparer", EqualityComparer<string>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Guid]", EqualityComparer<Guid>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[CharEnum]", EqualityComparer<CharEnum>.Default.GetType().ToString());

@@ -94,14 +94,6 @@
     }
 
     .method public hidebysig
-        instance object BoxAsObject(!T) cil managed
-    {
-        ldarg.1
-        box !T
-        ret
-    }
-
-    .method public hidebysig
         instance bool BoxUnboxAny(!T) cil managed
     {
         ldarg.1
@@ -230,7 +222,7 @@
         // Begin sequence
             box !T
             isinst ByRefLikeType
-            unbox.any !T
+            unbox.any ByRefLikeType
         // End sequence
         pop
         ldc.i4.1
@@ -334,22 +326,27 @@
     }
 
     .method public hidebysig
-        instance bool BoxIsinstBranch_UsingTypeConstraints<byreflike (InvalidCSharp.EmptyInterface) U>(class InvalidCSharp.EmptyInterface) cil managed
+        instance bool BoxIsinstBranch_CheckForSimpleInterface<byreflike U>(!!U) cil managed
     {
         .locals init (
             [0] !!U
         )
+
         ldarg.1
-        isinst !!U
-        brfalse.s NOT_U
+        box !!U
+        isinst InvalidCSharp.SimpleInterface
+        brtrue.s IS_SIMPLEINTERFACE
+
+        ldstr "All types should implement SimpleInterface"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    IS_SIMPLEINTERFACE:
         ldarg.1
-        isinst !!U
-        unbox.any !!U
         stloc.0
-        ldc.i4.0
-        ret
-        NOT_U:
-        ldc.i4.1
+        ldloca.s 0
+        constrained. !!U
+        callvirt instance int32 InvalidCSharp.SimpleInterface::Method()
         ret
     }
 
@@ -358,17 +355,6 @@
     {
         ldc.i4.1
         newarr !T
-        ldnull
-        cgt.un
-        ret
-    }
-
-    .method public hidebysig
-        instance bool AllocMultiDimArrayOfT() cil managed
-    {
-        ldc.i4.1
-        ldc.i4.1
-        newobj instance void !T[0..., 0...]::.ctor(int32, int32)
         ldnull
         cgt.un
         ret
@@ -465,17 +451,71 @@
     )
 }
 
-.class interface public auto ansi abstract InvalidCSharp.EmptyInterface
-{
-}
-
-.class public sequential ansi sealed beforefieldinit InvalidCSharp.ByRefLikeTypeWithInterface
+.class public sequential ansi sealed beforefieldinit ByRefLikeType`1<T>
     extends [System.Runtime]System.ValueType
-    implements InvalidCSharp.EmptyInterface
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
         01 00 00 00
     )
+}
+
+.class interface public auto ansi abstract InvalidCSharp.SimpleInterface
+{
+    .method public hidebysig newslot abstract virtual
+        instance int32 Method() cil managed
+    {
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit ByRefLikeTypeWithInterface
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.SimpleInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+
+    .method public final hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.1
+        ret
+    }
+}
+
+.class interface public auto ansi abstract InvalidCSharp.DefaultInterface
+{
+    .method public hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.0
+        ret
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit RS_DI1
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.DefaultInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class public sequential ansi sealed beforefieldinit RS_DI2
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.DefaultInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+
+    .method public hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.1
+        ret
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit RegularValueType
@@ -483,15 +523,22 @@
 {
 }
 
-.class public auto ansi beforefieldinit InvalidCSharp.ClassWithInterface
+.class public auto ansi beforefieldinit ClassWithInterface
     extends [System.Runtime]System.Object
-    implements InvalidCSharp.EmptyInterface
+    implements InvalidCSharp.SimpleInterface
 {
     .method public hidebysig specialname rtspecialname
         instance void .ctor () cil managed
     {
         ldarg.0
         call instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public final hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.0
         ret
     }
 }
@@ -662,14 +709,14 @@
     .method public hidebysig static
         class [System.Runtime]System.Type GenericByRefLike_ConstraintsAreIndependent_Interface_ByRefLike_Invalid() cil managed
     {
-        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<class InvalidCSharp.EmptyInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
+        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<class InvalidCSharp.SimpleInterface, valuetype ByRefLikeTypeWithInterface>::.ctor()
         callvirt instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
         ret
     }
     .method public hidebysig static
         class [System.Runtime]System.Type GenericByRefLike_ConstraintsAreIndependent_ByRefLike_ByRefLike_Invalid() cil managed
     {
-        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<valuetype InvalidCSharp.ByRefLikeTypeWithInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
+        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<valuetype ByRefLikeTypeWithInterface, valuetype ByRefLikeTypeWithInterface>::.ctor()
         callvirt instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
         ret
     }
@@ -693,23 +740,15 @@
     }
 
     .method public hidebysig static
-        object BoxAsObject() cil managed
+        object BoxAsObject<byreflike Y>(!!Y) cil managed noinlining
     {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
-
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        ldloc 0
-        ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
-        call instance object valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxAsObject(!0)
+        ldarg.0
+        box !!Y
         ret
     }
 
     .method public hidebysig static
-        bool BoxUnboxAny() cil managed
+        void BoxUnboxAny() cil managed
     {
         .locals init (
             [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
@@ -721,15 +760,21 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxUnboxAny(!0)
+        brtrue.s NEXT_1
+
+        ldstr "Failed: BoxUnboxAny for ByRefLikeType"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_1:
         ret
     }
 
     .method public hidebysig static
-        bool BoxBranch() cil managed
+        void BoxBranch() cil managed
     {
         .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>,
-            [1] bool
+            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
         )
 
         ldloca.s 0
@@ -739,30 +784,51 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranch(!0)
-        pop
+        brtrue.s NEXT_1
 
+        ldstr "Failed: BoxBranch for ByRefLikeType"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_1:
         ldloca.s 0
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranchToOther<valuetype InvalidCSharp.ByRefLikeTypeWithInterface>(!0)
-        pop
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranchToOther<valuetype ByRefLikeTypeWithInterface>(!0)
+        brtrue.s NEXT_2
 
+        ldstr "Failed: BoxBranchToOther for ByRefLikeTypeWithInterface"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_2:
         ldloca.s 0
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranchToOther<valuetype RegularValueType>(!0)
-        pop
+        brtrue.s NEXT_3
 
+        ldstr "Failed: BoxBranchToOther for RegularValueType"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_3:
         ldloca.s 0
         ldloca.s 0
         ldflda !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranch_WithSideEffects(!0&)
+        brtrue.s NEXT_4
 
+        ldstr "Failed: BoxBranch_WithSideEffects for ByRefLikeType"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_4:
         ret
     }
 
     .method public hidebysig static
-        bool BoxIsinstUnboxAny() cil managed
+        void BoxIsinstUnboxAny() cil managed
     {
         .locals init (
             [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
@@ -774,6 +840,13 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstUnboxAny(!0)
+        brtrue.s NEXT_1
+
+        ldstr "Failed: BoxIsinstUnboxAny for ByRefLikeType"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_1:
         ret
     }
 
@@ -794,10 +867,11 @@
     }
 
     .method public hidebysig static
-        bool BoxIsinstBranch() cil managed
+        void BoxIsinstBranchVarious() cil managed
     {
         .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>,
+            [1] valuetype ByRefLikeTypeWithInterface
         )
 
         ldloca.s 0
@@ -807,48 +881,87 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstBranch(!0)
-        pop
+        brtrue.s NEXT_1
 
+        ldstr "Failed: BoxIsinstBranch for ByRefLikeType"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_1:
         ldloca.s 0
         ldloca.s 0
         ldflda !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstBranch_WithSideEffects(!0&)
-        pop
+        brtrue.s NEXT_2
 
+        ldstr "Failed: BoxIsinstBranch_WithSideEffects for ByRefLikeType"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_2:
         ldloca.s 0
-        newobj instance void InvalidCSharp.ClassWithInterface::.ctor()
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstBranch_UsingTypeConstraints<valuetype InvalidCSharp.ByRefLikeTypeWithInterface>(class InvalidCSharp.EmptyInterface)
+        ldloca.s 1
+        initobj valuetype ByRefLikeTypeWithInterface
+        ldloc.1
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
+            BoxIsinstBranch_CheckForSimpleInterface<valuetype ByRefLikeTypeWithInterface>(!!0)
+        brtrue.s NEXT_3
 
+        ldstr "Failed: BoxIsinstBranch_CheckForSimpleInterface for ByRefLikeTypeWithInterface"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_3:
+        ldloca.s 0
+        newobj instance void ClassWithInterface::.ctor()
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
+            BoxIsinstBranch_CheckForSimpleInterface<class ClassWithInterface>(!!0)
+        brfalse.s NEXT_4
+
+        ldstr "The above is expected to be false since ClassWithInterface's interface implementation return 0."
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    NEXT_4:
         ret
     }
 
     .method public hidebysig static
-        void AllocArrayOfT_Invalid() cil managed
+        bool BoxIsinstBranch<byreflike T, byreflike U>(!!T) cil managed noinlining
     {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
+        ldarg.0
+        // Begin sequence
+            box !!T
+            isinst !!U
+            brfalse.s IS_FALSE
+        // End sequence
 
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::AllocArrayOfT()
-        pop
+        ldc.i4.1
+        ret
+
+    IS_FALSE:
+        ldc.i4.0
         ret
     }
 
     .method public hidebysig static
-        void AllocMultiDimArrayOfT_Invalid() cil managed
+        bool AllocArray<byreflike Y>() cil managed noinlining
     {
-        .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        )
+        ldc.i4.1
+        newarr !!Y
+        ldnull
+        cgt.un
+        ret
+    }
 
-        ldloca.s 0
-        initobj valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
-        ldloca.s 0
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::AllocMultiDimArrayOfT()
-        pop
+    .method public hidebysig static
+        bool AllocMultiDimArray<byreflike Y>() cil managed noinlining
+    {
+        ldc.i4.1
+        ldc.i4.1
+        newobj instance void !!Y[0..., 0...]::.ctor(int32, int32)
+        ldnull
+        cgt.un
         ret
     }
 
@@ -858,6 +971,39 @@
         ldtoken class InvalidCSharp.GenericClass_WithStaticField`1<valuetype ByRefLikeType>
         call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
         callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        string ConstrainedCallVirtToString<byreflike T>(!!T t) cil managed noinlining
+    {
+        ldarga.s 0
+        constrained. !!T
+        callvirt instance string [System.Runtime]System.Object::ToString()
+        ret
+    }
+
+    .method public hidebysig static
+        int32 ConstrainedCallVirtMethod<byreflike (InvalidCSharp.DefaultInterface) T>(!!T t) cil managed noinlining
+    {
+        ldarga.s 0
+        constrained. !!T
+        callvirt instance int32 InvalidCSharp.DefaultInterface::Method()
+        ret
+    }
+
+    .method public hidebysig static
+        int32 ConstrainedCallVirtMethod<byreflike (InvalidCSharp.DefaultInterface) T>(!!T t, bool skipCall) cil managed noinlining
+    {
+        ldarg.1
+        brfalse.s CALL
+        ldc.i4.m1
+        ret
+
+        CALL:
+        ldarga.s 0
+        constrained. !!T
+        callvirt instance int32 InvalidCSharp.DefaultInterface::Method()
         ret
     }
 

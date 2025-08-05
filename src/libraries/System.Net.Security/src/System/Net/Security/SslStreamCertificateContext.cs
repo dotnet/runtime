@@ -51,9 +51,24 @@ namespace System.Net.Security
             {
                 if (additionalCertificates != null)
                 {
-                    foreach (X509Certificate cert in additionalCertificates)
+                    chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+                }
+
+                if (trust != null)
+                {
+                    if (trust._store != null)
                     {
-                        chain.ChainPolicy.ExtraStore.Add(cert);
+                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                    }
+
+                    if (trust._trustList != null)
+                    {
+                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                    }
+
+                    if (chain.ChainPolicy.CustomTrustStore.Count > 0)
+                    {
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                     }
                 }
 
@@ -65,6 +80,20 @@ namespace System.Net.Security
                 if (!chainStatus && NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
+                }
+
+                if (!chainStatus && ChainBuildNeedsTrustedRoot && additionalCertificates?.Count > 0)
+                {
+                    // Some platforms like Android may not be able to build the chain unless the chain root is trusted.
+                    // We can try to rebuild the chain with making all extra certificates trused.
+                    // We do not try to evaluate trust here, we jsut need to construct the chain so it should not matter.
+                    chain.ChainPolicy.CustomTrustStore.AddRange(additionalCertificates);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chainStatus = chain.Build(target);
+                    if (!chainStatus && NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(null, $"Failed to build chain for {target.Subject} while trusting additional certificates");
+                    }
                 }
 
                 int count = chain.ChainElements.Count - 1;
@@ -140,7 +169,29 @@ namespace System.Net.Security
 
         internal SslStreamCertificateContext Duplicate()
         {
-            return new SslStreamCertificateContext(new X509Certificate2(TargetCertificate), IntermediateCertificates, Trust);
+            // Create will internally clone any certificates that it will
+            // retain, so we don't have to duplicate any of the instances here
+            X509Certificate2Collection intermediates = new X509Certificate2Collection();
+            foreach (X509Certificate2 cert in IntermediateCertificates)
+            {
+                intermediates.Add(cert);
+            }
+
+            return Create(new X509Certificate2(TargetCertificate), intermediates, trust: Trust);
         }
+
+        internal void ReleaseResources()
+        {
+            // TargetCertificate is owned by the user, but we have created the cert context
+            // which looked up intermediate certificates and only we have reference to them.
+            foreach (X509Certificate2 cert in IntermediateCertificates)
+            {
+                cert.Dispose();
+            }
+
+            ReleasePlatformSpecificResources();
+        }
+
+        partial void ReleasePlatformSpecificResources();
     }
 }

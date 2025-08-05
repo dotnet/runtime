@@ -948,7 +948,7 @@ namespace System.Numerics
         /// <summary>
         /// Flip the bit at a specific position in a given value.
         /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
-        /// /// </summary>
+        /// </summary>
         /// <param name="value">The value.</param>
         /// <param name="index">The zero-based index of the bit to flip.
         /// Any value outside the range [0..63] is treated as congruent mod 64.</param>

@@ -12,8 +12,13 @@
 
 #include "zutil.h"
 #include "zendian.h"
-#include "adler32_fold.h"
-#include "crc32_fold.h"
+#include "zmemory.h"
+#include "crc32.h"
+
+#ifdef S390_DFLTCC_DEFLATE
+#  include "arch/s390/dfltcc_common.h"
+#  define HAVE_ARCH_DEFLATE_STATE
+#endif
 
 /* define NO_GZIP when compiling if you want to disable gzip header and
    trailer creation by deflate().  NO_GZIP would be used to avoid linking in
@@ -21,6 +26,12 @@
    should be left enabled. */
 #ifndef NO_GZIP
 #  define GZIP
+#endif
+
+/* define LIT_MEM to slightly increase the speed of deflate (order 1% to 2%) at
+   the cost of a larger memory footprint */
+#ifndef NO_LIT_MEM
+#  define LIT_MEM
 #endif
 
 /* ===========================================================================
@@ -108,11 +119,30 @@ typedef uint16_t Pos;
 /* Type definitions for hash callbacks */
 typedef struct internal_state deflate_state;
 
-typedef uint32_t (* update_hash_cb)        (deflate_state *const s, uint32_t h, uint32_t val);
+typedef uint32_t (* update_hash_cb)        (uint32_t h, uint32_t val);
 typedef void     (* insert_string_cb)      (deflate_state *const s, uint32_t str, uint32_t count);
 typedef Pos      (* quick_insert_string_cb)(deflate_state *const s, uint32_t str);
 
-struct internal_state {
+uint32_t update_hash             (uint32_t h, uint32_t val);
+void     insert_string           (deflate_state *const s, uint32_t str, uint32_t count);
+Pos      quick_insert_string     (deflate_state *const s, uint32_t str);
+
+uint32_t update_hash_roll        (uint32_t h, uint32_t val);
+void     insert_string_roll      (deflate_state *const s, uint32_t str, uint32_t count);
+Pos      quick_insert_string_roll(deflate_state *const s, uint32_t str);
+
+/* Struct for memory allocation handling */
+typedef struct deflate_allocs_s {
+    char            *buf_start;
+    free_func        zfree;
+    deflate_state   *state;
+    unsigned char   *window;
+    unsigned char   *pending_buf;
+    Pos             *prev;
+    Pos             *head;
+} deflate_allocs;
+
+struct ALIGNED_(64) internal_state {
     PREFIX3(stream)      *strm;            /* pointer back to this zlib stream */
     unsigned char        *pending_buf;     /* output still pending */
     unsigned char        *pending_out;     /* next pending byte to output to the stream */
@@ -214,6 +244,10 @@ struct internal_state {
 
     int nice_match; /* Stop searching when current match exceeds this */
 
+#if defined(_M_IX86) || defined(_M_ARM)
+    int padding[2];
+#endif
+
     struct crc32_fold_s ALIGNED_(16) crc_fold;
 
                 /* used by trees.c: */
@@ -260,8 +294,16 @@ struct internal_state {
      *   - I can't count above 4
      */
 
+#ifdef LIT_MEM
+#   define LIT_BUFS 5
+    uint16_t *d_buf;              /* buffer for distances */
+    unsigned char *l_buf;         /* buffer for literals/lengths */
+#else
+#   define LIT_BUFS 4
     unsigned char *sym_buf;       /* buffer for distances and literals/lengths */
-    unsigned int sym_next;        /* running index in sym_buf */
+#endif
+
+    unsigned int sym_next;        /* running index in symbol buffer */
     unsigned int sym_end;         /* symbol table full when sym_next reaches this */
 
     unsigned long opt_len;        /* bit length of current block with optimal trees */
@@ -273,8 +315,11 @@ struct internal_state {
     unsigned long compressed_len; /* total bit length of compressed file mod 2^32 */
     unsigned long bits_sent;      /* bit length of compressed data sent mod 2^32 */
 
-    /* Reserved for future use and alignment purposes */
-    char *reserved_p;
+    deflate_allocs *alloc_bufs;
+
+#ifdef HAVE_ARCH_DEFLATE_STATE
+    arch_deflate_state arch;      /* architecture-specific extensions */
+#endif
 
     uint64_t bi_buf;
     /* Output buffer. bits are inserted starting at the bottom (least significant bits). */
@@ -283,8 +328,11 @@ struct internal_state {
     /* Number of valid bits in bi_buf.  All bits above the last valid bit are always zero. */
 
     /* Reserved for future use and alignment purposes */
-    int32_t reserved[11];
-} ALIGNED_(8);
+    int32_t reserved[19];
+#if defined(_M_IX86) || defined(_M_ARM)
+    int32_t padding2[4];
+#endif
+};
 
 typedef enum {
     need_more,      /* block not completed, need more input or more output */
@@ -308,7 +356,7 @@ static inline void put_short(deflate_state *s, uint16_t w) {
 #if BYTE_ORDER == BIG_ENDIAN
     w = ZSWAP16(w);
 #endif
-    memcpy(&s->pending_buf[s->pending], &w, sizeof(w));
+    zng_memwrite_2(&s->pending_buf[s->pending], w);
     s->pending += 2;
 }
 
@@ -320,7 +368,7 @@ static inline void put_short_msb(deflate_state *s, uint16_t w) {
 #if BYTE_ORDER == LITTLE_ENDIAN
     w = ZSWAP16(w);
 #endif
-    memcpy(&s->pending_buf[s->pending], &w, sizeof(w));
+    zng_memwrite_2(&s->pending_buf[s->pending], w);
     s->pending += 2;
 }
 
@@ -332,7 +380,7 @@ static inline void put_uint32(deflate_state *s, uint32_t dw) {
 #if BYTE_ORDER == BIG_ENDIAN
     dw = ZSWAP32(dw);
 #endif
-    memcpy(&s->pending_buf[s->pending], &dw, sizeof(dw));
+    zng_memwrite_4(&s->pending_buf[s->pending], dw);
     s->pending += 4;
 }
 
@@ -344,7 +392,7 @@ static inline void put_uint32_msb(deflate_state *s, uint32_t dw) {
 #if BYTE_ORDER == LITTLE_ENDIAN
     dw = ZSWAP32(dw);
 #endif
-    memcpy(&s->pending_buf[s->pending], &dw, sizeof(dw));
+    zng_memwrite_4(&s->pending_buf[s->pending], dw);
     s->pending += 4;
 }
 
@@ -356,7 +404,7 @@ static inline void put_uint64(deflate_state *s, uint64_t lld) {
 #if BYTE_ORDER == BIG_ENDIAN
     lld = ZSWAP64(lld);
 #endif
-    memcpy(&s->pending_buf[s->pending], &lld, sizeof(lld));
+    zng_memwrite_8(&s->pending_buf[s->pending], lld);
     s->pending += 8;
 }
 

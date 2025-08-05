@@ -56,6 +56,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(PolymorphicClass))]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     [JsonSerializable(typeof(PocoWithMixedVisibilityMembers))]
+    [JsonSerializable(typeof(ClassWithConflictingIgnoredProperties))]
     internal partial class SerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -555,6 +556,31 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.NullablePersonStruct));
+        }
+
+        [Fact]
+        public void ClassWithConflictingIgnoredProperties_FastPathSerialization()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/99988
+
+            ClassWithConflictingIgnoredProperties value = new()
+            {
+                SystemTextJsonUserList = ["root"],
+                SystemTextJsonUserGroupsList = ["wheel"],
+                SystemTextJsonIPAddresses = ["127.0.0.1"],
+                SystemTextJsonQueryParams = ["key=value"],
+            };
+
+            string json = JsonSerializer.Serialize(value, SerializationContext.Default.ClassWithConflictingIgnoredProperties);
+
+            JsonTestHelper.AssertJsonEqual("""
+                {
+                    "userlist" : ["root"],
+                    "usergroupslist" : ["wheel"],
+                    "SystemTextJsonIPAddresses" : ["127.0.0.1"],
+                    "queryparams" : ["key=value"]
+                }
+                """, json);
         }
     }
 

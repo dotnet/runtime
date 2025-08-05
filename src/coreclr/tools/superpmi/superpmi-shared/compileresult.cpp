@@ -65,12 +65,18 @@ bool CompileResult::IsEmpty()
     return isEmpty;
 }
 
-// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
-void* CompileResult::allocateMemory(size_t sizeInBytes)
+MemoryTracker* CompileResult::getOrCreateMemoryTracker()
 {
     if (memoryTracker == nullptr)
         memoryTracker = new MemoryTracker();
-    return memoryTracker->allocate(sizeInBytes);
+
+    return memoryTracker;
+}
+
+// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
+void* CompileResult::allocateMemory(size_t sizeInBytes)
+{
+    return getOrCreateMemoryTracker()->allocate(sizeInBytes);
 }
 
 void CompileResult::recAssert(const char* assertText)
@@ -848,15 +854,10 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
-                        INT64 delta = (INT64)(tmp.target - fixupLocation);
-                        if (!FitsInRel28(delta))
-                        {
-                            // Assume here that we would need a jump stub for this relocation and pretend
-                            // that the jump stub is located right at the end of the method.
-                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                            delta = (INT64)(target - fixupLocation);
-                        }
-                        PutArm64Rel28((UINT32*)address, (INT32)delta);
+                        // Similar to x64's IMAGE_REL_BASED_REL32 handling we
+                        // will handle this by also hardcoding the bottom bits
+                        // of the target into the instruction.
+                        PutArm64Rel28((UINT32*)address, (INT32)tmp.target);
                     }
                     wasRelocHandled = true;
                 }
@@ -888,6 +889,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
+                case IMAGE_REL_ARM64_SECREL_HIGH12A: // TLSDESC ADD for High-12 Add
+                case IMAGE_REL_ARM64_SECREL_LOW12A:  // TLSDESC ADD for Low-12 Add
                 case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12: // TLSDESC ADD for corresponding ADRP
                 case IMAGE_REL_AARCH64_TLSDESC_CALL:
@@ -903,14 +906,34 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
             }
         }
 
-        if (targetArch == SPMI_TARGET_ARCHITECTURE_LOONGARCH64)
+        if (targetArch == SPMI_TARGET_ARCHITECTURE_RISCV64)
         {
-            Assert(!"FIXME: Not Implements on loongarch64");
+            DWORDLONG fixupLocation = tmp.location;
+            DWORDLONG address       = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+
+            switch (relocType)
+            {
+                case IMAGE_REL_RISCV64_PC:
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        // Similar to x64's IMAGE_REL_BASED_REL32 handling we
+                        // will handle this by also hardcoding the bottom bits
+                        // of the target into the instruction.
+                        PutRiscV64AuipcItype((UINT32*)address, (INT32)tmp.target);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                default:
+                    break;
+            }
         }
 
         if (IsSpmiTarget64Bit())
         {
-            if (relocType == IMAGE_REL_BASED_DIR64)
+            if (!wasRelocHandled && (relocType == IMAGE_REL_BASED_DIR64))
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -995,8 +1018,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         {
                             for (unsigned int idx = 0; idx < rc->mc->GetHelperFtn->GetCount(); idx++)
                             {
-                                DLDL value = rc->mc->GetHelperFtn->GetItem(idx);
-                                if (value.B == tmp.target)
+                                Agnostic_GetHelperFtn value = rc->mc->GetHelperFtn->GetItem(idx);
+                                if (value.helperLookup.handle == tmp.target)
                                 {
                                     LogDebug("    REL32 target is result of getHelperFtn(): setting delta=%d (0x%X)",
                                              (int)tmp.target, (int)tmp.target);
@@ -1259,7 +1282,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     if (value.callSig.callConv == (DWORD)-1)
         return false;
 
-    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap);
+    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap, getOrCreateMemoryTracker());
 
     return true;
 }

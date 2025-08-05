@@ -7,6 +7,7 @@
 namespace Default {
 
 using System;
+using Xunit;
 
 public class Graph
 {
@@ -240,7 +241,8 @@ public class Edge
 public class Test
 {
     public static int exitCode = 0;
-  public static int Main()
+  [Fact]
+  public static int TestEntryPoint()
   {
 	Graph.flag=false;
     exitCode = 100;

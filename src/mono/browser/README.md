@@ -121,7 +121,7 @@ XHarness consists of two pieces for WASM
 
 #### 1. CLI/host
 
-* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net7.0/Microsoft.DotNet.XHarness.CLI.dll`
+* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net9.0/Microsoft.DotNet.XHarness.CLI.dll`
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
@@ -198,7 +198,7 @@ Example use of the `wasmconsole` template:
 ```console
 > dotnet new wasmconsole
 > dotnet publish
-> cd bin/Debug/net7.0/browser-wasm/AppBundle
+> cd bin/Debug/net9.0/browser-wasm/AppBundle
 > node main.mjs
 Hello World!
 Args:
@@ -228,11 +228,41 @@ They are handy to quickly disassemble functions and inspect webassembly module s
 
 There is also the [wa-edit](https://github.com/radekdoulik/wa-info#wa-edit) tool, which is now used to prototype improved warm startup.
 
+## Properties That Trigger Relinking
+
+### What is Relinking?
+
+Relinking is the process of rebuilding the native WebAssembly runtime (`dotnet.native.js`, `dotnet.native.wasm`, etc.) with updated or trimmed content, often resulting in a smaller or more optimized output. This is necessary when certain configuration properties or source changes require regeneration of the native artifacts.
+
+### Properties That Trigger Relinking in `browser.proj`
+
+The following MSBuild properties will trigger a relinking (full rebuild of native artifacts) during the browser/wasm build process:
+
+- **`WasmBuildNative`** - `/p:WasmBuildNative=true` - Forces a fresh build of the native runtime components.
+- **`WasmRelinkNative`** - `/p:WasmRelinkNative=true` - Explicitly requests relinking, even if not otherwise required by other property changes.
+- **`RunAOTCompilation`** - `/p:RunAOTCompilation=true` - Enables Ahead-of-Time (AOT) compilation. Changing this requires relinking to produce the correct output.
+- **`WasmEnableExceptionHandling`** - `/p:WasmEnableExceptionHandling=true` - Changes exception handling mechanisms in the native runtime.
+- **`EnableDiagnostics`** - `/p:EnableDiagnostics=true` - Enables or disables diagnostic features in the native runtime.
+- **`WasmProfilers`** - `/p:WasmProfilers=...` - Changes profiler configuration in the native runtime.
+- **`EmccMaximumHeapSize`** - `/p:EmccMaximumHeapSize=...` - Controls memory layout configuration.
+- **`EmccInitialHeapSize`** - `/p:EmccInitialHeapSize=...` - Controls memory layout together with `EmccMaximumHeapSize`. Heap size configuration applies only for browser scenarios.
+- **`WasmBuildArgs`** - Any change to arguments passed via `/p:WasmBuildArgs=...` (such as enabling/disabling additional features or options) will trigger a relink.
+- **Configuration/Target Architecture** - Changing `/p:Configuration=Debug|Release` or `/p:RuntimeIdentifier=browser-wasm`, etc., can require relinking for correct native output.
+
+#### Notes
+
+- Relinking ensures that the produced WebAssembly binaries reflect the current set of build options and runtime features.
+- For incremental developer workflows, minimizing unnecessary relinks speeds up build times.
+- The relink process is managed by MSBuild targets in `browser.proj`—refer to that file for the most up-to-date logic.
+- Source changes to native code (C/C++/Emscripten sources) in `src/mono/browser` or dependent directories will naturally trigger a relink.
+
+For questions or advanced scenarios, see the [WebAssembly build instructions](../../../docs/workflow/building/libraries/webassembly-instructions.md).
+
 ## Upgrading Emscripten
 
 Bumping Emscripten version involves these steps:
 
-* update https://github.com/dotnet/runtime/blob/main/src/mono/wasm/emscripten-version.txt
+* update https://github.com/dotnet/runtime/blob/main/src/mono/browser/emscripten-version.txt
 * bump emscripten versions in docker images in https://github.com/dotnet/dotnet-buildtools-prereqs-docker
 * bump emscripten in https://github.com/dotnet/emsdk
 * bump docker images in https://github.com/dotnet/icu, update emscripten files in eng/patches/
@@ -244,7 +274,7 @@ Bumping Emscripten version involves these steps:
 
 Two things to keep in mind:
 
-1. We use the Azure DevOps NPM registry (configured in `src/mono/wasm/runtime/.npmrc`).  When
+1. We use the Azure DevOps NPM registry (configured in `src/mono/browser/runtime/.npmrc`).  When
    updating `package.json`, you will need to be logged in (see instructions for Windows and
    mac/Linux, below) in order for the registry to populate with the correct package versions.
    Otherwise, CI builds will fail.
@@ -275,7 +305,7 @@ npm update --lockfile-version=1
 Go to https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm and log in and click on the "Other" tab.
 Follow the instructions to set up your `~/.npmrc` with a personal authentication token.
 
-In folder `src/mono/wasm/runtime/`
+In folder `src/mono/browser/runtime/`
 
 ```sh
 rm -rf node_modules
@@ -288,7 +318,7 @@ npm update --lockfile-version=1
 ## Code style
 
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
-* You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory
+* You could check the style by running `npm run lint` in `src/mono/browser/runtime` directory
 * You can install [plugin into your VS Code](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to show you the errors as you type
 
 ## Builds on CI
@@ -319,14 +349,12 @@ npm update --lockfile-version=1
 
 * `runtime-wasm*` pipelines are triggered manually, and they only run the jobs that would not run on any default pipelines based on path changes.
 * The `AOT` jobs run only smoke tests on `runtime`, and on `runtime-wasm*` pipelines all the `AOT` tests are run.
-* HG libtests are library test with `HybridGlobalization=true`
 
 | .                 | runtime-wasm               | runtime-wasm-libtests | runtime-wasm-non-libtests |
 | ----------------- | -------------------------- | --------------------  | --------------------      |
 | libtests          | linux+windows: all         | linux+windows: all    | none                      |
 | libtests eat      | linux:         all         | linux:         all    | none                      |
 | libtests aot      | linux+windows: all         | linux+windows: all    | none                      |
-| libtests hg       | linux+windows: all         | linux+windows: all    | none                      |
 | high resource aot | linux+windows: all         | linux+windows: all    | none                      |
 | Wasm.Build.Tests  | linux+windows              | none                  | linux+windows             |
 | Debugger tests    | linux+windows              | none                  | linux+windows             |

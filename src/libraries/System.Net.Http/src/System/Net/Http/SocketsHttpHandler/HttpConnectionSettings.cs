@@ -61,6 +61,8 @@ namespace System.Net.Http
 
         internal bool _enableMultipleHttp2Connections;
 
+        internal bool _enableMultipleHttp3Connections;
+
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
 
@@ -107,8 +109,6 @@ namespace System.Net.Http
                 _maxResponseDrainSize = _maxResponseDrainSize,
                 _maxResponseDrainTime = _maxResponseDrainTime,
                 _maxResponseHeadersLength = _maxResponseHeadersLength,
-                _meterFactory = _meterFactory,
-                _metrics = _metrics,
                 _pooledConnectionLifetime = _pooledConnectionLifetime,
                 _pooledConnectionIdleTimeout = _pooledConnectionIdleTimeout,
                 _preAuthenticate = _preAuthenticate,
@@ -123,6 +123,7 @@ namespace System.Net.Http
                 _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
+                _enableMultipleHttp3Connections = _enableMultipleHttp3Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
@@ -133,6 +134,12 @@ namespace System.Net.Http
                 _impersonationLevel = _impersonationLevel,
             };
 
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
+            {
+                settings._meterFactory = _meterFactory;
+                settings._metrics = _metrics;
+            }
+
             return settings;
         }
 
@@ -140,11 +147,11 @@ namespace System.Net.Http
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
 
-        private byte[]? _http3SettingsFrame;
+        public bool EnableMultipleHttp3Connections => _enableMultipleHttp3Connections;
 
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
+        internal byte[] Http3SettingsFrame => field ??= Http3Connection.BuildSettingsFrame(this);
     }
 }

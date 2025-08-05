@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions
 #if BUILDING_SOURCE_GENERATOR_TESTS
@@ -387,6 +388,124 @@ namespace Microsoft.Extensions
         public class Element
         {
             public string Type { get; set; }
+        }
+
+        public class OptionsWithStructs
+        {
+            public StringValues StringValues { get; set; }
+
+            public CollectionStructExplicit CollectionStructExplicit { get; set; } = new();
+
+            public DictionaryStructExplicit DictionaryStructExplicit { get; set; } = new();
+        }
+
+        public struct CollectionStructExplicit : ICollection<string>
+        {
+            public CollectionStructExplicit() {}
+
+            ICollection<string> _collection = new List<string>();
+
+            int ICollection<string>.Count => _collection.Count;
+
+            bool ICollection<string>.IsReadOnly => _collection.IsReadOnly;
+
+            void ICollection<string>.Add(string item) => _collection.Add(item);
+
+            void ICollection<string>.Clear() => _collection.Clear();
+
+            bool ICollection<string>.Contains(string item) => _collection.Contains(item);
+
+            void ICollection<string>.CopyTo(string[] array, int arrayIndex) => _collection.CopyTo(array, arrayIndex);
+
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() => _collection.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_collection).GetEnumerator();
+
+            bool ICollection<string>.Remove(string item) => _collection.Remove(item);
+        }
+
+        public struct DictionaryStructExplicit : IDictionary<string, string>
+        {
+            public DictionaryStructExplicit() {}
+
+            IDictionary<string, string> _dictionary = new Dictionary<string, string>();
+
+            string IDictionary<string, string>.this[string key] { get => _dictionary[key]; set => _dictionary[key] = value; }
+
+            ICollection<string> IDictionary<string, string>.Keys => _dictionary.Keys;
+
+            ICollection<string> IDictionary<string, string>.Values => _dictionary.Values;
+
+            int ICollection<KeyValuePair<string, string>>.Count => _dictionary.Count;
+
+            bool ICollection<KeyValuePair<string, string>>.IsReadOnly => _dictionary.IsReadOnly;
+
+            void IDictionary<string, string>.Add(string key, string value) => _dictionary.Add(key, value);
+
+            void ICollection<KeyValuePair<string, string>>.Add(KeyValuePair<string, string> item) => _dictionary.Add(item);
+
+            void ICollection<KeyValuePair<string, string>>.Clear() => _dictionary.Clear();
+
+            bool ICollection<KeyValuePair<string, string>>.Contains(KeyValuePair<string, string> item) => _dictionary.Contains(item);
+
+            bool IDictionary<string, string>.ContainsKey(string key) => _dictionary.ContainsKey(key);
+
+            void ICollection<KeyValuePair<string, string>>.CopyTo(KeyValuePair<string, string>[] array, int arrayIndex) => _dictionary.CopyTo(array, arrayIndex);
+
+            IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator() => _dictionary.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_dictionary).GetEnumerator();
+
+            bool IDictionary<string, string>.Remove(string key) => _dictionary.Remove(key);
+
+            bool ICollection<KeyValuePair<string, string>>.Remove(KeyValuePair<string, string> item) => _dictionary.Remove(item);
+
+            bool IDictionary<string, string>.TryGetValue(string key, out string value) => _dictionary.TryGetValue(key, out value);
+        }
+
+        public class OptionsWithUnsupportedStructs
+        {
+            public ReadOnlyCollectionStructExplicit ReadOnlyCollectionStructExplicit { get; set; } = new();
+
+            public ReadOnlyDictionaryStructExplicit ReadOnlyDictionaryStructExplicit { get; set; } = new();
+        }
+
+        public struct ReadOnlyCollectionStructExplicit : IReadOnlyCollection<string>
+        {
+            public ReadOnlyCollectionStructExplicit()
+            {
+                _collection = new List<string>();
+            }
+
+            private readonly IReadOnlyCollection<string> _collection;
+            int IReadOnlyCollection<string>.Count => _collection.Count;
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() => _collection.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_collection).GetEnumerator();
+        }
+
+        public struct ReadOnlyDictionaryStructExplicit : IReadOnlyDictionary<string, string>
+        {
+            public ReadOnlyDictionaryStructExplicit()
+            {
+                _dictionary = new Dictionary<string, string>();
+            }
+
+            private readonly IReadOnlyDictionary<string, string> _dictionary;
+            string IReadOnlyDictionary<string, string>.this[string key] => _dictionary[key];
+
+            IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => _dictionary.Keys;
+
+            IEnumerable<string> IReadOnlyDictionary<string, string>.Values => _dictionary.Values;
+
+            int IReadOnlyCollection<KeyValuePair<string, string>>.Count => _dictionary.Count;
+
+            bool IReadOnlyDictionary<string, string>.ContainsKey(string key) => _dictionary.ContainsKey(key);
+
+            IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator() => _dictionary.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_dictionary).GetEnumerator();
+
+            bool IReadOnlyDictionary<string, string>.TryGetValue(string key, out string value) => _dictionary.TryGetValue(key, out value);
         }
     }
 }

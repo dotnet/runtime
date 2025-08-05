@@ -52,7 +52,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     public Action<object?> CancellationAction { init { _cancellationAction = value; } }
 
     /// <summary>
-    /// Returns <c>true</c> is this task source has entered its final state, i.e. <see cref="TrySetResult(bool)"/> or <see cref="TrySetException(Exception, bool)"/>
+    /// Returns <c>true</c> is this task source has entered its final state, i.e. <see cref="TrySetResult(bool)"/> or <see cref="TrySetException(Exception)"/>
     /// was called with <c>final</c> set to <c>true</c> and the result was propagated.
     /// </summary>
     public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;
@@ -173,6 +173,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 // Unblock the current task source and in case of a final also the final task source.
                 if (exception is not null)
                 {
+                    Debug.Assert(final);
                     // Set up the exception stack trace for the caller.
                     exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
                     if (state is State.None or State.Awaiting)
@@ -192,7 +193,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     if (_finalTaskSource.TryComplete(exception))
                     {
                         // Signal the final task only if we don't have another result in the value task source.
-                        // In that case, the final task will be signalled after the value task result is retrieved.
+                        // In that case, the final task will be signaled after the value task result is retrieved.
                         if (state != State.Ready)
                         {
                             _finalTaskSource.TrySignal(out _);
@@ -205,7 +206,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
             }
             finally
             {
-                // Un-root the the kept alive object in all cases.
+                // Un-root the kept alive object in all cases.
                 if (_keepAlive.IsAllocated)
                 {
                     _keepAlive.Free();
@@ -226,15 +227,14 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     }
 
     /// <summary>
-    /// Tries to transition from <see cref="State.Awaiting"/> to either <see cref="State.Ready"/> or <see cref="State.Completed"/>, depending on the value of <paramref name="final"/>.
-    /// Only the first call is able to do that with the exception of <c>TrySetResult()</c> followed by <c>TrySetResult(true)</c>, which will both return <c>true</c>.
+    /// Tries to transition from <see cref="State.Awaiting"/> to <see cref="State.Completed"/>, setting an exception.
+    /// Only the first call is able to do that.
     /// </summary>
-    /// <param name="final">Whether this is the final transition to <see cref="State.Completed" /> or just a transition into <see cref="State.Ready"/> from which the task source can be reset back to <see cref="State.None"/>.</param>
     /// <param name="exception">The exception to set as a result of the value task.</param>
     /// <returns><c>true</c> if this is the first call that set the result; otherwise, <c>false</c>.</returns>
-    public bool TrySetException(Exception exception, bool final = false)
+    public bool TrySetException(Exception exception)
     {
-        return TryComplete(exception, final);
+        return TryComplete(exception, final: true);
     }
 
     ValueTaskSourceStatus IValueTaskSource.GetStatus(short token)
@@ -297,6 +297,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         private bool _isCompleted;
         private bool _isSignaled;
         private Exception? _exception;
+        private Task? _signaledTask;
 
         public FinalTaskSource()
         {
@@ -310,6 +311,13 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         {
             if (_finalTaskSource is null)
             {
+                if (_isSignaled)
+                {
+                    _signaledTask ??= _exception is null ? Task.CompletedTask : Task.FromException(_exception);
+                    _ = _signaledTask.Exception; // Observe the exception.
+                    return _signaledTask;
+                }
+
                 _finalTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 if (!_isCompleted)
                 {
@@ -318,10 +326,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     {
                         ((GCHandle)state!).Free();
                     }, handle, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                }
-                if (_isSignaled)
-                {
-                    TrySignal(out _);
                 }
             }
             return _finalTaskSource.Task;
@@ -347,13 +351,17 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                 return false;
             }
 
-            if (_exception is not null)
+            if (_finalTaskSource is not null)
             {
-                _finalTaskSource?.SetException(_exception);
-            }
-            else
-            {
-                _finalTaskSource?.SetResult();
+                if (_exception is not null)
+                {
+                    _finalTaskSource.SetException(_exception);
+                    _ = _finalTaskSource.Task.Exception; // Observe the exception.
+                }
+                else
+                {
+                    _finalTaskSource.SetResult();
+                }
             }
 
             exception = _exception;

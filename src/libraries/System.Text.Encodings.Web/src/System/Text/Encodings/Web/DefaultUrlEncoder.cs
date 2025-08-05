@@ -64,7 +64,7 @@ namespace System.Text.Encodings.Web
             // Basic Latin set is:
             // ALPHA / DIGIT / "-" / "." / "_" / "~" / "!" / "$" / "(" / ")" / "*" / "," / ";" / "@"
 
-            _innerEncoder = new OptimizedInboxTextEncoder(EscaperImplementation.Singleton, settings.GetAllowedCodePointsBitmap(), extraCharactersToEscape: stackalloc char[] {
+            _innerEncoder = new OptimizedInboxTextEncoder(EscaperImplementation.Singleton, settings.GetAllowedCodePointsBitmap(), extraCharactersToEscape: [
                 ' ', // chars from Basic Latin which aren't already disallowed by the base encoder
                 '#',
                 '%',
@@ -96,7 +96,7 @@ namespace System.Text.Encodings.Web
                 '\uFFFD',
                 '\uFFFE',
                 '\uFFFF',
-            });
+            ]);
         }
 
         public override int MaxOutputCharactersPerInputCharacter => 9; // "%XX%YY%ZZ" for a single char ("%XX%YY%ZZ%WW" [12 chars] for supplementary scalar value)
@@ -143,22 +143,22 @@ namespace System.Text.Encodings.Web
             {
                 uint utf8lsb = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)value.Value);
 
-                if (!SpanUtility.IsValidIndex(destination, 2)) { goto OutOfSpace; }
+                if ((uint)destination.Length <= 2) { goto OutOfSpace; }
                 destination[0] = (byte)'%';
                 HexConverter.ToBytesBuffer((byte)utf8lsb, destination, startingIndex: 1);
                 if ((utf8lsb >>= 8) == 0) { return 3; } // "%XX"
 
-                if (!SpanUtility.IsValidIndex(destination, 5)) { goto OutOfSpace; }
+                if ((uint)destination.Length <= 5) { goto OutOfSpace; }
                 destination[3] = (byte)'%';
                 HexConverter.ToBytesBuffer((byte)utf8lsb, destination, startingIndex: 4);
                 if ((utf8lsb >>= 8) == 0) { return 6; } // "%XX%YY"
 
-                if (!SpanUtility.IsValidIndex(destination, 8)) { goto OutOfSpace; }
+                if ((uint)destination.Length <= 8) { goto OutOfSpace; }
                 destination[6] = (byte)'%';
                 HexConverter.ToBytesBuffer((byte)utf8lsb, destination, startingIndex: 7);
                 if ((utf8lsb >>= 8) == 0) { return 9; } // "%XX%YY%ZZ"
 
-                if (!SpanUtility.IsValidIndex(destination, 11)) { goto OutOfSpace; }
+                if ((uint)destination.Length <= 11) { goto OutOfSpace; }
                 destination[9] = (byte)'%';
                 HexConverter.ToBytesBuffer((byte)utf8lsb, destination, startingIndex: 10);
                 return 12;  // "%XX%YY%ZZ%WW"
@@ -172,22 +172,22 @@ namespace System.Text.Encodings.Web
             {
                 uint utf8lsb = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)value.Value);
 
-                if (!SpanUtility.IsValidIndex(destination, 2)) { goto OutOfSpace; }
+                if ((uint)destination.Length <= 2) { goto OutOfSpace; }
                 destination[0] = '%';
                 HexConverter.ToCharsBuffer((byte)utf8lsb, destination, startingIndex: 1);
                 if ((utf8lsb >>= 8) == 0) { return 3; } // "%XX"
 
-                if (!SpanUtility.IsValidIndex(destination, 5)) { goto OutOfSpace; }
+                if ((uint)destination.Length <= 5) { goto OutOfSpace; }
                 destination[3] = '%';
                 HexConverter.ToCharsBuffer((byte)utf8lsb, destination, startingIndex: 4);
                 if ((utf8lsb >>= 8) == 0) { return 6; } // "%XX%YY"
 
-                if (!SpanUtility.IsValidIndex(destination, 8)) { goto OutOfSpace; }
+                if ((uint)destination.Length <= 8) { goto OutOfSpace; }
                 destination[6] = '%';
                 HexConverter.ToCharsBuffer((byte)utf8lsb, destination, startingIndex: 7);
                 if ((utf8lsb >>= 8) == 0) { return 9; } // "%XX%YY%ZZ"
 
-                if (!SpanUtility.IsValidIndex(destination, 11)) { goto OutOfSpace; }
+                if ((uint)destination.Length <= 11) { goto OutOfSpace; }
                 destination[9] = '%';
                 HexConverter.ToCharsBuffer((byte)utf8lsb, destination, startingIndex: 10);
                 return 12;  // "%XX%YY%ZZ%WW"

@@ -14,14 +14,11 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Enum_GetValuesAndNames")]
         private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe CorElementType InternalGetCorElementType(MethodTable* pMT);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
         {
             Debug.Assert(rt.IsActualEnum);
-            CorElementType elementType = InternalGetCorElementType((MethodTable*)rt.GetUnderlyingNativeHandle());
+            CorElementType elementType = rt.GetNativeTypeHandle().AsMethodTable()->GetPrimitiveCorElementType();
             GC.KeepAlive(rt);
             return elementType;
         }
@@ -29,14 +26,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe CorElementType InternalGetCorElementType()
         {
-            CorElementType elementType = InternalGetCorElementType(RuntimeHelpers.GetMethodTable(this));
+            CorElementType elementType = RuntimeHelpers.GetMethodTable(this)->GetPrimitiveCorElementType();
             GC.KeepAlive(this);
             return elementType;
         }
 
         // Indexed by CorElementType
         private static readonly RuntimeType?[] s_underlyingTypes =
-        {
+        [
             null,
             null,
             (RuntimeType)typeof(bool),
@@ -63,7 +60,7 @@ namespace System
             null,
             (RuntimeType)typeof(nint),
             (RuntimeType)typeof(nuint)
-        };
+        ];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe RuntimeType InternalGetUnderlyingType(RuntimeType enumType)
@@ -71,7 +68,7 @@ namespace System
             // Sanity check the last element in the table
             Debug.Assert(s_underlyingTypes[(int)CorElementType.ELEMENT_TYPE_U] == typeof(nuint));
 
-            RuntimeType? underlyingType = s_underlyingTypes[(int)InternalGetCorElementType((MethodTable*)enumType.GetUnderlyingNativeHandle())];
+            RuntimeType? underlyingType = s_underlyingTypes[(int)enumType.GetNativeTypeHandle().AsMethodTable()->GetPrimitiveCorElementType()];
             GC.KeepAlive(enumType);
 
             Debug.Assert(underlyingType != null);

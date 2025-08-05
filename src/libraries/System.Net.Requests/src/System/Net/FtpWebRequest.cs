@@ -176,6 +176,9 @@ namespace System.Net
         };
     }
 
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of WebRequest.Create being obsolete.
+
     /// <summary>
     /// The FtpWebRequest class implements a basic FTP client interface.
     /// </summary>
@@ -197,7 +200,6 @@ namespace System.Net
         private bool _passive = true;
         private bool _binary = true;
         private string? _connectionGroupName;
-        private ServicePoint? _servicePoint;
 
         private bool _async;
         private bool _aborted;
@@ -213,7 +215,6 @@ namespace System.Net
         private Stream? _stream;
         private RequestStage _requestStage;
         private bool _onceFailed;
-        private WebHeaderCollection? _ftpRequestHeaders;
         private FtpWebResponse? _ftpWebResponse;
         private int _readWriteTimeout = 5 * 60 * 1000;  // 5 minutes.
 
@@ -469,7 +470,7 @@ namespace System.Net
             }
         }
 
-        public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(_uri);
+        public ServicePoint ServicePoint => field ??= ServicePointManager.FindServicePoint(_uri);
 
         internal bool Aborted
         {
@@ -1557,8 +1558,8 @@ namespace System.Net
 
         public override WebHeaderCollection Headers
         {
-            get => _ftpRequestHeaders ??= new WebHeaderCollection();
-            set => _ftpRequestHeaders = value;
+            get => field ??= new WebHeaderCollection();
+            set => field = value;
         }
 
         // NOT SUPPORTED method

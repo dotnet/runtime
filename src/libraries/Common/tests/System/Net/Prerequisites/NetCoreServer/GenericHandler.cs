@@ -19,6 +19,16 @@ namespace NetCoreServer
         public async Task Invoke(HttpContext context)
         {
             PathString path = context.Request.Path;
+            if (path.Equals(new PathString("/swagger.json")))
+            {
+                using (var stream = typeof(GenericHandler).Assembly.GetManifestResourceStream("NetCoreServer.swagger.json"))
+                {
+                    context.Response.ContentType = "application/json";
+                    await stream.CopyToAsync(context.Response.Body);
+                }
+                return;
+            }
+
             if (path.Equals(new PathString("/deflate.ashx")))
             {
                 await DeflateHandler.InvokeAsync(context);
@@ -51,7 +61,7 @@ namespace NetCoreServer
 
             if (path.Equals(new PathString("/statuscode.ashx")))
             {
-                StatusCodeHandler.Invoke(context);
+                await StatusCodeHandler.InvokeAsync(context);
                 return;
             }
 

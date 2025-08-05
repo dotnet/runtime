@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Creates a new instance of <see cref="ConfigurationConsoleLoggerSettings"/>.
         /// </summary>
-        /// <param name="configuration">provides access to configuration values.</param>
+        /// <param name="configuration">The configuration values.</param>
         public ConfigurationConsoleLoggerSettings(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         /// <summary>
-        /// Gets the <see cref="IChangeToken"/> propagates notifications that a change has occurred.
+        /// Gets the <see cref="IChangeToken"/> that propagates notifications that a change has occurred.
         /// </summary>
         public IChangeToken? ChangeToken { get; private set; }
 
@@ -70,9 +70,9 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Gets the log level for the specified switch.
         /// </summary>
-        /// <param name="name">The name of the switch to look up</param>
-        /// <param name="level">An out parameter that will be set to the value of the switch if it is found. If the switch is not found, the method returns false and sets the value of level to LogLevel.None</param>
-        /// <returns>True if the switch was found, otherwise false.</returns>
+        /// <param name="name">The name of the switch to look up.</param>
+        /// <param name="level">When this method returns, contains the value of the switch if it is found. If the switch is not found, the method returns false and sets the value of level to LogLevel.None</param>
+        /// <returns><see langword="true" /> if the switch was found, otherwise <see langword="false" />.</returns>
         /// <exception cref="InvalidOperationException"></exception>
         public bool TryGetSwitch(string name, out LogLevel level)
         {

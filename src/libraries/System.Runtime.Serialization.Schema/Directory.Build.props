@@ -4,6 +4,7 @@
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <!-- This exclusion list matches System.CodeDom. -->
-    <UnsupportedOSPlatforms>browser;ios;tvos;maccatalyst</UnsupportedOSPlatforms>
+    <UnsupportedOSPlatforms>browser;wasi;ios;tvos;maccatalyst</UnsupportedOSPlatforms>
+    <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 </Project>

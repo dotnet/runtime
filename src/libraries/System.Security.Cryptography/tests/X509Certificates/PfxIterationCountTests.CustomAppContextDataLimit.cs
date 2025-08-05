@@ -128,16 +128,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 PfxInfo pfxInfo = s_certificatesDictionary[certName];
 
-                if (OperatingSystem.IsWindows())
-                {
-                    // Opting-out with AppContext data value -1 will still give us error because cert is beyond Windows limit.
-                    // But we will get the CryptoThrowHelper+WindowsCryptographicException.
-                    PfxIterationCountTests.VerifyThrowsCryptoExButDoesNotThrowPfxWithoutPassword(() => Import(pfxInfo.Blob));
-                }
-                else
-                {
-                    Assert.NotNull(Import(pfxInfo.Blob));
-                }
+                // The total iteration count filter is disabled, but individual items are
+                // still limited to 600k.
+                CryptographicException ce = Assert.Throws<CryptographicException>(() => Import(pfxInfo.Blob));
+                Assert.Contains(PfxIterationCountTests.FwlinkId, ce.Message);
             }, name).Dispose();
         }
     }

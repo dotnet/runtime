@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System
 {
@@ -144,7 +145,7 @@ namespace System
 
         private static bool TrySetSlot(object?[] a, int index, object o)
         {
-            if (a[index] == null && Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
+            if (a[index] == null && Interlocked.CompareExchange(ref a[index], o, null) == null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.
@@ -164,10 +165,10 @@ namespace System
             return false;
         }
 
-        private MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
+        private unsafe MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = InternalAllocLike(this);
+            MulticastDelegate result = Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(RuntimeHelpers.GetMethodTable(this)));
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
@@ -225,7 +226,7 @@ namespace System
                 followCount = (int)dFollow._invocationCount;
 
             int resultCount;
-            if (!(_invocationList is object[] invocationList))
+            if (_invocationList is not object[] invocationList)
             {
                 resultCount = 1 + followCount;
                 resultList = new object[resultCount];
@@ -335,9 +336,9 @@ namespace System
 
             if (v == null)
                 return this;
-            if (!(v._invocationList is object[]))
+            if (v._invocationList is not object[])
             {
-                if (!(_invocationList is object[] invocationList))
+                if (_invocationList is not object[] invocationList)
                 {
                     // they are both not real Multicast
                     if (this.Equals(value))
@@ -401,7 +402,7 @@ namespace System
         public sealed override Delegate[] GetInvocationList()
         {
             Delegate[] del;
-            if (!(_invocationList is object[] invocationList))
+            if (_invocationList is not object[] invocationList)
             {
                 del = new Delegate[1];
                 del[0] = this;
@@ -418,12 +419,12 @@ namespace System
             return del;
         }
 
-        internal new bool HasSingleTarget => !(_invocationList is object[]);
+        internal new bool HasSingleTarget => _invocationList is not object[];
 
         // Used by delegate invocation list enumerator
         internal object? /* Delegate? */ TryGetAt(int index)
         {
-            if (!(_invocationList is object[] invocationList))
+            if (_invocationList is not object[] invocationList)
             {
                 return (index == 0) ? this : null;
             }
@@ -447,7 +448,7 @@ namespace System
                 }
             }
 
-            if (!(_invocationList is object[] invocationList))
+            if (_invocationList is not object[] invocationList)
             {
                 return base.GetHashCode();
             }
@@ -515,20 +516,23 @@ namespace System
             {
                 // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
                 // be treated as open delegates by the base implementation, resulting in failure to get the MethodInfo
-                if ((_methodBase == null) || !(_methodBase is MethodInfo))
+                if (_methodBase is MethodInfo methodInfo)
                 {
-                    IRuntimeMethodInfo method = FindMethodHandle();
-                    RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
-
-                    // need a proper declaring type instance method on a generic type
-                    if (declaringType.IsGenericType)
-                    {
-                        // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
-                        RuntimeType reflectedType = (RuntimeType)GetType();
-                        declaringType = reflectedType;
-                    }
-                    _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
+                    return methodInfo;
                 }
+
+                IRuntimeMethodInfo method = FindMethodHandle();
+                RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
+
+                // need a proper declaring type instance method on a generic type
+                if (declaringType.IsGenericType)
+                {
+                    // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
+                    RuntimeType reflectedType = (RuntimeType)GetType();
+                    declaringType = reflectedType;
+                }
+
+                _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
                 return (MethodInfo)_methodBase;
             }
 

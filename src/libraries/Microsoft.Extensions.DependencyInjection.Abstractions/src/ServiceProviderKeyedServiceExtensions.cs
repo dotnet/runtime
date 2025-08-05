@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A service object of type <typeparamref name="T"/> or null if there is no such service.</returns>
         public static T? GetKeyedService<T>(this IServiceProvider provider, object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             if (provider is IKeyedServiceProvider keyedServiceProvider)
             {
@@ -37,12 +37,32 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service object from.</param>
         /// <param name="serviceType">An object that specifies the type of service object to get.</param>
         /// <param name="serviceKey">An object that specifies the key of service object to get.</param>
+        /// <returns>A service object of type <paramref name="serviceType"/> or null if there is no such service.</returns>
+        public static object? GetKeyedService(this IServiceProvider provider, Type serviceType, object? serviceKey)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(serviceType);
+
+            if (provider is IKeyedServiceProvider keyedServiceProvider)
+            {
+                return keyedServiceProvider.GetKeyedService(serviceType, serviceKey);
+            }
+
+            throw new InvalidOperationException(SR.KeyedServicesNotSupported);
+        }
+
+        /// <summary>
+        /// Get service of type <paramref name="serviceType"/> from the <see cref="IServiceProvider"/>.
+        /// </summary>
+        /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service object from.</param>
+        /// <param name="serviceType">An object that specifies the type of service object to get.</param>
+        /// <param name="serviceKey">An object that specifies the key of service object to get.</param>
         /// <returns>A service object of type <paramref name="serviceType"/>.</returns>
         /// <exception cref="System.InvalidOperationException">There is no service of type <paramref name="serviceType"/>.</exception>
         public static object GetRequiredKeyedService(this IServiceProvider provider, Type serviceType, object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(provider);
-            ThrowHelper.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             if (provider is IKeyedServiceProvider requiredServiceSupportingProvider)
             {
@@ -62,7 +82,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <exception cref="System.InvalidOperationException">There is no service of type <typeparamref name="T"/>.</exception>
         public static T GetRequiredKeyedService<T>(this IServiceProvider provider, object? serviceKey) where T : notnull
         {
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             return (T)provider.GetRequiredKeyedService(typeof(T), serviceKey);
         }
@@ -76,7 +96,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An enumeration of services of type <typeparamref name="T"/>.</returns>
         public static IEnumerable<T> GetKeyedServices<T>(this IServiceProvider provider, object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             return provider.GetRequiredKeyedService<IEnumerable<T>>(serviceKey);
         }
@@ -91,8 +111,8 @@ namespace Microsoft.Extensions.DependencyInjection
         [RequiresDynamicCode("The native code for an IEnumerable<serviceType> might not be available at runtime.")]
         public static IEnumerable<object?> GetKeyedServices(this IServiceProvider provider, Type serviceType, object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(provider);
-            ThrowHelper.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             Type? genericEnumerable = typeof(IEnumerable<>).MakeGenericType(serviceType);
             return (IEnumerable<object>)provider.GetRequiredKeyedService(genericEnumerable, serviceKey);

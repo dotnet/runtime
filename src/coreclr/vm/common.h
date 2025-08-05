@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// common.h - precompiled headers include for the COM+ Execution Engine
-//
 
 //
-
+// common.h - precompiled headers include for the CLR Execution Engine
+//
 
 #ifndef _common_h_
 #define _common_h_
@@ -73,6 +71,10 @@
 
 #include <olectl.h>
 
+#if defined(HOST_AMD64) || defined(HOST_X86)
+#include <xmmintrin.h>
+#endif
+
 using std::max;
 using std::min;
 
@@ -101,14 +103,13 @@ using std::min;
 
 typedef VPTR(class LoaderAllocator)     PTR_LoaderAllocator;
 typedef DPTR(PTR_LoaderAllocator)       PTR_PTR_LoaderAllocator;
-typedef VPTR(class AppDomain)           PTR_AppDomain;
+typedef DPTR(class AppDomain)           PTR_AppDomain;
 typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;
 typedef DPTR(class AssemblyBaseObject)  PTR_AssemblyBaseObject;
 typedef DPTR(class AssemblyLoadContextBaseObject) PTR_AssemblyLoadContextBaseObject;
 typedef DPTR(class AssemblyBinder)      PTR_AssemblyBinder;
 typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
-typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;
 typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
 typedef DPTR(class CLRToCOMCallMethodDesc) PTR_CLRToCOMCallMethodDesc;
@@ -119,14 +120,16 @@ typedef DPTR(struct FailedAssembly)     PTR_FailedAssembly;
 typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
 typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
-typedef DPTR(struct DomainLocalModule)  PTR_DomainLocalModule;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
+#ifdef FEATURE_INTERPRETER
+typedef VPTR(class InterpreterCodeManager) PTR_InterpreterCodeManager;
+#endif
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
 typedef VPTR(class EEDbgInterfaceImpl)  PTR_EEDbgInterfaceImpl;
 typedef VPTR(class DebugInfoManager)    PTR_DebugInfoManager;
 typedef DPTR(class FieldDesc)           PTR_FieldDesc;
-typedef VPTR(class Frame)               PTR_Frame;
+typedef DPTR(class Frame)               PTR_Frame;
 typedef DPTR(class GCFrame)             PTR_GCFrame;
 typedef VPTR(class ICodeManager)        PTR_ICodeManager;
 typedef VPTR(class IJitManager)         PTR_IJitManager;
@@ -139,7 +142,7 @@ typedef DPTR(class MethodImpl)          PTR_MethodImpl;
 typedef DPTR(class MethodTable)         PTR_MethodTable;
 typedef DPTR(class CoreLibBinder)      PTR_CoreLibBinder;
 typedef VPTR(class Module)              PTR_Module;
-typedef DPTR(class NDirectMethodDesc)   PTR_NDirectMethodDesc;
+typedef DPTR(class PInvokeMethodDesc)   PTR_PInvokeMethodDesc;
 typedef DPTR(class Thread)              PTR_Thread;
 typedef DPTR(class Object)              PTR_Object;
 typedef DPTR(PTR_Object)                PTR_PTR_Object;
@@ -199,31 +202,10 @@ Thread * const CURRENT_THREAD = NULL;
     (void)CURRENT_THREAD_AVAILABLE; /* silence "local variable initialized but not used" warning */ \
 
 #ifndef DACCESS_COMPILE
-EXTERN_C AppDomain* STDCALL GetAppDomain();
+AppDomain* GetAppDomain();
 #endif //!DACCESS_COMPILE
 
-inline void RetailBreak()
-{
-#ifdef TARGET_X86
-    __asm int 3
-#else
-    DebugBreak();
-#endif
-}
-
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
-
-#ifndef memcpyUnsafe_f
-#define memcpyUnsafe_f
-
-// use this when you want to memcpy something that contains GC refs
-FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
-{
-    WRAPPER_NO_CONTRACT;
-    return memcpy(dest, src, len);
-}
-
-#endif // !memcpyUnsafe_f
 
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {
@@ -293,7 +275,6 @@ namespace Loader
 #include "synch.h"
 #include "regdisp.h"
 #include "stackframe.h"
-#include "gms.h"
 #include "fcall.h"
 #include "syncblk.h"
 #include "gcdesc.h"
@@ -359,6 +340,14 @@ void* GetClrModuleBase();
 // use this when you want to memcpy something that contains GC refs
 void memmoveGCRefs(void *dest, const void *src, size_t len);
 
+// Struct often used as a parameter to callbacks.
+typedef struct
+{
+    promote_func*  f;
+    ScanContext*   sc;
+    CrawlFrame *   cf;
+    SetSHash<Object**, PtrSetSHashTraits<Object**> > *pScannedSlots;
+} GCCONTEXT;
 
 #if defined(_DEBUG)
 

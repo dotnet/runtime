@@ -18,10 +18,10 @@ namespace System.Reflection.Emit
 
         #region Constructor
         // This is a kind of MethodInfo to represent methods for array type of unbaked type
-        internal ArrayMethod(ModuleBuilder module, Type arrayClass, string methodName,
+        internal ArrayMethod(ModuleBuilderImpl module, Type arrayClass, string methodName,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
-            _returnType = returnType ?? typeof(void);
+            _returnType = returnType ?? module.GetTypeFromCoreAssembly(CoreTypeId.Void);
             if (parameterTypes != null)
             {
                 _parameterTypes = new Type[parameterTypes.Length];

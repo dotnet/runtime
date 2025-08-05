@@ -20,6 +20,9 @@ namespace System.Formats.Tar
         // Used to access the data section of this entry in an unseekable file
         private TarReader? _readerOfOrigin;
 
+        // These formats have a limited numeric range due to the octal number representation.
+        protected bool FormatIsOctalOnly => _header._format is TarEntryFormat.V7 or TarEntryFormat.Ustar;
+
         // Constructor called when reading a TarEntry from a TarReader.
         internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
@@ -92,13 +95,16 @@ namespace System.Formats.Tar
         /// A timestamps that represents the last time the contents of the file represented by this entry were modified.
         /// </summary>
         /// <remarks>In Unix platforms, this timestamp is commonly known as <c>mtime</c>.</remarks>
-        /// <exception cref="ArgumentOutOfRangeException">The specified value is larger than <see cref="DateTimeOffset.UnixEpoch"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The specified value is larger than <see cref="DateTimeOffset.UnixEpoch"/> when using <see cref="TarEntryFormat.V7"/> or <see cref="TarEntryFormat.Ustar"/>.</exception>
         public DateTimeOffset ModificationTime
         {
             get => _header._mTime;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
+                if (FormatIsOctalOnly)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
+                }
                 _header._mTime = value;
             }
         }
@@ -276,6 +282,15 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
+        /// Gets the starting position of the data stream respective to the archive stream.
+        /// </summary>
+        /// <remarks>
+        /// If the entry does not come from an archive stream or if the archive stream is not seekable, returns -1.
+        /// The position value returned by this property is relative to the absolute start of the archive stream, independent of where the tar archive begins.
+        /// </remarks>
+        public long DataOffset => _header._dataOffset;
+
+        /// <summary>
         /// A string that represents the current entry.
         /// </summary>
         /// <returns>The <see cref="Name"/> of the current entry.</returns>
@@ -424,7 +439,7 @@ namespace System.Formats.Tar
 
         private void CreateNonRegularFile(string filePath, string? linkTargetPath)
         {
-            Debug.Assert(EntryType is not TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile);
+            Debug.Assert(EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile));
 
             switch (EntryType)
             {
@@ -472,7 +487,7 @@ namespace System.Formats.Tar
                 case TarEntryType.GlobalExtendedAttributes:
                 case TarEntryType.LongPath:
                 case TarEntryType.LongLink:
-                    Debug.Assert(false, $"Metadata entry type should not be visible: '{EntryType}'");
+                    Debug.Fail($"Metadata entry type should not be visible: '{EntryType}'");
                     break;
 
                 case TarEntryType.MultiVolume:

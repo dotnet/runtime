@@ -16,11 +16,14 @@ namespace System.Xml.XmlDiff
         IgnoreChildOrder = 0x80,
         InfosetComparison = 0xB,     //sets IgnoreEmptyElement, IgnoreWhitespace and IgnoreAttributeOrder
         CDataAsText = 0x100,
-        NormalizeNewline = 0x200 // ignores newlines in text nodes only
+        NormalizeNewline = 0x200,   // ignores newlines in text nodes only
+        NormalizeSpaces = 0x400     // converts all forms of spaces to a normal space
     }
 
     public class XmlDiffAdvancedOptions
     {
+        internal const string SpaceStripPattern = "[\u00A0\u180E\u2000-\u200B\u202F\u205F\u3000\uFEFF]";
+
         private string _IgnoreNodesExpr;
         private string _IgnoreValuesExpr;
         private string _IgnoreChildOrderExpr;

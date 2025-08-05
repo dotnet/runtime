@@ -431,6 +431,8 @@ public:
 
     bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread);
 
+    bool IsUnmanagedThreadHijacked(ICorDebugThread * pThread);
+
     // Expose m_attached to CordbProcess.
     bool GetAttached();
 

@@ -378,8 +378,8 @@ namespace System.Collections
         //
         // 1) The only ?correctness? requirement is that the ?increment? used to probe
         //    a. Be non-zero
-        //    b. Be relatively prime to the table size ?hashSize?. (This is needed to insure you probe all entries in the table before you ?wrap? and visit entries already probed)
-        // 2) Because we choose table sizes to be primes, we just need to insure that the increment is 0 < incr < hashSize
+        //    b. Be relatively prime to the table size ?hashSize?. (This is needed to ensure you probe all entries in the table before you ?wrap? and visit entries already probed)
+        // 2) Because we choose table sizes to be primes, we just need to ensure that the increment is 0 < incr < hashSize
         //
         // Thus this function would work: Incr = 1 + (seed % (hashSize-1))
         //
@@ -798,7 +798,7 @@ namespace System.Collections
 
             if (_keycomparer != null)
                 return _keycomparer.Equals(item, key);
-            return item == null ? false : item.Equals(key);
+            return item != null && item.Equals(key);
         }
 
         // Returns a collection representing the keys of this hashtable. The order
@@ -937,7 +937,7 @@ namespace System.Collections
 
         private void putEntry(Bucket[] newBuckets, object key, object? nvalue, int hashcode)
         {
-            Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
+            Debug.Assert(hashcode >= 0);  // make sure collision bit (sign bit) wasn't set.
 
             uint seed = (uint)hashcode;
             uint incr = unchecked((uint)(1 + ((seed * HashHelpers.HashPrime) % ((uint)newBuckets.Length - 1))));

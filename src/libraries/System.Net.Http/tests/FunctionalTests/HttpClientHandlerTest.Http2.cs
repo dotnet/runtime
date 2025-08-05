@@ -1052,6 +1052,36 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GoAwayFrame_RequestServerDisconnects_ThrowsHttpProtocolExceptionWithProperErrorCode()
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                // Client starts an HTTP/2 request and awaits response headers
+                using HttpClient client = CreateHttpClient();
+                HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+
+                // Client reads from response stream
+                using Stream responseStream = await response.Content.ReadAsStreamAsync();
+                Memory<byte> buffer = new byte[1024];
+                HttpProtocolException exception = await Assert.ThrowsAsync<HttpProtocolException>(() => responseStream.ReadAsync(buffer).AsTask());
+                Assert.Equal(ProtocolErrors.ENHANCE_YOUR_CALM, (ProtocolErrors) exception.ErrorCode);
+                Assert.Contains("The HTTP/2 server closed the connection.", exception.Message);
+
+            },
+            async server =>
+            {
+                // Server returns response headers
+                await using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                int streamId = await connection.ReadRequestHeaderAsync();
+                await connection.SendDefaultResponseHeadersAsync(streamId);
+
+                // Server sends GOAWAY frame
+                await connection.SendGoAway(streamId, ProtocolErrors.ENHANCE_YOUR_CALM);
+                connection.ShutdownSend();
+            });
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task GoAwayFrame_UnprocessedStreamFirstRequestFinishedFirst_RequestRestarted()
         {
             // This test case is similar to GoAwayFrame_UnprocessedStreamFirstRequestWaitsUntilSecondFinishes_RequestRestarted
@@ -3276,15 +3306,11 @@ namespace System.Net.Http.Functional.Tests
                 // We should not reach retry limit without failing.
                 Assert.NotEqual(0, maxCount);
 
-                try
+                await IgnoreExceptions(async () =>
                 {
                     await connection.SendGoAway(streamId);
                     await connection.WaitForConnectionShutdownAsync();
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                }
+                });
             });
         }
 

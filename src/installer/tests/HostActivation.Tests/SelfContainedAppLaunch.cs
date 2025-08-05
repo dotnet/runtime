@@ -3,7 +3,7 @@
 
 using System;
 using System.IO;
-
+using System.Runtime.InteropServices;
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -95,7 +95,7 @@ namespace HostActivation.Tests
         {
             var app = sharedTestState.App.Copy();
 
-            var renamedAppExe = app.AppExe + Binaries.GetExeFileNameForCurrentPlatform("renamed");
+            var renamedAppExe = app.AppExe + Binaries.GetExeName("renamed");
             File.Move(app.AppExe, renamedAppExe, true);
 
             Command.Create(renamedAppExe)
@@ -122,7 +122,8 @@ namespace HostActivation.Tests
             HostWriter.CreateAppHost(
                 Binaries.AppHost.FilePath,
                 appExe,
-                Path.GetRelativePath(subDir, app.AppDll));
+                Path.GetRelativePath(subDir, app.AppDll),
+                enableMacOSCodeSign: RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
 
             Command.Create(appExe)
                 .CaptureStdErr()
@@ -150,10 +151,33 @@ namespace HostActivation.Tests
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(app.Location)
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), TestContext.BuildRID)
                 .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void DevicePath()
+        {
+            string appExe = $@"\\?\{sharedTestState.App.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+
+            appExe = $@"\\.\{sharedTestState.App.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         public class SharedTestState : IDisposable

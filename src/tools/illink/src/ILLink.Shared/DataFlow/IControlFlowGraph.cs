@@ -11,121 +11,123 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ILLink.Shared.DataFlow
 {
-	public enum RegionKind
-	{
-		Try,
-		Catch,
-		Filter,
-		Finally
-	}
+    public enum RegionKind
+    {
+        Try,
+        Catch,
+        Filter,
+        Finally
+    }
 
-	public enum ConditionKind
-	{
-		None,
-		WhenFalse,
-		WhenTrue,
-	}
+    public enum ConditionKind
+    {
+        Unconditional,
+        WhenFalse,
+        WhenTrue,
+        Unknown
+    }
 
-	public interface IRegion<TRegion> : IEquatable<TRegion>
-	{
-		RegionKind Kind { get; }
-	}
+    public interface IRegion<TRegion> : IEquatable<TRegion>
+    {
+        RegionKind Kind { get; }
+    }
 
-	public interface IBlock<TBlock> : IEquatable<TBlock>
-	{
-		ConditionKind ConditionKind { get; }
-	}
+    public interface IBlock<TBlock> : IEquatable<TBlock>
+    {
+    }
 
-	public interface IControlFlowGraph<TBlock, TRegion>
-		where TBlock : struct, IBlock<TBlock>
-		where TRegion : IRegion<TRegion>
-	{
+    public interface IControlFlowGraph<TBlock, TRegion>
+        where TBlock : struct, IBlock<TBlock>
+        where TRegion : IRegion<TRegion>
+    {
 
-		// Represents an edge in the control flow graph, from a source to a destination basic block.
-		public readonly struct ControlFlowBranch : IEquatable<ControlFlowBranch>
-		{
-			public readonly TBlock Source;
-			public readonly TBlock? Destination;
+        // Represents an edge in the control flow graph, from a source to a destination basic block.
+        public readonly struct ControlFlowBranch : IEquatable<ControlFlowBranch>
+        {
+            public readonly TBlock Source;
 
-			// The finally regions exited when control flows through this edge.
-			// For example:
-			//
-			// try {
-			//     try {
-			//         Source();
-			//     }
-			//     finally {}
-			// } finally {}
-			// Target();
-			//
-			// There will be an edge in the CRFG from the block that calls
-			// Source() to the block that calls Target(), which exits both
-			// finally regions.
-			public readonly ImmutableArray<TRegion> FinallyRegions;
-			public readonly bool IsConditional;
-			public ControlFlowBranch (TBlock source, TBlock? destination, ImmutableArray<TRegion> finallyRegions, bool isConditional)
-			{
-				Source = source;
-				Destination = destination;
-				FinallyRegions = finallyRegions;
-				IsConditional = isConditional;
-			}
+            // Might be null in a 'throw' branch.
+            public readonly TBlock? Destination;
 
-			public bool Equals (ControlFlowBranch other)
-			{
-				if (!Source.Equals (other.Source))
-					return false;
+            public readonly ConditionKind ConditionKind;
 
-				if (IsConditional != other.IsConditional)
-					return false;
+            // The finally regions exited when control flows through this edge.
+            // For example:
+            //
+            // try {
+            //     try {
+            //         Source();
+            //     }
+            //     finally {}
+            // } finally {}
+            // Target();
+            //
+            // There will be an edge in the CRFG from the block that calls
+            // Source() to the block that calls Target(), which exits both
+            // finally regions.
+            public readonly ImmutableArray<TRegion> FinallyRegions;
 
-				if (Destination == null)
-					return other.Destination == null;
+            public ControlFlowBranch(TBlock source, TBlock? destination, ImmutableArray<TRegion> finallyRegions, ConditionKind conditionKind)
+            {
+                Source = source;
+                Destination = destination;
+                FinallyRegions = finallyRegions;
+                ConditionKind = conditionKind;
+            }
 
-				return Destination.Equals (other.Destination);
-			}
+            public bool Equals(ControlFlowBranch other)
+            {
+                if (!Source.Equals(other.Source))
+                    return false;
 
-			public override bool Equals (object? obj)
-			{
-				return obj is ControlFlowBranch other && Equals (other);
-			}
+                if (ConditionKind != other.ConditionKind)
+                    return false;
 
-			public override int GetHashCode ()
-			{
-				return HashUtils.Combine (
-					Source.GetHashCode (),
-					Destination?.GetHashCode () ?? typeof (ControlFlowBranch).GetHashCode (),
-					IsConditional.GetHashCode ());
-			}
-		}
+                if (Destination == null)
+                    return other.Destination == null;
 
-		IEnumerable<TBlock> Blocks { get; }
+                return Destination.Equals(other.Destination);
+            }
 
-		TBlock Entry { get; }
+            public override bool Equals(object? obj)
+            {
+                return obj is ControlFlowBranch other && Equals(other);
+            }
 
-		// This does not include predecessor edges for exceptional control flow into
-		// catch regions or finally regions. It also doesn't include edges for non-exceptional
-		// control flow from try -> finally or from catch -> finally.
-		IEnumerable<ControlFlowBranch> GetPredecessors (TBlock block);
+            public override int GetHashCode()
+            {
+                return HashUtils.Combine(
+                    Source.GetHashCode(),
+                    Destination?.GetHashCode() ?? typeof(ControlFlowBranch).GetHashCode(),
+                    ConditionKind.GetHashCode());
+            }
+        }
 
-		ControlFlowBranch? GetConditionalSuccessor (TBlock block);
+        IEnumerable<TBlock> Blocks { get; }
 
-		ControlFlowBranch? GetFallThroughSuccessor (TBlock block);
+        TBlock Entry { get; }
 
-		bool TryGetEnclosingTryOrCatchOrFilter (TBlock block, [NotNullWhen (true)] out TRegion? tryOrCatchOrFilterRegion);
+        // This does not include predecessor edges for exceptional control flow into
+        // catch regions or finally regions. It also doesn't include edges for non-exceptional
+        // control flow from try -> finally or from catch -> finally.
+        IEnumerable<ControlFlowBranch> GetPredecessors(TBlock block);
 
-		bool TryGetEnclosingTryOrCatchOrFilter (TRegion region, [NotNullWhen (true)] out TRegion? tryOrCatchOrFilterRegion);
+        IEnumerable<ControlFlowBranch> GetSuccessors(TBlock block);
 
-		bool TryGetEnclosingFinally (TBlock block, [NotNullWhen (true)] out TRegion? region);
+        bool TryGetEnclosingTryOrCatchOrFilter(TBlock block, [NotNullWhen(true)] out TRegion? tryOrCatchOrFilterRegion);
 
-		TRegion GetCorrespondingTry (TRegion cathOrFilterOrFinallyRegion);
+        bool TryGetEnclosingTryOrCatchOrFilter(TRegion region, [NotNullWhen(true)] out TRegion? tryOrCatchOrFilterRegion);
 
-		IEnumerable<TRegion> GetPreviousFilters (TRegion catchOrFilterRegion);
+        bool TryGetEnclosingFinally(TBlock block, [NotNullWhen(true)] out TRegion? region);
 
-		bool HasFilter (TRegion catchRegion);
+        TRegion GetCorrespondingTry(TRegion cathOrFilterOrFinallyRegion);
 
-		TBlock FirstBlock (TRegion region);
+        IEnumerable<TRegion> GetPreviousFilters(TRegion catchOrFilterRegion);
 
-		TBlock LastBlock (TRegion region);
-	}
+        bool HasFilter(TRegion catchRegion);
+
+        TBlock FirstBlock(TRegion region);
+
+        TBlock LastBlock(TRegion region);
+    }
 }

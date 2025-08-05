@@ -1276,11 +1276,11 @@ namespace System.ComponentModel.Tests
         {
         }
 
-        private long _concurrentError = 0;
+        private volatile bool _concurrentError;
         private bool ConcurrentError
         {
-            get => Interlocked.Read(ref _concurrentError) == 1;
-            set => Interlocked.Exchange(ref _concurrentError, value ? 1 : 0);
+            get => _concurrentError;
+            set => Interlocked.Exchange(ref _concurrentError, value);
         }
 
         private void ConcurrentTest(TypeWithProperty instance)

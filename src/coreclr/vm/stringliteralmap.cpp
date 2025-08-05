@@ -298,7 +298,7 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
 : m_StringToEntryHashTable(NULL)
 , m_MemoryPool(NULL)
 , m_HashTableCrstGlobal(CrstGlobalStrLiteralMap)
-, m_PinnedHeapHandleTable(SystemDomain::System(), GLOBAL_STRING_TABLE_BUCKET_SIZE)
+, m_PinnedHeapHandleTable(GLOBAL_STRING_TABLE_BUCKET_SIZE)
 {
     CONTRACTL
     {
@@ -341,7 +341,7 @@ GlobalStringLiteralMap::~GlobalStringLiteralMap()
     {
         // We are shutting down, the OS will reclaim the memory from the StringLiteralEntries,
         // m_MemoryPool and m_StringToEntryHashTable.
-        _ASSERTE(g_fProcessDetach);
+        _ASSERTE(IsAtProcessExit());
     }
 }
 
@@ -466,14 +466,14 @@ STRINGREF AllocateStringObject(EEStringData *pStringData, bool preferFrozenObjHe
     }
     CONTRACTL_END;
 
-    // Create the COM+ string object.
+    // Create the CLR string object.
     DWORD cCount = pStringData->GetCharCount();
 
     STRINGREF strObj = AllocateString(cCount, preferFrozenObjHeap, pIsFrozen);
 
     GCPROTECT_BEGIN(strObj)
     {
-        // Copy the string constant into the COM+ string object.  The code
+        // Copy the string constant into the CLR string object.  The code
         // will add an extra null at the end for safety purposes, but since
         // we support embedded nulls, one should never treat the string as
         // null termianted.

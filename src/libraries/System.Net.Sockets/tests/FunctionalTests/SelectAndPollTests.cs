@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class SelectAndPollTests
     {
         private const int SelectTimeout = 100;

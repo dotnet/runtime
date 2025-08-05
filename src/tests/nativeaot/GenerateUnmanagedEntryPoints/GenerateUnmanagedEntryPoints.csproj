@@ -8,6 +8,8 @@
       Disable for now.
     -->
     <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
 
   <ItemGroup>

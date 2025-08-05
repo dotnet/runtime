@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net9.0";
+        public static readonly string DefaultTargetFramework = $"net{Environment.Version.Major}.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -46,7 +46,7 @@ namespace Wasm.Build.Tests
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
-        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
+        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private static Regex s_runtimePackPathRegex;
         private static int s_testCounter;
@@ -55,8 +55,7 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, "nuget9.config");
-                            // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
+            Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");
 
         static BuildTestBase()
         {
@@ -121,10 +120,19 @@ namespace Wasm.Build.Tests
         }
 
         [MemberNotNull(nameof(_projectDir), nameof(_logPath))]
-        protected void InitPaths(string id)
+        protected void InitPaths(string id, string? projectParentDir = null)
         {
             if (_projectDir == null)
-                _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
+            {
+                if (projectParentDir == null)
+                {
+                    _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
+                }
+                else
+                {
+                    _projectDir = Path.Combine(BuildEnvironment.TmpPath, projectParentDir, id);
+                }
+            }
             _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
             _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
 
@@ -135,8 +143,9 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_logPath);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = false, string targetFramework = DefaultTargetFramework)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = false, string? targetFramework = null)
         {
+            targetFramework ??= DefaultTargetFramework;
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
@@ -156,14 +165,12 @@ namespace Wasm.Build.Tests
             }
         }
 
-        protected const string SimpleProjectTemplate =
+        protected static readonly string SimpleProjectTemplate =
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
                 <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
-                <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>test-main.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -172,12 +179,12 @@ namespace Wasm.Build.Tests
               ##INSERT_AT_END##
             </Project>";
 
-        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="", string projectTemplate=SimpleProjectTemplate)
+        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="")
         {
+            string projectTemplate = SimpleProjectTemplate;
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
             }
 
             string projectContents = projectTemplate
@@ -212,8 +219,7 @@ namespace Wasm.Build.Tests
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory,
-                                        options.TargetFramework == "net7.0" ? "data/test-main-7.0.js" : "test-main.js"),
+                File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"),
                             Path.Combine(_projectDir, "test-main.js"));
             }
             else if (_projectDir is null)
@@ -265,8 +271,6 @@ namespace Wasm.Build.Tests
                     AssertBasicAppBundle(bundleDir,
                                          buildArgs.ProjectName,
                                          buildArgs.Config,
-                                         options.MainJS ?? "test-main.js",
-                                         options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.HasIcudt,
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
@@ -294,9 +298,9 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
+        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, string? projectParentDir = null)
         {
-            InitPaths(id);
+            InitPaths(id, projectParentDir);
             InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
 
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
@@ -362,8 +366,6 @@ namespace Wasm.Build.Tests
         protected static void AssertBasicAppBundle(string bundleDir,
                                                    string projectName,
                                                    string config,
-                                                   string mainJS,
-                                                   bool hasV8Script,
                                                    string targetFramework,
                                                    bool hasIcudt = true,
                                                    bool dotnetWasmFromRuntimePack = true)
@@ -371,14 +373,11 @@ namespace Wasm.Build.Tests
 #if false
             AssertFilesExist(bundleDir, new []
             {
-                "index.html",
-                mainJS,
                 "dotnet.wasm",
                 "_framework/blazor.boot.json",
                 "dotnet.js"
             });
 
-            AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
@@ -463,15 +462,17 @@ namespace Wasm.Build.Tests
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
+        protected string GetBinDir(string config, string? targetFramework = null, string? baseDir=null)
         {
+            targetFramework ??= DefaultTargetFramework;
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
             return Path.Combine(dir!, "bin", config, targetFramework, BuildEnvironment.DefaultRuntimeIdentifier);
         }
 
-        protected string GetObjDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
+        protected string GetObjDir(string config, string? targetFramework = null, string? baseDir=null)
         {
+            targetFramework ??= DefaultTargetFramework;
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
             return Path.Combine(dir!, "obj", config, targetFramework, BuildEnvironment.DefaultRuntimeIdentifier);
@@ -703,12 +704,26 @@ namespace Wasm.Build.Tests
             .MultiplyWithSingleArgs(true, false) /*aot*/
             .UnwrapItemsAsArrays();
 
-        protected CommandResult RunWithoutBuild(string config, string id)
+        public static IEnumerable<object?[]> TestDataForConsolePublishAndRunRelease() =>
+            new IEnumerable<object?>[]
+            {
+                new object?[] { true },
+                new object?[] { false }
+            }
+            .AsEnumerable()
+            .MultiplyWithSingleArgs(true, false) /*aot*/
+            .UnwrapItemsAsArrays();
+
+        protected CommandResult RunWithoutBuild(string config, string id, bool enableHttp = false)
         {
-            string runArgs = $"run --no-build -c {config}";
+            // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)
+            string runArgs = $"run --no-build -c {config} --forward-exit-code";
+            if (enableHttp)
+            {
+                runArgs += " --extra-host-arg=--wasi --extra-host-arg=http";
+            }
             runArgs += " x y z";
-            // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
-            int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
+            int expectedExitCode = 42;
             CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
                             .WithWorkingDirectory(_projectDir!)
                             .ExecuteWithCapturedOutput(runArgs)
@@ -740,12 +755,17 @@ namespace Wasm.Build.Tests
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,
-        string? MainJS                    = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
+    );
+    
+    public record AssertBundleOptions(
+        BuildProjectOptions BuildOptions,
+        bool ExpectSymbolsFile = true,
+        bool AssertIcuAssets = true,
+        bool AssertSymbolsFile = true
     );
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };

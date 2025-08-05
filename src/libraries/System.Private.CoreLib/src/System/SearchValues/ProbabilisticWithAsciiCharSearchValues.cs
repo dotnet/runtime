@@ -56,7 +56,7 @@ namespace System.Buffers
                 {
                     Debug.Assert(_inverseAsciiState.Lookup.Contains(0), "The inverse bitmap did not contain a 0.");
 
-                    offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
+                    offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle, SearchValues.FalseConst>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
                         ref _inverseAsciiState);
@@ -66,7 +66,7 @@ namespace System.Buffers
                     Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || !_inverseAsciiState.Lookup.Contains(0),
                         "The inverse bitmap contained a 0, but we're not using Ssse3AndWasmHandleZeroInNeedle.");
 
-                    offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
+                    offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
                         ref _inverseAsciiState);
@@ -105,7 +105,7 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[0]))
             {
                 // Do a regular IndexOfAnyExcept for the ASCII characters. The search will stop if we encounter a non-ASCII char.
-                offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
+                offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations, SearchValues.FalseConst>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref _asciiState);
@@ -155,7 +155,7 @@ namespace System.Buffers
                 {
                     Debug.Assert(_inverseAsciiState.Lookup.Contains(0), "The inverse bitmap did not contain a 0.");
 
-                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(
+                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle, SearchValues.FalseConst>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
                         ref _inverseAsciiState);
@@ -165,7 +165,7 @@ namespace System.Buffers
                     Debug.Assert(!(Ssse3.IsSupported || PackedSimd.IsSupported) || !_inverseAsciiState.Lookup.Contains(0),
                         "The inverse bitmap contained a 0, but we're not using Ssse3AndWasmHandleZeroInNeedle.");
 
-                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default>(
+                    offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
                         ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                         span.Length,
                         ref _inverseAsciiState);
@@ -194,7 +194,7 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[^1]))
             {
                 // Do a regular LastIndexOfAnyExcept for the ASCII characters. The search will stop if we encounter a non-ASCII char.
-                int offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
+                int offset = IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations, SearchValues.FalseConst>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref _asciiState);

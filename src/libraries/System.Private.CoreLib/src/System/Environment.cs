@@ -10,13 +10,41 @@ namespace System
 {
     public static partial class Environment
     {
+        /// <summary>
+        /// Represents the CPU usage statistics of a process.
+        /// </summary>
+        /// <remarks>
+        /// The CPU usage statistics include information about the time spent by the process in the application code (user mode) and the operating system code (kernel mode),
+        /// as well as the total time spent by the process in both user mode and kernel mode.
+        /// </remarks>
+        public readonly struct ProcessCpuUsage
+        {
+            /// <summary>
+            /// Gets the amount of time the associated process has spent running code inside the application portion of the process (not the operating system code).
+            /// </summary>
+            public TimeSpan UserTime { get; internal init; }
+
+            /// <summary>
+            /// Gets the amount of time the process has spent running code inside the operating system code.
+            /// </summary>
+            public TimeSpan PrivilegedTime { get; internal init; }
+
+            /// <summary>
+            /// Gets the amount of time the process has spent utilizing the CPU including the process time spent in the application code and the process time spent in the operating system code.
+            /// </summary>
+            public TimeSpan TotalTime => UserTime + PrivilegedTime;
+        }
+
         public static int ProcessorCount { get; } = GetProcessorCount();
 
         /// <summary>
         /// Gets whether the current machine has only a single processor.
         /// </summary>
+#if !FEATURE_SINGLE_THREADED
         internal static bool IsSingleProcessor => ProcessorCount == 1;
-
+#else
+        internal const bool IsSingleProcessor = true;
+#endif
         private static volatile sbyte s_privilegedProcess;
 
         /// <summary>
@@ -67,7 +95,7 @@ namespace System
 
         public static void SetEnvironmentVariable(string variable, string? value)
         {
-            ValidateVariableAndValue(variable, ref value);
+            ValidateVariable(variable);
             SetEnvironmentVariableCore(variable, value);
         }
 
@@ -79,7 +107,7 @@ namespace System
                 return;
             }
 
-            ValidateVariableAndValue(variable, ref value);
+            ValidateVariable(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             SetEnvironmentVariableFromRegistry(variable, value, fromMachine: fromMachine);
@@ -120,15 +148,20 @@ namespace System
             return ExpandEnvironmentVariablesCore(name);
         }
 
-        public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
+        public static string GetFolderPath(SpecialFolder folder) => GetFolderPathCore(folder, SpecialFolderOption.None);
 
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
         {
-            if (!Enum.IsDefined(folder))
-                throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
+            // No need to validate if 'folder' is defined; GetFolderPathCore handles this check.
 
-            if (option != SpecialFolderOption.None && !Enum.IsDefined(option))
-                throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
+            if (option is not SpecialFolderOption.None and not SpecialFolderOption.Create and not SpecialFolderOption.DoNotVerify)
+            {
+                // Use a throw helper so that if 'option' is a constant,
+                // the JIT can inline this method and remove the validation check entirely.
+                Throw(option);
+                static void Throw(SpecialFolderOption option) =>
+                    throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
+            }
 
             return GetFolderPathCore(folder, option);
         }
@@ -221,6 +254,10 @@ namespace System
             }
         }
 
+        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
+        /// <value>A 32-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
+        public static int TickCount => (int)TickCount64;
+
         private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)
         {
             Debug.Assert(target != EnvironmentVariableTarget.Process);
@@ -234,7 +271,7 @@ namespace System
             throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
         }
 
-        private static void ValidateVariableAndValue(string variable, ref string? value)
+        private static void ValidateVariable(string variable)
         {
             ArgumentException.ThrowIfNullOrEmpty(variable);
 
@@ -243,12 +280,6 @@ namespace System
 
             if (variable.Contains('='))
                 throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
-
-            if (string.IsNullOrEmpty(value) || value[0] == '\0')
-            {
-                // Explicitly null out value if it's empty
-                value = null;
-            }
         }
     }
 }

@@ -14,6 +14,7 @@ function print_usage {
     echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm. Defaults to current architecture.'
     echo '  <build configuration>            : One of debug, checked, release. Defaults to debug.'
     echo '  android                          : Set build OS to Android.'
+    echo '  wasi                             : Set build OS to WASI.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
     echo '  --coreRootDir=<path>             : Directory to the CORE_ROOT location.'
@@ -40,6 +41,7 @@ function print_usage {
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
+    echo '  --interpreter                    : Runs the tests with the interpreter enabled'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -104,6 +106,9 @@ do
             ;;
         android)
             buildOS="android"
+            ;;
+        wasi)
+            buildOS="wasi"
             ;;
         debug|Debug)
             buildConfiguration="Debug"
@@ -187,6 +192,9 @@ do
         --runnativeaottests)
             nativeaottest=1
             ;;
+        --interpreter)
+            export RunInterpreter=1
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -204,8 +212,12 @@ runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}"
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
-if [ "$buildArch" = "wasm" ]; then
-    runtestPyArguments+=("-os" "browser")
+if [ "$buildArch" = "wasm" -a -z "$buildOS" ]; then
+    buildOS="browser"
+fi
+
+if [ -n "$buildOS" ]; then
+    runtestPyArguments+=("-os" "$buildOS")
 fi
 
 if [ "$buildOS" = "android" ]; then
@@ -287,6 +299,11 @@ fi
 if [[ "$nativeaottest" -ne 0 ]]; then
     echo "Running NativeAOT compiled tests"
     runtestPyArguments+=("--run_nativeaot_tests")
+fi
+
+if [[ -n "$RunInterpreter" ]]; then
+    echo "Running tests with the interpreter"
+    runtestPyArguments+=("--interpreter")
 fi
 
 # Default to python3 if it is installed

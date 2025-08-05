@@ -1369,12 +1369,132 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(7, value.IsOnDeserializedInvocations);
         }
 
+        [Fact]
+        public static void CollectionWithCallBacks_JsonTypeInfoCallbackDelegatesArePopulated()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var jti = resolver.GetTypeInfo(typeof(CollectionWithCallBacks), new());
+
+            Assert.NotNull(jti.OnSerializing);
+            Assert.NotNull(jti.OnSerialized);
+            Assert.NotNull(jti.OnDeserializing);
+            Assert.NotNull(jti.OnDeserialized);
+
+            var value = new CollectionWithCallBacks();
+            jti.OnSerializing(value);
+            Assert.Equal(1, value.IsOnSerializingInvocations);
+
+            jti.OnSerialized(value);
+            Assert.Equal(1, value.IsOnSerializedInvocations);
+
+            jti.OnDeserializing(value);
+            Assert.Equal(1, value.IsOnDeserializingInvocations);
+
+            jti.OnDeserialized(value);
+            Assert.Equal(1, value.IsOnDeserializedInvocations);
+        }
+
+        [Fact]
+        public static void CollectionWithCallBacks_CanCustomizeCallbacks()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static jti =>
+                        {
+                            if (jti.Type == typeof(CollectionWithCallBacks))
+                            {
+                                jti.OnSerializing = null;
+                                jti.OnSerialized = (obj => ((CollectionWithCallBacks)obj).IsOnSerializedInvocations += 10);
+
+                                jti.OnDeserializing = null;
+                                jti.OnDeserialized = (obj => ((CollectionWithCallBacks)obj).IsOnDeserializedInvocations += 7);
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new CollectionWithCallBacks();
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("[]", json);
+
+            Assert.Equal(0, value.IsOnSerializingInvocations);
+            Assert.Equal(10, value.IsOnSerializedInvocations);
+
+            value = JsonSerializer.Deserialize<CollectionWithCallBacks>(json, options);
+            Assert.Equal(0, value.IsOnDeserializingInvocations);
+            Assert.Equal(7, value.IsOnDeserializedInvocations);
+        }
+
+        [Fact]
+        public static void DictionaryWithCallBacks_JsonTypeInfoCallbackDelegatesArePopulated()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var jti = resolver.GetTypeInfo(typeof(DictionaryWithCallBacks), new());
+
+            Assert.NotNull(jti.OnSerializing);
+            Assert.NotNull(jti.OnSerialized);
+            Assert.NotNull(jti.OnDeserializing);
+            Assert.NotNull(jti.OnDeserialized);
+
+            var value = new DictionaryWithCallBacks();
+            jti.OnSerializing(value);
+            Assert.Equal(1, value.IsOnSerializingInvocations);
+
+            jti.OnSerialized(value);
+            Assert.Equal(1, value.IsOnSerializedInvocations);
+
+            jti.OnDeserializing(value);
+            Assert.Equal(1, value.IsOnDeserializingInvocations);
+
+            jti.OnDeserialized(value);
+            Assert.Equal(1, value.IsOnDeserializedInvocations);
+        }
+
+        [Fact]
+        public static void DictionaryWithCallBacks_CanCustomizeCallbacks()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static jti =>
+                        {
+                            if (jti.Type == typeof(DictionaryWithCallBacks))
+                            {
+                                jti.OnSerializing = null;
+                                jti.OnSerialized = (obj => ((DictionaryWithCallBacks)obj).IsOnSerializedInvocations += 10);
+
+                                jti.OnDeserializing = null;
+                                jti.OnDeserialized = (obj => ((DictionaryWithCallBacks)obj).IsOnDeserializedInvocations += 7);
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new DictionaryWithCallBacks();
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("{}", json);
+
+            Assert.Equal(0, value.IsOnSerializingInvocations);
+            Assert.Equal(10, value.IsOnSerializedInvocations);
+
+            value = JsonSerializer.Deserialize<DictionaryWithCallBacks>(json, options);
+            Assert.Equal(0, value.IsOnDeserializingInvocations);
+            Assert.Equal(7, value.IsOnDeserializedInvocations);
+        }
+
         [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(string))]
         [InlineData(typeof(object))]
-        [InlineData(typeof(List<int>))]
-        [InlineData(typeof(Dictionary<string, int>))]
         public static void SettingCallbacksOnUnsupportedTypes_ThrowsInvalidOperationException(Type type)
         {
             var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
@@ -1390,7 +1510,71 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => jti.OnDeserialized = (obj => { }));
         }
 
+        [Theory]
+        [InlineData(typeof(ImmutableArray<string>))]
+        [InlineData(typeof(ImmutableList<string>))]
+        [InlineData(typeof(IImmutableList<string>))]
+        [InlineData(typeof(ImmutableStack<string>))]
+        [InlineData(typeof(IImmutableStack<string>))]
+        [InlineData(typeof(ImmutableQueue<string>))]
+        [InlineData(typeof(IImmutableQueue<string>))]
+        [InlineData(typeof(ImmutableSortedSet<string>))]
+        [InlineData(typeof(ImmutableHashSet<string>))]
+        [InlineData(typeof(IImmutableSet<string>))]
+        [InlineData(typeof(ImmutableDictionary<string, string>))]
+        [InlineData(typeof(ImmutableSortedDictionary<string, string>))]
+        [InlineData(typeof(IImmutableDictionary<string, string>))]
+        [InlineData(typeof(string[]))]
+        [InlineData(typeof(Memory<string>))]
+        [InlineData(typeof(ReadOnlyMemory<string>))]
+        public static void SettingOnDeserializingCallbackOnImmutableTypes_ThrowsInvalidOperationException(Type type)
+        {
+            var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
+
+            Assert.NotEqual(JsonTypeInfoKind.Object, jti.Kind);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = (obj => { }));
+        }
+
         public class ClassWithCallBacks :
+            IJsonOnSerializing, IJsonOnSerialized,
+            IJsonOnDeserializing, IJsonOnDeserialized
+        {
+            [JsonIgnore]
+            public int IsOnSerializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnSerializedInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializedInvocations { get; set; }
+
+            public void OnSerializing() => IsOnSerializingInvocations++;
+            public void OnSerialized() => IsOnSerializedInvocations++;
+            public void OnDeserializing() => IsOnDeserializingInvocations++;
+            public void OnDeserialized() => IsOnDeserializedInvocations++;
+        }
+
+        public class CollectionWithCallBacks : List<int>,
+            IJsonOnSerializing, IJsonOnSerialized,
+            IJsonOnDeserializing, IJsonOnDeserialized
+        {
+            [JsonIgnore]
+            public int IsOnSerializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnSerializedInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializedInvocations { get; set; }
+
+            public void OnSerializing() => IsOnSerializingInvocations++;
+            public void OnSerialized() => IsOnSerializedInvocations++;
+            public void OnDeserializing() => IsOnDeserializingInvocations++;
+            public void OnDeserialized() => IsOnDeserializedInvocations++;
+        }
+
+        public class DictionaryWithCallBacks : Dictionary<string, int>,
             IJsonOnSerializing, IJsonOnSerialized,
             IJsonOnDeserializing, IJsonOnDeserialized
         {

@@ -22,8 +22,11 @@
     <Compile Remove="TypeForwarding\Dependencies\TypeForwardersRewriteForwarders.cs" />
     <Compile Remove="CommandLine\Dependencies\CustomStepDummy.cs" />
     <Compile Remove="CommandLine\Dependencies\CustomStepUser.cs" />
+    <Compile Remove="CommandLine\Dependencies\CustomApplyPreserveStep.cs" />
     <Compile Remove="Logging\Dependencies\LogStep.cs" />
     <Compile Remove="Extensibility\Dependencies\*.cs" />
+    <Compile Include="Extensibility\Dependencies\InterfaceType.cs" />
+    <Compile Include="Extensibility\Dependencies\InterfaceImplementation.cs" />
     <Compile Remove="DynamicDependencies\Dependencies\FacadeAssembly.cs" />
     <Compile Remove="Warnings\Dependencies\CustomStep.cs" />
   </ItemGroup>
@@ -61,6 +64,12 @@
 
   <ItemGroup>
     <Compile Remove="TopLevelStatements/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../Mono.Linker.Tests.Cases.Expectations/Support/DynamicallyAccessedMembersAttribute.cs" Link="Support\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="..\..\src\ILLink.Shared\RequiresDynamicCodeAttribute.cs" Link="Support\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="..\..\src\ILLink.Shared\RequiresUnreferencedCodeAttribute.cs" Link="Support\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
 
 </Project>

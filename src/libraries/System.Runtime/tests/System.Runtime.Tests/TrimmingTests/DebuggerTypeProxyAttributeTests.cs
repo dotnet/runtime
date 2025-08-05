@@ -53,7 +53,7 @@ class Program
         }
     }
 
-    [DebuggerTypeProxy("Program+MyClassWithProxyStringProxy")]
+    [DebuggerTypeProxy("Program+MyClassWithProxyStringProxy, project")]
     public class MyClassWithProxyString
     {
         public string Name { get; set; }

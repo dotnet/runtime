@@ -308,7 +308,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
                 InDoubt();
                 break;
             default:
-                Debug.Assert(false, "OletxPhase0VolatileEnlistmentContainer.OutcomeFromTransaction, outcome is not Commited or Aborted or InDoubt");
+                Debug.Fail("OletxPhase0VolatileEnlistmentContainer.OutcomeFromTransaction, outcome is not Commited or Aborted or InDoubt");
                 break;
         }
     }
@@ -336,7 +336,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
                     etwLog.InternalError();
                 }
 
-                Debug.Assert(false, "OletxPhase1VolatileEnlistmentContainer.Committed, enlistmentList element is not an OletxVolatileEnlistment.");
+                Debug.Fail("OletxPhase1VolatileEnlistmentContainer.Committed, enlistmentList element is not an OletxVolatileEnlistment.");
                 throw new InvalidOperationException(SR.InternalError);
             }
 
@@ -368,7 +368,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
                     etwLog.InternalError();
                 }
 
-                Debug.Assert(false, "OletxPhase1VolatileEnlistmentContainer.Aborted, enlistmentList element is not an OletxVolatileEnlistment.");
+                Debug.Fail("OletxPhase1VolatileEnlistmentContainer.Aborted, enlistmentList element is not an OletxVolatileEnlistment.");
                 throw new InvalidOperationException(SR.InternalError);
             }
 

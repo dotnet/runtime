@@ -4,7 +4,7 @@
 using System.Collections;
 using System.Linq;
 using System.Resources.Extensions.BinaryFormat;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Resources.Extensions.Tests.Common;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
@@ -15,7 +15,8 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     public void ReadHeader()
     {
         BinaryFormattedObject format = new(Serialize("Hello World."));
-        format.RootRecord.ObjectId.Should().Be(1);
+        Assert.NotEqual(default, format.RootRecord.Id);
+        Assert.Equal(format.RootRecord, format[format.RootRecord.Id]);
     }
 
     [Theory]
@@ -25,9 +26,8 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     public void ReadBinaryObjectString(string testString)
     {
         BinaryFormattedObject format = new(Serialize(testString));
-        PrimitiveTypeRecord<string> stringRecord = (PrimitiveTypeRecord<string>)format[1];
-        stringRecord.ObjectId.Should().Be(1);
-        stringRecord.Value.Should().Be(testString);
+        PrimitiveTypeRecord<string> stringRecord = (PrimitiveTypeRecord<string>)format[format.RootRecord.Id];
+        Assert.Equal(testString, stringRecord.Value);
     }
 
     [Fact]
@@ -35,23 +35,20 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         BinaryFormattedObject format = new(Serialize(new Hashtable()));
 
-        ClassRecord systemClass = (ClassRecord)format[1];
+        ClassRecord systemClass = (ClassRecord)format[format.RootRecord.Id];
         VerifyHashTable(systemClass, expectedVersion: 0, expectedHashSize: 3);
 
-        ArrayRecord<object> keys = (ArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
-        keys.ObjectId.Should().Be(2);
-        keys.Length.Should().Be(0);
-        ArrayRecord<object> values = (ArrayRecord<object>)systemClass.GetSerializationRecord("Values")!;
-        values.ObjectId.Should().Be(3);
-        values.Length.Should().Be(0);
+        SZArrayRecord<SerializationRecord> keys = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
+        Assert.Equal(0, keys.Length);
+        SZArrayRecord<SerializationRecord> values = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Values")!;
+        Assert.Equal(0, values.Length);
     }
 
     private static void VerifyHashTable(ClassRecord systemClass, int expectedVersion, int expectedHashSize)
     {
-        systemClass.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
-        systemClass.ObjectId.Should().Be(1);
-        systemClass.TypeName.FullName.Should().Be("System.Collections.Hashtable");
-        systemClass.MemberNames.Should().BeEquivalentTo(
+        Assert.Equal(SerializationRecordType.SystemClassWithMembersAndTypes, systemClass.RecordType);
+        Assert.Equal("System.Collections.Hashtable", systemClass.TypeName.FullName);
+        Assert.Equal(
         [
             "LoadFactor",
             "Version",
@@ -60,13 +57,13 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
             "HashSize",
             "Keys",
             "Values"
-        ]);
+        ], systemClass.MemberNames);
 
-        systemClass.GetSingle("LoadFactor").Should().Be(0.72f);
-        systemClass.GetInt32("Version").Should().Be(expectedVersion);
-        systemClass.GetRawValue("Comparer").Should().BeNull();
-        systemClass.GetRawValue("HashCodeProvider").Should().BeNull();
-        systemClass.GetInt32("HashSize").Should().Be(expectedHashSize);
+        Assert.Equal(0.72f, systemClass.GetSingle("LoadFactor"));
+        Assert.Equal(expectedVersion, systemClass.GetInt32("Version"));
+        Assert.Null(systemClass.GetRawValue("Comparer"));
+        Assert.Null(systemClass.GetRawValue("HashCodeProvider"));
+        Assert.Equal(expectedHashSize, systemClass.GetInt32("HashSize"));
     }
 
     [Fact]
@@ -77,17 +74,15 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
             { "This", "That" }
         }));
 
-        ClassRecord systemClass = (ClassRecord)format[1];
+        ClassRecord systemClass = (ClassRecord)format[format.RootRecord.Id];
         VerifyHashTable(systemClass, expectedVersion: 1, expectedHashSize: 3);
 
-        ArrayRecord<object> keys = (ArrayRecord<object>)format[2];
-        keys.ObjectId.Should().Be(2);
-        keys.Length.Should().Be(1);
-        keys.GetArray().Single().Should().Be("This");
-        ArrayRecord<object> values = (ArrayRecord<object>)format[3];
-        values.ObjectId.Should().Be(3);
-        values.Length.Should().Be(1);
-        values.GetArray().Single().Should().Be("That");
+        SZArrayRecord<SerializationRecord> keys = (SZArrayRecord<SerializationRecord>)format[systemClass.GetArrayRecord("Keys").Id];
+        Assert.Equal(1, keys.Length);
+        Assert.Equal("This", ((PrimitiveTypeRecord<string>)keys.GetArray().Single()).Value);
+        SZArrayRecord<SerializationRecord> values = (SZArrayRecord<SerializationRecord>)format[systemClass.GetArrayRecord("Values").Id];
+        Assert.Equal(1, values.Length);
+        Assert.Equal("That", ((PrimitiveTypeRecord<string>)values.GetArray().Single()).Value);
     }
 
     [Fact]
@@ -100,14 +95,14 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
             { "That", "This" }
         }));
 
-        ClassRecord systemClass = (ClassRecord)format[1];
+        ClassRecord systemClass = (ClassRecord)format[format.RootRecord.Id];
         VerifyHashTable(systemClass, expectedVersion: 4, expectedHashSize: 7);
 
         // The collections themselves get ids first before the strings do.
         // Everything in the second keys is a string reference.
-        ArrayRecord<object> array = (ArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
-        array.ObjectId.Should().Be(2);
-        array.GetArray().Should().BeEquivalentTo(["This", "TheOther", "That"]);
+        SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
+        SerializationRecord[] array = arrayRecord.GetArray();
+        Assert.Equivalent(new string[] { "TheOther", "That", "This" }, array.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).ToArray());
     }
 
     [Fact]
@@ -120,25 +115,26 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
             { "Meeza", null }
         }));
 
-        ClassRecord systemClass = (ClassRecord)format[1];
+        ClassRecord systemClass = (ClassRecord)format[format.RootRecord.Id];
         VerifyHashTable(systemClass, expectedVersion: 4, expectedHashSize: 7);
 
         // The collections themselves get ids first before the strings do.
         // Everything in the second keys is a string reference.
-        ArrayRecord<object> keys = (ArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
-        keys.ObjectId.Should().Be(2);
-        keys.GetArray().Should().BeEquivalentTo(new object[] { "Yowza", "Youza", "Meeza" });
+        SZArrayRecord<SerializationRecord> keysRecord = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
+        SerializationRecord[] keysRecords = keysRecord.GetArray();
+        Assert.Equivalent(new string[] { "Yowza", "Youza", "Meeza" }, keysRecords.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).ToArray());
 
-        ArrayRecord<object?> values = (ArrayRecord<object?>)systemClass.GetSerializationRecord("Values")!;
-        values.ObjectId.Should().Be(3);
-        values.GetArray().Should().BeEquivalentTo(new object?[] { null, null, null });
+        SZArrayRecord<SerializationRecord?> valuesRecord = (SZArrayRecord<SerializationRecord?>)systemClass.GetSerializationRecord("Values")!;
+        SerializationRecord[] valuesRecords = valuesRecord.GetArray();
+        Assert.Equal(3, valuesRecords.Length);
+        Assert.All(valuesRecords, Assert.Null);
     }
 
     [Fact]
     public void ReadObject()
     {
         BinaryFormattedObject format = new(Serialize(new object()));
-        format[1].RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        Assert.Equal(SerializationRecordType.SystemClassWithMembersAndTypes, format[format.RootRecord.Id].RecordType);
     }
 
     [Fact]
@@ -146,7 +142,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         ValueTuple<int> tuple = new(355);
         BinaryFormattedObject format = new(Serialize(tuple));
-        format[1].RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        Assert.Equal(SerializationRecordType.SystemClassWithMembersAndTypes, format[format.RootRecord.Id].RecordType);
     }
 
     [Fact]
@@ -155,11 +151,10 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(new SimpleSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
-        @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
-        @class.ObjectId.Should().Be(1);
-        @class.TypeName.FullName.Should().Be(typeof(SimpleSerializableObject).FullName);
-        @class.TypeName.AssemblyName!.FullName.Should().Be(typeof(SimpleSerializableObject).Assembly.FullName);
-        @class.MemberNames.Should().BeEmpty();
+        Assert.Equal(SerializationRecordType.ClassWithMembersAndTypes, @class.RecordType);
+        Assert.Equal(typeof(SimpleSerializableObject).FullName, @class.TypeName.FullName);
+        Assert.Equal(typeof(SimpleSerializableObject).Assembly.FullName, @class.TypeName.AssemblyName!.FullName);
+        Assert.Empty(@class.MemberNames);
     }
 
     [Fact]
@@ -168,13 +163,12 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(new NestedSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
-        @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
-        @class.ObjectId.Should().Be(1);
-        @class.TypeName.FullName.Should().Be(typeof(NestedSerializableObject).FullName);
-        @class.TypeName.AssemblyName!.FullName.Should().Be(typeof(NestedSerializableObject).Assembly.FullName);
-        @class.MemberNames.Should().BeEquivalentTo(["_object", "_meaning"]);
-        @class.GetRawValue("_object").Should().NotBeNull();
-        @class.GetInt32("_meaning").Should().Be(42);
+        Assert.Equal(SerializationRecordType.ClassWithMembersAndTypes, @class.RecordType);
+        Assert.Equal(typeof(NestedSerializableObject).FullName, @class.TypeName.FullName);
+        Assert.Equal(typeof(NestedSerializableObject).Assembly.FullName, @class.TypeName.AssemblyName!.FullName);
+        Assert.Equal(["_object", "_meaning"], @class.MemberNames);
+        Assert.NotNull(@class.GetRawValue("_object"));
+        Assert.Equal(42, @class.GetInt32("_meaning"));
     }
 
     [Fact]
@@ -183,25 +177,25 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(new TwoIntSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
-        @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
-        @class.ObjectId.Should().Be(1);
-        @class.TypeName.FullName.Should().Be(typeof(TwoIntSerializableObject).FullName);
-        @class.TypeName.AssemblyName!.FullName.Should().Be(typeof(TwoIntSerializableObject).Assembly.FullName);
-        @class.MemberNames.Should().BeEquivalentTo(["_value", "_meaning"]);
-        @class.GetRawValue("_value").Should().Be(1970);
-        @class.GetInt32("_meaning").Should().Be(42);
+        Assert.Equal(SerializationRecordType.ClassWithMembersAndTypes, @class.RecordType);
+        Assert.Equal(typeof(TwoIntSerializableObject).FullName, @class.TypeName.FullName);
+        Assert.Equal(typeof(TwoIntSerializableObject).Assembly.FullName, @class.TypeName.AssemblyName!.FullName);
+        Assert.Equal(["_value", "_meaning"], @class.MemberNames);
+        Assert.Equal(1970, @class.GetRawValue("_value"));
+        Assert.Equal(42, @class.GetInt32("_meaning"));
     }
 
     [Fact]
     public void ReadRepeatedNestedObject()
     {
         BinaryFormattedObject format = new(Serialize(new RepeatedNestedSerializableObject()));
-        ClassRecord firstClass = (ClassRecord)format[3];
-        firstClass.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
-        ClassRecord classWithId = (ClassRecord)format[4];
-        classWithId.RecordType.Should().Be(RecordType.ClassWithId);
-        classWithId.GetRawValue("_value").Should().Be(1970);
-        classWithId.GetInt32("_meaning").Should().Be(42);
+        ClassRecord classRecord = (ClassRecord)format.RootRecord;
+        ClassRecord firstClass = classRecord.GetClassRecord("_first");
+        Assert.Equal(SerializationRecordType.ClassWithMembersAndTypes, firstClass.RecordType);
+        ClassRecord classWithId = classRecord.GetClassRecord("_second");
+        Assert.Equal(SerializationRecordType.ClassWithId, classWithId.RecordType);
+        Assert.Equal(1970, classWithId.GetRawValue("_value"));
+        Assert.Equal(42, classWithId.GetInt32("_meaning"));
     }
 
     [Fact]
@@ -211,9 +205,8 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         BinaryFormattedObject format = new(Serialize(input));
 
-        ArrayRecord<int> array = (ArrayRecord<int>)format[1];
-        array.Length.Should().Be(4);
-        array.GetArray().Should().BeEquivalentTo(input);
+        SZArrayRecord<int> array = (SZArrayRecord<int>)format[format.RootRecord.Id];
+        Assert.Equal(input, array.GetArray());
     }
 
     [Fact]
@@ -223,11 +216,9 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         BinaryFormattedObject format = new(Serialize(input));
 
-        ArrayRecord<string> array = (ArrayRecord<string>)format[1];
-        array.ObjectId.Should().Be(1);
-        array.Length.Should().Be(3);
-        array.GetArray().Should().BeEquivalentTo(input);
-        format.RecordMap.Count.Should().Be(4);
+        SZArrayRecord<string> array = (SZArrayRecord<string>)format[format.RootRecord.Id];
+        Assert.Equal(input, array.GetArray());
+        Assert.Equal(4, format.RecordMap.Count);
     }
 
     [Fact]
@@ -237,10 +228,8 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         BinaryFormattedObject format = new(Serialize(input));
 
-        ArrayRecord<string?> array = (ArrayRecord<string?>)format[1];
-        array.ObjectId.Should().Be(1);
-        array.Length.Should().Be(6);
-        array.GetArray().Should().BeEquivalentTo(input);
+        SZArrayRecord<string?> array = (SZArrayRecord<string?>)format[format.RootRecord.Id];
+        Assert.Equal(input, array.GetArray());
     }
 
     [Fact]
@@ -250,11 +239,9 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         BinaryFormattedObject format = new(Serialize(input));
 
-        ArrayRecord<string> array = (ArrayRecord<string>)format[1];
-        array.ObjectId.Should().Be(1);
-        array.Length.Should().Be(3);
-        array.GetArray().Should().BeEquivalentTo(input);
-        format.RecordMap.Count.Should().Be(3);
+        SZArrayRecord<string> array = (SZArrayRecord<string>)format[format.RootRecord.Id];
+        Assert.Equal(input, array.GetArray());
+        Assert.Equal(3, format.RecordMap.Count);
     }
 
     [Fact]
@@ -262,8 +249,8 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         BinaryFormattedObject format = new(Serialize(new ObjectWithNullableObjects()));
         ClassRecord classRecord = (ClassRecord)format.RootRecord;
-        classRecord.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
-        classRecord.TypeName.AssemblyName!.FullName.Should().Be(typeof(ObjectWithNullableObjects).Assembly.FullName);
+        Assert.Equal(SerializationRecordType.ClassWithMembersAndTypes, classRecord.RecordType);
+        Assert.Equal(typeof(ObjectWithNullableObjects).Assembly.FullName, classRecord.TypeName.AssemblyName!.FullName);
     }
 
     [Fact]
@@ -271,8 +258,8 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         BinaryFormattedObject format = new(Serialize(new NestedObjectWithNullableObjects()));
         ClassRecord classRecord = (ClassRecord)format.RootRecord;
-        classRecord.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
-        classRecord.TypeName.AssemblyName!.FullName.Should().Be(typeof(NestedObjectWithNullableObjects).Assembly.FullName);
+        Assert.Equal(SerializationRecordType.ClassWithMembersAndTypes, classRecord.RecordType);
+        Assert.Equal(typeof(NestedObjectWithNullableObjects).Assembly.FullName, classRecord.TypeName.AssemblyName!.FullName);
     }
 
     [Serializable]

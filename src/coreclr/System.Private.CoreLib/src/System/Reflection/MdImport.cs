@@ -214,7 +214,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj)
         {
-            if (!(obj is MetadataImport))
+            if (obj is not MetadataImport)
                 return false;
             return Equals((MetadataImport)obj);
         }
@@ -302,7 +302,7 @@ namespace System.Reflection
 
         #region Constructor
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr GetMetadataImport(RuntimeModule module);
+        private static extern IntPtr GetMetadataImport(RuntimeModule module);
 
         internal MetadataImport(RuntimeModule module)
         {

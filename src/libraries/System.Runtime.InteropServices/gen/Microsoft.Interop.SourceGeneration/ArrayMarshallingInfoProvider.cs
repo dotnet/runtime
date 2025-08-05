@@ -58,8 +58,8 @@ namespace Microsoft.Interop
 
             if (arrayMarshaller is null)
             {
-                // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
-                return new MissingSupportCollectionMarshallingInfo(countInfo, elementMarshallingInfo);
+                // If the array marshaller type is not available, then we cannot marshal arrays
+                return NoMarshallingInfo.Instance;
             }
 
             if (ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(arrayMarshaller)

@@ -6,18 +6,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "cdacplatformmetadata.hpp"
 #include "threads.h"
+#include "vars.hpp"
 
 extern "C"
 {
-  
 // without an extern declaration, clang does not emit this global into the object file
 extern const uintptr_t contractDescriptorPointerData[];
 
 const uintptr_t contractDescriptorPointerData[] = {
     (uintptr_t)0, // placeholder
 #define CDAC_GLOBAL_POINTER(name,value) (uintptr_t)(value),
-#include "datadescriptor.h"
+#include "datadescriptor.inc"
 };
 
 }

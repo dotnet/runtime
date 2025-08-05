@@ -22,9 +22,6 @@ namespace System.Reflection
         private readonly Dictionary<Module, NotAnnotatedStatus> _publicOnlyModules = new();
         private readonly Dictionary<MemberInfo, NullabilityState> _context = new();
 
-        internal static bool IsSupported { get; } =
-            AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported) ? isSupported : true;
-
         [Flags]
         private enum NotAnnotatedStatus
         {
@@ -70,13 +67,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(parameterInfo);
-#else
-            NetstandardHelpers.ThrowIfNull(parameterInfo, nameof(parameterInfo));
-#endif
-
-            EnsureIsSupported();
 
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
             NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
@@ -199,13 +190,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(propertyInfo);
-#else
-            NetstandardHelpers.ThrowIfNull(propertyInfo, nameof(propertyInfo));
-#endif
-
-            EnsureIsSupported();
 
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
             MethodInfo? setter = propertyInfo.GetSetMethod(true);
@@ -258,13 +243,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(EventInfo eventInfo)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(eventInfo);
-#else
-            NetstandardHelpers.ThrowIfNull(eventInfo, nameof(eventInfo));
-#endif
-
-            EnsureIsSupported();
 
             return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, CreateParser(eventInfo.GetCustomAttributesData()));
         }
@@ -279,27 +258,13 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(fieldInfo);
-#else
-            NetstandardHelpers.ThrowIfNull(fieldInfo, nameof(fieldInfo));
-#endif
-
-            EnsureIsSupported();
 
             IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();
             NullableAttributeStateParser parser = IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo) ? NullableAttributeStateParser.Unknown : CreateParser(attributes);
             NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, parser);
             CheckNullabilityAttributes(nullability, attributes);
             return nullability;
-        }
-
-        private static void EnsureIsSupported()
-        {
-            if (!IsSupported)
-            {
-                throw new InvalidOperationException(SR.NullabilityInfoContext_NotSupported);
-            }
         }
 
         private bool IsPrivateOrInternalFieldAndAnnotationDisabled(FieldInfo fieldInfo)
@@ -692,6 +657,11 @@ namespace System.Reflection
                         when index < args.Count && args[index].Value is byte elementB:
                         state = TranslateByte(elementB);
                         return true;
+#if MONO
+                    case byte[] ba when index < ba.Length:
+                        state = TranslateByte(ba[index]);
+                        return true;
+#endif
                     default:
                         return false;
                 }
@@ -702,21 +672,12 @@ namespace System.Reflection
 #if !NET
     internal static class NetstandardHelpers
     {
-        public static void ThrowIfNull(object? argument, string paramName)
-        {
-            if (argument is null)
-            {
-                Throw(paramName);
-                static void Throw(string paramName) => throw new ArgumentNullException(paramName);
-            }
-        }
-
         [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "This is finding the MemberInfo with the same MetadataToken as specified MemberInfo. If the specified MemberInfo " +
                             "exists and wasn't trimmed, then the current Type's MemberInfo couldn't have been trimmed.")]
         public static MemberInfo GetMemberWithSameMetadataDefinitionAs(this Type type, MemberInfo member)
         {
-            ThrowIfNull(member, nameof(member));
+            ArgumentNullException.ThrowIfNull(member);
 
             const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             foreach (MemberInfo myMemberInfo in type.GetMembers(all))

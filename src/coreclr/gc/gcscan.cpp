@@ -132,10 +132,12 @@ void GCScan::GcWeakPtrScanBySingleThread( int condemned, int max_gen, ScanContex
     GCToEEInterface::SyncBlockCacheWeakPtrScan(&CheckPromoted, (uintptr_t)sc, 0);
 }
 
+#ifdef FEATURE_SIZED_REF_HANDLES
 void GCScan::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
     Ref_ScanSizedRefHandles(condemned, max_gen, sc, fn);
 }
+#endif // FEATURE_SIZED_REF_HANDLES
 
 void GCScan::GcShortWeakPtrScan(int condemned, int max_gen, ScanContext* sc)
 {
@@ -174,6 +176,19 @@ void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
         Ref_ScanWeakInteriorPointersForRelocation(condemned, max_gen, sc, fn);
     }
 }
+
+#ifdef FEATURE_JAVAMARSHAL
+uint8_t** GCScan::GcProcessBridgeObjects (int condemned, int max_gen, ScanContext* sc, size_t* numObjs)
+{
+    uint8_t** bridgeObjectsToPromote = 0;
+
+    // This is only called during mark phase.
+    _ASSERTE (sc->promotion);
+    bridgeObjectsToPromote = Ref_ScanBridgeObjects (condemned, max_gen, sc, numObjs);
+
+    return bridgeObjectsToPromote;
+}
+#endif //FEATURE_JAVAMARSHAL
 
 /*
  * Scan all handle roots in this 'namespace' for profiling
@@ -231,28 +246,6 @@ void GCScan::GcPromotionsGranted (int condemned, int max_gen, ScanContext* sc)
     Ref_AgeHandles(condemned, max_gen, sc);
     if (!IsServerHeap() || sc->thread_number == 0)
         GCToEEInterface::SyncBlockCachePromotionsGranted(max_gen);
-}
-
-
-size_t GCScan::AskForMoreReservedMemory (size_t old_size, size_t need_size)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if !defined(FEATURE_CORECLR) && !defined(FEATURE_NATIVEAOT)
-    // call the host....
-
-    IGCHostControl *pGCHostControl = CorHost::GetGCHostControl();
-
-    if (pGCHostControl)
-    {
-        size_t new_max_limit_size = need_size;
-        pGCHostControl->RequestVirtualMemLimit (old_size,
-                                                (SIZE_T*)&new_max_limit_size);
-        return new_max_limit_size;
-    }
-#endif
-
-    return old_size + need_size;
 }
 
 void GCScan::VerifyHandleTable(int condemned, int max_gen, ScanContext* sc)

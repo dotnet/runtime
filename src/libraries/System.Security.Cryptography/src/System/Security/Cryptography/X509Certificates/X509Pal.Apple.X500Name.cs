@@ -5,7 +5,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal partial class X509Pal
     {
-        private sealed partial class AppleX509Pal : ManagedX509ExtensionProcessor, IX509Pal
+        private sealed partial class AppleX509Pal : IX509Pal
         {
             public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
             {

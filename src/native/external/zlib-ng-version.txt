@@ -1,10 +1,12 @@
-v2.1.6
-74253725f884e2424a0dd8ae3f69896d5377f325
+v2.2.4
+860e4cff7917d93f54f5d7f0bc1d0e8b1a3cb988
 
-https://github.com/zlib-ng/zlib-ng/releases/tag/2.1.6
+https://github.com/zlib-ng/zlib-ng/releases/tag/2.2.4
 
 We have removed the following folders from our local copy as these files are not needed for our compilation:
 
-- zlib-ng/docs/
+- zlib-ng/.github/
+- zlib-ng/doc/
 - zlib-ng/test/
 - zlib-ng/arch/s390/self-hosted-builder/
+

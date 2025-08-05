@@ -3,9 +3,11 @@
 // Tests GC.Collect(0)
 
 using System;
+using Xunit;
 
 public class Test_Collect0 {
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 
 		int[] array = new int[25];
 		int agen1 = GC.GetGeneration(array);

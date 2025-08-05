@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -18,16 +20,16 @@ namespace System.PrivateUri.Tests
                 if (PlatformDetection.IsWindows)
                 {
                     yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1/path2/path3/path4", @"/path1/path2/path3/path4", @"file:///path1/path2/path3/path4", "" };
-                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1/path2/path3", @"/path1/path2/path3", @"file:///path1/path2/path3", ""};
-                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1/path2/path3/path4/", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1/path2/path3/path4/", "localhost"};
-                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1/path2/path3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1/path2/path3", "randomhost"};
+                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1/path2/path3", @"/path1/path2/path3", @"file:///path1/path2/path3", "" };
+                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1/path2/path3/path4/", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1/path2/path3/path4/", "localhost" };
+                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1/path2/path3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1/path2/path3", "randomhost" };
                 }
                 else
                 {
                     yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", @"/path1\path2/path3\path4", @"file:///path1%5Cpath2/path3%5Cpath4", "" };
-                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"/path1\path2\path3", @"file:///path1%5Cpath2%5Cpath3", ""};
-                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1%5Cpath2/path3%5Cpath4%5C", "localhost"};
-                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1%5Cpath2%5Cpath3", "randomhost"};
+                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"/path1\path2\path3", @"file:///path1%5Cpath2%5Cpath3", "" };
+                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1%5Cpath2/path3%5Cpath4%5C", "localhost" };
+                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1%5Cpath2%5Cpath3", "randomhost" };
                 }
             }
         }
@@ -729,6 +731,25 @@ namespace System.PrivateUri.Tests
             Assert.Equal(Combined, new Uri(baseUri, RelativeUriString).AbsoluteUri);
         }
 
+        [Theory]
+        [InlineData("http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "bar")]
+        [InlineData(@"\\nas\Testue\testImage.jpg", "file://nas/Testue/testImage.jpg", "file://nas/Testue/testImage.jpg", "nas")]
+        // Tests that internal Uri info were properly applied during a Combine operation when URI contains non-ascii character.
+        [InlineData("http://bar/Test\u00fc/testImage.jpg", "http://bar/Test\u00fc/testImage.jpg", "http://bar/Test%C3%BC/testImage.jpg", "bar")]
+        [InlineData("\\\\nas\\Test\u00fc\\testImage.jpg", "file://nas/Test\u00fc/testImage.jpg", "file://nas/Test%C3%BC/testImage.jpg", "nas")]
+        public static void Uri_CombineWithAbsoluteUriResultInAbsoluteSchemaIgnoringOriginalBase(string relativeUri, string expectedUri, string expectedAbsoluteUri, string expectedHost)
+        {
+            string baseUriString = "combine-scheme://foo";
+
+            var baseUri = new Uri(baseUriString, UriKind.Absolute);
+            var uri = new Uri(relativeUri);
+            var resultUri = new Uri(baseUri, uri);
+
+            Assert.Equal(expectedUri, resultUri.ToString());
+            Assert.Equal(expectedAbsoluteUri, resultUri.AbsoluteUri);
+            Assert.Equal(expectedHost, resultUri.Host);
+        }
+
         [Fact]
         public static void Uri_CachesIdnHost()
         {
@@ -793,9 +814,10 @@ namespace System.PrivateUri.Tests
                 // Unix absolute file path
                 yield return new object[] { "/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
                 yield return new object[] { "/a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
+                yield return new object[] { "\t/\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
             }
 
-            // Absolute fie path
+            // Absolute file path
             yield return new object[] { "file:///\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
             yield return new object[] { "file:///a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
 
@@ -803,6 +825,7 @@ namespace System.PrivateUri.Tests
             yield return new object[] { "file://C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
             yield return new object[] { "file:///C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
             yield return new object[] { "C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "\tC:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
 
             // UNC
             yield return new object[] { "\\\\\u00FCri/", "file://\u00FCri/", "/", "file://\u00FCri/", "\\\\\u00FCri\\" };
@@ -917,6 +940,65 @@ namespace System.PrivateUri.Tests
                 // ISpanFormattable.TryFormat
                 Assert.False(((ISpanFormattable)func()).TryFormat(formatted, out charsWritten, default, null));
                 Assert.Equal(0, charsWritten);
+            }
+        }
+
+        [Fact]
+        public static void IsLoopback()
+        {
+            string[] validLoopback =
+            [
+                "localhost", "Localhost", "LOCALHOST",
+                "127.0.0.1", "127.4.5.6",
+                "[::1]", "[0:0:0:0:0:0:0:1]", "[0:0:0:0:0:0:127.0.0.1]", "[0:0:0:0:0:FFFF:127.0.0.1]"
+            ];
+
+            string[] invalidLoopback =
+            [
+                "something", "ELSE", "dot.net",
+                "128.0.0.1",
+                "[::2]", "[0:0:0:0:0:1234:127.0.0.1]"
+            ];
+
+            foreach (bool expected in new[] { false, true })
+            {
+                foreach (string scheme in new[] { "http", "https" })
+                {
+                    foreach (string host in (expected ? validLoopback : invalidLoopback))
+                    {
+                        foreach (bool hasPort in new[] { false, true })
+                        {
+                            Assert.Equal(expected, new Uri($"{scheme}://{host}{(hasPort ? ":12345" : "")}").IsLoopback);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("Manual only. This test takes a few minutes to execute.")]
+        public static async Task VeryLongInputs_ThrowOOM()
+        {
+            // This string will expand 6x when escaped (12 = 6x growth * 2 chars in the string)
+            string longString = string.Concat(Enumerable.Repeat("\uD83C\uDF49", int.MaxValue / 12));
+
+            Task userInfo = Task.Run(() => Test($"http://{longString}@host/path"));
+            Task path = Task.Run(() => Test($"http://host/{longString}"));
+            Task query = Task.Run(() => Test($"http://host/path?{longString}"));
+            Task fragment = Task.Run(() => Test($"http://host/path?foo=bar#{longString}"));
+
+            await userInfo;
+            await path;
+            await query;
+            await fragment;
+
+            static void Test(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                Assert.Throws<OutOfMemoryException>(() => uri.AbsoluteUri);
+
+                Assert.True(Uri.TryCreate(uriString, UriKind.Absolute, out uri));
+                Assert.Throws<OutOfMemoryException>(() => uri.AbsoluteUri);
             }
         }
     }

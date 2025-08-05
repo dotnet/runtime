@@ -536,7 +536,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95594", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void AllCulturesTest()
         {
             TimeOnly timeOnly = new TimeOnly((DateTime.Now.TimeOfDay.Ticks / TimeSpan.TicksPerMinute) * TimeSpan.TicksPerMinute);

@@ -20,7 +20,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("roots", "rootp", "rooti");
+            Assert.Equal(["roots", "rootp", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -40,7 +40,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -57,7 +57,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("values", "roots", "valuep", "rootp", "valuei", "rooti");
+            Assert.Equal(["values", "roots", "valuep", "rootp", "valuei", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -74,7 +74,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("rootp", "rooti");
+            Assert.Equal(["rootp", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -93,7 +93,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             Stream stream = Serialize(root);
             Deserialize(stream, surrogateSelector: selector);
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("roots", "rootp", "rooti");
+            Assert.Equal(["roots", "rootp", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -113,7 +113,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -130,7 +130,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("values", "valuep", "rootp", "valuei", "rooti");
+            Assert.Equal(["values", "valuep", "rootp", "valuei", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -152,7 +152,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             Stream stream = Serialize(root);
             Deserialize(stream, surrogateSelector: selector);
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -171,7 +171,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             Stream stream = Serialize(root);
             Deserialize(stream, surrogateSelector: selector);
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("values", "roots", "valuep", "rootp", "valuei", "rooti");
+            Assert.Equal(["values", "roots", "valuep", "rootp", "valuei", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -194,7 +194,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -214,7 +214,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -231,7 +231,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("values", "roots", "valuep", "rootp", "valuei", "rooti");
+            Assert.Equal(["values", "roots", "valuep", "rootp", "valuei", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -249,7 +249,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("rootp", "rooti");
+            Assert.Equal(["rootp", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -275,7 +275,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             {
                 Deserialize(stream, surrogateSelector: selector);
                 List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-                deserializeOrder.Should().Equal("roots", "rootp", "rooti");
+                Assert.Equal(["roots", "rootp", "rooti"], deserializeOrder);
             }
         }
         finally
@@ -297,7 +297,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -315,7 +315,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal("values", "valuep", "rootp", "valuei", "rooti");
+            Assert.Equal(["values", "valuep", "rootp", "valuei", "rooti"], deserializeOrder);
         }
         finally
         {
@@ -340,7 +340,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -361,7 +361,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -382,7 +382,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -408,7 +408,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -429,7 +429,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -452,7 +452,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             Stream stream = Serialize(root);
             Deserialize(stream, surrogateSelector: selector);
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -473,7 +473,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -494,7 +494,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -518,7 +518,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -539,7 +539,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -560,7 +560,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -582,7 +582,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -603,14 +603,13 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             Stream stream = Serialize(root);
             if (IsBinaryFormatterDeserializer)
             {
-                Action action = () => Deserialize(stream, surrogateSelector: selector);
-                action.Should().Throw<SerializationException>();
+                Assert.Throws<SerializationException>(() => Deserialize(stream, surrogateSelector: selector));
             }
             else
             {
                 Deserialize(stream, surrogateSelector: selector);
                 List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-                deserializeOrder.Should().Equal("childs", "roots", "childp", "rootp", "childi", "rooti");
+                Assert.Equal(["childs", "roots", "childp", "rootp", "childi", "rooti"], deserializeOrder);
             }
         }
         finally
@@ -633,7 +632,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -655,7 +654,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -681,7 +680,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -703,7 +702,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -725,7 +724,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -752,7 +751,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -774,7 +773,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -798,7 +797,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             Stream stream = Serialize(root);
             Deserialize(stream, surrogateSelector: selector);
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -820,7 +819,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -842,7 +841,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -867,7 +866,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -889,7 +888,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -911,7 +910,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -934,7 +933,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -956,14 +955,13 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
             Stream stream = Serialize(root);
             if (IsBinaryFormatterDeserializer)
             {
-                Action action = () => Deserialize(stream, surrogateSelector: selector);
-                action.Should().Throw<SerializationException>();
+                Assert.Throws<SerializationException>(() => Deserialize(stream, surrogateSelector: selector));
             }
             else
             {
                 Deserialize(stream, surrogateSelector: selector);
                 List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-                deserializeOrder.Should().Equal("child2s", "child1s", "roots", "child2p", "child1p", "rootp", "child2i", "child1i", "rooti");
+                Assert.Equal(["child2s", "child1s", "roots", "child2p", "child1p", "rootp", "child2i", "child1i", "rooti"], deserializeOrder);
             }
         }
         finally
@@ -987,7 +985,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {
@@ -1010,7 +1008,7 @@ public abstract class EventOrderTests<T> : SerializationTest<T> where T : ISeria
         {
             Deserialize(Serialize(root));
             List<string> deserializeOrder = BinaryTreeNodeWithEventsTracker.DeserializationOrder;
-            deserializeOrder.Should().Equal(expected);
+            Assert.Equal(expected, deserializeOrder);
         }
         finally
         {

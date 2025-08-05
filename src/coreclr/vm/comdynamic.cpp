@@ -184,7 +184,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethodSpec(QCall::ModuleHandle pMod
 
     // Define the Method
     IfFailThrow( pRCW->GetEmitter()->DefineMethodSpec(tkParent,         //ParentTypeDef
-                                                      (PCCOR_SIGNATURE)pSignature, //Blob value of a COM+ signature
+                                                      (PCCOR_SIGNATURE)pSignature, //Blob value of a signature
                                                       sigLength,            //Size of the signature blob
                                                       &memberE) );              //[OUT]methodToken
 
@@ -208,7 +208,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethod(QCall::ModuleHandle pModule,
     IfFailThrow( pRCW->GetEmitter()->DefineMethod(tkParent,        //ParentTypeDef
                                                   wszName,         //Name of Member
                                                   attributes,               //Member Attributes (public, etc);
-                                                  (PCCOR_SIGNATURE)pSignature,  //Blob value of a COM+ signature
+                                                  (PCCOR_SIGNATURE)pSignature,  //Blob value of a signature
                                                   sigLength,            //Size of the signature blob
                                                   0,                        //Code RVA
                                                   miIL | miManaged,         //Implementation Flags is default to managed IL
@@ -347,7 +347,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
 
     unsigned codeSizeAligned     = fatHeader.GetCodeSize();
     if (moreSections)
-        codeSizeAligned = AlignUp(codeSizeAligned, 4); // to insure EH section aligned
+        codeSizeAligned = AlignUp(codeSizeAligned, 4); // to ensure EH section aligned
     unsigned headerSize          = COR_ILMETHOD::Size(&fatHeader, numExceptions != 0);
 
     //Create the exception handlers.
@@ -385,19 +385,15 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
     UINT32 totalSize = totalSizeSafe.Value();
     ICeeGenInternal* pGen = pRCW->GetCeeGen();
     BYTE* buf = NULL;
-    ULONG methodRVA;
-    pGen->AllocateMethodBuffer(totalSize, &buf, &methodRVA);
-    if (buf == NULL)
-        COMPlusThrowOM();
+    ULONG methodRVA = 0;
+    IfFailThrow(pGen->AllocateMethodBuffer(totalSize, &buf, &methodRVA));
 
     _ASSERTE(buf != NULL);
-    _ASSERTE((((size_t) buf) & 3) == 0);   // header is dword aligned
+    _ASSERTE((((size_t) buf) & (sizeof(DWORD) - 1)) == 0);   // header is dword aligned
+    _ASSERTE(methodRVA != 0); // Method RVAs should never be 0, since that is reserved in ECMA-335.
 
-#ifdef _DEBUG
-    BYTE* endbuf = &buf[totalSize];
-#endif
-
-    BYTE * startBuf = buf;
+    INDEBUG(BYTE* endbuf = &buf[totalSize]);
+    BYTE* startBuf = buf;
 
     // Emit the header
     buf += COR_ILMETHOD::Emit(headerSize, &fatHeader, moreSections, buf);
@@ -560,7 +556,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineProperty(QCall::ModuleHandle pModul
             tkParent,                       // ParentTypeDef
             wszName,                        // Name of Member
             attr,                     // property Attributes (prDefaultProperty, etc);
-            (PCCOR_SIGNATURE)pSignature,    // Blob value of a COM+ signature
+            (PCCOR_SIGNATURE)pSignature,    // Blob value of a signature
             sigLength,                // Size of the signature blob
             ELEMENT_TYPE_VOID,              // don't specify the default value
             0,                              // no default value
@@ -894,9 +890,6 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
         DomainAssembly* pDomainAssembly = pAssembly->GetDomainAssembly();
 
         DWORD actualFlags;
-        actualFlags =  ((DWORD)pDomainAssembly->GetDebuggerInfoBits() & mask) | flags;
-        pDomainAssembly->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
-
         actualFlags = ((DWORD)pAssembly->GetDebuggerInfoBits() & mask) | flags;
         pAssembly->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);
 
@@ -910,6 +903,12 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
     {
         Assembly* pAssembly = pModule->GetAssembly();
         pAssembly->UpdateCachedFriendAssemblyInfo();
+    }
+
+    // System.Runtime.CompilerServices.RuntimeCompatibilityAttribute processing
+    if (((strcmp(szNamespace, RUNTIMECOMPATIBILITY_TYPE_NAMESPACE) == 0) && (strcmp(szName, RUNTIMECOMPATIBILITY_TYPE_NAME) == 0)))
+    {
+        pModule->UpdateCachedIsRuntimeWrapExceptions();
     }
 }
 

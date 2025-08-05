@@ -21,7 +21,14 @@ namespace System.Text.Json.Serialization.Converters
         protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
             TDictionary collection = (TDictionary)state.Current.ReturnValue!;
+
+            if (!options.AllowDuplicateProperties && collection.Contains(key))
+            {
+                ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(key);
+            }
+
             collection[key] = value;
+
             if (IsValueType)
             {
                 state.Current.ReturnValue = collection;
@@ -45,6 +52,7 @@ namespace System.Text.Json.Serialization.Converters
             if (state.Current.CollectionEnumerator == null)
             {
                 enumerator = value.GetEnumerator();
+                state.Current.CollectionEnumerator = enumerator;
                 if (!enumerator.MoveNext())
                 {
                     return true;
@@ -62,7 +70,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (ShouldFlush(ref state, writer))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 
@@ -87,7 +94,6 @@ namespace System.Text.Json.Serialization.Converters
                 object? element = enumerator.Value;
                 if (!_valueConverter.TryWrite(writer, element, options, ref state))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 

@@ -197,6 +197,9 @@ public class LibraryBuilderTask : AppBuilderTask
             }
         }
 
+        // Add dependencies of any runtime libraries explicitly after the runtime libraries
+        // to ensure that dependencies show up on the linker command line after their dependents.
+        List<string> bundledStaticLibs = [];
         foreach (ITaskItem lib in RuntimeLibraries)
         {
             string ext = Path.GetExtension(lib.ItemSpec);
@@ -205,11 +208,17 @@ public class LibraryBuilderTask : AppBuilderTask
             {
                 libs.Add(lib.ItemSpec);
             }
+            else if (lib.ItemSpec.Contains("brotli"))
+            {
+                bundledStaticLibs.Add(lib.ItemSpec);
+            }
             else
             {
                 sources.Add(lib.ItemSpec);
             }
         }
+
+        sources.AddRange(bundledStaticLibs);
 
         foreach (ITaskItem item in ExtraLinkerArguments)
         {
@@ -280,7 +289,7 @@ public class LibraryBuilderTask : AppBuilderTask
         {
             string dataSymbol = "NULL";
             string dataLenSymbol = "0";
-            StringBuilder externBundledResourcesSymbols = new ("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
+            StringBuilder externBundledResourcesSymbols = new("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
             if (BundledRuntimeConfig?.ItemSpec != null)
             {
                 dataSymbol = BundledRuntimeConfig.GetMetadata("DataSymbol");
@@ -335,8 +344,14 @@ public class LibraryBuilderTask : AppBuilderTask
         buildOptions.CompilerArguments.Add("-D HOST_ANDROID=1");
         buildOptions.CompilerArguments.Add("-fPIC");
         buildOptions.CompilerArguments.Add(IsSharedLibrary ? $"-shared -o {libraryName}" : $"-o {libraryName}");
-        buildOptions.IncludePaths.Add(MonoRuntimeHeaders);
+        buildOptions.IncludePaths.AddRange(MonoRuntimeHeaders);
         buildOptions.LinkerArguments.Add($"--soname={libraryName}");
+
+        // Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
+        // This is required only for 64-bit binaries.
+        if (RuntimeIdentifier == "android-arm64" || RuntimeIdentifier == "android-x64") {
+            buildOptions.LinkerArguments.Add($"-z,max-page-size=16384");
+        }
         buildOptions.LinkerArguments.AddRange(linkerArgs);
         buildOptions.NativeLibraryPaths.AddRange(libs);
         buildOptions.Sources.AddRange(sources);
@@ -371,7 +386,7 @@ public class LibraryBuilderTask : AppBuilderTask
         buildOptions.CompilerArguments.Add(IsSharedLibrary ? $"-dynamiclib -o {libraryName}" : $"-o {libraryName}");
         buildOptions.CompilerArguments.Add("-D HOST_APPLE_MOBILE=1");
         buildOptions.CompilerArguments.Add("-D FORCE_AOT=1");
-        buildOptions.IncludePaths.Add(MonoRuntimeHeaders);
+        buildOptions.IncludePaths.AddRange(MonoRuntimeHeaders);
         buildOptions.NativeLibraryPaths.AddRange(libs);
         buildOptions.Sources.AddRange(sources);
         buildOptions.Sources.Add("preloaded-assemblies.c");

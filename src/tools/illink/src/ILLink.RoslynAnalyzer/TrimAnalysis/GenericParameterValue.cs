@@ -9,22 +9,31 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// This is a System.Type value which represents generic parameter (basically result of typeof(T))
-	/// Its actual type is unknown, but it can have annotations.
-	/// </summary>
-	internal partial record GenericParameterValue
-	{
-		public GenericParameterValue (ITypeParameterSymbol typeParameterSymbol) => GenericParameter = new (typeParameterSymbol);
+    /// <summary>
+    /// This is a System.Type value which represents generic parameter (basically result of typeof(T))
+    /// Its actual type is unknown, but it can have annotations.
+    /// </summary>
+    internal partial record GenericParameterValue
+    {
+        public GenericParameterValue(ITypeParameterSymbol typeParameterSymbol, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        {
+            GenericParameter = new(typeParameterSymbol);
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes => GenericParameter.TypeParameterSymbol.GetDynamicallyAccessedMemberTypes ();
+        public GenericParameterValue(ITypeParameterSymbol typeParameterSymbol)
+            : this(typeParameterSymbol, typeParameterSymbol.GetDynamicallyAccessedMemberTypes())
+        {
+        }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { GenericParameter.TypeParameterSymbol.Name, GenericParameter.TypeParameterSymbol.ContainingSymbol.GetDisplayName () };
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
+            => new string[] { GenericParameter.TypeParameterSymbol.Name, GenericParameter.TypeParameterSymbol.ContainingSymbol.GetDisplayName() };
 
-		public override string ToString ()
-			=> this.ValueToString (GenericParameter.TypeParameterSymbol, DynamicallyAccessedMemberTypes);
-	}
+        public override SingleValue DeepCopy() => this; // This value is immutable
+
+        public override string ToString()
+            => this.ValueToString(GenericParameter.TypeParameterSymbol, DynamicallyAccessedMemberTypes);
+    }
 }

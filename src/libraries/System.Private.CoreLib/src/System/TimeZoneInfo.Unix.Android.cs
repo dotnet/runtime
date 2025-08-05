@@ -128,6 +128,8 @@ namespace System
         // Defaults to Utc if local time zone cannot be found
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
+            if (Invariant) return Utc;
+
             string? id = Interop.Sys.GetDefaultTimeZone();
             if (!string.IsNullOrEmpty(id))
             {
@@ -144,6 +146,7 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
+            Debug.Assert(!Invariant);
 
             value = id == LocalId ? GetLocalTimeZoneCore() : GetTimeZone(id, id);
 
@@ -224,10 +227,10 @@ namespace System
                 // On Android, time zone data is found in tzdata
                 // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
                 // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
-                string[] tzFileDirList = new string[] {GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
+                ReadOnlySpan<string> tzFileDirList = [ GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
                                                        GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, Fallback location if the above isn't found or corrupted
                                                        Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
-                                                       Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory};
+                                                       Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory ];
                 foreach (var tzFileDir in tzFileDirList)
                 {
                     string tzFilePath = Path.Combine(tzFileDir, TimeZoneFileName);
@@ -343,7 +346,7 @@ namespace System
                 ReadIndex(tzFileDir, fs, indexOffset, dataOffset);
             }
 
-            private static void LoadHeader(Span<byte> buffer, out int indexOffset, out int dataOffset)
+            private static void LoadHeader(ReadOnlySpan<byte> buffer, out int indexOffset, out int dataOffset)
             {
                 // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
                 // since we're not differentiating on year, check for tzdata and the ending \0
@@ -441,6 +444,11 @@ namespace System
 
             public string[] GetTimeZoneIds()
             {
+                if (Invariant)
+                {
+                    return new string[] { "UTC" };
+                }
+
                 int numTimeZoneIDs = _isBackwards.AsSpan(0, _ids.Length).Count(false);
                 string[] nonBackwardsTZIDs = new string[numTimeZoneIDs];
                 var index = 0;

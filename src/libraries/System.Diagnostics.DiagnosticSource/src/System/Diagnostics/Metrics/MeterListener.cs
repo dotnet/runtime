@@ -36,7 +36,13 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Creates a MeterListener object.
         /// </summary>
-        public MeterListener() { }
+        public MeterListener()
+        {
+#if NET9_0_OR_GREATER
+            // This ensures that the static Meter gets created before any listeners exist.
+            RuntimeMetrics.EnsureInitialized();
+#endif
+        }
 
         /// <summary>
         /// Callbacks to get notification when an instrument is published.
@@ -285,7 +291,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        // Publish is called from Instrument.Publish
+        // GetAllListeners is called from Instrument.Publish inside Instrument.SyncObject lock.
         internal static List<MeterListener>? GetAllListeners() => s_allStartedListeners.Count == 0 ? null : new List<MeterListener>(s_allStartedListeners);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

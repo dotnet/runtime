@@ -21,6 +21,7 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = false;
         internal const bool CanEncryptEmptyMessage = false;
+        internal const bool CanGenerateCustomAlerts = false;
 
         public static void VerifyPackageInfo()
         {
@@ -39,9 +40,10 @@ namespace System.Net.Security
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
+            out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, out consumed, sslAuthenticationOptions);
         }
 
         public static ProtocolToken InitializeSecurityContext(
@@ -49,9 +51,10 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? context,
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
+            out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, out consumed, sslAuthenticationOptions);
         }
 
         public static ProtocolToken Renegotiate(
@@ -177,9 +180,12 @@ namespace System.Net.Security
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
+            out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             ProtocolToken token = default;
+            consumed = 0;
+
             try
             {
                 SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
@@ -194,6 +200,7 @@ namespace System.Net.Security
                 {
                     sslContext!.Write(inputBuffer);
                 }
+                consumed = inputBuffer.Length;
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
 
@@ -224,6 +231,7 @@ namespace System.Net.Security
         {
             // There doesn't seem to be an exposed API for writing an alert.
             // The API seems to assume that all alerts are generated internally.
+            Debug.Assert(CanGenerateCustomAlerts);
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 

@@ -292,7 +292,7 @@ namespace System.IO
 
             private ManualResetValueTaskSourceCore<bool> _waitSource; // mutable struct, do not make this readonly
             private CancellationTokenRegistration _waitSourceCancellation;
-            private int _hasWaiter;
+            private bool _hasWaiter;
 
             ValueTaskSourceStatus IValueTaskSource.GetStatus(short token) => _waitSource.GetStatus(token);
 
@@ -300,7 +300,7 @@ namespace System.IO
 
             void IValueTaskSource.GetResult(short token)
             {
-                Debug.Assert(_hasWaiter == 0);
+                Debug.Assert(!_hasWaiter);
 
                 // Clean up the registration.  This will wait for any in-flight cancellation to complete.
                 _waitSourceCancellation.Dispose();
@@ -312,7 +312,7 @@ namespace System.IO
 
             public void SignalWaiter()
             {
-                if (Interlocked.Exchange(ref _hasWaiter, 0) == 1)
+                if (Interlocked.Exchange(ref _hasWaiter, false))
                 {
                     _waitSource.SetResult(true);
                 }
@@ -322,7 +322,7 @@ namespace System.IO
             {
                 Debug.Assert(cancellationToken.IsCancellationRequested);
 
-                if (Interlocked.Exchange(ref _hasWaiter, 0) == 1)
+                if (Interlocked.Exchange(ref _hasWaiter, false))
                 {
                     _waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken)));
                 }
@@ -330,13 +330,13 @@ namespace System.IO
 
             public void Reset()
             {
-                if (_hasWaiter != 0)
+                if (_hasWaiter)
                 {
                     throw new InvalidOperationException("Concurrent use is not supported");
                 }
 
                 _waitSource.Reset();
-                Volatile.Write(ref _hasWaiter, 1);
+                Volatile.Write(ref _hasWaiter, true);
             }
 
             public void Wait()

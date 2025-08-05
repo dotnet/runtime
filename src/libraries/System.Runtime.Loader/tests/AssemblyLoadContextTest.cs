@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using System.Reflection.Emit;
+using Xunit;
 
 namespace System.Runtime.Loader.Tests
 {
@@ -109,8 +107,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Throws<FileNotFoundException>(() => loadContext.LoadFromAssemblyName(asmName));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Corelib does not exist on disc for Browser builds")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
             var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
@@ -188,7 +185,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains("\"Default\"", alc.ToString());
             Assert.Contains("System.Runtime.Loader.DefaultAssemblyLoadContext", alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
-            Assert.Contains(Assembly.GetCallingAssembly(), alc.Assemblies);
+            Assert.Contains(typeof(int).Assembly, alc.Assemblies);
         }
 
         [Fact]
@@ -232,6 +229,51 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains(typeof(ResourceAssemblyLoadContext).ToString(), alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
             Assert.Empty(alc.Assemblies);
+        }
+
+        class RefEmitLoadContext : AssemblyLoadContext
+        {
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                return AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
+        public static void LoadRefEmitAssembly()
+        {
+            RefEmitLoadContext alc = new();
+            alc.Resolving += (sender, assembly) => { Assert.Fail("Resolving event not expected"); return null; };
+            Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
+            Assert.IsType<InvalidOperationException>(error.InnerException);
+        }
+
+        class NonRuntimeAssemblyContext : AssemblyLoadContext
+        {
+            class NonRuntimeAssembly : Assembly
+            {
+                private AssemblyName _name;
+
+                public NonRuntimeAssembly(AssemblyName name) => _name = name;
+
+                public override AssemblyName GetName(bool copiedName) => _name;
+            }
+
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                return new NonRuntimeAssembly(assemblyName);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
+        public static void LoadNonRuntimeAssembly()
+        {
+            NonRuntimeAssemblyContext alc = new();
+            alc.Resolving += (sender, assembly) => { Assert.Fail("Resolving event not expected"); return null; };
+            Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
+            Assert.IsType<InvalidOperationException>(error.InnerException);
         }
     }
 }

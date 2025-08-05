@@ -216,8 +216,8 @@ def main(main_args):
                 f.write("\n\n")
 
         if len(remaining) > 0:
-            f.write("# {} uncategorized/unreduced examples remain\n".format(len(remaining)))
-            for ex in remaining:
+            f.write("# {} uncategorized/unreduced examples remain{}\n".format(len(remaining), " (10 shown)" if len(remaining) > 10 else ""))
+            for ex in remaining[:10]:
                 f.write("* `{}`: {}\n".format(ex['Seed'], ex['Kind']))
                 if ex['Message'] and len(ex['Message'].strip()) > 0:
                     f.write("```scala\n")

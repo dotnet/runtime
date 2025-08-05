@@ -26,9 +26,9 @@ namespace System.Collections.Generic
         internal int _size; // Do not rename (binary serialization)
         internal int _version; // Do not rename (binary serialization)
 
-#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
+#pragma warning disable CA1825, IDE0300 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly T[] s_emptyArray = new T[0];
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
 
         // Constructs a List. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
@@ -461,7 +461,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="indexToInsert">Index of the first insertion.</param>
         /// <param name="insertionCount">How many elements will be inserted.</param>
-        private void GrowForInsertion(int indexToInsert, int insertionCount = 1)
+        internal void GrowForInsertion(int indexToInsert, int insertionCount = 1)
         {
             Debug.Assert(insertionCount > 0);
 
@@ -1184,8 +1184,6 @@ namespace System.Collections.Generic
 
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
-            internal static IEnumerator<T>? s_emptyEnumerator;
-
             private readonly List<T> _list;
             private int _index;
             private readonly int _version;

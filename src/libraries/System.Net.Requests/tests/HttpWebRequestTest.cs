@@ -1427,6 +1427,26 @@ namespace System.Net.Tests
             Assert.Equal("bytes=1-5", request.Headers["Range"]);
         }
 
+        [Theory, MemberData(nameof(EchoServers))]
+        public void Range_AddTwice_Success(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            request.AddRange(1, 5);
+            request.AddRange(11, 15);
+            Assert.Equal("bytes=1-5,11-15", request.Headers["Range"]);
+        }
+
+        [Theory, MemberData(nameof(EchoServers))]
+        public void Range_AddMultiple_Success(Uri remoteServer)
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            request.AddRange(int.MaxValue);
+            request.AddRange(100, 200);
+            request.AddRange(long.MaxValue);
+            request.AddRange(1000L, 2000L);
+            Assert.Equal("bytes=2147483647-,100-200,9223372036854775807-,1000-2000", request.Headers["Range"]);
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -2095,6 +2115,15 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public async Task SendHttpPostRequest_BufferingDisabledWithInvalidHost_ShouldThrow()
+        {
+            HttpWebRequest request = WebRequest.CreateHttp("http://anything-unusable-blabla");
+            request.Method = "POST";
+            request.AllowWriteStreamBuffering = false;
+            await Assert.ThrowsAnyAsync<WebException>(() => request.GetRequestStreamAsync());
+        }
+
+        [Fact]
         public async Task SendHttpPostRequest_BufferingDisabled_ConnectionShouldStartWithRequestStream()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -2318,33 +2347,70 @@ namespace System.Net.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
         {
-            await RemoteExecutor.Invoke(async (async) =>
+            await RemoteExecutor.Invoke(async isAsync =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
                 await LoopbackServer.CreateClientAndServerAsync(
-                async (uri) =>
+                async uri =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    HttpWebRequest.DefaultMaximumErrorResponseLength = 5;
-                    var exception = 
-                        await Assert.ThrowsAsync<WebException>(() => bool.Parse(async) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
+                    HttpWebRequest.DefaultMaximumErrorResponseLength = 1; // 1 KB
+                    WebException exception =
+                        await Assert.ThrowsAsync<WebException>(() => bool.Parse(isAsync) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
                     tcs.SetResult();
                     Assert.NotNull(exception.Response);
-                    using (var responseStream = exception.Response.GetResponseStream())
+                    using (Stream responseStream = exception.Response.GetResponseStream())
                     {
-                        var buffer = new byte[10];
-                        int readLen = responseStream.Read(buffer, 0, buffer.Length);
-                        Assert.Equal(5, readLen);
-                        Assert.Equal(new string('a', 5), Encoding.UTF8.GetString(buffer[0..readLen]));
-                        Assert.Equal(0, responseStream.Read(buffer));
+                        byte[] buffer = new byte[10 * 1024];
+                        int totalReadLen = 0;
+                        int readLen = 0;
+                        while ((readLen = responseStream.Read(buffer, readLen, buffer.Length - readLen)) > 0)
+                        {
+                            totalReadLen += readLen;
+                        }
+
+                        Assert.Equal(1024, totalReadLen);
+                        Assert.Equal(new string('a', 1024), Encoding.UTF8.GetString(buffer[0..totalReadLen]));
                     }
                 },
-                async (server) =>
+                async server =>
                 {
                     await server.AcceptConnectionAsync(
                         async connection =>
                         {
-                            await connection.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10));
+                            await connection.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10 * 1024));
+                            await tcs.Task;
+                        });
+                });
+            }, IsAsync.ToString()).DisposeAsync();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSetToIntMax_DoesNotThrow()
+        {
+            await RemoteExecutor.Invoke(async isAsync =>
+            {
+                TaskCompletionSource tcs = new TaskCompletionSource();
+                await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    HttpWebRequest.DefaultMaximumErrorResponseLength = int.MaxValue; // KB
+                    WebException exception =
+                        await Assert.ThrowsAsync<WebException>(() => bool.Parse(isAsync) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
+                    tcs.SetResult();
+                    Assert.NotNull(exception.Response);
+                    using (Stream responseStream = exception.Response.GetResponseStream())
+                    {
+                        Assert.Equal(1, await responseStream.ReadAsync(new byte[1]));
+                    }
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(
+                        async connection =>
+                        {
+                            await connection.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10 * 1024));
                             await tcs.Task;
                         });
                 });
@@ -2529,6 +2595,30 @@ namespace System.Net.Tests
                 //        0, Culture=neutral, PublicKeyToken=b77a5c561934e089' is not marked as serializable.
                 Assert.Throws<System.Runtime.Serialization.SerializationException>(() => formatter.Serialize(fs, hwr));
             }
+        }
+
+        [Fact]
+        public void GetRequestStream_ReturnsSameInstanceWithoutLoopback()
+        {
+            var request = WebRequest.CreateHttp("http://localhost:12345");
+            request.Method = "POST";
+
+            var s1 = request.GetRequestStream();
+            var s2 = request.GetRequestStream();
+
+            Assert.Same(s1, s2);
+        }
+
+        [Fact]
+        public async Task GetRequestStream_ReturnsSameInstanceWithoutLoopback_Async()
+        {
+            var request = WebRequest.CreateHttp("http://localhost:12345");
+            request.Method = "POST";
+
+            var s1 = await request.GetRequestStreamAsync();
+            var s2 = await request.GetRequestStreamAsync();
+
+            Assert.Same(s1, s2);
         }
     }
 

@@ -15,7 +15,27 @@ internal static partial class Interop
     internal static partial class @procfs
     {
         internal const string RootPath = "/proc/";
+        internal const string Self = "self";
         private const string StatusFileName = "/status";
+
+        // Normally the '/proc' filesystem uses the same pid namespace as the process.
+        // With rootless containers, it may happen that these pid namespaces do not match
+        // because the container doesn't have permissions to change '/proc' but it can
+        // create a new pid namespace.
+        //
+        // When that happens, the numeric ids used by the '/proc' filesystem no longer match with
+        // the process pid namespace. We can still access information for the current process
+        // using '/proc/self'. For other processes, we can't map pids to the proc pids so we musn't
+        // use '/proc' as that would return information for non-existing/wrong/inaccessible processes.
+        //
+        // The 'ProcPid' type represents a pid used by the '/proc' filesystem.
+        // This type provides a type-safe way to distingish the proc pids from the process pid namespace pids,
+        // which are passed as regular 'int's.
+        internal enum ProcPid : int
+        {
+            Invalid = -1,
+            Self = 0,     // Information for the current process, accessible through '/proc/self'.
+        }
 
         internal struct ParsedStatus
         {
@@ -30,13 +50,15 @@ internal static partial class Interop
             internal ulong VmPeak;
         }
 
-        internal static string GetStatusFilePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{StatusFileName}");
+        internal static string GetStatusFilePathForProcess(ProcPid pid) =>
+            pid == ProcPid.Self ? $"{RootPath}{Self}{StatusFileName}" :
+                                  string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{StatusFileName}");
 
-        internal static bool TryReadStatusFile(int pid, out ParsedStatus result)
+        internal static bool TryReadStatusFile(ProcPid pid, out ParsedStatus result)
         {
             bool b = TryParseStatusFile(GetStatusFilePathForProcess(pid), out result);
 #if DEBUG
-            Debug.Assert(!b || result.Pid == pid, "Expected process ID from status file to match supplied pid");
+            Debug.Assert(!b || (ProcPid)result.Pid == pid || pid == ProcPid.Self, "Expected process ID from status file to match supplied pid");
 #endif
             return b;
         }

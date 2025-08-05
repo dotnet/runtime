@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+
+    <!-- These tests need explicit Main as they use command-line parameters to pass test characteristics. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>    
+
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestExecutionArguments>-t 1 -tp 0 -dz 17 -sdz 8517 -dc 10000 -sdc 5000 -lt 2 -f -dp 0.4 -dw 0.0</CLRTestExecutionArguments>

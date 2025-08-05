@@ -163,7 +163,7 @@ namespace System.Globalization
                 { "AL", "sq-AL" },
                 { "AM", "hy-AM" },
                 { "AO", "pt-AO" },
-                { "AQ", "en-A" },
+                { "AQ", "en-AQ" },
                 { "AR", "es-AR" },
                 { "AS", "en-AS" },
                 { "AT", "de-AT" },
@@ -188,7 +188,7 @@ namespace System.Globalization
                 { "BR", "pt-BR" },
                 { "BS", "en-BS" },
                 { "BT", "dz-BT" },
-                { "BV", "nb-B" },
+                { "BV", "nb-BV" },
                 { "BW", "en-BW" },
                 { "BY", "be-BY" },
                 { "BZ", "en-BZ" },
@@ -201,7 +201,7 @@ namespace System.Globalization
                 { "CI", "fr-CI" },
                 { "CK", "en-CK" },
                 { "CL", "es-CL" },
-                { "CM", "fr-C" },
+                { "CM", "fr-CM" },
                 { "CN", "zh-CN" },
                 { "CO", "es-CO" },
                 { "CR", "es-CR" },
@@ -244,13 +244,13 @@ namespace System.Globalization
                 { "GP", "fr-GP" },
                 { "GQ", "es-GQ" },
                 { "GR", "el-GR" },
-                { "GS", "en-G" },
+                { "GS", "en-GS" },
                 { "GT", "es-GT" },
                 { "GU", "en-GU" },
                 { "GW", "pt-GW" },
                 { "GY", "en-GY" },
                 { "HK", "zh-HK" },
-                { "HM", "en-H" },
+                { "HM", "en-HM" },
                 { "HN", "es-HN" },
                 { "HR", "hr-HR" },
                 { "HT", "fr-HT" },
@@ -371,7 +371,7 @@ namespace System.Globalization
                 { "SZ", "ss-SZ" },
                 { "TC", "en-TC" },
                 { "TD", "fr-TD" },
-                { "TF", "fr-T" },
+                { "TF", "fr-TF" },
                 { "TG", "fr-TG" },
                 { "TH", "th-TH" },
                 { "TJ", "tg-Cyrl-TJ" },
@@ -536,7 +536,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
             {
                 // in invariant mode we always return invariant culture only from the enumeration
-                return new CultureInfo[] { new CultureInfo("") };
+                return [new CultureInfo("")];
             }
 
 #pragma warning restore 618
@@ -585,7 +585,7 @@ namespace System.Globalization
             invariant._sNegativeSign = "-";                    // negative sign
             invariant._iDigits = 2;                      // number of fractional digits
             invariant._iNegativeNumber = 1;                      // negative number format
-            invariant._waGrouping = new int[] { 3 };          // grouping of digits
+            invariant._waGrouping = [3];          // grouping of digits
             invariant._sDecimalSeparator = ".";                    // decimal separator
             invariant._sThousandSeparator = ",";                    // thousands separator
             invariant._sNaN = "NaN";                  // Not a Number
@@ -606,7 +606,7 @@ namespace System.Globalization
             invariant._iCurrencyDigits = 2;                      // # local monetary fractional digits
             invariant._iCurrency = 0;                      // positive currency format
             invariant._iNegativeCurrency = 0;                      // negative currency format
-            invariant._waMonetaryGrouping = new int[] { 3 };          // monetary grouping of digits
+            invariant._waMonetaryGrouping = [3];          // monetary grouping of digits
             invariant._sMonetaryDecimal = ".";                    // monetary decimal separator
             invariant._sMonetaryThousand = ",";                    // monetary thousands separator
 
@@ -618,15 +618,15 @@ namespace System.Globalization
             invariant._sTimeSeparator = ":";
             invariant._sAM1159 = "AM";                   // AM designator
             invariant._sPM2359 = "PM";                   // PM designator
-            invariant._saLongTimes = new string[] { "HH:mm:ss" };                             // time format
-            invariant._saShortTimes = new string[] { "HH:mm", "hh:mm tt", "H:mm", "h:mm tt" }; // short time format
+            invariant._saLongTimes = ["HH:mm:ss"];                             // time format
+            invariant._saShortTimes = ["HH:mm", "hh:mm tt", "H:mm", "h:mm tt"]; // short time format
 
             // Calendar specific data
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
 
             // all available calendar type(s).  The first one is the default calendar
-            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
+            invariant._waCalendars = [CalendarId.GREGORIAN];
 
             if (!GlobalizationMode.InvariantNoLoad)
             {
@@ -658,8 +658,7 @@ namespace System.Globalization
         /// Build our invariant information
         /// We need an invariant instance, which we build hard-coded
         /// </summary>
-        internal static CultureData Invariant => s_Invariant ??= CreateCultureWithInvariantData();
-        private static CultureData? s_Invariant;
+        internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
 
         // Cache of cultures we've already looked up
         private static volatile Dictionary<string, CultureData>? s_cachedCultures;
@@ -667,8 +666,11 @@ namespace System.Globalization
 
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {
+            // The undetermined culture name "und" is not a real culture, but it resolves to the invariant culture because ICU typically normalizes it to an empty string.
+            const string UndeterminedCultureName = "und";
+
             // First do a shortcut for Invariant
-            if (string.IsNullOrEmpty(cultureName))
+            if (string.IsNullOrEmpty(cultureName) || cultureName.Equals(UndeterminedCultureName, StringComparison.OrdinalIgnoreCase))
             {
                 return Invariant;
             }
@@ -815,11 +817,6 @@ namespace System.Globalization
                 return null;
             }
 #if TARGET_BROWSER
-            // populate fields for which ICU does not provide data in Hybrid mode
-            if (GlobalizationMode.Hybrid && !string.IsNullOrEmpty(culture._sName))
-            {
-                culture = JSLoadCultureInfoFromBrowser(culture._sName, culture);
-            }
             culture.JSInitLocaleInfo();
 #endif
 
@@ -918,13 +915,7 @@ namespace System.Globalization
                 // since windows doesn't know about zh-CHS and zh-CHT,
                 // we leave sRealName == zh-Hanx but we still need to
                 // pretend that it was zh-CHX.
-                switch (_sName)
-                {
-                    case "zh-CHS":
-                    case "zh-CHT":
-                        return _sName;
-                }
-                return _sRealName;
+                return _sName is "zh-CHS" or "zh-CHT" ? _sName : _sRealName;
             }
         }
 
@@ -976,11 +967,10 @@ namespace System.Globalization
         private string GetLanguageDisplayNameCore(string cultureName) => GlobalizationMode.UseNls ?
                                                                             NlsGetLanguageDisplayName(cultureName) :
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                                                                            GlobalizationMode.Hybrid ? GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
-                                                                            IcuGetLanguageDisplayName(cultureName);
-#else
-                                                                            IcuGetLanguageDisplayName(cultureName);
+                                                                         GlobalizationMode.Hybrid ?
+                                                                            GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
 #endif
+                                                                            IcuGetLanguageDisplayName(cultureName);
 
         /// <summary>
         /// English pretty name for this locale (ie: English (United States))
@@ -1545,20 +1535,15 @@ namespace System.Globalization
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    _iFirstDayOfWeek = GlobalizationMode.Hybrid ? GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek) : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-#elif TARGET_BROWSER
                     if (GlobalizationMode.Hybrid)
                     {
-                        Debug.Assert(_sName != null, "[FirstDayOfWeek] Expected _sName to be populated already");
-                        _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
+                        _iFirstDayOfWeek = GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek);
                     }
                     else
-                    {
-                        _iFirstDayOfWeek = IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-                    }
-#else
-                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
 #endif
+                    {
+                        _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    }
                 }
                 return _iFirstDayOfWeek;
             }
@@ -1574,19 +1559,7 @@ namespace System.Globalization
             {
                 if (_iFirstWeekOfYear == undef)
                 {
-#if TARGET_BROWSER
-                    if (GlobalizationMode.Hybrid)
-                    {
-                        Debug.Assert(_sName != null, "[CalendarWeekRule] Expected _sName to be populated already");
-                        _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
-                    }
-                    else
-                    {
-                        _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
-                    }
-#else
                     _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
-#endif
                 }
                 return _iFirstWeekOfYear;
             }
@@ -1978,11 +1951,7 @@ namespace System.Globalization
                     }
                     else
                     {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                        string? longTimeFormat = GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
-#else
                         string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
-#endif
                         if (string.IsNullOrEmpty(longTimeFormat))
                         {
                             longTimeFormat = LongTimes[0];

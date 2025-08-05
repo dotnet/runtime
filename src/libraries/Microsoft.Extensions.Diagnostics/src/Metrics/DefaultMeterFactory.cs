@@ -18,10 +18,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         public Meter Create(MeterOptions options)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             if (options.Scope is not null && !object.ReferenceEquals(options.Scope, this))
             {
@@ -55,7 +52,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 object? scope = options.Scope;
                 options.Scope = this;
-                FactoryMeter m = new FactoryMeter(options.Name, options.Version, options.Tags, scope: this);
+                FactoryMeter m = new FactoryMeter(options);
                 options.Scope = scope;
 
                 meterList.Add(m);
@@ -89,8 +86,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
     internal sealed class FactoryMeter : Meter
     {
-        public FactoryMeter(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope)
-            : base(name, version, tags, scope)
+        public FactoryMeter(MeterOptions options) : base(options)
         {
         }
 

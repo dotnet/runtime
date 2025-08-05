@@ -15,5 +15,26 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             throw new ObjectDisposedException(nameof(IServiceProvider));
         }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ThrowInvalidOperationException_KeyedServiceAnyKeyUsedToResolveService()
+        {
+            throw new InvalidOperationException(SR.Format(SR.KeyedServiceAnyKeyUsedToResolveService, nameof(IServiceProvider), nameof(IServiceScopeFactory)));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ThrowInvalidOperationException_NoServiceRegistered(Type serviceType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NoServiceRegistered, serviceType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ThrowInvalidOperationException_NoKeyedServiceRegistered(Type serviceType, Type keyType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NoKeyedServiceRegistered, serviceType, keyType));
+        }
     }
 }

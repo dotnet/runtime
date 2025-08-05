@@ -68,22 +68,22 @@ namespace System.Text.Encodings.Web
             {
                 if (value.Value == '<')
                 {
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'l', (byte)'t', (byte)';')) { goto OutOfSpace; }
+                    if (!"&lt;"u8.TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '>')
                 {
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'g', (byte)'t', (byte)';')) { goto OutOfSpace; }
+                    if (!"&gt;"u8.TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '&')
                 {
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'a', (byte)'m', (byte)'p', (byte)';')) { goto OutOfSpace; }
+                    if (!"&amp;"u8.TryCopyTo(destination)) { goto OutOfSpace; }
                     return 5;
                 }
                 else if (value.Value == '\"')
                 {
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'q', (byte)'u', (byte)'o', (byte)'t', (byte)';')) { goto OutOfSpace; }
+                    if (!"&quot;"u8.TryCopyTo(destination)) { goto OutOfSpace; }
                     return 6;
                 }
                 else
@@ -106,16 +106,16 @@ namespace System.Text.Encodings.Web
                     int idxOfSemicolon = (int)((uint)BitOperations.Log2(scalarValue) / 4) + 4;
                     Debug.Assert(4 <= idxOfSemicolon && idxOfSemicolon <= 9, "Expected '&#x0;'..'&#x10FFFF;'.");
 
-                    if (!SpanUtility.IsValidIndex(destination, idxOfSemicolon)) { goto OutOfSpaceInner; }
+                    if ((uint)destination.Length <= (uint)idxOfSemicolon) { goto OutOfSpaceInner; }
                     destination[idxOfSemicolon] = (byte)';';
 
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'#', (byte)'x', (byte)'0'))
+                    if (!"&#x0"u8.TryCopyTo(destination))
                     {
                         Debug.Fail("We should've had enough room to write 4 bytes.");
                     }
 
                     destination = destination.Slice(3, idxOfSemicolon - 3);
-                    for (int i = destination.Length - 1; SpanUtility.IsValidIndex(destination, i); i--)
+                    for (int i = destination.Length - 1; (uint)destination.Length > (uint)i; i--)
                     {
                         char asUpperHex = HexConverter.ToCharUpper((int)scalarValue);
                         destination[i] = (byte)asUpperHex;
@@ -134,22 +134,22 @@ namespace System.Text.Encodings.Web
             {
                 if (value.Value == '<')
                 {
-                    if (!SpanUtility.TryWriteChars(destination, '&', 'l', 't', ';')) { goto OutOfSpace; }
+                    if (!"&lt;".AsSpan().TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '>')
                 {
-                    if (!SpanUtility.TryWriteChars(destination, '&', 'g', 't', ';')) { goto OutOfSpace; }
+                    if (!"&gt;".AsSpan().TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '&')
                 {
-                    if (!SpanUtility.TryWriteChars(destination, '&', 'a', 'm', 'p', ';')) { goto OutOfSpace; }
+                    if (!"&amp;".AsSpan().TryCopyTo(destination)) { goto OutOfSpace; }
                     return 5;
                 }
                 else if (value.Value == '\"')
                 {
-                    if (!SpanUtility.TryWriteChars(destination, '&', 'q', 'u', 'o', 't', ';')) { goto OutOfSpace; }
+                    if (!"&quot;".AsSpan().TryCopyTo(destination)) { goto OutOfSpace; }
                     return 6;
                 }
                 else
@@ -181,18 +181,18 @@ namespace System.Text.Encodings.Web
                     int idxOfSemicolon = (int)((uint)BitOperations.Log2(scalarValue) / 4) + 4;
                     Debug.Assert(4 <= idxOfSemicolon && idxOfSemicolon <= 9, "Expected '&#x0;'..'&#x10FFFF;'.");
 
-                    if (!SpanUtility.IsValidIndex(destination, idxOfSemicolon)) { goto OutOfSpaceInner; }
+                    if ((uint)destination.Length <= (uint)idxOfSemicolon) { goto OutOfSpaceInner; }
                     destination[idxOfSemicolon] = ';';
 
                     // It's more efficient to write 4 chars at a time instead of 1 char.
                     // The '0' at the end will be overwritten.
-                    if (!SpanUtility.TryWriteChars(destination, '&', '#', 'x', '0'))
+                    if (!"&#x0".AsSpan().TryCopyTo(destination))
                     {
                         Debug.Fail("We should've had enough room to write 4 chars.");
                     }
 
                     destination = destination.Slice(3, idxOfSemicolon - 3);
-                    for (int i = destination.Length - 1; SpanUtility.IsValidIndex(destination, i); i--)
+                    for (int i = destination.Length - 1; (uint)destination.Length > (uint)i; i--)
                     {
                         char asUpperHex = HexConverter.ToCharUpper((int)scalarValue);
                         destination[i] = asUpperHex;

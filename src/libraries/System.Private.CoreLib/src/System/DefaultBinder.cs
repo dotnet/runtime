@@ -576,7 +576,7 @@ namespace System
                     Type? type = types[j];
                     if (type is SignatureType signatureType)
                     {
-                        if (!(candidates[i] is MethodInfo methodInfo))
+                        if (candidates[i] is not MethodInfo methodInfo)
                             break;
                         type = signatureType.TryResolveAgainstGenericMethod(methodInfo);
                         if (type == null)

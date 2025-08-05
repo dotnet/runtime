@@ -10,7 +10,7 @@ namespace System.Threading
         private static int WaitOneCore(IntPtr handle, int millisecondsTimeout, bool useTrivialWaits) =>
             WaitSubsystem.Wait(handle, millisecondsTimeout, interruptible: !useTrivialWaits);
 
-        private static int WaitMultipleIgnoringSyncContextCore(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout) =>
+        private static int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> handles, bool waitAll, int millisecondsTimeout) =>
             WaitSubsystem.Wait(handles, waitAll, millisecondsTimeout);
 
         private static int SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout) =>

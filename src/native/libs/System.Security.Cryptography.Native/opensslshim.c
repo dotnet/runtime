@@ -66,11 +66,11 @@ static void DlOpen(const char* libraryName)
 
 static void OpenLibraryOnce(void)
 {
-    // If there is an override of the version specified using the CLR_OPENSSL_VERSION_OVERRIDE
+    // If there is an override of the version specified using the DOTNET_OPENSSL_VERSION_OVERRIDE
     // env variable, try to load that first.
     // The format of the value in the env variable is expected to be the version numbers,
     // like 1.0.0, 1.0.2 etc.
-    char* versionOverride = getenv("CLR_OPENSSL_VERSION_OVERRIDE");
+    char* versionOverride = getenv("DOTNET_OPENSSL_VERSION_OVERRIDE");
 
     if ((versionOverride != NULL) && strnlen(versionOverride, MaxVersionStringLength + 1) <= MaxVersionStringLength)
     {
@@ -233,9 +233,11 @@ void InitializeOpenSSLShim(void)
     }
 
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
+    c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
+    
     // This value will represent a time in year 2038 if 64-bit time is used,
     // or 1901 if the lower 32 bits are interpreted as a 32-bit time_t value.
-    time_t timeVal = (time_t)INT_MAX + 1;
+    time_t timeVal = (time_t)0x80000000U;
     struct tm tmVal = { 0 };
 
     // Detect whether openssl is using 32-bit or 64-bit time_t.
