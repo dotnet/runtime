@@ -7810,8 +7810,8 @@ namespace JIT.HardwareIntrinsics.Arm
             where N : IBinaryInteger<N>
         {
             int halfsize = default(N).GetByteCount() * 8;
-            ulong a = Convert.ToUInt64(op1);
-            ulong b = Convert.ToUInt64(op2);
+            ulong a = ulong.CreateChecked(op1);
+            ulong b = ulong.CreateChecked(op2);
             ulong sum = a + b;
             ulong bias = 1UL << (halfsize - 1);
             ulong result = (sum + bias) >> halfsize;
@@ -7837,8 +7837,8 @@ namespace JIT.HardwareIntrinsics.Arm
             where N : IBinaryInteger<N>
         {
             int halfsize = default(N).GetByteCount() * 8;
-            ulong a = Convert.ToUInt64(op1);
-            ulong b = Convert.ToUInt64(op2);
+            ulong a = ulong.CreateChecked(op1);
+            ulong b = ulong.CreateChecked(op2);
             ulong sum = (ulong)a - (ulong)b;
             ulong bias = 1UL << (halfsize - 1);
             ulong result = (sum + bias) >> halfsize;
