@@ -73,7 +73,7 @@ EXTERN_C void QCALLTYPE RhFlushProcessWriteBuffers()
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
         "You must p/invoke to RhFlushProcessWriteBuffers");
 
-    minipal_flush_process_write_buffers();
+    minipal_memory_barrier_process_wide();
 }
 
 // Get the list of currently loaded NativeAOT modules (as OS HMODULE handles). The caller provides a reference

@@ -11,8 +11,8 @@ extern "C"
 {
 #endif // __cplusplus
 
-    bool minipal_initialize_flush_process_write_buffers(void);
-    void minipal_flush_process_write_buffers(void);
+    bool minipal_initialize_memory_barrier_process_wide(void);
+    void minipal_memory_barrier_process_wide(void);
 
 #ifdef __cplusplus
 }
