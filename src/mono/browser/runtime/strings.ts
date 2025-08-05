@@ -301,7 +301,8 @@ function stringToMonoStringNewRoot (string: string, result: WasmRoot<MonoString>
         ? buffer as any as number + bufferLen
         : (buffer as any as number) + bufferLen;
     stringToUTF16(buffer as any, bufferEnd as any, string);
-    cwraps.mono_wasm_string_from_utf16_ref(buffer as any, bufferEnd as any, result.address);
+    // this function takes the length, not the end pointer
+    cwraps.mono_wasm_string_from_utf16_ref(buffer as any, bufferLen as any, result.address);
     free(buffer);
 }
 
