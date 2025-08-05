@@ -135,7 +135,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Setter_NullOrEmptyName_Throws(string name)
+        public void Setter_NullOrEmptyName_Throws(string? name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
             AssertExtensions.Throws<ArgumentNullException>("name", () => w[name] = "test");
@@ -222,7 +222,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Remove_NullOrEmptyHeader_ThrowsArgumentNullException(string name)
+        public void Remove_NullOrEmptyHeader_ThrowsArgumentNullException(string? name)
         {
             var headers = new WebHeaderCollection();
             AssertExtensions.Throws<ArgumentNullException>("name", () => headers.Remove(name));
@@ -342,7 +342,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void ToString_SingleHeaderWithEmptyValue_Success(string value)
+        public void ToString_SingleHeaderWithEmptyValue_Success(string? value)
         {
             WebHeaderCollection w = new WebHeaderCollection();
             w["name"] = value;
@@ -515,7 +515,7 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Add_NullHeader_ThrowsArgumentNullException(string header)
+        public void Add_NullHeader_ThrowsArgumentNullException(string? header)
         {
             var headers = new WebHeaderCollection();
             AssertExtensions.Throws<ArgumentNullException>("header", () => headers.Add(header));

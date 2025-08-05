@@ -23,9 +23,10 @@ namespace ILLink.RoslynAnalyzer
         private static readonly DiagnosticDescriptor s_requiresDynamicCodeOnEntryPoint = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresDynamicCodeOnEntryPoint);
         private static readonly DiagnosticDescriptor s_requiresDynamicCodeRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresDynamicCode);
         private static readonly DiagnosticDescriptor s_requiresDynamicCodeAttributeMismatch = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresDynamicCodeAttributeMismatch);
+        private static readonly DiagnosticDescriptor s_referenceNotMarkedIsAotCompatibleRule = DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ReferenceNotMarkedIsAotCompatible);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(s_requiresDynamicCodeRule, s_requiresDynamicCodeAttributeMismatch, s_requiresDynamicCodeOnStaticCtor, s_requiresDynamicCodeOnEntryPoint);
+            ImmutableArray.Create(s_requiresDynamicCodeRule, s_requiresDynamicCodeAttributeMismatch, s_requiresDynamicCodeOnStaticCtor, s_requiresDynamicCodeOnEntryPoint, s_referenceNotMarkedIsAotCompatibleRule);
 
         private protected override string RequiresAttributeName => RequiresDynamicCodeAttribute;
 
@@ -162,6 +163,16 @@ namespace ILLink.RoslynAnalyzer
 
             return SymbolEqualityComparer.Default.Equals(propertySymbol, isDynamicCodeSupportedProperty);
         }
+
+        private protected override ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions =>
+            ImmutableArray.Create<Action<CompilationAnalysisContext>>((context) =>
+            {
+                CheckReferencedAssemblies(
+                    context,
+                    MSBuildPropertyOptionNames.VerifyReferenceAotCompatibility,
+                    "IsAotCompatible",
+                    s_referenceNotMarkedIsAotCompatibleRule);
+            });
 
         protected override bool VerifyAttributeArguments(AttributeData attribute) =>
             attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments is [{ Type.SpecialType: SpecialType.System_String }, ..];

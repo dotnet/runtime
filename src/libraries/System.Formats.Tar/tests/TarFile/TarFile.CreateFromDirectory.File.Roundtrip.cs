@@ -14,7 +14,7 @@ namespace System.Formats.Tar.Tests
         [InlineData("../file.txt", "subDirectory1/subDirectory1.1")]
         [InlineData("./file.txt", "subDirectory1/subDirectory1.1")]
         [InlineData("./file.txt", null)]
-        public void SymlinkRelativeTargets_InsideTheArchive_RoundtripsSuccessfully(string symlinkTargetPath, string subDirectory)
+        public void SymlinkRelativeTargets_InsideTheArchive_RoundtripsSuccessfully(string symlinkTargetPath, string? subDirectory)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -51,7 +51,7 @@ namespace System.Formats.Tar.Tests
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         [InlineData("../file.txt", null)]
         [InlineData("../../file.txt", "subDirectory")]
-        public void SymlinkRelativeTargets_OutsideTheArchive_Fails(string symlinkTargetPath, string subDirectory)
+        public void SymlinkRelativeTargets_OutsideTheArchive_Fails(string symlinkTargetPath, string? subDirectory)
         {
             using TempDirectory root = new TempDirectory();
 
