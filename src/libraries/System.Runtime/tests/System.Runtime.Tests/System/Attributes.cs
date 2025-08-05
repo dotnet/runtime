@@ -316,6 +316,15 @@ namespace System.Tests
                 () => Assert.Equal(4, attribute.OptionalValue));
         }
 
+        [Fact]
+        public static void GetCustomAttributesWithSettersDefinedOnBaseClass()
+        {
+            object[] attributes = typeof(ClassWithDerivedAttr).GetCustomAttributes(true);
+            object attribute = Assert.Single(attributes);
+            var derivedAttributeWithGetterAttr = Assert.IsType<DerivedAttributeWithGetter>(attribute);
+            Assert.Equal(2, derivedAttributeWithGetterAttr.P);
+        }
+
         private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
         {
             Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
@@ -326,6 +335,32 @@ namespace System.Tests
                 () => Assert.NotEmpty(closedGenericAttributes),
                 () => Assert.All(closedGenericAttributes, a => Assert.IsType<GenericAttribute<TGenericParameter>>(a)));
         }
+
+        public class BaseAttributeWithGetterSetter : Attribute
+        {
+            protected int _p;
+
+            public virtual int P
+            {
+                get => _p;
+                set
+                {
+                    _p = value;
+                }
+            }
+        }
+
+        public class DerivedAttributeWithGetter : BaseAttributeWithGetterSetter
+        {
+            public override int P
+            {
+                get => _p;
+            }
+        }
+
+        [DerivedAttributeWithGetter(P = 2)]
+        public class ClassWithDerivedAttr
+        { }
     }
 
     public static class GetCustomAttribute
