@@ -4347,7 +4347,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
-            pCookie->pPInvokeILStub = NULL;
+            pCookie->pPInvokeILStub = (PCODE)NULL;
             pCookie->pMethodDesc = pMD;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
