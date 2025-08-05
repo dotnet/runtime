@@ -76,7 +76,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_field), true, typeof(string), false)]
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_readonlyField), true, typeof(string), false)]
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_volatileField), true, typeof(string), false)]
-        public void DeclaredFields(Type type, string name, bool exists, Type fieldType, bool isPrivate)
+        public void DeclaredFields(Type type, string name, bool exists, Type? fieldType, bool isPrivate)
         {
             IEnumerable<string> fields = type.GetTypeInfo().DeclaredFields.Select(fieldInfo => fieldInfo.Name);
             FieldInfo declaredFieldInfo = type.GetTypeInfo().GetDeclaredField(name);
@@ -395,7 +395,7 @@ namespace System.Reflection.Tests
         [InlineData(10, nameof(IntEnum.Enum10))]
         [InlineData(45, nameof(IntEnum.Enum45))]
         [InlineData(8, null)]
-        public void GetEnumName(object value, string expected)
+        public void GetEnumName(object value, string? expected)
         {
             Assert.Equal(expected, typeof(IntEnum).GetTypeInfo().GetEnumName(value));
         }
@@ -595,7 +595,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(uint[]), typeof(int[]), true)]
         [InlineData(typeof(IList<int>), typeof(int[]), true)]
         [InlineData(typeof(IList<uint>), typeof(int[]), true)]
-        public void IsAssignable(Type type, Type c, bool expected)
+        public void IsAssignable(Type type, Type? c, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c));
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c?.GetTypeInfo()));
@@ -1114,7 +1114,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_BaseClass), null)]
         [InlineData(typeof(string[]), typeof(string))]
         [InlineData(typeof(int[]), typeof(int))]
-        public void GetElementType(Type type, Type expected)
+        public void GetElementType(Type type, Type? expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().GetElementType());
         }

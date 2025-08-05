@@ -44,7 +44,7 @@ namespace System.Tests
         [InlineData((ulong)234, (ulong)456, -1)]
         [InlineData((ulong)234, ulong.MaxValue, -1)]
         [InlineData((ulong)234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(ulong i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(ulong i, object? value, int expected)
         {
             if (value is ulong ulongValue)
             {
@@ -69,7 +69,7 @@ namespace System.Tests
         [InlineData((ulong)789, null, false)]
         [InlineData((ulong)789, "789", false)]
         [InlineData((ulong)789, 789, false)]
-        public static void EqualsTest(ulong i1, object obj, bool expected)
+        public static void EqualsTest(ulong i1, object? obj, bool expected)
         {
             if (obj is ulong i2)
             {

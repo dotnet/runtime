@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
@@ -44,5 +45,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Func<X509Certificate2, TKey> getPrivateKey,
             Action<TKey, TKey> keyProver)
             where TKey : class, IDisposable;
+
+        [Fact]
+        public static void ArgumentValidation()
+        {
+            Assert.Throws<ArgumentNullException>("certificate", () => X509CertificateKeyAccessors.CopyWithPrivateKey(null, default(MLKem)));
+            Assert.Throws<ArgumentNullException>("certificate", () => X509CertificateKeyAccessors.CopyWithPrivateKey(null, default(MLDsa)));
+            Assert.Throws<ArgumentNullException>("certificate", () => X509CertificateKeyAccessors.CopyWithPrivateKey(null, default(SlhDsa)));
+            Assert.Throws<ArgumentNullException>("certificate", () => X509CertificateKeyAccessors.GetMLKemPublicKey(null));
+            Assert.Throws<ArgumentNullException>("certificate", () => X509CertificateKeyAccessors.GetMLDsaPublicKey(null));
+            Assert.Throws<ArgumentNullException>("certificate", () => X509CertificateKeyAccessors.GetSlhDsaPublicKey(null));
+
+#pragma warning disable SYSLIB0026 // X509Certificate and X509Certificate2 are immutable
+            // This constructor is deprecated, but we use it here for test purposes.
+            using (X509Certificate2 cert = new X509Certificate2())
+#pragma warning restore SYSLIB0026 // X509Certificate and X509Certificate2 are immutable
+            {
+                Assert.Throws<ArgumentNullException>("privateKey", () => X509CertificateKeyAccessors.CopyWithPrivateKey(cert, default(MLKem)));
+                Assert.Throws<ArgumentNullException>("privateKey", () => X509CertificateKeyAccessors.CopyWithPrivateKey(cert, default(MLDsa)));
+                Assert.Throws<ArgumentNullException>("privateKey", () => X509CertificateKeyAccessors.CopyWithPrivateKey(cert, default(SlhDsa)));
+            }
+        }
     }
 }
