@@ -76,7 +76,7 @@ namespace utils
         int len = pal::strlen_printf(format, std::forward<Args>(args)...) + 1;
         std::vector<pal::char_t> buffer(len);
         pal::str_printf(&buffer[0], len, format, std::forward<Args>(args)...);
-        return pal::string_t{buffer.data()};
+        return pal::string_t(buffer.data(), len - 1);
     }
 }
 
