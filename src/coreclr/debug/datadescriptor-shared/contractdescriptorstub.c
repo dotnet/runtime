@@ -21,10 +21,10 @@ struct ContractDescriptor
     const uintptr_t *pointer_data;
 };
 
-extern const uintptr_t POINTER_NAME[];
+extern const uintptr_t POINTER_DATA_NAME[];
 
 // just the placeholder pointer
-const uintptr_t POINTER_NAME[] = { (uintptr_t)0 };
+const uintptr_t POINTER_DATA_NAME[] = { (uintptr_t)0 };
 
 DLLEXPORT struct ContractDescriptor CONTRACT_NAME;
 
@@ -36,5 +36,5 @@ DLLEXPORT struct ContractDescriptor CONTRACT_NAME = {
     .descriptor_size = sizeof(STUB_DESCRIPTOR),
     .descriptor = STUB_DESCRIPTOR,
     .pointer_data_count = 1,
-    .pointer_data = &POINTER_NAME[0],
+    .pointer_data = &POINTER_DATA_NAME[0],
 };

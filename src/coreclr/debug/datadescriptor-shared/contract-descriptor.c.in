@@ -21,7 +21,7 @@ struct ContractDescriptor
     const uintptr_t *pointer_data;
 };
 
-extern const uintptr_t POINTER_NAME[];
+extern const uintptr_t POINTER_DATA_NAME[];
 
 #if EXPORT_CONTRACT
 DLLEXPORT
@@ -32,5 +32,5 @@ struct ContractDescriptor CONTRACT_NAME = {
     .descriptor_size = %%jsonDescriptorSize%%,
     .descriptor = "%%jsonDescriptor%%",
     .pointer_data_count = %%pointerDataCount%%,
-    .pointer_data = &POINTER_NAME[0],
+    .pointer_data = &POINTER_DATA_NAME[0],
 };
