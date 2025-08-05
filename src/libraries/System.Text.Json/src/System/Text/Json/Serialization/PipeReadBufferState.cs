@@ -73,6 +73,24 @@ namespace System.Text.Json.Serialization
 
         public void Read(PipeReader utf8Json) => throw new NotImplementedException();
 
+        public Utf8JsonReader GetReader(JsonReaderState jsonReaderState)
+        {
+            if (Bytes.IsSingleSegment)
+            {
+                return new Utf8JsonReader(
+#if NET
+                    Bytes.FirstSpan,
+#else
+                    Bytes.First.Span,
+#endif
+                    IsFinalBlock, jsonReaderState);
+            }
+            else
+            {
+                return new Utf8JsonReader(Bytes, IsFinalBlock, jsonReaderState);
+            }
+        }
+
         private void ProcessReadBytes()
         {
             if (_isFirstBlock)

@@ -136,21 +136,7 @@ namespace System.Text.Json.Serialization.Metadata
             out T? value)
             where TReadBufferState : struct, IReadBufferState<TReadBufferState, TStream>
         {
-            Utf8JsonReader reader;
-            if (bufferState.Bytes.IsSingleSegment)
-            {
-                reader = new Utf8JsonReader(
-#if NET
-                    bufferState.Bytes.FirstSpan,
-#else
-                    bufferState.Bytes.First.Span,
-#endif
-                    bufferState.IsFinalBlock, jsonReaderState);
-            }
-            else
-            {
-                reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
-            }
+            Utf8JsonReader reader = bufferState.GetReader(jsonReaderState);
 
             try
             {

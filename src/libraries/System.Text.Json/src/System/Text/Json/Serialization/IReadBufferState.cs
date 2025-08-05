@@ -22,5 +22,7 @@ namespace System.Text.Json.Serialization
         public abstract void Read(TStream utf8Json);
 
         public abstract void Advance(long bytesConsumed);
+
+        public abstract Utf8JsonReader GetReader(JsonReaderState jsonReaderState);
     }
 }
