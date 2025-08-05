@@ -173,11 +173,7 @@ void* EEDbgInterfaceImpl::GetObjectFromHandle(OBJECTHANDLE handle)
     }
     CONTRACTL_END;
 
-    void *v;
-
-    *((OBJECTREF *)&v) = *(OBJECTREF *)handle;
-
-    return v;
+    return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 
 OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,

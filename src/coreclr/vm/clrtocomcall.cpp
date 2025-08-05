@@ -347,7 +347,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         MethodDescCallSite eventProvider(pEvProvMD, &gc.EventProviderObj);
 
         // Retrieve the event handler passed in.
-        OBJECTREF EventHandlerObj = *(OBJECTREF*)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset());
+        OBJECTREF EventHandlerObj = ObjectToOBJECTREF(*(Object**)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset()));
 
         ARG_SLOT EventMethArgs[] =
         {

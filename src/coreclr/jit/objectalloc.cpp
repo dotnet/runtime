@@ -2427,11 +2427,30 @@ void ObjectAllocator::UpdateAncestorTypes(
                 {
                     assert(tree == parent->AsIndir()->Data());
 
-                    // If we are storing to a GC struct field, we may need to retype the store
-                    //
                     if (varTypeIsGC(parent->TypeGet()))
                     {
-                        parent->ChangeType(newType);
+                        // We are storing a non-struct value, possibly to a struct field.
+                        //
+                        // See if we can figure out the field type from the address.
+                        // It might be TYP_BYREF even if the value we are storing is TYP_I_IMPL.
+                        //
+                        StoreInfo* const info       = m_StoreAddressToIndexMap.LookupPointer(parent);
+                        bool             wasRetyped = false;
+
+                        if (info != nullptr)
+                        {
+                            unsigned const addressIndex = info->m_index;
+                            if ((addressIndex != BAD_VAR_NUM) && !DoesIndexPointToStack(addressIndex))
+                            {
+                                parent->ChangeType(TYP_BYREF);
+                                wasRetyped = true;
+                            }
+                        }
+
+                        if (!wasRetyped)
+                        {
+                            parent->ChangeType(newType);
+                        }
                     }
                     else if (retypeFields && parent->OperIs(GT_STORE_BLK))
                     {

@@ -162,7 +162,7 @@ class Module;
 // TailCallArgBuffer states
 #define TAILCALLARGBUFFER_ACTIVE       0
 #define TAILCALLARGBUFFER_INSTARG_ONLY 1
-#define TAILCALLARGBUFFER_ABANDONED    2
+#define TAILCALLARGBUFFER_INACTIVE     2
 
 struct TailCallArgBuffer
 {
@@ -414,7 +414,7 @@ class TailCallTls
 
 public:
     TailCallTls();
-    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    TailCallArgBuffer* AllocArgBuffer(int size);
     void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
     TailCallArgBuffer* GetArgBuffer()
     {

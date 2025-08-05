@@ -231,7 +231,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData(typeof(SubClass), null, typeof(BaseClass))]
         [InlineData(typeof(int), null, typeof(BaseClass))]
         [InlineData(typeof(BaseClass), 1, typeof(int))]
-        public void MismatchTypes(Type variableType, object constantValue, Type constantType)
+        public void MismatchTypes(Type variableType, object? constantValue, Type constantType)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Expression.Assign(Expression.Variable(variableType), Expression.Constant(constantValue, constantType)));
         }

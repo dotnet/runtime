@@ -120,7 +120,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?i)((abc){4,8}|(def){2,3})", new[] { "abcabcab", "defdef" }, true)]
         [InlineData("(?i)((abc){4,8}|(de+f){2,3})", new[] { "abcabcab", "de" }, true)]
         [InlineData("(?i)((ab{2}c){4,8}|(de+f){2,3})", new[] { "abbcabbc", "de" }, true)]
-        public void FindPrefixes(string pattern, string[] expectedSet, bool ignoreCase)
+        public void FindPrefixes(string pattern, string[]? expectedSet, bool ignoreCase)
         {
             RegexTree tree = RegexParser.Parse(pattern, RegexOptions.None, CultureInfo.InvariantCulture);
             string[] actual = RegexPrefixAnalyzer.FindPrefixes(tree.Root, ignoreCase);
