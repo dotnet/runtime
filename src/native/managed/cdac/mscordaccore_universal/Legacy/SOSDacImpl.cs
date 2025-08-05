@@ -1128,12 +1128,6 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, ppMD) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodDescPtrFromIP(ClrDataAddress ip, ClrDataAddress* ppMD)
     {
-        if (ip < 100)
-        {
-            TargetPointer gcDescriptor = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.GCDescriptor));
-            Debug.WriteLine($"GCDescriptor: {gcDescriptor.Value:X}");
-        }
-
         if (ip == 0 || ppMD == null)
             return HResults.E_INVALIDARG;
 
