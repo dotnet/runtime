@@ -52,7 +52,7 @@ namespace System.Tests
         [InlineData((short)-234, (short)234, -1)]
         [InlineData((short)-234, (short)-432, 1)]
         [InlineData((short)234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(short i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(short i, object? value, int expected)
         {
             if (value is short shortValue)
             {
@@ -81,7 +81,7 @@ namespace System.Tests
         [InlineData((short)789, null, false)]
         [InlineData((short)789, "789", false)]
         [InlineData((short)789, 789, false)]
-        public static void EqualsTest(short i1, object obj, bool expected)
+        public static void EqualsTest(short i1, object? obj, bool expected)
         {
             if (obj is short)
             {

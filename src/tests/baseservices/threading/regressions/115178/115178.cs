@@ -284,12 +284,17 @@ public class Test_wait_interrupted_user_apc
     }
 
     [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsWindows))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/118233", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         RunTestUsingInfiniteWait();
         RunTestUsingTimedWait();
-        RunTestInterruptInfiniteWait();
+
+        // Thread.Interrupt is not implemented on NativeAOT - https://github.com/dotnet/runtime/issues/69919
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            RunTestInterruptInfiniteWait();
+        }
+
         return result;
     }
 }
