@@ -142,9 +142,7 @@ namespace System.Text.Json.Nodes
         {
             ArgumentNullException.ThrowIfNull(propertyName);
 
-#if NET10_0_OR_GREATER
-            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
-#else
+#if NET9_0
             index = Dictionary.IndexOf(propertyName);
             if (index < 0)
             {
@@ -154,6 +152,8 @@ namespace System.Text.Json.Nodes
 
             jsonNode = Dictionary.GetAt(index).Value;
             return true;
+#else
+            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
 #endif
         }
 
@@ -267,14 +267,14 @@ namespace System.Text.Json.Nodes
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
             if (
-#if NET10_0_OR_GREATER
-                !dict.TryAdd(propertyName, value, out int index)
-#else
+#if NET9_0
                 !dict.TryAdd(propertyName, value)
+#else
+                !dict.TryAdd(propertyName, value, out int index)
 #endif
                 )
             {
-#if !NET10_0_OR_GREATER
+#if NET9_0
                 int index = dict.IndexOf(propertyName);
 #endif
                 Debug.Assert(index >= 0);
