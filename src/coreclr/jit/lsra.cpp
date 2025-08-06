@@ -7669,7 +7669,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         GenTree* useNode = tree;
 
         // Get the use of the node. If the node is contained then the actual use is the containing node
-        // (which may be much later in the LIR). Recursively check until there is no contained node.
+        // (which may be much later in the LIR). Repeatedly check until there is no contained node.
         do
         {
             foundUse = blockRange.TryGetUse(useNode, &treeUse);
