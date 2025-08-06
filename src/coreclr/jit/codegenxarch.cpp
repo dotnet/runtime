@@ -1242,25 +1242,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genIsSameLocalVar:
-//   Check if two trees represent the same scalar local value.
-//
-// Arguments:
-//   op1 - first tree
-//   op2 - second tree
-//
-// Returns:
-//   True if so.
-//
-bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
-{
-    GenTree* op1Skip = op1->gtSkipReloadOrCopy();
-    GenTree* op2Skip = op2->gtSkipReloadOrCopy();
-    return op1Skip->OperIs(GT_LCL_VAR) && op2Skip->OperIs(GT_LCL_VAR) &&
-           (op1Skip->AsLclVar()->GetLclNum() == op2Skip->AsLclVar()->GetLclNum());
-}
-
-//------------------------------------------------------------------------
 // genCodeForMul: Generate code for a MUL operation.
 //
 // Arguments:
