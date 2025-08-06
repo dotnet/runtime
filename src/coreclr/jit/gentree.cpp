@@ -32390,10 +32390,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         // Check all operands are valid
         bool canFold = true;
-        for (size_t i = 1; i <= opCount && canFold; i++)
+        if (ni == NI_Sve_ConditionalSelect)
         {
-            canFold &=
-                (varTypeIsMask(tree->Op(i)) || tree->Op(i)->OperIsConvertMaskToVector() || tree->Op(i)->IsVectorZero());
+            assert(varTypeIsMask(op1));
+            canFold = (op2->OperIsConvertMaskToVector() && op3->OperIsConvertMaskToVector());
+        }
+        else
+        {
+            for (size_t i = 1; i <= opCount && canFold; i++)
+            {
+                canFold &= tree->Op(i)->OperIsConvertMaskToVector();
+            }
         }
 
         if (canFold)
