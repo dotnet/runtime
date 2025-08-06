@@ -40,7 +40,6 @@ class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
 class JIT_TrialAlloc;
-struct LayoutRawFieldInfo;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
@@ -64,6 +63,7 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
+enum class AsyncVariantLookup;
 struct MethodTableAuxiliaryData;
 
 typedef DPTR(MethodTableAuxiliaryData) PTR_MethodTableAuxiliaryData;
@@ -340,7 +340,7 @@ struct MethodTableAuxiliaryData
         enum_flag_HasCheckedStreamOverride  = 0x0400,
         enum_flag_StreamOverriddenRead      = 0x0800,
         enum_flag_StreamOverriddenWrite     = 0x1000,
-        // unused enum                      = 0x2000,
+        enum_flag_EnsuredInstanceActive     = 0x2000,
         // unused enum                      = 0x4000,
         // unused enum                      = 0x8000,
     };
@@ -457,6 +457,12 @@ public:
         return VolatileLoad(&m_dwFlags) & enum_flag_Initialized;
     }
 
+    inline BOOL IsEnsuredInstanceActive() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return VolatileLoad(&m_dwFlags) & enum_flag_EnsuredInstanceActive;
+    }
+
     inline bool IsClassInitedOrPreinitedDecided(bool *initResult) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -471,6 +477,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_Initialized);
+    }
+
+    inline void SetEnsuredInstanceActive()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_EnsuredInstanceActive);
     }
 #endif
 
@@ -577,7 +589,6 @@ public:
 // find the normal (non-thread) static variables of the type.
 struct DynamicStaticsInfo
 {
-private:
     // The detail of whether or not the class has been initialized is stored in the statics pointers as well as in
     // its normal flag location. This is done so that when getting the statics base for a class, we can get the statics
     // base address and check to see if it is initialized without needing a barrier between reading the flag and reading
@@ -585,6 +596,7 @@ private:
     static constexpr TADDR ISCLASSNOTINITED = 1;
     static constexpr TADDR ISCLASSNOTINITEDMASK = ISCLASSNOTINITED;
     static constexpr TADDR STATICSPOINTERMASK = ~ISCLASSNOTINITEDMASK;
+private:
 
     void InterlockedSetClassInited(bool isGC)
     {
@@ -1078,9 +1090,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // currently all ComObjects except
-        // for __ComObject have dynamic Interface maps
-        return GetNumInterfaces() > 0 && IsComObjectType() && !ParentEquals(g_pObjectClass);
+        // All ComObjects except for __ComObject
+        // have dynamic Interface maps
+        return GetNumInterfaces() > 0
+            && IsComObjectType()
+            && !ParentEquals(g_pObjectClass)
+            && this != g_pBaseCOMObject;
     }
 #endif // FEATURE_COMINTEROP
 
@@ -1376,18 +1391,6 @@ public:
     Instantiation GetClassOrArrayInstantiation();
     Instantiation GetArrayInstantiation();
 
-    // Does this method table require that additional modules be loaded?
-    inline BOOL HasModuleDependencies()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_HasModuleDependencies);
-    }
-
-    inline void SetHasModuleDependencies()
-    {
-        SetFlag(enum_flag_HasModuleDependencies);
-    }
-
     inline BOOL IsIntrinsicType()
     {
         LIMITED_METHOD_DAC_CONTRACT;;
@@ -1483,9 +1486,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         SetFlag(enum_flag_IsByRefLike);
     }
-
-    // class is a com object class
-    Module* GetDefiningModuleForOpenType();
 
     inline BOOL IsTypicalTypeDefinition()
     {
@@ -1625,9 +1625,11 @@ public:
     typedef DPTR(VTableIndir2_t) VTableIndir_t;
 
     static DWORD GetIndexOfVtableIndirection(DWORD slotNum);
+
     static DWORD GetStartSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
     static DWORD GetEndSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
     static UINT32 GetIndexAfterVtableIndirection(UINT32 slotNum);
+    static UINT32 IndexAfterVtableIndirectionToSlot(UINT32 slotNum);
     static DWORD GetNumVtableIndirections(DWORD wNumVirtuals);
     DPTR(VTableIndir_t) GetVtableIndirections();
     DWORD GetNumVtableIndirections();
@@ -1751,7 +1753,7 @@ public:
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
     // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD);
+    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.
@@ -1867,10 +1869,20 @@ public:
     // the information within MethodTable, and so less code manipulates EEClass
     // objects directly, because doing so can lead to bugs related to generics.
     //
-    // <TODO> Use m_wBaseSize whenever this is identical to GetNumInstanceFieldBytes.
-    // We would need to reserve a flag for this. </TODO>
-    //
     inline DWORD GetNumInstanceFieldBytes();
+
+    // Returns the size of the instance fields for a value type, in bytes when
+    // the type is known to contain GC pointers. This takes advantage of the detail
+    // that if the type contains GC pointers, the size of the instance fields is aligned
+    // to pointer sized boundaries. This is only faster if we already have some reason
+    // to have checked for ContainsGCPointers.
+    inline DWORD GetNumInstanceFieldBytesIfContainsGCPointers()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(ContainsGCPointers());
+        _ASSERTE(GetBaseSize() - (DWORD)(2 * sizeof(TADDR)) == GetNumInstanceFieldBytes());
+        return GetBaseSize() - (DWORD)(2 * sizeof(TADDR));
+    }
 
     int GetFieldAlignmentRequirement();
 
@@ -2669,14 +2681,13 @@ public:
     // This flavor of Allocate is more efficient, but can only be used
     // if CheckInstanceActivated(), IsClassInited() are known to be true.
     // A sufficient condition is that another instance of the exact same type already
-    // exists in the same appdomain. It's currently called only from Delegate.Combine
-    // via COMDelegate::InternalAllocLike.
+    // exists in the same ALC. It's currently called only from Delegate.Combine
+    // via RuntimeTypeHandle_InternalAllocNoChecks.
     OBJECTREF AllocateNoChecks();
 
     OBJECTREF Box(void* data);
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE
-    BOOL UnBoxInto(void *dest, OBJECTREF src);
     void UnBoxIntoUnchecked(void *dest, OBJECTREF src);
 #endif
 
@@ -2766,7 +2777,7 @@ public:
     }
 
     // Returns true if this type is Nullable<T> for some T.
-    inline BOOL IsNullable()
+    inline BOOL IsNullable() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_Nullable;
@@ -2982,6 +2993,37 @@ public:
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists();
 
+    // ------------------------------------------------------------------
+    // Details about Nullable<T> MethodTables
+    // ------------------------------------------------------------------
+    UINT32 GetNullableValueAddrOffset() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsNullable());
+#ifndef TARGET_64BIT
+        return *(BYTE*)&m_encodedNullableUnboxData;
+#else
+        return *(UINT32*)&m_encodedNullableUnboxData;
+#endif
+    }
+
+    UINT32 GetNullableValueSize() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsNullable());
+#ifndef TARGET_64BIT
+        return (UINT32)(m_encodedNullableUnboxData >> 8);
+#else
+        return (UINT32)(m_encodedNullableUnboxData >> 32);
+#endif
+    }
+
+    UINT32 GetNullableNumInstanceFieldBytes() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsNullable());
+        return GetNullableValueAddrOffset() + GetNullableValueSize();
+    }
 
     // ------------------------------------------------------------------
     // Private part of MethodTable
@@ -3732,7 +3774,7 @@ private:
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
         enum_flag_wflags2_unused_2          = 0x0008,
-        enum_flag_HasModuleDependencies     = 0x0010,
+        //unused                            = 0x0010,
         enum_flag_IsIntrinsicType           = 0x0020,
         enum_flag_HasCctor                  = 0x0040,
         enum_flag_HasVirtualStaticMethods   = 0x0080,
@@ -3799,6 +3841,33 @@ private:
         return (m_dwFlags2 & (DWORD)mask) == (DWORD)flag;
     }
 
+#ifndef DACCESS_COMPILE
+    void SetNullableDetails(UINT16 offsetToValueField, UINT32 sizeOfValueField)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(IsNullable());
+#ifndef TARGET_64BIT
+        if (sizeOfValueField > 0xFFFFFF)
+        {
+            // We can't encode the size of the value field in the Nullable<T> MethodTable
+            // because it's too large. This is a limitation of the encoding. It is not expected
+            // to impact any real customers, as Nullable<T> should only be used on the stack
+            // where having a 16MB local would always be a significant problem. Especially oh
+            // a 32-bit machine.
+            ThrowHR(COR_E_TYPELOAD);
+        }
+        if (offsetToValueField > 255)
+        {
+            // If we get here something completely unexpected has happened. We don't expect alignment greater than 128
+            ThrowHR(COR_E_TYPELOAD);
+        }
+        m_encodedNullableUnboxData = ((TADDR)sizeOfValueField << 8) | (TADDR)offsetToValueField;
+#else
+        m_encodedNullableUnboxData = ((TADDR)sizeOfValueField << 32) | (TADDR)offsetToValueField;
+#endif
+    }
+#endif // DACCESS_COMPILE
+
 private:
     // Low WORD is component size for array and string types (HasComponentSize() returns true).
     // Used for flags otherwise.
@@ -3851,13 +3920,17 @@ private:
     // JITed code and JIT helpers. The space used by m_pPerInstInfo is used to represent the array
     // element type handle for array MethodTables.
 
+    public:
     union
     {
         PerInstInfo_t m_pPerInstInfo;
         TADDR         m_ElementTypeHnd;
     };
-    public:
-    PTR_InterfaceInfo   m_pInterfaceMap;
+    union
+    {
+        PTR_InterfaceInfo   m_pInterfaceMap;
+        TADDR               m_encodedNullableUnboxData; // Used for Nullable<T> to represent the offset to the value field, and the size of the value field
+    };
 
     // VTable slots go here
 
@@ -4017,5 +4090,10 @@ void ThrowAmbiguousResolutionException(
     MethodTable* pTargetClass,
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
+
+
+#ifndef DACCESS_COMPILE
+void DoNotRecordTheResultOfEnsureLoadLevel();
+#endif
 
 #endif // !_METHODTABLE_H_

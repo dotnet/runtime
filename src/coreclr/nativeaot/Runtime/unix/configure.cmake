@@ -59,34 +59,6 @@ int main(int argc, char **argv)
     return (int)_lwp_self();
 }" HAVE_LWP_SELF)
 
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC)
-
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC_COARSE)
-
 check_cxx_source_compiles("
 #include <sys/prctl.h>
 

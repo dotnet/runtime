@@ -6,5 +6,5 @@ void UnmanagedFunc()
     int ret = 0;
     printf("UnmanagedFunc calling ManagedFunc\n");
     ret = ManagedFunc(123);
-    printf("ManagedFunc returned %d\n", ret);
+    printf("TestOutput -> ManagedFunc returned %d\n", ret);
 }

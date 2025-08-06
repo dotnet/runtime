@@ -57,10 +57,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
+            ArgumentNullException.ThrowIfNull(returnType);
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
@@ -80,10 +77,7 @@ namespace System.Text.Json
         /// </exception>
         public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromSpan(utf8Json, jsonTypeInfo);
@@ -101,10 +95,7 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
@@ -135,14 +126,8 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerContext context)
         {
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
-            if (context is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(returnType);
+            ArgumentNullException.ThrowIfNull(context);
 
             return ReadFromSpanAsObject(utf8Json, GetTypeInfo(context, returnType));
         }

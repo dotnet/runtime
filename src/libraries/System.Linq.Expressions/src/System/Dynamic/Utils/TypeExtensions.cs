@@ -71,7 +71,7 @@ namespace System.Dynamic.Utils
             if (!pic.TryGetValue(method, out ParameterInfo[]? pis))
             {
                 pis = method.GetParameters();
-                if (method.DeclaringType?.IsCollectible == false)
+                if (!method.IsCollectible)
                 {
                     pic[method] = pis;
                 }

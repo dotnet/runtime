@@ -15,9 +15,8 @@
 #include "forward_declarations.h"
 #include "RhConfig.h"
 
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "interoplibinterface.h"
@@ -29,6 +28,12 @@
 
 #include "gcdesc.h"
 
+#ifdef FEATURE_EVENT_TRACE
+   #include "clretwallmain.h"
+#else // FEATURE_EVENT_TRACE
+   #include "etmdummy.h"
+#endif // FEATURE_EVENT_TRACE
+
 #define RH_LARGE_OBJECT_SIZE 85000
 
 MethodTable g_FreeObjectEEType;
@@ -37,11 +42,18 @@ GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 GPTR_IMPL(Thread, g_pFinalizerThread);
 
 bool RhInitializeFinalization();
+#ifdef TARGET_WINDOWS
+bool RhWaitForFinalizerThreadStart();
+#endif
 
 // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in gcenv.ee.
 // Returns true on success or false if a subsystem failed to initialize.
 bool InitializeGC()
 {
+    // Give some headstart to the finalizer thread by launching it early.
+    if (!RhInitializeFinalization())
+        return false;
+
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
     g_pFreeObjectEEType = &g_FreeObjectEEType;
@@ -72,13 +84,17 @@ bool InitializeGC()
     if (FAILED(hr))
         return false;
 
-    if (!RhInitializeFinalization())
-        return false;
-
     // Initialize HandleTable.
     if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         return false;
 
+#ifdef TARGET_WINDOWS
+    // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
+    // And ensured that COM is initialized (must happen before allocating FLS slot).
+    // Make sure that this was done.
+    if (!RhWaitForFinalizerThreadStart())
+        return false;
+#endif
     return true;
 }
 
@@ -389,7 +405,7 @@ FCIMPLEND
 
 // The MethodTable is remembered in some slow-path allocation paths. This value is used in event tracing.
 // It may statistically correlate with the most allocated type on the given stack/thread.
-DECLSPEC_THREAD
+static PLATFORM_THREAD_LOCAL
 MethodTable* tls_pLastAllocationEEType = NULL;
 
 MethodTable* GetLastAllocEEType()
@@ -471,6 +487,24 @@ EXTERN_C int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
+void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBudgetOffset, Object* orObject)
+{
+#ifdef FEATURE_EVENT_TRACE
+    void* typeId = GetLastAllocEEType();
+    // Note: Just as for AllocationTick, the type name cannot be retrieved
+    WCHAR* name = nullptr;
+
+    if (typeId != nullptr)
+    {
+        unsigned int allocKind =
+            (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
+            (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
+            0;  // SOH
+        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, (BYTE*)orObject, size, samplingBudgetOffset);
+    }
+#endif
+}
+
 static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, Thread* pThread)
 {
     ASSERT(!pThread->IsDoNotTriggerGcSet());
@@ -539,7 +573,47 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     // Save the MethodTable for instrumentation purposes.
     tls_pLastAllocationEEType = pEEType;
 
-    Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
+    // check for dynamic allocation sampling
+    ee_alloc_context* pEEAllocContext = pThread->GetEEAllocContext();
+    gc_alloc_context* pAllocContext = pEEAllocContext->GetGCAllocContext();
+    bool isSampled = false;
+    size_t availableSpace = 0;
+    size_t samplingBudget = 0;
+
+    bool isRandomizedSamplingEnabled = ee_alloc_context::IsRandomizedSamplingEnabled();
+    if (isRandomizedSamplingEnabled)
+    {
+        // The number bytes we can allocate before we need to emit a sampling event.
+        // This calculation is only valid if combined_limit < alloc_limit.
+        samplingBudget = (size_t)(pEEAllocContext->combined_limit - pAllocContext->alloc_ptr);
+
+        // The number of bytes available in the current allocation context
+        availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+
+        // Check to see if the allocated object overlaps a sampled byte
+        // in this AC. This happens when both:
+        // 1) The AC contains a sampled byte (combined_limit < alloc_limit)
+        // 2) The object is large enough to overlap it (samplingBudget < aligned_size)
+        //
+        // Note that the AC could have no remaining space for allocations (alloc_ptr =
+        // alloc_limit = combined_limit). When a thread hasn't done any SOH allocations
+        // yet it also starts in an empty state where alloc_ptr = alloc_limit =
+        // combined_limit = nullptr. The (1) check handles both of these situations
+        // properly as an empty AC can not have a sampled byte inside of it.
+        isSampled =
+            (pEEAllocContext->combined_limit < pAllocContext->alloc_limit) &&
+            (samplingBudget < cbSize);
+
+        // if the object overflows the AC, we need to sample the remaining bytes
+        // the sampling budget only included at most the bytes inside the AC
+        if (cbSize > availableSpace && !isSampled)
+        {
+            samplingBudget = ee_alloc_context::ComputeGeometricRandom() + availableSpace;
+            isSampled = (samplingBudget < cbSize);
+        }
+    }
+
+    Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, cbSize, uFlags);
     if (pObject == NULL)
         return NULL;
 
@@ -549,6 +623,19 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
         ASSERT(numElements == (uint32_t)numElements);
         ((Array*)pObject)->InitArrayLength((uint32_t)numElements);
     }
+
+    if (isSampled)
+    {
+        FireAllocationSampled((GC_ALLOC_FLAGS)uFlags, cbSize, samplingBudget, pObject);
+    }
+
+    // There are a variety of conditions that may have invalidated the previous combined_limit value
+    // such as not allocating the object in the AC memory region (UOH allocations), moving the AC, adding
+    // extra alignment padding, allocating a new AC, or allocating an object that consumed the sampling budget.
+    // Rather than test for all the different invalidation conditions individually we conservatively always
+    // recompute it. If sampling isn't enabled this inlined function is just trivially setting
+    // combined_limit=alloc_limit.
+    pEEAllocContext->UpdateCombinedLimit(isRandomizedSamplingEnabled);
 
     if (uFlags & GC_ALLOC_USER_OLD_HEAP)
         GCHeapUtilities::GetGCHeap()->PublishObject((uint8_t*)pObject);
@@ -568,7 +655,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
 //  numElements     -  number of array elements
 //  pTransitionFrame-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
+EXTERN_C void* RhpGcAlloc(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, PInvokeTransitionFrame* pTransitionFrame)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 

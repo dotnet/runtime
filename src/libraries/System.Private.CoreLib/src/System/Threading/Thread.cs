@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
@@ -69,18 +70,37 @@ namespace System.Threading
                     AutoreleasePool.CreateAutoreleasePool();
 #endif
 
-                if (start is ThreadStart threadStart)
+                try
                 {
-                    threadStart();
+#if TARGET_OSX || NATIVEAOT
+                    // On other platforms, when the underlying native thread is created,
+                    // the thread name is set to the name of the managed thread by another thread.
+                    // However, on OS X and NativeAOT (across all OSes), only the thread itself can set its name.
+                    // Therefore, by this point the native thread is still unnamed as it has not started yet.
+                    Thread thread = Thread.CurrentThread;
+                    if (!string.IsNullOrEmpty(thread.Name))
+                    {
+                        // Name the underlying native thread to match the managed thread name.
+                        thread.ThreadNameChanged(thread.Name);
+                    }
+#endif
+                    if (start is ThreadStart threadStart)
+                    {
+                        threadStart();
+                    }
+                    else
+                    {
+                        ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
+
+                        object? startArg = _startArg;
+                        _startArg = null;
+
+                        parameterizedThreadStart(startArg);
+                    }
                 }
-                else
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {
-                    ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
-
-                    object? startArg = _startArg;
-                    _startArg = null;
-
-                    parameterizedThreadStart(startArg);
+                    // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
                 }
 
 #if FEATURE_OBJCMARSHAL
@@ -149,30 +169,18 @@ namespace System.Threading
         }
 
 #if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
-        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => true;
-        internal static bool IsInternalThreadStartSupported => true;
-#elif FEATURE_WASM_PERFTRACING
-        [UnsupportedOSPlatformGuard("wasi")]
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => false;
-        internal static bool IsInternalThreadStartSupported => true;
 #else
-        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
-        internal static bool IsInternalThreadStartSupported => false;
 #endif
 
-        internal static void ThrowIfNoThreadStart(bool internalThread = false)
+        internal static void ThrowIfNoThreadStart()
         {
             if (IsThreadStartSupported)
-                return;
-            if (IsInternalThreadStartSupported && internalThread)
                 return;
             throw new PlatformNotSupportedException();
         }
@@ -201,12 +209,12 @@ namespace System.Threading
 #endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
-        private void Start(object? parameter, bool captureContext, bool internalThread = false)
+        private void Start(object? parameter, bool captureContext)
         {
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
-            ThrowIfNoThreadStart(internalThread);
+            ThrowIfNoThreadStart();
 
             StartHelper? startHelper = _startHelper;
 
@@ -247,11 +255,9 @@ namespace System.Threading
 #endif
         public void UnsafeStart() => Start(captureContext: false);
 
-        internal void InternalUnsafeStart() => Start(captureContext: false, internalThread: true);
-
-        private void Start(bool captureContext, bool internalThread = false)
+        private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart(internalThread);
+            ThrowIfNoThreadStart();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -379,6 +385,21 @@ namespace System.Threading
         /// <summary>Returns the operating system identifier for the current thread.</summary>
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
 #endif
+
+#if !MONO
+        [Intrinsic]
+        internal static void FastPollGC() => FastPollGC();
+#endif
+
+        internal static Thread CurrentThreadAssumedInitialized
+        {
+            get
+            {
+                Thread? thread = t_currentThread;
+                Debug.Assert(thread != null);
+                return thread;
+            }
+        }
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
@@ -565,7 +586,7 @@ namespace System.Threading
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
+        public static nint VolatileRead(ref nint address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [return: NotNullIfNotNull(nameof(address))]
@@ -592,7 +613,7 @@ namespace System.Threading
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
-        public static UIntPtr VolatileRead(ref UIntPtr address) => Volatile.Read(ref address);
+        public static nuint VolatileRead(ref nuint address) => Volatile.Read(ref address);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite(ref byte address, byte value) => Volatile.Write(ref address, value);
@@ -610,7 +631,7 @@ namespace System.Threading
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite(ref nint address, nint value) => Volatile.Write(ref address, value);
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void VolatileWrite([NotNullIfNotNull(nameof(value))] ref object? address, object? value) => Volatile.Write(ref address, value);
@@ -636,7 +657,7 @@ namespace System.Threading
         [Obsolete(Obsoletions.ThreadVolatileReadWriteMessage, DiagnosticId = Obsoletions.ThreadVolatileReadWriteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [CLSCompliant(false)]
-        public static void VolatileWrite(ref UIntPtr address, UIntPtr value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite(ref nuint address, nuint value) => Volatile.Write(ref address, value);
 
         /// <summary>
         /// Manages functionality required to support members of <see cref="Thread"/> dealing with thread-local data
@@ -720,15 +741,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetCurrentProcessorId()
         {
-            if (s_isProcessorNumberReallyFast)
-                return GetCurrentProcessorNumber();
-
             return ProcessorIdCache.GetCurrentProcessorId();
         }
-
-        // a speed check will determine refresh rate of the cache and will report if caching is not advisable.
-        // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
-        private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
 #if FEATURE_WASM_MANAGED_THREADS
         [ThreadStatic]

@@ -27,47 +27,31 @@
     <PackageReadmeFilePath Condition="'$(PackageReadmeFilePath)' == '' and '$(EnableDefaultPackageReadmeFile)' == 'true'">PACKAGE.md</PackageReadmeFilePath>
     <BeforePack>$(BeforePack);ValidatePackageReadmeExists</BeforePack>
 
-    <!-- Non-shipping packages shouldn't incrementally serviced. -->
-    <PackageUseIncrementalServicingVersion Condition="'$(IsShipping)' != 'true'">false</PackageUseIncrementalServicingVersion>
-    <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
-    <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
+    <!-- Generate packages for rid specific projects when not in runtimelab (to avoid binclashes when using the same feed). -->
     <IsRIDSpecificProject Condition="$(MSBuildProjectName.StartsWith('runtime.')) and
                                      !$(MSBuildProjectName.StartsWith('runtime.native'))">true</IsRIDSpecificProject>
-    <GeneratePackageOnBuild Condition="(
-                                        '$(BuildAllConfigurations)' == 'true' or
-                                        '$(IsRIDSpecificProject)' == 'true'
-                                       ) and
-                                       (
-                                        '$(PreReleaseVersionLabel)' != 'servicing' or
-                                        '$(PackageUseIncrementalServicingVersion)' != 'true'
-                                       ) and
-                                       '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
-    <!-- When in source-build we need to generate all packages when building for all configurations even in servicing. -->
-    <GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' != 'true' and
-                                       '$(BuildAllConfigurations)' == 'true' and
-                                       '$(DotNetBuildSourceOnly)' == 'true'">true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(IsRIDSpecificProject)' == 'true' and '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
+
+    <AllowedOutputExtensionsInPackageBuildOutputFolder Condition="'$(IncludeSymbolsInPackage)' == 'true'">$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb;.mdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
+  
+  <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsPackable>true</IsPackable>
+      <PackageId>$(PackageId)</PackageId>
+      <PackageVersion>$(PackageVersion)</PackageVersion>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
 
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
     <!-- In servicing, the live package is compared against the GA version in strict mode. -->
     <EnableStrictModeForBaselineValidation>true</EnableStrictModeForBaselineValidation>
     <!-- In servicing, disable the APICompat rule that validates that the assembly versions must match. -->
     <NoWarn>$(NoWarn);CP0003</NoWarn>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
-                            '$(PackageUseIncrementalServicingVersion)' == 'true'">
-    <!-- If no servicing version is set we need to default to 0 in order for dependency versions to
-    be calculated properly, if we don't set it to 0, we would get the dependency version using the
-    product Patch Version -->
-    <ServicingVersion Condition="'$(ServicingVersion)' == ''">0</ServicingVersion>
-
-    <!-- Always update the package version in servicing. -->
-    <Version>$(MajorVersion).$(MinorVersion).$(ServicingVersion)</Version>
-    <Version Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -149,7 +133,7 @@
       <TfmSpecificPackageFile Include="@(TfmRuntimeSpecificPackageFile)"
                               PackagePath="runtimes\$(_packageTargetRuntime)\$(BuildOutputTargetFolder)\$(_targetFrameworkWithoutSuffix)\" />
       <!-- Create the item and use its metadata separately to avoid MSB4120. See https://aka.ms/msbuild/metadata-self-ref for more info. -->
-      <_RuntimeSymbolPath Include="$(RuntimeSymbolPath)" />
+      <_RuntimeSymbolPath Include="@(TfmRuntimeSpecificPackageFile->'%(RootDir)%(Directory)%(FileName).pdb')" Condition="'%(TfmRuntimeSpecificPackageFile.Extension)' == '.dll'" KeepMetadata="None" />
       <TfmSpecificDebugSymbolsFile Include="@(_RuntimeSymbolPath)"
                                    TargetPath="/runtimes/$(_packageTargetRuntime)/$(BuildOutputTargetFolder)/$(_targetFrameworkWithoutSuffix)/%(_RuntimeSymbolPath.Filename)%(_RuntimeSymbolPath.Extension)"
                                    TargetFramework="$(_targetFrameworkWithoutSuffix)"
@@ -195,21 +179,6 @@
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
       <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\%(NETStandardCompatError.Supported)\$(PackageId).targets" Condition="'@(NETStandardCompatError)' != ''" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="WarnOnProjectReferenceToFrameworkAssemblies"
-          BeforeTargets="IncludeTransitiveProjectReferences"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and
-                     '@(ProjectReference)' != ''">
-    <!-- Find project references that overlap with NetCoreApp, are direct (NuGetPackageId is not set), actually referenced (ReferenceOutputAssembly), and not hidden with PrivateAssets
-         ProjectReferences can opt out of this checking by setting AllowFrameworkPackageReference, though they should not. -->
-    <Warning Text="Project reference '%(ProjectReference.Identity)' is a reference to a framework assembly and is not required in $(NetCoreAppCurrent) (NetCoreAppCurrent)."
-             Code="NETPKG0001"
-             Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) and
-                        '%(ProjectReference.ReferenceOutputAssembly)' != 'false' and
-                        '%(ProjectReference.NuGetPackageId)' == '' and
-                        '%(ProjectReference.PrivateAssets)' != 'all' and
-                        '%(ProjectReference.AllowFrameworkPackageReference)' != 'true'" />
   </Target>
 
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"
@@ -281,13 +250,13 @@
       <!-- Add ReferenceCopyLocalPaths for ProjectReferences which are flagged as Pack="true" into the package. -->
       <_projectReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Pack', 'true'))" />
       <TfmSpecificPackageFile Include="@(_projectReferenceCopyLocalPaths)"
-                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)\$(_referringTargetFramework)\'))" />
+                              PackagePath="$([MSBuild]::ValueOrDefault('%(ReferenceCopyLocalPaths.PackagePath)', '$(BuildOutputTargetFolder)/$(_referringTargetFramework)/'))" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
-                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
+                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)%(Filename)%(Extension)"
                                    TargetFramework="$(_referringTargetFramework)"
                                    Condition="'$(IncludeSymbols)' == 'true'" />
       <!-- Remove symbol from the non symbol package. -->
-      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
+      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" Condition="'$(IncludeSymbolsInPackage)' != 'true'" />
       <!-- If the reference assembly is included, don't put the documentation file next to the lib assembly. -->
       <TfmSpecificPackageFile Remove="@(_projectReferenceCopyLocalPaths->WithMetadataValue('Extension', '.xml')->WithMetadataValue('IncludeReferenceAssemblyInPackage', 'true'))" />
     </ItemGroup>
@@ -303,13 +272,21 @@
 
   <!-- Manual invoked target that can be used by toolset packages by adding it to the `TargetsForTfmSpecificContentInPackage` property. -->
   <Target Name="AddBuildOutputToToolsPackage">
+    <PropertyGroup Condition="'$(BuildTaskTargetTfmSpecificFolder)' == ''">
+      <BuildTaskTargetTfmSpecificFolder Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">net</BuildTaskTargetTfmSpecificFolder>
+      <BuildTaskTargetTfmSpecificFolder Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">netframework</BuildTaskTargetTfmSpecificFolder>
+    </PropertyGroup>
+
+    <Error Text="The 'BuildTaskTargetTfmSpecificFolder' property must be explicitly set when not targeting .NETCoreApp or .NETFramework"
+           Condition="'$(BuildTaskTargetTfmSpecificFolder)' == ''" />
+
     <ItemGroup>
       <!-- Include build outputs in the package under tools directory. -->
       <_BuildOutputPackageFile Include="$(OutputPath)**"
                                Exclude="$(OutputPath)publish\**;
                                         $(OutputPath)" />
       <TfmSpecificPackageFile Include="@(_BuildOutputPackageFile)"
-                              PackagePath="tools/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)" />
+                              PackagePath="tools/$(BuildTaskTargetTfmSpecificFolder)/%(RecursiveDir)%(FileName)%(Extension)" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
                                    TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
                                    TargetFramework="$(TargetFramework)"
@@ -317,14 +294,6 @@
       <!-- Remove symbols from the non symbol package. -->
       <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="ValidateServicingVersionIsProperlySet"
-          Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
-                     '$(PackageUseIncrementalServicingVersion)' == 'true' and
-                     '$(DotNetBuildSourceOnly)' != 'true'"
-          AfterTargets="GenerateNuspec">
-    <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
   </Target>
 
   <Target Name="ValidatePackageReadmeExists"

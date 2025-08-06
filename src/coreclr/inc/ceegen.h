@@ -104,10 +104,6 @@ class CeeSectionImpl {
         CeeSection &           relativeTo,
         CeeSectionRelocType    reloc = srRelocAbsolute,
         CeeSectionRelocExtra * extra = NULL) = 0;
-    virtual HRESULT addBaseReloc(
-        unsigned               offset,
-        CeeSectionRelocType    reloc = srRelocHighLow,
-        CeeSectionRelocExtra * extra = NULL) = 0;
     virtual HRESULT directoryEntry(unsigned num) = 0;
     virtual unsigned char * name() = 0;
     virtual char * computePointer(unsigned offset) const = 0;
@@ -150,8 +146,6 @@ class CeeSection {
     // have the base of section 'relativeTo added to it
     HRESULT addSectReloc(unsigned offset, CeeSection& relativeTo,
                          CeeSectionRelocType = srRelocAbsolute, CeeSectionRelocExtra *extra = 0);
-    // Add a base reloc for the given offset in the current section
-    virtual HRESULT addBaseReloc(unsigned offset, CeeSectionRelocType reloc = srRelocHighLow, CeeSectionRelocExtra *extra = 0);
 
 
     // this section will be directory entry 'num'
@@ -179,7 +173,7 @@ class CCeeGen : public ICeeGenInternal {
   protected:
     short m_textIdx;            // m_sections[] index for the .text section
     short m_metaIdx;            // m_sections[] index for metadata (.text, or .cormeta for obj files)
-    short m_corHdrIdx;          // m_sections[] index for the COM+ header (.text0)
+    short m_corHdrIdx;          // m_sections[] index for the CLR header (.text0)
     short m_stringIdx;          // m_sections[] index for strings (.text, or .rdata for EnC)
     short m_ilIdx;              // m_sections[] index for IL (.text)
 
@@ -223,10 +217,6 @@ class CCeeGen : public ICeeGenInternal {
     STDMETHODIMP EmitString (
         _In_ LPWSTR lpString,               // [IN] String to emit
         ULONG *RVA);
-
-    STDMETHODIMP GetString (
-        ULONG RVA,
-        __inout LPWSTR *lpString);
 
     STDMETHODIMP AllocateMethodBuffer (
         ULONG cchBuffer,                    // [IN] Length of string to emit
@@ -275,7 +265,7 @@ class CCeeGen : public ICeeGenInternal {
     // Write the metadata in "emitter" to the default metadata section is "section" is 0
     // If 'section != 0, it will put the data in 'buffer'.  This
     // buffer is assumed to be in 'section' at 'offset' and of size 'buffLen'
-    // (should use GetSaveSize to insure that buffer is big enough
+    // (should use GetSaveSize to ensure that buffer is big enough
     virtual HRESULT emitMetaData(IMetaDataEmit *emitter,
                         CeeSection* section=0, DWORD offset=0, BYTE* buffer=0, unsigned buffLen=0);
     virtual HRESULT getMethodRVA(ULONG codeOffset, ULONG *codeRVA);
@@ -322,12 +312,6 @@ inline HRESULT CeeSection::addSectReloc(
     WRAPPER_NO_CONTRACT;
     return(m_impl.addSectReloc(offset, relativeTo, reloc, extra));
 }
-
-inline HRESULT CeeSection::addBaseReloc(unsigned offset, CeeSectionRelocType reloc, CeeSectionRelocExtra *extra) {
-    WRAPPER_NO_CONTRACT;
-    return(m_impl.addBaseReloc(offset, reloc, extra));
-}
-
 
 inline HRESULT CeeSection::directoryEntry(unsigned num) {
     WRAPPER_NO_CONTRACT;

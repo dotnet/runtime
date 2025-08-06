@@ -4,7 +4,7 @@
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
         <source>Argument '{0}' is not referenced from the logging message</source>
-        <target state="needs-review-translation">引數 '{0}' 未參照記錄訊息</target>
+        <target state="translated">引數 '{0}' 未參照記錄訊息</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <target state="translated">引數 '{0}' 使用不支援的 out 參數修飾元</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="new">Argument is using the unsupported out parameter modifier</target>
+        <target state="translated">引數使用不支援的 out 參數修飾元</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -69,22 +69,22 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">記錄來源產生器在 C# {0} 中不可用。請使用語言版本 {1} 或更新版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">來源產生器不支援 C# 語言版本。</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="new">Logging method '{0}' contains malformed format strings</target>
+        <target state="translated">記錄方法 '{0}' 包含格式錯誤的格式字串</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="new">Logging method contains malformed format strings</target>
+        <target state="translated">記錄方法包含格式錯誤的格式字串</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
         <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
-        <target state="new">Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</target>
+        <target state="translated">類別 '{0}' 具有類型 Microsoft.Extensions.Logging.ILogger 的主要建構函式參數，其已由類別或基底類別中的欄位隱藏，因此無法使用</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
         <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
-        <target state="new">Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</target>
+        <target state="translated">類型 Microsoft.Extensions.Logging.ILogger 的主要建構函式參數由某欄位隱藏</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
@@ -184,12 +184,12 @@
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesMessage">
         <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="new">Multiple logging methods are using event name {0} in class {1}</target>
+        <target state="translated">多個記錄方法是使用類別 {0} 中的事件名稱 {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesTitle">
         <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="new">Multiple logging methods should not use the same event name within a class</target>
+        <target state="translated">多個記錄方法不應在類別內使用相同的事件名稱</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

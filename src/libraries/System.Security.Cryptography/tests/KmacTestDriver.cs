@@ -500,7 +500,7 @@ namespace System.Security.Cryptography.Tests
                 mac = stackalloc byte[OutputLength];
                 TKmacTrait.AppendData(kmac, "habaneros"u8);
                 TKmacTrait.GetHashAndReset(kmac, mac);
-                AssertExtensions.SequenceEqual(expected, mac);
+                AssertExtensions.SequenceEqual(expected.AsSpan(), mac);
             }
         }
 

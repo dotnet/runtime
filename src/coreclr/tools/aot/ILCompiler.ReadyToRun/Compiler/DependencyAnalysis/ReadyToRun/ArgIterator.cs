@@ -778,27 +778,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
                         }
-
-#if FEATURE_INTERPRETER
-                        switch (_interpreterCallingConvention)
-                        {
-                            case CallingConventions.StdCall:
-                                _numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
-                                _ofsStack = TransitionBlock.GetOffsetOfArgs() + numRegistersUsed * _transitionBlock.PointerSize + initialArgOffset;
-                                break;
-
-                            case CallingConventions.ManagedStatic:
-                            case CallingConventions.ManagedInstance:
-                                _numRegistersUsed = numRegistersUsed;
-                                // DESKTOP BEHAVIOR     _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
-                                _ofsStack= (int)(TransitionBlock.GetOffsetOfArgs() + initialArgOffset);
-                                break;
-
-                            default:
-                                Environment.FailFast("Unsupported calling convention.");
-                                break;
-                        }
-#endif
                         _x86NumRegistersUsed = numRegistersUsed;
                         _x86OfsStack = (int)(_transitionBlock.OffsetOfArgs + SizeOfArgStack());
                         break;
@@ -867,14 +846,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             switch (_transitionBlock.Architecture)
             {
                 case TargetArchitecture.X86:
-#if FEATURE_INTERPRETER
-                    if (_interpreterCallingConvention != CallingConventions.ManagedStatic && _interpreterCallingConvention != CallingConventions.ManagedInstance)
-                    {
-                        argOfs = _curOfs;
-                        _curOfs += ArchitectureConstants.StackElemSize(argSize);
-                        return argOfs;
-                    }
-#endif
                     if (_transitionBlock.IsArgumentInRegister(ref _x86NumRegistersUsed, argType, _argTypeHandle))
                     {
                         return _transitionBlock.OffsetOfArgumentRegisters + (_transitionBlock.NumArgumentRegisters - _x86NumRegistersUsed) * _transitionBlock.PointerSize;
@@ -1514,23 +1485,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     nSizeOfArgStack += _transitionBlock.PointerSize;
                     numRegistersUsed = _transitionBlock.NumArgumentRegisters; // Nothing else gets passed in registers for varargs
                 }
-
-#if FEATURE_INTERPRETER
-                switch (_interpreterCallingConvention)
-                {
-                    case CallingConventions.StdCall:
-                        numRegistersUsed = ArchitectureConstants.NUM_ARGUMENT_REGISTERS;
-                        break;
-
-                    case CallingConventions.ManagedStatic:
-                    case CallingConventions.ManagedInstance:
-                        break;
-
-                    default:
-                        Environment.FailFast("Unsupported calling convention.");
-                        break;
-                }
-#endif // FEATURE_INTERPRETER
 
                 int nArgs = NumFixedArgs;
                 for (int i = (_skipFirstArg ? 1 : 0); i < nArgs; i++)

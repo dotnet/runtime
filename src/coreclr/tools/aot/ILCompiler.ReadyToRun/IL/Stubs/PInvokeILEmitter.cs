@@ -24,7 +24,7 @@ namespace Internal.IL.Stubs
         private readonly MethodDesc _targetMethod;
         private readonly Marshaller[] _marshallers;
         private readonly PInvokeMetadata _importMetadata;
-        private static readonly ConditionalWeakTable<TypeSystemContext, ConcurrentDictionary<MethodDesc, PInvokeTargetNativeMethod>> s_contexts = new ();
+        private static readonly ConditionalWeakTable<TypeSystemContext, ConcurrentDictionary<MethodDesc, PInvokeTargetNativeMethod>> s_contexts = new();
 
         private PInvokeILEmitter(MethodDesc targetMethod)
         {

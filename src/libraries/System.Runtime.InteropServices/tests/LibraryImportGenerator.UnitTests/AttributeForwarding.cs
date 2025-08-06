@@ -21,6 +21,7 @@ namespace LibraryImportGenerator.UnitTests
         [Theory]
         [InlineData("SuppressGCTransition", "System.Runtime.InteropServices.SuppressGCTransitionAttribute")]
         [InlineData("UnmanagedCallConv", "System.Runtime.InteropServices.UnmanagedCallConvAttribute")]
+        [InlineData("WasmImportLinkage", "System.Runtime.InteropServices.WasmImportLinkageAttribute")]
         public async Task KnownParameterlessAttribute(string attributeSourceName, string attributeMetadataName)
         {
             string source = $$"""

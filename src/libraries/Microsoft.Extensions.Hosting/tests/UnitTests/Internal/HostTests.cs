@@ -688,7 +688,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
-        public async Task HostPropagatesExceptionsThrownWithBackgroundServiceExceptionBehaviorOfStopHost()
+        public async Task HostStopsWithBackgroundServiceExceptionBehaviorOfStopHost()
         {
             using IHost host = CreateBuilder()
                 .ConfigureServices(
@@ -702,7 +702,12 @@ namespace Microsoft.Extensions.Hosting.Internal
                     })
                 .Build();
 
-            await Assert.ThrowsAsync<Exception>(() => host.StartAsync());
+            await host.StartAsync();
+
+            // host is expected to catch exception, then trigger ApplicationStopping.
+            // give the host 1 minute to stop.
+            var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+            Assert.True(lifetime.ApplicationStopping.WaitHandle.WaitOne(TimeSpan.FromMinutes(1)));
         }
 
         [Fact]
@@ -1427,6 +1432,50 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         /// <summary>
+        /// Tests that an exception is logged if a hosted service factory fails.
+        /// </summary>
+        [Fact]
+        public async Task HostedServiceFactoryExceptionGetsLogged()
+        {
+            TestLoggerProvider logger = new TestLoggerProvider();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(logger);
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddHostedService<WorkerTemplateService>(p => throw new InvalidOperationException("factory failed"));
+                })
+                .Build();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+
+            LogEvent[] events = logger.GetEvents();
+            Assert.Single(events);
+            Assert.Equal(LogLevel.Error, events[0].LogLevel);
+            Assert.Equal("HostedServiceStartupFaulted", events[0].EventId.Name);
+        }
+
+        [Fact]
+        public async Task HostConcurrentCancelledStartAsyncAbortsStart()
+        {
+            using CancellationTokenSource cancellationTokenSource = new();
+            StartAsyncCancelledService service = new(cancellationTokenSource);
+
+            using IHost host = CreateBuilder()
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.Configure<HostOptions>(o => o.ServicesStartConcurrently = true);
+                    services.AddHostedService(sp => service);
+                })
+                .Build();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() => host.StartAsync(cancellationTokenSource.Token));
+        }
+
+        /// <summary>
         /// Tests that when a BackgroundService is canceled when stopping the host,
         /// no error is logged.
         /// </summary>
@@ -1669,6 +1718,17 @@ namespace Microsoft.Extensions.Hosting.Internal
             protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
 
             public override Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        }
+
+        private class StartAsyncCancelledService(CancellationTokenSource cancellationTokenSource) : IHostedService
+        {
+            public Task StartAsync(CancellationToken cancellationToken)
+            {
+                cancellationTokenSource.Cancel();
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         }
 
         private class SlowStartService : IHostedService

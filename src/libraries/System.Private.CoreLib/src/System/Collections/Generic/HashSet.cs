@@ -1570,7 +1570,7 @@ namespace System.Collections.Generic
         ///
         /// This attempts to allocate on the stack, if below StackAllocThreshold.
         /// </summary>
-        private unsafe void IntersectWithEnumerable(IEnumerable<T> other)
+        private void IntersectWithEnumerable(IEnumerable<T> other)
         {
             Debug.Assert(_buckets != null, "_buckets shouldn't be null; callers should check first");
 
@@ -1580,7 +1580,7 @@ namespace System.Collections.Generic
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
             Span<int> span = stackalloc int[StackAllocThreshold];
-            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+            BitHelper bitHelper = (uint)intArrayLength <= StackAllocThreshold ?
                 new BitHelper(span.Slice(0, intArrayLength), clear: true) :
                 new BitHelper(new int[intArrayLength], clear: false);
 
@@ -1642,7 +1642,7 @@ namespace System.Collections.Generic
         ///
         /// </summary>
         /// <param name="other"></param>
-        private unsafe void SymmetricExceptWithEnumerable(IEnumerable<T> other)
+        private void SymmetricExceptWithEnumerable(IEnumerable<T> other)
         {
             int originalCount = _count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);

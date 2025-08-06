@@ -60,6 +60,14 @@ namespace ILCompiler.Dataflow
                 field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
         }
 
+        public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, TypeDesc type)
+        {
+            return GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, type) ||
+                type.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                type.DoesTypeRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _) ||
+                type.DoesTypeRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
+        }
+
         internal static void CheckAndReportAllRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember)
         {
             CheckAndReportRequires(diagnosticContext, calledMember, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
@@ -130,6 +138,25 @@ namespace ILCompiler.Dataflow
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
+
+            // We're on an interface and we're processing annotations for the purposes of a object.GetType() call.
+            // Most of the annotations don't apply to the members of interfaces - the result of object.GetType() is
+            // never the interface type, it's a concrete type that implements the interface. Limit this to the only
+            // annotations that are applicable in this situation.
+            if (type.IsInterface)
+            {
+                // .All applies to interface members same as to the type
+                if (annotation != DynamicallyAccessedMemberTypes.All)
+                {
+                    // Filter to the MemberTypes that apply to interfaces
+                    annotation &= DynamicallyAccessedMemberTypes.Interfaces;
+
+                    // If we're left with nothing, we're done
+                    if (annotation == DynamicallyAccessedMemberTypes.None)
+                        return new DependencyList();
+                }
+            }
+
             var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true);
 
             // We need to apply annotations to this type, and its base/interface types (recursively)
@@ -410,10 +437,10 @@ namespace ILCompiler.Dataflow
 
         private void ProcessGenericArgumentDataFlow(MethodDesc method)
         {
-            // We only need to validate static methods and then all generic methods
-            // Instance non-generic methods don't need validation because the creation of the instance
-            // is the place where the validation will happen.
-            if (!method.Signature.IsStatic && !method.HasInstantiation && !method.IsConstructor)
+            // We mostly need to validate static methods and generic methods
+            // Instance non-generic methods on reference types don't need validation
+            // because the creation of the instance is the place where the validation will happen.
+            if (!method.Signature.IsStatic && !method.HasInstantiation && !method.IsConstructor && !method.OwningType.IsValueType)
                 return;
 
             if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_annotations, method))

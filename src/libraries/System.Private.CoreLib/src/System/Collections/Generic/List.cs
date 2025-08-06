@@ -461,7 +461,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="indexToInsert">Index of the first insertion.</param>
         /// <param name="insertionCount">How many elements will be inserted.</param>
-        private void GrowForInsertion(int indexToInsert, int insertionCount = 1)
+        internal void GrowForInsertion(int indexToInsert, int insertionCount = 1)
         {
             Debug.Assert(insertionCount > 0);
 
@@ -1184,8 +1184,6 @@ namespace System.Collections.Generic
 
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
-            internal static IEnumerator<T>? s_emptyEnumerator;
-
             private readonly List<T> _list;
             private int _index;
             private readonly int _version;

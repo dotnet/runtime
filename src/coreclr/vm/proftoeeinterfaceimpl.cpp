@@ -136,8 +136,6 @@
 
 #include "profdetach.h"
 
-#include "metadataexports.h"
-
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"
 #endif // FEATURE_PERFTRACING
@@ -949,7 +947,7 @@ void __stdcall UpdateGenerationBounds()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions)
+            EX_END_CATCH
         }
 
         if (s_currentGenerationTable == nullptr)
@@ -4031,7 +4029,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         // Get the module file name
         LPCWSTR wszFileName = pFile->GetPath();
         _ASSERTE(wszFileName != NULL);
-        PREFIX_ASSUME(wszFileName != NULL);
+        _ASSERTE(wszFileName != NULL);
 
         // If there is no filename, which is the case for RefEmit modules and for SQL
         // modules, then rather than returning an empty string for the name, just use the
@@ -6835,8 +6833,8 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
         return CORPROF_E_SUSPENSION_IN_PROGRESS;
     }
 
-    g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+    g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
     return S_OK;
 }
 
@@ -6874,8 +6872,8 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
         return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
     }
 
-    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     return S_OK;
 }
 
@@ -7667,8 +7665,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         // SuspendEE() may race with other threads by design and this thread may block
         // arbitrarily long inside SuspendEE() for other threads to complete their own
         // suspensions.
-        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
         ownEESuspension = TRUE;
     }
 
@@ -7700,8 +7698,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
 
     if (ownEESuspension)
     {
-        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
         g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     }
 
     return hr;
@@ -8085,11 +8083,11 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
+    if (!pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
-        InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pCf->GetFrame();
-        PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+        InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pCf->GetFrame());
+        PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
         TADDR datum = dac_cast<TADDR>(pMD);
         if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
         {
@@ -8163,55 +8161,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
 }
 
 #ifdef TARGET_X86
-
-//---------------------------------------------------------------------------------------
-// Normally, calling GetFunction() on the frame is sufficient to ensure
-// HelperMethodFrames are initialized. However, sometimes we need to be able to specify
-// that we should not enter the host while initializing, so we need to initialize such
-// frames more directly. This small helper function directly forces the initialization,
-// and ensures we don't enter the host as a result if we're executing in an asynchronous
-// call (i.e., hijacked thread)
-//
-// Arguments:
-//      pFrame - Frame to initialize.
-//
-// Return Value:
-//     TRUE iff pFrame was successfully initialized (or was already initialized). If
-//     pFrame is not a HelperMethodFrame (or derived type), this returns TRUE
-//     immediately. FALSE indicates we tried to initialize w/out entering the host, and
-//     had to abort as a result when a reader lock was needed but unavailable.
-//
-
-static BOOL EnsureFrameInitialized(Frame * pFrame)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    if (pFrame->GetFrameType() != Frame::TYPE_HELPER_METHOD_FRAME)
-    {
-        // This frame is not a HelperMethodFrame or a frame derived from
-        // HelperMethodFrame, so HMF-specific lazy initialization is not an issue.
-        return TRUE;
-    }
-
-    HelperMethodFrame * pHMF = (HelperMethodFrame *) pFrame;
-
-    if (pHMF->InsureInit(
-        NULL                        // unwindState
-        ) != NULL)
-    {
-        // InsureInit() succeeded and found the return address
-        return TRUE;
-    }
-
-    // No return address was found
-    return FALSE;
-}
 
 //---------------------------------------------------------------------------------------
 //
@@ -8361,14 +8310,6 @@ HRESULT ProfToEEInterfaceImpl::ProfilerEbpWalker(
                     goto Loop;
                 }
 
-
-                // This should be the first call we make to the Frame, as it will
-                // ensure we force lazy initialize of HelperMethodFrames
-                if (!EnsureFrameInitialized(pFrameCur))
-                {
-                    return CORPROF_E_ASYNCHRONOUS_UNSAFE;
-                }
-
                 // This frame is only useful if it gives us an actual return address,
                 // and is situated on the stack at or below our current ESP (stack
                 // grows up)
@@ -8431,8 +8372,6 @@ Loop:
                 // about the most likely cases, and it's ok if the unlikely cases result
                 // in truncated stacks, as unlikely cases will be statistically
                 // irrelevant to CPU performance sampling profilers
-                CodeManState codeManState;
-                codeManState.dwIsSet = 0;
                 REGDISPLAY rd;
                 FillRegDisplay(&rd, &ctxCur);
 
@@ -8443,8 +8382,7 @@ Loop:
                 codeInfo.GetCodeManager()->UnwindStackFrame(
                     &rd,
                     &codeInfo,
-                    SpeculativeStackwalk,
-                    &codeManState);
+                    SpeculativeStackwalk);
 
                 ctxCur.Ebp = *rd.GetEbpLocation();
                 ctxCur.Esp = rd.SP;
@@ -10733,7 +10671,6 @@ GCX_COOP_THREAD_EXISTS(GET_THREAD());
 HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
     if (GetThreadNULLOk() == NULL)
     {
@@ -10913,8 +10850,6 @@ HCIMPL_PROLOG(ProfileLeave)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
-
 #ifdef PROFILING_SUPPORTED
 
 #ifdef PROF_TEST_ONLY_FORCE_ELT
@@ -11039,8 +10974,6 @@ HCIMPLEND
 HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
 #ifdef PROFILING_SUPPORTED
 

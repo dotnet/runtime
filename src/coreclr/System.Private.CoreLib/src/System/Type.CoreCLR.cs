@@ -78,10 +78,6 @@ namespace System
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
-        // Given a class handle, this will return the class for that handle.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetTypeFromHandleUnsafe(IntPtr handle);
-
         [Intrinsic]
         public static Type? GetTypeFromHandle(RuntimeTypeHandle handle)
             => handle.m_type;

@@ -4,10 +4,10 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import cwraps from "./cwraps";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { mono_assert, runtimeHelpers } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types/internal";
-import { _zero_region, localHeapViewU32 } from "./memory";
+import { _zero_region, free, localHeapViewU32, malloc } from "./memory";
 import { gc_locked } from "./gc-lock";
 
 const maxScratchRoots = 8192;
@@ -31,7 +31,7 @@ export function mono_wasm_new_root_buffer (capacity: number, name?: string): Was
     capacity = capacity | 0;
 
     const capacityBytes = capacity * 4;
-    const offset = Module._malloc(capacityBytes);
+    const offset = malloc(capacityBytes);
     if ((<any>offset % 4) !== 0)
         throw new Error("Malloc returned an unaligned offset");
 
@@ -238,7 +238,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
             mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
             cwraps.mono_wasm_deregister_root(this.__offset);
             _zero_region(this.__offset, this.__count * 4);
-            Module._free(this.__offset);
+            free(this.__offset);
         }
 
         this.__handle = (<any>this.__offset) = this.__count = this.__offset32 = 0;

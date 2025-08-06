@@ -1,19 +1,16 @@
 set(SOURCES
     doublemapping.cpp
     dn-u16.cpp
-    ${CLR_SRC_NATIVE_DIR}/minipal/time.c
 )
 
-if(NOT CLR_CROSS_COMPONENTS_BUILD)
-    list(APPEND SOURCES
-        ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
-    )
-endif()
-
-add_library(coreclrminipal
-    STATIC
+add_library(coreclrminipal_objects
+    OBJECT
     ${SOURCES}
 )
 
-include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+add_library(coreclrminipal
+    STATIC
+    $<TARGET_OBJECTS:coreclrminipal_objects>
+)
+
+target_link_libraries(coreclrminipal PRIVATE minipal)

@@ -6,6 +6,7 @@ namespace NetClient
 {
     using System;
     using System.Threading;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
     using TestLibrary;
@@ -24,6 +25,7 @@ namespace NetClient
             GetAllocationCount = (delegate* unmanaged<int>)inst.GetAllocationCountCallback();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static int AllocateInstances(int a)
         {
             var insts = new object[a];

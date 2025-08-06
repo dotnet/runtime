@@ -51,10 +51,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteNumber(string propertyName, long value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteNumber(propertyName.AsSpan(), value);
         }
 
@@ -142,10 +139,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteNumber(string propertyName, int value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteNumber(propertyName.AsSpan(), (long)value);
         }
 

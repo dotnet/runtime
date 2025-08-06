@@ -44,11 +44,11 @@ namespace projs
 
         internal static double[] GenerateSource1()
         {
-            return new double[4] { 5.1, 5.2, 5.3, 5.4 };
+            return new double[] { 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8 };
         }
         internal static double[] GenerateSource2()
         {
-            return new double[4] { 6.1, 6.2, 6.3, 6.4 };
+            return new double[] { 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8 };
         }
     }
 }

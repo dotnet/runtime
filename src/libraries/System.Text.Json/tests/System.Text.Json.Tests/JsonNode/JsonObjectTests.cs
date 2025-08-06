@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -1025,7 +1026,7 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DeepClone_FromElement()
         {
-            JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
+            using JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
             JsonObject jObject = JsonObject.Create(document.RootElement);
             var clone = jObject.DeepClone().AsObject();
 
@@ -1601,6 +1602,192 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(3, ilist.Count);
             Assert.DoesNotContain("Two", jObject);
             Assert.Equal(-1, jObject.IndexOf("Two"));
+        }
+
+        [Fact]
+        public static void TryAdd_NewKey_EmptyJsonObject()
+        {
+            JsonObject jObject = new();
+
+            Assert.True(jObject.TryAdd("First", "value", out var index));
+            Assert.Equal(0, index);
+        }
+
+        [Fact]
+        public static void TryAdd_NewKey()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.True(jObject.TryAdd("Four", 33, out var index));
+            Assert.Equal(3, index);
+        }
+
+        [Fact]
+        public static void TryAdd_ExistingKey()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.False(jObject.TryAdd("Two", 33, out var index));
+            Assert.Equal(1, index);
+        }
+
+        [Fact]
+        public static void TryAdd_ThrowsArgumentNullException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Throws<ArgumentNullException>(() => { jObject.TryAdd(null, 33); });
+        }
+
+        [Fact]
+        public static void TryGetPropertyValue_ThrowsArgumentNullException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Throws<ArgumentNullException>(() => { jObject.TryGetPropertyValue(null, out var jsonNode, out var index); });
+        }
+
+        [Theory]
+        [InlineData(10_000)]
+        [InlineData(50_000)]
+        [InlineData(100_000)]
+        public static void JsonObject_ExtensionData_ManyDuplicatePayloads(int size)
+        {
+            // Generate the payload
+            StringBuilder builder = new StringBuilder();
+            builder.Append("{");
+            for (int i = 0; i < size; i++)
+            {
+                builder.Append($"\"{i}\": 0,");
+                builder.Append($"\"{i}\": 0,");
+            }
+            builder.Length--; // strip trailing comma
+            builder.Append("}");
+
+            string jsonPayload = builder.ToString();
+            ClassWithObjectExtensionData result = JsonSerializer.Deserialize<ClassWithObjectExtensionData>(jsonPayload);
+            Assert.Equal(size, result.ExtensionData.Count);
+        }
+
+        class ClassWithObjectExtensionData
+        {
+            [JsonExtensionData]
+            public JsonObject ExtensionData { get; set; }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicatePropertyThrows<JsonObject>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrows<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows_NestedInArray(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicatePropertyThrows<JsonArray>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrows<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows_NestedDeeply(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicatePropertyThrows<JsonObject>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrows<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        private static void AssertDuplicatePropertyThrows<T>(string jsonPayload, bool isValidJson)
+            where T : JsonNode
+        {
+            if (isValidJson)
+            {
+                T node = JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties);
+                JsonNode.DeepEquals(node, node); // Assert no throw
+
+                node = JsonSerializer.Deserialize<T>(jsonPayload);
+                JsonNode.DeepEquals(node, node); // Assert no throw
+            }
+            else
+            {
+                AssertExtensions.ThrowsContains<ArgumentException>(
+                    () => JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties),
+                    "An item with the same key has already been added.");
+
+                // Default options don't throw on deserialize but will throw when accessed
+                T node = JsonSerializer.Deserialize<T>(jsonPayload);
+                AssertExtensions.ThrowsContains<ArgumentException>(
+                    () => JsonNode.DeepEquals(node, node),
+                    "An item with the same key has already been added.");
+            }
+        }
+
+        [Fact]
+        public static void JsonObject_DuplicatePropertyCaseInsensitiveThrows()
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+
+            string jsonPayload = """{"a":1,"A":2}""";
+
+            _ = JsonSerializer.Deserialize<JsonObject>(jsonPayload); // Assert no throw
+            AssertExtensions.ThrowsContains<ArgumentException>(
+                () => JsonSerializer.Deserialize<JsonObject>(jsonPayload, options),
+                "An item with the same key has already been added.");
+
+            _ = JsonSerializer.Deserialize<JsonNode>(jsonPayload); // Assert no throw
+            AssertExtensions.ThrowsContains<ArgumentException>(
+                () => JsonSerializer.Deserialize<JsonNode>(jsonPayload, options),
+                "An item with the same key has already been added.");
+        }
+
+        [Fact]
+        public static void JsonObject_NestedDuplicatePropertyCaseInsensitiveThrows()
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+
+            string jsonPayload = """[{"a":1,"A":2}]""";
+
+            _ = JsonSerializer.Deserialize<JsonArray>(jsonPayload); // Assert no throw
+            AssertExtensions.ThrowsContains<ArgumentException>(
+                () => JsonSerializer.Deserialize<JsonArray>(jsonPayload, options),
+                "An item with the same key has already been added.");
+
+            _ = JsonSerializer.Deserialize<JsonNode>(jsonPayload); // Assert no throw
+            AssertExtensions.ThrowsContains<ArgumentException>(
+                () => JsonSerializer.Deserialize<JsonNode>(jsonPayload, options),
+                "An item with the same key has already been added.");
+        }
+
+        [Theory]
+        [InlineData("42")]
+        [InlineData("[]")]
+        public static void Deserialize_WrongType(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<JsonObject>(json));
         }
     }
 }

@@ -112,15 +112,6 @@ typedef int errno_t; /* standard */
 /* error codes */
 #if !defined(_SECURECRT_ERRCODE_VALUES_DEFINED)
 #define _SECURECRT_ERRCODE_VALUES_DEFINED
-#if !defined(EINVAL)
-#define EINVAL          22
-#endif
-#if !defined(ERANGE)
-#define ERANGE          34
-#endif
-#if !defined(EILSEQ)
-#define EILSEQ          42
-#endif
 #if !defined(STRUNCATE)
 #define STRUNCATE       80
 #endif

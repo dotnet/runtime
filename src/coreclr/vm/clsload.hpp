@@ -910,7 +910,9 @@ private:
 
     // Notify profiler and debugger that a type load has completed
     // Also update perf counters
-    static void Notify(TypeHandle typeHnd);
+    static void NotifyLoad(TypeHandle typeHnd);
+    // Notify profiler that a MethodTable is being unloaded
+    static void NotifyUnload(MethodTable* pMT, bool unloadStarted);
 
     // Phase CLASS_LOAD_EXACTPARENTS of class loading
     // Load exact parents and interfaces and dependent structures (generics dictionary, vtable fixes)

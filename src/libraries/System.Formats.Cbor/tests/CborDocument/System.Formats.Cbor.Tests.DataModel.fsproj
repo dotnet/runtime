@@ -4,6 +4,8 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- NuGet restore issue with TargetFrameworks in f# projects: https://github.com/NuGet/Home/issues/10005 -->
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- Public signing (performed under DotNetBuildSourceOnly) is broken for f#: https://github.com/dotnet/fsharp/issues/17451 -->
+    <SignAssembly Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>

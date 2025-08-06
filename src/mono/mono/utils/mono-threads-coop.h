@@ -167,4 +167,8 @@ mono_threads_is_runtime_startup_finished (void)
 void
 mono_threads_set_runtime_startup_finished (void);
 
+MONO_PROFILER_API
+void
+mono_threads_abort_gc_safe_region_internal (gpointer cookie);
+
 #endif

@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions.Symbolic
             Zero = zero;
             Ordinal = ordinal;
 
-            // Precompute a hashchode value that respects BDD equivalence.
+            // Precompute a hashcode value that respects BDD equivalence.
             // Two equivalent BDDs will always have the same hashcode
             // that is independent of object id values of the BDD objects.
             _hashcode = HashCode.Combine(ordinal, one, zero);

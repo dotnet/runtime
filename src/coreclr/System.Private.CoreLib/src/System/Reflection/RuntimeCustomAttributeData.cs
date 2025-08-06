@@ -1085,7 +1085,7 @@ namespace System.Reflection
 
             if (encodedType == CustomAttributeEncoding.Array)
             {
-                parameterType = (RuntimeType)parameterType.GetElementType();
+                parameterType = (RuntimeType)parameterType.GetElementType()!;
                 encodedArrayType = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
             }
 
@@ -1270,12 +1270,12 @@ namespace System.Reflection
             for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
 
-            while (type != (RuntimeType)typeof(object) && type != null)
+            do
             {
                 AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 type = (type.BaseType as RuntimeType)!;
-            }
+            } while (type != (RuntimeType)typeof(object) && type != null);
 
             object[] typedResult = CreateAttributeArrayHelper(caType, result.Count);
             for (int i = 0; i < result.Count; i++)
@@ -1641,13 +1641,6 @@ namespace System.Reflection
             // Ensure that to consider a duplicate attribute type AllowMultiple is true
             if (!AttributeUsageCheck(attributeType, mustBeInheritable, ref derivedAttributes))
                 return false;
-
-            // Windows Runtime attributes aren't real types - they exist to be read as metadata only, and as such
-            // should be filtered out of the GetCustomAttributes path.
-            if ((attributeType.Attributes & TypeAttributes.WindowsRuntime) == TypeAttributes.WindowsRuntime)
-            {
-                return false;
-            }
 
             // Resolve the attribute ctor
             ConstArray ctorSig = scope.GetMethodSignature(caCtorToken);

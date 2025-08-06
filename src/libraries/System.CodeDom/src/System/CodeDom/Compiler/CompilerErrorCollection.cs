@@ -29,10 +29,7 @@ namespace System.CodeDom.Compiler
 
         public void AddRange(CompilerError[] value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -42,10 +39,7 @@ namespace System.CodeDom.Compiler
 
         public void AddRange(CompilerErrorCollection value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)

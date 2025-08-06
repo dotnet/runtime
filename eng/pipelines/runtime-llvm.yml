@@ -28,6 +28,24 @@ schedules:
       - main
     always: false # run only if there were changes since the last successful scheduled run.
 
+# To reduce the load on the pipeline, enable it only for PRs that affect Mono LLVM related code.
+pr:
+  branches:
+    include:
+    - main
+    - release/*.*
+
+  paths:
+    include:
+      - src/mono/mono/mini/aot-*.*
+      - src/mono/mono/mini/llvm-*.*
+      - src/mono/mono/mini/mini-llvm-*.*
+      - src/mono/mono/mini/intrinsics.c
+      - src/mono/mono/mini/simd-*.*
+      - src/mono/mono/mini/decompose.c
+      - src/mono/mono/mini/method-to-ir.c
+      - src/mono/mono/mini/mini.c
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
@@ -144,7 +162,7 @@ extends:
             nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeTests
             runtimeVariant: llvmfullaot
             buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
-            timeoutInMinutes: 400
+            timeoutInMinutes: 480
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -159,9 +177,9 @@ extends:
                   testRunNamePrefixSuffix: Mono_Release
                   testBuildArgs: >-
                     -tree:CoreMangLib -tree:Exceptions -tree:GC -tree:Interop -tree:Loader -tree:Regressions -tree:baseservices
-                    -tree:ilasm -tree:ilverify -tree:managed -tree:profiler -tree:readytorun -tree:reflection -tree:tracing
+                    -tree:ilverify -tree:managed -tree:profiler -tree:reflection -tree:tracing
                     -tree:JIT/BBT -tree:JIT/CodeGenBringUpTests -tree:JIT/Directed -tree:JIT/Generics -tree:JIT/IL_Conformance
-                    -tree:JIT/Math -tree:JIT/Methodical -tree:JIT/PGO -tree:JIT/Performance -tree:JIT/Regression -tree:JIT/RyuJIT
+                    -tree:JIT/Math -tree:JIT/Methodical -tree:JIT/Performance -tree:JIT/Regression -tree:JIT/RyuJIT
                     -tree:JIT/Stress -tree:JIT/common -tree:JIT/jit64 -tree:JIT/opt -tree:JIT/superpmi
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -191,7 +209,7 @@ extends:
             nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeIntrinsicsTests
             runtimeVariant: llvmfullaot
             buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
-            timeoutInMinutes: 400
+            timeoutInMinutes: 480
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

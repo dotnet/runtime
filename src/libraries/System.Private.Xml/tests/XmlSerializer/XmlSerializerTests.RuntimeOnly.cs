@@ -885,6 +885,39 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_TestTypeWithPrivateOrNoSetters()
+    {
+        // Private setters are a problem. Traditional XmlSerializer doesn't know what to do with them.
+        // This should fail when constructing the serializer.
+#if ReflectionOnly
+        // For the moment, the reflection-based serializer doesn't throw until it does deserialization, because
+        // it doesn't do xml/type mapping in the constructor. This should change in the future with improvements to
+        // the reflection-based serializer that frontloads more work to make the actual serialization faster.
+        var ex = Record.Exception(() => SerializeAndDeserialize<TypeWithPrivateSetters>(new TypeWithPrivateSetters(39), "", null, true));
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+#else
+        var ex = Record.Exception(() => new XmlSerializer(typeof(TypeWithPrivateSetters)));
+#endif
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Equal("Cannot deserialize type 'SerializationTypes.TypeWithPrivateSetters' because it contains property 'PrivateSetter' which has no public setter.", ex.Message);
+
+        // If there is no setter at all though, traditional XmlSerializer just doesn't include the property in the serialization.
+        // Therefore, the following should work. Although the serialized output isn't really worth much.
+        var noSetter = new TypeWithNoSetters(25);
+        var actualNoSetter = SerializeAndDeserialize<TypeWithNoSetters>(noSetter, WithXmlHeader("<TypeWithNoSetters xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+        Assert.NotNull(actualNoSetter);
+        Assert.StrictEqual(25, noSetter.NoSetter);
+        Assert.StrictEqual(200, actualNoSetter.NoSetter); // 200 is what the default constructor sets it to.
+
+        // But private setters aren't a problem if the class is ISerializable.
+        var value = new TypeWithPrivateOrNoSettersButIsIXmlSerializable(32, 52);
+        var actual = SerializeAndDeserialize<TypeWithPrivateOrNoSettersButIsIXmlSerializable>(value, WithXmlHeader("<TypeWithPrivateOrNoSettersButIsIXmlSerializable>\r\n  <PrivateSetter>32</PrivateSetter>\r\n  <NoSetter>52</NoSetter>\r\n</TypeWithPrivateOrNoSettersButIsIXmlSerializable>"));
+        Assert.NotNull(actual);
+        Assert.StrictEqual(value.PrivateSetter, actual.PrivateSetter);
+        Assert.StrictEqual(value.NoSetter, actual.NoSetter);
+    }
+
+    [Fact]
     public static void Xml_TestTypeWithListPropertiesWithoutPublicSetters()
     {
         var value = new TypeWithListPropertiesWithoutPublicSetters();
@@ -915,6 +948,7 @@ public static partial class XmlSerializerTests
   <AnotherStringList>
     <string>AnotherFoo</string>
   </AnotherStringList>
+  <AlwaysNullNullableList xsi:nil=""true"" />
 </TypeWithListPropertiesWithoutPublicSetters>");
         Assert.StrictEqual(value.PropertyWithXmlElementAttribute.Count, actual.PropertyWithXmlElementAttribute.Count);
         Assert.Equal(value.PropertyWithXmlElementAttribute[0], actual.PropertyWithXmlElementAttribute[0]);
@@ -928,6 +962,139 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.AnotherStringList[0], actual.AnotherStringList[0]);
         Assert.StrictEqual(value.PublicIntListField[0], actual.PublicIntListField[0]);
         Assert.StrictEqual(value.PublicIntListFieldWithXmlElementAttribute[0], actual.PublicIntListFieldWithXmlElementAttribute[0]);
+        // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
+        // not try to set an empty list. So the property will be either empty or null depending on how the default constructor leaves it.
+        Assert.Null(actual.AlwaysNullList);
+        Assert.Null(actual.AlwaysNullNullableList);
+        // Fields are always settable though, so the serializer always takes that liberty. *smh*
+        Assert.Empty(actual.AlwaysNullStringListField);
+        Assert.Empty(actual.AlwaysNullIntListFieldWithXmlElementAttribute);
+
+        // Try with an empty list
+        value = new TypeWithListPropertiesWithoutPublicSetters();
+        actual = SerializeAndDeserialize<TypeWithListPropertiesWithoutPublicSetters>(value,
+@"<?xml version=""1.0""?>
+<TypeWithListPropertiesWithoutPublicSetters xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+    <PublicIntListField />
+    <IntList />
+    <StringList />
+    <AnotherStringList />
+    <AlwaysNullNullableList xsi:nil=""true"" />
+</TypeWithListPropertiesWithoutPublicSetters>");
+        Assert.NotNull(actual);
+        // List fields with a setter - public or not - are always initialized to an empty list before populating them.
+        // So list fields that are not in the xml or are explicitly 'nil' will still be empty here if they have a setter.
+        Assert.Empty(actual.PublicIntListField);
+        Assert.Empty(actual.IntList);
+        Assert.Empty(actual.StringList);
+        Assert.Empty(actual.AnotherStringList);
+        Assert.Empty(actual.PropertyWithXmlElementAttribute);
+        // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
+        // not try to set an empty list. So the property will be either empty or null depending on how the default constructor leaves it.
+        Assert.Empty(actual.PublicIntListFieldWithXmlElementAttribute);
+        Assert.Null(actual.AlwaysNullList);
+        Assert.Null(actual.AlwaysNullNullableList);
+        // Fields are always settable though, so the serializer always takes that liberty. *smh*
+        Assert.Empty(actual.AlwaysNullStringListField);
+        Assert.Empty(actual.AlwaysNullIntListFieldWithXmlElementAttribute);
+
+        // And also try with a null list
+        value = new TypeWithListPropertiesWithoutPublicSetters(createLists: false);
+        actual = SerializeAndDeserialize<TypeWithListPropertiesWithoutPublicSetters>(value,
+@"<?xml version=""1.0""?>
+<TypeWithListPropertiesWithoutPublicSetters xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringList xsi:nil=""true"" />
+  <AnotherStringList />
+  <AlwaysNullNullableList xsi:nil=""true"" />
+</TypeWithListPropertiesWithoutPublicSetters>");
+        Assert.NotNull(actual);
+        Assert.Empty(actual.PublicIntListField);
+        Assert.Empty(actual.IntList);
+        Assert.Empty(actual.StringList);
+        Assert.Empty(actual.AnotherStringList);
+        Assert.Empty(actual.PropertyWithXmlElementAttribute);
+        // In an annoyingly inconsistent behavior, if a list property does not have a setter at all, the serializer is smart enough to
+        // not try to set an empty list. So the property will be either empty or null depending on how the default constructor leaves it.
+        Assert.Empty(actual.PublicIntListFieldWithXmlElementAttribute);
+        Assert.Null(actual.AlwaysNullList);
+        Assert.Null(actual.AlwaysNullNullableList);
+        // Fields are always settable though, so the serializer always takes that liberty. *smh*
+        Assert.Empty(actual.AlwaysNullStringListField);
+        Assert.Empty(actual.AlwaysNullIntListFieldWithXmlElementAttribute);
+
+        // And finally, a corner case where "private-setter" property is left null by the default constructor, but the serializer sees it as null
+        // and thinks it can call the private setter, so it tries to make it empty and fails. But again, note that the fields and
+        // no-setter-at-all properties that come first do not cause the failure.
+        var cannotDeserialize = new TypeWithGetOnlyListsThatDoNotInitialize();
+        var ex = Record.Exception(() =>
+        {
+            SerializeAndDeserialize<TypeWithGetOnlyListsThatDoNotInitialize>(cannotDeserialize,
+@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<TypeWithGetOnlyListsThatDoNotInitialize xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""/>");
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        // Attempt by method 'Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderTypeWithGetOnlyListsThatDoNotInitialize.Read2_Item(Boolean, Boolean)' to access method 'SerializationTypes.TypeWithGetOnlyListsThatDoNotInitialize.set_AlwaysNullPropertyPrivateSetter(System.Collections.Generic.List`1<Int32>)' failed.
+        Assert.Contains("AlwaysNullPropertyPrivateSetter", ex.Message);
+    }
+
+    [Fact]
+    public static void Xml_HiddenMembersChangeMappings()
+    {
+        var baseValue = new BaseWithElementsAttributesPropertiesAndLists() { StringField = "BString", TextField = "BText", ListField = new () { "one", "two" }, ListProp = new () { "three" } };
+        var baseActual = SerializeAndDeserialize<BaseWithElementsAttributesPropertiesAndLists>(baseValue, WithXmlHeader("<BaseWithElementsAttributesPropertiesAndLists xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" TextField=\"BText\">\r\n  <StringField>BString</StringField>\r\n  <ListField>\r\n    <string>one</string>\r\n    <string>two</string>\r\n  </ListField>\r\n  <ListProp>\r\n    <string>three</string>\r\n  </ListProp>\r\n</BaseWithElementsAttributesPropertiesAndLists>"));
+        Assert.IsType<BaseWithElementsAttributesPropertiesAndLists>(baseActual);
+        Assert.Equal(baseValue.StringField, baseActual.StringField);
+        Assert.Equal(baseValue.TextField, baseActual.TextField);
+        Assert.Equal(baseValue.ListProp.ToArray(), baseActual.ListProp.ToArray());
+        Assert.Equal(baseValue.ListField.ToArray(), baseActual.ListField.ToArray());
+
+        var value1 = new HideElementWithAttribute() { StringField = "DString" };
+        ((BaseWithElementsAttributesPropertiesAndLists)value1).Copy(baseValue);
+        var ex = Record.Exception(() => { SerializeAndDeserialize<HideElementWithAttribute>(value1, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideElementWithAttribute", "StringField", "Member 'HideElementWithAttribute.StringField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.StringField', but has different custom attributes.");
+
+        var value2 = new HideAttributeWithElement() { TextField = "DText" };
+        ((BaseWithElementsAttributesPropertiesAndLists)value2).Copy(baseValue);
+        ex = Record.Exception(() => { SerializeAndDeserialize<HideAttributeWithElement>(value2, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideAttributeWithElement", "TextField", "Member 'HideAttributeWithElement.TextField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.TextField', but has different custom attributes.");
+
+        var value3 = new HideWithNewType() { TextField = 3 };
+        ((BaseWithElementsAttributesPropertiesAndLists)value3).Copy(baseValue);
+        ex = Record.Exception(() => { SerializeAndDeserialize<HideWithNewType>(value3, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideWithNewType", "TextField", "Member HideWithNewType.TextField of type System.Int32 hides base class member BaseWithElementsAttributesPropertiesAndLists.TextField of type System.String. Use XmlElementAttribute or XmlAttributeAttribute to specify a new name.");
+
+        var value4 = new HideWithNewName() { StringField = "DString" };
+        ((BaseWithElementsAttributesPropertiesAndLists)value4).Copy(baseValue);
+        ex = Record.Exception(() => { SerializeAndDeserialize<HideWithNewName>(value4, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideWithNewName", "StringField", "Member 'HideWithNewName.StringField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.StringField', but has different custom attributes.");
+
+        // Funny tricks can be played with XmlArray/Element when it comes to Lists though.
+        // Stuff kind of doesn't blow up, but hidden members still get left out.
+        var value5 = new HideArrayWithElement() { ListField = new() { "ONE", "TWO", "THREE" } };
+        ((BaseWithElementsAttributesPropertiesAndLists)value5).Copy(baseValue);
+        var actual5 = SerializeAndDeserialize<HideArrayWithElement>(value5, WithXmlHeader(
+@"<HideArrayWithElement xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" TextField=""BText"">
+  <StringField>BString</StringField>
+  <ListField>ONE</ListField>
+  <ListField>TWO</ListField>
+  <ListField>THREE</ListField>
+  <ListProp>
+    <string>three</string>
+  </ListProp>
+</HideArrayWithElement>"));
+        Assert.IsType<HideArrayWithElement>(actual5);
+        Assert.Equal(value5.StringField, actual5.StringField);
+        Assert.Equal(value5.TextField, actual5.TextField);
+        Assert.Equal(value5.ListProp.ToArray(), actual5.ListProp.ToArray());
+        Assert.Equal(value5.ListField.ToArray(), actual5.ListField.ToArray());
+        // Not only are the hidden values not serialized, but the serialzier doesn't even try to do it's empty list thing
+        Assert.Null(((BaseWithElementsAttributesPropertiesAndLists)actual5).ListField);
+
+        // But at the end of the day, you still can't get away with changing the name of the element
+        var value6 = new HideArrayWithRenamedElement() { ListField = new() { "FOUR", "FIVE" } };
+        ((BaseWithElementsAttributesPropertiesAndLists)value6).Copy(baseValue);
+        ex = Record.Exception(() => { SerializeAndDeserialize<HideArrayWithRenamedElement>(value6, null); });
+        AssertXmlMappingException(ex, "SerializationTypes.HideArrayWithRenamedElement", "ListField", "Member 'HideArrayWithRenamedElement.ListField' hides inherited member 'BaseWithElementsAttributesPropertiesAndLists.ListField', but has different custom attributes.");
     }
 
     [Fact]
@@ -1273,6 +1440,7 @@ public static partial class XmlSerializerTests
         Assert.NotNull(actual.Things);
         Assert.Equal(value.Things.Length, actual.Things.Length);
 
+        // Try with an unexpected namespace
         var expectedElem = (XmlElement)value.Things[1];
         var actualElem = (XmlElement)actual.Things[1];
         Assert.Equal(expectedElem.Name, actualElem.Name);
@@ -1287,6 +1455,26 @@ public static partial class XmlSerializerTests
         };
 
         Assert.Throws<InvalidOperationException>(() => actual = SerializeAndDeserialize(value, string.Empty, skipStringCompare: true));
+
+        // Try with no elements
+        value = new TypeWithMultiNamedXmlAnyElement()
+        {
+            Things = new object[] { }
+        };
+        actual = SerializeAndDeserialize(value,
+           "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
+        Assert.NotNull(actual);
+        Assert.Null(actual.Things);
+
+        // Try with a null list
+        value = new TypeWithMultiNamedXmlAnyElement()
+        {
+            Things = null
+        };
+        actual = SerializeAndDeserialize(value,
+           "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
+        Assert.NotNull(actual);
+        Assert.Null(actual.Things);
     }
 
 
@@ -2560,7 +2748,7 @@ public static partial class XmlSerializerTests
         string ns = s_defaultNs;
         string memberName1 = "items";
         XmlReflectionMember member1 = GetReflectionMemberNoXmlElement<object[]>(memberName1, ns);
-        PropertyInfo itemProperty = typeof(TypeWithPropertyHavingChoice).GetProperty("ManyChoices");
+        FieldInfo itemProperty = typeof(TypeWithArrayPropertyHavingChoice).GetField("ManyChoices");
         member1.XmlAttributes = new XmlAttributes(itemProperty);
 
         string memberName2 = "ChoiceArray";
@@ -2583,6 +2771,202 @@ public static partial class XmlSerializerTests
         var actualItems = actual[0] as object[];
         Assert.NotNull(actualItems);
         Assert.True(items.SequenceEqual(actualItems));
+    }
+
+    [Fact]
+    public static void XmlMembersMapping_With_ComplexChoiceIdentifier()
+    {
+        string ns = s_defaultNs;
+        string memberName1 = "items";
+        XmlReflectionMember member1 = GetReflectionMemberNoXmlElement<object[]>(memberName1, ns);
+        FieldInfo itemProperty = typeof(TypeWithPropertyHavingComplexChoice).GetField("ManyChoices");
+        member1.XmlAttributes = new XmlAttributes(itemProperty);
+
+        string memberName2 = "ChoiceArray";
+        XmlReflectionMember member2 = GetReflectionMemberNoXmlElement<MoreChoices[]>(memberName2, ns);
+        member2.XmlAttributes.XmlIgnore = true;
+
+        var members = new XmlReflectionMember[] { member1, member2 };
+
+        object[] items = { new ComplexChoiceB { Name = "Beef" }, 5 };
+        var itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+        object[] value = { items, itemChoices };
+
+        object[] actual = RoundTripWithXmlMembersMapping(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<wrapper xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://tempuri.org/\">\r\n  <Item xsi:type=\"ComplexChoiceB\">\r\n    <Name>Beef</Name>\r\n  </Item>\r\n  <Amount>5</Amount>\r\n</wrapper>",
+            false,
+            members,
+            wrapperName: "wrapper");
+
+        Assert.NotNull(actual);
+        var actualItems = actual[0] as object[];
+        Assert.NotNull(actualItems);
+        Assert.True(items.SequenceEqual(actualItems));
+
+        object[] itemsWithNull = { null, 5 };
+        object[] valueWithNull = { itemsWithNull, itemChoices };
+
+        actual = RoundTripWithXmlMembersMapping(valueWithNull,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<wrapper xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://tempuri.org/\">\r\n  <Amount>5</Amount>\r\n</wrapper>",
+            false,
+            members,
+            wrapperName: "wrapper");
+
+        Assert.NotNull(actual);
+        actualItems = actual[0] as object[];
+        // TODO: Ugh. Is losing a 'null' element of the choice array data loss?
+        // Probably. But that's what NetFx and ILGen do. :(
+        Assert.Single(actualItems);
+        Assert.Equal(5, actualItems[0]);
+        Assert.NotNull(actualItems);
+    }
+
+    [Fact]
+    public static void XmlMembersMapping_With_ChoiceErrors()
+    {
+        string ns = s_defaultNs;
+        string memberName1 = "items";
+        XmlReflectionMember member1 = GetReflectionMemberNoXmlElement<object[]>(memberName1, ns);
+        FieldInfo itemProperty = typeof(TypeWithPropertyHavingComplexChoice).GetField("ManyChoices");
+        member1.XmlAttributes = new XmlAttributes(itemProperty);
+
+        string memberName2 = "ChoiceArray";
+        XmlReflectionMember member2 = GetReflectionMemberNoXmlElement<MoreChoices[]>(memberName2, ns);
+        member2.XmlAttributes.XmlIgnore = true;
+
+        var members = new XmlReflectionMember[] { member1, member2 };
+
+        // XmlChoiceMismatchChoiceException
+        object[] items = { new ComplexChoiceB { Name = "Beef" }, "not integer 5" };
+        var itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+        object[] value = { items, itemChoices };
+
+        var ex = Record.Exception(() => {
+            RoundTripWithXmlMembersMapping(value, null, true, members, wrapperName: "wrapper");
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("mismatches the type of ", ex.Message);
+
+        // XmlChoiceMissingValue
+        object[] newItems = { "random string", new ComplexChoiceB { Name = "Beef" }, 5 };
+        object[] newValue = { newItems, itemChoices };
+
+        ex = Record.Exception(() => {
+            RoundTripWithXmlMembersMapping(newValue, null, true, members, wrapperName: "wrapper");
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("Invalid or missing value of the choice identifier", ex.Message);
+
+        // XmlChoiceMissingValue
+        FieldInfo missingItemProperty = typeof(TypeWithPropertyHavingChoiceError).GetField("ManyChoices");
+        member1.XmlAttributes = new XmlAttributes(missingItemProperty);
+
+        object[] missingItems = { new ComplexChoiceB { Name = "Beef" }, 5, "not_a_choice" };
+        var missingItemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount, MoreChoices.None };
+        object[] missingValue = { missingItems, missingItemChoices };
+
+        ex = Record.Exception(() => {
+            RoundTripWithXmlMembersMapping(missingValue, null, true, members, wrapperName: "wrapper");
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("is missing enumeration value", ex.Message);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithArrayPropertyHavingChoiceErrors()
+    {
+        MoreChoices[] itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+
+        // XmlChoiceMismatchChoiceException
+        object[] mismatchedChoices = new object[] { new ComplexChoiceB { Name = "Beef" }, "not integer 5" };
+        var mismatchedValue = new TypeWithPropertyHavingComplexChoice() { ManyChoices = mismatchedChoices, ChoiceArray = itemChoices };
+        var ex = Record.Exception(() => {
+            Serialize(mismatchedValue, null);
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("mismatches the type of ", ex.Message);
+
+        // XmlChoiceMissingValue
+        object[] missingChoice = { "random string", new ComplexChoiceB { Name = "Beef" }, 5 };
+        var missingValue = new TypeWithPropertyHavingComplexChoice() { ManyChoices = missingChoice, ChoiceArray = itemChoices };
+        ex = Record.Exception(() => {
+            Serialize(missingValue, null);
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("Invalid or missing value of the choice identifier", ex.Message);
+
+        // XmlChoiceMissingValue
+        object[] invalidChoiceValues = { new ComplexChoiceB { Name = "Beef" }, 5, "not_a_choice" };
+        MoreChoices[] invalidChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount, MoreChoices.None };
+        var invalidChoiceValue = new TypeWithPropertyHavingChoiceError() { ManyChoices = invalidChoiceValues, ChoiceArray = invalidChoices };
+        ex = Record.Exception(() => {
+            Serialize(invalidChoiceValue, null);
+        });
+#if ReflectionOnly
+        // The ILGen Serializer does XmlMapping during serializer ctor and lets the exception out cleanly.
+        // The Reflection Serializer does XmlMapping in the Serialize() call and wraps the resulting exception
+        //      inside a catch-all IOE in Serialize().
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "There was an error generating the XML document");
+#endif
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "TypeWithPropertyHavingChoiceError");   // There was an error reflecting type...
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "ManyChoices"); // There was an error reflecting field...
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("is missing enumeration value", ex.Message);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInTypedCollection()
+    {
+        var value = new List<BaseClass>() {
+            new BaseClass() { Value = "base class" },
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<List<BaseClass>>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfBaseClass xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <BaseClass>
+    <Value>base class</Value>
+  </BaseClass>
+  <BaseClass xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </BaseClass>
+</ArrayOfBaseClass>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(2, actual.Count);
+        Assert.Equal("base class", actual[0].Value);
+        Assert.IsType<BaseClass>(actual[0]);
+        Assert.IsType<DerivedClass>(actual[1]);
+        // BaseClass.Value is hidden - not overridden - by DerivedClass.Value, so it shows when accessed as a BaseClass.
+        Assert.Null(actual[1].Value);
+        Assert.Equal("derived class", ((DerivedClass)actual[1]).Value);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInTypedCollectionSingle()
+    {
+        var value = new List<BaseClass>() {
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<List<BaseClass>>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfBaseClass xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <BaseClass xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </BaseClass>
+</ArrayOfBaseClass>");
+
+        Assert.NotNull(actual);
+        Assert.Single(actual);
+        Assert.IsType<DerivedClass>(actual[0]);
+        // BaseClass.Value is hidden - not overridden - by DerivedClass.Value, so it shows when accessed as a BaseClass.
+        Assert.Null(actual[0].Value);
+        Assert.Equal("derived class", ((DerivedClass)actual[0]).Value);
     }
 
     [Fact]

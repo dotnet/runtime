@@ -116,6 +116,8 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TSource value) => _source.Contains(value);
         }
     }
 }

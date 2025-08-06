@@ -1,14 +1,17 @@
 <Project>
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
-        <FeatureEventTrace>true</FeatureEventTrace>
         <FeaturePerfTracing>true</FeaturePerfTracing>
-        <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
+        <FeatureEHFunclets>true</FeatureEHFunclets>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
+        <FeatureJavaMarshal>true</FeatureJavaMarshal>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
         <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 
@@ -16,25 +19,30 @@
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
+        <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
+        <FeatureIjw>true</FeatureIjw>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsOSX)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR '$(TargetsiOS)' == 'true' OR '$(TargetstvOS)' == 'true'">
         <FeatureObjCMarshal>true</FeatureObjCMarshal>
     </PropertyGroup>
 
-    <PropertyGroup Condition="!('$(TargetsWindows)' == 'true' AND '$(Platform)' == 'x86')">
-        <FeatureEHFunclets>true</FeatureEHFunclets>
+    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
+        <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
     <PropertyGroup>
+        <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">$(DefineConstants);FEATURE_JAVAMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
+        <DefineConstants Condition="'$(FeatureIjw)' == 'true'">$(DefineConstants);FEATURE_IJW</DefineConstants>
         <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureEHFunclets)' == 'true'">$(DefineConstants);FEATURE_EH_FUNCLETS</DefineConstants>
+        <DefineConstants Condition="'$(FeatureInterpreter)' == 'true'">$(DefineConstants);FEATURE_INTERPRETER</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
     </PropertyGroup>

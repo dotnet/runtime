@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<out xmlns:ms="urn:schemas-microsoft-com:xslt">
+	<dates>
+		<test1>Monday, June 15, 2009</test1>
+		<test2>6/15/2009</test2>
+		<test3>6/15/2009 1:45:30 PM</test3>
+		<test4>6/15/2009</test4>
+		<test5>lundi 15 juin 2009</test5>
+		<test6>15/06/2009</test6>
+	</dates>
+  <times>
+		<test1>1:45:30 PM</test1>
+		<test2>1:45 PM</test2>
+		<test3>6/15/2009 1:45:30 PM</test3>
+		<test4>1:45 PM</test4>
+		<test5>13:45:30</test5>
+		<test6>13:45</test6>
+	</times>
+</out>

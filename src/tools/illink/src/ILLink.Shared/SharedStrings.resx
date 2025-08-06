@@ -1089,6 +1089,12 @@
   <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBaseMessage" xml:space="preserve">
     <value>'DynamicallyAccessedMemberAttribute' on '{0}' or one of its base types references compiler-generated member '{1}'.</value>
   </data>
+  <data name="TypeMapGroupTypeCannotBeStaticallyDeterminedTitle" xml:space="preserve">
+    <value>The provided generic argument cannot be statically determined.</value>
+  </data>
+  <data name="TypeMapGroupTypeCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Type '{0}' must not contain signature variables to be used as a type map group.</value>
+  </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
   </data>
@@ -1179,6 +1185,24 @@
   <data name="RequiresAssemblyFilesOnStaticConstructorTitle" xml:space="preserve">
     <value>The use of 'RequiresAssemblyFilesAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
   </data>
+  <data name="RequiresUnreferencedCodeOnEntryPointMessage" xml:space="preserve">
+    <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on application entry point '{0}'.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnEntryPointTitle" xml:space="preserve">
+    <value>The use of 'RequiresUnreferencedCodeAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
+  </data>
+  <data name="RequiresDynamicCodeOnEntryPointMessage" xml:space="preserve">
+    <value>'RequiresDynamicCodeAttribute' cannot be placed directly on application entry point '{0}'.</value>
+  </data>
+  <data name="RequiresDynamicCodeOnEntryPointTitle" xml:space="preserve">
+    <value>The use of 'RequiresDynamicCodeAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
+  </data>
+  <data name="RequiresAssemblyFilesOnEntryPointMessage" xml:space="preserve">
+    <value>'RequiresAssemblyFilesAttribute' cannot be placed directly on application entry point '{0}'.</value>
+  </data>
+  <data name="RequiresAssemblyFilesOnEntryPointTitle" xml:space="preserve">
+    <value>The use of 'RequiresAssemblyFilesAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
+  </data>
   <data name="UnrecognizedInternalAttributeMessage" xml:space="preserve">
     <value>The internal attribute name '{0}' being used in the xml is not supported by ILLink, check the spelling and the supported internal attributes.</value>
   </data>
@@ -1214,5 +1238,17 @@
   </data>
   <data name="TypeNameIsNotAssemblyQualifiedTitle" xml:space="preserve">
     <value>Type name is not assembly qualified.</value>
+  </data>
+  <data name="ReferenceNotMarkedIsTrimmableTitle" xml:space="preserve">
+    <value>Referenced assembly is not marked as trimmable.</value>
+  </data>
+  <data name="ReferenceNotMarkedIsTrimmableMessage" xml:space="preserve">
+    <value>Referenced assembly '{0}' is not built with `<IsTrimmable>true</IsTrimmable>` and may not be compatible with trimming.</value>
+  </data>
+  <data name="ReferenceNotMarkedIsAotCompatibleTitle" xml:space="preserve">
+    <value>Referenced assembly is not marked as AOT-compatible.</value>
+  </data>
+  <data name="ReferenceNotMarkedIsAotCompatibleMessage" xml:space="preserve">
+    <value>Referenced assembly '{0}' is not built with `<IsAotCompatible>true</IsAotCompatible>` and may not be compatible with AOT.</value>
   </data>
 </root>

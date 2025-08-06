@@ -29,10 +29,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="ArgumentNullException">The <paramref name="transform"/> or <paramref name="dataflowBlockOptions"/> is <see langword="null" />.</exception>
         public TransformManyBlock(Func<TInput, IAsyncEnumerable<TOutput>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            if (transform is null)
-            {
-                throw new ArgumentNullException(nameof(transform));
-            }
+            ArgumentNullException.ThrowIfNull(transform);
 
             Initialize(messageWithId =>
             {

@@ -33,11 +33,11 @@ namespace System.Buffers.ArrayPool.Tests
             }
         }
 
-        protected static void RemoteInvokeWithTrimming(Action method, int timeout = RemoteExecutor.FailWaitTimeoutMilliseconds)
+        protected static void RemoteInvokeWithTrimming(Action method, int? timeout = null)
         {
             var options = new RemoteInvokeOptions
             {
-                TimeOut = timeout
+                TimeOut = timeout ?? RemoteExecutor.FailWaitTimeoutMilliseconds
             };
 
             options.StartInfo.UseShellExecute = false;

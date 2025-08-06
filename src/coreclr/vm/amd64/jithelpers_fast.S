@@ -98,7 +98,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         je      LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     rax, rdi
         shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-        add     rax, qword ptr [C_VAR(g_sw_ww_table)]
+        add     rax, qword ptr [C_VAR(g_write_watch_table)]
         cmp     byte ptr [rax], 0x0
         jne     LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     byte ptr [rax], 0xFF
@@ -215,7 +215,7 @@ LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
         // When JIT_WriteBarrier is copied into an allocated page,
         // helpers use this global variable to jump to it. This variable is set in InitThreadManager.
         .global C_FUNC(JIT_WriteBarrier_Loc)
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
         .zerofill __DATA,__common,C_FUNC(JIT_WriteBarrier_Loc),8,3
 #else
         .data

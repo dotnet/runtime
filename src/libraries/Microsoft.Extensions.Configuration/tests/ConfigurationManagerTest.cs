@@ -196,7 +196,7 @@ namespace Microsoft.Extensions.Configuration.Test
             await loadTask;
         }
 
-        public static TheoryData ConcurrentReadActions
+        public static TheoryData<Action<IConfiguration>> ConcurrentReadActions
         {
             get
             {

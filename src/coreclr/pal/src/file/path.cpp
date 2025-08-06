@@ -23,7 +23,6 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
-#include "pal/malloc.hpp"
 #include "pal/stackstring.hpp"
 
 #include <errno.h>

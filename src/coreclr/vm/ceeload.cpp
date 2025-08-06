@@ -37,10 +37,12 @@
 #include <formattype.h>
 #include "fieldmarshaler.h"
 #include "sigbuilder.h"
-#include "metadataexports.h"
 #include "inlinetracking.h"
 #include "threads.h"
 #include "nativeimage.h"
+
+#include "CachedInterfaceDispatchPal.h"
+#include "CachedInterfaceDispatch.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -63,6 +65,8 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
+
+#include "interpexec.h"
 
 #ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT
@@ -343,7 +347,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     }
     CONTRACTL_END
 
-    PREFIX_ASSUME(m_pAssembly != NULL);
+    _ASSERTE(m_pAssembly != NULL);
 
     m_loaderAllocator = NULL;
     m_pDynamicMetadata = (TADDR)NULL;
@@ -416,6 +420,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_loaderAllocator = GetAssembly()->GetLoaderAllocator();
     m_pSimpleName = m_pPEAssembly->GetSimpleName();
     m_path = m_pPEAssembly->GetPath().GetUnicode();
+    m_fileName = m_pPEAssembly->GetModuleFileNameHint();
     _ASSERTE(m_path != NULL);
     m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
     if (m_pPEAssembly->IsReflectionEmit())
@@ -474,14 +479,23 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
+#ifdef PROFILING_SUPPORTED
+    // set profiler related JIT flags
+    if (CORProfilerDisableInlining())
+    {
+        m_dwTransientFlags |= PROF_DISABLE_INLINING;
+    }
+    if (CORProfilerDisableOptimizations())
+    {
+        m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
+    }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE)
+#endif // PROFILING_SUPPORTED
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
 }
@@ -503,7 +517,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
     {
-        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()));
+        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && AreJITOptimizationsDisabled());
         if (setEnC)
         {
             EnableEditAndContinue();
@@ -578,7 +592,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
         pModule = new (pMemory) Module(pAssembly, pPEAssembly);
     }
 
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
     ModuleHolder pModuleSafe(pModule);
     pModuleSafe->DoInit(pamTracker, NULL);
 
@@ -648,7 +662,7 @@ void Module::Destruct()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         END_PROFILER_CALLBACK();
     }
@@ -704,7 +718,7 @@ void Module::Destruct()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
         END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
@@ -853,7 +867,7 @@ void Module::InitializeDynamicILCrst()
 // Add a (token, address) pair to the table of IL blobs for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
+//         token        method token or field token (See SetDynamicRvaField)
 //         blobAddress  address of the start of the IL blob address, including the header
 //     Output: not explicit, but if the pair was not already in the table it will be added.
 //             Does not add duplicate tokens to the table.
@@ -915,6 +929,35 @@ TADDR Module::GetDynamicIL(mdToken token)
     // If the lookup fails, it returns the 'NULL' entry
     // The 'NULL' entry has m_il set to NULL, so either way we're safe
     return entry.m_il;
+}
+
+#ifndef DACCESS_COMPILE
+void Module::SetDynamicRvaField(mdToken token, TADDR blobAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    SetDynamicIL(token, blobAddress);
+}
+#endif // !DACCESS_COMPILE
+
+TADDR Module::GetDynamicRvaField(mdToken token)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    return GetDynamicIL(token);
 }
 
 #if !defined(DACCESS_COMPILE)
@@ -1053,56 +1096,77 @@ BOOL Module::IsRuntimeWrapExceptionsStatusComputed()
     return (m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
 }
 
+BOOL Module::IsRuntimeWrapExceptionsDuringEH()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    // This method assumes that the runtime wrap exceptions status has already been computed.
+    // IsRuntimeWrapExceptionsStatusComputed() returns TRUE before calling this method, but
+    // that should be done as part of Module activation, so we shouldn't need to worry about that.
+    _ASSERTE(IsRuntimeWrapExceptionsStatusComputed());
+    return (m_dwPersistedFlags & WRAP_EXCEPTIONS) != 0;
+}
+
 BOOL Module::IsRuntimeWrapExceptions()
 {
     CONTRACTL
     {
         NOTHROW;
-        if (IsRuntimeWrapExceptionsStatusComputed()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END
 
     if (!(IsRuntimeWrapExceptionsStatusComputed()))
     {
-        HRESULT hr;
-        BOOL fRuntimeWrapExceptions = FALSE;
-
-        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
-
-        mdToken token;
-        IfFailGo(mdImport->GetAssemblyFromScope(&token));
-
-        const BYTE *pVal;
-        ULONG       cbVal;
-
-        hr = mdImport->GetCustomAttributeByName(token,
-                        RUNTIMECOMPATIBILITY_TYPE,
-                        (const void**)&pVal, &cbVal);
-
-        // Parse the attribute
-        if (hr == S_OK)
-        {
-            CustomAttributeParser ca(pVal, cbVal);
-            CaNamedArg namedArgs[1] = {{0}};
-
-            // First, the void constructor:
-            IfFailGo(ParseKnownCaArgs(ca, NULL, 0));
-
-            // Then, find the named argument
-            namedArgs[0].InitBoolField("WrapNonExceptionThrows");
-
-            IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
-
-            if (namedArgs[0].val.boolean)
-                fRuntimeWrapExceptions = TRUE;
-        }
-ErrExit:
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
-            (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
+        UpdateCachedIsRuntimeWrapExceptions();
     }
-
     return !!(m_dwPersistedFlags & WRAP_EXCEPTIONS);
+}
+
+void Module::UpdateCachedIsRuntimeWrapExceptions()
+{
+    HRESULT hr;
+    BOOL fRuntimeWrapExceptions = FALSE;
+
+    IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
+
+    mdToken token;
+    IfFailGo(mdImport->GetAssemblyFromScope(&token));
+
+    const BYTE *pVal;
+    ULONG       cbVal;
+
+    hr = mdImport->GetCustomAttributeByName(token,
+                    RUNTIMECOMPATIBILITY_TYPE,
+                    (const void**)&pVal, &cbVal);
+
+    // Parse the attribute
+    if (hr == S_OK)
+    {
+        CustomAttributeParser ca(pVal, cbVal);
+        CaNamedArg namedArgs[1] = {{0}};
+
+        // First, the void constructor:
+        IfFailGo(ParseKnownCaArgs(ca, NULL, 0));
+
+        // Then, find the named argument
+        namedArgs[0].InitBoolField("WrapNonExceptionThrows");
+
+        IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
+
+        if (namedArgs[0].val.boolean)
+            fRuntimeWrapExceptions = TRUE;
+    }
+ErrExit:
+    InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
+        (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
 }
 
 BOOL Module::IsRuntimeMarshallingEnabled()
@@ -1385,7 +1449,9 @@ void Module::FreeClassTables()
         MethodTable * pMT = typeDefIter.GetElement();
         if (pMT != NULL)
         {
-            pMT->GetClass()->Destruct(pMT);
+            ClassLoader::NotifyUnload(pMT, true);
+            pMT->GetClass()->Destruct();
+            ClassLoader::NotifyUnload(pMT, false);
         }
     }
 
@@ -1401,14 +1467,20 @@ void Module::FreeClassTables()
             {
                 TypeHandle th = pEntry->GetTypeHandle();
 
+                // Array EEClass doesn't need notification and there is no work for Destruct()
+                if (th.IsTypeDesc())
+                    continue;
+
+                MethodTable * pMT = th.AsMethodTable();
+                ClassLoader::NotifyUnload(pMT, true);
+
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
-                // There is nothing interesting to destruct on array EEClass
-                if (!th.IsTypeDesc())
+                if (pMT->IsCanonicalMethodTable())
                 {
-                    MethodTable * pMT = th.AsMethodTable();
-                    if (pMT->IsCanonicalMethodTable())
-                        pMT->GetClass()->Destruct(pMT);
+                    pMT->GetClass()->Destruct();
                 }
+
+                ClassLoader::NotifyUnload(pMT, false);
             }
         }
     }
@@ -1444,7 +1516,7 @@ void Module::StartUnload()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         END_PROFILER_CALLBACK();
     }
@@ -1586,18 +1658,9 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
     {
         ret = GetISymUnmanagedReader();
     }
-    EX_CATCH
-    {
-        // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
-        // The only type of error that should be possible here is OOM.
-        /* DISABLED due to Dev10 bug 619495
-        CONSISTENCY_CHECK_MSG(
-            GET_EXCEPTION()->GetHR() == E_OUTOFMEMORY,
-            "Exception from GetISymUnmanagedReader");
-         */
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
+    EX_SWALLOW_NONTERMINAL
+    // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
+    // The only type of error that should be possible here is OOM.
     RETURN (ret);
 }
 
@@ -2041,7 +2104,7 @@ PTR_READYTORUN_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
     return GetReadyToRunInfo()->GetImportSectionForRVA(rva);
 }
 
-TADDR Module::GetIL(DWORD target)
+TADDR Module::GetIL(RVA target)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -2187,21 +2250,18 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
 }
 
 
-OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
+STRINGREF* ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
 
     EEStringData strData;
-    OBJECTHANDLE string = NULL;
 
 #if !BIGENDIAN
     InitializeStringData(token, &strData, NULL);
@@ -2211,14 +2271,8 @@ OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
 #endif // !!BIGENDIAN
 
     GCX_COOP();
-
-    LoaderAllocator *pLoaderAllocator;
-
-    pLoaderAllocator = this->GetLoaderAllocator();
-
-    string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
-
-    return string;
+    LoaderAllocator* pLoaderAllocator = this->GetLoaderAllocator();
+    return pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
 }
 
 mdToken Module::GetEntryPointToken()
@@ -2806,7 +2860,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
         LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     RETURN pMDRet;
 }
@@ -3301,11 +3355,11 @@ void Module::FixupVTables()
                     iCurMethod++;
 
 #ifdef _DEBUG
-                    if (pMD->IsNDirect())
+                    if (pMD->IsPInvoke())
                     {
                         LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
-                            (size_t)(((NDirectMethodDesc*)pMD)->GetNDirectTarget())));
+                            (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
 #endif // _DEBUG
 
@@ -3334,18 +3388,14 @@ void Module::FixupVTables()
                     LOG((LF_INTEROP, LL_INFO10, "[0x%p] <-- VTable  thunk for \"%s\" (pMD = 0x%p)\n",
                         (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
 
-                    UMEntryThunk *pUMEntryThunk = (UMEntryThunk*)(void*)(GetDllThunkHeap()->AllocAlignedMem(sizeof(UMEntryThunk), CODE_SIZE_ALIGN)); // UMEntryThunk contains code
-                    ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
-                    FillMemory(uMEntryThunkWriterHolder.GetRW(), sizeof(UMEntryThunk), 0);
+                    UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
-                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(GetThunkHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
-                    ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
-                    FillMemory(uMThunkMarshInfoWriterHolder.GetRW(), sizeof(UMThunkMarshInfo), 0);
+                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
 
-                    uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
-                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, (PCODE)0, NULL, pUMThunkMarshInfo, pMD);
+                    pUMThunkMarshInfo->LoadTimeInit(pMD);
+                    pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
-                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
+                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
                 }
@@ -3365,49 +3415,6 @@ void Module::FixupVTables()
         pData->SetIsFixedUp();  // On the data
         SetIsIJWFixedUp();      // On the module
     } // End of Stage 3
-}
-
-// Self-initializing accessor for m_pThunkHeap
-LoaderHeap *Module::GetDllThunkHeap()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    return PEImage::GetDllThunkHeap(GetPEAssembly()->GetIJWBase());
-
-}
-
-LoaderHeap *Module::GetThunkHeap()
-{
-    CONTRACT(LoaderHeap *)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END
-
-    if (!m_pThunkHeap)
-    {
-        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-            0,                                 // DWORD dwCommitBlockSize
-            ThunkHeapStubManager::g_pManager->GetRangeList(),
-            UnlockedLoaderHeap::HeapKind::Executable);
-
-        if (InterlockedCompareExchangeT(&m_pThunkHeap, pNewHeap, 0) != 0)
-        {
-            delete pNewHeap;
-        }
-    }
-
-    RETURN m_pThunkHeap;
 }
 
 ModuleBase *Module::GetModuleFromIndex(DWORD ix)
@@ -3612,7 +3619,7 @@ void Module::RunEagerFixupsUnlocked()
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
@@ -3628,7 +3635,7 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
     {
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods))
             return FALSE;
 
         _ASSERTE(*fixupCell != 0);
@@ -3777,6 +3784,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, pPEAssembly));
 
     pModule->DoInit(pamTracker, szName);
+    pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
     RETURN pModule.Extract();
 }
@@ -4039,9 +4047,9 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-
     BYTE* pByte = NULL;
-    m_pCeeFileGen->GetMethodBuffer(il, &pByte);
+    if (il != 0)
+        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
     return TADDR(pByte);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
@@ -4340,7 +4348,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
-            pCookie->pNDirectILStub = 0;
+            pCookie->pPInvokeILStub = 0;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;
@@ -4474,7 +4482,7 @@ CHECK Module::CheckActivated()
 #ifndef DACCESS_COMPILE
     Assembly *pAssembly = GetAssembly();
     CHECK(pAssembly != NULL);
-    PREFIX_ASSUME(pAssembly != NULL);
+    _ASSERTE(pAssembly != NULL);
     CHECK(pAssembly->CheckActivated());
 #endif
     CHECK_OK;
@@ -4600,8 +4608,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
             asmRefIter.GetElement()->GetAssembly()->EnumMemoryRegions(flags);
         }
     }
-
-    ECall::EnumFCallMethods();
 
 #ifdef FEATURE_METADATA_UPDATER
     m_ClassList.EnumMemoryRegions();
@@ -4740,7 +4746,7 @@ void Module::ExpandAll()
             {
                 hr = GET_EXCEPTION()->GetHR();
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             //Only do this for non-generic types and unshared generic types
             //(canonical generics and value type generic instantiations).
@@ -4765,7 +4771,7 @@ void Module::ExpandAll()
             {
                 hr = GET_EXCEPTION()->GetHR();
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
     };
     //Jit all methods eagerly

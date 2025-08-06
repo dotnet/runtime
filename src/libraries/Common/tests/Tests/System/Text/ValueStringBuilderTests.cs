@@ -104,25 +104,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public unsafe void Append_PtrInt_MatchesStringBuilder()
-        {
-            var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
-            for (int i = 1; i <= 100; i++)
-            {
-                string s = i.ToString();
-                fixed (char* p = s)
-                {
-                    sb.Append(p, s.Length);
-                    vsb.Append(p, s.Length);
-                }
-            }
-
-            Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
-        }
-
-        [Fact]
         public void AppendSpan_DataAppendedCorrectly()
         {
             var sb = new StringBuilder();
@@ -266,7 +247,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public unsafe void Indexer()
+        public void Indexer()
         {
             const string Text1 = "foobar";
             var vsb = new ValueStringBuilder();

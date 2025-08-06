@@ -584,7 +584,7 @@ STDMETHODIMP SymbolInfo::EnumPermissionSets (          // S_OK, S_FALSE, or erro
 STDMETHODIMP SymbolInfo::FindMember (
     mdTypeDef   td,                     // [IN] given typedef
     LPCWSTR     szName,                 // [IN] member name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdToken     *pmb)             // [OUT] matching memberdef
 {
@@ -595,7 +595,7 @@ STDMETHODIMP SymbolInfo::FindMember (
 STDMETHODIMP SymbolInfo::FindMethod (
     mdTypeDef   td,                     // [IN] given typedef
     LPCWSTR     szName,                 // [IN] member name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMethodDef *pmb)             // [OUT] matching memberdef
 {
@@ -606,7 +606,7 @@ STDMETHODIMP SymbolInfo::FindMethod (
 STDMETHODIMP SymbolInfo::FindField (
     mdTypeDef   td,                     // [IN] given typedef
     LPCWSTR     szName,                 // [IN] member name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdFieldDef  *pmb)             // [OUT] matching memberdef
 {
@@ -617,7 +617,7 @@ STDMETHODIMP SymbolInfo::FindField (
 STDMETHODIMP SymbolInfo::FindMemberRef (
     mdTypeRef   td,                     // [IN] given typeRef
     LPCWSTR     szName,                 // [IN] member name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMemberRef *pmr)             // [OUT] matching memberref
 {
@@ -1073,7 +1073,7 @@ STDMETHODIMP SymbolInfo::DefineMethod (                // S_OK or error.
     mdTypeDef   td,                     // Parent TypeDef
     LPCWSTR     szName,                 // Name of member
     DWORD       dwMethodFlags,          // Member attributes
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     ULONG       ulCodeRVA,
     DWORD       dwImplFlags,
@@ -1117,7 +1117,7 @@ STDMETHODIMP SymbolInfo::DefineImportType (            // S_OK or error.
 STDMETHODIMP SymbolInfo::DefineMemberRef (             // S_OK or error
     mdToken     tkImport,               // [IN] ClassRef or ClassDef importing a member.
     LPCWSTR     szName,                 // [IN] member's name
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     mdMemberRef *pmr)             // [OUT] memberref token
 {
@@ -1351,7 +1351,7 @@ STDMETHODIMP SymbolInfo::DefineField (                 // S_OK or error.
     mdTypeDef   td,                     // Parent TypeDef
     LPCWSTR     szName,                 // Name of member
     DWORD       dwFieldFlags,           // Member attributes
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
     ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
     DWORD       dwCPlusTypeFlag,        // [IN] flag for value type. selected ELEMENT_TYPE_*
     void const  *pValue,                // [IN] constant value

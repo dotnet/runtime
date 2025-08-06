@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
+import { INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { mono_log_warn } from "./logging";
-import { forceThreadMemoryViewRefresh, localHeapViewU8 } from "./memory";
+import { forceThreadMemoryViewRefresh, free, localHeapViewU8, malloc } from "./memory";
 import { utf8ToString } from "./strings";
 const commands_received: any = new Map<number, CommandResponse>();
 commands_received.remove = function (key: number): CommandResponse {
@@ -64,9 +64,9 @@ export function mono_wasm_add_dbg_command_received (res_ok: boolean, id: number,
 function mono_wasm_malloc_and_set_debug_buffer (command_parameters: string) {
     if (command_parameters.length > _debugger_buffer_len) {
         if (_debugger_buffer)
-            Module._free(_debugger_buffer);
+            free(_debugger_buffer);
         _debugger_buffer_len = Math.max(command_parameters.length, _debugger_buffer_len, 256);
-        _debugger_buffer = Module._malloc(_debugger_buffer_len);
+        _debugger_buffer = malloc(_debugger_buffer_len);
     }
     const byteCharacters = atob(command_parameters);
     const heapU8 = localHeapViewU8();

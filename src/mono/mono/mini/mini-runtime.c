@@ -119,7 +119,6 @@ const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
 int mini_verbose = 0;
-gboolean mono_term_signaled = FALSE;
 
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
@@ -3764,17 +3763,6 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 	}
 }
 
-MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
-{
-	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
-
-	mono_term_signaled = TRUE;
-
-	mono_gc_finalize_notify ();
-
-	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-}
-
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
 
 #define HAVE_SIG_INFO
@@ -3908,7 +3896,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -3918,7 +3907,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	} else {
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -4506,7 +4496,7 @@ init_class (MonoClass *klass)
 	}
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
@@ -4938,6 +4928,7 @@ register_icalls (void)
 	 * so on.
 	 */
 	register_icall (mono_profiler_raise_method_enter, mono_icall_sig_void_ptr_ptr, TRUE);
+	register_icall (mono_profiler_raise_method_samplepoint, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_method_leave, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_method_tail_call, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_exception_clause, mono_icall_sig_void_ptr_int_int_object, TRUE);

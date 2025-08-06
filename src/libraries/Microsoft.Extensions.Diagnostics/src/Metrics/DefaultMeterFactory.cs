@@ -18,10 +18,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
         public Meter Create(MeterOptions options)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             if (options.Scope is not null && !object.ReferenceEquals(options.Scope, this))
             {

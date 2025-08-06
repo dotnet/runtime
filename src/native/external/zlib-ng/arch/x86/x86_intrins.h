@@ -84,4 +84,9 @@ static inline __m512i _mm512_zextsi128_si512(__m128i a) {
 #endif // __AVX512F__
 #endif // defined(_MSC_VER) && _MSC_VER < 1914
 
+/* Visual C++ toolchains before v142 have constant overflow in AVX512 intrinsics */
+#if defined(_MSC_VER) && defined(__AVX512F__) && !defined(_MM_K0_REG8)
+#  undef _mm512_extracti32x4_epi32
+#  define _mm512_extracti32x4_epi32(v1, e1) _mm512_maskz_extracti32x4_epi32(UINT8_MAX, v1, e1)
+#endif
 #endif // include guard X86_INTRINS_H

@@ -20,7 +20,7 @@ bool             Logger::s_initialized = false;
 UINT32           Logger::s_logLevel    = LOGMASK_DEFAULT;
 HANDLE           Logger::s_logFile     = INVALID_HANDLE_VALUE;
 char*            Logger::s_logFilePath = nullptr;
-CRITICAL_SECTION Logger::s_critSec;
+minipal_mutex Logger::s_critSec;
 
 //
 // Initializes the logging subsystem. This must be called before invoking any of the logging functionality.
@@ -30,7 +30,7 @@ void Logger::Initialize()
 {
     if (!s_initialized)
     {
-        InitializeCriticalSection(&s_critSec);
+        minipal_mutex_init(&s_critSec);
         s_initialized = true;
     }
 }
@@ -43,7 +43,7 @@ void Logger::Shutdown()
 {
     if (s_initialized)
     {
-        DeleteCriticalSection(&s_critSec);
+        minipal_mutex_destroy(&s_critSec);
         CloseLogFile();
         s_initialized = false;
     }
@@ -244,7 +244,7 @@ void Logger::LogVprintf(
     // maintaining chronological order is crucial, then we can implement a priority queueing system
     // for log messages.
 
-    EnterCriticalSection(&s_critSec);
+    minipal_mutex_enter(&s_critSec);
 
     if (level < LOGLEVEL_INFO)
         fprintf(dest, "%s: ", logLevelStr);
@@ -305,7 +305,7 @@ void Logger::LogVprintf(
 CleanUp:
 #endif // !TARGET_UNIX
 
-    LeaveCriticalSection(&s_critSec);
+    minipal_mutex_leave(&s_critSec);
     delete[] fullMsg;
 }
 

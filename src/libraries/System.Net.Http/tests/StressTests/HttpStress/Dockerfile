@@ -1,7 +1,7 @@
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:latest
 FROM $SDK_BASE_IMAGE
 
-# Build latest msquic locally
+# Build latest msquic locally with ASAN enabled
 WORKDIR /msquic
 RUN apt-get update -y && \
     apt-get upgrade -y && \
@@ -42,7 +42,8 @@ ENV STRESS_ROLE=''
 ENV STRESS_ARGS=''
 
 # configure adress sanitizer
-ENV ASAN_OPTIONS='detect_leaks=0'
-ENV LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/12/libasan.so
+# Make sure ASAN_OPTIONS are compatible with CoreCLR: https://github.com/dotnet/runtime/blob/300485de6f5bf52c28192da930e1aa79cfef46df/src/native/minipal/sansupport.c#L18
+ENV ASAN_OPTIONS='symbolize=1 use_sigaltstack=0 detect_leaks=0 handle_segv=0 allocator_may_return_null=1'
+ENV LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/13/libasan.so
 
 CMD ./entrypoint.sh

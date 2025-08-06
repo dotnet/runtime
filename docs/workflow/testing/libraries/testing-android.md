@@ -22,7 +22,7 @@ Android SDK and NDK can be automatically installed via the following script:
 #!/usr/bin/env bash
 set -e
 
-NDK_VER=r23c
+NDK_VER=r27c
 SDK_VER=9123335_latest
 SDK_API_LEVEL=33
 SDK_BUILD_TOOLS=33.0.1
@@ -154,3 +154,37 @@ The emulator can be launched with a variety of options. Run `emulator -help` to 
 ### Debugging the native runtime code using Android Studio
 
 See [Debugging Android](../../debugging/mono/android-debugging.md)
+
+## Upgrading the Android NDK Version in CI Pipelines
+
+The Android NDK has two release channels: a rolling release, which occurs approximately every quarter, and a Long Term Support (LTS) release, which happens once a year (typically in Q3). While release dates are not guaranteed, LTS versions receive support for at least one year or until the next LTS reaches the release candidate stage. After that, the NDK version stops receiving bug fixes and security updates.
+
+The LTS NDK release schedule roughly aligns with the .NET Release Candidate (RC) timeline. Given this, we should plan to upgrade the NDK version used in `main` around that time. If we successfully upgrade before .NET release, we can ensure that our CI builds and tests run against a supported NDK version for approximately 9 months after the release.
+
+.NET MAUI is supported for 18 months after each .NET release. This means the NDK version used in CI will be supported for about half the lifecycle of a given .NET MAUI release. If we want to ensure that the NDK version used in CI is supported for the entire lifecycle of a given .NET MAUI release, we should consider upgrading the NDK version in the `release` branches.
+
+CI pipelines retrieve the NDK version from Docker images hosted in the [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repository.
+
+For reference, see an example Dockerfile NDK definition:
+[Azure Linux 3.0 .NET 10.0 Android Dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/c480b239b3731983e36b0879f5b60d8f4ab7b945/src/azurelinux/3.0/net10.0/android/amd64/Dockerfile#L2).
+
+Bumping version of the NDK in the prereqs repo will automatically propagate it to all CI runs Thus, bumping the NDK requires a three step process in order to ensure that CI continues to operate correctly.
+To upgrade the NDK version used in CI for building and testing Android, follow these steps:
+
+### 1. Verify the New NDK Version Locally
+- Download the new NDK version.
+- Test the local build using the new NDK by building a sample Android app.
+- Ensure **AOT** and **AOT_WITH_LIBRARY_FILES** are enabled in the build.
+
+### 2. Test the New NDK in CI and Fix Issues
+- Create a new Docker image containing the updated NDK version (based on the original docker image from the [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repository).
+- Open a **draft PR** in the **runtime** repository that updates the Dockerfile reference to use the new image.
+- Monitor CI results and fix any failures.
+- Once CI is green, **commit only the necessary changes** (e.g., fixes, build adjustments) to the respective branch.
+- **Do not** change the Docker image reference in the final commit.
+
+### 3. Update the NDK Version in the Prerequisites Repository
+- Update the NDK version in the [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) repository by modifying the Dockerfile.
+- The updated NDK will automatically flow to all builds of a given branch once merged.
+
+By following these steps, you ensure a smooth upgrade of the Android NDK in CI while maintaining stability and compatibility.
