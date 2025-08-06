@@ -1058,12 +1058,12 @@ bool DefaultPolicy::PropagateNeverToRuntime() const
         return true;
     }
 
-    /*if (m_InsideThrowBlock)
+    if (m_InsideThrowBlock)
     {
         // We inline only trivial methods inside BBJ_THROW call-sites - no need to record that.
         //
         return false;
-    }*/
+    }
 
     if (m_RootCompiler->fgPgoDynamic)
     {
