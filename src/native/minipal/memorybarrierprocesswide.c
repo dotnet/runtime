@@ -87,8 +87,7 @@ bool minipal_initialize_memory_barrier_process_wide(void)
 #ifdef HOST_WASM
     // browser/wasm is currently single threaded
 #elif defined(HOST_APPLE)
-...
-
+    // Apple platforms do not support membarrier, so we use a different mechanism
 #else
 #if HAVE_SYS_MEMBARRIER_H
     if (CanFlushUsingMembarrier())
@@ -99,20 +98,6 @@ bool minipal_initialize_memory_barrier_process_wide(void)
 #else
     {
         // Fallback implementation
-    }
-#endif
-    //
-    // support for FlusProcessWriteBuffers
-    //
-    assert(s_flushUsingMemBarrier == 0);
-
-    if (CanFlushUsingMembarrier())
-    {
-        s_flushUsingMemBarrier = true;
-    }
-#ifndef TARGET_APPLE
-    else
-    {
         assert(g_helperPage == 0);
 
         int pageSize = sysconf( _SC_PAGE_SIZE );
@@ -145,8 +130,9 @@ bool minipal_initialize_memory_barrier_process_wide(void)
             return false;
         }
     }
-#endif // !TARGET_APPLE
-#endif // !TARGET_WASM
+#endif // HAVE_SYS_MEMBARRIER_H
+#endif // !HOST_WASM && !HOST_APPLE
+
     return true;
 }
 
