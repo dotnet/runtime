@@ -80,7 +80,7 @@ namespace DefaultNamespace {
             return 1;
         }
 
-        public RootMem( int i )
+        private RootMem( int i )
         {
             if( i> 0)
             {
