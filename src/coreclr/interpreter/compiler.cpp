@@ -3041,6 +3041,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     m_pLastNewIns->data[2] = lookup.accessType == IAT_PVALUE;
                     if (lookup.accessType == IAT_PPVALUE)
                         NO_WAY("IAT_PPVALUE pinvokes not implemented in interpreter");
+                    bool suppressGCTransition = false;
+                    m_compHnd->getUnmanagedCallConv(callInfo.hMethod, nullptr, &suppressGCTransition);
+                    m_pLastNewIns->data[3] = suppressGCTransition ? 1 : 0;
                 }
             }
             break;

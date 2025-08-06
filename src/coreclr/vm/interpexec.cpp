@@ -1856,8 +1856,9 @@ MAIN_LOOP:
                     methodSlot = ip[3];
                     int32_t targetAddrSlot = ip[4];
                     int32_t indirectFlag = ip[5];
+                    bool suppressGCTransition = (ip[6] != 0);
 
-                    ip += 6;
+                    ip += 7;
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
                     PCODE callTarget = indirectFlag
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
@@ -1872,12 +1873,8 @@ MAIN_LOOP:
                     inlinedCallFrame.Push();
 
                     {
-                        GCX_PREEMP();
-                        bool shouldSuppressGCTransition = targetMethod->ShouldSuppressGCTransition();
-                        {
-                            GCX_MAYBE_COOP(shouldSuppressGCTransition);
-                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
-                        }
+                        GCX_MAYBE_PREEMP(!suppressGCTransition);
+                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
 
                     inlinedCallFrame.Pop();
