@@ -2,34 +2,6 @@
 
 This folder contains infrastructure to create data descriptors as defined in the [data_descriptor.md](../../../../docs/design/datacontracts/data_descriptor.md). Data descriptors enable diagnostic tooling (debuggers, profilers, etc.) to understand the internal layout and structure of .NET runtime objects without requiring intimate knowledge of implementation details.
 
-<!-- ## Overview
-
-### What are Data Descriptors?
-
-Data descriptors are structured metadata that describe:
-- **Type layouts**: Sizes and field offsets of internal runtime structures
-- **Global values**: Important runtime constants and pointers
-- **Algorithmic contracts**: Well-defined interfaces for diagnostic operations
-
-This system is part of the broader [data contracts design](../../../../docs/design/datacontracts/datacontracts_design.md) that provides a stable, versioned interface between the .NET runtime and external diagnostic tools.
-
-### How it Fits into the Diagnostic Ecosystem
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│ Diagnostic Tool │───▶│ Contract         │───▶│ Runtime Process │
-│ (Debugger, etc.)│    │ Descriptor Blob  │    │ Memory          │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                              ▲
-                              │
-                       ┌──────────────┐
-                       │ This System  │
-                       │ Generates    │
-                       └──────────────┘
-```
-
-The diagnostic tool reads the contract descriptor blob from the target process memory, which contains all the metadata needed to interpret runtime data structures safely and correctly. -->
-
 ## Getting Started
 
 ### Quick Example
