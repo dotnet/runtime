@@ -2202,7 +2202,7 @@ do {                                                                           \
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
-                    OBJECTREF elemRef = *(OBJECTREF*)(pData + idx * sizeof(OBJECTREF));
+                    OBJECTREF elemRef = ObjectToOBJECTREF(*(Object**)(pData + idx * sizeof(OBJECTREF)));
                     LOCAL_VAR(ip[1], OBJECTREF) = elemRef;
                     ip += 4;
                     break;
