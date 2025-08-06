@@ -16,13 +16,30 @@
     <Compile Include="GB18030\Tests\FileInfoTests.cs" />
     <Compile Include="GB18030\Tests\FileTestBase.cs" />
     <Compile Include="GB18030\Tests\FileTests.cs" />
+    <Compile Include="GB18030\Tests\RegexTests.cs" />
     <Compile Include="GB18030\Tests\StringTests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\tests\FunctionalTests\Regex.Tests.Common.cs"
+             Link="System\Text\RegularExpressions\tests\FunctionalTests\Regex.Tests.Common.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\tests\FunctionalTests\RegexGeneratorHelper.netcoreapp.cs"
+             Link="System\Text\RegularExpressions\tests\FunctionalTests\RegexGeneratorHelper.netcoreapp.cs" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
+                      SetTargetFramework="TargetFramework=netstandard2.0"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\tests\FunctionalTests\RegexGeneratorHelper.netfx.cs" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
+  </ItemGroup>
+  
   <ItemGroup>
-    <None Include="GB18030\Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="GB18030\Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
 </Project>
