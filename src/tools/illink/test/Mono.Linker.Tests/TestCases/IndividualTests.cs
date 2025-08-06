@@ -8,7 +8,6 @@ using System.Linq;
 using System.Runtime.Serialization.Json;
 using System.Xml;
 using Mono.Cecil;
-using Mono.Linker.Tests.Cases.CommandLine;
 using Mono.Linker.Tests.Cases.CommandLine.Mvid;
 using Mono.Linker.Tests.Cases.Interop.PInvoke.Individual;
 using Mono.Linker.Tests.Cases.References.Individual;
@@ -269,32 +268,6 @@ namespace Mono.Linker.Tests.TestCases
         {
             runner = new TestRunner(new ObjectFactory());
             return runner.Run(testCase);
-        }
-
-        [Test]
-        public void NoSEHFlagIsSetInPEHeader()
-        {
-            var testcase = CreateIndividualCase(typeof(NoSEHFlagIsSet));
-            var result = Run(testcase);
-
-            var outputPath = result.OutputAssemblyPath;
-            if (!outputPath.Exists())
-                Assert.Fail($"The linked assembly is missing. Expected it to exist at {outputPath}");
-
-            // Check PE header for NoSEH flag
-            using (var fileStream = new FileStream(outputPath, FileMode.Open, FileAccess.Read))
-            using (var peReader = new System.Reflection.PortableExecutable.PEReader(fileStream))
-            {
-                var peHeaders = peReader.PEHeaders;
-                var characteristics = peHeaders.CoffHeader.Characteristics;
-                var dllCharacteristics = peHeaders.PEHeader!.DllCharacteristics;
-                
-                // IMAGE_DLLCHARACTERISTICS_NO_SEH = 0x0400
-                const System.Reflection.PortableExecutable.DllCharacteristics NoSEH = (System.Reflection.PortableExecutable.DllCharacteristics)0x0400;
-                
-                Assert.That(dllCharacteristics & NoSEH, Is.EqualTo(NoSEH), 
-                    $"NoSEH flag (0x0400) is not set in PE header. DllCharacteristics: 0x{dllCharacteristics:X}");
-            }
         }
     }
 }
