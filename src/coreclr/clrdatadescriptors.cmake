@@ -37,7 +37,6 @@ function(generate_data_descriptors)
     endif()
 
     add_library(${INTERMEDIARY_LIBRARY} OBJECT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/datadescriptor.cpp")
-    target_include_directories(${INTERMEDIARY_LIBRARY} PRIVATE ${DATA_DESCRIPTOR_SHARED_SOURCE_DIR})
 
     if(CLR_CMAKE_TARGET_WIN32)
       # turn off whole program optimization:
@@ -75,10 +74,7 @@ function(generate_data_descriptors)
     )
     add_dependencies(${LIBRARY} ${INTERMEDIARY_LIBRARY})
 
-    target_include_directories(${LIBRARY} PRIVATE 
-      ${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}
-      ${GENERATED_CDAC_DESCRIPTOR_DIR}
-    )
+    target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
 
     # inherit definitions, include directories, and dependencies from the INTERFACE target
     target_link_libraries(${LIBRARY} PRIVATE ${DATA_DESCRIPTORS_INTERFACE_TARGET})
