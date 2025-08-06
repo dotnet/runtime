@@ -2987,6 +2987,9 @@
   <data name="NotSupported_ByRefToVoidReturn" xml:space="preserve">
     <value>ByRef to void return values are not supported in reflection invocation.</value>
   </data>
+  <data name="NotSupported_Async" xml:space="preserve">
+    <value>Async infrastructure methods are not supported in reflection invocation.</value>
+  </data>
   <data name="NotSupported_CallToVarArg" xml:space="preserve">
     <value>Vararg calling convention not supported.</value>
   </data>

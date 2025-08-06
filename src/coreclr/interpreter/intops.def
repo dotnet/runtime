@@ -390,6 +390,7 @@ OPDEF(INTOP_GENERICLOOKUP, "generic", 4, 1, 1, InterpOpGenericLookup)
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
 
 OPDEF(INTOP_ZEROBLK_IMM, "zeroblk.imm", 3, 0, 1, InterpOpInt)
+OPDEF(INTOP_CPBLK, "cpblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
 

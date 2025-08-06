@@ -331,7 +331,7 @@ void emitIns_R_AI(instruction  ins,
                   regNumber    reg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
+unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned get_curTotalCodeSize(); // bytes of code
 

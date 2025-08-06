@@ -1009,7 +1009,7 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     GetEmitter()->emitIns_R_R_I(INS_addi, attr, targetReg, operandReg, 1);
     // bne targetReg, zero, 2 * 4
     GetEmitter()->emitIns_R_R_I(INS_bne, attr, targetReg, REG_R0, 8);
-    GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, targetReg, -1);
+    GetEmitter()->emitIns_R_R(INS_not, attr, targetReg, targetReg);
 
     genProduceReg(tree);
 }
@@ -1691,7 +1691,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     else if (tree->OperIs(GT_NOT))
     {
         assert(!varTypeIsFloating(targetType));
-        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, -1);
+        GetEmitter()->emitIns_R_R(INS_not, attr, targetReg, operandReg);
     }
 
     genProduceReg(tree);
@@ -2190,8 +2190,19 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber tmpReg = internalRegisters.GetSingle(treeNode);
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
-    GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpReg, idxReg, 2);
-    GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, tmpReg);
+    assert(treeNode->gtGetOp2()->TypeIs(TYP_I_IMPL));
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zba))
+    {
+        emitAttr    idxSize = emitTypeSize(treeNode->gtGetOp1());
+        instruction sh2add  = (idxSize == EA_4BYTE) ? INS_sh2add_uw : INS_sh2add;
+        GetEmitter()->emitIns_R_R_R(sh2add, idxSize, baseReg, idxReg, baseReg);
+    }
+    else
+    {
+        assert(treeNode->gtGetOp1()->TypeIs(TYP_I_IMPL));
+        GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpReg, idxReg, 2);
+        GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, tmpReg);
+    }
     GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, baseReg, baseReg, 0);
 
     // add it to the absolute address of fgFirstBB
@@ -6511,12 +6522,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             params.addr     = helperFunction.addr;
             params.callType = EC_FUNC_TOKEN;
 
-            ssize_t imm = 9 << 2;
-            if (compiler->opts.compReloc)
-            {
-                imm = 3 << 2;
-            }
-
+            ssize_t imm = 3 * sizeof(emitter::code_t);
             emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
         }
         else

@@ -162,7 +162,7 @@ class Module;
 // TailCallArgBuffer states
 #define TAILCALLARGBUFFER_ACTIVE       0
 #define TAILCALLARGBUFFER_INSTARG_ONLY 1
-#define TAILCALLARGBUFFER_ABANDONED    2
+#define TAILCALLARGBUFFER_INACTIVE     2
 
 struct TailCallArgBuffer
 {
@@ -414,7 +414,7 @@ class TailCallTls
 
 public:
     TailCallTls();
-    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    TailCallArgBuffer* AllocArgBuffer(int size);
     void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
     TailCallArgBuffer* GetArgBuffer()
     {
@@ -4390,7 +4390,17 @@ public:
         _ASSERTE(result == NULL || (dac_cast<size_t>(result) & 0x3) == 0 || ((Thread*)result)->GetThreadId() == id);
         return result;
     }
+
+    friend struct ::cdac_data<IdDispenser>;
 };
+
+template<>
+struct cdac_data<IdDispenser>
+{
+    static constexpr size_t IdToThread = offsetof(IdDispenser, m_idToThread);
+    static constexpr size_t HighestId = offsetof(IdDispenser, m_highestId);
+};
+
 typedef DPTR(IdDispenser) PTR_IdDispenser;
 
 

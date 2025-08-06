@@ -46,27 +46,48 @@ record struct ThreadData (
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
+TargetPointer IdToThread(uint id);
 ```
 
 ## Version 1
 
-This contract depends on the following descriptors:
+The contract depends on the following globals
 
-| Data descriptor name |
-| --- |
-| `GCAllocContext` |
-| `RuntimeThreadLocals` |
-| `Thread` |
-| `ThreadStore` |
+| Global name | Type | Meaning |
+| --- | --- |
+| `AppDomain` | TargetPointer | A pointer to the address of the one AppDomain
+| `ThreadStore` | TargetPointer | A pointer to the address of the ThreadStore
+| `FeatureEHFunclets` | TargetPointer | 1 if EH funclets are enabled, 0 otherwise
+| `FinalizerThread` | TargetPointer | A pointer to the finalizer thread
+| `GCThread` | TargetPointer | A pointer to the GC thread
+| `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects
 
-| Global name |
-| --- |
-| `AppDomain` |
-| `ThreadStore` |
-| `FeatureEHFunclets` |
-| `FinalizerThread` |
-| `GCThread` |
+The contract additionally depends on these data descriptors
 
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested exception info |
+| `GCAllocContext` | `Pointer` | GC allocation pointer |
+| `GCAllocContext` | `Limit` | Allocation limit pointer |
+| `IdDispenser` | `HighestId` | Highest possible small thread ID |
+| `IdDispenser` | `IdToThread` | Array mapping small thread IDs to thread pointers |
+| `RuntimeThreadLocals` | `AllocContext` | GC allocation context for the thread |
+| `Thread` | `Id` | Thread identifier |
+| `Thread` | `OSId` | Operating system thread identifier |
+| `Thread` | `State` | Thread state flags |
+| `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
+| `Thread` | `Frame` | Pointer to current frame |
+| `Thread` | `TEB` | Thread Environment Block pointer |
+| `Thread` | `LastThrownObject` | Handle to last thrown exception object |
+| `Thread` | `LinkNext` | Pointer to get next thread |
+| `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
+| `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
+| `ThreadStore` | `ThreadCount` | Number of threads |
+| `ThreadStore` | `FirstThreadLink` | Pointer to first thread in the linked list |
+| `ThreadStore` | `UnstartedCount` | Number of unstarted threads |
+| `ThreadStore` | `BackgroundCount` | Number of background threads |
+| `ThreadStore` | `PendingCount` | Number of pending threads |
+| `ThreadStore` | `DeadCount` | Number of dead threads |
 ``` csharp
 ThreadStoreData GetThreadStoreData()
 {
@@ -93,11 +114,11 @@ DacThreadStoreCounts GetThreadCounts()
 
 ThreadData GetThreadData(TargetPointer address)
 {
-    var runtimeThread = new Thread(Target, threadPointer);
+    var runtimeThread = new Thread(target, threadPointer);
 
     // Exception tracker is a pointer when EH funclets are enabled
-    TargetPointer exceptionTrackerAddr = _target.ReadGlobal<byte>("FeatureEHFunclets") != 0
-        ? _target.ReadPointer(address + /* Thread::ExceptionTracker offset */)
+    TargetPointer exceptionTrackerAddr = target.ReadGlobal<byte>("FeatureEHFunclets") != 0
+        ? target.ReadPointer(address + /* Thread::ExceptionTracker offset */)
         : address + /* Thread::ExceptionTracker offset */;
     TargetPointer firstNestedException = exceptionTrackerAddr != TargetPointer.Null
         ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::PreviousNestedInfo offset*/)
@@ -126,5 +147,16 @@ ThreadData GetThreadData(TargetPointer address)
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
     );
+}
+
+TargetPointer IThread.IdToThread(uint id)
+{
+    TargetPointer idDispenserPointer = target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
+    TargetPointer idDispenser = target.ReadPointer(idDispenserPointer);
+    uint HighestId = target.ReadPointer(idDispenser + /* IdDispenser::HighestId offset */);
+    TargetPointer threadPtr = TargetPointer.Null;
+    if (id < HighestId)
+        threadPtr = target.ReadPointer(idDispenser + /* IdDispenser::IdToThread offset + (index into IdToThread array * size of array elements (== size of target pointer)) */);
+    return threadPtr;
 }
 ```
