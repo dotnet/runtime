@@ -1,7 +1,7 @@
-v2.2.4
-860e4cff7917d93f54f5d7f0bc1d0e8b1a3cb988
+v2.2.5
+5f0a27330f90da761864e02004acb3cbdc2c84a5
 
-https://github.com/zlib-ng/zlib-ng/releases/tag/2.2.4
+https://github.com/zlib-ng/zlib-ng/pull/1943
 
 We have removed the following folders from our local copy as these files are not needed for our compilation:
 
