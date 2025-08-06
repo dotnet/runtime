@@ -5,18 +5,20 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public enum GCHeapType
+public class GCTypes
 {
-    Unknown,
-    Workstation,
-    Server,
+    public const string Server = "server";
+    public const string Workstation = "workstation";
+
+    public const string Regions = "regions";
+    public const string Segments = "segments";
 }
 
 public interface IGC : IContract
 {
     static string IContract.Name { get; } = nameof(GC);
 
-    GCHeapType GetGCHeapType() => throw new NotImplementedException();
+    string[] GetGCType() => throw new NotImplementedException();
     uint GetGCHeapCount() => throw new NotImplementedException();
     bool GetGCStructuresValid() => throw new NotImplementedException();
     uint GetMaxGeneration() => throw new NotImplementedException();

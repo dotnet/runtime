@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -9,7 +10,26 @@ internal readonly struct GC_1 : IGC
 {
     private const string GC_TYPE_SVR = "server";
     private const string GC_TYPE_WRK = "workstation";
+
+    private const string HEAP_TYPE_RGN = "regions";
+    private const string HEAP_TYPE_SEG = "segments";
+
     private const uint WRK_HEAP_COUNT = 1;
+
+    private enum GCType
+    {
+        Unknown,
+        Workstation,
+        Server,
+    }
+
+    private enum HeapType
+    {
+        Unknown,
+        Segments,
+        Regions,
+    }
+
     private readonly Target _target;
 
     internal GC_1(Target target)
@@ -17,19 +37,19 @@ internal readonly struct GC_1 : IGC
         _target = target;
     }
 
-    GCHeapType IGC.GetGCHeapType() => GetGCHeapType();
+    string[] IGC.GetGCType() => [_target.ReadGlobalString("GCType"), _target.ReadGlobalString("HeapType")];
 
     uint IGC.GetGCHeapCount()
     {
-        switch (GetGCHeapType())
+        switch (GetGCType())
         {
-            case GCHeapType.Workstation:
+            case GCType.Workstation:
                 return WRK_HEAP_COUNT; // Workstation GC has a single heap
-            case GCHeapType.Server:
+            case GCType.Server:
                 TargetPointer pNumHeaps = _target.ReadGlobalPointer(Constants.Globals.NumHeaps);
                 return (uint)_target.Read<int>(pNumHeaps);
             default:
-                throw new NotImplementedException("Unknown GC heap type");
+                throw new NotImplementedException("Unknown GC type");
         }
     }
 
@@ -46,13 +66,22 @@ internal readonly struct GC_1 : IGC
         return _target.Read<uint>(pMaxGeneration);
     }
 
-    private GCHeapType GetGCHeapType()
+    private GCType GetGCType()
     {
         return _target.ReadGlobalString(Constants.Globals.HeapType) switch
         {
-            GC_TYPE_WRK => GCHeapType.Workstation,
-            GC_TYPE_SVR => GCHeapType.Server,
-            _ => GCHeapType.Unknown,
+            GC_TYPE_WRK => GCType.Workstation,
+            GC_TYPE_SVR => GCType.Server,
+            _ => GCType.Unknown,
         };
     }
-}
+
+    private HeapType GetHeapType()
+    {
+        return _target.ReadGlobalString(Constants.Globals.HeapType) switch
+        {
+            HEAP_TYPE_RGN => HeapType.Regions,
+            HEAP_TYPE_SEG => HeapType.Segments,
+            _ => HeapType.Unknown,
+        };
+    }}

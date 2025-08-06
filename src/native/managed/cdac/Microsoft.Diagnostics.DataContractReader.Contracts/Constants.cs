@@ -71,6 +71,7 @@ public static class Constants
 
         // Globals found on GCDescriptor
         // see src/coreclr/gc/datadescriptors/datadescriptor.inc
+        public const string GCType = nameof(GCType);
         public const string HeapType = nameof(HeapType);
         public const string MaxGeneration = nameof(MaxGeneration);
         public const string StructureInvalidCount = nameof(StructureInvalidCount);

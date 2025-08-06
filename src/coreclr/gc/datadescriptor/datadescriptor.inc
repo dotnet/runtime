@@ -118,10 +118,17 @@ CDAC_TYPES_END()
 CDAC_GLOBALS_BEGIN()
 
 #ifdef SERVER_GC
-CDAC_GLOBAL_STRING(HeapType, server)
+CDAC_GLOBAL_STRING(GCType, server)
 #else // SERVER_GC
-CDAC_GLOBAL_STRING(HeapType, workstation)
+CDAC_GLOBAL_STRING(GCType, workstation)
 #endif // SERVER_GC
+
+#ifdef USE_REGIONS
+CDAC_GLOBAL_STRING(HeapType, regions)
+#else // USE_REGIONS
+CDAC_GLOBAL_STRING(HeapType, segments)
+#endif // USE_REGIONS
+
 
 CDAC_GLOBAL_POINTER(MaxGeneration, &::g_max_generation)
 CDAC_GLOBAL_POINTER(StructureInvalidCount, (&GCScan::m_GcStructuresInvalidCnt))

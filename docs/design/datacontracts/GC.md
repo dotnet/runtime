@@ -4,18 +4,13 @@ This contract is for getting information about the garbage collector configurati
 
 ## APIs of contract
 
-```csharp
-public enum GCHeapType
-{
-    Unknown,
-    Workstation,
-    Server,
-}
-```
 
 ```csharp
-    // Return the type of the current GC heap
-    GCHeapType GetGCHeapType();
+    // Return an array of strings identifying the GC type.
+    // Current return values can include:
+    // "workstation" or "server"
+    // "segments" or "regions"
+    string[] GetGCType();
     // Return the number of GC heaps
     uint GetGCHeapCount();
     // Return true if the GC structure is valid, otherwise return false
@@ -34,7 +29,8 @@ Data descriptors used:
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| `HeapType` | string | Type of GC heap ("workstation" or "server") |
+| `GCType` | string | Type of GC ("workstation" or "server") |
+| `HeapType` | string | Type of the GC heap ("regions" or "segments") |
 | `NumHeaps` | TargetPointer | Pointer to the number of heaps for server GC (int) |
 | `StructureInvalidCount` | TargetPointer | Pointer to the count of invalid GC structures (int) |
 | `MaxGeneration` | TargetPointer | Pointer to the maximum generation number (uint) |
@@ -51,28 +47,28 @@ Constants used:
 | `WRK_HEAP_COUNT` | uint | The number of heaps in the `workstation` GC type | `1` |
 
 ```csharp
-GCHeapType GetGCHeapType()
+GCHeapType GetGCType()
 {
-    return target.ReadGlobalString("HeapType") switch
-    {
-        "workstation" => GCHeapType.Workstation,
-        "server" => GCHeapType.Server,
-        _ => GCHeapType.Unknown,
-    };
+    string gcType = target.ReadGlobalString("GCType");
+    string heapType = target.ReadGlobalString("HeapType");
+
+    return [gcType, heapType];
 }
 
 uint GetGCHeapCount()
 {
-    switch (GetGCHeapType())
+    string gcType = target.ReadGlobalString("GCType");
+    if (gcType == "workstation")
     {
-        case GCHeapType.Workstation:
-            return WRK_HEAP_COUNT;
-        case GCHeapType.Server:
-            TargetPointer pNumHeaps = target.ReadGlobalPointer("NumHeaps");
-            return (uint)target.Read<int>(pNumHeaps);
-        default:
-            throw new NotImplementedException("Unknown GC heap type");
+        return WRK_HEAP_COUNT;
     }
+    if (gcType == "server")
+    {
+        TargetPointer pNumHeaps = target.ReadGlobalPointer("NumHeaps");
+        return (uint)target.Read<int>(pNumHeaps);
+    }
+
+    throw new NotImplementedException("Unknown GC heap type");
 }
 
 bool GetGCStructuresValid()

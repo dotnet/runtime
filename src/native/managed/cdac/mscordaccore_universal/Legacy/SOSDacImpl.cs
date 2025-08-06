@@ -636,15 +636,16 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             IGC gc = _target.Contracts.GC;
-            GCHeapType heapType = gc.GetGCHeapType();
-            if (heapType == GCHeapType.Unknown)
+            string[] heapType = gc.GetGCType();
+            if (!heapType.Contains(GCTypes.Workstation) && !heapType.Contains(GCTypes.Server))
             {
+                // If the GC type is not recognized, we cannot provide heap data
                 hr = HResults.E_FAIL;
             }
             else
             {
                 data->g_max_generation = gc.GetMaxGeneration();
-                data->bServerMode = heapType == GCHeapType.Server ? 1 : 0;
+                data->bServerMode = heapType.Contains(GCTypes.Server) ? 1 : 0;
                 data->bGcStructuresValid = gc.GetGCStructuresValid() ? 1 : 0;
                 data->HeapCount = gc.GetGCHeapCount();
             }
