@@ -21,7 +21,7 @@ namespace System.Threading.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Mutex_Create_NameMultipleNew(string name)
+        public void Mutex_Create_NameMultipleNew(string? name)
         {
             MutexSecurity security = GetBasicMutexSecurity();
 

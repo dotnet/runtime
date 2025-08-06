@@ -211,6 +211,12 @@ namespace ILCompiler
         public virtual bool CanReferenceConstructedMethodTable(TypeDesc type) => true;
 
         /// <summary>
+        /// Gets a value indicating whether it might be possible to obtain a metadata type data structure for the given type
+        /// in this compilation (i.e. is it possible to reference a metadata MethodTable symbol for this).
+        /// </summary>
+        public virtual bool CanReferenceMetadataMethodTable(TypeDesc type) => true;
+
+        /// <summary>
         /// Gets a value indicating whether a (potentially canonically-equlivalent) constructed MethodTable could
         /// exist. This is similar to <see cref="CanReferenceConstructedMethodTable"/>, but will return true
         /// for List&lt;__Canon&gt; if a constructed MethodTable for List&lt;object&gt; exists.

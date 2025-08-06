@@ -45,7 +45,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
+        public async Task UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
                         (Configuration config, bool aot)
         {
             ProjectInfo info = PrepreProjectForBlittableTests(
@@ -93,7 +93,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
-        public async void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
+        public async Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
                         (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
         {
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
@@ -132,7 +132,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void UnmanagedCallback_InFileType(Configuration config, bool aot)
+        public async Task UnmanagedCallback_InFileType(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_filetype");
             string programRelativePath = Path.Combine("Common", "Program.cs");
@@ -151,7 +151,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
+        public async Task UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_namespace");
             string programRelativePath = Path.Combine("Common", "Program.cs");
@@ -276,7 +276,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
-        public async void BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
+        public async Task BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
         {
             // Check that we can generate interp tables in non-english cultures
             // Prompted by https://github.com/dotnet/runtime/issues/71149
@@ -351,12 +351,12 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        public async void EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
+        public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
+        public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
@@ -373,7 +373,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void UCOWithSpecialCharacters(Configuration config, bool aot)
+        public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
             var extraItems = @"<NativeFileReference Include=""local.c"" />";
