@@ -35,12 +35,12 @@ public abstract class DirectoryTestBase : IDisposable
     }
 
     public static IEnumerable<object[]> Delete_TestData() =>
-        new int[] { 0, 2, 8 }.SelectMany(recurseLevel =>
-        TestHelper.s_nonExceedingPathNameMaxDecodedTestData.Select(testData => new object[] { recurseLevel, testData }));
+        TestHelper.s_nonExceedingPathNameMaxDecodedTestData.SelectMany(testData =>
+        new int[] { 0, 2, 8 }.Select(recurseLevel => new object[] { testData, recurseLevel }));
 
     [Theory]
     [MemberData(nameof(Delete_TestData))]
-    public void Delete(int recurseLevel, string gb18030Line)
+    public void Delete(string gb18030Line, int recurseLevel)
     {
         string firstPath = Path.Combine(TempDirectory.FullName, gb18030Line);
         string nestedDirPath = Path.Combine(firstPath, Path.Combine(Enumerable.Repeat(gb18030Line, recurseLevel).ToArray()));

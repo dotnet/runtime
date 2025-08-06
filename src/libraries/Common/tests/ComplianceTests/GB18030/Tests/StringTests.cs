@@ -27,13 +27,13 @@ public class StringTests
     }
 
     public static IEnumerable<object[]> Compare_TestData() =>
+        TestHelper.s_decodedTestData.SelectMany(testData =>
         TestHelper.s_cultures.SelectMany(culture =>
-        TestHelper.s_compareOptions.SelectMany(option =>
-        TestHelper.s_decodedTestData.Select(testData => new object[] { culture, option, testData })));
+        TestHelper.s_compareOptions.Select(option => new object[] { testData, culture, option })));
 
     [Theory]
     [MemberData(nameof(Compare_TestData))]
-    public void Compare(CultureInfo culture, CompareOptions option, string decoded)
+    public void Compare(string decoded, CultureInfo culture, CompareOptions option)
     {
 #pragma warning disable 0618 // suppress obsolete warning for String.Copy
         string copy = string.Copy(decoded);
@@ -42,13 +42,13 @@ public class StringTests
     }
 
     public static IEnumerable<object[]> Contains_TestData() =>
-        TestHelper.s_nonOrdinalStringComparisons.SelectMany(comparison =>
-        TestHelper.s_decodedTestData.Select(testData => new object[] { comparison, testData }));
+        TestHelper.s_decodedTestData.SelectMany(testData =>
+        TestHelper.s_nonOrdinalStringComparisons.Select(comparison => new object[] { testData, comparison  }));
 
     [Theory]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     [MemberData(nameof(Contains_TestData))]
-    public void Contains(StringComparison comparison, string decoded)
+    public void Contains(string decoded, StringComparison comparison)
     {
         string current = string.Empty;
         foreach (string element in TestHelper.GetTextElements(decoded))
@@ -66,12 +66,12 @@ public class StringTests
     }
 
     public static IEnumerable<object[]> StringComparison_TestData() =>
-        TestHelper.s_nonOrdinalStringComparisons.SelectMany(comparison =>
-        TestHelper.s_decodedTestData.Select(decoded => new object[] { comparison, decoded }));
+        TestHelper.s_decodedTestData.SelectMany(decoded =>
+        TestHelper.s_nonOrdinalStringComparisons.Select(comparison => new object[] { decoded, comparison }));
 
     [Theory]
     [MemberData(nameof(StringComparison_TestData))]
-    public void String_Equals(StringComparison comparison, string decoded)
+    public void String_Equals(string decoded, StringComparison comparison)
     {
 #pragma warning disable 0618 // suppress obsolete warning for String.Copy
         string copy = string.Copy(decoded);
@@ -90,12 +90,12 @@ public class StringTests
     }
 
     public static IEnumerable<object[]> EndsStartsWith_TestData() =>
-        TestHelper.s_cultures.SelectMany(culture =>
-        TestHelper.s_decodedTestData.Select(testData => new object[] { culture, testData }));
+        TestHelper.s_decodedTestData.SelectMany(testData =>
+        TestHelper.s_cultures.Select(culture => new object[] { testData, culture }));
 
     [Theory]
     [MemberData(nameof(EndsStartsWith_TestData))]
-    public void EndsWith(CultureInfo culture, string decoded)
+    public void EndsWith(string decoded, CultureInfo culture)
     {
         string suffix = string.Empty;
         foreach (string textElement in TestHelper.GetTextElements(decoded).Reverse())
@@ -107,7 +107,7 @@ public class StringTests
 
     [Theory]
     [MemberData(nameof(EndsStartsWith_TestData))]
-    public void StartsWith(CultureInfo culture, string decoded)
+    public void StartsWith(string decoded, CultureInfo culture)
     {
         string prefix = string.Empty;
         foreach (string textElement in TestHelper.GetTextElements(decoded))
@@ -119,7 +119,7 @@ public class StringTests
 
     [Theory]
     [MemberData(nameof(StringComparison_TestData))]
-    public void IndexOf_MultipleElements(StringComparison comparison, string decoded)
+    public void IndexOf_MultipleElements(string decoded, StringComparison comparison)
     {
         Assert.NotEqual(StringComparison.Ordinal, comparison);
         Assert.NotEqual(StringComparison.OrdinalIgnoreCase, comparison);
@@ -138,7 +138,7 @@ public class StringTests
 
     [Theory]
     [MemberData(nameof(StringComparison_TestData))]
-    public void IndexOf_SingleElement(StringComparison comparison, string decoded)
+    public void IndexOf_SingleElement(string decoded, StringComparison comparison)
     {
         Assert.NotEqual(StringComparison.Ordinal, comparison);
         Assert.NotEqual(StringComparison.OrdinalIgnoreCase, comparison);
@@ -175,7 +175,7 @@ public class StringTests
 
     [Theory]
     [MemberData(nameof(StringComparison_TestData))]
-    public void LastIndexOf_MultipleElements(StringComparison comparison, string decoded)
+    public void LastIndexOf_MultipleElements(string decoded, StringComparison comparison)
     {
         Assert.NotEqual(StringComparison.Ordinal, comparison);
         Assert.NotEqual(StringComparison.OrdinalIgnoreCase, comparison);
@@ -198,7 +198,7 @@ public class StringTests
 
     [Theory]
     [MemberData(nameof(StringComparison_TestData))]
-    public void LastIndexOf_SingleElement(StringComparison comparison, string decoded)
+    public void LastIndexOf_SingleElement(string decoded, StringComparison comparison)
     {
         Assert.NotEqual(StringComparison.Ordinal, comparison);
         Assert.NotEqual(StringComparison.OrdinalIgnoreCase, comparison);
@@ -254,13 +254,13 @@ public class StringTests
     }
 
     public static IEnumerable<object[]> Replace_NetCore_TestData() =>
-        TestHelper.s_cultures.SelectMany(culture =>
-        TestHelper.s_decodedTestData.Select(testData => new object[] { culture, testData }));
+        TestHelper.s_decodedTestData.SelectMany(testData =>
+        TestHelper.s_cultures.Select(culture => new object[] { testData, culture }));
 
 #if NETCOREAPP
     [Theory]
     [MemberData(nameof(Replace_NetCore_TestData))]
-    public void Replace_CultureInfo(CultureInfo culture, string decoded)
+    public void Replace_CultureInfo(string decoded, CultureInfo culture)
     {
         Assert.False(decoded.Contains(Dummy));
 
