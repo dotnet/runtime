@@ -89,6 +89,12 @@ namespace System.Net.Security
                 try
                 {
                     proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate();
+                    if (!proxy.ValidationResult.IsValid)
+                    {
+                        // Throw AuthenticationException if validation failed
+                        proxy.ValidationException = new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null);
+                        return false;
+                    }
                     return proxy.ValidationResult.IsValid;
                 }
                 catch (Exception exception)
