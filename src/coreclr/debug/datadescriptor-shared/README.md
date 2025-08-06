@@ -86,7 +86,7 @@ The build system uses a two-phase approach:
 ## Current Implementation
 
 For reference, see the current implementation in:
-- **`src/coreclr/debug/runtimeinfo/`** - Complete real-world implementation
+- **`src/coreclr/vm/datadescriptor/`** - Complete real-world implementation
   - `datadescriptor.h` - Headers and includes
   - `datadescriptor.inc` - Full type definitions for runtime objects
   - `contracts.jsonc` - Contract definitions
