@@ -76,7 +76,7 @@ namespace System.ComponentModel.Design.Tests
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData("Description", "Description")]
-        public void Description_GetWithProperties_ReturnsExpected(string value, string expected)
+        public void Description_GetWithProperties_ReturnsExpected(string? value, string expected)
         {
             var verb = new DesignerVerb("Text", new EventHandler(EventHandler));
             verb.Properties["Description"] = value;
@@ -102,7 +102,7 @@ namespace System.ComponentModel.Design.Tests
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData("Description", "Description")]
-        public void Description_Set_GetReturnsExpected(string value, string expected)
+        public void Description_Set_GetReturnsExpected(string? value, string expected)
         {
             var verb = new DesignerVerb("Text", new EventHandler(EventHandler))
             {
@@ -128,7 +128,7 @@ namespace System.ComponentModel.Design.Tests
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData("Text", "Text")]
-        public void Text_GetWithProperties_ReturnsExpected(string value, string expected)
+        public void Text_GetWithProperties_ReturnsExpected(string? value, string expected)
         {
             var verb = new DesignerVerb("Text", new EventHandler(EventHandler));
             verb.Properties["Text"] = value;

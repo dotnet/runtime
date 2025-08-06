@@ -70,9 +70,10 @@ namespace System.Security.Cryptography.Tests
             internal int KeySizeInBits { get; } = keySizeInBits;
         }
 
-        internal class ECDsaAlgorithm(int keySizeInBits)
+        internal class ECDsaAlgorithm(int keySizeInBits, bool isSec)
         {
             internal int KeySizeInBits { get; } = keySizeInBits;
+            internal bool IsSec { get; } = isSec;
         }
 
         internal class EdDsaAlgorithm(int keySizeInBits)
@@ -117,20 +118,26 @@ namespace System.Security.Cryptography.Tests
                 return rsaFunc(new RsaAlgorithm(4096));
             }
             else if (algo == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256 ||
-                     algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1 ||
                      algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256)
             {
-                return ecdsaFunc(new ECDsaAlgorithm(256));
+                return ecdsaFunc(new ECDsaAlgorithm(256, isSec: true));
+            }
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1)
+            {
+                return ecdsaFunc(new ECDsaAlgorithm(256, isSec: false));
             }
             else if (algo == CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384 ||
-                     algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1 ||
                      algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384)
             {
-                return ecdsaFunc(new ECDsaAlgorithm(384));
+                return ecdsaFunc(new ECDsaAlgorithm(384, isSec: true));
+            }
+            else if (algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1)
+            {
+                return ecdsaFunc(new ECDsaAlgorithm(384, isSec: false));
             }
             else if (algo == CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521)
             {
-                return ecdsaFunc(new ECDsaAlgorithm(521));
+                return ecdsaFunc(new ECDsaAlgorithm(521, isSec: true));
             }
             else if (algo == CompositeMLDsaAlgorithm.MLDsa44WithEd25519 ||
                      algo == CompositeMLDsaAlgorithm.MLDsa65WithEd25519)
@@ -146,6 +153,8 @@ namespace System.Security.Cryptography.Tests
                 throw new XunitException($"Unsupported algorithm: {algo}");
             }
         }
+
+        internal static bool IsECDsa(CompositeMLDsaAlgorithm algorithm) => ExecuteComponentFunc(algorithm, rsa => false, ecdsa => true, eddsa => false);
 
         internal static void AssertExportPublicKey(Action<Func<CompositeMLDsa, byte[]>> callback)
         {

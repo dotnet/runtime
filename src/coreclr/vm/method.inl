@@ -130,7 +130,7 @@ inline bool MethodDesc::IsILStub()
 inline BOOL MethodDesc::IsQCall()
 {
     WRAPPER_NO_CONTRACT;
-    return (IsNDirect() && dac_cast<PTR_NDirectMethodDesc>(this)->IsQCall());
+    return (IsPInvoke() && dac_cast<PTR_PInvokeMethodDesc>(this)->IsQCall());
 }
 
 #ifdef FEATURE_COMINTEROP

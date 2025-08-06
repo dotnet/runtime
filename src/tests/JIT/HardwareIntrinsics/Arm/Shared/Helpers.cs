@@ -1227,7 +1227,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
         {
             // Get the underlying integer value
-            dynamic value = Convert.ChangeType(n, typeof(long));
+            dynamic value = n;
+            value = (long)value;
 
             // Mask to extract the lowest numBits
             long mask = (1L << numBits) - 1;
@@ -2522,6 +2523,11 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long MultiplyDoublingWideningUpperAndAddSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static long MultiplyDoublingWideningUpperAndSubtractSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long MultiplyDoublingSaturateHigh(long op1, long op2)
+        {
+            return MultiplyDoublingSaturate(op1, op2, rounding: false, 0, subOp: false);
+        }
 
         public static long MultiplyRoundedDoublingSaturateHigh(long op1, long op2)
         {
@@ -4540,10 +4546,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double ReciprocalExponent(double op1)
         {
-            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
+            if (double.IsNaN(op1))
+            {
+                return double.NaN;
+            }
 
-            // Invert the exponent
-            bits ^= 0x7FF0000000000000;
+            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
+            ulong exp = bits & 0x7FF0000000000000;
+
+            if (exp == 0)
+            {
+                // Replace exponent with maximum exponent
+                bits ^= exp ^ 0x7FE0000000000000;
+            }
+            else
+            {
+                // Invert the exponent
+                bits ^= 0x7FF0000000000000;
+            }
+
             // Zero the fraction
             bits &= 0xFFF0000000000000;
 
@@ -4552,10 +4573,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float ReciprocalExponent(float op1)
         {
-            uint bits = BitConverter.SingleToUInt32Bits(op1);
+            if (float.IsNaN(op1))
+            {
+                return float.NaN;
+            }
 
-            // Invert the exponent
-            bits ^= 0x7F800000;
+            uint bits = BitConverter.SingleToUInt32Bits(op1);
+            uint exp = bits & 0x7F800000;
+
+            if (exp == 0)
+            {
+                // Replace exponent with maximum exponent
+                bits ^= exp ^ 0x7F000000;
+            }
+            else
+            {
+                // Invert the exponent
+                bits ^= 0x7F800000;
+            }
+
             // Zero the fraction
             bits &= 0xFF800000;
 
@@ -7753,22 +7789,20 @@ namespace JIT.HardwareIntrinsics.Arm
             where W : IBinaryInteger<W>
             where N : IBinaryInteger<N>
         {
-            dynamic a = op2;
-            dynamic b = op3;
-            W product = (W)((W)a * (W)b);
-            W r = (W)(op1 + product);
-            return r;
+            W a = W.CreateChecked(op2);
+            W b = W.CreateChecked(op3);
+            W product = W.CreateTruncating(a * b);
+            return W.CreateTruncating(op1 + product);
         }
 
         public static W MultiplySubtractWidening<W, N>(W op1, N op2, N op3)
             where W : IBinaryInteger<W>
             where N : IBinaryInteger<N>
         {
-            dynamic a = op2;
-            dynamic b = op3;
-            W product = (W)((W)a * (W)b);
-            W r = (W)(op1 - product);
-            return r;
+            W a = W.CreateChecked(op2);
+            W b = W.CreateChecked(op3);
+            W product = W.CreateTruncating(a * b);
+            return W.CreateTruncating(op1 - product);
         }
 
         public static N AddRoundedHighNarrowing<W, N>(W op1, W op2)
@@ -7776,12 +7810,12 @@ namespace JIT.HardwareIntrinsics.Arm
             where N : IBinaryInteger<N>
         {
             int halfsize = default(N).GetByteCount() * 8;
-            dynamic a = op1;
-            dynamic b = op2;
-            ulong sum = (ulong)a + (ulong)b;
+            ulong a = ulong.CreateChecked(op1);
+            ulong b = ulong.CreateChecked(op2);
+            ulong sum = a + b;
             ulong bias = 1UL << (halfsize - 1);
-            dynamic result = sum + bias;
-            return (N)(result >> halfsize);
+            ulong result = (sum + bias) >> halfsize;
+            return N.CreateTruncating(result);
         }
 
         public static N AddRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
@@ -7803,12 +7837,12 @@ namespace JIT.HardwareIntrinsics.Arm
             where N : IBinaryInteger<N>
         {
             int halfsize = default(N).GetByteCount() * 8;
-            dynamic a = op1;
-            dynamic b = op2;
+            ulong a = ulong.CreateChecked(op1);
+            ulong b = ulong.CreateChecked(op2);
             ulong sum = (ulong)a - (ulong)b;
             ulong bias = 1UL << (halfsize - 1);
-            dynamic result = sum + bias;
-            return (N)(result >> halfsize);
+            ulong result = (sum + bias) >> halfsize;
+            return N.CreateTruncating(result);
         }
 
         public static N SubtractRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
