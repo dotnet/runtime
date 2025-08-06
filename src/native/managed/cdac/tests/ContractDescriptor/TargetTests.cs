@@ -185,7 +185,7 @@ public unsafe partial class TargetTests
         MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[4] };
         builder.AddHeapFragment(fragment);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(new(builder), out ContractDescriptorTarget? target);
         Assert.True(success);
         bool writeSuccess = target.Write<uint>(addr, expected);
         Assert.True(writeSuccess);
@@ -204,7 +204,7 @@ public unsafe partial class TargetTests
         MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[4] };
         builder.AddHeapFragment(fragment);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(new(builder), out ContractDescriptorTarget? target);
         Assert.True(success);
         target.WriteBuffer(addr, expected);
         Span<byte> data = stackalloc byte[4];
