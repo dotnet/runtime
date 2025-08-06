@@ -46,7 +46,7 @@ namespace System.DirectoryServices.Protocols
     public partial class BerConversionException : System.DirectoryServices.Protocols.DirectoryException
     {
         public BerConversionException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -194,7 +194,7 @@ namespace System.DirectoryServices.Protocols
     public partial class DirectoryException : System.Exception
     {
         public DirectoryException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -220,7 +220,7 @@ namespace System.DirectoryServices.Protocols
         public DirectoryOperationException(System.DirectoryServices.Protocols.DirectoryResponse response) { }
         public DirectoryOperationException(System.DirectoryServices.Protocols.DirectoryResponse response, string message) { }
         public DirectoryOperationException(System.DirectoryServices.Protocols.DirectoryResponse response, string message, System.Exception inner) { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -228,7 +228,7 @@ namespace System.DirectoryServices.Protocols
         public DirectoryOperationException(string message) { }
         public DirectoryOperationException(string message, System.Exception inner) { }
         public System.DirectoryServices.Protocols.DirectoryResponse Response { get { throw null; } }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -361,7 +361,7 @@ namespace System.DirectoryServices.Protocols
         public LdapException(int errorCode, string message) { }
         public LdapException(int errorCode, string message, System.Exception inner) { }
         public LdapException(int errorCode, string message, string serverErrorMessage) { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -371,7 +371,7 @@ namespace System.DirectoryServices.Protocols
         public int ErrorCode { get { throw null; } }
         public System.DirectoryServices.Protocols.PartialResultsCollection PartialResults { get { throw null; } }
         public string ServerErrorMessage { get { throw null; } }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -735,7 +735,7 @@ namespace System.DirectoryServices.Protocols
         public TlsOperationException(System.DirectoryServices.Protocols.DirectoryResponse response) { }
         public TlsOperationException(System.DirectoryServices.Protocols.DirectoryResponse response, string message) { }
         public TlsOperationException(System.DirectoryServices.Protocols.DirectoryResponse response, string message, System.Exception inner) { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif

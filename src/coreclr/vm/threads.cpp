@@ -6129,12 +6129,11 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         // -additionally, we need to provide some region to hosts to allow for lock acquisition in a hosted scenario
         //
         EXTRA_PAGES = 3;
-        INDEBUG(EXTRA_PAGES += 1);
 #else // HOST_64BIT
-#ifdef _DEBUG
-        uGuardSize += (1 * GetOsPageSize());    // one extra page for debug infrastructure
-#endif // _DEBUG
+        EXTRA_PAGES = 1;
 #endif // HOST_64BIT
+
+        INDEBUG(EXTRA_PAGES += 1);
 
         int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages, EXTRA_PAGES);
         uGuardSize += (ThreadGuardPages * GetOsPageSize());
