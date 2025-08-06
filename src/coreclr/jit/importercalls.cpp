@@ -7264,7 +7264,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
                                     e.m_classHandle = classGuesses[guessIdx];
                                     e.m_likelihood  = likelihoods[guessIdx];
 
-                                    JITDUMP("Rememmbering that V%02u has %u%% likely class %s\n", thisLclNum,
+                                    JITDUMP("Remembering that V%02u has %u%% likely class %s\n", thisLclNum,
                                             e.m_likelihood, eeGetClassName(e.m_classHandle));
                                     map->Set(thisLclNum, e);
                                 }
