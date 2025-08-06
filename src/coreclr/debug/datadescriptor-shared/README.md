@@ -95,5 +95,5 @@ For reference, see the current implementation in:
 ## Related Documentation
 
 - **[Data Contracts Design](../../../../docs/design/datacontracts/datacontracts_design.md)** - Overall design and motivation
-- **[Contract Descriptor](../../../../docs/design/datacontracts/contract-descriptor.md)** - Binary format specification  
+- **[Contract Descriptor](../../../../docs/design/datacontracts/contract-descriptor.md)** - Binary format specification
 - **[Data Descriptor](../../../../docs/design/datacontracts/data_descriptor.md)** - Logical format specification
