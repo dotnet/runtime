@@ -2782,7 +2782,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			fsig->ret->type == MONO_TYPE_BOOLEAN &&
 			mono_metadata_type_equal (fsig->params [0], fsig->params [1]));
 #ifdef TARGET_S390X
-                if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
+		if (!mono_hwcap_s390x_has_ve1 && (arg0_type == MONO_TYPE_R4))
 			return NULL;
 #endif
 		gboolean is_all = FALSE;
@@ -3180,8 +3180,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #ifdef TARGET_S390X
 		if (!mono_hwcap_s390x_has_ve1 && (id == SN_Negate) && (arg0_type == MONO_TYPE_R4))
-		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
+			return NULL;
 #endif
+		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
 	case SN_Shuffle: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
@@ -3849,7 +3850,7 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 #ifdef TARGET_S390X
 		if (!mono_hwcap_s390x_has_ve1 && ((id !=SN_op_ExclusiveOr) || (id != SN_op_BitwiseAnd) || (id != SN_op_BitwiseOr)) && arg0_type == MONO_TYPE_R4)
-                        return NULL;
+			return NULL;
 #endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 
@@ -4220,7 +4221,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #endif
 #ifdef TARGET_S390X
 		if (!mono_hwcap_s390x_has_ve1 && ((id == SN_Max) || (id == SN_Min) || (id == SN_MaxNative) || (id == SN_MinNative)))
-                        return NULL;
+			return NULL;
 #endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	}
