@@ -7670,22 +7670,6 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         useNode           = treeUse.User();
         assert(foundUse);
 
-#ifdef TARGET_ARM64
-        if (refPosition->needsConsecutive && useNode->OperIs(GT_FIELD_LIST))
-        {
-            // The tree node requiring consecutive registers are represented as GT_FIELD_LIST.
-            // When restoring the upper vector, make sure to restore it at the point where
-            // GT_FIELD_LIST is consumed instead where the individual field is consumed, which
-            // will always be at GT_FIELD_LIST creation time. That way, we will restore the
-            // upper vector just before the use of them in the intrinsic.
-            LIR::Use fieldListUse;
-            foundUse = blockRange.TryGetUse(useNode, &fieldListUse);
-            treeUse  = fieldListUse;
-            useNode  = treeUse.User();
-            assert(foundUse);
-        }
-#endif
-
         // If the node is contained then the actual use is the containing node (which may be much
         // later in the LIR). Recursively check until there is no contained node.
         while (useNode->isContained())
