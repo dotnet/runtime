@@ -2047,7 +2047,7 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
 
 
 

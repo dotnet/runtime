@@ -2524,6 +2524,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long MultiplyDoublingWideningUpperAndSubtractSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
+        public static long MultiplyDoublingSaturateHigh(long op1, long op2)
+        {
+            return MultiplyDoublingSaturate(op1, op2, rounding: false, 0, subOp: false);
+        }
+
         public static long MultiplyRoundedDoublingSaturateHigh(long op1, long op2)
         {
             return MultiplyDoublingSaturate(op1, op2, rounding: true, 0, subOp: false);
@@ -7784,22 +7789,20 @@ namespace JIT.HardwareIntrinsics.Arm
             where W : IBinaryInteger<W>
             where N : IBinaryInteger<N>
         {
-            dynamic a = op2;
-            dynamic b = op3;
-            W product = (W)((W)a * (W)b);
-            W r = (W)(op1 + product);
-            return r;
+            W a = W.CreateChecked(op2);
+            W b = W.CreateChecked(op3);
+            W product = W.CreateTruncating(a * b);
+            return W.CreateTruncating(op1 + product);
         }
 
         public static W MultiplySubtractWidening<W, N>(W op1, N op2, N op3)
             where W : IBinaryInteger<W>
             where N : IBinaryInteger<N>
         {
-            dynamic a = op2;
-            dynamic b = op3;
-            W product = (W)((W)a * (W)b);
-            W r = (W)(op1 - product);
-            return r;
+            W a = W.CreateChecked(op2);
+            W b = W.CreateChecked(op3);
+            W product = W.CreateTruncating(a * b);
+            return W.CreateTruncating(op1 - product);
         }
 
         public static N AddRoundedHighNarrowing<W, N>(W op1, W op2)
@@ -7807,12 +7810,12 @@ namespace JIT.HardwareIntrinsics.Arm
             where N : IBinaryInteger<N>
         {
             int halfsize = default(N).GetByteCount() * 8;
-            dynamic a = op1;
-            dynamic b = op2;
-            ulong sum = (ulong)a + (ulong)b;
+            ulong a = ulong.CreateChecked(op1);
+            ulong b = ulong.CreateChecked(op2);
+            ulong sum = a + b;
             ulong bias = 1UL << (halfsize - 1);
-            dynamic result = sum + bias;
-            return (N)(result >> halfsize);
+            ulong result = (sum + bias) >> halfsize;
+            return N.CreateTruncating(result);
         }
 
         public static N AddRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
@@ -7834,12 +7837,12 @@ namespace JIT.HardwareIntrinsics.Arm
             where N : IBinaryInteger<N>
         {
             int halfsize = default(N).GetByteCount() * 8;
-            dynamic a = op1;
-            dynamic b = op2;
+            ulong a = ulong.CreateChecked(op1);
+            ulong b = ulong.CreateChecked(op2);
             ulong sum = (ulong)a - (ulong)b;
             ulong bias = 1UL << (halfsize - 1);
-            dynamic result = sum + bias;
-            return (N)(result >> halfsize);
+            ulong result = (sum + bias) >> halfsize;
+            return N.CreateTruncating(result);
         }
 
         public static N SubtractRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)

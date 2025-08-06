@@ -471,6 +471,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyNonBucketizedN3.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\AsciiStringSearchValuesTeddyBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\MultiStringIgnoreCaseSearchValuesFallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesPackedThreeChars.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesThreeChars.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\SingleStringSearchValuesFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValues.cs" />
@@ -2462,10 +2463,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MountPoints.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.cs"
-             Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs"
-             Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.cs" Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Open.cs</Link>
     </Compile>
@@ -2810,6 +2809,15 @@
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Browser.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Wasi.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Wasi.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Browser.Threads.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Browser.Threads.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.Threads.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.cs" />

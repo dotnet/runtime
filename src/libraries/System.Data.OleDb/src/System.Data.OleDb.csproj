@@ -8,7 +8,6 @@
     <NoWarn>$(NoWarn);CA2249</NoWarn>
     <!-- Suppress SYSLIB0004: 'RuntimeHelpers.PrepareConstrainedRegions()' is obsolete to avoid ifdefs. -->
     <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
-    <IsAotCompatible>false</IsAotCompatible>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes for OLEDB.

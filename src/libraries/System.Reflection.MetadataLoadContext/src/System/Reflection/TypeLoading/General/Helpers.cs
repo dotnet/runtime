@@ -12,7 +12,7 @@ namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
-#if NET8_0_OR_GREATER
+#if NET
         private static readonly SearchValues<char> s_charsToEscape = SearchValues.Create("\\[]+*&,");
 #else
         private static ReadOnlySpan<char> s_charsToEscape => "\\[]+*&,".AsSpan();
@@ -125,7 +125,7 @@ namespace System.Reflection.TypeLoading
 
         public static bool NeedsEscapingInTypeName(this char c)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return s_charsToEscape.Contains(c);
 #else
             return s_charsToEscape.IndexOf(c) >= 0;

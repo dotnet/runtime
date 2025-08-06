@@ -25,13 +25,13 @@ namespace System.Security.Cryptography.Tests
         internal int VerifyMuCoreCallCount = 0;
         internal int ExportMLDsaPrivateSeedCoreCallCount = 0;
         internal int ExportMLDsaPublicKeyCoreCallCount = 0;
-        internal int ExportMLDsaSecretKeyCoreCallCount = 0;
+        internal int ExportMLDsaPrivateKeyCoreCallCount = 0;
         internal int TryExportPkcs8PrivateKeyCoreCallCount = 0;
         internal int DisposeCallCount = 0;
 
         internal ExportAction ExportMLDsaPrivateSeedHook { get; set; }
         internal ExportAction ExportMLDsaPublicKeyHook { get; set; }
-        internal ExportAction ExportMLDsaSecretKeyHook { get; set; }
+        internal ExportAction ExportMLDsaPrivateKeyHook { get; set; }
         internal TryExportFunc TryExportPkcs8PrivateKeyHook { get; set; }
         internal SignAction SignDataHook { get; set; }
         internal VerifyFunc VerifyDataHook { get; set; }
@@ -63,10 +63,10 @@ namespace System.Security.Cryptography.Tests
             ExportMLDsaPublicKeyHook(destination);
         }
 
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination)
         {
-            ExportMLDsaSecretKeyCoreCallCount++;
-            ExportMLDsaSecretKeyHook(destination);
+            ExportMLDsaPrivateKeyCoreCallCount++;
+            ExportMLDsaPrivateKeyHook(destination);
         }
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Tests
             {
                 ExportMLDsaPrivateSeedHook = _ => Assert.Fail(),
                 ExportMLDsaPublicKeyHook = _ => Assert.Fail(),
-                ExportMLDsaSecretKeyHook = _ => Assert.Fail(),
+                ExportMLDsaPrivateKeyHook = _ => Assert.Fail(),
                 SignDataHook = (_, _, _) => Assert.Fail(),
                 SignPreHashHook = delegate { Assert.Fail(); },
                 SignMuHook = (_, _) => Assert.Fail(),
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography.Tests
             {
                 ExportMLDsaPrivateSeedHook = d => d.Clear(),
                 ExportMLDsaPublicKeyHook = d => d.Clear(),
-                ExportMLDsaSecretKeyHook = d => d.Clear(),
+                ExportMLDsaPrivateKeyHook = d => d.Clear(),
                 SignDataHook = (data, context, destination) => destination.Clear(),
                 VerifyDataHook = (data, context, signature) => false,
                 SignPreHashHook = (hash, context, hashAlgorithmOid, destination) => destination.Clear(),
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.Tests
             {
                 ExportMLDsaPrivateSeedHook = d => other.ExportMLDsaPrivateSeed(d),
                 ExportMLDsaPublicKeyHook = d => other.ExportMLDsaPublicKey(d),
-                ExportMLDsaSecretKeyHook = d => other.ExportMLDsaSecretKey(d),
+                ExportMLDsaPrivateKeyHook = d => other.ExportMLDsaPrivateKey(d),
                 SignDataHook = (data, context, destination) => other.SignData(data, destination, context),
                 VerifyDataHook = (data, context, signature) => other.VerifyData(data, signature, context),
                 DisposeHook = _ => other.Dispose(),
@@ -192,11 +192,11 @@ namespace System.Security.Cryptography.Tests
                 Assert.Equal(Algorithm.PublicKeySizeInBytes, destination.Length);
             };
 
-            ExportAction oldExportMLDsaSecretKeyHook = ExportMLDsaSecretKeyHook;
-            ExportMLDsaSecretKeyHook = (Span<byte> destination) =>
+            ExportAction oldExportMLDsaPrivateKeyHook = ExportMLDsaPrivateKeyHook;
+            ExportMLDsaPrivateKeyHook = (Span<byte> destination) =>
             {
-                oldExportMLDsaSecretKeyHook(destination);
-                Assert.Equal(Algorithm.SecretKeySizeInBytes, destination.Length);
+                oldExportMLDsaPrivateKeyHook(destination);
+                Assert.Equal(Algorithm.PrivateKeySizeInBytes, destination.Length);
             };
 
             SignAction oldSignDataHook = SignDataHook;
@@ -263,10 +263,10 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.Same(buffer.Span, destination);
             };
 
-            ExportAction oldExportMLDsaSecretKeyHook = ExportMLDsaSecretKeyHook;
-            ExportMLDsaSecretKeyHook = (Span<byte> destination) =>
+            ExportAction oldExportMLDsaPrivateKeyHook = ExportMLDsaPrivateKeyHook;
+            ExportMLDsaPrivateKeyHook = (Span<byte> destination) =>
             {
-                oldExportMLDsaSecretKeyHook(destination);
+                oldExportMLDsaPrivateKeyHook(destination);
                 AssertExtensions.Same(buffer.Span, destination);
             };
 
@@ -427,10 +427,10 @@ namespace System.Security.Cryptography.Tests
                 destination.Fill(b);
             };
 
-            ExportAction oldExportMLDsaSecretKeyHook = ExportMLDsaSecretKeyHook;
-            ExportMLDsaSecretKeyHook = (Span<byte> destination) =>
+            ExportAction oldExportMLDsaPrivateKeyHook = ExportMLDsaPrivateKeyHook;
+            ExportMLDsaPrivateKeyHook = (Span<byte> destination) =>
             {
-                oldExportMLDsaSecretKeyHook(destination);
+                oldExportMLDsaPrivateKeyHook(destination);
                 destination.Fill(b);
             };
 
