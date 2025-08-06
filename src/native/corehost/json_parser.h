@@ -36,8 +36,8 @@ class json_parser_t {
 
         const document_t& document() const { return m_document; }
 
-        bool parse_raw_data(char* data, int64_t size, const pal::string_t& context);
-        bool parse_file(const pal::string_t& path);
+        bool parse_fully_trusted_raw_data(char* data, int64_t size, const pal::string_t& context);
+        bool parse_fully_trusted_file(const pal::string_t& path);
 
         json_parser_t()
             : m_data(nullptr)
