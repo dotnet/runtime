@@ -28,10 +28,9 @@ namespace System
         public bool MoveNext()
         {
             nint index = _index + 1;
-            nuint length = _array.NativeLength;
-            if ((nuint)index >= length)
+            if ((nuint)index >= _array.NativeLength)
             {
-                _index = (nint)length;
+                _index = -2;
                 return false;
             }
             _index = index;
@@ -47,14 +46,7 @@ namespace System
 
                 if ((nuint)index >= array.NativeLength)
                 {
-                    if (index < 0)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
-                    }
-                    else
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
-                    }
+                    ThrowHelper.ThrowInvalidOperationException_EnumCurrent((int)index);
                 }
 
                 return array.InternalGetValue(index);
@@ -140,7 +132,7 @@ namespace System
         {
             get
             {
-                ThrowHelper.ThrowInvalidOperationException_EnumCurrent(-1);
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
                 return default;
             }
         }
@@ -167,7 +159,7 @@ namespace System
         {
             get
             {
-                ThrowHelper.ThrowInvalidOperationException_EnumCurrent(-1);
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
                 return default;
             }
         }
