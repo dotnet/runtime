@@ -233,6 +233,6 @@ void minipal_memory_barrier_process_wide(void)
 
 void minipal_memory_barrier_process_wide(void)
 {
-    ::FlushProcessWriteBuffers();
+    FlushProcessWriteBuffers();
 }
 #endif // !HOST_WINDOWS
