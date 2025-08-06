@@ -6986,6 +6986,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     const int               maxLikelyMethods = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyMethods[maxLikelyMethods];
     unsigned                numberOfMethods = 0;
+    bool                    isInferredGDV   = false;
 
     // TODO-GDV: R2R support requires additional work to reacquire the
     // entrypoint, similar to what happens at the end of impDevirtualizeCall.
@@ -6998,6 +6999,39 @@ void Compiler::pickGDV(GenTreeCall*           call,
         assert(!call->IsHelperCall());
         numberOfMethods = getLikelyMethods(likelyMethods, maxLikelyMethods, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
                                            pgoInfo.PgoData, ilOffset);
+    }
+
+    if ((numberOfClasses < 1) && (numberOfMethods < 1))
+    {
+        // See if we can infer a GDV here for enumerator var uses
+        //
+        CallArg* const thisArg = call->gtArgs.FindWellKnownArg(WellKnownArg::ThisPointer);
+
+        if (thisArg != nullptr)
+        {
+            GenTree* const thisNode = thisArg->GetEarlyNode();
+            if (thisNode->OperIs(GT_LCL_VAR))
+            {
+                GenTreeLclVarCommon* thisLclNode = thisNode->AsLclVarCommon();
+                LclVarDsc* const     thisVarDsc  = lvaGetDesc(thisLclNode);
+                unsigned const       thisLclNum  = thisLclNode->GetLclNum();
+
+                if (thisVarDsc->lvIsEnumerator)
+                {
+                    VarToLikelyClassMap* const map = getImpEnumeratorLikelyTypeMap();
+                    InferredGdvEntry           e;
+                    if (map->Lookup(thisLclNum, &e))
+                    {
+                        JITDUMP("Recalling that V%02u has %u%% likely class %s\n", thisLclNum, e.m_likelihood,
+                                eeGetClassName(e.m_classHandle));
+                        numberOfClasses             = 1;
+                        likelyClasses[0].handle     = (INT_PTR)e.m_classHandle;
+                        likelyClasses[0].likelihood = e.m_likelihood;
+                        isInferredGDV               = true;
+                    }
+                }
+            }
+        }
     }
 
     if ((numberOfClasses < 1) && (numberOfMethods < 1))
@@ -7185,6 +7219,58 @@ void Compiler::pickGDV(GenTreeCall*           call,
                 {
                     JITDUMP("Accepting type %s with likelihood %u as a candidate\n",
                             eeGetClassName(classGuesses[guessIdx]), likelihoods[guessIdx])
+                }
+
+                // If the 'this' arg to the call is an enumerator var, record any
+                // dominant likely class so we can possibly infer a GDV at places where we
+                // never observed the var's value. (eg an unreached Dispose call if
+                // control is hijacked out of Tier0+i by OSR).
+                //
+                // Note enumerator vars are special as they are generally not redefined
+                // and we want to ensure all methods called on them get inlined to enable
+                // escape analysis to kick in, if possible.
+                //
+                const unsigned dominantLikelihood = 50;
+
+                if (!isInferredGDV && (likelihoods[guessIdx] >= dominantLikelihood))
+                {
+                    CallArg* const thisArg = call->gtArgs.FindWellKnownArg(WellKnownArg::ThisPointer);
+
+                    if (thisArg != nullptr)
+                    {
+                        GenTree* const thisNode = thisArg->GetEarlyNode();
+                        if (thisNode->OperIs(GT_LCL_VAR))
+                        {
+                            GenTreeLclVarCommon* thisLclNode = thisNode->AsLclVarCommon();
+                            LclVarDsc* const     thisVarDsc  = lvaGetDesc(thisLclNode);
+                            unsigned const       thisLclNum  = thisLclNode->GetLclNum();
+
+                            if (thisVarDsc->lvIsEnumerator)
+                            {
+                                VarToLikelyClassMap* const map = getImpEnumeratorLikelyTypeMap();
+
+                                // If we have multiple type observations, we just use the first.
+                                //
+                                // Note importation order is somewhat reverse-post-orderish;
+                                // a block is only imported if one of its imported preds is imported.
+                                //
+                                // Enumerator vars tend to have a dominating MoveNext call that will
+                                // be the one subsequent uses will see, if they lack their own
+                                // type observations.
+                                //
+                                if (!map->Lookup(thisLclNum))
+                                {
+                                    InferredGdvEntry e;
+                                    e.m_classHandle = classGuesses[guessIdx];
+                                    e.m_likelihood  = likelihoods[guessIdx];
+
+                                    JITDUMP("Rememmbering that V%02u has %u%% likely class %s\n", thisLclNum,
+                                            e.m_likelihood, eeGetClassName(e.m_classHandle));
+                                    map->Set(thisLclNum, e);
+                                }
+                            }
+                        }
+                    }
                 }
             }
             else
