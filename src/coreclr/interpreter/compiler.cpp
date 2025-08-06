@@ -4,7 +4,6 @@
 
 #include "interpreter.h"
 #include "stackmap.h"
-#include "../vm/classnames.h"
 
 #include <inttypes.h>
 
@@ -2835,7 +2834,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     if (newObjThisArgLocation != INT_MAX)
     {
         ctorType = GetInterpType(m_compHnd->asCorInfoType(resolvedCallToken.hClass));
-
         if (ctorType != InterpTypeO)
         {
             vtsize = m_compHnd->getClassSize(resolvedCallToken.hClass);
