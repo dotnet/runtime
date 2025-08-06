@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -38,6 +37,29 @@ namespace System.Net.Test.Common
             private static readonly X509BasicConstraintsExtension s_eeConstraints =
                 new X509BasicConstraintsExtension(false, false, 0, false);
 
+            private static X509Certificate2 s_dynamicServerCertificate;
+            private static X509Certificate2Collection s_dynamicCaCertificates;
+            private static object certLock = new object();
+
+
+            // These Get* methods make a copy of the certificates so that consumers own the lifetime of the
+            // certificates handed back.  Consumers are expected to dispose of their certs when done with them.
+
+            public static X509Certificate2 GetDynamicServerCerttificate(X509Certificate2Collection? chainCertificates)
+            {
+                lock (certLock)
+                {
+                    if (s_dynamicServerCertificate == null)
+                    {
+                        CleanupCertificates();
+                        (s_dynamicServerCertificate, s_dynamicCaCertificates) = GenerateCertificates("localhost", nameof(Configuration) + nameof(Certificates));
+                    }
+
+                    chainCertificates?.AddRange(s_dynamicCaCertificates);
+                    return new X509Certificate2(s_dynamicServerCertificate);
+                }
+            }
+
             public static void CleanupCertificates([CallerMemberName] string? testName = null, StoreName storeName = StoreName.CertificateAuthority)
             {
                 string caName = $"O={testName}";
@@ -56,9 +78,7 @@ namespace System.Net.Test.Common
                         }
                     }
                 }
-                catch
-                {
-                }
+                catch { };
 
                 try
                 {
@@ -75,9 +95,7 @@ namespace System.Net.Test.Common
                         }
                     }
                 }
-                catch
-                {
-                }
+                catch { };
             }
 
             internal static X509ExtensionCollection BuildTlsServerCertExtensions(string serverName)
@@ -101,68 +119,7 @@ namespace System.Net.Test.Common
                 return extensions;
             }
 
-            internal class PkiHolder : IDisposable
-            {
-                internal CertificateAuthority Root { get; }
-                internal CertificateAuthority[] Intermediates { get; }
-                public X509Certificate2 EndEntity { get; }
-                public X509Certificate2Collection IssuerChain { get; }
-                internal RevocationResponder Responder { get; }
-
-                private readonly string? _testName;
-
-                public PkiHolder(string? testName, CertificateAuthority root, CertificateAuthority[] intermediates, X509Certificate2 endEntity, RevocationResponder responder)
-                {
-                    _testName = testName;
-                    Root = root;
-                    Intermediates = intermediates;
-                    EndEntity = endEntity;
-                    Responder = responder;
-
-                    // Walk the intermediates backwards so we build the chain collection as
-                    // Issuer3
-                    // Issuer2
-                    // Issuer1
-                    // Root
-                    IssuerChain = new X509Certificate2Collection();
-                    for (int i = intermediates.Length - 1; i >= 0; i--)
-                    {
-                        CertificateAuthority authority = intermediates[i];
-
-                        IssuerChain.Add(authority.CloneIssuerCert());
-                    }
-
-                    IssuerChain.Add(root.CloneIssuerCert());
-                }
-
-                public SslStreamCertificateContext CreateSslStreamCertificateContext()
-                {
-                    return SslStreamCertificateContext.Create(EndEntity, IssuerChain);
-                }
-
-                public void Dispose()
-                {
-                    foreach (CertificateAuthority authority in Intermediates)
-                    {
-                        authority.Dispose();
-                    }
-                    Root.Dispose();
-                    EndEntity.Dispose();
-                    Responder.Dispose();
-
-                    foreach (X509Certificate2 authority in IssuerChain)
-                    {
-                        authority.Dispose();
-                    }
-
-                    if (PlatformDetection.IsWindows && _testName != null)
-                    {
-                        CleanupCertificates(_testName);
-                    }
-                }
-            }
-
-            internal static PkiHolder GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true, bool ephemeralKey = false)
+            public static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true, bool ephemeralKey = false)
             {
                 const int keySize = 2048;
                 if (PlatformDetection.IsWindows && testName != null)
@@ -174,7 +131,7 @@ namespace System.Net.Test.Common
                 X509ExtensionCollection extensions = BuildTlsCertExtensions(targetName, serverCertificate);
 
                 CertificateAuthority.BuildPrivatePki(
-                    PkiOptions.AllRevocation,
+                    PkiOptions.IssuerRevocationViaCrl,
                     out RevocationResponder responder,
                     out CertificateAuthority root,
                     out CertificateAuthority[] intermediates,
@@ -185,6 +142,24 @@ namespace System.Net.Test.Common
                     keyFactory: CertificateAuthority.KeyFactory.RSASize(keySize),
                     extensions: extensions);
 
+                // Walk the intermediates backwards so we build the chain collection as
+                // Issuer3
+                // Issuer2
+                // Issuer1
+                // Root
+                for (int i = intermediates.Length - 1; i >= 0; i--)
+                {
+                    CertificateAuthority authority = intermediates[i];
+
+                    chain.Add(authority.CloneIssuerCert());
+                    authority.Dispose();
+                }
+
+                chain.Add(root.CloneIssuerCert());
+
+                responder.Dispose();
+                root.Dispose();
+
                 if (!ephemeralKey && PlatformDetection.IsWindows)
                 {
                     X509Certificate2 ephemeral = endEntity;
@@ -192,8 +167,9 @@ namespace System.Net.Test.Common
                     ephemeral.Dispose();
                 }
 
-                return new PkiHolder(testName, root, intermediates, endEntity, responder);
+                return (endEntity, chain);
             }
+
         }
     }
 }

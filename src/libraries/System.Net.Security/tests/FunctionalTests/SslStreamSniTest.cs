@@ -27,8 +27,7 @@ namespace System.Net.Security.Tests
 
             await WithVirtualConnection(async (server, client) =>
                 {
-                    Task clientJob = Task.Run(() =>
-                    {
+                    Task clientJob = Task.Run(() => {
                         client.AuthenticateAsClient(hostName);
                     });
 
@@ -80,8 +79,7 @@ namespace System.Net.Security.Tests
             using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
                              client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
-                Task clientJob = Task.Run(() =>
-                {
+                Task clientJob = Task.Run(() => {
                     client.AuthenticateAsClient(hostName);
                     Assert.Fail("RemoteCertificateValidationCallback called when AuthenticateAsServerAsync was expected to fail.");
                 });
@@ -129,8 +127,7 @@ namespace System.Net.Security.Tests
             using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
                              client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
-                Task clientJob = Task.Run(() =>
-                {
+                Task clientJob = Task.Run(() => {
                     client.AuthenticateAsClient(hostName);
                 });
 
@@ -150,8 +147,7 @@ namespace System.Net.Security.Tests
         {
             await WithVirtualConnection(async (server, client) =>
             {
-                Task clientJob = Task.Run(() =>
-                {
+                Task clientJob = Task.Run(() => {
                     Assert.Throws<IOException>(() =>
                         client.AuthenticateAsClient("test")
                     );
@@ -193,8 +189,8 @@ namespace System.Net.Security.Tests
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
             {
-                TargetHost = target,
-                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                    TargetHost = target,
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
             };
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
             {
@@ -245,33 +241,41 @@ namespace System.Net.Security.Tests
             string rawHostname = "räksmörgås.josefsson.org";
             string punycodeHostname = "xn--rksmrgs-5wao1o.josefsson.org";
 
-            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(punycodeHostname);
-
-            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+            var (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates(punycodeHostname);
+            try
             {
-                ServerCertificateContext = pkiHolder.CreateSslStreamCertificateContext(),
-            };
-
-            SslClientAuthenticationOptions clientOptions = new()
-            {
-                TargetHost = rawHostname,
-                CertificateChainPolicy = new X509ChainPolicy()
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
                 {
-                    RevocationMode = X509RevocationMode.NoCheck,
-                    TrustMode = X509ChainTrustMode.CustomRootTrust,
-                    CustomTrustStore = { pkiHolder.IssuerChain[^1] }
-                }
-            };
+                    ServerCertificateContext = SslStreamCertificateContext.Create(serverCert, serverChain),
+                };
 
-            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                SslClientAuthenticationOptions clientOptions = new ()
+                {
+                    TargetHost = rawHostname,
+                    CertificateChainPolicy = new X509ChainPolicy()
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { serverChain[serverChain.Count - 1] }
+                    }
+                };
 
-            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                            client.AuthenticateAsClientAsync(clientOptions, default),
-                            server.AuthenticateAsServerAsync(serverOptions, default));
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
 
-            await TestHelper.PingPong(client, server, default);
-            Assert.Equal(rawHostname, server.TargetHostName);
-            Assert.Equal(rawHostname, client.TargetHostName);
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, default),
+                                server.AuthenticateAsServerAsync(serverOptions, default));
+
+                await TestHelper.PingPong(client, server, default);
+                Assert.Equal(rawHostname, server.TargetHostName);
+                Assert.Equal(rawHostname, client.TargetHostName);
+            }
+            finally
+            {
+                serverCert.Dispose();
+                foreach (var c in serverChain) c.Dispose();
+                TestHelper.CleanupCertificates(rawHostname);
+            }
         }
 
         [ConditionalTheory]
@@ -334,8 +338,7 @@ namespace System.Net.Security.Tests
 
         private static Func<Task> WithAggregateExceptionUnwrapping(Func<Task> a)
         {
-            return async () =>
-            {
+            return async () => {
                 try
                 {
                     await a();

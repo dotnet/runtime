@@ -22,21 +22,22 @@ namespace System.Net.Security.Tests
 
     public class CertificateSetup : IDisposable
     {
-        public X509Certificate2 ServerCert => _pkiHolder.EndEntity;
-        public X509Certificate2Collection ServerChain => _pkiHolder.IssuerChain;
-
-        private readonly Configuration.Certificates.PkiHolder _pkiHolder;
+        public readonly X509Certificate2 serverCert;
+        public readonly X509Certificate2Collection serverChain;
 
         public CertificateSetup()
         {
-            _pkiHolder = Configuration.Certificates.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
+            TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
+            (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
         }
-
-        public SslStreamCertificateContext CreateSslStreamCertificateContext() => _pkiHolder.CreateSslStreamCertificateContext();
 
         public void Dispose()
         {
-            _pkiHolder.Dispose();
+            serverCert.Dispose();
+            foreach (var c in serverChain)
+            {
+                c.Dispose();
+            }
         }
     }
 
@@ -759,7 +760,7 @@ namespace System.Net.Security.Tests
                 throw new SkipTestException("Android does not support partial chain validation.");
             }
 
-            int split = Random.Shared.Next(0, _certificates.ServerChain.Count - 1);
+            int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.CertificateChainPolicy = new X509ChainPolicy()
@@ -767,14 +768,14 @@ namespace System.Net.Security.Tests
                 RevocationMode = X509RevocationMode.NoCheck,
                 TrustMode = X509ChainTrustMode.CustomRootTrust
             };
-            clientOptions.CertificateChainPolicy.CustomTrustStore.Add(_certificates.ServerChain[_certificates.ServerChain.Count - 1]);
+            clientOptions.CertificateChainPolicy.CustomTrustStore.Add(_certificates.serverChain[_certificates.serverChain.Count - 1]);
             // Add only one CA to verify that peer did send intermediate CA cert.
             // In case of partial chain, we need to make missing certs available.
             if (usePartialChain)
             {
-                for (int i = split; i < _certificates.ServerChain.Count - 1; i++)
+                for (int i = split; i < _certificates.serverChain.Count - 1; i++)
                 {
-                    clientOptions.CertificateChainPolicy.ExtraStore.Add(_certificates.ServerChain[i]);
+                    clientOptions.CertificateChainPolicy.ExtraStore.Add(_certificates.serverChain[i]);
                 }
             }
 
@@ -786,15 +787,15 @@ namespace System.Net.Security.Tests
                 serverChain = new X509Certificate2Collection();
                 for (int i = 0; i < split; i++)
                 {
-                    serverChain.Add(_certificates.ServerChain[i]);
+                    serverChain.Add(_certificates.serverChain[i]);
                 }
             }
             else
             {
-                serverChain = _certificates.ServerChain;
+                serverChain = _certificates.serverChain;
             }
 
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.ServerCert, serverChain);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -877,15 +878,13 @@ namespace System.Net.Security.Tests
             StoreName storeName = OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority;
             List<SslStream> streams = new List<SslStream>();
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
-            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
-            X509Certificate2 clientCertificate = pkiHolder.EndEntity;
-            X509Certificate2Collection clientChain = pkiHolder.IssuerChain;
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
 
             using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
             {
                 // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
                 store.Open(OpenFlags.ReadWrite);
-                store.AddRange(pkiHolder.IssuerChain);
+                store.AddRange(clientChain);
                 store.Close();
             }
 
@@ -921,6 +920,13 @@ namespace System.Net.Security.Tests
             clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
 
             await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
+
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
+            clientCertificate.Dispose();
+            foreach (X509Certificate c in clientChain)
+            {
+                c.Dispose();
+            }
         }
 
         [Theory]
@@ -928,7 +934,7 @@ namespace System.Net.Security.Tests
         [InlineData(false)]
         public async Task SslStream_ClientCertificateContext_SendsChain(bool useTrust)
         {
-            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
 
             SslCertificateTrust? trust = null;
@@ -936,24 +942,32 @@ namespace System.Net.Security.Tests
             {
                 // This is simplification. We make all the intermediates trusted,
                 // normally just the root would go here.
-                trust = SslCertificateTrust.CreateForX509Collection(pkiHolder.IssuerChain, false);
+                trust = SslCertificateTrust.CreateForX509Collection(clientChain, false);
             }
 
             var clientOptions = new SslClientAuthenticationOptions()
             {
                 TargetHost = "localhost",
-                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
-                ClientCertificateContext = SslStreamCertificateContext.Create(pkiHolder.EndEntity, useTrust ? null : pkiHolder.IssuerChain, offline: true, trust),
             };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, useTrust ? null : clientChain, offline: true, trust);
 
-            await SslStream_ClientSendsChain_Core(clientOptions, pkiHolder.IssuerChain);
+            await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
+
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+            clientCertificate.Dispose();
+            foreach (X509Certificate c in clientChain)
+            {
+                c.Dispose();
+            }
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task SslStream_EphemeralKey_Throws()
         {
-            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
 
             var clientOptions = new SslClientAuthenticationOptions()
             {
@@ -963,7 +977,7 @@ namespace System.Net.Security.Tests
 
             var serverOptions = new SslServerAuthenticationOptions()
             {
-                ServerCertificate = pkiHolder.EndEntity
+                ServerCertificate = serverCertificate
             };
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
@@ -976,6 +990,13 @@ namespace System.Net.Security.Tests
             server.Dispose();
             await Assert.ThrowsAsync<IOException>(() => t1);
             client.Dispose();
+
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+            serverCertificate.Dispose();
+            foreach (X509Certificate c in chain)
+            {
+                c.Dispose();
+            }
         }
 
         [Theory]

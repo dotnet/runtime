@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Null(handler.ServerCertificateCustomValidationCallback);
-                Assert.True(handler.CheckCertificateRevocationList);
+                Assert.False(handler.CheckCertificateRevocationList);
             }
         }
 
@@ -232,9 +232,7 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/106634", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.CheckCertificateRevocationList = false;
-            using (HttpClient client = CreateHttpClient(handler))
+            using (HttpClient client = CreateHttpClient())
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -246,6 +244,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+            handler.CheckCertificateRevocationList = true;
             using (HttpClient client = CreateHttpClient(handler))
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.RevokedCertRemoteServer));
