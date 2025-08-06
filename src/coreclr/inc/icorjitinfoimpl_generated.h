@@ -590,9 +590,6 @@ void* GetCookieForPInvokeCalliSig(
 void* GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;
 
-bool canGetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig) override;
-
 CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(
           CORINFO_METHOD_HANDLE method,
           CORINFO_JUST_MY_CODE_HANDLE** ppIndirection) override;

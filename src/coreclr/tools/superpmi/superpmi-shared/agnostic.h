@@ -727,12 +727,6 @@ struct GetCookieForInterpreterCalliSigValue
     DWORD     token;
 };
 
-struct CanGetCookieForPInvokeCalliSigValue
-{
-    DWORDLONG scope;
-    DWORD     token;
-};
-
 struct GetReadyToRunHelper_TOKENin
 {
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;

@@ -1378,14 +1378,6 @@ LPVOID MyICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** p
     return jitInstance->mc->repGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
 }
 
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool MyICJI::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-{
-    jitInstance->mc->cr->AddCall("canGetCookieForPInvokeCalliSig");
-    return jitInstance->mc->repCanGetCookieForPInvokeCalliSig(szMetaSig);
-}
-
 // Generate a cookie based on the signature to pass to INTOP_CALLI
 LPVOID MyICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {

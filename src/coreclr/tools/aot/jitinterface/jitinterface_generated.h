@@ -153,7 +153,6 @@ struct JitInterfaceCallbacks
     void (* getAddressOfPInvokeTarget)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void* (* GetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
     void* (* GetCookieForInterpreterCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig);
-    bool (* canGetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig);
     CORINFO_JUST_MY_CODE_HANDLE (* getJustMyCodeHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE** ppIndirection);
     void (* GetProfilingHandle)(void * thisHandle, CorInfoExceptionClass** ppException, bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
     void (* getCallInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult);
@@ -1571,15 +1570,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     void* temp = _callbacks->GetCookieForInterpreterCalliSig(_thisHandle, &pException, szMetaSig);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual bool canGetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->canGetCookieForPInvokeCalliSig(_thisHandle, &pException, szMetaSig);
     if (pException != nullptr) throw pException;
     return temp;
 }
