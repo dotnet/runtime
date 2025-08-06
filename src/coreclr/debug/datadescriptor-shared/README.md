@@ -2,66 +2,6 @@
 
 This folder contains infrastructure to create data descriptors as defined in the [data_descriptor.md](../../../../docs/design/datacontracts/data_descriptor.md). Data descriptors enable diagnostic tooling (debuggers, profilers, etc.) to understand the internal layout and structure of .NET runtime objects without requiring intimate knowledge of implementation details.
 
-## Getting Started
-
-### Quick Example
-
-Here's how to create a simple data descriptor:
-
-**1. Create the required files:**
-
-```
-your_component/
-├── CMakeLists.txt
-├── datadescriptor.h
-├── datadescriptor.inc
-└── contracts.jsonc
-```
-
-**2. Define your data descriptor (`datadescriptor.inc`):**
-
-```cpp
-CDAC_BASELINE("empty")
-CDAC_TYPES_BEGIN()
-
-CDAC_TYPE_BEGIN(MyRuntimeObject)
-CDAC_TYPE_SIZE(sizeof(MyRuntimeObject))
-CDAC_TYPE_FIELD(MyRuntimeObject, uint32, Id, offsetof(MyRuntimeObject, m_id))
-CDAC_TYPE_FIELD(MyRuntimeObject, pointer, NextObject, offsetof(MyRuntimeObject, m_next))
-CDAC_TYPE_END(MyRuntimeObject)
-
-CDAC_TYPES_END()
-CDAC_GLOBALS_BEGIN()
-
-CDAC_GLOBAL(g_MyGlobalCounter, uint32, g_myGlobalCounter)
-
-CDAC_GLOBALS_END()
-```
-
-**3. Create the header file (`datadescriptor.h`):**
-
-```cpp
-#include "my_runtime_object.h" // Your actual runtime structures
-```
-
-**4. Add CMake integration (`CMakeLists.txt`):**
-
-```cmake
-add_library(my_component_interface INTERFACE)
-target_include_directories(my_component_interface INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    # include dirs here)
-generate_data_descriptors(
-    LIBRARY_NAME my_component_contract_descriptor
-    CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
-    CONTRACT_NAME "MyComponentContractDescriptor"
-    INTERFACE_TARGET my_component_interface
-    DLLEXPORT
-)
-```
-
-Then the output object library `my_component_contract_descriptor` can be linked into the shipping dll.
-
 ## CMake Integration and Build System
 
 ### Function Parameters
