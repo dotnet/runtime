@@ -3940,6 +3940,8 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
                 case ELEMENT_TYPE_U:
                 case ELEMENT_TYPE_I:
                     return elemType;
+                default:
+                    break;
             }
 
             // Invalid enum base type (probably) fall back to using the loaded type.

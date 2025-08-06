@@ -13,7 +13,7 @@
 #include <config.h>
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
-#endif
+#endif 
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
