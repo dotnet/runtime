@@ -955,30 +955,38 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             MethodDesc implMethod;
 
+            MethodDesc instantiatedConstrainedMethodDefinition = instantiatedConstrainedMethod.GetMethodDefinition();
+
             if (instantiatedConstrainedMethod.OwningType.IsInterface)
             {
                 if (instantiatedConstrainedMethod.Signature.IsStatic)
                 {
-                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
-                    if (implMethod == null)
-                    {
-                        DefaultInterfaceMethodResolution resolution =
-                            instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethod, out implMethod);
-                        if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
-                        {
-                            // TODO: diamond/reabstraction
-                            ThrowHelper.ThrowInvalidProgramException();
-                        }
-                    }
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethodDefinition);
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethodDefinition);
+                }
+
+                if (implMethod == null)
+                {
+                    DefaultInterfaceMethodResolution resolution =
+                        instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethodDefinition, out implMethod);
+                    if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
+                    {
+                        // TODO: diamond/reabstraction: https://github.com/dotnet/runtime/issues/72589
+                        ThrowHelper.ThrowInvalidProgramException();
+                    }
                 }
             }
             else
             {
-                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethod);
+                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethodDefinition);
+            }
+
+            if (instantiatedConstrainedMethod != instantiatedConstrainedMethodDefinition)
+            {
+                implMethod = implMethod.MakeInstantiatedMethod(instantiatedConstrainedMethod.Instantiation);
             }
 
             // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
@@ -987,21 +995,10 @@ namespace ILCompiler.DependencyAnalysis
             factory.MetadataManager.NoteOverridingMethod(_constrainedMethod, implMethod);
 
             // TODO-SIZE: this is address taken only in the delegate target case
-            if (implMethod.Signature.IsStatic)
-            {
-                if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
-                    return factory.ExactCallableAddressTakenAddress(implMethod);
-                else
-                    return factory.AddressTakenMethodEntrypoint(implMethod);
-            }
-            else if (implMethod.HasInstantiation)
-            {
+            if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
                 return factory.ExactCallableAddressTakenAddress(implMethod);
-            }
             else
-            {
-                return factory.AddressTakenMethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
-            }
+                return factory.AddressTakenMethodEntrypoint(implMethod);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
