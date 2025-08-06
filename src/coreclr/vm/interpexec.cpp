@@ -2020,7 +2020,7 @@ CALL_INTERP_METHOD:
                     if (size && (!dst || !src))
                         COMPlusThrow(kNullReferenceException);
                     else
-                        memcpy(dst, src, size);
+                        memcpyNoGCRefs(dst, src, size);
                     ip += 4;
                     break;
                 }

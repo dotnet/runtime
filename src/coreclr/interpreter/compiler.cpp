@@ -2834,25 +2834,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (newObjThisArgLocation != INT_MAX)
     {
-        const char* namespaceName = nullptr;
-        const char* className = m_compHnd->getClassNameFromMetadata(resolvedCallToken.hClass, &namespaceName);
-        CorInfoType corInfoType;
-        if (namespaceName != NULL && className != NULL &&
-            !strcmp(namespaceName, "System") &&
-            (!strcmp(className, g_RuntimeMethodHandleInternalName) ||
-             !strcmp(className, g_RuntimeFieldHandleInternalName) ||
-             !strcmp(className, g_RuntimeArgumentHandleName)))
-        {
-            corInfoType = CORINFO_TYPE_VALUECLASS;
-        }
-        else
-        {
-            corInfoType = m_compHnd->asCorInfoType(resolvedCallToken.hClass);
-        }
+        ctorType = GetInterpType(m_compHnd->asCorInfoType(resolvedCallToken.hClass));
 
-        ctorType = GetInterpType(corInfoType);
-
-        if (ctorType == InterpTypeVT)
+        if (ctorType != InterpTypeO)
         {
             vtsize = m_compHnd->getClassSize(resolvedCallToken.hClass);
             PushTypeVT(resolvedCallToken.hClass, vtsize);
@@ -2984,7 +2968,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         case CORINFO_CALL:
             if (newObj && !doCallInsteadOfNew)
             {
-                if (ctorType == InterpTypeVT)
+                if (ctorType != InterpTypeO)
                 {
                     // If this is a newobj for a value type, we need to call the constructor
                     // and then copy the value type to the stack.
