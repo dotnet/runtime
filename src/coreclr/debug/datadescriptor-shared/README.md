@@ -6,7 +6,7 @@ This folder contains infrastructure to create data descriptors as defined in the
 
 ### Quick Example
 
-Here's how to create a simple data descriptor for a new runtime component:
+Here's how to create a simple data descriptor:
 
 **1. Create the required files:**
 
@@ -76,7 +76,7 @@ The `generate_data_descriptors` function defined in `clrdatadescriptors.cmake` t
 
 ### Two-Phase Build Process
 
-The build system uses a sophisticated two-phase approach:
+The build system uses a two-phase approach:
 
 **Phase 1: Intermediary Library**
 - Compiles `datadescriptor.cpp` with your `datadescriptor.h` and `datadescriptor.inc`
@@ -143,9 +143,9 @@ The build system uses a sophisticated two-phase approach:
 - `stringValue` must be a compile-time string literal
 
 
-## Reference Implementation
+## Current Implementation
 
-For comprehensive examples, see the current implementation in:
+For reference, see the current implementation in:
 - **`src/coreclr/debug/runtimeinfo/`** - Complete real-world implementation
   - `datadescriptor.h` - Headers and includes
   - `datadescriptor.inc` - Full type definitions for runtime objects
