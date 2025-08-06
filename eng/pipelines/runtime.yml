@@ -961,8 +961,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-          # Tracking issue: https://github.com/dotnet/dnceng/issues/5909
-          # - android_x64
+          - android_x64
           - android_arm64
           variables:
             # map dependencies variables to local variables
