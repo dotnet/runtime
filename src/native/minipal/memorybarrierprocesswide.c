@@ -31,16 +31,15 @@
 #include <linux/membarrier.h>
 #include <sys/syscall.h>
 #define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
+#undef HAVE_SYS_MEMBARRIER_H
+#define HAVE_SYS_MEMBARRIER_H 1
 #elif HAVE_SYS_MEMBARRIER_H
 #include <sys/membarrier.h>
-#ifdef TARGET_BROWSER
-#define membarrier(cmd, flags, cpu_id) 0 // browser/wasm is currently single threaded
-#endif
 #endif
 
+#if HAVE_SYS_MEMBARRIER_H
 static bool CanFlushUsingMembarrier(void)
 {
-#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
 
 #ifdef TARGET_ANDROID
     // Avoid calling membarrier on older Android versions where membarrier
@@ -69,12 +68,14 @@ static bool CanFlushUsingMembarrier(void)
     return false;
 }
 
+#if HAVE_SYS_MEMBARRIER_H
 //
-// Tracks if the OS supports FlushProcessWriteBuffers using membarrier
+// Tracks if the OS supports membarrier syscall
 //
 static int s_flushUsingMemBarrier = 0;
+#endif // HAVE_SYS_MEMBARRIER_H
 
-#ifndef TARGET_APPLE
+#if !defined(HOST_APPLE) && !defined(HOST_WASM)
 // Helper memory page used by the FlushProcessWriteBuffers
 static uint8_t* g_helperPage = 0;
 
@@ -86,7 +87,23 @@ static size_t s_pageSize = 0;
 
 bool minipal_initialize_memory_barrier_process_wide(void)
 {
-#ifndef TARGET_WASM
+#ifdef HOST_WASM
+    // browser/wasm is currently single threaded
+#elif defined(HOST_APPLE)
+...
+
+#else
+#if HAVE_SYS_MEMBARRIER_H
+    if (CanFlushUsingMembarrier())
+    {
+        s_flushUsingMemBarrier = true;
+    }
+    else
+#else
+    {
+        // Fallback implementation
+    }
+#endif
     //
     // support for FlusProcessWriteBuffers
     //
