@@ -4318,8 +4318,6 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
         {
             CrstHolder ch(&pLoaderModule->m_Crst);
 
-            AllocMemTracker amt;
-
             // Note that we were possibly racing to create the cookie, and another thread
             // may have already created it.  We could put another check
             // here, but it's probably not worth the effort, so we'll just take an
@@ -4335,9 +4333,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
             else
             {
                 // Yes, create a new block.
-                VASigCookieBlock* pNewBlock = (VASigCookieBlock*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(VASigCookieBlock))));
-                ::memset(pNewBlock, 0, sizeof(*pNewBlock));
-
+                VASigCookieBlock* pNewBlock = (VASigCookieBlock*)(void*)pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(VASigCookieBlock)));
                 pNewBlock->m_Next = pLoaderModule->m_pVASigCookieBlock;
                 pNewBlock->m_numCookies = 0;
                 pLoaderModule->m_pVASigCookieBlock = pNewBlock;
@@ -4352,6 +4348,8 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;
+
+            AllocMemTracker amt;
 
             if (classInstCount != 0)
             {
