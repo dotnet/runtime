@@ -37,10 +37,6 @@ function(generate_data_descriptors)
     endif()
 
     add_library(${INTERMEDIARY_LIBRARY} OBJECT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/datadescriptor.cpp")
-    # get_target_property(intermediary_includes ${INTERMEDIARY_LIBRARY} INCLUDE_DIRECTORIES)
-    # get_target_property(interface_includes ${DATA_DESCRIPTORS_INTERFACE_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-    # message(STATUS "Default include directories for ${INTERMEDIARY_LIBRARY} are: ${intermediary_includes}")
-    # message(STATUS "Default include directories for ${DATA_DESCRIPTORS_INTERFACE_TARGET} are: ${interface_includes}")
 
     if(CLR_CMAKE_TARGET_WIN32)
       # turn off whole program optimization:
@@ -78,7 +74,6 @@ function(generate_data_descriptors)
     )
 
     add_dependencies(${LIBRARY} ${INTERMEDIARY_LIBRARY})
-    # Remove default include directories to avoid conflicts with the include order from the interface target.
     target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
 
     # inherit definitions, include directories, and dependencies from the INTERFACE target

@@ -76,6 +76,7 @@ public static class Constants
         public const string MaxGeneration = nameof(MaxGeneration);
         public const string StructureInvalidCount = nameof(StructureInvalidCount);
         public const string NumHeaps = nameof(NumHeaps);
+        public const string Heaps = nameof(Heaps);
     }
     public static class FieldNames
     {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -22,6 +23,7 @@ public interface IGC : IContract
     uint GetGCHeapCount() => throw new NotImplementedException();
     bool GetGCStructuresValid() => throw new NotImplementedException();
     uint GetMaxGeneration() => throw new NotImplementedException();
+    IEnumerable<TargetPointer> GetGCHeaps() => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

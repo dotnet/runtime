@@ -673,10 +673,70 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
+    int ISOSDacInterface.GetGCHeapList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] heaps, uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            IGC gc = _target.Contracts.GC;
+            string[] heapType = gc.GetGCType();
+            if (!heapType.Contains(GCTypes.Server))
+            {
+                // If GC type is not server, this API is not supported
+                hr = HResults.E_FAIL;
+            }
+            else
+            {
+                uint heapCount = gc.GetGCHeapCount();
+                if (pNeeded is not null)
+                {
+                    *pNeeded = heapCount;
+                }
+
+                if (heaps.Length == heapCount)
+                {
+                    List<TargetPointer> gcHeaps = gc.GetGCHeaps().ToList();
+                    Debug.Assert(gcHeaps.Count == heapCount, "Expected the number of GC heaps to match the count returned by GetGCHeapCount");
+                    for (uint i = 0; i < heapCount; i++)
+                    {
+                        heaps[i] = gcHeaps[(int)i].ToClrDataAddress(_target);
+                    }
+                }
+                else if (heaps.Length != 0)
+                {
+                    hr = HResults.E_INVALIDARG;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress[] heapsLocal = new ClrDataAddress[count];
+            uint neededLocal;
+            int hrLocal = _legacyImpl.GetGCHeapList(count, heapsLocal, &neededLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                // in theory, these don't need to be in the same order, but for consistency it is
+                // easiest for consumers and verification if the DAC and cDAC return the same order
+                for (int i = 0; i < neededLocal; i++)
+                {
+                    Debug.Assert(heaps[i] == heapsLocal[i], $"cDAC: {heaps[i]:x}, DAC: {heapsLocal[i]:x}");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetGCHeapDetails(ClrDataAddress heap, void* details)
         => _legacyImpl is not null ? _legacyImpl.GetGCHeapDetails(heap, details) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetGCHeapList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] heaps, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetGCHeapList(count, heaps, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetGCHeapStaticData(void* data)
         => _legacyImpl is not null ? _legacyImpl.GetGCHeapStaticData(data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHandleEnum(void** ppHandleEnum)

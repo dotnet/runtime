@@ -112,7 +112,6 @@ CDAC_BASELINE("empty")
 
 CDAC_TYPES_BEGIN()
 
-
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -135,6 +134,7 @@ CDAC_GLOBAL_POINTER(StructureInvalidCount, (&GCScan::m_GcStructuresInvalidCnt))
 
 #ifdef SERVER_GC
 CDAC_GLOBAL_POINTER(NumHeaps, &GC_NAMESPACE::gc_heap::n_heaps)
+CDAC_GLOBAL_POINTER(Heaps, cdac_data<GC_NAMESPACE::gc_heap>::Heaps)
 #endif // SERVER_GC
 
 CDAC_GLOBALS_END()

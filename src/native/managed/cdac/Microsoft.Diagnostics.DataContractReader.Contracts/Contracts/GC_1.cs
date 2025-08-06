@@ -66,9 +66,25 @@ internal readonly struct GC_1 : IGC
         return _target.Read<uint>(pMaxGeneration);
     }
 
+    IEnumerable<TargetPointer> IGC.GetGCHeaps()
+    {
+        if (GetGCType() != GCType.Server)
+        {
+            yield break; // Only server GC has multiple heaps
+        }
+
+        uint heapCount = ((IGC)this).GetGCHeapCount();
+        TargetPointer ppHeapTable = _target.ReadGlobalPointer(Constants.Globals.Heaps);
+        TargetPointer pHeapTable = _target.ReadPointer(ppHeapTable);
+        for (uint i = 0; i < heapCount; i++)
+        {
+            yield return _target.ReadPointer(pHeapTable + (i * (uint)_target.PointerSize));
+        }
+    }
+
     private GCType GetGCType()
     {
-        return _target.ReadGlobalString(Constants.Globals.HeapType) switch
+        return _target.ReadGlobalString(Constants.Globals.GCType) switch
         {
             GC_TYPE_WRK => GCType.Workstation,
             GC_TYPE_SVR => GCType.Server,
