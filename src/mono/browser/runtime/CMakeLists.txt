@@ -51,6 +51,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
                         COMMENT "Stripping debug symbols from dotnet.native.wasm using wasm-opt")
 endif()
 
-
+if(CONFIGURATION_EMCC_FLAGS)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CONFIGURATION_EMCC_FLAGS}")
+endif()
+message(STATUS "CONFIGURE CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 check_type_size("void*" SIZEOF_VOID_P)
 configure_file(wasm-config.h.in include/wasm/wasm-config.h)
