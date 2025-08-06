@@ -12176,19 +12176,7 @@ void Compiler::gtDispConst(GenTree* tree)
                 break;
             }
 
-            constexpr int maxLiteralLength      = 256;
-            char16_t      str[maxLiteralLength] = {};
-            int len = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxLiteralLength);
-            if (len < 0)
-            {
-                printf("<unknown string literal>");
-            }
-            else
-            {
-                char dst[maxLiteralLength];
-                convertUtf16ToUtf8ForPrinting(str, len, dst, maxLiteralLength);
-                printf("\"%.50s%s\"", dst, len > 50 ? "..." : "");
-            }
+            eePrintStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX);
         }
         break;
 

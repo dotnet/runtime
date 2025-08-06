@@ -7687,20 +7687,17 @@ CEEInfo::getMethodInfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
-    if (ftn->IsDynamicMethod())
-    {
-        getMethodInfoWorker(ftn, NULL, methInfo, context);
-        result = true;
-    }
-    else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
+    COR_ILMETHOD* pILHeader;
+    if (ftn->MayHaveILHeader() && (pILHeader = ftn->GetILHeader()) != NULL)
     {
         // Get the IL header and set it.
-        COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, ftn->GetMDImport(), NULL);
         getMethodInfoWorker(ftn, &header, methInfo, context);
         result = true;
     }
-    else if (ftn->IsIL() && ftn->GetRVA() == 0) // IL methods with no RVA indicate there is no implementation defined in metadata.
+    else if (ftn->IsIL() || ftn->IsDynamicMethod())
     {
+        // IL methods with no IL header indicate there is no implementation defined in metadata.
         getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
     }
@@ -7872,9 +7869,10 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
         if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
         {
-            if (pCallee->HasILHeader())
+            COR_ILMETHOD* pILHeader;
+            if (pCallee->MayHaveILHeader() && (pILHeader = pCallee->GetILHeader()) != NULL)
             {
-                COR_ILMETHOD_DECODER header(pCallee->GetILHeader(), pCallee->GetMDImport(), NULL);
+                COR_ILMETHOD_DECODER header(pILHeader, pCallee->GetMDImport(), NULL);
                 if (header.EHCount() > 0)
                 {
                     result = INLINE_FAIL;
@@ -7882,7 +7880,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                     goto exit;
                 }
             }
-            else if (pCallee->IsIL() && pCallee->GetRVA() == 0)
+            else if (pCallee->IsIL())
             {
                 CORINFO_METHOD_INFO methodInfo;
                 getMethodInfoWorker(pCallee, NULL, &methodInfo);
@@ -11937,6 +11935,19 @@ void CEEJitInfo::recordRelocation(void * location,
 
 #endif // TARGET_LOONGARCH64
 
+
+#ifdef TARGET_RISCV64
+    case IMAGE_REL_RISCV64_PC:
+        {
+            _ASSERTE(addlDelta == 0);
+
+            INT64 offset = (INT64)target - (INT64)location;
+            PutRiscV64AuipcItype((UINT32 *)locationRW, offset);
+        }
+        break;
+
+#endif // TARGET_RISCV64
+
     default:
         _ASSERTE(!"Unknown reloc type");
         break;
@@ -12782,6 +12793,8 @@ void CEECodeGenInfo::getEHinfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* pMD = GetMethod(ftn);
+
+    COR_ILMETHOD* pILHeader;
     if (IsDynamicMethodHandle(ftn))
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
@@ -12790,12 +12803,12 @@ void CEECodeGenInfo::getEHinfo(
     {
         getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
     }
-    else if (pMD->HasILHeader())
+    else if (pMD->MayHaveILHeader() && (pILHeader = pMD->GetILHeader()) != NULL)
     {
-        COR_ILMETHOD_DECODER header(pMD->GetILHeader(), pMD->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
         getEHinfoHelper(ftn, EHnumber, clause, &header);
     }
-    else if (pMD->IsIL() && pMD->GetRVA() == 0)
+    else if (pMD->IsIL())
     {
         TransientMethodDetails* details;
         if (!FindTransientMethodDetails(pMD, &details))

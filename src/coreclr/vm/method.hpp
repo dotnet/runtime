@@ -901,7 +901,8 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-        return IsIL() && !IsUnboxingStub() && GetRVA();
+
+        return MayHaveILHeader() && GetRVA();
     }
 
     COR_ILMETHOD* GetILHeader();
@@ -1498,6 +1499,14 @@ public:
 #endif
 
     BOOL MayHaveNativeCode();
+
+    BOOL MayHaveILHeader()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        // methods with transient IL bodies do not have IL headers
+        return IsIL() && !IsUnboxingStub() && !IsAsyncThunkMethod();
+    }
 
     ULONG GetRVA();
 

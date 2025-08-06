@@ -12,7 +12,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(null, RegexOptions.None, Timeout.Infinite)]
         [InlineData("", (RegexOptions)12345, -2)]
         [InlineData("a.*b", RegexOptions.Compiled | RegexOptions.CultureInvariant, 1)]
-        public void Ctor_Roundtrips(string pattern, RegexOptions options, int matchTimeoutMilliseconds)
+        public void Ctor_Roundtrips(string? pattern, RegexOptions options, int matchTimeoutMilliseconds)
         {
             GeneratedRegexAttribute a;
 

@@ -1501,7 +1501,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(" 1.1", "010100", null)]
         [InlineData("1.1 ", "010100", null)]
         [InlineData("1 1", "010100", null)]
-        public static void SignIdentifiedContent_BadOid(string oidValueIn, string contentHex, string oidValueOut)
+        public static void SignIdentifiedContent_BadOid(string? oidValueIn, string contentHex, string? oidValueOut)
         {
             SignedCms signedCms = new SignedCms(
                 new ContentInfo(new Oid(oidValueIn, "Some Friendly Name"), contentHex.HexToByteArray()));

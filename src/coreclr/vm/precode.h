@@ -32,7 +32,6 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 #elif defined(TARGET_LOONGARCH64)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
-#define SHIFTOF_PRECODE_TYPE        5
 
 #elif defined(TARGET_RISCV64)
 
