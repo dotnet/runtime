@@ -37,6 +37,7 @@ FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
 FRAME_TYPE_NAME(ExceptionFilterFrame)
+FRAME_TYPE_NAME(UnhandledExceptionMarkerFrame)
 #ifdef FEATURE_INTERPRETER
 FRAME_TYPE_NAME(InterpreterFrame)
 #endif // FEATURE_INTERPRETER

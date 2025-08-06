@@ -10523,12 +10523,8 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 
     bool success = true;
 
-    GCX_COOP();
-    DebuggerU2MCatchHandlerFrame catchFrame(true /* catchesAllExceptions */);
-
     EX_TRY
     {
-        GCX_PREEMP();
         function(param);
     }
     EX_CATCH
@@ -10537,8 +10533,6 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
         RethrowTerminalExceptions();
     }
     EX_END_CATCH
-
-    catchFrame.Pop();
 
     return success;
 }
