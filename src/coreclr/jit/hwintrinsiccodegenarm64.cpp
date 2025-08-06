@@ -368,8 +368,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (isRMW)
                 {
-                    assert((targetReg == op1Reg) || (targetReg != op2Reg));
-                    assert((targetReg == op1Reg) || (targetReg != op3Reg));
+                    assert((targetReg == op1Reg) || (targetReg != op2Reg) || genIsSameLocalVar(intrin.op1, intrin.op2));
+                    assert((targetReg == op1Reg) || (targetReg != op3Reg) || genIsSameLocalVar(intrin.op1, intrin.op3));
                     GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
                     HWIntrinsicImmOpHelper helper(this, intrin.op4, node);
