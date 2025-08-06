@@ -247,10 +247,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private static bool TryReadAllContractDescriptors(
         ulong address,
-        Reader reader,
+        DataTargetDelegates dataTargetDelegates,
         out Descriptor[] descriptors)
     {
-        if (!TryReadContractDescriptor(address, reader, out Descriptor mainDescriptor))
+        if (!TryReadContractDescriptor(address, dataTargetDelegates, out Descriptor mainDescriptor))
         {
             descriptors = [];
             return false;
@@ -263,7 +263,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             if (pSubDescriptor == TargetPointer.Null)
                 continue;
 
-            if (!TryReadPointer(pSubDescriptor.Value, mainDescriptor.Config, reader, out TargetPointer subDescriptorAddress))
+            if (!TryReadPointer(pSubDescriptor.Value, mainDescriptor.Config, dataTargetDelegates, out TargetPointer subDescriptorAddress))
                 continue;
 
             if (subDescriptorAddress == TargetPointer.Null)
@@ -271,7 +271,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
             TryReadAllContractDescriptors(
                 subDescriptorAddress.Value,
-                reader,
+                dataTargetDelegates,
                 out Descriptor[] subDescriptors);
 
             allDescriptors.AddRange(subDescriptors);
