@@ -1,7 +1,7 @@
 # cDAC contract descriptor
 
 function(generate_data_descriptors)
-  set(options DLLEXPORT)
+  set(options EXPORT_VISIBLE)
   set(oneValueArgs LIBRARY_NAME CONTRACT_FILE CONTRACT_NAME INTERFACE_TARGET)
   set(multiValueArgs "")
   cmake_parse_arguments(DATA_DESCRIPTORS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
@@ -16,7 +16,7 @@ function(generate_data_descriptors)
   # configure contract export name
   set(POINTER_DATA_NAME ${DATA_DESCRIPTORS_CONTRACT_NAME}PointerData)
   set(CONTRACT_NAME ${DATA_DESCRIPTORS_CONTRACT_NAME})
-  if (DATA_DESCRIPTORS_DLLEXPORT)
+  if (DATA_DESCRIPTORS_EXPORT_VISIBLE)
     set(EXPORT_CONTRACT 1)
   else()
     set(EXPORT_CONTRACT 0)
@@ -48,7 +48,7 @@ function(generate_data_descriptors)
     endif()
 
     # inherit definitions, include directories, and dependencies from the INTERFACE target
-    add_interface_library(${INTERMEDIARY_LIBRARY} ${DATA_DESCRIPTORS_INTERFACE_TARGET})
+    target_link_libraries(${INTERMEDIARY_LIBRARY} PRIVATE ${DATA_DESCRIPTORS_INTERFACE_TARGET})
 
     set(CONTRACT_BASELINE_DIR "${CLR_REPO_ROOT_DIR}/docs/design/datacontracts/data")
     set(CONTRACT_DESCRIPTOR_INPUT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contract-descriptor.c.in")
@@ -67,27 +67,16 @@ function(generate_data_descriptors)
 
     # It is important that LIBRARY is an object library;
     # if it was static, linking it into the final dll would not export
-    # DotNetRuntimeContractDescriptor since it is not referenced anywhere.
+    # ${CONTRACT_NAME} since it is not referenced anywhere.
     add_library_clr(${LIBRARY} OBJECT
       "${CONTRACT_DESCRIPTOR_OUTPUT}"
       "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contractpointerdata.cpp"
     )
-
     add_dependencies(${LIBRARY} ${INTERMEDIARY_LIBRARY})
+
     target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
 
     # inherit definitions, include directories, and dependencies from the INTERFACE target
-    add_interface_library(${LIBRARY} ${DATA_DESCRIPTORS_INTERFACE_TARGET})
+    target_link_libraries(${LIBRARY} PRIVATE ${DATA_DESCRIPTORS_INTERFACE_TARGET})
   endif()
 endfunction(generate_data_descriptors)
-
-# Links in an interface to a target with the interface include directories included
-# before the targets include directories.
-function(add_interface_library target_name interface_name)
-  get_target_property(target_includes ${target_name} INCLUDE_DIRECTORIES)
-  target_link_libraries(${target_name} PRIVATE ${interface_name})
-  set_target_properties(${target_name} PROPERTIES INCLUDE_DIRECTORIES "${target_includes}")
-
-  get_target_property(interface_includes ${interface_name} INTERFACE_INCLUDE_DIRECTORIES)
-  target_include_directories(${target_name} BEFORE PRIVATE ${interface_includes})
-endfunction(add_interface_library)
