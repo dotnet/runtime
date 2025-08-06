@@ -136,7 +136,7 @@ enum
     CDacBlobGlobalSubDescriptorsCount =
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) + 1
-#include "datadescriptor.inc"
+#include "wrappeddatadescriptor.inc"
 };
 
 
@@ -325,7 +325,7 @@ struct MagicAndBlob BlobDataDescriptor = {
 
         /* .GlobalSubDescriptorValues = */ {
 #define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .PointerDataIndex = */ GET_GLOBAL_POINTER_INDEX(name) },
-#include "datadescriptor.inc"
+#include "wrappeddatadescriptor.inc"
         },
 
         /* .NamesPool = */ ("\0" // starts with a nul
