@@ -28,12 +28,15 @@ public enum DataType
     Exception,
     ExceptionInfo,
     RuntimeThreadLocals,
+    IdDispenser,
     Module,
     ModuleLookupMap,
     AppDomain,
+    SystemDomain,
     Assembly,
     LoaderAllocator,
     PEAssembly,
+    AssemblyBinder,
     PEImage,
     PEImageLayout,
     CGrowableSymbolStream,
@@ -103,6 +106,7 @@ public enum DataType
 
     TransitionBlock,
     DebuggerEval,
+    ArgumentRegisters,
     CalleeSavedRegisters,
     HijackArgs,
 

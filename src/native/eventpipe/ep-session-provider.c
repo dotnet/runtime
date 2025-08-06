@@ -7,10 +7,6 @@
 #include "ep-session-provider.h"
 #include "ep-rt.h"
 
-#if HAVE_LINUX_USER_EVENTS_H
-#include <linux/user_events.h> // DIAG_IOCSREG
-#endif // HAVE_LINUX_USER_EVENTS_H
-
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h> // session_register_tracepoint
 #endif // HAVE_SYS_IOCTL_H
@@ -149,7 +145,7 @@ ep_on_error:
  * EventPipeSessionProviderTracepoint.
  */
 
-#if HAVE_LINUX_USER_EVENTS_H && HAVE_SYS_IOCTL_H
+#if HAVE_SYS_IOCTL_H
 static
 bool
 session_provider_tracepoint_register (
@@ -194,7 +190,7 @@ session_provider_tracepoint_unregister (
 
 	return true;
 }
-#else // HAVE_LINUX_USER_EVENTS_H && HAVE_SYS_IOCTL_H
+#else // HAVE_SYS_IOCTL_H
 static
 bool
 session_provider_tracepoint_register (
@@ -214,7 +210,7 @@ session_provider_tracepoint_unregister (
 	// Not Supported
 	return false;
 }
-#endif // HAVE_LINUX_USER_EVENTS_H && HAVE_SYS_IOCTL_H
+#endif // HAVE_SYS_IOCTL_H
 
 /*
  *  ep_session_provider_register_tracepoints

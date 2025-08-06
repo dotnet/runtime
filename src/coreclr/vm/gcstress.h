@@ -15,7 +15,7 @@
 //
 //  GCStress<> template classes with its IsEnabled() & MaybeTrigger members.
 //
-//  Use GCStress<> to abstract away the GC stress related decissions. The
+//  Use GCStress<> to abstract away the GC stress related decisions. The
 //  template definitions will resolve to nothing when STRESS_HEAP is not
 //  defined, and will inline the function body at the call site otherwise.
 //
@@ -34,7 +34,7 @@ struct alloc_context;
 
 
 enum gcs_trigger_points {
-    // generic handling based on EEConfig settings
+    // Generic handling based on EEConfig settings
     cfg_any,                        // any bit set in EEConfig::iGCStress
     cfg_alloc,                      // trigger on GC allocations
     cfg_transition,                 // trigger on transitions
@@ -44,7 +44,7 @@ enum gcs_trigger_points {
     cfg_instr,                      // trigger on managed instructions (JITted or NGENed)
     cfg_last,                       // boundary
 
-    // special handling at particular trigger points
+    // Special handling at particular trigger points
     jit_on_create_jump_stub,
     jit_on_create_il_stub,
     gc_on_alloc,
@@ -140,7 +140,7 @@ namespace _GCStress
 
 #ifdef STRESS_HEAP
 
-    // Support classes to allow easy customization of GC Stress policies
+    // Support classes to allow easy customization of GC stress policies
     namespace detail
     {
         using namespace mpl;
@@ -164,7 +164,7 @@ namespace _GCStress
         >
         struct GetPolicy<type_list<HeadT, TailT>, DefPolicy, Traits>
         {
-            // is true if HeadT and DefPolicy evaluate to the same tag,
+            // Is true if HeadT and DefPolicy evaluate to the same tag,
             // through Traits<>
             static const bool sameTag = std::is_same<
                         typename Traits<HeadT>::tag,
@@ -193,7 +193,7 @@ namespace _GCStress
     // GC stress specific EEConfig accessors
     namespace detail
     {
-        // no definition provided so that absence of concrete implementations cause compiler errors
+        // No definition provided so that absence of concrete implementations causes compiler errors
         template <enum gcs_trigger_points>
         bool IsEnabled();
 
@@ -274,7 +274,7 @@ namespace _GCStress
     class CoopGcModePolicy
     {
 #ifndef DACCESS_COMPILE
-        // implicit constructor an destructor will do the right thing
+        // Implicit constructor and destructor will do the right thing
         GCCoop m_coop;
 #endif // DACCESS_COMPILE
 

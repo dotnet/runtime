@@ -28,7 +28,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_DistinguishedName_Attributes_TestData))]
-        public void Ctor_DistinguishedString_Attributes(string distinguishedName, DirectoryAttribute[] attributes)
+        public void Ctor_DistinguishedString_Attributes(string? distinguishedName, DirectoryAttribute[] attributes)
         {
             var request = new AddRequest(distinguishedName, attributes);
             Assert.Equal(attributes ?? Enumerable.Empty<DirectoryAttribute>(), request.Attributes.Cast<DirectoryAttribute>());
@@ -46,7 +46,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null, "")]
         [InlineData("DistinguishedName", "ObjectClass")]
-        public void Ctor_DistinguishedName_ObjectClass(string distinguishedName, string objectClass)
+        public void Ctor_DistinguishedName_ObjectClass(string? distinguishedName, string objectClass)
         {
             var request = new AddRequest(distinguishedName, objectClass);
             DirectoryAttribute attribute = (DirectoryAttribute)Assert.Single(request.Attributes);

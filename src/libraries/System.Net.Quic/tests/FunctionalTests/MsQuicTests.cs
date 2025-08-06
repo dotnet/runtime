@@ -341,6 +341,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114912", TestPlatforms.OSX)]
         public async Task CertificateCallbackThrowPropagates()
         {
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
@@ -1426,7 +1427,7 @@ namespace System.Net.Quic.Tests
         [InlineData("a")]
         [InlineData("test")]
         [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")] // max allowed hostname length is 63
-        [InlineData("\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144. \u7EA2\u70E7. \u7167\u308A\u713C\u304D")]
+        [InlineData("\u017C\u00F3\u0142\u0107g\u0119\u015Bl\u0105ja\u017A\u0144.\u7EA2\u70E7.\u7167\u308A\u713C\u304D")]
         public Task ClientSendsSniServerReceives_Ok(string hostname) => SniTestCore(hostname, true);
 
         [Theory]

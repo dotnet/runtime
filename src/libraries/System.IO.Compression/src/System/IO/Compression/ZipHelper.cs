@@ -124,11 +124,18 @@ internal static partial class ZipHelper
             bool signatureFound = false;
 
             int totalBytesRead = 0;
-            int duplicateBytesRead = 0;
 
-            while (!signatureFound && !outOfBytes && totalBytesRead <= maxBytesToRead)
+            while (!signatureFound && !outOfBytes && totalBytesRead < maxBytesToRead)
             {
-                int bytesRead = SeekBackwardsAndRead(stream, bufferSpan, signatureToFind.Length);
+                int overlap = totalBytesRead == 0 ? 0 : signatureToFind.Length;
+
+                if (maxBytesToRead - totalBytesRead + overlap < bufferSpan.Length)
+                {
+                    // If we have less than a full buffer left to read, we adjust the buffer size.
+                    bufferSpan = bufferSpan.Slice(0, maxBytesToRead - totalBytesRead + overlap);
+                }
+
+                int bytesRead = SeekBackwardsAndRead(stream, bufferSpan, overlap);
 
                 outOfBytes = bytesRead < bufferSpan.Length;
                 if (bytesRead < bufferSpan.Length)
@@ -139,15 +146,13 @@ internal static partial class ZipHelper
                 bufferPointer = bufferSpan.LastIndexOf(signatureToFind);
                 Debug.Assert(bufferPointer < bufferSpan.Length);
 
-                totalBytesRead += (bufferSpan.Length - duplicateBytesRead);
+                totalBytesRead += bytesRead - overlap;
 
                 if (bufferPointer != -1)
                 {
                     signatureFound = true;
                     break;
                 }
-
-                duplicateBytesRead = signatureToFind.Length;
             }
 
             if (!signatureFound)

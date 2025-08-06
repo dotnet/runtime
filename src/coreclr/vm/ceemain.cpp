@@ -663,7 +663,7 @@ void EEStartupHelper()
 
         Thread::StaticInitialize();
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
         InitCallStubGenerator();
 #endif // FEATURE_INTERPRETER
 
@@ -755,6 +755,8 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 
+        UnwindInfoTable::Initialize();
+
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
@@ -804,6 +806,7 @@ void EEStartupHelper()
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
+        CDacPlatformMetadata::InitPrecodes();
 
         InitializeGarbageCollector();
 
@@ -822,9 +825,6 @@ void EEStartupHelper()
         // Static initialization
         SystemDomain::Attach();
 
-        // Start up the EE initializing all the global variables
-        ECall::Init();
-
         COMDelegate::Init();
 
         ExecutionManager::Init();
@@ -842,7 +842,9 @@ void EEStartupHelper()
         // Initialize the debugging services. This must be done before any
         // EE thread objects are created, and before any classes or
         // modules are loaded.
+#ifndef TARGET_WASM
         InitializeDebugger(); // throws on error
+#endif
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef PROFILING_SUPPORTED
@@ -920,7 +922,9 @@ void EEStartupHelper()
         }
 #endif
 
-#ifndef TARGET_WINDOWS
+        // on wasm we need to run finalizers on main thread as we are single threaded
+        // active issue: https://github.com/dotnet/runtime/issues/114096
+#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM)
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects
         FinalizerThread::FinalizerThreadCreate();
@@ -1236,8 +1240,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
-            g_fEEShutDown |= ShutDown_Finalize1;
-
             // Wait for the finalizer thread to deliver process exit event
             GCX_PREEMP();
             FinalizerThread::RaiseShutdownEvents();
@@ -1263,9 +1265,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             {
                 g_pDebugInterface->LockDebuggerForShutdown();
             }
-
-            // This call will convert the ThreadStoreLock into "shutdown" mode, just like the debugger lock above.
-            g_fEEShutDown |= ShutDown_Finalize2;
         }
 
 #ifdef FEATURE_EVENT_TRACE
@@ -1308,15 +1307,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
                 (&g_profControlBlock)->Shutdown();
                 END_PROFILER_CALLBACK();
             }
-
-            g_fEEShutDown |= ShutDown_Profiler;
         }
 #endif // PROFILING_SUPPORTED
 
 
-#ifdef _DEBUG
-        g_fEEShutDown |= ShutDown_SyncBlock;
-#endif
         {
             // From here on out we might call stuff that violates mode requirements, but we ignore these
             // because we are shutting down.
@@ -1369,11 +1363,6 @@ part2:
             {
                 g_fEEShutDown |= ShutDown_Phase2;
 
-                // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
-                // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
-                // RemoveAppDomainFromIPC.
-                //
-                // (If we move those things to earlier, this can be called only if fShouldWeCleanup.)</TODO>
                 if (!g_fFastExitProcess)
                 {
                     SystemDomain::DetachBegin();

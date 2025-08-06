@@ -263,6 +263,8 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     allocationAddressHolder.SuppressRelease();
     stub->Initialize(targetForMethod, remainingCallCountCell);
 
+    FlushCacheForDynamicMappedStub(stub, CallCountingStub::CodeSize);
+
     return stub;
 }
 
@@ -324,11 +326,13 @@ void CallCountingStub::StaticInitialize()
         // This should fail if the template is used on a platform which doesn't support the supported page size for templates
         ThrowHR(COR_E_EXECUTIONENGINE);
     }
+#elif defined(TARGET_WASM)
+    // CallCountingStub is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
 #endif
 
-    InitializeLoaderHeapConfig(&s_callCountingHeapConfig, CallCountingStub::CodeSize, (void*)CallCountingStubCodeTemplate, CallCountingStub::GenerateCodePage);
+    InitializeLoaderHeapConfig(&s_callCountingHeapConfig, CallCountingStub::CodeSize, (void*)CallCountingStubCodeTemplate, CallCountingStub::GenerateCodePage, NULL);
 }
 
 #endif // DACCESS_COMPILE

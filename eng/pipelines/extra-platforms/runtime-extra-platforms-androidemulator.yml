@@ -111,7 +111,7 @@ jobs:
       nameSuffix: AllSubsets_Mono
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
-      timeoutInMinutes: 180
+      timeoutInMinutes: 240
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml

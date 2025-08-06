@@ -23,11 +23,8 @@ namespace System.Net.Mail
 
         private MailAddress? _from;
         private MailAddress? _sender;
-        private MailAddressCollection? _replyToList;
         private MailAddress? _replyTo;
         private MailAddressCollection? _to;
-        private MailAddressCollection? _cc;
-        private MailAddressCollection? _bcc;
         private MimeBasePart? _content;
         private HeaderCollection? _headers;
         private HeaderCollection? _envelopeHeaders;
@@ -118,13 +115,13 @@ namespace System.Net.Mail
             }
         }
 
-        internal MailAddressCollection ReplyToList => _replyToList ??= new MailAddressCollection();
+        internal MailAddressCollection ReplyToList => field ??= new MailAddressCollection();
 
         internal MailAddressCollection To => _to ??= new MailAddressCollection();
 
-        internal MailAddressCollection Bcc => _bcc ??= new MailAddressCollection();
+        internal MailAddressCollection Bcc => field ??= new MailAddressCollection();
 
-        internal MailAddressCollection CC => _cc ??= new MailAddressCollection();
+        internal MailAddressCollection CC => field ??= new MailAddressCollection();
 
 
         internal string? Subject

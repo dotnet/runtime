@@ -19,9 +19,10 @@ namespace System.Buffers
 
         public AsciiCharSearchValues(ReadOnlySpan<char> values)
         {
-            // Despite the name being Ascii, this type may be used with non-ASCII values on ARM.
-            // See IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch.
-            Debug.Assert(Ascii.IsValid(values) || (AdvSimd.IsSupported && TUniqueLowNibble.Value));
+            // Despite the name being Ascii, this type may be used with non-ASCII values on ARM or WASM.
+            // See comments in IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch.
+            Debug.Assert(Ascii.IsValid(values) || (TUniqueLowNibble.Value && (AdvSimd.IsSupported || PackedSimd.IsSupported)));
+            Debug.Assert(!values.ContainsAnyInRange((char)byte.MaxValue, char.MaxValue));
 
             if (TUniqueLowNibble.Value)
             {

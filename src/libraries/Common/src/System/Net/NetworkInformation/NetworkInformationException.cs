@@ -35,7 +35,7 @@ namespace System.Net.NetworkInformation
         {
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
