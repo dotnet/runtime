@@ -1881,6 +1881,8 @@
              Link="Common\System\Security\Cryptography\DSACng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.SignVerify.cs"
              Link="Common\System\Security\Cryptography\DSACng.SignVerify.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs"
+             Link="Common\System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.HashAlgorithm.cs"
              Link="Common\System\Security\Cryptography\ECCng.HashAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.cs"

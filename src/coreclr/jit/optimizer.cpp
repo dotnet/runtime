@@ -1901,6 +1901,42 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
             condBlock->bbNum, loop->GetIndex());
 
+    weight_t       loopIterations       = BB_LOOP_WEIGHT_SCALE;
+    const bool     haveProfileWeights   = fgIsUsingProfileWeights();
+    const weight_t weightPreheader      = preheader->bbWeight;
+    const weight_t weightCond           = condBlock->bbWeight;
+    const weight_t weightStayInLoopSucc = stayInLoopSucc->bbWeight;
+
+    // If we have profile data then we calculate the number of times
+    // the loop will iterate into loopIterations
+    if (haveProfileWeights)
+    {
+        assert(preheader->hasProfileWeight());
+        assert(condBlock->hasProfileWeight());
+        assert(stayInLoopSucc->hasProfileWeight());
+
+        // If this while loop never iterates then don't bother transforming
+        //
+        if (weightStayInLoopSucc == BB_ZERO_WEIGHT)
+        {
+            JITDUMP("No loop-inversion for " FMT_LP " since the in-loop successor " FMT_BB " has 0 weight\n",
+                    loop->GetIndex(), preheader->bbNum);
+            return false;
+        }
+
+        // Determine average iteration count
+        //
+        //   weightTop is the number of time this loop executes
+        //   weightTest is the number of times that we consider entering or remaining in the loop
+        //   loopIterations is the average number of times that this loop iterates
+        //
+        // If profile is inaccurate, use other data to provide a credible estimate.
+        // The value should at least be >= weightPreheader.
+        //
+        const weight_t loopEntries = max(weightPreheader, weightCond - weightStayInLoopSucc);
+        loopIterations             = weightStayInLoopSucc / loopEntries;
+    }
+
     // Check if loop is small enough to consider for inversion.
     // Large loops are less likely to benefit from inversion.
     const int invertSizeLimit = JitConfig.JitLoopInversionSizeLimit();
@@ -1954,68 +1990,6 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             GenTree* tree = stmt->GetRootNode();
             gtPrepareCost(tree);
             estDupCostSz += tree->GetCostSz();
-        }
-    }
-
-    weight_t       loopIterations       = BB_LOOP_WEIGHT_SCALE;
-    bool           haveProfileWeights   = false;
-    weight_t const weightPreheader      = preheader->bbWeight;
-    weight_t const weightCond           = condBlock->bbWeight;
-    weight_t const weightStayInLoopSucc = stayInLoopSucc->bbWeight;
-
-    // If we have profile data then we calculate the number of times
-    // the loop will iterate into loopIterations
-    if (fgIsUsingProfileWeights())
-    {
-        // Only rely upon the profile weight when all three of these blocks
-        // have good profile weights
-        if (preheader->hasProfileWeight() && condBlock->hasProfileWeight() && stayInLoopSucc->hasProfileWeight())
-        {
-            // If this while loop never iterates then don't bother transforming
-            //
-            if (weightStayInLoopSucc == BB_ZERO_WEIGHT)
-            {
-                JITDUMP("No loop-inversion for " FMT_LP " since the in-loop successor " FMT_BB " has 0 weight\n",
-                        loop->GetIndex(), preheader->bbNum);
-                return false;
-            }
-
-            haveProfileWeights = true;
-
-            // We generally expect weightCond > weightStayInLoopSucc
-            //
-            // Tolerate small inconsistencies...
-            //
-            if (!fgProfileWeightsConsistent(weightPreheader + weightStayInLoopSucc, weightCond))
-            {
-                JITDUMP("Profile weights locally inconsistent: preheader " FMT_WT ", stayInLoopSucc " FMT_WT
-                        ", cond " FMT_WT "\n",
-                        weightPreheader, weightStayInLoopSucc, weightCond);
-            }
-            else
-            {
-                // Determine average iteration count
-                //
-                //   weightTop is the number of time this loop executes
-                //   weightTest is the number of times that we consider entering or remaining in the loop
-                //   loopIterations is the average number of times that this loop iterates
-                //
-                weight_t loopEntries = weightCond - weightStayInLoopSucc;
-
-                // If profile is inaccurate, try and use other data to provide a credible estimate.
-                // The value should at least be >= weightBlock.
-                //
-                if (loopEntries < weightPreheader)
-                {
-                    loopEntries = weightPreheader;
-                }
-
-                loopIterations = weightStayInLoopSucc / loopEntries;
-            }
-        }
-        else
-        {
-            JITDUMP("Missing profile data for loop!\n");
         }
     }
 

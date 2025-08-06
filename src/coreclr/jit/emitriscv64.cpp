@@ -1895,6 +1895,8 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
         }
     }
 
+    assert(dst > origDst);
+    assert((dst - origDst) <= UINT_MAX);
     return (unsigned)(dst - origDst);
 }
 
