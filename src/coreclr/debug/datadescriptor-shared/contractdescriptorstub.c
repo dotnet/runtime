@@ -21,7 +21,8 @@ struct ContractDescriptor
     const uintptr_t *pointer_data;
 };
 
-// POINTER_DATA_NAME and CONTRACT_NAME are macros provided by contractconfiguration.h
+// POINTER_DATA_NAME and CONTRACT_NAME are macros provided by
+// contractconfiguration.h which is configured by CMake
 extern const uintptr_t POINTER_DATA_NAME[];
 
 // just the placeholder pointer
