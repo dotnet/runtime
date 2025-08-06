@@ -40,7 +40,6 @@
 #if HAVE_SYS_MEMBARRIER_H
 static bool CanFlushUsingMembarrier(void)
 {
-
 #ifdef TARGET_ANDROID
     // Avoid calling membarrier on older Android versions where membarrier
     // may be barred by seccomp causing the process to be killed.
@@ -63,12 +62,10 @@ static bool CanFlushUsingMembarrier(void)
     {
         return true;
     }
-#endif
 
     return false;
 }
 
-#if HAVE_SYS_MEMBARRIER_H
 //
 // Tracks if the OS supports membarrier syscall
 //
