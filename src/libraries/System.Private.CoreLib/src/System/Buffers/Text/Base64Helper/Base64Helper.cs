@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-#if NET
+#if NET8_0
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -71,7 +71,7 @@ namespace System.Buffers.Text
             }
         }
 
-#if NET && !NET9_0_OR_GREATER
+#if NET8_0
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
