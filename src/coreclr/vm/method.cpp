@@ -1189,11 +1189,6 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     CONTRACTL_END
 
     RVA rva = GetRVA();
-    if (rva == 0)
-    {
-        return NULL;
-    }
-
     Module *pModule = GetModule();
 
     // Always pickup overrides like reflection emit, EnC, etc.
@@ -1201,6 +1196,10 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 
     if (pIL == (TADDR)NULL)
     {
+        if (rva == 0)
+        {
+            return NULL;
+        }
         pIL = pModule->GetIL(rva);
     }
 
