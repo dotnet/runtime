@@ -75,11 +75,6 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 	if (fatal)
 		exit (1);
 }
-//TOOD: HACK
-#ifdef SIZEOF_VOID_P
-#undef SIZEOF_VOID_P
-#endif
-#define SIZEOF_VOID_P 8
 
 #ifndef SIZEOF_VOID_P
 #pragma message ("MRH_LOGGING_DRIVER: SIZEOF_VOID_P is undefined in driver.c") 
