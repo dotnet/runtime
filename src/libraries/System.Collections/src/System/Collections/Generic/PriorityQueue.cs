@@ -1014,7 +1014,7 @@ namespace System.Collections.Generic
 
                     if (_version != localQueue._version)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                        System.Collections.ThrowHelper.ThrowVersionCheckFailed();
                     }
 
                     if ((uint)_index < (uint)localQueue._size)
@@ -1039,7 +1039,7 @@ namespace System.Collections.Generic
                 {
                     if (_version != _queue._version)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                        System.Collections.ThrowHelper.ThrowVersionCheckFailed();
                     }
 
                     _index = 0;
