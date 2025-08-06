@@ -440,7 +440,7 @@ class OffsetsTool:
 					print ("Offsets file has changed, updating " + outfile)
 					f.dump (outfile)
 			else:
-					print ("Offsets file is up to date, no changes to " + outfile)
+				print ("Offsets file is up to date, no changes to " + outfile)
 		else:
 			f.dump (outfile)
 
