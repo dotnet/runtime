@@ -371,6 +371,11 @@ The contract additionally depends on these data descriptors
 | `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
 
+Contracts used:
+| Contract Name |
+| --- |
+| `Thread` |
+
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;

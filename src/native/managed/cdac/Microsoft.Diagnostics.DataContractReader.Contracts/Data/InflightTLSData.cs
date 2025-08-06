@@ -12,10 +12,10 @@ internal sealed class InflightTLSData : IData<InflightTLSData>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.InFlightTLSData);
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        TlsIndex = address + (ulong)type.Fields[nameof(TlsIndex)].Offset;
-        TLSData = target.ReadPointer(address + (ulong)type.Fields[nameof(TLSData)].Offset);
+        TlsIndex = target.ProcessedData.GetOrAdd<TLSIndex>(address + (ulong)type.Fields[nameof(TlsIndex)].Offset);
+        TLSData = target.ProcessedData.GetOrAdd<ObjectHandle>(target.ReadPointer(address + (ulong)type.Fields[nameof(TLSData)].Offset));
     }
     public TargetPointer Next { get; init; }
-    public TargetPointer TlsIndex { get; init; }
-    public TargetPointer TLSData { get; init; }
+    public TLSIndex TlsIndex { get; init; }
+    public ObjectHandle TLSData { get; init; }
 }

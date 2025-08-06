@@ -2449,9 +2449,9 @@ internal sealed unsafe partial class SOSDacImpl
         {
             ClrDataAddress nonGCStaticsAddressLocal = default;
             ClrDataAddress GCStaticsAddressLocal = default;
-            ClrDataAddress* arg2 = nonGCStaticsAddress != null ? &nonGCStaticsAddressLocal : null;
-            ClrDataAddress* arg3 = GCStaticsAddress != null ? &GCStaticsAddressLocal : null;
-            int hrLocal = _legacyImpl14.GetThreadStaticBaseAddress(methodTable, thread, arg2, arg3);
+            ClrDataAddress* nonGCStaticsAddressOrNull = nonGCStaticsAddress != null ? &nonGCStaticsAddressLocal : null;
+            ClrDataAddress* gcStaticsAddressOrNull = GCStaticsAddress != null ? &GCStaticsAddressLocal : null;
+            int hrLocal = _legacyImpl14.GetThreadStaticBaseAddress(methodTable, thread, nonGCStaticsAddressOrNull, gcStaticsAddressOrNull);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {

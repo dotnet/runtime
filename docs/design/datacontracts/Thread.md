@@ -27,13 +27,6 @@ enum ThreadState
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
 }
 
-enum TLSIndexType
-{
-    NonCollectible,
-    Collectible,
-    DirectOnThreadLocalData,
-};
-
 record struct ThreadData (
     uint Id;
     TargetNUInt OSId;
@@ -113,6 +106,13 @@ The contract additionally depends on these data descriptors
 | `ThreadStore` | `PendingCount` | Number of pending threads |
 | `ThreadStore` | `DeadCount` | Number of dead threads |
 ``` csharp
+enum TLSIndexType
+{
+    NonCollectible,
+    Collectible,
+    DirectOnThreadLocalData,
+};
+
 ThreadStoreData GetThreadStoreData()
 {
     TargetPointer threadStore = target.ReadGlobalPointer("ThreadStore");
@@ -201,7 +201,7 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
     switch ((TLSIndexType)indexType)
     {
         case TLSIndexType.NonCollectible:
-            int nonCollectibleCount = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::nonCollectibleCount offset */);
+            int nonCollectibleCount = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::NonCollectibleTlsDataCount offset */);
             // bounds check
             if (nonCollectibleCount > indexOffset)
             {
@@ -212,7 +212,7 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
             }
             break;
         case TLSIndexType.Collectible:
-            int collectibleCount = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::collectibleCount offset */);
+            int collectibleCount = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::CollectibleTlsDataCount offset */);
             if (collectibleCount > indexOffset)
             {
                 TargetPointer collectibleArray = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::CollectibleTlsArrayData offset */);

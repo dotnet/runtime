@@ -116,7 +116,7 @@ internal readonly struct Thread_1 : IThread
         switch ((TLSIndexType)indexType)
         {
             case TLSIndexType.NonCollectible:
-                int nonCollectibleCount = threadLocalData.NonCollectibleTlsData;
+                int nonCollectibleCount = threadLocalData.NonCollectibleTlsDataCount;
                 // bounds check
                 if (nonCollectibleCount > indexOffset)
                 {
@@ -127,7 +127,7 @@ internal readonly struct Thread_1 : IThread
                 }
                 break;
             case TLSIndexType.Collectible:
-                int collectibleCount = threadLocalData.CollectibleTlsData;
+                int collectibleCount = threadLocalData.CollectibleTlsDataCount;
                 if (collectibleCount > indexOffset)
                 {
                     TargetPointer collectibleArray = threadLocalData.CollectibleTlsArrayData;
@@ -144,11 +144,9 @@ internal readonly struct Thread_1 : IThread
             while (inFlightData != TargetPointer.Null)
             {
                 Data.InflightTLSData inFlightTLSData = _target.ProcessedData.GetOrAdd<Data.InflightTLSData>(inFlightData);
-                Data.TLSIndex tlsIndexInFlight = _target.ProcessedData.GetOrAdd<Data.TLSIndex>(inFlightTLSData.TlsIndex);
-                if (tlsIndexInFlight.TLSIndexRawIndex == tlsIndex.TLSIndexRawIndex)
+                if (inFlightTLSData.TlsIndex.TLSIndexRawIndex == tlsIndex.TLSIndexRawIndex)
                 {
-                    Data.ObjectHandle objectHandle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(inFlightTLSData.TLSData);
-                    threadLocalStaticBase = objectHandle.Object;
+                    threadLocalStaticBase = inFlightTLSData.TLSData.Object;
                     break;
                 }
                 inFlightData = inFlightTLSData.Next;

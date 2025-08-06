@@ -394,20 +394,20 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
 
-    private TargetPointer GetTlsIndex(TypeHandle typeHandle, bool gc)
+    private Data.ThreadStaticsInfo GetThreadStaticsInfo(TypeHandle typeHandle)
     {
         MethodTable methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = _target.GetTypeInfo(DataType.ThreadStaticsInfo).Size!.Value;
         TargetPointer threadStaticsInfoAddr = methodTable.AuxiliaryData - threadStaticsInfoSize;
         Data.ThreadStaticsInfo threadStaticsInfo = _target.ProcessedData.GetOrAdd<Data.ThreadStaticsInfo>(threadStaticsInfoAddr);
-        return gc ? threadStaticsInfo.GCTlsIndex : threadStaticsInfo.NonGCTlsIndex;
+        return threadStaticsInfo;
     }
 
     public TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr)
     {
         if (!typeHandle.IsMethodTable())
             return TargetPointer.Null;
-        TargetPointer tlsIndexPtr = GetTlsIndex(typeHandle, true);
+        TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).GCTlsIndex;
         Contracts.IThread threadContract = _target.Contracts.Thread;
         return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexPtr);
     }
@@ -416,7 +416,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         if (!typeHandle.IsMethodTable())
             return TargetPointer.Null;
-        TargetPointer tlsIndexPtr = GetTlsIndex(typeHandle, false);
+        TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).NonGCTlsIndex;
         Contracts.IThread threadContract = _target.Contracts.Thread;
         return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexPtr);
     }
