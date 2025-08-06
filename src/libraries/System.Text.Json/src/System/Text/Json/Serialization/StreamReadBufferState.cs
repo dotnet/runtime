@@ -51,7 +51,9 @@ namespace System.Text.Json.Serialization
 
         public readonly bool IsFinalBlock => _isFinalBlock;
 
+#if DEBUG
         public readonly ReadOnlySequence<byte> Bytes => new(_buffer.AsMemory(_offset, _count));
+#endif
 
         /// <summary>
         /// Read from the stream until either our buffer is filled or we hit EOF.
