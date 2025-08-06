@@ -12,7 +12,7 @@ The `generate_data_descriptors` function defined in `clrdatadescriptors.cmake` t
 * **`CONTRACT_FILE`** (Required) - Path to the contract JSON file defining supported contracts
 * **`CONTRACT_NAME`** (Required) - Name of the `ContractDescriptor` export symbol
 * **`INTERFACE_TARGET`** (Required) - Interface target providing dependencies, include directories, and definitions
-* **`DLLEXPORT`** (Optional) - Controls if the `CONTRACT_NAME` will be exported from the DLL
+* **`EXPORT_VISIBLE`** (Optional) - Controls if the `CONTRACT_NAME` will be exported from the DLL
 
 ### Two-Phase Build Process
 

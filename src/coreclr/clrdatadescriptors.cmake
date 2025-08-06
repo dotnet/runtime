@@ -1,7 +1,7 @@
 # cDAC contract descriptor
 
 function(generate_data_descriptors)
-  set(options DLLEXPORT)
+  set(options EXPORT_VISIBLE)
   set(oneValueArgs LIBRARY_NAME CONTRACT_FILE CONTRACT_NAME INTERFACE_TARGET)
   set(multiValueArgs "")
   cmake_parse_arguments(DATA_DESCRIPTORS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
@@ -16,7 +16,7 @@ function(generate_data_descriptors)
   # configure contract export name
   set(POINTER_DATA_NAME ${DATA_DESCRIPTORS_CONTRACT_NAME}PointerData)
   set(CONTRACT_NAME ${DATA_DESCRIPTORS_CONTRACT_NAME})
-  if (DATA_DESCRIPTORS_DLLEXPORT)
+  if (DATA_DESCRIPTORS_EXPORT_VISIBLE)
     set(EXPORT_CONTRACT 1)
   else()
     set(EXPORT_CONTRACT 0)

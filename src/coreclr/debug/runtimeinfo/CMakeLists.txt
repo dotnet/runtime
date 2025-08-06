@@ -59,4 +59,4 @@ generate_data_descriptors(
    CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
    CONTRACT_NAME "DotNetRuntimeContractDescriptor"
    INTERFACE_TARGET runtime_descriptor_interface
-   DLLEXPORT)
+   EXPORT_VISIBLE)
