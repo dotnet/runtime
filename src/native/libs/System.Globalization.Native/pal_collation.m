@@ -15,12 +15,13 @@
 // Enum that corresponds to C# CompareOptions
 typedef enum
 {
-    None = 0,
-    IgnoreCase = 1,
-    IgnoreNonSpace = 2,
-    IgnoreKanaType = 8,
-    IgnoreWidth = 16,
-    StringSort = 536870912,
+    None = 0x00000000,
+    IgnoreCase = 0x00000001,
+    IgnoreNonSpace = 0x00000002,
+    IgnoreSymbols = 0x00000004,
+    IgnoreKanaType = 0x00000008,
+    IgnoreWidth = 0x00000010,
+    StringSort = 0x20000000,
 } CompareOptions;
 
 typedef enum
@@ -47,7 +48,7 @@ static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLengt
 
 static bool IsComparisonOptionSupported(int32_t comparisonOptions)
 {
-    int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreWidth | StringSort | IgnoreKanaType;
+    int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreSymbols | IgnoreWidth | StringSort | IgnoreKanaType;
     if ((comparisonOptions | supportedOptions) != supportedOptions)
         return false;
     return true;
@@ -78,6 +79,126 @@ static NSString *ConvertToKatakana(NSString *input)
     return mutableString;
 }
 
+/**
+ * Removes zero-width and other weightless characters such as U+200B (Zero Width Space), 
+ * U+200C (Zero Width Non-Joiner), U+200D (Zero Width Joiner), U+FEFF (Zero Width No-Break Space), 
+ * and the NUL character from the specified string.
+ */
+static NSString* RemoveWeightlessCharacters(NSString* source)
+{
+    NSError *error = nil;
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"[\u200B-\u200D\uFEFF\0]" options:NSRegularExpressionCaseInsensitive error:&error];
+
+    if (error != nil)
+        return source;
+
+    NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:0 range:NSMakeRange(0, [source length]) withTemplate:@""];
+
+    return modifiedString;
+}
+
+// Structure to hold the modified string and character mapping
+typedef struct {
+    NSString* modifiedString;
+    NSArray<NSNumber*>* mapping; // mapping[i] = original position j for character at position i in modifiedString
+} StringWithMapping;
+
+/**
+ * Removes symbols including whitespace, punctuation, currency symbols, the percent sign, 
+ * mathematical symbols, the ampersand, and similar characters from the specified string.
+ * This corresponds to .NET's CompareOptions.IgnoreSymbols behavior.
+ */
+static NSString* RemoveSymbols(NSString* source)
+{
+    NSError *error = nil;
+    // Unicode categories covered:
+    // \p{P} - Punctuation (all punctuation marks)
+    // \p{S} - Symbols (currency, mathematical, modifier, and other symbols)
+    // \p{Z} - Separators (space, line, and paragraph separators)
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"[\\p{P}\\p{S}\\p{Z}]" options:NSRegularExpressionCaseInsensitive error:&error];
+
+    if (error != nil)
+        return source;
+
+    NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:0 range:NSMakeRange(0, [source length]) withTemplate:@""];
+
+    return modifiedString;
+}
+
+/**
+ * Removes symbols including whitespace, punctuation, currency symbols, the percent sign, 
+ * mathematical symbols, the ampersand, and similar characters from the specified string.
+ * Returns both the modified string and a mapping array where mapping[i] contains the original
+ * position in the source string for the character at position i in the modified string.
+ * This corresponds to .NET's CompareOptions.IgnoreSymbols behavior.
+ */
+static StringWithMapping RemoveSymbolsWithMapping(NSString* source)
+{
+    StringWithMapping result = {source, nil};
+    
+    NSError *error = nil;
+    // Unicode categories covered:
+    // \p{P} - Punctuation (all punctuation marks)
+    // \p{S} - Symbols (currency, mathematical, modifier, and other symbols)
+    // \p{Z} - Separators (space, line, and paragraph separators)
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"[\\p{P}\\p{S}\\p{Z}]" options:NSRegularExpressionCaseInsensitive error:&error];
+
+    if (error != nil)
+        return result;
+
+    NSMutableString *modifiedString = [NSMutableString string];
+    NSMutableArray<NSNumber*> *mapping = [NSMutableArray array];
+    
+    NSUInteger sourceLength = [source length];
+    for (NSUInteger i = 0; i < sourceLength; i++)
+    {
+        unichar ch = [source characterAtIndex:i];
+        NSString *charString = [NSString stringWithCharacters:&ch length:1];
+        
+        // Check if this character matches the symbol pattern
+        NSRange matchRange = [regex rangeOfFirstMatchInString:charString options:0 range:NSMakeRange(0, 1)];
+        
+        if (matchRange.location == NSNotFound)
+        {
+            // Character is not a symbol, keep it
+            [modifiedString appendString:charString];
+            [mapping addObject:@(i)];
+        }
+        // If it's a symbol, skip it (don't add to modifiedString or mapping)
+    }
+    
+    result.modifiedString = [modifiedString copy];
+    result.mapping = [mapping copy];
+    return result;
+}
+
+/**
+ * Maps a range from the modified string back to the original string using the provided mapping.
+ * Returns the mapped location and length in the original string coordinates.
+ * Returns a range with location = ERROR_INDEX_NOT_FOUND if mapping fails.
+ */
+static Range MapRangeToOriginalString(NSRange modifiedRange, NSArray<NSNumber*>* mapping)
+{
+    Range invalidRange = {ERROR_INDEX_NOT_FOUND, 0};
+
+    if (mapping == nil || mapping.count == 0 || modifiedRange.location >= mapping.count)
+        return invalidRange;
+
+    int32_t mappedLocation = [mapping[(NSUInteger)modifiedRange.location] intValue];
+
+    // Calculate the mapped length by finding the end position in the original string
+    NSUInteger endIndex = modifiedRange.location + modifiedRange.length - 1;
+
+    if (endIndex >= mapping.count)
+        return invalidRange;
+
+    int32_t mappedEndLocation = [mapping[endIndex] intValue];
+    int32_t mappedLength = mappedEndLocation - mappedLocation + 1;
+    
+    Range result = {mappedLocation, mappedLength};
+    return result;
+}
+
 /*
 Function:
 CompareString
@@ -101,6 +222,12 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
             targetStrPrecomposed = ConvertToKatakana(targetStrPrecomposed);
         }
 
+        if (comparisonOptions & IgnoreSymbols)
+        {
+            sourceStrPrecomposed = RemoveSymbols(sourceStrPrecomposed);
+            targetStrPrecomposed = RemoveSymbols(targetStrPrecomposed);
+        }
+        
         if (comparisonOptions != 0 && comparisonOptions != StringSort)
         {
             NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, false);
@@ -115,24 +242,6 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
                                      range:comparisonRange
                                      locale:currentLocale];
     }
-}
-
-/**
- * Removes zero-width and other weightless characters such as U+200B (Zero Width Space), 
- * U+200C (Zero Width Non-Joiner), U+200D (Zero Width Joiner), U+FEFF (Zero Width No-Break Space), 
- * and the NUL character from the specified string.
- */
-static NSString* RemoveWeightlessCharacters(NSString* source)
-{
-    NSError *error = nil;
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"[\u200B-\u200D\uFEFF\0]" options:NSRegularExpressionCaseInsensitive error:&error];
-
-    if (error != nil)
-        return source;
-
-    NSString *modifiedString = [regex stringByReplacingMatchesInString:source options:0 range:NSMakeRange(0, [source length]) withTemplate:@""];
-
-    return modifiedString;
 }
 
 static int32_t IsIndexFound(int32_t fromBeginning, int32_t foundLocation, int32_t newLocation)
@@ -169,10 +278,22 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
         NSString *searchStrCleaned = RemoveWeightlessCharacters(searchString);
         NSString *sourceString = [NSString stringWithCharacters: lpSource length: (NSUInteger)cwSourceLength];
         NSString *sourceStrCleaned = RemoveWeightlessCharacters(sourceString);
+        
+        // Store mapping information for the source string.
+        // This is used to map the found index back to the original string if symbols were removed.
+        StringWithMapping sourceMapping = {sourceStrCleaned, nil};
+        
         if (comparisonOptions & IgnoreKanaType)
         {
             sourceStrCleaned = ConvertToKatakana(sourceStrCleaned);
             searchStrCleaned = ConvertToKatakana(searchStrCleaned);
+        }
+
+        if (comparisonOptions & IgnoreSymbols)
+        {
+            sourceMapping = RemoveSymbolsWithMapping(sourceStrCleaned);
+            sourceStrCleaned = sourceMapping.modifiedString;
+            searchStrCleaned = RemoveSymbols(searchStrCleaned);
         }
 
         if (searchStrCleaned.length == 0)
@@ -208,8 +329,16 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
 
         if (nsRange.location != NSNotFound)
         {   
-            result.location = (int32_t)nsRange.location;
-            result.length = (int32_t)nsRange.length;
+            // Map the found location back to the original string if symbols were removed
+            result = (Range){(int32_t)nsRange.location, (int32_t)nsRange.length};
+            if ((comparisonOptions & IgnoreSymbols) && sourceMapping.mapping != nil)
+            {
+                Range mappedResult = MapRangeToOriginalString(nsRange, sourceMapping.mapping);
+                if (mappedResult.location != ERROR_INDEX_NOT_FOUND) {
+                    result = mappedResult;
+                }
+            }
+
             // in case of CompareOptions.IgnoreCase if letters have different representations in source and search strings
             // and case insensitive search appears more than one time in source string take last index for LastIndexOf and first index for IndexOf
             // e.g. new CultureInfo().CompareInfo.LastIndexOf("Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?", "U\u0308", 25,18, CompareOptions.IgnoreCase);
@@ -234,8 +363,16 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             if ((comparisonOptions & IgnoreCase) && IsIndexFound(fromBeginning, (int32_t)result.location, (int32_t)precomposedRange.location))
                 return result;
 
-            result.location = (int32_t)precomposedRange.location;
-            result.length = (int32_t)precomposedRange.length;
+            // Map the found location back to the original string if symbols were removed
+            result = (Range){(int32_t)precomposedRange.location, (int32_t)precomposedRange.length};
+            if ((comparisonOptions & IgnoreSymbols) && sourceMapping.mapping != nil)
+            {
+                Range mappedResult = MapRangeToOriginalString(precomposedRange, sourceMapping.mapping);
+                if (mappedResult.location != ERROR_INDEX_NOT_FOUND) {
+                    result = mappedResult;
+                }
+            }
+
             if (!(comparisonOptions & IgnoreCase))
                 return result;
         }
@@ -253,8 +390,16 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             if ((comparisonOptions & IgnoreCase) && IsIndexFound(fromBeginning, (int32_t)result.location, (int32_t)decomposedRange.location))
                 return result;
 
-            result.location = (int32_t)decomposedRange.location;
-            result.length = (int32_t)decomposedRange.length;
+            // Map the found location back to the original string if symbols were removed
+            result = (Range){(int32_t)decomposedRange.location, (int32_t)decomposedRange.length};
+            if ((comparisonOptions & IgnoreSymbols) && sourceMapping.mapping != nil)
+            {
+                Range mappedResult = MapRangeToOriginalString(decomposedRange, sourceMapping.mapping);
+                if (mappedResult.location != ERROR_INDEX_NOT_FOUND) {
+                    result = mappedResult;
+                }
+            }
+           
             return result;
         }
 
@@ -282,6 +427,12 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
         {
             prefixStrComposed = ConvertToKatakana(prefixStrComposed);
             sourceStrComposed = ConvertToKatakana(sourceStrComposed);
+        }
+
+        if (comparisonOptions & IgnoreSymbols)
+        {
+            prefixStrComposed = RemoveSymbols(prefixStrComposed);
+            sourceStrComposed = RemoveSymbols(sourceStrComposed);
         }
 
         NSRange sourceRange = NSMakeRange(0, prefixStrComposed.length > sourceStrComposed.length ? sourceStrComposed.length : prefixStrComposed.length);
@@ -315,6 +466,13 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
             suffixStrComposed = ConvertToKatakana(suffixStrComposed);
             sourceStrComposed = ConvertToKatakana(sourceStrComposed);
         }
+
+        if (comparisonOptions & IgnoreSymbols)
+        {
+            suffixStrComposed = RemoveSymbols(suffixStrComposed);
+            sourceStrComposed = RemoveSymbols(sourceStrComposed);
+        }
+
         NSUInteger startIndex = suffixStrComposed.length > sourceStrComposed.length ? 0 : sourceStrComposed.length - suffixStrComposed.length;
         NSRange sourceRange = NSMakeRange(startIndex, sourceStrComposed.length - startIndex);
         
@@ -342,6 +500,11 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         if (options & IgnoreKanaType)
         {
             sourceString = ConvertToKatakana(sourceString);
+        }
+
+        if (options & IgnoreSymbols)
+        { // TODO TEST
+            sourceString = RemoveSymbols(sourceString);
         }
         NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString).precomposedStringWithCanonicalMapping;
         // If the string is empty after removing weightless characters, return 1
