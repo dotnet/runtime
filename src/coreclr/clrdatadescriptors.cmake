@@ -68,7 +68,7 @@ function(generate_data_descriptors)
 
     # It is important that LIBRARY is an object library;
     # if it was static, linking it into the final dll would not export
-    # DotNetRuntimeContractDescriptor since it is not referenced anywhere.
+    # ${CONTRACT_NAME} since it is not referenced anywhere.
     add_library_clr(${LIBRARY} OBJECT
       "${CONTRACT_DESCRIPTOR_OUTPUT}"
       "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contractpointerdata.cpp"
