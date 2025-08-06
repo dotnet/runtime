@@ -6161,6 +6161,11 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
     SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
 
     MethodDesc* pMD = GetMethod(methHnd);
+    if (pMD != NULL && !pMD->IsPInvoke())
+    {
+        pMD = NULL;
+    }
+
     result = CORINFO_VARARGS_HANDLE(module->GetVASigCookie(Signature(sig->pSig, sig->cbSig), pMD, &typeContext));
 
     EE_TO_JIT_TRANSITION();

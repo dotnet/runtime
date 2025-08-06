@@ -345,7 +345,7 @@ struct VASigCookie
     // so please keep this field first
     unsigned        sizeOfArgs;             // size of argument list
     Volatile<PCODE> pPInvokeILStub;         // will be use if target is PInvoke (tag == 0)
-    PTR_MethodDesc  pMethodDesc;            // MethodDesc for the method that this cookie is for
+    PTR_MethodDesc  pMethodDesc;            // Only non-null if this is a PInvoke method
     PTR_Module      pModule;
     PTR_Module      pLoaderModule;
     Signature       signature;

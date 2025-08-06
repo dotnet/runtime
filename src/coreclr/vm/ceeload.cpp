@@ -4194,6 +4194,7 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, MethodDesc* pMD, cons
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
+        PRECONDITION(pMD == NULL || pMD->IsPInvoke()); // Only PInvoke methods are embedded in VASig cookies.
         POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }
@@ -4236,6 +4237,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
     CONTRACT(VASigCookie*)
     {
         STANDARD_VM_CHECK;
+        PRECONDITION(pMD == NULL || pMD->IsPInvoke());
         POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }
