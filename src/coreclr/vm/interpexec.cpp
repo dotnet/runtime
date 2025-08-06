@@ -1873,7 +1873,11 @@ MAIN_LOOP:
 
                     {
                         GCX_PREEMP();
-                        InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                        bool shouldSuppressGCTransition = targetMethod->ShouldSuppressGCTransition();
+                        {
+                            GCX_MAYBE_COOP(shouldSuppressGCTransition);
+                            InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
+                        }
                     }
 
                     inlinedCallFrame.Pop();
