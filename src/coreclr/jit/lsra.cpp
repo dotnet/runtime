@@ -7665,19 +7665,17 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     if (tree != nullptr)
     {
         LIR::Use treeUse;
-        GenTree* useNode  = nullptr;
-        bool     foundUse = blockRange.TryGetUse(tree, &treeUse);
-        useNode           = treeUse.User();
-        assert(foundUse);
+        bool     foundUse;
+        GenTree* useNode = tree;
 
-        // If the node is contained then the actual use is the containing node (which may be much
-        // later in the LIR). Recursively check until there is no contained node.
-        while (useNode->isContained())
+        // Get the use of the node. If the node is contained then the actual use is the containing node
+        // (which may be much later in the LIR). Recursively check until there is no contained node.
+        do
         {
             foundUse = blockRange.TryGetUse(useNode, &treeUse);
             useNode  = treeUse.User();
             assert(foundUse);
-        }
+        } while (useNode->isContained());
 
         JITDUMP("before %d.%s:\n", useNode->gtTreeID, GenTree::OpName(useNode->gtOper));
 
