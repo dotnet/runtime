@@ -404,7 +404,7 @@ namespace System.Threading
 
                     if (waitableObjectMaybe is not WaitableObject waitableObject)
                     {
-                        throw new ArgumentException("Only unnamed waitable objects are supported in multi-wait operations.", nameof(waitHandles));
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSyncObjectWaitAnyWaitAll);
                     }
 
                     if (waitForAll)

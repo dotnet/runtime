@@ -7,7 +7,9 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        internal static int PageSize { get => field == 0 ? (field = GetPageSize()) : field; }
+
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPageSize")]
-        internal static partial int GetPageSize();
+        private static partial int GetPageSize();
     }
 }

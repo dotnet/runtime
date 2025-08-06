@@ -41,7 +41,7 @@ namespace System.IO
 
             if (name.ContainsAny(['\\', '/']))
             {
-                throw new ArgumentException($"Name '{name}' cannot contain path separators after prefixes.", nameof(name));
+                throw new ArgumentException(SR.Format(SR.IO_SharedMemory_InvalidName, name), nameof(name));
             }
 
             IsUserScope = isUserScope;
@@ -161,7 +161,7 @@ namespace System.IO
             SharedMemoryId id = new(name, isUserScope);
 
             nuint sharedDataUsedByteCount = (nuint)sizeof(SharedMemorySharedDataHeader) + sharedMemoryDataSize;
-            nuint sharedDataTotalByteCount = AlignUp(sharedDataUsedByteCount, (nuint)Interop.Sys.GetPageSize());
+            nuint sharedDataTotalByteCount = AlignUp(sharedDataUsedByteCount, (nuint)Interop.Sys.PageSize);
 
             SharedMemoryProcessDataHeader<TSharedMemoryProcessData>? processDataHeader = SharedMemoryManager<TSharedMemoryProcessData>.Instance.FindProcessDataHeader(id);
 
@@ -228,7 +228,7 @@ namespace System.IO
 
                 if (fileStatus.Size < (long)sharedDataUsedByteCount)
                 {
-                    throw new InvalidOperationException("Header mismatch");
+                    throw new InvalidOperationException(SR.Format(SR.IO_SharedMemory_InvalidHeader, sharedMemoryFilePath));
                 }
 
                 SetFileSize(fileHandle, sharedMemoryFilePath, (long)sharedDataTotalByteCount);
@@ -263,7 +263,7 @@ namespace System.IO
                 if (sharedDataHeader->Type != requiredSharedDataHeader.Type ||
                     sharedDataHeader->Version != requiredSharedDataHeader.Version)
                 {
-                    throw new InvalidOperationException("Header mismatch");
+                    throw new InvalidOperationException(SR.Format(SR.IO_SharedMemory_InvalidHeader, sharedMemoryFilePath));
                 }
             }
 

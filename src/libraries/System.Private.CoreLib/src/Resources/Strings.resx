@@ -4384,6 +4384,12 @@
   <data name="Arg_FailedToInitializePThreadMutex" xml:space="preserve">
     <value>Failed to initialize pthread mutex</value>
   </data>
+  <data name="IO_SharedMemory_InvalidName" xml:space="preserve">
+    <value>Cross-process shared memory name '{0}' is cannot contain path separators after prefixes.</value>
+  </data>
+  <data name="IO_SharedMemory_InvalidHeader" xml:space="preserve">
+    <value>Cross-process shared memory file '{0}' has a header that is not supported by this version of the .NET runtime.</value>
+  </data>
   <data name="IO_SharedMemory_FileNotOwnedByUid" xml:space="preserve">
     <value>The file '{0}' is not owned by the current user with UID {1}.</value>
   </data>
