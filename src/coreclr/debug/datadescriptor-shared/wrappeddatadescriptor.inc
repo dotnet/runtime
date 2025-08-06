@@ -1,3 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// No include guards. This file is included multiple times.
+// Wraps datadescriptor.inc to define and undefine macros used in the file.
+
 #ifndef CDAC_BASELINE
 #define CDAC_BASELINE(identifier)
 #endif
