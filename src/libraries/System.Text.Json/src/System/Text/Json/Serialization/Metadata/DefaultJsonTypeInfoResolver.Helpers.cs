@@ -497,7 +497,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 return NullabilityState.NotNull;
             }
-#if NET8_0
+#if NET && !NET9_0_OR_GREATER
             // Workaround for https://github.com/dotnet/runtime/issues/92487
             // The fix has been incorporated into .NET 9 (and the polyfilled implementations in netfx).
             // Should be removed once .NET 8 support is dropped.

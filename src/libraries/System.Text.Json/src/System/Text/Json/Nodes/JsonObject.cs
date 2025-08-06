@@ -142,7 +142,9 @@ namespace System.Text.Json.Nodes
         {
             ArgumentNullException.ThrowIfNull(propertyName);
 
-#if NET9_0
+#if NET10_0_OR_GREATER
+            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
+#else
             index = Dictionary.IndexOf(propertyName);
             if (index < 0)
             {
@@ -152,8 +154,6 @@ namespace System.Text.Json.Nodes
 
             jsonNode = Dictionary.GetAt(index).Value;
             return true;
-#else
-            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
 #endif
         }
 

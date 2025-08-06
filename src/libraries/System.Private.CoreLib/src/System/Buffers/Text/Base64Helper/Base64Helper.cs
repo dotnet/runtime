@@ -71,7 +71,7 @@ namespace System.Buffers.Text
             }
         }
 
-#if NET8_0
+#if NET && !NET9_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
