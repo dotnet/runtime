@@ -1717,16 +1717,6 @@ CORINFO_VARARGS_HANDLE interceptor_ICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig
     return temp;
 }
 
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool interceptor_ICJI::canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-{
-    mc->cr->AddCall("canGetVarArgsHandle");
-    bool temp = original_ICorJitInfo->canGetVarArgsHandle(pSig);
-    mc->recCanGetVarArgsHandle(pSig, temp);
-    return temp;
-}
-
 // Allocate a string literal on the heap and return a handle to it
 InfoAccessType interceptor_ICJI::constructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken metaTok, void** ppValue)
 {

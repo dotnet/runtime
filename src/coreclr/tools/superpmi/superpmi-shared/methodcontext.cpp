@@ -5559,37 +5559,6 @@ CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig
     return (CORINFO_VARARGS_HANDLE)value.B;
 }
 
-void MethodContext::recCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig, bool result)
-{
-    if (CanGetVarArgsHandle == nullptr)
-        CanGetVarArgsHandle = new LightWeightMap<CanGetVarArgsHandleValue, DWORD>();
-
-    CanGetVarArgsHandleValue key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.scope = CastHandle(pSig->scope);
-    key.token = (DWORD)pSig->token;
-
-    DWORD value = result ? 1 : 0;
-    CanGetVarArgsHandle->Add(key, value);
-    DEBUG_REC(dmpCanGetVarArgsHandle(key, value));
-}
-void MethodContext::dmpCanGetVarArgsHandle(const CanGetVarArgsHandleValue& key, DWORD value)
-{
-    printf("CanGetVarArgsHandle key scope-%016" PRIX64 " token-%08X, value result-%08X", key.scope, key.token, value);
-}
-bool MethodContext::repCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-{
-    CanGetVarArgsHandleValue key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.scope = CastHandle(pSig->scope);
-    key.token = (DWORD)pSig->token;
-
-    DWORD value = LookupByKeyOrMiss(CanGetVarArgsHandle, key, ": key %016" PRIX64 " %08X", key.scope, key.token);
-
-    DEBUG_REP(dmpCanGetVarArgsHandle(key, value));
-    return value != 0;
-}
-
 void MethodContext::recGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection, DWORD result)
 {
     if (GetFieldThreadLocalStoreID == nullptr)

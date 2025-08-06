@@ -1222,13 +1222,6 @@ CORINFO_VARARGS_HANDLE interceptor_ICJI::getVarArgsHandle(
     return original_ICorJitInfo->getVarArgsHandle(pSig, methHnd, ppIndirection);
 }
 
-bool interceptor_ICJI::canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig)
-{
-    mcs->AddCall("canGetVarArgsHandle");
-    return original_ICorJitInfo->canGetVarArgsHandle(pSig);
-}
-
 InfoAccessType interceptor_ICJI::constructStringLiteral(
           CORINFO_MODULE_HANDLE module,
           mdToken metaTok,

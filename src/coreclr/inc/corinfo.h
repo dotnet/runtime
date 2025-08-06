@@ -3301,12 +3301,6 @@ public:
             void                  **ppIndirection = NULL
             ) = 0;
 
-    // returns true if a VM cookie can be generated for it (might be false due to cross-module
-    // inlining, in which case the inlining should be aborted)
-    virtual bool canGetVarArgsHandle(
-            CORINFO_SIG_INFO       *pSig
-            ) = 0;
-
     // Allocate a string literal on the heap and return a handle to it
     virtual InfoAccessType constructStringLiteral(
             CORINFO_MODULE_HANDLE   module,

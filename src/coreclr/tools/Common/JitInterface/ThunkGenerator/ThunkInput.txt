@@ -316,7 +316,6 @@ FUNCTIONS
     bool getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t *buffer, int bufferSize, int valueOffset);
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE    field,  BoolStar pIsSpeculative);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO       *pSig, CORINFO_METHOD_HANDLE   methHnd, void                  **ppIndirection);
-    bool canGetVarArgsHandle(CORINFO_SIG_INFO       *pSig);
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE   module, mdToken                 metaTok, void                  **ppValue);
     InfoAccessType emptyStringLiteral(void                  **ppValue);
     uint32_t getFieldThreadLocalStoreID (CORINFO_FIELD_HANDLE    field, void                  **ppIndirection);

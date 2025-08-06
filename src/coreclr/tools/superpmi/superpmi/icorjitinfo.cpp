@@ -1462,14 +1462,6 @@ CORINFO_VARARGS_HANDLE MyICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_
     return jitInstance->mc->repGetVarArgsHandle(pSig, methHnd, ppIndirection);
 }
 
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool MyICJI::canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-{
-    jitInstance->mc->cr->AddCall("canGetVarArgsHandle");
-    return jitInstance->mc->repCanGetVarArgsHandle(pSig);
-}
-
 // Allocate a string literal on the heap and return a handle to it
 InfoAccessType MyICJI::constructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken metaTok, void** ppValue)
 {

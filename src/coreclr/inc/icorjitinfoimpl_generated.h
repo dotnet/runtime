@@ -631,9 +631,6 @@ CORINFO_VARARGS_HANDLE getVarArgsHandle(
           CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection) override;
 
-bool canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig) override;
-
 InfoAccessType constructStringLiteral(
           CORINFO_MODULE_HANDLE module,
           mdToken metaTok,

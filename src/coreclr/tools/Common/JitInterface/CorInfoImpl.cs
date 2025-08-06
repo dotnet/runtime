@@ -3670,8 +3670,6 @@ namespace Internal.JitInterface
 
         private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_STRUCT_* methHnd, ref void* ppIndirection)
         { throw new NotImplementedException("getVarArgsHandle"); }
-        private bool canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-        { throw new NotImplementedException("canGetVarArgsHandle"); }
 
         private InfoAccessType emptyStringLiteral(ref void* ppValue)
         {

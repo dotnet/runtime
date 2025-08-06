@@ -717,10 +717,6 @@ public:
     void dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL value);
     CORINFO_VARARGS_HANDLE repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection);
 
-    void recCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig, bool result);
-    void dmpCanGetVarArgsHandle(const CanGetVarArgsHandleValue& key, DWORD value);
-    bool repCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig);
-
     void recGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection, DWORD result);
     void dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value);
     DWORD repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection);

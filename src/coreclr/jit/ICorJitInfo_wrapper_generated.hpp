@@ -1483,15 +1483,6 @@ CORINFO_VARARGS_HANDLE WrapICorJitInfo::getVarArgsHandle(
     return temp;
 }
 
-bool WrapICorJitInfo::canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig)
-{
-    API_ENTER(canGetVarArgsHandle);
-    bool temp = wrapHnd->canGetVarArgsHandle(pSig);
-    API_LEAVE(canGetVarArgsHandle);
-    return temp;
-}
-
 InfoAccessType WrapICorJitInfo::constructStringLiteral(
           CORINFO_MODULE_HANDLE module,
           mdToken metaTok,

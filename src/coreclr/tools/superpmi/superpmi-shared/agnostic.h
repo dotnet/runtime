@@ -711,12 +711,6 @@ struct GetVarArgsHandleValue
     DWORDLONG methHnd;
 };
 
-struct CanGetVarArgsHandleValue
-{
-    DWORDLONG scope;
-    DWORD     token;
-};
-
 struct GetCookieForPInvokeCalliSigValue
 {
     DWORD     cbSig;

@@ -6167,12 +6167,6 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
     return result;
 }
 
-bool CEEInfo::canGetVarArgsHandle(CORINFO_SIG_INFO *sig)
-{
-    LIMITED_METHOD_CONTRACT;
-    return true;
-}
-
 /***********************************************************************/
 unsigned CEEInfo::getMethodHash (CORINFO_METHOD_HANDLE ftnHnd)
 {

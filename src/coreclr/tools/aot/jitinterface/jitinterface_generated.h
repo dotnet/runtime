@@ -161,7 +161,6 @@ struct JitInterfaceCallbacks
     bool (* getObjectContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection);
-    bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig);
     InfoAccessType (* constructStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned int metaTok, void** ppValue);
     InfoAccessType (* emptyStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppValue);
     uint32_t (* getFieldThreadLocalStoreID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
@@ -1659,15 +1658,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_VARARGS_HANDLE temp = _callbacks->getVarArgsHandle(_thisHandle, &pException, pSig, methHnd, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual bool canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->canGetVarArgsHandle(_thisHandle, &pException, pSig);
     if (pException != nullptr) throw pException;
     return temp;
 }

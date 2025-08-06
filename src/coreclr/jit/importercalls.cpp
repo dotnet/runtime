@@ -766,12 +766,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
     {
         void *varCookie, *pVarCookie;
-        if (!info.compCompHnd->canGetVarArgsHandle(sig))
-        {
-            compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_VARARGS_COOKIE);
-            return TYP_UNDEF;
-        }
-
         varCookie = info.compCompHnd->getVarArgsHandle(sig, methHnd, &pVarCookie);
         assert((!varCookie) != (!pVarCookie));
         varArgsCookie = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
