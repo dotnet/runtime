@@ -191,7 +191,7 @@
     <NugetProjectModelVersion>6.2.4</NugetProjectModelVersion>
     <NugetPackagingVersion>6.2.4</NugetPackagingVersion>
     <NugetVersioningVersion>6.2.4</NugetVersioningVersion>
-    <DotnetSosVersion>7.0.412701</DotnetSosVersion>
+    <DotnetSosVersion>9.0.607501</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.5.0</MicrosoftNETCoreCoreDisToolsVersion>
