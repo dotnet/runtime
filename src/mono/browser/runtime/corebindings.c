@@ -24,6 +24,7 @@
 
 #if SIZEOF_VOID_P == 4
 typedef int32_t cb_handle;
+#error "Unexpected 32-bit pointer size. This code expects 64-bit pointers."
 #else
 typedef int64_t cb_handle;
 #endif
