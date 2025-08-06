@@ -223,7 +223,7 @@ void minipal_memory_barrier_process_wide(void)
 }
 #else // !HOST_WINDOWS
 
-#include <processthreadsapi.h>
+#include <windows.h>
 
 void minipal_memory_barrier_process_wide(void)
 {
