@@ -16,6 +16,7 @@ set(CMAKE_TRY_COMPILE_CONFIGURATION Release)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 include(CheckLinkerFlag)
+include(CheckIPOSupported)
 
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
@@ -155,6 +156,17 @@ elseif (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-implicit-int-float-conversion)
   endif()
 endif(MSVC)
+
+check_ipo_supported(RESULT result OUTPUT output)
+if(result AND NOT CLR_CMAKE_TARGET_APPLE)
+  # Apple does not properly support IPO and need more involved
+  # way on how to support this. For now, disable it for Apple.
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
+else()
+  message(WARNING "IPO is not supported")
+endif()
 
 if (CLR_CMAKE_ENABLE_SANITIZERS)
   set (CLR_CMAKE_BUILD_SANITIZERS "")
@@ -900,10 +912,6 @@ if (MSVC)
   if (CLR_CMAKE_HOST_ARCH_I386)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
-
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
 
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     # The generator expression in the following command means that the /homeparams option is added only for debug builds for C and C++ source files
