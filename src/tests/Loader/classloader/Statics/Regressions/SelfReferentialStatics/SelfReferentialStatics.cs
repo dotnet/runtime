@@ -45,6 +45,7 @@ public class SelfReferentialStatics
     }
 
     [Fact]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/118472")]
     public static void TestEntryPoint()
     {
         var example = IExample.DefaultExample;

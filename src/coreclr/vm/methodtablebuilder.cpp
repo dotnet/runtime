@@ -3957,7 +3957,7 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
             ThrowHR(COR_E_TYPELOAD);
         }
 
-        return pMT->GetApproxFieldDescListRaw()[0].GetFieldType();
+        return pMTEnum->GetApproxFieldDescListRaw()[0].GetFieldType();
     }
     else
     {
