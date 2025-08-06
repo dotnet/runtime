@@ -7001,7 +7001,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
                                            pgoInfo.PgoData, ilOffset);
     }
 
-    if ((numberOfClasses < 1) && (numberOfMethods < 1))
+    if ((numberOfClasses < 1) && (numberOfMethods < 1) && hasEnumeratorLikelyTypeMap())
     {
         // See if we can infer a GDV here for enumerator var uses
         //
