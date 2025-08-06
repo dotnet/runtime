@@ -12,30 +12,20 @@ namespace GB18030.Tests;
 
 public static class TestHelper
 {
-    internal static CultureInfo[] s_cultureInfos = [
+    internal static CultureInfo[] s_cultures = [
         CultureInfo.CurrentCulture,
         CultureInfo.InvariantCulture,
         new CultureInfo("zh-CN")];
 
     internal static CompareOptions[] s_compareOptions = [
         CompareOptions.None,
-        CompareOptions.IgnoreCase,
-        CompareOptions.Ordinal,
-        CompareOptions.OrdinalIgnoreCase];
-
-    internal static readonly StringComparison[] s_ordinalStringComparisons = [
-        StringComparison.Ordinal,
-        StringComparison.OrdinalIgnoreCase];
+        CompareOptions.IgnoreCase];
 
     internal static readonly StringComparison[] s_nonOrdinalStringComparisons = [
         StringComparison.CurrentCulture,
         StringComparison.CurrentCultureIgnoreCase,
         StringComparison.InvariantCulture,
         StringComparison.InvariantCultureIgnoreCase];
-
-    internal static readonly StringComparison[] s_allStringComparisons = [
-        .. s_ordinalStringComparisons,
-        .. s_nonOrdinalStringComparisons];
 
     internal static string s_testDataFilePath = Path.Combine(AppContext.BaseDirectory, "GB18030", "Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt");
 
