@@ -270,6 +270,60 @@ namespace ILCompiler.DependencyAnalysis
     }
 
     /// <summary>
+    /// Generic lookup result that points to an MethodTable.
+    /// </summary>
+    public sealed class MetadataTypeHandleGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => -4892308;
+
+        public MetadataTypeHandleGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedType);
+
+            return factory.MetadataTypeSymbol(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("MetadataTypeHandle_"u8);
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public TypeDesc Type => _type;
+        public override string ToString() => $"MetadataTypeHandle: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TypeHandleDictionarySlot(_type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((MetadataTypeHandleGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((MetadataTypeHandleGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
     /// Generic lookup result that points to an MethodTable where if the type is Nullable&lt;X&gt; the MethodTable is X
     /// </summary>
     public sealed class UnwrapNullableTypeHandleGenericLookupResult : GenericLookupResult

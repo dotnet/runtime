@@ -385,7 +385,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("true", typeof(bool), true)]
         [InlineData("false", typeof(bool), false)]
         [InlineData("\"my string\"", typeof(string), "my string")]
-        public static void Primitives(string jsonString, Type type, object expected)
+        public static void Primitives(string jsonString, Type type, object? expected)
         {
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -406,7 +406,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("true", typeof(bool), true)]
         [InlineData("false", typeof(bool), false)]
         [InlineData("\"my string\"", typeof(string), "my string")]
-        public static void PrimitivesMultiSegment(string jsonString, Type type, object expected)
+        public static void PrimitivesMultiSegment(string jsonString, Type type, object? expected)
         {
             byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
             ReadOnlySequence<byte> sequence = JsonTestHelper.CreateSegments(utf8);

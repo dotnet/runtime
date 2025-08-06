@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [InlineData("")]
         [InlineData("*")]
         [InlineData("foo")]
-        public void BuilderEnableMetricsAddsRule(string meterName)
+        public void BuilderEnableMetricsAddsRule(string? meterName)
         {
             var services = new ServiceCollection();
             services.AddOptions();
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [InlineData("")]
         [InlineData("*")]
         [InlineData("foo")]
-        public void OptionsEnableMetricsAddsRule(string meterName)
+        public void OptionsEnableMetricsAddsRule(string? meterName)
         {
             var services = new ServiceCollection();
             services.AddOptions();
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [InlineData("")]
         [InlineData("*")]
         [InlineData("foo")]
-        public void BuilderDisableMetricsAddsRule(string meterName)
+        public void BuilderDisableMetricsAddsRule(string? meterName)
         {
             var services = new ServiceCollection();
             services.AddOptions();
@@ -144,7 +144,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         [InlineData("")]
         [InlineData("*")]
         [InlineData("foo")]
-        public void OptionsDisableMetricsAddsRule(string meterName)
+        public void OptionsDisableMetricsAddsRule(string? meterName)
         {
             var services = new ServiceCollection();
             services.AddOptions();

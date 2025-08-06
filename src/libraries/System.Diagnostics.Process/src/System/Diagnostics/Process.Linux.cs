@@ -105,7 +105,7 @@ namespace System.Diagnostics
         /// <summary>Gets execution path</summary>
         private static string? GetPathToOpenFile()
         {
-            string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
+            ReadOnlySpan<string> allowedProgramsToRun = ["xdg-open", "gnome-open", "kfmclient"];
             foreach (var program in allowedProgramsToRun)
             {
                 string? pathToProgram = FindProgramInPath(program);

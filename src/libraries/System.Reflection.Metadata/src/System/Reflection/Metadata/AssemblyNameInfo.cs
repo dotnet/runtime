@@ -60,7 +60,7 @@ namespace System.Reflection.Metadata
 #else
             PublicKeyOrToken = parts._publicKeyOrToken is null ? default : parts._publicKeyOrToken.Length == 0
                 ? ImmutableArray<byte>.Empty
-    #if NET8_0_OR_GREATER
+    #if NET
                 : Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(parts._publicKeyOrToken);
     #else
                 : ImmutableArray.Create(parts._publicKeyOrToken);
@@ -134,7 +134,7 @@ namespace System.Reflection.Metadata
                 byte[]? publicKeyOrToken =
 #if SYSTEM_PRIVATE_CORELIB
                     PublicKeyOrToken;
-#elif NET8_0_OR_GREATER
+#elif NET
                     !PublicKeyOrToken.IsDefault ? Runtime.InteropServices.ImmutableCollectionsMarshal.AsArray(PublicKeyOrToken) : null;
 #else
                     !PublicKeyOrToken.IsDefault ? PublicKeyOrToken.ToArray() : null;

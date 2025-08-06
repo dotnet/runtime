@@ -1083,7 +1083,7 @@ Checking if a method has a native code slot and getting its address
     {
         MethodClassification.IL => /*size of MethodDesc*/,
         MethodClassification.FCall => /* size of FCallMethodDesc */
-        MethodClassification.PInvoke => /* size of NDirectMethodDesc */
+        MethodClassification.PInvoke => /* size of PInvokeMethodDesc */
         MethodClassification.EEImpl => /* size of EEImplMethodDesc */
         MethodClassification.Array => /* size of ArrayMethodDesc */
         MethodClassification.Instantiated => /* size of InstantiatedMethodDesc */

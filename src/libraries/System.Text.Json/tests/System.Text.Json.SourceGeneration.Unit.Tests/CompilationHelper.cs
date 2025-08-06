@@ -829,7 +829,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
         internal static void AssertMaxSeverity(this IEnumerable<Diagnostic> diagnostics, DiagnosticSeverity maxSeverity)
         {
-            Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity > maxSeverity));
+            Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Severity > maxSeverity);
         }
     }
 
