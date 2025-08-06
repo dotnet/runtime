@@ -335,7 +335,6 @@ The contract depends on the following globals
 | Global name | Meaning |
 | --- | --- |
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
-| `DynamicStaticsInfoSize` | The size of a DynamicStaticsInfo object
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 
 The contract additionally depends on these data descriptors
@@ -354,6 +353,7 @@ The contract additionally depends on these data descriptors
 | `MethodTable` | `AuxiliaryData` | Pointer to the AuxiliaryData of a method table |
 | `DynamicStaticsInfo` | `NonGCStatics` | Pointer to non-GC statics |
 | `DynamicStaticsInfo` | `GCStatics` | Pointer to the GC statics |
+| `DynamicStaticsInfo` | `Size` | Size of the data |
 | `EEClass` | `InternalCorElementType` | An InternalCorElementType uses the enum values of a CorElementType to indicate some of the information about the type of the type which uses the EEClass In particular, all reference types are CorElementType.Class, Enums are the element type of their underlying type and ValueTypes which can exactly be represented as an element type are represented as such, all other values types are represented as CorElementType.ValueType. |
 | `EEClass` | `MethodTable` | Pointer to the canonical MethodTable of this type |
 | `EEClass` | `NumMethods` | Count of methods attached to the EEClass |
@@ -475,7 +475,7 @@ The contract additionally depends on these data descriptors
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.IsDynamicStatics)
             return TargetPointer.Null;
-        TargetPointer dynamicStaticsInfoSize = _target.ReadGlobalPointer("DynamicStaticsInfoSize");
+        TargetPointer dynamicStaticsInfoSize = target.GetTypeInfo(DataType.DynamicStaticsInfo).Size!.Value;
         TargetPointer mask = target.ReadGlobalPointer("StaticsPointerMask");
 
         TargetPointer dynamicStaticsInfo = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
@@ -490,7 +490,7 @@ The contract additionally depends on these data descriptors
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.IsDynamicStatics)
             return TargetPointer.Null;
-        TargetPointer dynamicStaticsInfoSize = _target.ReadGlobalPointer("DynamicStaticsInfoSize");
+        TargetPointer dynamicStaticsInfoSize = target.GetTypeInfo(DataType.DynamicStaticsInfo).Size!.Value;
         TargetPointer mask = target.ReadGlobalPointer("StaticsPointerMask");
 
         TargetPointer dynamicStaticsInfo = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
