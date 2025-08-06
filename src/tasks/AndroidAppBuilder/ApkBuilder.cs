@@ -475,13 +475,8 @@ public partial class ApkBuilder
 
             if (classFiles.Length == 0)
                 throw new InvalidOperationException("Didn't find any .class files");
-            List<string> inputFiles = [.. classFiles];
-            if (IsNativeAOT)
-            {
-                inputFiles.Add(Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(AppDir)!)!, "libSystem.Security.Cryptography.Native.Android.jar"));
-            }
 
-            Utils.RunProcess(logger, androidSdkHelper.D8Path, $"--no-desugaring {string.Join(" ", inputFiles)}", workingDir: OutputDir);
+            Utils.RunProcess(logger, androidSdkHelper.D8Path, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
         }
         else
         {
