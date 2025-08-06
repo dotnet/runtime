@@ -152,6 +152,11 @@ bool GCToOSInterface::Initialize()
 
     g_totalCpuCount = cpuCount;
 
+    if (!minipal_initialize_memory_barrier_process_wide())
+    {
+        return false;
+    }
+
     InitializeCGroup();
 
 #if HAVE_SCHED_GETAFFINITY

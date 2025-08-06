@@ -82,8 +82,15 @@ static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 static size_t s_pageSize = 0;
 #endif // !TARGET_APPLE
 
+static bool s_initializedMemoryBarrierSuccessfullyInitialized = false;
+
 bool minipal_initialize_memory_barrier_process_wide(void)
 {
+    if (s_initializedMemoryBarrierSuccessfullyInitialized)
+    {
+        return true;
+    }
+
 #ifdef HOST_WASM
     // browser/wasm is currently single threaded
 #elif defined(HOST_APPLE)
@@ -95,7 +102,7 @@ bool minipal_initialize_memory_barrier_process_wide(void)
         s_flushUsingMemBarrier = true;
     }
     else
-#else
+#endif // HAVE_SYS_MEMBARRIER_H
     {
         // Fallback implementation
         assert(g_helperPage == 0);
@@ -130,10 +137,9 @@ bool minipal_initialize_memory_barrier_process_wide(void)
             return false;
         }
     }
-#endif // HAVE_SYS_MEMBARRIER_H
 #endif // !HOST_WASM && !HOST_APPLE
 
-    return true;
+    return s_initializedMemoryBarrierSuccessfullyInitialized = true;
 }
 
 // Flush write buffers of processors that are executing threads of the current process
