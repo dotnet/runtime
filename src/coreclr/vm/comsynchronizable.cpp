@@ -917,6 +917,7 @@ extern "C" OBJECTHANDLE QCALLTYPE SyncTable_GetLockHandle(int idx)
 
     BEGIN_QCALL;
 
+    _ASSERTE(0 <= idx && idx < SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
     handle = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock();
 
     END_QCALL;
