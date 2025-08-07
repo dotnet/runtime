@@ -566,6 +566,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader.Flags}");
 
+            Console.Error.WriteLine("Sections:");
+            foreach (var section in CompositeReader.PEHeaders.SectionHeaders)
+                Console.Error.WriteLine($"  {section.Name} {section.VirtualAddress} - {(section.VirtualAddress + section.VirtualSize)}");
+
             var exportTable = CompositeReader.GetExportTable();
             exportTable.DumpToConsoleError();
         }
