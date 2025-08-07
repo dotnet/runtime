@@ -60,7 +60,8 @@ struct GlobalStringSpec
 #define MAKE_GLOBALVALUELEN_NAME(globalname) CONCAT(cdac_string_pool_globalvalue__, globalname)
 
 // used to stringify the result of a macros expansion
-#define STRINGIFY(x) #x
+// __VA_ARGS__ is the argument list comma separated
+#define STRINGIFY(...) #__VA_ARGS__
 
 // define a struct where the size of each field is the length of some string.  we will use offsetof to get
 // the offset of each struct element, which will be equal to the offset of the beginning of that string in the

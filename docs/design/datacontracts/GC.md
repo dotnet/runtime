@@ -10,7 +10,7 @@ This contract is for getting information about the garbage collector configurati
     // Current return values can include:
     // "workstation" or "server"
     // "segments" or "regions"
-    string[] GetGCType();
+    string[] GetGCIdentifiers();
     // Return the number of GC heaps
     uint GetGCHeapCount();
     // Return true if the GC structure is valid, otherwise return false
@@ -29,8 +29,7 @@ Data descriptors used:
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| `GCType` | string | Type of GC ("workstation" or "server") |
-| `HeapType` | string | Type of the GC heap ("regions" or "segments") |
+| `GCIdentifiers` | string | CSV string containing identifiers of the GC. Current values are "server", "workstation", "regions", and "segments" |
 | `NumHeaps` | TargetPointer | Pointer to the number of heaps for server GC (int) |
 | `StructureInvalidCount` | TargetPointer | Pointer to the count of invalid GC structures (int) |
 | `MaxGeneration` | TargetPointer | Pointer to the maximum generation number (uint) |
@@ -47,22 +46,20 @@ Constants used:
 | `WRK_HEAP_COUNT` | uint | The number of heaps in the `workstation` GC type | `1` |
 
 ```csharp
-GCHeapType GetGCType()
+GCHeapType GetGCIdentifiers()
 {
-    string gcType = target.ReadGlobalString("GCType");
-    string heapType = target.ReadGlobalString("HeapType");
-
-    return [gcType, heapType];
+    string gcIdentifiers = _target.ReadGlobalString("GCIdentifiers");
+    return gcIdentifiers.Split(',');
 }
 
 uint GetGCHeapCount()
 {
-    string gcType = target.ReadGlobalString("GCType");
-    if (gcType == "workstation")
+    string[] gcIdentifiers = GetGCIdentifiers()
+    if (gcType.Contains("workstation"))
     {
         return WRK_HEAP_COUNT;
     }
-    if (gcType == "server")
+    if (gcType.Contains("server"))
     {
         TargetPointer pNumHeaps = target.ReadGlobalPointer("NumHeaps");
         return (uint)target.Read<int>(pNumHeaps);

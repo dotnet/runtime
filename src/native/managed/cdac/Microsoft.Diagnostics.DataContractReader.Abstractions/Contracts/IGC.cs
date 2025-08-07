@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public class GCTypes
+public class GCIdentifiers
 {
     public const string Server = "server";
     public const string Workstation = "workstation";
@@ -19,7 +19,7 @@ public interface IGC : IContract
 {
     static string IContract.Name { get; } = nameof(GC);
 
-    string[] GetGCType() => throw new NotImplementedException();
+    string[] GetGCIdentifiers() => throw new NotImplementedException();
     uint GetGCHeapCount() => throw new NotImplementedException();
     bool GetGCStructuresValid() => throw new NotImplementedException();
     uint GetMaxGeneration() => throw new NotImplementedException();

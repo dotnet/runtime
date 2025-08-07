@@ -8,12 +8,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct GC_1 : IGC
 {
-    private const string GC_TYPE_SVR = "server";
-    private const string GC_TYPE_WRK = "workstation";
-
-    private const string HEAP_TYPE_RGN = "regions";
-    private const string HEAP_TYPE_SEG = "segments";
-
     private const uint WRK_HEAP_COUNT = 1;
 
     private enum GCType
@@ -23,13 +17,6 @@ internal readonly struct GC_1 : IGC
         Server,
     }
 
-    private enum HeapType
-    {
-        Unknown,
-        Segments,
-        Regions,
-    }
-
     private readonly Target _target;
 
     internal GC_1(Target target)
@@ -37,7 +24,11 @@ internal readonly struct GC_1 : IGC
         _target = target;
     }
 
-    string[] IGC.GetGCType() => [_target.ReadGlobalString("GCType"), _target.ReadGlobalString("HeapType")];
+    string[] IGC.GetGCIdentifiers()
+    {
+        string gcIdentifiers = _target.ReadGlobalString(Constants.Globals.GCIdentifiers);
+        return gcIdentifiers.Split(',');
+    }
 
     uint IGC.GetGCHeapCount()
     {
@@ -84,20 +75,18 @@ internal readonly struct GC_1 : IGC
 
     private GCType GetGCType()
     {
-        return _target.ReadGlobalString(Constants.Globals.GCType) switch
+        string[] identifiers = ((IGC)this).GetGCIdentifiers();
+        if (identifiers.Contains(GCIdentifiers.Workstation))
         {
-            GC_TYPE_WRK => GCType.Workstation,
-            GC_TYPE_SVR => GCType.Server,
-            _ => GCType.Unknown,
-        };
+            return GCType.Workstation;
+        }
+        else if (identifiers.Contains(GCIdentifiers.Server))
+        {
+            return GCType.Server;
+        }
+        else
+        {
+            return GCType.Unknown; // Unknown or unsupported GC type
+        }
     }
-
-    private HeapType GetHeapType()
-    {
-        return _target.ReadGlobalString(Constants.Globals.HeapType) switch
-        {
-            HEAP_TYPE_RGN => HeapType.Regions,
-            HEAP_TYPE_SEG => HeapType.Segments,
-            _ => HeapType.Unknown,
-        };
-    }}
+}

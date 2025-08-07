@@ -636,8 +636,8 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             IGC gc = _target.Contracts.GC;
-            string[] heapType = gc.GetGCType();
-            if (!heapType.Contains(GCTypes.Workstation) && !heapType.Contains(GCTypes.Server))
+            string[] heapType = gc.GetGCIdentifiers();
+            if (!heapType.Contains(GCIdentifiers.Workstation) && !heapType.Contains(GCIdentifiers.Server))
             {
                 // If the GC type is not recognized, we cannot provide heap data
                 hr = HResults.E_FAIL;
@@ -645,7 +645,7 @@ internal sealed unsafe partial class SOSDacImpl
             else
             {
                 data->g_max_generation = gc.GetMaxGeneration();
-                data->bServerMode = heapType.Contains(GCTypes.Server) ? 1 : 0;
+                data->bServerMode = heapType.Contains(GCIdentifiers.Server) ? 1 : 0;
                 data->bGcStructuresValid = gc.GetGCStructuresValid() ? 1 : 0;
                 data->HeapCount = gc.GetGCHeapCount();
             }
@@ -680,8 +680,8 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             IGC gc = _target.Contracts.GC;
-            string[] heapType = gc.GetGCType();
-            if (!heapType.Contains(GCTypes.Server))
+            string[] heapType = gc.GetGCIdentifiers();
+            if (!heapType.Contains(GCIdentifiers.Server))
             {
                 // If GC type is not server, this API is not supported
                 hr = HResults.E_FAIL;

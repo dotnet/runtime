@@ -14,18 +14,23 @@ CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 
+
 #ifdef SERVER_GC
-CDAC_GLOBAL_STRING(GCType, server)
+#define GC_TYPE server
 #else // SERVER_GC
-CDAC_GLOBAL_STRING(GCType, workstation)
+#define GC_TYPE workstation
 #endif // SERVER_GC
 
 #ifdef USE_REGIONS
-CDAC_GLOBAL_STRING(HeapType, regions)
+#define HEAP_TYPE regions
 #else // USE_REGIONS
-CDAC_GLOBAL_STRING(HeapType, segments)
+#define HEAP_TYPE segments
 #endif // USE_REGIONS
 
+// CDAC_GLOBAL_STRING takes a single value argument.
+// To avoid issues with commas in the string we wrap the input string in a macro.
+#define GC_IDENTIFIER GC_TYPE ## , ## HEAP_TYPE
+CDAC_GLOBAL_STRING(GCIdentifiers, GC_IDENTIFIER)
 
 CDAC_GLOBAL_POINTER(MaxGeneration, &::g_max_generation)
 CDAC_GLOBAL_POINTER(StructureInvalidCount, (&GCScan::m_GcStructuresInvalidCnt))
