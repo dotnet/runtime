@@ -43,6 +43,11 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
+        internal static bool DefaultCertificateRevocationCheck { get; } =
+            AppContextSwitchHelper.GetBooleanConfig(
+                "System.Net.Security.NoRevocationCheckByDefault",
+                "DOTNET_SYSTEM_NET_SECURITY_NOREVOCATIONCHECKBYDEFAULT") ? false : true;
+
         internal static bool CertificateCachingAppContextSwitchEnabled { get; } = AppContext.TryGetSwitch("System.Net.Http.UseWinHttpCertificateCaching", out bool enabled) && enabled;
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
@@ -68,7 +73,7 @@ namespace System.Net.Http
             X509Chain,
             SslPolicyErrors,
             bool>? _serverCertificateValidationCallback;
-        private bool _checkCertificateRevocationList;
+        private bool _checkCertificateRevocationList = DefaultCertificateRevocationCheck;
         private ClientCertificateOption _clientCertificateOption = ClientCertificateOption.Manual;
         private X509Certificate2Collection? _clientCertificates; // Only create collection when required.
         private ICredentials? _serverCredentials;
