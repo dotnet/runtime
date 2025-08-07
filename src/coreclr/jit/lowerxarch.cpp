@@ -9928,7 +9928,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 bool isNE = (userId == NI_Vector128_op_Inequality) ||
                                             (userId == NI_Vector256_op_Inequality) ||
                                             (userId == NI_Vector512_op_Inequality);
-                                if ((isEQ != isNE) && (userHw->Op(1)->IsVectorZero() || userHw->Op(2)->IsVectorZero()))
+                                if ((isEQ || isNE) && (userHw->Op(1)->IsVectorZero() || userHw->Op(2)->IsVectorZero()))
                                 {
                                     isEmbeddedBroadcastCompatible = false;
                                 }
