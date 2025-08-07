@@ -2001,6 +2001,8 @@ static InterpThreadContext* GetInterpThreadContext()
     return threadContext;
 }
 
+EXTERN_C void STDCALL ReversePInvokeBadTransition();
+
 extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
 {
     // Argument registers are in the TransitionBlock
