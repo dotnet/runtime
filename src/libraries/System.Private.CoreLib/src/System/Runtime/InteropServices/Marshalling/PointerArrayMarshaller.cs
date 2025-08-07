@@ -59,7 +59,12 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The <see cref="Span{TUnmanagedElement}"/> of unmanaged elements.</returns>
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
-            => new Span<TUnmanagedElement>(unmanaged, numElements);
+        {
+            if (unmanaged is null)
+                return [];
+
+            return new Span<TUnmanagedElement>(unmanaged, numElements);
+        }
 
         /// <summary>
         /// Allocates memory for the managed representation of the array.
@@ -90,7 +95,12 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The <see cref="ReadOnlySpan{TUnmanagedElement}"/> containing the unmanaged elements to marshal.</returns>
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
-            => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+        {
+            if (unmanagedValue is null)
+                return [];
+
+            return new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+        }
 
         /// <summary>
         /// Frees memory for the unmanaged array.

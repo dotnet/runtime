@@ -4164,7 +4164,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             else
             {
                 assert(pFieldInfo->fieldLookup.accessType == IAT_PVALUE);
-                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
+                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR);
             }
             GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
             isHoistable     = true;
@@ -5078,7 +5078,6 @@ void Compiler::impImportLeave(BasicBlock* block)
                     }
 
                     step2->inheritWeight(block);
-                    step2->CopyFlags(block, BBF_RUN_RARELY);
                     step2->SetFlags(BBF_IMPORTED);
 
 #ifdef DEBUG
@@ -5361,10 +5360,9 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         //  b) weight zero
         //  c) prevent from being imported
         //  d) as internal
-        //  e) as rarely run
-        dupBlock->bbRefs   = 0;
-        dupBlock->bbWeight = BB_ZERO_WEIGHT;
-        dupBlock->SetFlags(BBF_IMPORTED | BBF_INTERNAL | BBF_RUN_RARELY);
+        dupBlock->bbRefs = 0;
+        dupBlock->bbSetRunRarely();
+        dupBlock->SetFlags(BBF_IMPORTED | BBF_INTERNAL);
 
         // Insert the block right after the block which is getting reset so that BBJ_CALLFINALLY and BBJ_ALWAYS
         // will be next to each other.
@@ -13395,7 +13393,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 //   The method may make observations that lead to marking this candidate as
 //   a failed inline. If this happens the initialization is abandoned immediately
 //   to try and reduce the jit time cost for a failed inline.
-
+//
 void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 {
     assert(!compIsForInlining());

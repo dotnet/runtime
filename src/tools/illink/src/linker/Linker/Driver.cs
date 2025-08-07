@@ -459,6 +459,12 @@ namespace Mono.Linker
 
                             continue;
 
+                        case "--disable-generated-code-heuristics":
+                            if (!GetBoolParam(token, l => context.DisableGeneratedCodeHeuristics = l))
+                                return -1;
+
+                            continue;
+
                         case "--ignore-descriptors":
                             if (!GetBoolParam(token, l => context.IgnoreDescriptors = l))
                                 return -1;

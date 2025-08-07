@@ -22,6 +22,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
+    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'android'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
   </PropertyGroup>
@@ -141,13 +142,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" Condition="!$(_targetOS.StartsWith('tvos')) and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
-      <!-- Not compliant for Apple platforms -->
-      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true' and '$(_IsApplePlatform)' != 'true'" />
+      <!-- No OpenSSL on Apple platforms or Android -->
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true' and '$(_IsApplePlatform)' != 'true' and '$(_targetOS)' != 'android'" />
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Android" Condition="'$(_targetOS)' == 'android'" />
     </ItemGroup>
 
     <ItemGroup>
-      <DirectPInvoke Include="@(NetCoreAppNativeLibrary->'lib%(Identity)')" />
-      <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
+      <DirectPInvoke Include="@(NetCoreAppNativeLibrary)" />
+      <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary)">
         <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
@@ -178,7 +180,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static' and '$(InvariantGlobalization)' != 'true'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
-      <DirectPInvoke Include="libSystem.Globalization.Native" />
+      <DirectPInvoke Include="System.Globalization.Native" />
       <StaticICULibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
       <StaticICULibs Include="-licuio -licutu -licui18n -licuuc -licudata -lstdc++" />
       <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
@@ -191,7 +193,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Security.Cryptography.Native/build/libSystem.Security.Cryptography.Native.OpenSsl.a" />
-      <DirectPInvoke Include="libSystem.Security.Cryptography.Native.OpenSsl" />
+      <DirectPInvoke Include="System.Security.Cryptography.Native.OpenSsl" />
       <StaticSslLibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
       <StaticSslLibs Include="-lssl -lcrypto" />
       <StaticSslLibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
