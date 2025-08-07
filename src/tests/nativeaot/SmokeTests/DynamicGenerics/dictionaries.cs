@@ -349,12 +349,12 @@ namespace Dictionaries
         }
         static void NullableTesting_Inner(Type arg1, Type arg2)
         {
-            var structOf = TypeOf.D_GenericStruct.MakeGenericType(arg1);
+            var structOf = typeof(GenericStruct<>).MakeGenericType(arg1);
 
-            var structInst1 = Activator.CreateInstance(TypeOf.D_GenericStruct.MakeGenericType(arg1));
-            var structInst2 = Activator.CreateInstance(TypeOf.D_GenericStruct.MakeGenericType(arg2));
+            var structInst1 = Activator.CreateInstance(typeof(GenericStruct<>).MakeGenericType(arg1));
+            var structInst2 = Activator.CreateInstance(typeof(GenericStruct<>).MakeGenericType(arg2));
 
-            var nullableTestOf = TypeOf.D_NullableTest.MakeGenericType(structOf);
+            var nullableTestOf = typeof(NullableTest<>).MakeGenericType(structOf);
             Base test = (Base)Activator.CreateInstance(nullableTestOf);
 
             // Type cast T -> T?
