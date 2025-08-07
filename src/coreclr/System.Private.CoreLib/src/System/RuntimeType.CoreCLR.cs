@@ -39,6 +39,7 @@ namespace System
         Name,
         ToString,
         FullName,
+        AssemblyQualifiedName,
     }
 
     internal sealed partial class RuntimeType : TypeInfo, ICloneable
@@ -1408,7 +1409,8 @@ namespace System
             private RuntimeType? m_enclosingType;
             private TypeCode m_typeCode;
             private string? m_name;
-            private string? m_fullname;
+            private string? m_fullName;
+            private string? m_assemblyQualifiedName;
             private string? m_toString;
             private string? m_namespace;
             private readonly bool m_isGlobal;
@@ -1504,7 +1506,7 @@ namespace System
 
                     case TypeNameKind.FullName:
                         // We exclude the types that contain generic parameters because their names cannot be roundtripped.
-                        // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be roundtriped.
+                        // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be roundtripped.
                         // Theoretically generic types instantiated with generic type definitions can be roundtripped, e.g. List`1<Dictionary`2>.
                         // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
                         // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
@@ -1517,11 +1519,19 @@ namespace System
                             return null;
 
                         // No assembly.
-                        return ConstructName(ref m_fullname, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
+                        return ConstructName(ref m_fullName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
 
                     case TypeNameKind.ToString:
                         // No full instantiation and assembly.
                         return ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace);
+
+                    case TypeNameKind.AssemblyQualifiedName:
+                        // See above for when the FullName may be null.
+                        string? typeFullName = GetName(TypeNameKind.FullName);
+                        if (typeFullName is null)
+                            return null;
+                        m_assemblyQualifiedName ??= Assembly.CreateQualifiedName(m_runtimeType.Assembly.FullName, typeFullName);
+                        return m_assemblyQualifiedName;
 
                     default:
                         throw new InvalidOperationException();
@@ -3336,20 +3346,7 @@ namespace System
 
         public override string? FullName => GetCachedName(TypeNameKind.FullName);
 
-        public override string? AssemblyQualifiedName
-        {
-            get
-            {
-                string? fullname = FullName;
-
-                // FullName is null if this type contains generic parameters but is not a generic type definition
-                // or if it is a function pointer.
-                if (fullname == null)
-                    return null;
-
-                return Assembly.CreateQualifiedName(Assembly.FullName, fullname);
-            }
-        }
+        public override string? AssemblyQualifiedName => GetCachedName(TypeNameKind.AssemblyQualifiedName);
 
         public override string? Namespace
         {
