@@ -2010,6 +2010,17 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 
     InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
 
+    if (pInterpreterCode->Method->unmanagedCallersOnly)
+    {
+        Thread* thread = GetThreadNULLOk();
+        if (thread == NULL)
+            CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
+
+        // Verify the current thread isn't in COOP mode.
+        if (thread->PreemptiveGCDisabled())
+            ReversePInvokeBadTransition();
+    }
+
     GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
