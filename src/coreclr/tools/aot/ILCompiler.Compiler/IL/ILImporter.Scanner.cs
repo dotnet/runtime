@@ -959,6 +959,23 @@ namespace Internal.IL
                     }
                 }
 
+                // We might also be able to optimize this if this is typeof(Foo).IsValueType
+                if (helperId != ReadyToRunHelperId.NecessaryTypeHandle)
+                {
+                    reader = new ILReader(_ilBytes, _currentOffset);
+                    if (reader.HasNext
+                        && reader.ReadILOpcode() == ILOpcode.call
+                        && IsTypeGetTypeFromHandle((MethodDesc)_methodIL.GetObject(reader.ReadILToken())))
+                    {
+                        if (reader.HasNext
+                            && reader.ReadILOpcode() is ILOpcode.callvirt or ILOpcode.call
+                            && _methodIL.GetObject(reader.ReadILToken()) is MethodDesc { Name: "get_IsValueType" or "get_IsEnum"})
+                        {
+                            helperId = ReadyToRunHelperId.NecessaryTypeHandle;
+                        }
+                    }
+                }
+
                 _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
@@ -1143,10 +1160,8 @@ namespace Internal.IL
         {
             var type = (TypeDesc)_methodIL.GetObject(token);
 
-            // There are some sequences of box with ByRefLike types that are allowed
-            // per the extension to the ECMA-335 specification.
-            // Everything else is invalid.
-            if (!type.IsRuntimeDeterminedType && type.IsByRefLike)
+            // Some box operations will trivially be eliminated during import
+            if (!type.IsRuntimeDeterminedType)
             {
                 ILReader reader = new ILReader(_ilBytes, _currentOffset);
                 ILOpcode nextOpcode = reader.ReadILOpcode();
@@ -1180,7 +1195,9 @@ namespace Internal.IL
                     }
                 }
 
-                ThrowHelper.ThrowInvalidProgramException();
+                // If this is a byref-like type, only the above operations are permitted.
+                if (type.IsByRefLike)
+                    ThrowHelper.ThrowInvalidProgramException();
             }
 
             AddBoxingDependencies(type, "Box");
@@ -1353,6 +1370,7 @@ namespace Internal.IL
         {
             if (checkOverflow)
             {
+                //
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2IntOvf), "_dbl2intovf");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2UIntOvf), "_dbl2uintovf");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Dbl2LngOvf), "_dbl2lngovf");

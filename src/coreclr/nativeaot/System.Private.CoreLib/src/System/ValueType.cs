@@ -127,11 +127,11 @@ namespace System
 
                 if (fieldType->ElementType == EETypeElementType.Single)
                 {
-                    hashCode.Add(Unsafe.As<byte, float>(ref fieldData));
+                    hashCode.Add(Unsafe.As<byte, float>(ref fieldData).GetHashCode());
                 }
                 else if (fieldType->ElementType == EETypeElementType.Double)
                 {
-                    hashCode.Add(Unsafe.As<byte, double>(ref fieldData));
+                    hashCode.Add(Unsafe.As<byte, double>(ref fieldData).GetHashCode());
                 }
                 else if (fieldType->IsPrimitive)
                 {
