@@ -278,6 +278,7 @@ do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval 
 	log_op(op);
 	// FIXME: this string/cookie comparison is rubbish - use an enum
 	char* sigTest = log_sig(sig); // currently must be called to get the cookie!
+	MH_LOG("Got signature cookie %s", sigTest);
 	if (!sigTest)
 	{
 		memset(&ret_sp->data, 0, sizeof(stackval));

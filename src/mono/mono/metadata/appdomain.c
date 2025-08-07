@@ -235,8 +235,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAtt
 
 void
 mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error)
-{
-	printf("MH_NATIVE_LOG: calling HANDLE_FUNCTION_ENTER\n");fflush(stdout);	
+{	
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoAppDomainHandle ad;
@@ -246,14 +245,12 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_gc_base_init ();
 	mono_monitor_init ();
 	mono_marshal_init ();
-	mono_gc_init_icalls ();
-	printf("MH_NATIVE_LOG: calling mono_install_assembly_preload_hook_v2\n");fflush(stdout);	
+	mono_gc_init_icalls ();	
 	// We have to append here because otherwise this will run before the netcore hook (which is installed first), see https://github.com/dotnet/runtime/issues/34273
 	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), TRUE);
 	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE);
 	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), TRUE, FALSE);
-	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL, FALSE);
-	printf("MH_NATIVE_LOG: calling mono_thread_init\n");fflush(stdout);	
+	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL, FALSE);	
 	mono_thread_init (start_cb, attach_cb);
 
 	if (!mono_runtime_get_no_exec ()) {
@@ -278,9 +275,9 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_component_event_pipe ()->add_rundown_execution_checkpoint ("RuntimeResumed");
 
 	mono_component_event_pipe ()->write_event_ee_startup_start ();
-	printf("MH_NATIVE_LOG: calling mono_type_initialization_init (%p)\n", &mono_type_initialization_init);fflush(stdout);	
+	
 	mono_type_initialization_init ();
-	printf("MH_NATIVE_LOG: exited mono_type_initialization_init\n");fflush(stdout);	
+
 	if (!mono_runtime_get_no_exec ())
 		create_domain_objects (domain);
 	
@@ -292,11 +289,9 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	if (!mono_runtime_get_no_exec ())
 		mono_runtime_install_appctx_properties ();
 
-	mono_locks_tracer_init ();
-	printf("MH_NATIVE_LOG: calling mono_domain_fire_assembly_load\n");fflush(stdout);	
+	mono_locks_tracer_init ();	
 	/* mscorlib is loaded before we install the load hook */
-	mono_domain_fire_assembly_load (mono_alc_get_default (), mono_defaults.corlib->assembly, NULL, error);
-	printf("MH_NATIVE_LOG: exited mono_domain_fire_assembly_load. Error code is %s\n", is_ok(error) ? "ok" : "not ok");fflush(stdout);	
+	mono_domain_fire_assembly_load (mono_alc_get_default (), mono_defaults.corlib->assembly, NULL, error);	
 	goto_if_nok (error, exit);
 
 exit:

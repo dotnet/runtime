@@ -344,10 +344,10 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 		interp_opts = "-all";
 		mono_wasm_enable_debugging (debug_level);
 	}
-#endif
-    printf("about to init_icall_table\n");
+#endif    
 	init_icall_table ();
-
+    const bool check_symbol_lookup = false;
+    if(check_symbol_lookup)
     {
         printf("Checking mono_lookup_icall_symbol_internal\n");
         const char *p  = mono_lookup_icall_symbol_internal (mono_lookup_icall_symbol_internal);

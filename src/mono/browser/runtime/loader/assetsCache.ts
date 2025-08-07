@@ -4,6 +4,7 @@
 import type { MonoConfig } from "../types";
 import type { AssetEntryInternal } from "../types/internal";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
+import { mono_log_debug } from "./logging";
 
 const usedCacheKeys: { [key: string]: boolean } = {};
 const networkLoads: { [name: string]: LoadLogEntry } = {};
@@ -59,6 +60,7 @@ export async function purgeUnusedCacheEntriesAsync (): Promise<void> {
         const cachedRequests = await cache.keys();
         const deletionPromises = cachedRequests.map(async cachedRequest => {
             if (!(cachedRequest.url in usedCacheKeys)) {
+                mono_log_debug(`Purging unused cache entry: ${cachedRequest.url}`);
                 await cache.delete(cachedRequest);
             }
         });

@@ -3,10 +3,22 @@
 #include <stdio.h>
 
 static int MH_LOG_indent_level = 0;
-#if(0)
+#if(1)
 #define MH_LOG(msg, ...) do { } while (0)
 #define MH_LOG_INDENT() do { } while (0)
 #define MH_LOG_UNINDENT() do { } while (0)
+
+#define MH_LOG_ALWAYS(msg, ...) { \
+  printf("MH_FORCED_LOG: "); \
+  for (int mh_idx = 0; mh_idx < MH_LOG_indent_level; mh_idx++) { \
+    printf("  "); \
+  } \
+  printf("%s : %s | %d :: ", __func__, __FILE__, __LINE__); \
+  printf(msg, ##__VA_ARGS__); \
+  printf("\n"); \
+  fflush(stdout); \
+}
+
 #else
 #define MH_LOG(msg, ...) { \
   printf("MH_NATIVE_LOG: "); \

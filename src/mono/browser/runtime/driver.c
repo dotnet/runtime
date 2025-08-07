@@ -13,6 +13,7 @@
 #include <dlfcn.h>
 #include <sys/stat.h>
 
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class.h>
@@ -24,6 +25,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mh_log.h>
+
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
@@ -160,9 +162,7 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		return 1;
 	}
 	char *assembly_name = strdup (name);
-	assert (assembly_name);
-    printf("Calling mono_bundled_resources_add_assembly_resource for %s, size %u\n", name, size);        
-    fflush(stdout);
+	assert (assembly_name);    
 	mono_bundled_resources_add_assembly_resource (assembly_name, assembly_name, data, size, bundled_resources_free_func, assembly_name);
 	return mono_has_pdb_checksum ((char*)data, size);
 }
@@ -387,6 +387,10 @@ mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoSt
 		mono_gc_wbarrier_generic_store_atomic(result, NULL);
 	}
 	MONO_EXIT_GC_UNSAFE;
+    //FIXME: debug only
+    MH_LOG("Input length %d, result length: %d", length, mono_string_length(*result));
+    char* charString = mono_string_to_utf8(*result);
+    MH_LOG("Converted string with length %d to: %s", length, charString);
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -416,8 +420,10 @@ mono_wasm_set_main_args (int argc, char* argv[])
 EMSCRIPTEN_KEEPALIVE d_handle
 mono_wasm_strdup (const char *s)
 {
-    MH_LOG("duplicating %s", s);
-	return (d_handle)strdup (s);
+    MH_LOG("duplicating: %s (%p)", s, s);
+    char* result = strdup(s);
+    MH_LOG("duplicated: %s (%p)", result, result);
+	return (d_handle)result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
