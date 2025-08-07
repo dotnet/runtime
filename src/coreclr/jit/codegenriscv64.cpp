@@ -1560,40 +1560,27 @@ void CodeGen::genLclHeap(GenTree* tree)
         // case SP is on the last byte of the guard page.  Thus you must
         // touch SP-0 first not SP-0x1000.
         //
-        //
         // Note that we go through a few hoops so that SP never points to
         // illegal pages at any time during the tickling process.
-        //
-        //       sltu     RA, SP, regCnt
-        //       sub      regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        //       beq      RA, REG_R0, Skip
-        //       addi     regCnt, REG_R0, 0
-        //
-        //  Skip:
-        //       lui      regPageSize, eeGetPageSize()>>12
-        //       addi     regTmp, SP, 0
-        //  Loop:
-        //       lw       r0, 0(regTmp)           // tickle the page - read from the page
-        //       sub      regTmp, regTmp, regPageSize
-        //       bgeu     regTmp, regCnt, Loop
-        //
-        //  Done:
-        //       addi     SP, regCnt, 0
-        //
 
         if (tempReg == REG_NA)
             tempReg = internalRegisters.Extract(tree);
 
         assert(regCnt != tempReg);
-        emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
-
-        // sub  regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
-
-        // Overflow, set regCnt to lowest possible value
-        emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, tempReg, REG_R0, 2 << 2);
-        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, regCnt, REG_R0);
-
+        // regCnt now holds the number of bytes to localloc, after the sequence it will be set to the ultimate SP
+        if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+        {
+            emit->emitIns_R_R_R(INS_maxu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt); // temp = max(sp, cnt);
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, tempReg, regCnt);      // cnt  = temp - cnt;
+        }
+        else
+        {
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt); // cnt = sp - cnt; // ultimate SP
+            // If the subtraction above overflowed (i.e. sp < ultimateSP), set regCnt to lowest possible value (i.e. 0)
+            emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt); // temp = overflow ? 1 : 0;
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -1);        // temp = overflow ? 0 : full_mask;
+            emit->emitIns_R_R_R(INS_and, EA_PTRSIZE, regCnt, regCnt, tempReg);      // cnt  = overflow ? 0 : cnt;
+        }
         regNumber rPageSize = internalRegisters.GetSingle(tree);
 
         noway_assert(rPageSize != tempReg);
@@ -1638,8 +1625,9 @@ ALLOC_DONE:
     }
     else // stackAdjustment == 0
     {
-        // Move the final value of SP to targetReg
-        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_SPBASE);
+        // Move the final value of SP to targetReg (if necessary; targetReg may be same as regCnt which also holds SP)
+        regNumber spSrc = (regCnt == REG_NA) ? REG_SPBASE : regCnt;
+        emit->emitIns_Mov(EA_PTRSIZE, targetReg, spSrc, true);
     }
 
 BAILOUT:
