@@ -37,7 +37,7 @@ jobs:
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
-      - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:     
+      - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.edge.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.322.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-amd64
@@ -75,7 +75,7 @@ jobs:
               - Ubuntu.2204.Amd64.Open
               - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64
               - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
-    
+
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
       - osx.13.arm64.open
@@ -100,11 +100,11 @@ jobs:
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      - OSX.13.Amd64.Iphone.Open
+      - osx.amd64.iphone.scouting.open
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      - OSX.13.Amd64.AppleTV.Open
+      - osx.amd64.appletv.scouting.open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
