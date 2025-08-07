@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
+#include "contractconfiguration.h"
 
 #ifdef _MSC_VER
 #define DLLEXPORT __declspec(dllexport)
@@ -9,7 +10,7 @@
 #define DLLEXPORT __attribute__((visibility("default")))
 #endif
 
-struct DotNetRuntimeContractDescriptor
+struct ContractDescriptor
 {
     uint64_t magic;
     uint32_t flags;
@@ -20,15 +21,18 @@ struct DotNetRuntimeContractDescriptor
     const uintptr_t *pointer_data;
 };
 
-extern const uintptr_t contractDescriptorPointerData[];
+// POINTER_DATA_NAME and CONTRACT_NAME are macros provided by
+// contractconfiguration.h which is configured by CMake
+extern const uintptr_t POINTER_DATA_NAME[];
 
-DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor;
-
-DLLEXPORT struct DotNetRuntimeContractDescriptor DotNetRuntimeContractDescriptor = {
+#if EXPORT_CONTRACT
+DLLEXPORT
+#endif // EXPORT_CONTRACT
+struct ContractDescriptor CONTRACT_NAME = {
     .magic = 0x0043414443434e44ull, // "DNCCDAC\0"
     .flags = %%platformFlags%%,
     .descriptor_size = %%jsonDescriptorSize%%,
     .descriptor = "%%jsonDescriptor%%",
     .pointer_data_count = %%pointerDataCount%%,
-    .pointer_data = &contractDescriptorPointerData[0],
+    .pointer_data = &POINTER_DATA_NAME[0],
 };
