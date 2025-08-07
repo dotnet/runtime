@@ -27,18 +27,76 @@ public class InstUnBoxThunks
         }
     }
 
-    static I0 o0;
+    static I0 o00;
     static async Task<string> CallStruct0M0()
     {
-        o0 = new Struct0();
-        return await o0.M0();
+        o00 = new Struct0();
+        return await o00.M0();
     }
 
+    static I0 o01;
     static async Task<string> CallStruct0M1()
     {
-        o0 = new Struct0();
-        return await o0.M1(default, default, default, default, default, default, default, default, default);
+        o01 = new Struct0();
+        return await o01.M1(default, default, default, default, default, default, default, default, default);
     }
+
+    struct Struct1<T> : I0
+    {
+        public Task<string> M0()
+        {
+            return Task.FromResult(typeof(T).ToString());
+        }
+
+        public Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
+        {
+            return Task.FromResult(typeof(T).ToString());
+        }
+    }
+
+    static I0 o10;
+    static async Task<string> CallStruct1M0()
+    {
+        o10 = new Struct1<string>();
+        return await o10.M0();
+    }
+
+    static I0 o11;
+    static async Task<string> CallStruct1M1()
+    {
+        o11 = new Struct1<string>();
+        return await o11.M1(default, default, default, default, default, default, default, default, default);
+    }
+
+    class Box<U> where U : I0
+    {
+        public U f;
+    }
+
+    static async Task<string> CallStruct1M0Field<T>(Box<T> arg) where T : I0
+    {
+        return await arg.f.M0();
+    }
+
+    static async Task<string> CallStruct1M1Field<T>(Box<T> arg) where T : I0
+    {
+        return await arg.f.M1(default, default, default, default, default, default, default, default, default);
+    }
+
+    static Box<Struct1<string>> b1 = new();
+    static async Task<string> CallStruct1M0b()
+    {
+        b1.f = new Struct1<string>();
+        return await CallStruct1M0Field(b1);
+    }
+
+    static Box<Struct1<string>> b2 = new();
+    static async Task<string> CallStruct1M1b()
+    {
+        b2.f = new Struct1<string>();
+        return await CallStruct1M1Field(b2);
+    }
+
 
     [Fact]
     public static void NoArgUnbox()
@@ -52,38 +110,6 @@ public class InstUnBoxThunks
         Assert.Equal("hello", CallStruct0M1().Result);
     }
 
-    interface I1
-    {
-        Task<string> M0();
-        Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8);
-    }
-
-    struct Struct1<T> : I1
-    {
-        public Task<string> M0()
-        {
-            return Task.FromResult(typeof(T).ToString());
-        }
-
-        public Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
-        {
-            return Task.FromResult(typeof(T).ToString());
-        }
-    }
-
-    static I1 o1;
-    static async Task<string> CallStruct1M0()
-    {
-        o1 = new Struct1<string>();
-        return await o1.M0();
-    }
-
-    static async Task<string> CallStruct1M1()
-    {
-        o1 = new Struct1<string>();
-        return await o1.M1(default, default, default, default, default, default, default, default, default);
-    }
-
     [Fact]
     public static void NoArgGenericUnbox()
     {
@@ -94,5 +120,17 @@ public class InstUnBoxThunks
     public static void ManyArgGenericUnbox()
     {
         Assert.Equal("System.String", CallStruct1M1().Result);
+    }
+
+    [Fact]
+    public static void NoArgGenericInstantiating()
+    {
+        Assert.Equal("System.String", CallStruct1M0b().Result);
+    }
+
+    [Fact]
+    public static void ManyArgGenericInstantiating()
+    {
+        Assert.Equal("System.String", CallStruct1M1b().Result);
     }
 }

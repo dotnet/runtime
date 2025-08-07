@@ -1578,9 +1578,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
-    _ASSERTE(!msig.HasAsyncContinuation());
-
     // Build the new signature
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
