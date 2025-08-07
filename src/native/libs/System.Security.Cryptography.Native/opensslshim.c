@@ -158,8 +158,6 @@ static void OpenLibraryOnce(void)
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
 
-typedef unsigned long(*OpenSSL_version_num_ptr_private)(void);
-
 int OpenLibrary(void)
 {
     pthread_once(&g_openLibrary, OpenLibraryOnce);
@@ -185,25 +183,6 @@ void InitializeOpenSSLShim(void)
     // A function defined in libcrypto.so.1.0.0/libssl.so.1.0.0 that is not defined in
     // libcrypto.so.1.1.0/libssl.so.1.1.0
     const void* v1_0_sentinel = dlsym(libssl, "SSL_state");
-
-    if (v1_0_sentinel)
-    {
-        printf("OpenSSL version: 1.0.x\n");
-    }
-    else
-    {
-        const OpenSSL_version_num_ptr_private opensslnum = (OpenSSL_version_num_ptr_private)dlsym(libssl, "OpenSSL_version_num");
-
-        if (opensslnum)
-        {
-            unsigned long ver = opensslnum();
-            printf("OpenSSL version: 0x%lx\n", ver);
-        }
-        else
-        {
-            printf("OpenSSL version could not be determiend.\n");
-        }
-    }
 
     // Only permit a single assignment here so that two assemblies both triggering the initializer doesn't cause a
     // race where the fn_ptr is nullptr, then properly bound, then goes back to nullptr right before being used (then bound again).
@@ -255,7 +234,7 @@ void InitializeOpenSSLShim(void)
 
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
     c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
-
+    
     // This value will represent a time in year 2038 if 64-bit time is used,
     // or 1901 if the lower 32 bits are interpreted as a 32-bit time_t value.
     time_t timeVal = (time_t)0x80000000U;
