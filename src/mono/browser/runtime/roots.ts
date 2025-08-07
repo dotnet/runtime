@@ -384,12 +384,15 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     _set_address (address: NativePointer | ManagedPointer): void {
-        this.__external_address = <MonoObjectRef><any>address;
-        this.__external_address_32 = <number><any>address >>> 2;
-        if (typeof address === "bigint")
+        if (typeof address === "bigint") {
+            this.__external_address = <MonoObjectRef><any>Number(address);
+            this.__external_address_32 = Number(address) >>> 2;
             this.__external_address_64 = address >> 3n;
-        else
+        } else {
+            this.__external_address = <MonoObjectRef><any>address;
+            this.__external_address_32 = <number><any>address >>> 2;
             this.__external_address_64 = BigInt(<any>address) >> 3n;
+        }
     }
 
     get address (): MonoObjectRef {
