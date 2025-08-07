@@ -564,7 +564,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             else
                 Console.Error.WriteLine("No PEHeader");
 
-            Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader.Flags}");
+            Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader?.Flags}");
 
             Console.Error.WriteLine("Sections:");
             foreach (var section in CompositeReader.PEHeaders.SectionHeaders)
