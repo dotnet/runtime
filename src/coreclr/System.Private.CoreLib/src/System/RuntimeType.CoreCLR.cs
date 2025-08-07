@@ -1512,7 +1512,8 @@ namespace System
                         return ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace);
 
                     case TypeNameKind.AssemblyQualifiedName:
-                        string? typeFullName = null;
+                        // Initialize with the current full name since it might already be computed.
+                        string? typeFullName = m_fullName;
                         // This function returns the byref argument, so the return can be ignored.
                         ConstructFullName(ref typeFullName);
                         Debug.Assert(typeFullName == GetName(TypeNameKind.FullName));
