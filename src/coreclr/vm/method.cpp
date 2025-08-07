@@ -1196,12 +1196,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 
     if (pIL == (TADDR)NULL)
     {
-        RVA rva = GetRVA();
-        if (rva == 0)
-        {
-            return NULL;
-        }
-        pIL = pModule->GetIL(rva);
+        pIL = pModule->GetIL(GetRVA());
     }
 
 #ifdef _DEBUG_IMPL
