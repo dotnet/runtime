@@ -1025,7 +1025,7 @@ namespace System.Collections.Generic
                     }
 
                     _current = default;
-                    _index = localQueue._size + 1;
+                    _index = -1;
                     return false;
                 }
 
