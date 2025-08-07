@@ -133,7 +133,9 @@ namespace System.Threading
             public Scope(Lock lockObj, int timeoutMs) : this(lockObj, ObjectKind.Lock, timeoutMs) { }
 #pragma warning restore CS9216
 
+#if !MONO
             public Scope(Condition condition, int timeoutMs) : this(condition, ObjectKind.Condition, timeoutMs) { }
+#endif
 
             private Scope(object obj, ObjectKind objectKind, int timeoutMs)
             {
