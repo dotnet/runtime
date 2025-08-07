@@ -1857,7 +1857,7 @@ MAIN_LOOP:
                     int32_t targetAddrSlot = ip[4];
                     int32_t flags = ip[5];
 
-                    ip += 7;
+                    ip += 6;
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
                     PCODE callTarget = (flags & (int32_t)PInvokeCallFlags::Indirect)
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
