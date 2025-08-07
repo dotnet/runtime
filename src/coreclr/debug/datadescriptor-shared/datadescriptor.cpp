@@ -3,6 +3,14 @@
 
 #include "datadescriptor.h"
 
+#ifndef DLLEXPORT
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+#endif // DLLEXPORT
+
 // begin blob definition
 
 extern "C"
