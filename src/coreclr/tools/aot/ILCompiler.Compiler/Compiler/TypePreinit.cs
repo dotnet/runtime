@@ -2868,7 +2868,7 @@ namespace ILCompiler
 
             public override bool GetRawData(NodeFactory factory, out object data)
             {
-                data = factory.SerializedMaximallyConstructableRuntimeTypeObject(TypeRepresented);
+                data = factory.SerializedMetadataRuntimeTypeObject(TypeRepresented);
                 return true;
             }
 
@@ -2882,7 +2882,7 @@ namespace ILCompiler
             }
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                builder.EmitPointerReloc(factory.SerializedMaximallyConstructableRuntimeTypeObject(TypeRepresented));
+                builder.EmitPointerReloc(factory.SerializedMetadataRuntimeTypeObject(TypeRepresented));
             }
         }
 
