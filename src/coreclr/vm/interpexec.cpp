@@ -2458,11 +2458,38 @@ do {                                                                           \
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
-                    size_t elemSize = ip[4];
-                    void* elemAddr = pData + idx * elemSize;
+                    void* elemAddr = pData + idx * sizeof(void*);
 
                     MethodTable* arrayElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
-                    MethodTable* expectedMT = (MethodTable*)pMethod->pDataItems[ip[5]];
+                    MethodTable* expectedMT = (MethodTable*)pMethod->pDataItems[ip[4]];
+                    if (arrayElemMT != expectedMT)
+                    {
+                        COMPlusThrow(kArrayTypeMismatchException);
+                    }
+
+                    LOCAL_VAR(ip[1], void*) = elemAddr;
+                    ip += 5;
+                    break;
+                }
+
+                case INTOP_LDELEMA_REF_GENERIC:
+                {
+                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
+                    if (arrayRef == NULL)
+                        COMPlusThrow(kNullReferenceException);
+
+                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
+                    uint32_t len = arr->GetNumComponents();
+                    uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
+                    if (idx >= len)
+                        COMPlusThrow(kIndexOutOfRangeException);
+
+                    uint8_t* pData = arr->GetDataPtr();
+                    void* elemAddr = pData + idx * sizeof(void*);
+
+                    MethodTable* arrayElemMT = arr->GetArrayElementTypeHandle().AsMethodTable();
+                    InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
+                    MethodTable* expectedMT = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[4], void*), pLookup);
                     if (arrayElemMT != expectedMT)
                     {
                         COMPlusThrow(kArrayTypeMismatchException);
