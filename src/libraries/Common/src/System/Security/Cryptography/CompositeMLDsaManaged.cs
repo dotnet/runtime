@@ -726,7 +726,7 @@ namespace System.Security.Cryptography
             internal RSASignaturePadding Padding { get; } = padding;
         }
 
-        private sealed class ECDsaAlgorithm(int keySizeInBits, string curveOid, HashAlgorithmName hashAlgorithmName)
+        private sealed class ECDsaAlgorithm
         {
             internal int KeySizeInBits { get; }
             internal HashAlgorithmName HashAlgorithmName { get; }

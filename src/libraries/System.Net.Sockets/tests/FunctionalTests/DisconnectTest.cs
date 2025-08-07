@@ -73,15 +73,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118314")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task Disconnect_NotConnected_ThrowsInvalidOperationException(bool reuseSocket)
+        public async Task Disconnect_NotConnected_ThrowsSocketException(bool reuseSocket)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await DisconnectAsync(s, reuseSocket));
+                await Assert.ThrowsAsync<SocketException>(async () => await DisconnectAsync(s, reuseSocket));
             }
         }
 
