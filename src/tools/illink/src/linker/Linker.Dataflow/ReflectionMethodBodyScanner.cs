@@ -218,6 +218,12 @@ namespace Mono.Linker.Dataflow
 
             if (nativeType == NativeType.None)
             {
+                if (parameterType.IsPointer)
+                {
+                    // Pointer types are passed without marshalling
+                    return false;
+                }
+
                 // Resolve will look at the element type
                 var parameterTypeDef = context.TryResolve(parameterType);
 

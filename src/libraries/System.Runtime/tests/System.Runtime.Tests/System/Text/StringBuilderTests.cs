@@ -70,7 +70,7 @@ namespace System.Text.Tests
         [InlineData("Hello")]
         [InlineData("")]
         [InlineData(null)]
-        public static void Ctor_String(string value)
+        public static void Ctor_String(string? value)
         {
             var builder = new StringBuilder(value);
 
@@ -83,7 +83,7 @@ namespace System.Text.Tests
         [InlineData("Hello")]
         [InlineData("")]
         [InlineData(null)]
-        public static void Ctor_String_Int(string value)
+        public static void Ctor_String_Int(string? value)
         {
             var builder = new StringBuilder(value, 42);
 
@@ -105,7 +105,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 2, 3)]
         [InlineData("", 0, 0)]
         [InlineData(null, 0, 0)]
-        public static void Ctor_String_Int_Int_Int(string value, int startIndex, int length)
+        public static void Ctor_String_Int_Int_Int(string? value, int startIndex, int length)
         {
             var builder = new StringBuilder(value, startIndex, length, 42);
 
@@ -384,7 +384,7 @@ namespace System.Text.Tests
         [InlineData("", "g", "g")]
         [InlineData("Hello", "", "Hello")]
         [InlineData("Hello", null, "Hello")]
-        public static void Append_Object(string original, object value, string expected)
+        public static void Append_Object(string original, object? value, string expected)
         {
             var builder = new StringBuilder(original);
             builder.Append(value);
@@ -562,7 +562,7 @@ namespace System.Text.Tests
         [InlineData("", new char[] { 'a' }, 0, "")]
         [InlineData("Hello", new char[0], 0, "Hello")]
         [InlineData("Hello", null, 0, "Hello")]
-        public static unsafe void Append_CharPointer(string original, char[] charArray, int valueCount, string expected)
+        public static unsafe void Append_CharPointer(string original, char[]? charArray, int valueCount, string expected)
         {
             _ = charArray; // https://github.com/xunit/xunit/issues/1969
             fixed (char* value = charArray)
@@ -613,7 +613,7 @@ namespace System.Text.Tests
         [InlineData("Hello", "g", 0, 0, "Hello")]
         [InlineData("Hello", "", 0, 0, "Hello")]
         [InlineData("Hello", null, 0, 0, "Hello")]
-        public static void Append_String(string original, string value, int startIndex, int count, string expected)
+        public static void Append_String(string original, string? value, int startIndex, int count, string expected)
         {
             StringBuilder builder;
             if (startIndex == 0 && count == (value?.Length ?? 0))
@@ -673,7 +673,7 @@ namespace System.Text.Tests
         [InlineData("Hello", new char[] { 'e' }, 0, 0, "Hello")]
         [InlineData("Hello", new char[0], 0, 0, "Hello")]
         [InlineData("Hello", null, 0, 0, "Hello")]
-        public static void Append_CharArray(string original, char[] value, int startIndex, int charCount, string expected)
+        public static void Append_CharArray(string original, char[]? value, int startIndex, int charCount, string expected)
         {
             StringBuilder builder;
             if (startIndex == 0 && charCount == (value?.Length ?? 0))
@@ -1355,7 +1355,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 5, "def", "Hellodef")]
         [InlineData("Hello", 0, "", "Hello")]
         [InlineData("Hello", 0, null, "Hello")]
-        public static void Insert_Object(string original, int index, object value, string expected)
+        public static void Insert_Object(string original, int index, object? value, string expected)
         {
             var builder = new StringBuilder(original);
             builder.Insert(index, value);
@@ -1544,7 +1544,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 0, null, 1, "Hello")]
         [InlineData("Hello", 3, "abc", 2, "Helabcabclo")]
         [InlineData("Hello", 5, "def", 2, "Hellodefdef")]
-        public static void Insert_String_Count(string original, int index, string value, int count, string expected)
+        public static void Insert_String_Count(string original, int index, string? value, int count, string expected)
         {
             StringBuilder builder;
             if (count == 1)
@@ -1590,7 +1590,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 1, 1, "Helblo")]
         [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 1, 2, "Helbclo")]
         [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 0, 2, "Helablo")]
-        public static void Insert_CharArray(string original, int index, char[] value, int startIndex, int charCount, string expected)
+        public static void Insert_CharArray(string original, int index, char[]? value, int startIndex, int charCount, string expected)
         {
             StringBuilder builder;
             if (startIndex == 0 && charCount == (value?.Length ?? 0))
@@ -1836,7 +1836,7 @@ namespace System.Text.Tests
         [InlineData("", "123")]
         [InlineData(" ", "1 2 3")]
         [InlineData(", ", "1, 2, 3")]
-        public static void AppendJoin_TestStringSeparators(string separator, string expected)
+        public static void AppendJoin_TestStringSeparators(string? separator, string expected)
         {
             var values = new object[] { 1, 2, 3 };
             var stringValues = new string[] { "1", "2", "3" };
@@ -1859,7 +1859,7 @@ namespace System.Text.Tests
         [InlineData("", new object[] { "", "" })]
         [InlineData(" ", new object[] { })]
         [InlineData(", ", new object[] { "" })]
-        public static void AppendJoin_NoValues_NoSpareCapacity_DoesNotThrow(string separator, object[] values)
+        public static void AppendJoin_NoValues_NoSpareCapacity_DoesNotThrow(string? separator, object[] values)
         {
             var stringValues = Array.ConvertAll(values, _ => _?.ToString());
             var enumerable = values.Select(_ => _);
@@ -1884,7 +1884,7 @@ namespace System.Text.Tests
         [InlineData(" ", new object[] { " " })]
         [InlineData(" ", new object[] { null, null })]
         [InlineData(" ", new object[] { "", "" })]
-        public static void AppendJoin_NoSpareCapacity_ThrowsArgumentOutOfRangeException(string separator, object[] values)
+        public static void AppendJoin_NoSpareCapacity_ThrowsArgumentOutOfRangeException(string? separator, object[] values)
         {
             var builder = new StringBuilder(0, 5);
             builder.Append("Hello");

@@ -35,8 +35,28 @@ namespace System.Security.Cryptography
 #if NETFRAMEWORK
             // RSA-PSS requires RSACng on .NET Framework
             private static RSACng CreateRSA() => new RSACng();
+            private static RSACng CreateRSA(int keySizeInBits) => new RSACng(keySizeInBits);
+#elif NETSTANDARD2_0
+            private static RSA CreateRSA() => RSA.Create();
+
+            private static RSA CreateRSA(int keySizeInBits)
+            {
+                RSA rsa = RSA.Create();
+
+                try
+                {
+                    rsa.KeySize = keySizeInBits;
+                    return rsa;
+                }
+                catch
+                {
+                    rsa.Dispose();
+                    throw;
+                }
+            }
 #else
             private static RSA CreateRSA() => RSA.Create();
+            private static RSA CreateRSA(int keySizeInBits) => RSA.Create(keySizeInBits);
 #endif
 
             internal override int SignData(
@@ -80,8 +100,25 @@ namespace System.Security.Cryptography
 #endif
             }
 
-            public static RsaComponent GenerateKey(RsaAlgorithm algorithm) =>
-                throw new NotImplementedException();
+            public static RsaComponent GenerateKey(RsaAlgorithm algorithm)
+            {
+                RSA? rsa = null;
+
+                try
+                {
+                    rsa = CreateRSA(algorithm.KeySizeInBits);
+
+                    // RSA key generation is lazy, so we need to force it to happen eagerly.
+                    _ = rsa.ExportParameters(includePrivateParameters: false);
+
+                    return new RsaComponent(rsa, algorithm.HashAlgorithmName, algorithm.Padding);
+                }
+                catch (CryptographicException)
+                {
+                    rsa?.Dispose();
+                    throw;
+                }
+            }
 
             public static RsaComponent ImportPrivateKey(RsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
@@ -119,6 +156,10 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                     }
 #endif
+                    if (rsa.KeySize != algorithm.KeySizeInBits)
+                    {
+                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                    }
 
                     if (bytesRead != source.Length)
                     {
@@ -170,6 +211,10 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                     }
 #endif
+                    if (rsa.KeySize != algorithm.KeySizeInBits)
+                    {
+                        throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
+                    }
 
                     if (bytesRead != source.Length)
                     {

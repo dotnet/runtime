@@ -12,7 +12,10 @@ namespace System.Text.Json.Serialization
     {
         public abstract bool IsFinalBlock { get; }
 
+#if DEBUG
+        // Used for Debug.Assert's
         public abstract ReadOnlySequence<byte> Bytes { get; }
+#endif
 
         public abstract ValueTask<TReadBufferState> ReadAsync(
             TStream utf8Json,
@@ -22,5 +25,7 @@ namespace System.Text.Json.Serialization
         public abstract void Read(TStream utf8Json);
 
         public abstract void Advance(long bytesConsumed);
+
+        public abstract Utf8JsonReader GetReader(JsonReaderState jsonReaderState);
     }
 }
