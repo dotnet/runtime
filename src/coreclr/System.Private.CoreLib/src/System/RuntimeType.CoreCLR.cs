@@ -25,7 +25,7 @@ namespace System
         FormatFullInst = 0x00000002, // Include namespace and assembly in generic types (regardless of other flag settings)
         FormatAssembly = 0x00000004, // Include assembly display name in type names
         FormatSignature = 0x00000008, // Include signature in method names
-        FormatNoVersion = 0x00000010, // Suppress version and culture information in all assembly names
+        // unused = 0x00000010,
 #if DEBUG
         FormatDebug = 0x00000020, // For debug printing of types only
 #endif
@@ -1505,44 +1505,42 @@ namespace System
                         return ConstructName(ref m_name, TypeNameFormatFlags.FormatBasic);
 
                     case TypeNameKind.FullName:
-                        return ConstructFullName(ref m_fullName);
+                        if (!ValidFullName(m_runtimeType))
+                            return null;
+
+                        // No assembly.
+                        return ConstructName(ref m_fullName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
 
                     case TypeNameKind.ToString:
                         // No full instantiation and assembly.
                         return ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace);
 
                     case TypeNameKind.AssemblyQualifiedName:
-                        // Initialize with the current full name since it might already be computed.
-                        string? typeFullName = m_fullName;
-                        // This function returns the byref argument, so the return can be ignored.
-                        ConstructFullName(ref typeFullName);
-                        Debug.Assert(typeFullName == GetName(TypeNameKind.FullName));
-                        if (typeFullName is null)
+                        if (!ValidFullName(m_runtimeType))
                             return null;
-                        return m_assemblyQualifiedName ??= Assembly.CreateQualifiedName(m_runtimeType.Assembly.FullName, typeFullName);
+                        return ConstructName(ref m_assemblyQualifiedName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst | TypeNameFormatFlags.FormatAssembly);
 
                     default:
                         throw new InvalidOperationException();
                 }
-            }
 
-            private string? ConstructFullName(ref string? name)
-            {
-                // We exclude the types that contain generic parameters because their names cannot be roundtripped.
-                // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be roundtripped.
-                // Theoretically generic types instantiated with generic type definitions can be roundtripped, e.g. List`1<Dictionary`2>.
-                // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
-                // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
-                if (!m_runtimeType.GetRootElementType().IsGenericTypeDefinition && m_runtimeType.ContainsGenericParameters)
-                    return null;
+                static bool ValidFullName(RuntimeType runtimeType)
+                {
+                    // We exclude the types that contain generic parameters because their names cannot be round-tripped.
+                    // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be round-tripped.
+                    // Theoretically generic types instantiated with generic type definitions can be round-tripped, e.g. List`1<Dictionary`2>.
+                    // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
+                    // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
+                    if (!runtimeType.GetRootElementType().IsGenericTypeDefinition && runtimeType.ContainsGenericParameters)
+                        return false;
 
-                // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
-                // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
-                if (m_runtimeType.IsFunctionPointer)
-                    return null;
+                    // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
+                    // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
+                    if (runtimeType.IsFunctionPointer)
+                        return false;
 
-                // No assembly.
-                return ConstructName(ref name, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
+                    return true;
+                }
             }
 
             internal string? GetNameSpace()
