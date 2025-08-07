@@ -584,11 +584,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa44,
-<<<<<<< HEAD
-                        new ECDsaAlgorithm(256, Oids.secp256r1, HashAlgorithmName.SHA256),
-=======
                         ECDsaAlgorithm.CreateP256(HashAlgorithmName.SHA256),
->>>>>>> darc/back/30bc8f9-b8ed7bb
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x03],
                         HashAlgorithmName.SHA256)
                 },
@@ -628,11 +624,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-<<<<<<< HEAD
-                        new ECDsaAlgorithm(256, Oids.secp256r1, HashAlgorithmName.SHA256),
-=======
                         ECDsaAlgorithm.CreateP256(HashAlgorithmName.SHA256),
->>>>>>> darc/back/30bc8f9-b8ed7bb
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x08],
                         HashAlgorithmName.SHA512)
                 },
@@ -640,11 +632,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-<<<<<<< HEAD
-                        new ECDsaAlgorithm(384, Oids.secp384r1, HashAlgorithmName.SHA384),
-=======
                         ECDsaAlgorithm.CreateP384(HashAlgorithmName.SHA384),
->>>>>>> darc/back/30bc8f9-b8ed7bb
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x09],
                         HashAlgorithmName.SHA512)
                 },
@@ -652,11 +640,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa65WithECDsaBrainpoolP256r1,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
-<<<<<<< HEAD
-                        new ECDsaAlgorithm(256, "1.3.36.3.3.2.8.1.1.7", HashAlgorithmName.SHA256),
-=======
                         ECDsaAlgorithm.CreateBrainpoolP256r1(HashAlgorithmName.SHA256),
->>>>>>> darc/back/30bc8f9-b8ed7bb
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0A],
                         HashAlgorithmName.SHA512)
                 },
@@ -672,11 +656,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaP384,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-<<<<<<< HEAD
-                        new ECDsaAlgorithm(384, Oids.secp384r1, HashAlgorithmName.SHA384),
-=======
                         ECDsaAlgorithm.CreateP384(HashAlgorithmName.SHA384),
->>>>>>> darc/back/30bc8f9-b8ed7bb
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0C],
                         HashAlgorithmName.SHA512)
                 },
@@ -684,11 +664,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaBrainpoolP384r1,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-<<<<<<< HEAD
-                        new ECDsaAlgorithm(384, "1.3.36.3.3.2.8.1.1.11", HashAlgorithmName.SHA384),
-=======
                         ECDsaAlgorithm.CreateBrainpoolP384r1(HashAlgorithmName.SHA384),
->>>>>>> darc/back/30bc8f9-b8ed7bb
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x0D],
                         HashAlgorithmName.SHA512)
                 },
@@ -720,11 +696,7 @@ namespace System.Security.Cryptography
                     CompositeMLDsaAlgorithm.MLDsa87WithECDsaP521,
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
-<<<<<<< HEAD
-                        new ECDsaAlgorithm(521, Oids.secp521r1, HashAlgorithmName.SHA512),
-=======
                         ECDsaAlgorithm.CreateP521(HashAlgorithmName.SHA512),
->>>>>>> darc/back/30bc8f9-b8ed7bb
                         [0x06, 0x0B, 0x60, 0x86, 0x48, 0x01, 0x86, 0xFA, 0x6B, 0x50, 0x09, 0x01, 0x11],
                         HashAlgorithmName.SHA512)
                 }
@@ -756,37 +728,6 @@ namespace System.Security.Cryptography
 
         private sealed class ECDsaAlgorithm(int keySizeInBits, string curveOid, HashAlgorithmName hashAlgorithmName)
         {
-<<<<<<< HEAD
-            internal int KeySizeInBits { get; } = keySizeInBits;
-            internal HashAlgorithmName HashAlgorithmName { get; } = hashAlgorithmName;
-            internal string CurveOid { get; } = curveOid;
-
-            internal int KeySizeInBytes => (KeySizeInBits + 7) / 8;
-
-#if NET
-            internal ECCurve Curve
-            {
-                get
-                {
-                    return CurveOid switch
-                    {
-                        Oids.secp256r1 => ECCurve.NamedCurves.nistP256,
-                        Oids.secp384r1 => ECCurve.NamedCurves.nistP384,
-                        Oids.secp521r1 => ECCurve.NamedCurves.nistP521,
-                        "1.3.36.3.3.2.8.1.1.7" => ECCurve.NamedCurves.brainpoolP256r1,
-                        "1.3.36.3.3.2.8.1.1.11" => ECCurve.NamedCurves.brainpoolP384r1,
-                        string oid => FailAndThrow(oid)
-                    };
-
-                    static ECCurve FailAndThrow(string oid)
-                    {
-                        Debug.Fail($"'{oid}' is not a valid ECDSA curve for Composite ML-DSA.");
-                        throw new CryptographicException();
-                    }
-                }
-            }
-#endif
-=======
             internal int KeySizeInBits { get; }
             internal HashAlgorithmName HashAlgorithmName { get; }
 
@@ -887,7 +828,6 @@ namespace System.Security.Cryptography
                     KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC,
 #endif
                     hashAlgorithmName);
->>>>>>> darc/back/30bc8f9-b8ed7bb
         }
 
         private sealed class EdDsaAlgorithm
