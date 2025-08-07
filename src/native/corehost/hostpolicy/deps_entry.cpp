@@ -23,22 +23,23 @@ static pal::string_t normalize_dir_separator(const pal::string_t& path)
 // -----------------------------------------------------------------------------
 // Given a "base" directory, determine the resolved path for this file.
 //
-// * If this file exists within the single-file bundle candidate is
-//   the full-path to the extracted file.
+// * If this file exists within the single-file bundle:
+//     - if extracted, candidate is the full-path to the extracted file.
+//     - if not extracted, candidate is empty.
 // * Otherwise, candidate is the full local path of the file.
 //
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
 //    relative_path - Relative path of to look for this entry
-//    str  - (out parameter) If the method returns true, contains the file path for this deps entry
+//    str  - (out) If the method returns true, contains the file path for this deps entry
 //    search_options - Flags to instruct where to look for this deps entry
-//    found_in_bundle - (out parameter) True if the candidate is located within the single-file bundle.
+//    found_in_bundle - (out) True if the candidate is located within the single-file bundle and not extracted.
 //
 // Returns:
 //    If the file exists in the path relative to the "base" directory within the
 //    single-file or on disk.
 
-bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& relative_path, pal::string_t* str, uint32_t search_options, bool &found_in_bundle) const
+static bool to_path(const pal::string_t& base, const pal::string_t& relative_path, pal::string_t* str, uint32_t search_options, bool &found_in_bundle)
 {
     pal::string_t& candidate = *str;
 

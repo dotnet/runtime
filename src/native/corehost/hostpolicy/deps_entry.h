@@ -73,13 +73,6 @@ struct deps_entry_t
 
     // Given a "base" dir, yield the relative path with package name/version in the package layout or servicing location.
     bool to_library_package_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options) const;
-
-private:
-    // Given a "base" dir, yield the filepath within this directory or relative to this directory based on "look_in_base"
-    // flag in "search_options".
-    // Returns a path within the single-file bundle, or a file on disk,
-    bool to_path(const pal::string_t& base, const pal::string_t& relative_path, pal::string_t* str, uint32_t search_options, bool & found_in_bundle) const;
-
 };
 
 #endif // __DEPS_ENTRY_H_
