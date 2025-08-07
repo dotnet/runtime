@@ -738,7 +738,9 @@ MethodTable * MethodDesc::GetExactDeclaringType(MethodTable * ownerOrSubType)
     // will match, but the types are actually from unrelated arrays, so the result would be incorrect.
     _ASSERTE(!IsArray());
 
-    return ownerOrSubType->GetMethodTableMatchingParentClass(pMT);
+    MethodTable * result = ownerOrSubType->GetMethodTableMatchingParentClass(pMT);
+    _ASSERTE(result);
+    return result;
 }
 
 //*******************************************************************************
