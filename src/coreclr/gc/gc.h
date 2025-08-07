@@ -32,7 +32,6 @@ Module Name:
 
 #include "cdacdata.h"
 
-
 /*
  * Promotion Function Prototypes
  */

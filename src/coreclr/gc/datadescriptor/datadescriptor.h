@@ -25,3 +25,13 @@ namespace GC_NAMESPACE {
 #include "gcpriv.h"
 
 }
+
+// On non-MSVC builds explicit specializations must be declared in the namespace the template was defined.
+// Due to the gc being built into coreclr, cdac_data must be defined in the global scope.
+template<>
+struct cdac_data<GC_NAMESPACE::gc_heap>
+{
+#ifdef MULTIPLE_HEAPS
+    static constexpr void* const Heaps = (void*)&gc_heap::g_heaps;
+#endif // MULTIPLE_HEAPS
+};

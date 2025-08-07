@@ -1538,6 +1538,8 @@ class gc_heap
 
     friend class mark_queue_t;
 
+    friend struct ::cdac_data<gc_heap>;
+
 #ifdef MULTIPLE_HEAPS
     typedef void (gc_heap::* card_fn) (uint8_t**, int);
 #define call_fn(this_arg,fn) (this_arg->*fn)
@@ -5658,17 +5660,7 @@ public:
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_FIELD_MAINTAINED sorted_table* seg_table;
 #endif //FEATURE_BASICFREEZE
-
-    friend struct ::cdac_data<gc_heap>;
 }; // class gc_heap
-
-template<>
-struct ::cdac_data<gc_heap>
-{
-#ifdef MULTIPLE_HEAPS
-    static constexpr void* const Heaps = (void*)&gc_heap::g_heaps;
-#endif // MULTIPLE_HEAPS
-};
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 class CFinalize
