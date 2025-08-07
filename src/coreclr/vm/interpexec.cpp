@@ -1855,12 +1855,11 @@ MAIN_LOOP:
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
                     int32_t targetAddrSlot = ip[4];
-                    int32_t indirectFlag = ip[5];
-                    bool suppressGCTransition = (ip[6] != 0);
+                    int32_t flags = ip[5];
 
                     ip += 7;
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
-                    PCODE callTarget = indirectFlag
+                    PCODE callTarget = (flags & (int32_t)PInvokeCallFlags::Indirect)
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
                         : (PCODE)pMethod->pDataItems[targetAddrSlot];
 
@@ -1873,7 +1872,7 @@ MAIN_LOOP:
                     inlinedCallFrame.Push();
 
                     {
-                        GCX_MAYBE_PREEMP(!suppressGCTransition);
+                        GCX_MAYBE_PREEMP(!(flags & (int32_t)PInvokeCallFlags::SuppressGCTransition));
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
 
@@ -1906,6 +1905,7 @@ CALL_INTERP_METHOD:
                             pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                             GCX_PREEMP();
                             // Attempt to setup the interpreter code for the target method.
+
                             if (targetMethod->IsIL() || targetMethod->IsNoMetadata())
                             {
                                 targetMethod->PrepareInitialCode(CallerGCMode::Coop);

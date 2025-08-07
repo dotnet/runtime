@@ -1004,9 +1004,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
         InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
-        // The current MethodDesc is different from the pConfig->GetMethodDesc() in case of a call that goes through
-        // an IL stub. Make sure we set the same interpreter code on both.
-        SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
 
@@ -2013,7 +2010,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 
     InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
 
-    GCX_MAYBE_COOP(((MethodDesc*)pInterpreterCode->Method->methodHnd)->HasUnmanagedCallersOnlyAttribute());
+    GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
     // InterpMethodContextFrame. This is important for the stack walking code.
