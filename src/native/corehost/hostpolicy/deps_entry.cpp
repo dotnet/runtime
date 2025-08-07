@@ -52,7 +52,7 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& relat
     }
 
     // Reserve space for the path below
-    candidate.reserve(base.length() + relative_path.length() + 2);
+    candidate.reserve(base.length() + relative_path.length() + 2); // +2 for directory separator and null terminator
 
     bool look_in_bundle = search_options & deps_entry_t::search_options::look_in_bundle;
     bool is_servicing = search_options & deps_entry_t::search_options::is_servicing;
@@ -157,6 +157,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, ui
                 pal::string_t ietf_dir = get_directory(relative_path);
 
                 // get_directory returns with DIR_SEPARATOR appended that we need to remove.
+                assert(ietf_dir.back() == DIR_SEPARATOR);
                 remove_trailing_dir_separator(&ietf_dir);
 
                 // Extract IETF code from "lib/<netstandrd_ver>/<ietf-code>"
@@ -170,7 +171,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, ui
             }
             else
             {
-                relative_path = file_name;
+                relative_path = std::move(file_name);
             }
         }
 
