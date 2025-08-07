@@ -1002,14 +1002,15 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
 
     GenTree* operand = tree->gtGetOp1();
     assert(!operand->isContained());
+    regNumber tempReg = internalRegisters.GetSingle(tree);
     // The src must be a register.
     regNumber operandReg = genConsumeReg(operand);
     emitAttr  attr       = emitActualTypeSize(tree);
+    assert(EA_SIZE(attr) == EA_PTRSIZE);
+    assert(tempReg != operandReg);
 
-    GetEmitter()->emitIns_R_R_I(INS_addi, attr, targetReg, operandReg, 1);
-    // bne targetReg, zero, 2 * 4
-    GetEmitter()->emitIns_R_R_I(INS_bne, attr, targetReg, REG_R0, 8);
-    GetEmitter()->emitIns_R_R(INS_not, attr, targetReg, targetReg);
+    GetEmitter()->emitIns_R_R_I(INS_sltiu, attr, tempReg, operandReg, SIZE_T_MAX); // temp = (operand < max) ? 1 : 0;
+    GetEmitter()->emitIns_R_R_I(INS_add, attr, targetReg, operandReg, tempReg);    // target = operand + temp;
 
     genProduceReg(tree);
 }
