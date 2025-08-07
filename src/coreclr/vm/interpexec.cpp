@@ -1855,11 +1855,11 @@ MAIN_LOOP:
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
                     int32_t targetAddrSlot = ip[4];
-                    int32_t indirectFlag = ip[5];
+                    int32_t flags = ip[5];
 
                     ip += 6;
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
-                    PCODE callTarget = indirectFlag
+                    PCODE callTarget = (flags & (int32_t)PInvokeCallFlags::Indirect)
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
                         : (PCODE)pMethod->pDataItems[targetAddrSlot];
 
@@ -1872,7 +1872,7 @@ MAIN_LOOP:
                     inlinedCallFrame.Push();
 
                     {
-                        GCX_PREEMP();
+                        GCX_MAYBE_PREEMP(!(flags & (int32_t)PInvokeCallFlags::SuppressGCTransition));
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
 
