@@ -2303,11 +2303,7 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-#ifdef FEATURE_EH_FUNCLETS
-        DispatchManagedException(exceptObj);
-#else // FEATURE_EH_FUNCLETS
         RaiseTheExceptionInternalOnly(exceptObj, FALSE);
-#endif // FEATURE_EH_FUNCLETS
     }
 
     ::SetLastError(lastError);

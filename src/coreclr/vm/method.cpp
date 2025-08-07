@@ -1190,7 +1190,8 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 
     Module *pModule = GetModule();
 
-    // Always pickup overrides like reflection emit, EnC, etc.
+    // Always pickup overrides like reflection emit, EnC, etc. irrespective of RVA.
+    // Profilers can attach dynamic IL to methods with zero RVA.
     TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
 
     if (pIL == (TADDR)NULL)
