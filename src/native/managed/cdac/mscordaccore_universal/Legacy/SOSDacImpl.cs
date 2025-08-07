@@ -2377,14 +2377,16 @@ internal sealed unsafe partial class SOSDacImpl
             hr = HResults.E_NOTIMPL;
         else if (rcw == 0)
             hr = HResults.E_INVALIDARG;
+        else if ((rcw & ComWrappersConstants.rcwMask) == 0)
+            *identity = 0;
         else
         {
             try
             {
                 if (identity != null)
                 {
-                    Contracts.IObject objectContract = _target.Contracts.Object;
-                    TargetPointer identityPtr = objectContract.GetComWrappersRCWIdentity(rcw.ToTargetPointer(_target));
+                    Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+                    TargetPointer identityPtr = comWrappersContract.GetComWrappersRCWIdentity((rcw.ToTargetPointer(_target) & ~(ComWrappersConstants.rcwMask)));
                     *identity = identityPtr.ToClrDataAddress(_target);
                 }
             }

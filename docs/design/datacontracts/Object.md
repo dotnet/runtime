@@ -16,9 +16,6 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
 
 // Get built-in COM data for the object if available. Returns false, if address does not represent a COM object using built-in COM
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
-
-// Get the address of the external COM object
-TargetPointer GetComWrappersRCWIdentity(TargetPointer rcw);
 ```
 
 ## Version 1
@@ -34,7 +31,6 @@ Data descriptors used:
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
 | `SyncBlock` | `InteropInfo` | Optional `InteropSyncBlockInfo` for the sync block |
 | `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
-| `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object |
 
 Global variables used:
 | Global Name | Type | Purpose |
