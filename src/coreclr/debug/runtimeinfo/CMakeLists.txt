@@ -1,9 +1,10 @@
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 set(RUNTIMEINFO_SOURCES
     runtimeinfo.cpp
 )
 
 add_library_clr(runtimeinfo STATIC ${RUNTIMEINFO_SOURCES})
-target_include_directories(runtimeinfo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 function(generate_module_index Target ModuleIndexFile)
     # Win32 may be false when cross compiling
