@@ -18,6 +18,7 @@ internal sealed class DacEnumerableHash
 {
     private const int SLOT_LENGTH = 0;
     private const int SKIP_SPECIAL_SLOTS = 3;
+    private const int END_SENTINEL = 0x1;
 
     private readonly Target _target;
     private readonly Target.TypeInfo _type;
@@ -77,7 +78,7 @@ internal sealed class DacEnumerableHash
 
     private static bool IsEndSentinel(TargetPointer value)
     {
-        return ((ulong)value & 0x1) == 0x1;
+        return ((ulong)value & END_SENTINEL) == END_SENTINEL;
     }
 
     private List<TargetPointer> ReadChain(TargetPointer chainElement)

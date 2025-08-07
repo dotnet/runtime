@@ -421,7 +421,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         }
 
 
-        if (legacyMethod is not null)
+        if (_legacyProcess is not null)
         {
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
         }
