@@ -862,7 +862,7 @@ internal static class ReflectionTest
 
     class TestActivationWithoutConstructor
     {
-        static void Main()
+        public static void Run()
         {
             {
                 object o = Activator.CreateInstance(typeof(StructForCreateInstanceDirect<>).MakeGenericType(GetTheType()));
