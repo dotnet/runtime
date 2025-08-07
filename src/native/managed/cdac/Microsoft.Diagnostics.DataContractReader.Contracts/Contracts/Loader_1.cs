@@ -195,6 +195,18 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
+    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+    {
+        Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
+        if (assembly.PEImage == TargetPointer.Null)
+            throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
+        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(assembly.PEImage);
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+        return peImageLayout.Base + (uint)rva;
+    }
+
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {
         buffer = TargetPointer.Null;
