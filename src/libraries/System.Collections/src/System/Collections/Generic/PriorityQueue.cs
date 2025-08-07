@@ -1014,7 +1014,7 @@ namespace System.Collections.Generic
 
                     if (_version != localQueue._version)
                     {
-                        System.Collections.ThrowHelper.ThrowVersionCheckFailed();
+                        ThrowHelper.ThrowVersionCheckFailed();
                     }
 
                     if ((uint)_index < (uint)localQueue._size)
@@ -1039,7 +1039,7 @@ namespace System.Collections.Generic
                 {
                     if (_version != _queue._version)
                     {
-                        System.Collections.ThrowHelper.ThrowVersionCheckFailed();
+                        ThrowHelper.ThrowVersionCheckFailed();
                     }
 
                     _index = 0;
