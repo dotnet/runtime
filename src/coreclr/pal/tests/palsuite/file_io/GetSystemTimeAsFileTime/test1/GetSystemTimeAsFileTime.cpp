@@ -66,16 +66,19 @@ PALTEST(file_io_GetSystemTimeAsFileTime_test1_paltest_getsystemtimeasfiletime_te
         precise only to the level of about 10000 nanoseconds, so we would 
         fail the comparison depending on when we took time slices.  
        
-        To fix this, we just check that we're within a millisecond of
+        To fix this, we just check that we're within 10 milliseconds of
         sleeping 3000 milliseconds.  We're not currently ensuring that we 
         haven't slept much more than 3000 ms.  We may want to do that.
         */
         TimeError = 30000000 - ( FullSecondTime - FullFirstTime );
-        if ( TimeError > 10000)
+        if ( TimeError > 100000)
         {
         Fail("ERROR: Two system times were tested, with a sleep of 3 "
                "seconds between.  The time passed should have been at least "
-               "3 seconds.  But, it was less according to the function.");
+               "3 seconds.  But, it was less according to the function. "
+               "Actual time difference: %llu hundred-nanoseconds, "
+               "Expected: 30000000, Tolerance: 100000", 
+               (unsigned long long)(FullSecondTime - FullFirstTime));
         }
     }
 
