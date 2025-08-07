@@ -94,7 +94,6 @@ namespace System.Net.Security
                     {
                         // Throw AuthenticationException if validation failed
                         proxy.ValidationException = new AuthenticationException(SR.net_ssl_io_cert_custom_validation);
-                        return false;
                     }
                     return proxy.ValidationResult.IsValid;
                 }
