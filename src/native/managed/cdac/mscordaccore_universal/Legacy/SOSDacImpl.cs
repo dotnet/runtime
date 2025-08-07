@@ -2371,7 +2371,42 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface10.IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW)
         => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersRCW(rcw, isComWrappersRCW) : HResults.E_NOTIMPL;
     int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
-        => _legacyImpl10 is not null ? _legacyImpl10.GetComWrappersRCWData(rcw, identity) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        if (_target.ReadGlobalPointer(Constants.Globals.FeatureCOMWrappers) == 0)
+            hr = HResults.E_NOTIMPL;
+        else if (rcw == 0)
+            hr = HResults.E_INVALIDARG;
+        else
+        {
+            try
+            {
+                if (identity != null)
+                {
+                    Contracts.IObject objectContract = _target.Contracts.Object;
+                    TargetPointer identityPtr = objectContract.GetComWrappersRCWIdentity(rcw.ToTargetPointer(_target));
+                    *identity = identityPtr.ToClrDataAddress(_target);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            ClrDataAddress identityLocal;
+            int hrLocal = _legacyImpl10.GetComWrappersRCWData(rcw, &identityLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*identity == identityLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface10
 
     #region ISOSDacInterface11

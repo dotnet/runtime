@@ -214,6 +214,11 @@ CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
 CDAC_TYPE_END(SyncBlock)
 
+CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
+CDAC_TYPE_INDETERMINATE(NativeObjectWrapperObject)
+CDAC_TYPE_FIELD(NativeObjectWrapperObject, /*pointer*/, ExternalComObject, cdac_data<NativeObjectWrapperObject>::ExternalComObject)
+CDAC_TYPE_END(NativeObjectWrapperObject)
+
 CDAC_TYPE_BEGIN(SyncTableEntry)
 CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
 CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, SyncBlock, offsetof(SyncTableEntry, m_SyncBlock))
@@ -969,6 +974,11 @@ CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
+#endif
+#if FEATURE_COMWRAPPERS
+CDAC_GLOBAL(FeatureCOMWrappers, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureCOMWrappers, uint8, 0)
 #endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT

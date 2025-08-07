@@ -129,4 +129,14 @@ internal readonly struct Object_1 : IObject
         Data.SyncTableEntry entry = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + offsetInSyncTableEntries);
         return entry.SyncBlock;
     }
+
+    public TargetPointer GetComWrappersRCWIdentity(TargetPointer rcw)
+    {
+        if ((rcw.Value & 1) == 0)
+        {
+            return TargetPointer.Null; // Invalid RCW address
+        }
+        Data.NativeObjectWrapperObject wrapper = _target.ProcessedData.GetOrAdd<Data.NativeObjectWrapperObject>(rcw.Value & ~1UL);
+        return wrapper.ExternalComObject;
+    }
 }
