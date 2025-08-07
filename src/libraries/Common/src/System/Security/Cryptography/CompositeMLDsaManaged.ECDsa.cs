@@ -7,6 +7,14 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
+<<<<<<< HEAD
+=======
+using Microsoft.Win32.SafeHandles;
+
+#if NETFRAMEWORK
+using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
+#endif
+>>>>>>> darc/back/30bc8f9-b8ed7bb
 
 namespace System.Security.Cryptography
 {
@@ -21,9 +29,25 @@ namespace System.Security.Cryptography
         {
             private readonly ECDsaAlgorithm _algorithm;
 
+<<<<<<< HEAD
             private ECDsa _ecdsa;
 
             private ECDsaComponent(ECDsa ecdsa, ECDsaAlgorithm algorithm)
+=======
+#if NET || NETSTANDARD
+            private ECDsa _ecdsa;
+#else
+            private ECDsaCng _ecdsa;
+#endif
+
+            private ECDsaComponent(
+#if NET || NETSTANDARD
+                ECDsa ecdsa,
+#else
+                ECDsaCng ecdsa,
+#endif
+                ECDsaAlgorithm algorithm)
+>>>>>>> darc/back/30bc8f9-b8ed7bb
             {
                 Debug.Assert(ecdsa != null);
 
@@ -35,6 +59,7 @@ namespace System.Security.Cryptography
             // Limit this implementation to the NIST curves until we have a better understanding
             // of where native implementations of composite are aligning.
             public static bool IsAlgorithmSupported(ECDsaAlgorithm algorithm) =>
+<<<<<<< HEAD
 #if NET
                 algorithm.CurveOid is Oids.secp256r1 or Oids.secp384r1 or Oids.secp521r1;
 #else
@@ -47,6 +72,16 @@ namespace System.Security.Cryptography
                 return new ECDsaComponent(ECDsa.Create(algorithm.Curve), algorithm);
 #else
                 throw new PlatformNotSupportedException();
+=======
+                algorithm.CurveOidValue is Oids.secp256r1 or Oids.secp384r1 or Oids.secp521r1;
+
+            public static ECDsaComponent GenerateKey(ECDsaAlgorithm algorithm)
+            {
+#if NET || NETSTANDARD
+                return new ECDsaComponent(ECDsa.Create(algorithm.Curve), algorithm);
+#else
+                return new ECDsaComponent(CreateKey(algorithm.CurveOid.FriendlyName), algorithm);
+>>>>>>> darc/back/30bc8f9-b8ed7bb
 #endif
             }
 
@@ -68,7 +103,11 @@ namespace System.Security.Cryptography
                         // If domain parameters are present, validate that they match the composite ML-DSA algorithm.
                         if (ecPrivateKey.Parameters is ECDomainParameters domainParameters)
                         {
+<<<<<<< HEAD
                             if (domainParameters.Named is not string curveOid || curveOid != algorithm.CurveOid)
+=======
+                            if (domainParameters.Named is not string curveOid || curveOid != algorithm.CurveOidValue)
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                             {
                                 // The curve specified must be named and match the required curve for the composite ML-DSA algorithm.
                                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -90,7 +129,11 @@ namespace System.Security.Cryptography
                         {
                             ecPrivateKey.PrivateKey.CopyTo(d);
 
+<<<<<<< HEAD
 #if NET
+=======
+#if NET || NETSTANDARD
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                             ECParameters parameters = new ECParameters
                             {
                                 Curve = algorithm.Curve,
@@ -105,8 +148,38 @@ namespace System.Security.Cryptography
                             parameters.Validate();
 
                             return new ECDsaComponent(ECDsa.Create(parameters), algorithm);
+<<<<<<< HEAD
 #else
                             throw new PlatformNotSupportedException();
+=======
+#else // NETFRAMEWORK
+#if NET472_OR_GREATER
+#error ECDsa.Create(ECParameters) is avaliable in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
+#endif
+                            Debug.Assert(!string.IsNullOrEmpty(algorithm.CurveOid.FriendlyName));
+                            Debug.Assert(x is null == y is null);
+
+                            if (x is null)
+                            {
+                                byte[] zero = new byte[d.Length];
+                                x = zero;
+                                y = zero;
+                            }
+
+                            if (!TryValidateNamedCurve(x, y, d))
+                            {
+                                throw new CryptographicException(SR.Cryptography_InvalidECPrivateKeyParameters);
+                            }
+
+                            return new ECDsaComponent(
+                                ECCng.EncodeEccKeyBlob(
+                                    algorithm.PrivateKeyBlobMagicNumber,
+                                    x,
+                                    y,
+                                    d,
+                                    blob => ImportKeyBlob(blob, algorithm.CurveOid.FriendlyName, includePrivateParameters: true)),
+                                algorithm);
+>>>>>>> darc/back/30bc8f9-b8ed7bb
 #endif
                         }
                     }
@@ -130,26 +203,59 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
                 }
 
+<<<<<<< HEAD
 #if NET
+=======
+                byte[] x = source.Slice(1, fieldWidth).ToArray();
+                byte[] y = source.Slice(1 + fieldWidth).ToArray();
+
+#if NET || NETSTANDARD
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                 ECParameters parameters = new ECParameters()
                 {
                     Curve = algorithm.Curve,
                     Q = new ECPoint()
                     {
+<<<<<<< HEAD
                         X = source.Slice(1, fieldWidth).ToArray(),
                         Y = source.Slice(1 + fieldWidth).ToArray(),
+=======
+                        X = x,
+                        Y = y,
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                     }
                 };
 
                 return new ECDsaComponent(ECDsa.Create(parameters), algorithm);
+<<<<<<< HEAD
 #else
                 throw new PlatformNotSupportedException();
+=======
+#else // NETFRAMEWORK
+#if NET472_OR_GREATER
+#error ECDsa.Create(ECParameters) is available in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
+#endif
+                Debug.Assert(!string.IsNullOrEmpty(algorithm.CurveOid.FriendlyName));
+
+                return new ECDsaComponent(
+                    ECCng.EncodeEccKeyBlob(
+                        algorithm.PublicKeyBlobMagicNumber,
+                        x,
+                        y,
+                        d: null,
+                        blob => ImportKeyBlob(blob, algorithm.CurveOid.FriendlyName, includePrivateParameters: false)),
+                    algorithm);
+>>>>>>> darc/back/30bc8f9-b8ed7bb
 #endif
             }
 
             internal override bool TryExportPrivateKey(Span<byte> destination, out int bytesWritten)
             {
+<<<<<<< HEAD
 #if NET
+=======
+#if NET || NETSTANDARD
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                 ECParameters ecParameters = _ecdsa.ExportParameters(includePrivateParameters: true);
 
                 Debug.Assert(ecParameters.D != null);
@@ -166,12 +272,17 @@ namespace System.Security.Cryptography
 
                     // The curve OID must match the composite ML-DSA algorithm.
                     if (!ecParameters.Curve.IsNamed ||
+<<<<<<< HEAD
                         (ecParameters.Curve.Oid.Value != _algorithm.Curve.Oid.Value && ecParameters.Curve.Oid.FriendlyName != _algorithm.Curve.Oid.FriendlyName))
+=======
+                        (ecParameters.Curve.Oid.Value != _algorithm.CurveOidValue && ecParameters.Curve.Oid.FriendlyName != _algorithm.CurveOid.FriendlyName))
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                     {
                         Debug.Fail("Unexpected curve OID.");
                         throw new CryptographicException();
                     }
 
+<<<<<<< HEAD
                     return TryWriteKey(ecParameters.D, ecParameters.Q.X, ecParameters.Q.Y, _algorithm.CurveOid, destination, out bytesWritten);
                 }
 #else
@@ -181,10 +292,14 @@ namespace System.Security.Cryptography
 #if NET
                 static bool TryWriteKey(byte[] d, byte[]? x, byte[]? y, string curveOid, Span<byte> destination, out int bytesWritten)
                 {
+=======
+
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                     AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
                     try
                     {
+<<<<<<< HEAD
                         // ECPrivateKey
                         using (writer.PushSequence())
                         {
@@ -212,6 +327,9 @@ namespace System.Security.Cryptography
                             }
                         }
 
+=======
+                        WriteKey(ecParameters.D, ecParameters.Q.X, ecParameters.Q.Y, _algorithm.CurveOidValue, writer);
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                         return writer.TryEncode(destination, out bytesWritten);
                     }
                     finally
@@ -219,12 +337,85 @@ namespace System.Security.Cryptography
                         writer.Reset();
                     }
                 }
+<<<<<<< HEAD
 #endif
+=======
+#else
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+                try
+                {
+                    _ecdsa.Key.ExportKeyBlob(
+                        CngKeyBlobFormat.EccPrivateBlob.Format,
+                        blob =>
+                        {
+                            ECCng.DecodeEccKeyBlob(
+                                blob,
+                                (magic, x, y, d) =>
+                                {
+                                    if (magic != _algorithm.PrivateKeyBlobMagicNumber)
+                                    {
+                                        Debug.Fail("Unexpected magic number.");
+                                        throw new CryptographicException();
+                                    }
+
+                                    if (!TryValidateNamedCurve(x, y, d))
+                                    {
+                                        Debug.Fail("Invalid EC parameters.");
+                                        throw new CryptographicException();
+                                    }
+
+                                    WriteKey(d, x, y, _algorithm.CurveOidValue, writer);
+                                    return true;
+                                });
+                        });
+
+                    return writer.TryEncode(destination, out bytesWritten);
+                }
+                finally
+                {
+                    writer.Reset();
+                }
+#endif
+
+                static void WriteKey(byte[] d, byte[]? x, byte[]? y, string curveOid, AsnWriter writer)
+                {
+                    // ECPrivateKey
+                    using (writer.PushSequence())
+                    {
+                        // version 1
+                        writer.WriteInteger(1);
+
+                        // privateKey
+                        writer.WriteOctetString(d);
+
+                        // domainParameters
+                        using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true)))
+                        {
+                            writer.WriteObjectIdentifier(curveOid);
+                        }
+
+                        // publicKey
+                        if (x != null)
+                        {
+                            Debug.Assert(y != null);
+
+                            using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true)))
+                            {
+                                EccKeyFormatHelper.WriteUncompressedPublicKey(x, y, writer);
+                            }
+                        }
+                    }
+                }
+>>>>>>> darc/back/30bc8f9-b8ed7bb
             }
 
             internal override bool TryExportPublicKey(Span<byte> destination, out int bytesWritten)
             {
+<<<<<<< HEAD
 #if NET
+=======
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                 int fieldWidth = _algorithm.KeySizeInBytes;
 
                 if (destination.Length < 1 + 2 * fieldWidth)
@@ -235,11 +426,56 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
+<<<<<<< HEAD
+=======
+                byte[]? x = null;
+                byte[]? y = null;
+
+#if NET || NETSTANDARD
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                 ECParameters ecParameters = _ecdsa.ExportParameters(includePrivateParameters: false);
 
                 ecParameters.Validate();
 
+<<<<<<< HEAD
                 if (ecParameters.Q.X?.Length != fieldWidth)
+=======
+                x = ecParameters.Q.X;
+                y = ecParameters.Q.Y;
+#else
+                // Public parameters, x and y, don't need pinning so they can be pulled out of the inner lambdas.
+                _ecdsa.Key.ExportKeyBlob(
+                    CngKeyBlobFormat.EccPublicBlob.Format,
+                    blob =>
+                    {
+                        ECCng.DecodeEccKeyBlob(
+                            blob,
+                            (magic, localX, localY, _) =>
+                            {
+                                if (magic != _algorithm.PublicKeyBlobMagicNumber)
+                                {
+                                    Debug.Fail("Unexpected magic number.");
+                                    throw new CryptographicException();
+                                }
+
+                                if (!TryValidateNamedCurve(localX, localY, null))
+                                {
+                                    Debug.Fail("Invalid EC parameters.");
+                                    throw new CryptographicException();
+                                }
+
+                                x = localX;
+                                y = localY;
+                                return true;
+                            });
+                    });
+#endif
+
+                Debug.Assert(x is not null);
+                Debug.Assert(y is not null);
+
+                if (x.Length != fieldWidth || y.Length != fieldWidth)
+>>>>>>> darc/back/30bc8f9-b8ed7bb
                 {
                     Debug.Fail("Unexpected key size.");
                     throw new CryptographicException();
@@ -248,6 +484,7 @@ namespace System.Security.Cryptography
                 // Uncompressed ECPoint format
                 destination[0] = 0x04;
 
+<<<<<<< HEAD
                 ecParameters.Q.X.CopyTo(destination.Slice(1, fieldWidth));
                 ecParameters.Q.Y.CopyTo(destination.Slice(1 + fieldWidth));
 
@@ -256,6 +493,13 @@ namespace System.Security.Cryptography
 #else
                 throw new PlatformNotSupportedException();
 #endif
+=======
+                x.CopyTo(destination.Slice(1, fieldWidth));
+                y.CopyTo(destination.Slice(1 + fieldWidth));
+
+                bytesWritten = 1 + 2 * fieldWidth;
+                return true;
+>>>>>>> darc/back/30bc8f9-b8ed7bb
             }
 
             internal override bool VerifyData(
@@ -269,7 +513,22 @@ namespace System.Security.Cryptography
 #if NET
                 return _ecdsa.VerifyData(data, signature, _algorithm.HashAlgorithmName, DSASignatureFormat.Rfc3279DerSequence);
 #else
+<<<<<<< HEAD
                 throw new PlatformNotSupportedException();
+=======
+                byte[] ieeeSignature = null;
+
+                try
+                {
+                    ieeeSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, _algorithm.KeySizeInBits);
+                }
+                catch (CryptographicException)
+                {
+                    return false;
+                }
+
+                return _ecdsa.VerifyData(data, ieeeSignature, _algorithm.HashAlgorithmName);
+>>>>>>> darc/back/30bc8f9-b8ed7bb
 #endif
             }
 
@@ -290,7 +549,19 @@ namespace System.Security.Cryptography
 
                 return bytesWritten;
 #else
+<<<<<<< HEAD
                 throw new PlatformNotSupportedException();
+=======
+                byte[] ieeeSignature = _ecdsa.SignData(data, _algorithm.HashAlgorithmName);
+
+                if (!AsymmetricAlgorithmHelpers.TryConvertIeee1363ToDer(ieeeSignature, destination, out int bytesWritten))
+                {
+                    Debug.Fail("Buffer size should have been validated by caller.");
+                    throw new CryptographicException();
+                }
+
+                return bytesWritten;
+>>>>>>> darc/back/30bc8f9-b8ed7bb
 #endif
             }
 
@@ -304,6 +575,61 @@ namespace System.Security.Cryptography
 
                 base.Dispose(disposing);
             }
+<<<<<<< HEAD
+=======
+
+#if NETFRAMEWORK
+#if NET472_OR_GREATER
+#error ECDsa.Create(ECParameters) is available in .NET Framework 4.7.2 and later, so this workaround is not needed anymore.
+#endif
+            private static ECDsaCng ImportKeyBlob(byte[] ecKeyBlob, string curveName, bool includePrivateParameters)
+            {
+                CngKeyBlobFormat blobFormat = includePrivateParameters ? CngKeyBlobFormat.EccPrivateBlob : CngKeyBlobFormat.EccPublicBlob;
+                CngProvider provider = CngProvider.MicrosoftSoftwareKeyStorageProvider;
+
+                using (SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider())
+                using (SafeNCryptKeyHandle keyHandle = ECCng.ImportKeyBlob(blobFormat.Format, ecKeyBlob, curveName, providerHandle))
+                using (CngKey key = CngKey.Open(keyHandle, CngKeyHandleOpenOptions.EphemeralKey))
+                {
+                    key.SetExportPolicy(CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+                    return new ECDsaCng(key);
+                }
+            }
+
+            private static ECDsaCng CreateKey(string curveName)
+            {
+                CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
+                {
+                    ExportPolicy = CngExportPolicies.AllowPlaintextExport,
+                };
+
+                byte[] curveNameBytes = new byte[(curveName.Length + 1) * sizeof(char)]; // +1 to add trailing null
+                System.Text.Encoding.Unicode.GetBytes(curveName, 0, curveName.Length, curveNameBytes, 0);
+                creationParameters.Parameters.Add(new CngProperty(KeyPropertyName.ECCCurveName, curveNameBytes, CngPropertyOptions.None));
+
+                using (CngKey key = CngKey.Create(new CngAlgorithm("ECDSA"), null, creationParameters))
+                {
+                    return new ECDsaCng(key);
+                }
+            }
+
+            private static bool TryValidateNamedCurve(byte[]? x, byte[]? y, byte[]? d)
+            {
+                bool hasErrors = true;
+
+                if (d is not null && y is null && x is null)
+                {
+                    hasErrors = false;
+                }
+                else if (y is not null && x is not null && y.Length == x.Length)
+                {
+                    hasErrors = (d is not null && (d.Length != x.Length));
+                }
+
+                return !hasErrors;
+            }
+#endif
+>>>>>>> darc/back/30bc8f9-b8ed7bb
         }
     }
 }
