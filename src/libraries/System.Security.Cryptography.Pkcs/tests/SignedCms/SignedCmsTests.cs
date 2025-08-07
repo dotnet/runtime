@@ -1501,7 +1501,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(" 1.1", "010100", null)]
         [InlineData("1.1 ", "010100", null)]
         [InlineData("1 1", "010100", null)]
-        public static void SignIdentifiedContent_BadOid(string oidValueIn, string contentHex, string oidValueOut)
+        public static void SignIdentifiedContent_BadOid(string? oidValueIn, string contentHex, string? oidValueOut)
         {
             SignedCms signedCms = new SignedCms(
                 new ContentInfo(new Oid(oidValueIn, "Some Friendly Name"), contentHex.HexToByteArray()));
@@ -1848,7 +1848,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 useSigner =>
                 {
                     using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
-                    using (SlhDsa key = SlhDsa.ImportSlhDsaSecretKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
+                    using (SlhDsa key = SlhDsa.ImportSlhDsaPrivateKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
                     {
                         useSigner(new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key));
                     }

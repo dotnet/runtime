@@ -1721,8 +1721,8 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_S:
                 {
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[2]);
-                    void* helperArg = LOCAL_VAR(ip[3], void*);
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3]);
+                    void* helperArg = LOCAL_VAR(ip[2], void*);
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
                     ip += 4;
@@ -2012,6 +2012,18 @@ CALL_INTERP_METHOD:
                     memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
                     ip += 3;
                     break;
+                case INTOP_CPBLK:
+                {
+                    void* dst = LOCAL_VAR(ip[1], void*);
+                    void* src = LOCAL_VAR(ip[2], void*);
+                    size_t size = LOCAL_VAR(ip[3], size_t);
+                    if (size && (!dst || !src))
+                        COMPlusThrow(kNullReferenceException);
+                    else
+                        memcpyNoGCRefs(dst, src, size);
+                    ip += 4;
+                    break;
+                }
                 case INTOP_LOCALLOC:
                 {
                     size_t len = LOCAL_VAR(ip[2], size_t);
@@ -2202,7 +2214,7 @@ do {                                                                           \
                         COMPlusThrow(kIndexOutOfRangeException);
 
                     uint8_t* pData = arr->GetDataPtr();
-                    OBJECTREF elemRef = *(OBJECTREF*)(pData + idx * sizeof(OBJECTREF));
+                    OBJECTREF elemRef = ObjectToOBJECTREF(*(Object**)(pData + idx * sizeof(OBJECTREF)));
                     LOCAL_VAR(ip[1], OBJECTREF) = elemRef;
                     ip += 4;
                     break;

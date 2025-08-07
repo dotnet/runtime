@@ -200,7 +200,7 @@ namespace System.Text.Json.Serialization.Metadata
                             if (state.PendingTask is not null)
                             {
                                 // Exceptions should only be propagated by the resuming converter
-#if NET8_0_OR_GREATER
+#if NET
                                 await state.PendingTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 #else
                                 try

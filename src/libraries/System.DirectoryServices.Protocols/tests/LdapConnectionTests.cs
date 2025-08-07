@@ -15,7 +15,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null, new string[0])]
         [InlineData("server", new string[] { "server" })]
-        public void Ctor_String(string server, string[] expectedServer)
+        public void Ctor_String(string? server, string[] expectedServer)
         {
             var connection = new LdapConnection(server);
             Assert.Equal(AuthType.Negotiate, connection.AuthType);

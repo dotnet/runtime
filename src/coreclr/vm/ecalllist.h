@@ -334,7 +334,7 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("TryGetHashCode", ObjectNative::TryGetHashCode)
     FCFuncElement("ContentEquals", ObjectNative::ContentEquals)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
-    FCFuncElement("AllocTailCallArgBufferWorker", TailCallHelp::AllocTailCallArgBufferWorker)
+    FCFuncElement("GetTailCallArgBuffer", TailCallHelp::GetTailCallArgBuffer)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
 FCFuncEnd()
 

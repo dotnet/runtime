@@ -1920,7 +1920,33 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread)
-        => _legacyImpl is not null ? _legacyImpl.GetThreadFromThinlockID(thinLockId, pThread) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        if (pThread == null)
+            hr = HResults.E_INVALIDARG;
+        try
+        {
+            TargetPointer threadPtr = _target.Contracts.Thread.IdToThread(thinLockId);
+            *pThread = threadPtr.ToClrDataAddress(_target);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress pThreadLocal;
+            int hrLocal = _legacyImpl.GetThreadFromThinlockID(thinLockId, &pThreadLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pThread == pThreadLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetThreadLocalModuleData(ClrDataAddress thread, uint index, void* data)
     {
         // CoreCLR does not use thread local modules anymore

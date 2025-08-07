@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         private static readonly FakeService _instance = new FakeService();
 
-        public static TheoryData AddImplementationTypeData
+        public static TheoryData<Action<IServiceCollection>, Type, object, Type, ServiceLifetime> AddImplementationTypeData
         {
             get
             {
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(lifeCycle, descriptor.Lifetime);
         }
 
-        public static TheoryData AddImplementationFactoryData
+        public static TheoryData<Action<IServiceCollection>, Type, object, Type, ServiceLifetime> AddImplementationFactoryData
         {
             get
             {
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(lifeCycle, descriptor.Lifetime);
         }
 
-        public static TheoryData AddSingletonData
+        public static TheoryData<Action<IServiceCollection>> AddSingletonData
         {
             get
             {
@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
         }
 
-        public static TheoryData TryAddImplementationTypeData
+        public static TheoryData<Action<IServiceCollection>, Type, object, Type, ServiceLifetime> TryAddImplementationTypeData
         {
             get
             {
@@ -256,7 +256,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
         }
 
-        public static TheoryData TryAddEnumerableImplementationTypeData
+        public static TheoryData<Func<ServiceDescriptor>, Type, object, Type, ServiceLifetime> TryAddEnumerableImplementationTypeData
         {
             get
             {
@@ -327,7 +327,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(expectedLifetime, d.Lifetime);
         }
 
-        public static TheoryData TryAddEnumerableInvalidImplementationTypeData
+        public static TheoryData<ServiceDescriptor, Type, Type> TryAddEnumerableInvalidImplementationTypeData
         {
             get
             {
@@ -489,7 +489,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(new[] { descriptor }, collection);
         }
 
-        public static TheoryData NullServiceKeyData
+        public static TheoryData<ServiceDescriptor> NullServiceKeyData
         {
             get
             {
@@ -520,7 +520,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Throws<InvalidOperationException>(() => serviceDescriptor.KeyedImplementationFactory);
         }
 
-        public static TheoryData NotNullServiceKeyData
+        public static TheoryData<ServiceDescriptor> NotNullServiceKeyData
         {
             get
             {

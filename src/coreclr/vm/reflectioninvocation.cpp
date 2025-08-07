@@ -342,6 +342,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
 
+    if (pMeth->IsAsyncMethod())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Async"));
+    }
+
 #ifdef _DEBUG
     if (g_pConfig->ShouldInvokeHalt(pMeth))
     {
@@ -612,7 +617,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         // We have a special case for Strings...The object is returned...
         if (fCtorOfVariableSizedObject) {
             PVOID pReturnValue = &callDescrData.returnValue;
-            gc.retVal = *(OBJECTREF *)pReturnValue;
+            gc.retVal = ObjectToOBJECTREF(*(Object**)pReturnValue);
         }
 
         // If it is a Nullable<T>, box it using Nullable<T> conventions.
