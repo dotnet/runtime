@@ -107,48 +107,6 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentException_ValueTooLarge(value.Length);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyAndValue(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> value)
-        {
-            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || value.Length > JsonConstants.MaxUnescapedTokenSize)
-                ThrowHelper.ThrowArgumentException(propertyName, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyAndValue(ReadOnlySpan<byte> propertyName, ReadOnlySpan<char> value)
-        {
-            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize || value.Length > JsonConstants.MaxCharacterTokenSize)
-                ThrowHelper.ThrowArgumentException(propertyName, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyAndValue(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> value)
-        {
-            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize || value.Length > JsonConstants.MaxUnescapedTokenSize)
-                ThrowHelper.ThrowArgumentException(propertyName, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyAndValue(ReadOnlySpan<char> propertyName, ReadOnlySpan<char> value)
-        {
-            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || value.Length > JsonConstants.MaxCharacterTokenSize)
-                ThrowHelper.ThrowArgumentException(propertyName, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyNameLength(ReadOnlySpan<char> propertyName)
-        {
-            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize)
-                ThrowHelper.ThrowPropertyNameTooLargeArgumentException(propertyName.Length);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyNameLength(ReadOnlySpan<byte> propertyName)
-        {
-            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)
-                ThrowHelper.ThrowPropertyNameTooLargeArgumentException(propertyName.Length);
-        }
-
         internal static void ValidateNumber(ReadOnlySpan<byte> utf8FormattedNumber)
         {
             // This is a simplified version of the number reader from Utf8JsonReader.TryGetNumber,
