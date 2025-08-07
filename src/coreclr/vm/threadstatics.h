@@ -67,6 +67,16 @@ struct TLSIndex
 // Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
 struct InFlightTLSData;
 typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
+struct InFlightTLSData
+{
+#ifndef DACCESS_COMPILE
+    InFlightTLSData(TLSIndex index);
+    ~InFlightTLSData();
+#endif // !DACCESS_COMPILE
+    PTR_InFlightTLSData pNext; // Points at the next in-flight TLS data
+    TLSIndex tlsIndex; // The TLS index for the static
+    OBJECTHANDLE hTLSData; // The TLS data for the static
+};
 
 #define EXTENDED_DIRECT_THREAD_LOCAL_SIZE 48
 
