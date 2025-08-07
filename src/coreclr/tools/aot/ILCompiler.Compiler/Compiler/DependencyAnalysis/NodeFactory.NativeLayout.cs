@@ -143,66 +143,6 @@ namespace ILCompiler.DependencyAnalysis
                 });
             }
 
-            // Produce a set of dependencies that is necessary such that if this type
-            // needs to be used referenced from a NativeLayout template, that the template
-            // will be properly constructable.  (This is done by ensuring that all
-            // canonical types in the deconstruction of the type are ConstructedEEType instead
-            // of just necessary. (Which is what the actual templates signatures will ensure)
-            public IEnumerable<IDependencyNode> TemplateConstructableTypes(TypeDesc type)
-            {
-                if (!type.IsRuntimeDeterminedSubtype)
-                {
-                    yield return _factory.MaximallyConstructableType(type);
-                    yield break;
-                }
-
-                // Array types are the only parameterized types that have templates
-                if (type.IsSzArray && !type.IsArrayTypeWithoutGenericInterfaces())
-                {
-                    TypeDesc arrayCanonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-
-                    // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
-                    if (arrayCanonicalType.IsCanonicalSubtype(CanonicalFormKind.Any) && !_factory.NecessaryTypeSymbol(arrayCanonicalType).RepresentsIndirectionCell)
-                    {
-                        yield return _factory.NativeLayout.TemplateTypeLayout(arrayCanonicalType);
-                    }
-                }
-
-                while (type.IsParameterizedType)
-                {
-                    type = ((ParameterizedType)type).ParameterType;
-                }
-
-                if (type.IsFunctionPointer)
-                {
-                    MethodSignature sig = ((FunctionPointerType)type).Signature;
-                    foreach (var dependency in TemplateConstructableTypes(sig.ReturnType))
-                        yield return dependency;
-
-                    foreach (var param in sig)
-                        foreach (var dependency in TemplateConstructableTypes(param))
-                            yield return dependency;
-
-                    // Nothing else to do for function pointers
-                    yield break;
-                }
-
-                TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-
-                // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
-                if (canonicalType.IsCanonicalSubtype(CanonicalFormKind.Any) && !_factory.NecessaryTypeSymbol(canonicalType).RepresentsIndirectionCell)
-                {
-                    if (!_factory.TypeSystemContext.IsCanonicalDefinitionType(canonicalType, CanonicalFormKind.Any))
-                        yield return _factory.NativeLayout.TemplateTypeLayout(canonicalType);
-                }
-
-                foreach (TypeDesc instantiationType in type.Instantiation)
-                {
-                    foreach (var dependency in TemplateConstructableTypes(instantiationType))
-                        yield return dependency;
-                }
-            }
-
             private NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode> _typeSignatures;
             internal NativeLayoutTypeSignatureVertexNode TypeSignatureVertex(TypeDesc type)
             {
