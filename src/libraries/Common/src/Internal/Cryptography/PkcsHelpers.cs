@@ -223,7 +223,7 @@ namespace Internal.Cryptography
                 return Oids.Sha384;
             if (algName == HashAlgorithmName.SHA512)
                 return Oids.Sha512;
-#if NET8_0_OR_GREATER
+#if NET
             if (algName == HashAlgorithmName.SHA3_256)
                 return Oids.Sha3_256;
             if (algName == HashAlgorithmName.SHA3_384)

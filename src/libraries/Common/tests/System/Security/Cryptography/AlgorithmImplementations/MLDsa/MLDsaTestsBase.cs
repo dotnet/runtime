@@ -394,7 +394,7 @@ namespace System.Security.Cryptography.Tests
 
         protected static byte[]? CalculateMu(MLDsa mldsa, byte[] data, byte[]? context = null)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if (MLDsaTestHelpers.ExternalMuIsSupported)
             {
                 byte[] mu = new byte[mldsa.Algorithm.MuSizeInBytes];

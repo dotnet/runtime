@@ -1898,11 +1898,11 @@ MAIN_LOOP:
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
                     int32_t targetAddrSlot = ip[4];
-                    int32_t indirectFlag = ip[5];
+                    int32_t flags = ip[5];
 
                     ip += 6;
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
-                    PCODE callTarget = indirectFlag
+                    PCODE callTarget = (flags & (int32_t)PInvokeCallFlags::Indirect)
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
                         : (PCODE)pMethod->pDataItems[targetAddrSlot];
 
@@ -1915,7 +1915,7 @@ MAIN_LOOP:
                     inlinedCallFrame.Push();
 
                     {
-                        GCX_PREEMP();
+                        GCX_MAYBE_PREEMP(!(flags & (int32_t)PInvokeCallFlags::SuppressGCTransition));
                         InvokeCompiledMethod(targetMethod, stack + callArgsOffset, stack + returnOffset, callTarget);
                     }
 
@@ -2079,6 +2079,18 @@ CALL_INTERP_METHOD:
                     memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
                     ip += 3;
                     break;
+                case INTOP_CPBLK:
+                {
+                    void* dst = LOCAL_VAR(ip[1], void*);
+                    void* src = LOCAL_VAR(ip[2], void*);
+                    size_t size = LOCAL_VAR(ip[3], size_t);
+                    if (size && (!dst || !src))
+                        COMPlusThrow(kNullReferenceException);
+                    else
+                        memcpyNoGCRefs(dst, src, size);
+                    ip += 4;
+                    break;
+                }
                 case INTOP_LOCALLOC:
                 {
                     size_t len = LOCAL_VAR(ip[2], size_t);
