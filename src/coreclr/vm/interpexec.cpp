@@ -1721,8 +1721,8 @@ MAIN_LOOP:
 
                 case INTOP_CALL_HELPER_P_S:
                 {
-                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[2]);
-                    void* helperArg = LOCAL_VAR(ip[3], void*);
+                    HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3]);
+                    void* helperArg = LOCAL_VAR(ip[2], void*);
 
                     LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
                     ip += 4;
