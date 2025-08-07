@@ -11,8 +11,6 @@
 #include "gchandletableimpl.h"
 #include "gceventstatus.h"
 
-#include "cdacdata.h"
-
 #ifdef SERVER_GC
 #define GC_NAMESPACE SVR
 #else // SERVER_GC

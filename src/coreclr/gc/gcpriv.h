@@ -17,8 +17,6 @@
 #include "gc.h"
 #include "gcrecord.h"
 
-#include "cdacdata.h"
-
 // The per heap and global fields are separated into the following categories -
 //
 // Used in GC and needs to be maintained, ie, next GC can be using this field so it needs to have the right value.
@@ -5661,11 +5659,11 @@ public:
     PER_HEAP_ISOLATED_FIELD_MAINTAINED sorted_table* seg_table;
 #endif //FEATURE_BASICFREEZE
 
-    friend struct cdac_data<gc_heap>;
+    friend struct ::cdac_data<gc_heap>;
 }; // class gc_heap
 
 template<>
-struct cdac_data<gc_heap>
+struct ::cdac_data<gc_heap>
 {
 #ifdef MULTIPLE_HEAPS
     static constexpr void* const Heaps = (void*)&gc_heap::g_heaps;
