@@ -258,7 +258,7 @@ static_assert_no_msg(sizeof(void*) == 4 || sizeof(void*) == 8);
 
 // C-style designated initializers are a C++20 feature.  Have to use plain old aggregate initialization instead.
 
-// DLLEXPORT
+DLLEXPORT
 struct MagicAndBlob BlobDataDescriptor = {
     /*.magic = */ 0x00424F4C42434144ull,// "DACBLOB",
     /*.Blob =*/ {
