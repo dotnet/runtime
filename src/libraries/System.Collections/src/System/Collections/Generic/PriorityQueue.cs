@@ -1012,25 +1012,20 @@ namespace System.Collections.Generic
                 {
                     PriorityQueue<TElement, TPriority> localQueue = _queue;
 
-                    if (_version == localQueue._version && ((uint)_index < (uint)localQueue._size))
+                    if (_version != localQueue._version)
+                    {
+                        ThrowHelper.ThrowVersionCheckFailed();
+                    }
+
+                    if ((uint)_index < (uint)localQueue._size)
                     {
                         _current = localQueue._nodes[_index];
                         _index++;
                         return true;
                     }
 
-                    return MoveNextRare();
-                }
-
-                private bool MoveNextRare()
-                {
-                    if (_version != _queue._version)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                    }
-
-                    _index = _queue._size + 1;
                     _current = default;
+                    _index = -1;
                     return false;
                 }
 
@@ -1044,7 +1039,7 @@ namespace System.Collections.Generic
                 {
                     if (_version != _queue._version)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                        ThrowHelper.ThrowVersionCheckFailed();
                     }
 
                     _index = 0;
