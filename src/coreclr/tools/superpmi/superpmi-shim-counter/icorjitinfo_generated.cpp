@@ -1149,13 +1149,6 @@ void* interceptor_ICJI::GetCookieForInterpreterCalliSig(
     return original_ICorJitInfo->GetCookieForInterpreterCalliSig(szMetaSig);
 }
 
-bool interceptor_ICJI::canGetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig)
-{
-    mcs->AddCall("canGetCookieForPInvokeCalliSig");
-    return original_ICorJitInfo->canGetCookieForPInvokeCalliSig(szMetaSig);
-}
-
 CORINFO_JUST_MY_CODE_HANDLE interceptor_ICJI::getJustMyCodeHandle(
           CORINFO_METHOD_HANDLE method,
           CORINFO_JUST_MY_CODE_HANDLE** ppIndirection)
@@ -1220,13 +1213,6 @@ CORINFO_VARARGS_HANDLE interceptor_ICJI::getVarArgsHandle(
 {
     mcs->AddCall("getVarArgsHandle");
     return original_ICorJitInfo->getVarArgsHandle(pSig, methHnd, ppIndirection);
-}
-
-bool interceptor_ICJI::canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig)
-{
-    mcs->AddCall("canGetVarArgsHandle");
-    return original_ICorJitInfo->canGetVarArgsHandle(pSig);
 }
 
 InfoAccessType interceptor_ICJI::constructStringLiteral(

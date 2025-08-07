@@ -1143,28 +1143,11 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // In order for this operation to be correct
     // we need that op is a commutative operation so
     // we can convert it into reg1 = reg1 op reg2 and emit
-    // the same code as above
+    // the same code as above. Or we need both operands to
+    // be the same local.
     else if (op2reg == targetReg)
     {
-
-#ifdef DEBUG
-        unsigned lclNum1 = (unsigned)-1;
-        unsigned lclNum2 = (unsigned)-2;
-
-        GenTree* op1Skip = op1->gtSkipReloadOrCopy();
-        GenTree* op2Skip = op2->gtSkipReloadOrCopy();
-
-        if (op1Skip->OperIsLocalRead())
-        {
-            lclNum1 = op1Skip->AsLclVarCommon()->GetLclNum();
-        }
-        if (op2Skip->OperIsLocalRead())
-        {
-            lclNum2 = op2Skip->AsLclVarCommon()->GetLclNum();
-        }
-
-        assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
-#endif
+        assert(GenTree::OperIsCommutative(oper) || genIsSameLocalVar(op1, op2));
 
         dst = op2;
         src = op1;

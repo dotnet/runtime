@@ -1396,15 +1396,6 @@ void* WrapICorJitInfo::GetCookieForInterpreterCalliSig(
     return temp;
 }
 
-bool WrapICorJitInfo::canGetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig)
-{
-    API_ENTER(canGetCookieForPInvokeCalliSig);
-    bool temp = wrapHnd->canGetCookieForPInvokeCalliSig(szMetaSig);
-    API_LEAVE(canGetCookieForPInvokeCalliSig);
-    return temp;
-}
-
 CORINFO_JUST_MY_CODE_HANDLE WrapICorJitInfo::getJustMyCodeHandle(
           CORINFO_METHOD_HANDLE method,
           CORINFO_JUST_MY_CODE_HANDLE** ppIndirection)
@@ -1480,15 +1471,6 @@ CORINFO_VARARGS_HANDLE WrapICorJitInfo::getVarArgsHandle(
     API_ENTER(getVarArgsHandle);
     CORINFO_VARARGS_HANDLE temp = wrapHnd->getVarArgsHandle(pSig, methHnd, ppIndirection);
     API_LEAVE(getVarArgsHandle);
-    return temp;
-}
-
-bool WrapICorJitInfo::canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig)
-{
-    API_ENTER(canGetVarArgsHandle);
-    bool temp = wrapHnd->canGetVarArgsHandle(pSig);
-    API_LEAVE(canGetVarArgsHandle);
     return temp;
 }
 

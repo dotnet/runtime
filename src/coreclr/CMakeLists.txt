@@ -178,6 +178,12 @@ endif(CLR_CMAKE_HOST_WIN32)
 #----------------------------------
 include(clrdefinitions.cmake)
 
+#--------------------------------
+# Data descriptors mechanics
+#  - all clr specific data descriptor helpers should be included in this file
+#----------------------------------
+include(clrdatadescriptors.cmake)
+
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
 endif(FEATURE_STANDALONE_GC)

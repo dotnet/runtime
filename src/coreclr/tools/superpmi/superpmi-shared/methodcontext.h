@@ -717,10 +717,6 @@ public:
     void dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL value);
     CORINFO_VARARGS_HANDLE repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection);
 
-    void recCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig, bool result);
-    void dmpCanGetVarArgsHandle(const CanGetVarArgsHandleValue& key, DWORD value);
-    bool repCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig);
-
     void recGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection, DWORD result);
     void dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value);
     DWORD repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection);
@@ -761,10 +757,6 @@ public:
     LPVOID repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig);
     void recGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig, LPVOID result);
     void dmpGetCookieForInterpreterCalliSig(const GetCookieForInterpreterCalliSigValue& key, DLDL value);
-
-    void recCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, bool result);
-    void dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value);
-    bool repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
     void recErrorList(const char* error);
     void dmpErrorList(DWORD key, DWORD value);
