@@ -32,6 +32,6 @@ template<>
 struct cdac_data<GC_NAMESPACE::gc_heap>
 {
 #ifdef MULTIPLE_HEAPS
-    static constexpr void* const Heaps = (void*)&gc_heap::g_heaps;
+    static constexpr void* const Heaps = (void*)&GC_NAMESPACE::gc_heap::g_heaps;
 #endif // MULTIPLE_HEAPS
 };
