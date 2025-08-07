@@ -87,9 +87,11 @@ namespace System.Threading
                     case ObjectKind.Lock:
                         return ((Lock)Unsafe.AsRef<object>(_objectPtr)).OwningOSThreadId;
 
+#if !MONO
                     case ObjectKind.Condition:
                         Debug.Assert(_objectKind == ObjectKind.Condition);
                         return ((Condition)Unsafe.AsRef<object>(_objectPtr)).AssociatedLock.OwningOSThreadId;
+#endif
 
                     default:
                         throw new UnreachableException();
@@ -114,9 +116,11 @@ namespace System.Threading
                     case ObjectKind.Lock:
                         return ((Lock)Unsafe.AsRef<object>(_objectPtr)).OwningManagedThreadId;
 
+#if !MONO
                     case ObjectKind.Condition:
                         Debug.Assert(_objectKind == ObjectKind.Condition);
                         return ((Condition)Unsafe.AsRef<object>(_objectPtr)).AssociatedLock.OwningManagedThreadId;
+#endif
 
                     default:
                         throw new UnreachableException();
