@@ -657,6 +657,7 @@ DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
 DEFINE_METHOD(MONITOR,              EXIT,                   Exit,                       SM_Obj_RetVoid)
 DEFINE_METHOD(MONITOR,              RELIABLEENTER,          Enter,                      SM_Obj_RefBool_RetVoid)
+DEFINE_METHOD(MONITOR,              EXIT_IF_TAKEN,          ExitIfLockTaken,            SM_Obj_RefBool_RetVoid)
 DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
 
 DEFINE_CLASS(LOCK,                  Threading,              Lock)

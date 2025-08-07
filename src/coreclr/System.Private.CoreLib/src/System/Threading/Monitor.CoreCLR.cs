@@ -125,6 +125,15 @@ namespace System.Threading
             lockTaken = TryEnter(obj, millisecondsTimeout);
         }
 
+        internal static void ExitIfLockTaken(object obj, ref bool lockTaken)
+        {
+            if (!lockTaken)
+                return;
+
+            Exit(obj);
+            lockTaken = false;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Exit(object obj)
         {
