@@ -198,9 +198,6 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
         }
     }
 
-    // public bool TryCreateTarget([NotNullWhen(true)] out ContractDescriptorTarget? target)
-    //  => TryCreateTarget(new DescriptorBuilder(this), out target);
-
     public bool TryCreateTarget(DescriptorBuilder descriptor, [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         if (_created)
