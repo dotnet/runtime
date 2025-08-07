@@ -53,6 +53,12 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
+            // If we're keeping constructors, ensure the type is considered allocated even if we find no
+            // matching members below. This covers cases like structs or classes without any constructors.
+            if ((requiredMemberTypes & DynamicallyAccessedMemberTypes.AllConstructors) != 0
+                && typeDefinition is not MetadataType { IsAbstract: true })
+                MarkType(origin, typeDefinition, reason);
+
             foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
             {
                 MarkTypeSystemEntity(origin, member, reason, AccessKind.DynamicallyAccessedMembersMark);
@@ -197,6 +203,11 @@ namespace ILCompiler.Dataflow
         {
             if (!_enabled)
                 return;
+
+            // Ensure the type is considered allocated even if we find no constructors below.
+            // This covers cases like structs or classes without any constructors.
+            if (type is not MetadataType { IsAbstract: true })
+                MarkType(origin, type, reason);
 
             foreach (var ctor in type.GetConstructorsOnType(filter, bindingFlags))
                 MarkMethod(origin, ctor, reason);
