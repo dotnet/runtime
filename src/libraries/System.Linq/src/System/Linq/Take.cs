@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -110,47 +112,40 @@ namespace System.Linq
 
             if (isStartIndexFromEnd)
             {
-                // TakeLast compat: enumerator should be disposed before yielding the first element.
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                Init(ref source, ref startIndex, ref endIndex, isEndIndexFromEnd);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void Init(ref IEnumerable<TSource> source, ref int startIndex, ref int endIndex, bool isEndIndexFromEnd)
                 {
+
+                    // TakeLast compat: enumerator should be disposed before yielding the first element.
+                    using var e = source.GetEnumerator();
                     if (!e.MoveNext())
                     {
-                        yield break;
+                        startIndex = 0;
+                        endIndex = 0;
+                        return;
                     }
 
-                    queue = new Queue<TSource>();
-                    queue.Enqueue(e.Current);
-                    count = 1;
-
-                    while (e.MoveNext())
+                    var scratchBuffer = default(InlineArray16<TSource>);
+                    using var buffer = new FromEndRangeBuffer<TSource>(startIndex, scratchBuffer);
+                    do
                     {
-                        if (count < startIndex)
-                        {
-                            queue.Enqueue(e.Current);
-                            ++count;
-                        }
-                        else
-                        {
-                            do
-                            {
-                                queue.Dequeue();
-                                queue.Enqueue(e.Current);
-                                checked { ++count; }
-                            } while (e.MoveNext());
-                            break;
-                        }
-                    }
+                        buffer.Enqueue(e.Current);
+                    } while (e.MoveNext());
 
-                    Debug.Assert(queue.Count == Math.Min(count, startIndex));
+                    startIndex = CalculateStartIndex(true, startIndex, buffer.TotalCount);
+                    endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, buffer.TotalCount);
+                    var count = endIndex - startIndex;
+                    Debug.Assert(count >= 0 && count <= buffer.TotalCount);
+                    source = buffer.Build(count, out startIndex);
+                    endIndex = startIndex + count;
                 }
 
-                startIndex = CalculateStartIndex(isStartIndexFromEnd: true, startIndex, count);
-                endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
-                Debug.Assert(endIndex - startIndex <= queue.Count);
-
-                for (int rangeIndex = startIndex; rangeIndex < endIndex; rangeIndex++)
+                for (; startIndex < endIndex; startIndex++)
                 {
-                    yield return queue.Dequeue();
+                    var array = Unsafe.As<TSource[]>(source);
+                    yield return array[(uint)startIndex % (uint)array.Length];
                 }
             }
             else
@@ -194,6 +189,186 @@ namespace System.Linq
 
             static int CalculateEndIndex(bool isEndIndexFromEnd, int endIndex, int count) =>
                 Math.Min(count, isEndIndexFromEnd ? count - endIndex : endIndex);
+        }
+
+
+        /// <summary>
+        /// Provides a circular buffer for efficiently handling Range operations with from-end indices.
+        /// </summary>
+        /// <remarks>
+        /// This struct is designed to support LINQ's Take(Range) operations when indices are specified from the end (e.g., ^5..^2).
+        /// It uses a circular buffer pattern to maintain only the necessary elements, avoiding the need to buffer the entire sequence.
+        /// The buffer starts with a stack-allocated scratch buffer and can grow to a heap-allocated array if needed.
+        /// </remarks>
+        /// <typeparam name="T">Specifies the element type of the sequence being buffered.</typeparam>
+        internal ref struct FromEndRangeBuffer<T>(int maxCapacity, Span<T> scratchBuffer)
+        {
+            /// <summary>The current buffer, which may point to either the initial scratch buffer or a heap-allocated array.</summary>
+            /// <remarks>This acts as a circular buffer once the capacity is reached.</remarks>
+            private Span<T> _buffer = scratchBuffer;
+
+            /// This field has two allocation strategies:
+            /// 1. When growing but not yet at maxCapacity: Rented from ArrayPool for better performance
+            /// 2. When reaching exactly maxCapacity: Allocated directly with GC.AllocateUninitializedArray
+            /// The allocation strategy effects:
+            /// 1. building the final array
+            /// 2. returning the array to the pool
+            private T[]? _array = null;
+
+            /// <summary>The index where the next element will be inserted in the circular buffer.</summary>
+            /// <remarks>When this reaches maxCapacity, it wraps back to 0 to implement circular behavior.</remarks>
+            private int _tail = 0;
+
+            /// <summary>The total number of elements that have been enqueued.</summary>
+            /// <remarks>This can exceed maxCapacity, unlike the actual buffer size which is capped.</remarks>
+            private int _totalCount = 0;
+
+            /// <summary>Gets the total number of elements that have been enqueued.</summary>
+            /// <remarks>This is used to calculate the actual range indices when converting from-end indices.</remarks>
+            public int TotalCount => _totalCount;
+
+            /// <summary>Adds an element to the circular buffer.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void Enqueue(T item)
+            {
+                var tail = _tail;
+                var span = _buffer;
+                if ((uint)tail < (uint)span.Length)
+                {
+                    span[tail] = item;
+                    var newTail = tail + 1;
+                    _tail = newTail == maxCapacity ? 0 : newTail;
+                    checked {  _totalCount++; }
+                }
+                else
+                {
+                    SlowEnqueue(item);
+                }
+            }
+
+            /// <summary>Constructs the final array containing the requested range of elements.</summary>
+            /// <remarks>
+            /// This method extracts the appropriate elements from the circular buffer based on the
+            /// calculated range. It handles both the case where all elements fit in the buffer
+            /// and the case where only the last maxCapacity elements are retained.
+            /// </remarks>
+            /// <param name="count">The number of elements to include in the result.</param>
+            /// <param name="head">Outputs the starting index in the circular buffer for the range.</param>
+            /// <returns>An array containing the requested elements from the buffer.</returns>
+            public T[] Build(int count, out int head)
+            {
+                // Calculate the head position in the circular buffer
+                // This represents where the oldest relevant element is located
+                head = _tail - Math.Min(_totalCount, maxCapacity);
+                if (head < 0) head += maxCapacity;
+
+                int actualCount = Math.Min(count, _totalCount);
+                if (actualCount <= 0)
+                    return Array.Empty<T>();
+
+                // If we have a heap array that matches the max capacity, return it directly
+                if (_array != null && _array.Length == maxCapacity) return _array;
+
+                // For simple cases where the buffer hasn't wrapped or we need all elements
+                if (actualCount == maxCapacity || _totalCount < maxCapacity)
+                {
+                    return _buffer[..actualCount].ToArray();
+                }
+
+                // For complex cases, we need to copy from a circular buffer
+                var result = GC.AllocateUninitializedArray<T>(actualCount);
+                var resultSpan = result.AsSpan();
+
+                // Calculate how much we can copy from the head to the end of the buffer
+                int firstPart = head + actualCount <= maxCapacity ? actualCount : Math.Min(maxCapacity, _buffer.Length) - head;
+
+                // Copy the first part (from head to end of buffer or all needed elements)
+                _buffer.Slice(head, firstPart).CopyTo(resultSpan);
+
+                // If we wrapped around, copy the remaining elements from the beginning of the buffer
+                if (firstPart != actualCount)
+                {
+                    _buffer[..(actualCount - firstPart)].CopyTo(resultSpan[firstPart..]);
+                }
+
+                head = 0;
+                return result;
+            }
+
+            /// <summary>Handles buffer expansion when the initial scratch buffer is not enough.</summary>
+            /// <remarks>
+            /// This method is called when the buffer needs to grow beyond its current capacity.
+            /// It follows a doubling strategy similar to SegmentedArrayBuilder, but caps at maxCapacity.
+            /// The method is marked NoInlining to keep the hot path (Enqueue) small and inlinable.
+            /// </remarks>
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private void SlowEnqueue(in T item)
+            {
+                // Calculate new capacity with doubling strategy
+                int newCapacity = _buffer.Length * 2;
+                if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
+
+                T[] newArray;
+                // If we've reached max capacity, allocate exactly what we need
+                // Otherwise, rent from the pool for better performance
+                if (newCapacity >= maxCapacity)
+                {
+                    newCapacity = maxCapacity;
+                    newArray = GC.AllocateUninitializedArray<T>(newCapacity);
+                }
+                else
+                {
+                    newArray = ArrayPool<T>.Shared.Rent(newCapacity);
+                }
+
+                // Copy existing data to the new array
+                _buffer.CopyTo(newArray);
+
+                // Return the old array to the pool if it was rented
+                T[]? toReturn = _array;
+                if (toReturn != null)
+                {
+                    // Clear references to avoid rooting objects unnecessarily
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    {
+                        _buffer.Clear();
+                    }
+
+                    ArrayPool<T>.Shared.Return(toReturn);
+                }
+
+                // Update to use the new array
+                _array = newArray;
+                _buffer = newArray.AsSpan();
+                _buffer[_tail] = item;
+                _totalCount = ++_tail;
+
+                // Implement circular buffer wrapping
+                if (_tail == maxCapacity) _tail = 0;
+            }
+
+            /// <summary>Releases any rented arrays back to the array pool.</summary>
+            /// <remarks>
+            /// This ensures proper cleanup of pooled resources. Arrays that exactly match maxCapacity
+            /// are not returned to the pool as they were allocated specifically for this use.
+            /// Reference types are cleared before returning to avoid artificial rooting.
+            /// </remarks>
+            public void Dispose()
+            {
+                T[]? toReturn = _array;
+
+                if (toReturn != null)
+                {
+                    _array = null;
+
+                    // Don't return arrays that were allocated at exactly maxCapacity
+                    // as these were not rented from the pool
+                    if (toReturn.Length == maxCapacity) return;
+
+                    // Clear references to avoid keeping objects alive in the pool
+                    ArrayPool<T>.Shared.Return(toReturn, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                }
+            }
         }
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
