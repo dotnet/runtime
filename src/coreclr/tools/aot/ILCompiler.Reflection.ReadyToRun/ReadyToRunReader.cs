@@ -550,28 +550,35 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         internal void DumpImageInformation()
         {
-            Console.Error.WriteLine($"Image file '{Filename}' information:");
-            Console.Error.WriteLine($"Size: {Image.Length} byte(s)");
-            Console.Error.WriteLine($"MetadataSize: {CompositeReader.PEHeaders.MetadataSize} byte(s)");
-
-            if (CompositeReader.PEHeaders.PEHeader is PEHeader header)
+            try
             {
-                Console.Error.WriteLine($"SizeOfImage: {header.SizeOfImage} byte(s)");
-                Console.Error.WriteLine($"ImageBase: 0x{header.ImageBase:X}");
-                Console.Error.WriteLine($"FileAlignment: 0x{header.FileAlignment:X}");
-                Console.Error.WriteLine($"SectionAlignment: 0x{header.SectionAlignment:X}");
+                Console.Error.WriteLine($"Image file '{Filename}' information:");
+                Console.Error.WriteLine($"Size: {Image.Length} byte(s)");
+                Console.Error.WriteLine($"MetadataSize: {CompositeReader.PEHeaders.MetadataSize} byte(s)");
+
+                if (CompositeReader.PEHeaders.PEHeader is PEHeader header)
+                {
+                    Console.Error.WriteLine($"SizeOfImage: {header.SizeOfImage} byte(s)");
+                    Console.Error.WriteLine($"ImageBase: 0x{header.ImageBase:X}");
+                    Console.Error.WriteLine($"FileAlignment: 0x{header.FileAlignment:X}");
+                    Console.Error.WriteLine($"SectionAlignment: 0x{header.SectionAlignment:X}");
+                }
+                else
+                    Console.Error.WriteLine("No PEHeader");
+
+                Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader?.Flags}");
+
+                Console.Error.WriteLine("Sections:");
+                foreach (var section in CompositeReader.PEHeaders.SectionHeaders)
+                    Console.Error.WriteLine($"  {section.Name} {section.VirtualAddress} - {(section.VirtualAddress + section.VirtualSize)}");
+
+                var exportTable = CompositeReader.GetExportTable();
+                exportTable.DumpToConsoleError();
             }
-            else
-                Console.Error.WriteLine("No PEHeader");
-
-            Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader?.Flags}");
-
-            Console.Error.WriteLine("Sections:");
-            foreach (var section in CompositeReader.PEHeaders.SectionHeaders)
-                Console.Error.WriteLine($"  {section.Name} {section.VirtualAddress} - {(section.VirtualAddress + section.VirtualSize)}");
-
-            var exportTable = CompositeReader.GetExportTable();
-            exportTable.DumpToConsoleError();
+            catch (Exception exc)
+            {
+                Console.Error.WriteLine($"Unhandled exception while dumping image information: {exc}");
+            }
         }
 
         internal void EnsureMethods()
