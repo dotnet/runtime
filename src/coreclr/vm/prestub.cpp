@@ -1436,9 +1436,10 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     }
 
 #ifdef TARGET_X86
-    if (msig.HasAsyncContinuation())
+    if (msig.HasGenericContextArg())
     {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
+        // The hidden context parameter
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
     }
 #endif // TARGET_X86
 }
