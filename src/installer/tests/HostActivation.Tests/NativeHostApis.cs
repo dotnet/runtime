@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
     public class NativeHostApis : IClassFixture<NativeHostApis.SharedTestState>
     {
+        private const string NoGlobalJson = "<none>";
         private SharedTestState sharedTestState;
 
         public NativeHostApis(SharedTestState fixture)
@@ -32,7 +33,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             private readonly TestArtifact _artifact;
 
-            public string EmptyGlobalJsonDir => Path.Combine(_artifact.Location, "wd");
 
             public string ExeDir => Path.Combine(_artifact.Location, "ed");
             public string LocalSdkDir => Path.Combine(ExeDir, "sdk");
@@ -63,12 +63,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public SdkAndFrameworkFixture()
             {
                 _artifact = TestArtifact.Create(nameof(SdkAndFrameworkFixture));
-
-                Directory.CreateDirectory(EmptyGlobalJsonDir);
-
-                // start with an empty global.json, it will be ignored, but prevent one lying on disk
-                // on a given machine from impacting the test.
-                GlobalJson.CreateEmpty(EmptyGlobalJsonDir);
 
                 foreach (string sdk in ProgramFilesGlobalSdks)
                 {
@@ -169,18 +163,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void Hostfxr_resolve_sdk2_without_global_json_or_flags()
+        public void Hostfxr_resolve_sdk2_NoGlobalJson()
         {
-            // with no global.json and no flags, pick latest SDK
+            // With no global.json and no flags, pick latest SDK
 
             var f = sharedTestState.SdkAndFrameworkFixture;
             string expectedData = string.Join(';', new[]
             {
                 ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "5.6.7-preview")),
+                ("global_json_state", "not_found"),
             });
 
             string api = ApiNames.hostfxr_resolve_sdk2;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, f.EmptyGlobalJsonDir, "0")
+            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, "0")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -189,18 +184,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void Hostfxr_resolve_sdk2_without_global_json_and_disallowing_previews()
+        public void Hostfxr_resolve_sdk2_NoGlobalJson_DisallowPrerelease()
         {
-            // Without global.json and disallowing previews, pick latest non-preview
+            // With no global.json and disallowing previews, pick latest non-preview
 
             var f = sharedTestState.SdkAndFrameworkFixture;
             string expectedData = string.Join(';', new[]
             {
-                ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "1.2.3"))
+                ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "1.2.3")),
+                ("global_json_state", "not_found"),
             });
 
             string api = ApiNames.hostfxr_resolve_sdk2;
-            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, f.EmptyGlobalJsonDir, "disallow_prerelease")
+            TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, NoGlobalJson, "disallow_prerelease")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -209,7 +205,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void Hostfxr_resolve_sdk2_with_global_json_and_disallowing_previews()
+        public void Hostfxr_resolve_sdk2_GlobalJson_DisallowPrerelease()
         {
             // With global.json specifying a preview, roll forward to preview
             // since flag has no impact if global.json specifies a preview.
@@ -225,6 +221,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "5.6.7-preview")),
                     ("global_json_path", globalJson),
                     ("requested_version", requestedVersion),
+                    ("global_json_state", "valid"),
                 });
 
                 string api = ApiNames.hostfxr_resolve_sdk2;
@@ -250,7 +247,61 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 string expectedData = string.Join(';', new[]
                 {
                     ("resolved_sdk_dir", Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview")),
-                    ("global_json_path", globalJson)
+                    ("global_json_path", globalJson),
+                    ("global_json_state", "valid"),
+                });
+
+                string api = ApiNames.hostfxr_resolve_sdk2;
+                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+            }
+        }
+
+        [Fact]
+        public void Hostfxr_resolve_sdk2_GlobalJson_InvalidJson()
+        {
+            // With global.json with malformed JSON
+            // Pick latest SDK (invalid global.json ignored), report invalid JSON for global.json
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Hostfxr_resolve_sdk2_GlobalJson_InvalidJson)))
+            {
+                GlobalJson.Write(workingDir.Location, "{ \"sdk\": { }");
+                string expectedData = string.Join(';', new[]
+                {
+                    ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "5.6.7-preview")),
+                    ("global_json_state", "invalid_json"),
+                });
+
+                string api = ApiNames.hostfxr_resolve_sdk2;
+                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+            }
+        }
+
+        [Fact]
+        public void Hostfxr_resolve_sdk2_GlobalJson_InvalidData()
+        {
+            // With global.json with invalid version value
+            // Pick latest SDK (invalid global.json ignored), report invalid data for global.json
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Hostfxr_resolve_sdk2_GlobalJson_InvalidData)))
+            {
+                string invalidVersion = "invalid";
+                GlobalJson.CreateWithVersion(workingDir.Location, invalidVersion);
+                string expectedData = string.Join(';', new[]
+                {
+                    ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "5.6.7-preview")),
+                    ("global_json_state", "invalid_data"),
                 });
 
                 string api = ApiNames.hostfxr_resolve_sdk2;

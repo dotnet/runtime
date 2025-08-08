@@ -365,7 +365,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Should().Fail()
                 .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
                 .And.HaveStdOutContaining("corehost reported errors:")
-                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{component.DepsJson}], offset 0 (line 1, column 1): Invalid value.")
+                .And.HaveStdOutContaining($"Failed to parse file [{component.DepsJson}]. JSON parsing exception: Invalid value. [offset 0: line 1, column 1]")
                 .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {component.DepsJson}");
         }
 
@@ -426,7 +426,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Should().Fail()
                 .And.HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
                 .And.HaveStdOutContaining($"ComponentA: corehost reported errors:")
-                .And.HaveStdOutContaining($"ComponentA: A JSON parsing exception occurred in [{componentWithNoDependencies.DepsJson}], offset 0 (line 1, column 1): Invalid value.")
+                .And.HaveStdOutContaining($"ComponentA: Failed to parse file [{componentWithNoDependencies.DepsJson}]. JSON parsing exception: Invalid value. [offset 0: line 1, column 1]")
                 .And.HaveStdOutContaining($"ComponentA: Error initializing the dependency resolver: An error occurred while parsing: {componentWithNoDependencies.DepsJson}")
                 .And.HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.LibHostInvalidArgs.ToString("x")}]")
                 .And.HaveStdOutContaining($"ComponentB: corehost reported errors:")

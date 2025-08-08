@@ -1103,7 +1103,7 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), false /*skip_sdk_info_output*/);
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), false /*skip_sdk_info_output*/);
             return StatusCode::Success;
         }
 
@@ -1160,7 +1160,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path(), result == 0 /*skip_sdk_info_output*/);
+        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file(), result == 0 /*skip_sdk_info_output*/);
     }
 
     return result;
