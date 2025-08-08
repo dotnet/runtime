@@ -185,7 +185,7 @@ namespace System.Security.Cryptography.Tests
 
             AssertImportBadPrivateKey(
                 algorithm,
-                CreateKeyWithCurveOid(ECCurve.NamedCurves.brainpoolP256r1.Oid.Value));
+                CreateKeyWithCurveOid("1.3.36.3.3.2.8.1.1.7")); // brainpoolP256r1
 
             // Domain parameters are optional, don't throw (unless platform does not support Composite ML-DSA)
             CompositeMLDsaTestHelpers.AssertImportPrivateKey(
@@ -469,11 +469,7 @@ namespace System.Security.Cryptography.Tests
             bool supported = CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                 algorithm,
                 rsa => MLDsa.IsSupported,
-#if NET
                 ecdsa => ecdsa.IsSec && MLDsa.IsSupported,
-#else
-                ecdsa => false,
-#endif
                 eddsa => false);
 
             Assert.Equal(

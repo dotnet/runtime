@@ -1811,7 +1811,7 @@ string lengthAttribute = "";
         string generatedSource = File.ReadAllText(languageVersion == LanguageVersion.CSharp10  ? @"Baselines/GeneratedAttributesTest.netcore.lang10.g.cs" : @"Baselines/GeneratedAttributesTest.netcore.lang11.g.cs");
 #else
         string generatedSource = File.ReadAllText(languageVersion == LanguageVersion.CSharp10  ? @"Baselines/GeneratedAttributesTest.netfx.lang10.g.cs" : @"Baselines/GeneratedAttributesTest.netfx.lang11.g.cs");
-#endif // NET8_0_OR_GREATER
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), emittedSource.Replace("\r\n", "\n"));
 
         CSharpCompilation compilation = CreateCompilationForOptionsSource(Path.GetRandomFileName(), source + emittedSource, refAssemblyPath: null, languageVersion);
