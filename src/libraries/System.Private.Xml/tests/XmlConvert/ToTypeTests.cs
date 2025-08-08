@@ -76,6 +76,14 @@ namespace System.Xml.XmlConvertTests
             AddChild(new CVariation(ToType59) { Attribute = new Variation("4. Roundtrip: String-DateTimeOffset-String") { Param = "9999-12-31T23:59:59+14:00" } });
             AddChild(new CVariation(ToType59) { Attribute = new Variation("1. Roundtrip: String-DateTimeOffset-String") { Param = "0001-01-01T00:00:00Z" } });
             AddChild(new CVariation(ToType62) { Attribute = new Variation("null params DateTime, DateTimeOffset - invalid cases") });
+            AddChild(new CVariation(ToType63) { Attribute = new Variation("ToDateOnly - valid cases") });
+            AddChild(new CVariation(ToType64) { Attribute = new Variation("ToDateOnly - invalid cases") });
+            AddChild(new CVariation(ToType65) { Attribute = new Variation("ToTimeOnly - valid cases") });
+            AddChild(new CVariation(ToType66) { Attribute = new Variation("ToTimeOnly - invalid cases") });
+            AddChild(new CVariation(ToType67) { Attribute = new Variation("ToString(DateOnly) - valid cases") });
+            AddChild(new CVariation(ToType68) { Attribute = new Variation("ToString(TimeOnly) - valid cases") });
+            AddChild(new CVariation(ToType69) { Attribute = new Variation("Roundtrip: DateOnly-String-DateOnly") });
+            AddChild(new CVariation(ToType70) { Attribute = new Variation("Roundtrip: TimeOnly-String-TimeOnly") });
         }
 
         public int TestInvalid(string[] array, string type)
@@ -125,6 +133,12 @@ namespace System.Xml.XmlConvertTests
                             break;
                         case "timespan":
                             XmlConvert.ToTimeSpan(array[i]);
+                            break;
+                        case "dateonly":
+                            XmlConvert.ToDateOnly(array[i]);
+                            break;
+                        case "timeonly":
+                            XmlConvert.ToTimeOnly(array[i]);
                             break;
                         case "uint16":
                             XmlConvert.ToUInt16(array[i]);
@@ -252,6 +266,14 @@ namespace System.Xml.XmlConvertTests
                     case "timespan":
                         actual = XmlConvert.ToTimeSpan((string)array0[i]);
                         expect = (TimeSpan)array1[i];
+                        break;
+                    case "dateonly":
+                        actual = XmlConvert.ToDateOnly((string)array0[i]);
+                        expect = (DateOnly)array1[i];
+                        break;
+                    case "timeonly":
+                        actual = XmlConvert.ToTimeOnly((string)array0[i]);
+                        expect = (TimeOnly)array1[i];
                         break;
                     case "uint16":
                         actual = XmlConvert.ToUInt16((string)array0[i]);
@@ -1129,6 +1151,108 @@ namespace System.Xml.XmlConvertTests
         {
             TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(dt);
             return offset;
+        }
+
+        //[Variation("ToDateOnly - valid cases")]
+        public int ToType63()
+        {
+            object[] array0 = { "2024-01-15", "0001-01-01", "9999-12-31", "2000-02-29" };
+            object[] array1 = { new DateOnly(2024, 1, 15), new DateOnly(1, 1, 1), new DateOnly(9999, 12, 31), new DateOnly(2000, 2, 29) };
+            return TestValid(array0, array1, "dateonly");
+        }
+
+        //[Variation("ToDateOnly - invalid cases")]
+        public int ToType64()
+        {
+            string[] array = { "2024-13-01", "2024-01-32", "invalid", "2024/01/15", null, "2024-01-15T10:30:00", "" };
+            return TestInvalid(array, "dateonly");
+        }
+
+        //[Variation("ToTimeOnly - valid cases")]
+        public int ToType65()
+        {
+            object[] array0 = { "14:30:45.1230000", "00:00:00", "23:59:59.9999999", "12:30:00" };
+            object[] array1 = { new TimeOnly(14, 30, 45, 123), new TimeOnly(0, 0, 0), new TimeOnly(23, 59, 59, 999, 999), new TimeOnly(12, 30, 0) };
+            return TestValid(array0, array1, "timeonly");
+        }
+
+        //[Variation("ToTimeOnly - invalid cases")]
+        public int ToType66()
+        {
+            string[] array = { "25:00:00", "12:60:00", "12:30:60", "invalid", null, "2024-01-15T12:30:00", "12:30", "" };
+            return TestInvalid(array, "timeonly");
+        }
+
+        //[Variation("ToString(DateOnly) - valid cases")]
+        public int ToType67()
+        {
+            DateOnly[] input = { new DateOnly(2024, 1, 15), new DateOnly(1, 1, 1), new DateOnly(9999, 12, 31), new DateOnly(2000, 2, 29) };
+            string[] expected = { "2024-01-15", "0001-01-01", "9999-12-31", "2000-02-29" };
+            
+            for (int i = 0; i < input.Length; i++)
+            {
+                string result = XmlConvert.ToString(input[i]);
+                if (result != expected[i])
+                {
+                    CError.WriteLine($"Failed DateOnly ToString: {input[i]} -> {result}, expected {expected[i]}");
+                    return TEST_FAIL;
+                }
+            }
+            return TEST_PASS;
+        }
+
+        //[Variation("ToString(TimeOnly) - valid cases")]
+        public int ToType68()
+        {
+            TimeOnly[] input = { new TimeOnly(14, 30, 45, 123), new TimeOnly(0, 0, 0), new TimeOnly(23, 59, 59, 999, 999), new TimeOnly(12, 30, 0) };
+            string[] expected = { "14:30:45.1230000", "00:00:00", "23:59:59.9999999", "12:30:00" };
+            
+            for (int i = 0; i < input.Length; i++)
+            {
+                string result = XmlConvert.ToString(input[i]);
+                if (result != expected[i])
+                {
+                    CError.WriteLine($"Failed TimeOnly ToString: {input[i]} -> {result}, expected {expected[i]}");
+                    return TEST_FAIL;
+                }
+            }
+            return TEST_PASS;
+        }
+
+        //[Variation("Roundtrip: DateOnly-String-DateOnly")]
+        public int ToType69()
+        {
+            DateOnly[] testValues = { new DateOnly(2024, 1, 15), new DateOnly(1, 1, 1), new DateOnly(9999, 12, 31), new DateOnly(2000, 2, 29) };
+            
+            for (int i = 0; i < testValues.Length; i++)
+            {
+                string str = XmlConvert.ToString(testValues[i]);
+                DateOnly roundTrip = XmlConvert.ToDateOnly(str);
+                if (roundTrip != testValues[i])
+                {
+                    CError.WriteLine($"Failed DateOnly roundtrip: {testValues[i]} -> {str} -> {roundTrip}");
+                    return TEST_FAIL;
+                }
+            }
+            return TEST_PASS;
+        }
+
+        //[Variation("Roundtrip: TimeOnly-String-TimeOnly")]
+        public int ToType70()
+        {
+            TimeOnly[] testValues = { new TimeOnly(14, 30, 45, 123), new TimeOnly(0, 0, 0), new TimeOnly(23, 59, 59, 999, 999), new TimeOnly(12, 30, 0) };
+            
+            for (int i = 0; i < testValues.Length; i++)
+            {
+                string str = XmlConvert.ToString(testValues[i]);
+                TimeOnly roundTrip = XmlConvert.ToTimeOnly(str);
+                if (roundTrip != testValues[i])
+                {
+                    CError.WriteLine($"Failed TimeOnly roundtrip: {testValues[i]} -> {str} -> {roundTrip}");
+                    return TEST_FAIL;
+                }
+            }
+            return TEST_PASS;
         }
         #endregion
     }
