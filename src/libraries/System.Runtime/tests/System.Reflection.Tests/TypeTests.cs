@@ -253,44 +253,4 @@ namespace System.Reflection.Tests
             }
         }
     }
-
-    // Additional test types for more comprehensive coverage
-    public class GenericTestClass<T>
-    {
-        public class NestedInGeneric
-        {
-        }
-
-        public class NestedGeneric<U>
-        {
-        }
-    }
-
-    public struct TestStruct
-    {
-        public struct NestedStruct
-        {
-        }
-    }
-
-    public interface ITestInterface
-    {
-        interface INestedInterface
-        {
-        }
-    }
-
-    public enum TestEnum
-    {
-        Value1,
-        Value2
-    }
-}
-
-// Test types in global namespace for edge case testing
-public class GlobalNamespaceTestType
-{
-    public class NestedInGlobal
-    {
-    }
 }
