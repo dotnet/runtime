@@ -1512,12 +1512,13 @@ namespace System
                 // Theoretically generic types instantiated with generic type definitions can be round-tripped, e.g. List`1<Dictionary`2>.
                 // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
                 // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
-                if (!runtimeType.GetRootElementType().IsGenericTypeDefinition && runtimeType.ContainsGenericParameters)
+                Type rootElementType = runtimeType.GetRootElementType();
+                if (!rootElementType.IsGenericTypeDefinition && rootElementType.ContainsGenericParameters)
                     return false;
 
                 // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
                 // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
-                if (runtimeType.GetRootElementType().IsFunctionPointer)
+                if (rootElementType.IsFunctionPointer)
                     return false;
 
                 return true;
