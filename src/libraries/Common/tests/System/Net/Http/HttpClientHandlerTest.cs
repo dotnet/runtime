@@ -2300,26 +2300,26 @@ namespace System.Net.Http.Functional.Tests
                     switch (headerType)
                     {
                         case HeaderType.Request:
-                            {
-                                var headerLine = DecodeHeaderValue("Custom-Header");
-                                var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
-                                Assert.Equal(headerValue, receivedHeaderValue);
-                                break;
-                            }
+                        {
+                            var headerLine = DecodeHeaderValue("Custom-Header");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
                         case HeaderType.Content:
-                            {
-                                var headerLine = DecodeHeaderValue("Custom-Content-Header");
-                                var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
-                                Assert.Equal(headerValue, receivedHeaderValue);
-                                break;
-                            }
+                        {
+                            var headerLine = DecodeHeaderValue("Custom-Content-Header");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
                         case HeaderType.Cookie:
-                            {
-                                var headerLine = DecodeHeaderValue("cookie");
-                                var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
-                                Assert.Equal(headerValue, receivedHeaderValue);
-                                break;
-                            }
+                        {
+                            var headerLine = DecodeHeaderValue("cookie");
+                            var receivedHeaderValue = headerLine.Substring(headerLine.IndexOf("HeaderValue"));
+                            Assert.Equal(headerValue, receivedHeaderValue);
+                            break;
+                        }
                     }
 
                     string DecodeHeaderValue(string headerName)
