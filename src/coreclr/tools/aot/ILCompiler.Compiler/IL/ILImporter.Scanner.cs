@@ -1143,10 +1143,8 @@ namespace Internal.IL
         {
             var type = (TypeDesc)_methodIL.GetObject(token);
 
-            // There are some sequences of box with ByRefLike types that are allowed
-            // per the extension to the ECMA-335 specification.
-            // Everything else is invalid.
-            if (!type.IsRuntimeDeterminedType && type.IsByRefLike)
+            // Some box operations will trivially be eliminated during import
+            if (!type.IsRuntimeDeterminedType)
             {
                 ILReader reader = new ILReader(_ilBytes, _currentOffset);
                 ILOpcode nextOpcode = reader.ReadILOpcode();
@@ -1180,7 +1178,9 @@ namespace Internal.IL
                     }
                 }
 
-                ThrowHelper.ThrowInvalidProgramException();
+                // If this is a byref-like type, only the above operations are permitted.
+                if (type.IsByRefLike)
+                    ThrowHelper.ThrowInvalidProgramException();
             }
 
             AddBoxingDependencies(type, "Box");
