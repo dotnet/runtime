@@ -970,7 +970,7 @@ namespace Internal.IL
                     {
                         if (reader.HasNext
                             && reader.ReadILOpcode() is ILOpcode.callvirt or ILOpcode.call
-                            && _methodIL.GetObject(reader.ReadILToken()) is MethodDesc{ Name: "get_IsValueType" or "get_IsEnum"})
+                            && _methodIL.GetObject(reader.ReadILToken()) is MethodDesc { Name: "get_IsValueType" or "get_IsEnum"})
                         {
                             helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                         }
