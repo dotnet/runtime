@@ -898,11 +898,6 @@ namespace ILCompiler.DependencyAnalysis
 
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific).GetClosestDefType()), "Dictionary layout");
 
-            foreach (TypeDesc iface in _type.RuntimeInterfaces)
-            {
-                yield return new DependencyListEntry(context.NativeLayout.TypeSignatureVertex(iface), "template interface list");
-            }
-
             if (context.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
@@ -944,8 +939,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool HasConditionalStaticDependencies => false;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override bool HasConditionalStaticDependencies => _type.RuntimeInterfaces.Length > 0;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            foreach (TypeDesc iface in _type.RuntimeInterfaces)
+            {
+                yield return new CombinedDependencyListEntry(factory.NativeLayout.TypeSignatureVertex(iface), factory.InterfaceUse(iface.GetTypeDefinition()), "template interface list");
+            }
+        }
 
         private static int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
         {
@@ -968,11 +969,16 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (TypeDesc iface in _type.RuntimeInterfaces)
                 {
-                    implementedInterfacesList.Add(factory.NativeLayout.TypeSignatureVertex(iface));
+                    if (factory.InterfaceUse(iface.GetTypeDefinition()).Marked)
+                        implementedInterfacesList.Add(factory.NativeLayout.TypeSignatureVertex(iface));
                 }
-                NativeLayoutPlacedVertexSequenceVertexNode implementedInterfaces = factory.NativeLayout.PlacedVertexSequence(implementedInterfacesList);
 
-                layoutInfo.Append(BagElementKind.ImplementedInterfaces, implementedInterfaces.WriteVertex(factory));
+                if (implementedInterfacesList.Count > 0)
+                {
+                    NativeLayoutPlacedVertexSequenceVertexNode implementedInterfaces = factory.NativeLayout.PlacedVertexSequence(implementedInterfacesList);
+
+                    layoutInfo.Append(BagElementKind.ImplementedInterfaces, implementedInterfaces.WriteVertex(factory));
+                }
             }
 
             if (!factory.LazyGenericsPolicy.UsesLazyGenerics(_type) && templateLayout.Count > 0)
