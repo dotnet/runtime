@@ -1708,7 +1708,7 @@ void SyncBlock::InitializeThinLock(DWORD recursionLevel, DWORD threadId)
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(m_Lock == NULL);
+    _ASSERTE(m_Lock == (OBJECTHANDLE)NULL);
     _ASSERTE(m_thinLock == 0);
     m_thinLock = (threadId & SBLK_MASK_LOCK_THREADID) | (recursionLevel << SBLK_RECLEVEL_SHIFT);
 }
@@ -1717,12 +1717,14 @@ OBJECTHANDLE SyncBlock::GetLock()
 {
     STANDARD_VM_CONTRACT;
 
-    if (m_Lock != NULL)
+    if (m_Lock != (OBJECTHANDLE)NULL)
     {
         return m_Lock;
     }
 
     SetPrecious();
+
+    GCX_COOP();
 
     // We need to create a new lock
     OBJECTHANDLEHolder lockHandle = NULL;
@@ -1749,7 +1751,6 @@ OBJECTHANDLE SyncBlock::GetLock()
         args[ARGNUM_1] = DWORD_TO_ARGHOLDER(lockThreadId);
         args[ARGNUM_2] = DWORD_TO_ARGHOLDER(recursionLevel);
         CALL_MANAGED_METHOD_NORET(args);
-        lockHandle = GetAppDomain()->CreateHandle(lockObj);
     }
 
     GCPROTECT_END();
@@ -1776,6 +1777,7 @@ BOOL SyncBlock::TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel)
 
     if (m_Lock != NULL)
     {
+        GCX_COOP();
         // Extract info from the lock object
         OBJECTREF lockObj = ObjectFromHandle(m_Lock);
         GCPROTECT_BEGIN(lockObj);
