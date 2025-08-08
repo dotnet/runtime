@@ -508,9 +508,6 @@ namespace System.Data.Common
                 [Out] out IntPtr prgRestrictionSupport);
         }
 
-#pragma warning disable CS3019 // CLS compliance checking will not be performed on 'Baz' because it is not visible from outside this assembly. https://github.com/dotnet/roslyn/issues/68560. https://github.com/dotnet/roslyn/issues/68526.
-        [CLSCompliant(false)]
-#pragma warning disable CS3019 // CLS compliance checking will not be performed on 'Baz' because it is not visible from outside this assembly. https://github.com/dotnet/roslyn/issues/68560. https://github.com/dotnet/roslyn/issues/68526.
         [Guid("0C733A74-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), GeneratedComInterface, SuppressUnmanagedCodeSecurity]
         internal partial interface ISQLErrorInfo
         {
@@ -519,9 +516,6 @@ namespace System.Data.Common
                 [MarshalAs(UnmanagedType.BStr)] out string pbstrSQLState);
         }
 
-#pragma warning disable CS3019 // CLS compliance checking will not be performed on 'Baz' because it is not visible from outside this assembly. https://github.com/dotnet/roslyn/issues/68560. https://github.com/dotnet/roslyn/issues/68526.
-        [CLSCompliant(false)]
-#pragma warning disable CS3019 // CLS compliance checking will not be performed on 'Baz' because it is not visible from outside this assembly. https://github.com/dotnet/roslyn/issues/68560. https://github.com/dotnet/roslyn/issues/68526.
         [Guid("1CF2B120-547D-101B-8E65-08002B2BD119"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), GeneratedComInterface, SuppressUnmanagedCodeSecurity]
         internal partial interface IErrorInfo
         {
@@ -554,9 +548,6 @@ namespace System.Data.Common
                 /* [out] */ DWORD *pdwHelpContext) = 0;
 #endif
 
-#pragma warning disable CS3019 // CLS compliance checking will not be performed on 'Baz' because it is not visible from outside this assembly. https://github.com/dotnet/roslyn/issues/68560. https://github.com/dotnet/roslyn/issues/68526.
-        [CLSCompliant(false)]
-#pragma warning disable CS3019 // CLS compliance checking will not be performed on 'Baz' because it is not visible from outside this assembly. https://github.com/dotnet/roslyn/issues/68560. https://github.com/dotnet/roslyn/issues/68526.
         [Guid("0C733A67-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), GeneratedComInterface, SuppressUnmanagedCodeSecurity]
         internal partial interface IErrorRecords
         {
