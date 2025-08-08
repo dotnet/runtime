@@ -28,6 +28,7 @@ public enum DataType
     Exception,
     ExceptionInfo,
     RuntimeThreadLocals,
+    IdDispenser,
     Module,
     ModuleLookupMap,
     AppDomain,
