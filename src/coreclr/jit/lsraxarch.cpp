@@ -1157,12 +1157,12 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
         if (!source->isContained())
     {
-        tgtPrefUse = BuildUse(source, srcCandidates);
+        tgtPrefUse = BuildUse(source, ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported()));
         srcCount++;
     }
     else
     {
-        srcCount += BuildOperandUses(source, srcCandidates);
+        srcCount += BuildOperandUses(source, ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported()));
     }
 
     if (!tree->isContained())
@@ -1172,6 +1172,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
             srcCount += BuildDelayFreeUses(shiftBy, source, SRBM_RCX);
             buildKillPositionsForNode(tree, currentLoc + 1, SRBM_RCX);
         }
+        dstCandidates = (tree->GetRegNum() == REG_NA)
+                            ? ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported())
+                            : dstCandidates;
         BuildDef(tree, dstCandidates);
     }
     else
@@ -2304,11 +2307,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 if (!op2->OperIsConst() && !op1->isContained())
                 {
-                    // If the index is not a constant or op1 is in register,
+                    // If the index is not a constant and op1 is in register,
                     // we will use the SIMD temp location to store the vector.
 
                     var_types requiredSimdTempType = Compiler::getSIMDTypeForSize(intrinsicTree->GetSimdSize());
                     compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+                }
+                else if (op1->IsCnsVec())
+                {
+                    // We need an int reg to load the address of the CnsVec data.
+                    buildInternalIntRegisterDefForNode(intrinsicTree);
                 }
                 break;
             }
@@ -3275,8 +3283,8 @@ int LinearScan::BuildMul(GenTree* tree)
             srcCandidates1 = SRBM_RDX;
         }
 
-        srcCount = BuildOperandUses(op1, srcCandidates1);
-        srcCount += BuildOperandUses(op2, srcCandidates2);
+        srcCount = BuildOperandUses(op1, ForceLowGprForApxIfNeeded(op1, srcCandidates1, getEvexIsSupported()));
+        srcCount += BuildOperandUses(op2, ForceLowGprForApxIfNeeded(op2, srcCandidates2, getEvexIsSupported()));
 
 #if defined(TARGET_X86)
         if (tree->OperIs(GT_MUL_LONG))
