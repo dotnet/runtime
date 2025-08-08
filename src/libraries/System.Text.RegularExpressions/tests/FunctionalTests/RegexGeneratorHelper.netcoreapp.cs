@@ -18,7 +18,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
-using Xunit;
+using Xunit;    
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions.Tests
             return new[]
             {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(corelibPath), "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(corelibPath)!, "System.Runtime.dll")),
                 MetadataReference.CreateFromFile(typeof(Unsafe).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Regex).Assembly.Location),
             };
@@ -175,7 +175,7 @@ namespace System.Text.RegularExpressions.Tests
                 code.Append($"    [GeneratedRegex({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
                 if (regex.options is not null)
                 {
-                    code.Append($", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
+                    code.Append($", {string.Join(" | ", regex.options.ToString()!.Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
                     if (regex.matchTimeout is not null)
                     {
                         code.Append(string.Create(CultureInfo.InvariantCulture, $", {(int)regex.matchTimeout.Value.TotalMilliseconds}"));
@@ -215,7 +215,7 @@ namespace System.Text.RegularExpressions.Tests
                     .AddDocument("RegexGenerator.g.cs", SourceText.From("// Empty", Encoding.UTF8)).Project;
                 Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
 
-                s_compilation = comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
+                s_compilation = comp = (await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false))!;
                 Debug.Assert(comp is not null);
             }
 
@@ -265,7 +265,7 @@ namespace System.Text.RegularExpressions.Tests
             for (int i = 0; i < instances.Length; i++)
             {
                 string memberName = $"Get{i}";
-                instances[i] = (Regex)(c.GetMethod(memberName) ?? c.GetProperty(memberName).GetGetMethod())!.Invoke(null, null)!;
+                instances[i] = (Regex)(c.GetMethod(memberName) ?? c.GetProperty(memberName)!.GetGetMethod())!.Invoke(null, null)!;
             }
 
             // Issue an unload on the ALC, so it'll be collected once the Regex instance is collected
