@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
+  <PropertyGroup>    
+    <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
+    <PublishTrimmed>false</PublishTrimmed>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <InvariantTimezone>true</InvariantTimezone>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
+    <EmccEnableAssertions>true</EmccEnableAssertions>
+    <EmccEnvironment>web,worker</EmccEnvironment>
+    <!-- add OpenGL emulation -->
+    <EmccExtraLDFlags>-s LEGACY_GL_EMULATION=1 -lGL -lSDL -lidbfs.js</EmccExtraLDFlags>
+    <!-- just to prove we don't do JS eval() -->
+    <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot; -h &quot;Timing-Allow-Origin: *&quot; -h &quot;Cross-Origin-Opener-Policy: same-origin&quot; -h &quot;Cross-Origin-Embedder-Policy: require-corp&quot; </_ServeHeaders>
+    <!-- enable reporting to profiler in browser dev tools -->
+    <!-- for callspec see diagnostics-tracing.md -->
+    <!--<WasmProfilers>browser:callspec=N:Sample;</WasmProfilers>-->
+
+    <!-- Put "framework" (dotnet.js, dlls, etc) files directly into the AppBundle -->
+    <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
+
+     
+    <!--<RunAOTCompilation>true</RunAOTCompilation>-->
+    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <WasmNativeStrip>false</WasmNativeStrip>
+    
+  </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+    <WasmExtraFilesToDeploy Include="advanced-sample.lib.module.js" />
+        
+    <!-- add export GL object from Module -->
+    <EmccExportedRuntimeMethod Include="GL" />
+    <NativeFileReference Include="fibonacci.c" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    
+    <Compile Include="$(MSBuildThisFileDirectory)\JavaScriptTestHelper.cs" />
+    <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
+    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)\JavaScriptTestHelper.mjs" />
+    
+  </ItemGroup>
+    
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
+
+</Project>
