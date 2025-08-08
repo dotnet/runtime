@@ -16,14 +16,16 @@ public class InstUnBoxThunks
 
     struct Struct0 : I0
     {
-        public Task<string> M0()
+        public async Task<string> M0()
         {
-            return Task.FromResult("hi");
+            await Task.Yield();
+            return "hi";
         }
 
-        public Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
+        public async Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
         {
-            return Task.FromResult("hello");
+            await Task.Yield();
+            return "hello";
         }
     }
 
@@ -43,14 +45,16 @@ public class InstUnBoxThunks
 
     struct Struct1<T> : I0
     {
-        public Task<string> M0()
+        public async Task<string> M0()
         {
-            return Task.FromResult(typeof(T).ToString());
+            await Task.Yield();
+            return typeof(T).ToString();
         }
 
-        public Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
+        public async Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
         {
-            return Task.FromResult(typeof(T).ToString());
+            await Task.Yield();
+            return typeof(T).ToString();
         }
     }
 

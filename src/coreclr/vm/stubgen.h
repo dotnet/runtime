@@ -1105,5 +1105,6 @@ protected:
 #endif // DACCESS_COMPILE
 
 #define TOKEN_ILSTUB_TARGET_SIG (TokenFromRid(0xFFFFFF, mdtSignature))
+#define TOKEN_ILSTUB_TARGET_SIG_ASYNC (TokenFromRid(0xFFFFFE, mdtSignature))
 
 #endif  // __STUBGEN_H__

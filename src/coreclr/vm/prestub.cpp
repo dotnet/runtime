@@ -1512,7 +1512,8 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
     // Do the calli
-    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
+    int token = pTargetMD->IsAsyncMethod() ? TOKEN_ILSTUB_TARGET_SIG_ASYNC : TOKEN_ILSTUB_TARGET_SIG;
+    pCode->EmitCALLI(token, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;
@@ -1614,7 +1615,8 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
     // Do the calli
-    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
+    int token = pTargetMD->IsAsyncMethod() ? TOKEN_ILSTUB_TARGET_SIG_ASYNC : TOKEN_ILSTUB_TARGET_SIG;
+    pCode->EmitCALLI(token, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;
@@ -1627,7 +1629,8 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
                                                             pTargetMD->GetModule(),
                                                             pSig, cbSig,
                                                             &typeContext,
-                                                            &sl);
+                                                            &sl,
+                                                            pTargetMD->IsAsyncMethod());
 
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
