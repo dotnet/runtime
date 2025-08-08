@@ -34,14 +34,6 @@ namespace System
         FormatGenericParam = 0x00000100, // Use !name and !!name for generic type and method parameters
     }
 
-    internal enum TypeNameKind
-    {
-        Name,
-        ToString,
-        FullName,
-        AssemblyQualifiedName,
-    }
-
     internal sealed partial class RuntimeType : TypeInfo, ICloneable
     {
         #region Definitions
@@ -1496,51 +1488,39 @@ namespace System
                 }
             }
 
-            internal string? GetName(TypeNameKind kind)
+            // No namespace, full instantiation, and assembly.
+            internal string GetName() => ConstructName(ref m_name, TypeNameFormatFlags.FormatBasic)!;
+
+            // No assembly.
+            internal string? GetFullName() => m_fullName ??
+                (IsFullNameRoundtripCompatible(m_runtimeType)
+                    ? ConstructName(ref m_fullName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst)
+                    : null);
+
+            // No full instantiation and assembly.
+            internal string GetToString() => ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace)!;
+
+            internal string? GetAssemblyQualifiedName() => m_assemblyQualifiedName ??
+                (IsFullNameRoundtripCompatible(m_runtimeType)
+                    ? ConstructName(ref m_assemblyQualifiedName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst | TypeNameFormatFlags.FormatAssembly)
+                    : null);
+
+            private static bool IsFullNameRoundtripCompatible(RuntimeType runtimeType)
             {
-                switch (kind)
-                {
-                    case TypeNameKind.Name:
-                        // No namespace, full instantiation, and assembly.
-                        return ConstructName(ref m_name, TypeNameFormatFlags.FormatBasic);
+                // We exclude the types that contain generic parameters because their names cannot be round-tripped.
+                // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be round-tripped.
+                // Theoretically generic types instantiated with generic type definitions can be round-tripped, e.g. List`1<Dictionary`2>.
+                // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
+                // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
+                if (!runtimeType.GetRootElementType().IsGenericTypeDefinition && runtimeType.ContainsGenericParameters)
+                    return false;
 
-                    case TypeNameKind.FullName:
-                        if (!ValidFullName(m_runtimeType))
-                            return null;
+                // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
+                // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
+                if (runtimeType.GetRootElementType().IsFunctionPointer)
+                    return false;
 
-                        // No assembly.
-                        return ConstructName(ref m_fullName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
-
-                    case TypeNameKind.ToString:
-                        // No full instantiation and assembly.
-                        return ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace);
-
-                    case TypeNameKind.AssemblyQualifiedName:
-                        if (!ValidFullName(m_runtimeType))
-                            return null;
-                        return ConstructName(ref m_assemblyQualifiedName, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst | TypeNameFormatFlags.FormatAssembly);
-
-                    default:
-                        throw new InvalidOperationException();
-                }
-
-                static bool ValidFullName(RuntimeType runtimeType)
-                {
-                    // We exclude the types that contain generic parameters because their names cannot be round-tripped.
-                    // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be round-tripped.
-                    // Theoretically generic types instantiated with generic type definitions can be round-tripped, e.g. List`1<Dictionary`2>.
-                    // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
-                    // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
-                    if (!runtimeType.GetRootElementType().IsGenericTypeDefinition && runtimeType.ContainsGenericParameters)
-                        return false;
-
-                    // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
-                    // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
-                    if (runtimeType.IsFunctionPointer)
-                        return false;
-
-                    return true;
-                }
+                return true;
             }
 
             internal string? GetNameSpace()
@@ -3349,9 +3329,9 @@ namespace System
 
         #region Name
 
-        public override string? FullName => GetCachedName(TypeNameKind.FullName);
+        public override string? FullName => Cache.GetFullName();
 
-        public override string? AssemblyQualifiedName => GetCachedName(TypeNameKind.AssemblyQualifiedName);
+        public override string? AssemblyQualifiedName => Cache.GetAssemblyQualifiedName();
 
         public override string? Namespace
         {
@@ -3829,17 +3809,11 @@ namespace System
 
         #endregion
 
-        public override string ToString() => GetCachedName(TypeNameKind.ToString)!;
+        public override string ToString() => Cache.GetToString();
 
         #region MemberInfo Overrides
 
-        public override string Name => GetCachedName(TypeNameKind.Name)!;
-
-        // This method looks like an attractive inline but expands to two calls,
-        // neither of which can be inlined or optimized further. So block it
-        // from inlining.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private string? GetCachedName(TypeNameKind kind) => Cache.GetName(kind);
+        public override string Name => Cache.GetName();
 
         public override Type? DeclaringType => Cache.GetEnclosingType();
 
