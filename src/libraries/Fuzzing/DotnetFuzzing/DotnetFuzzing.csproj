@@ -30,6 +30,7 @@
     <Compile Include="Fuzzers\TextEncodingFuzzer.cs" />
     <Compile Include="Fuzzers\TypeNameFuzzer.cs" />
     <Compile Include="Fuzzers\UTF8Fuzzer.cs" />
+    <Compile Include="Fuzzers\Utf8JsonReaderFuzzer.cs" />
     <Compile Include="Fuzzers\Utf8JsonWriterFuzzer.cs" />
     <Compile Include="Fuzzers\ZipArchiveFuzzer.cs" />
     <Compile Include="IFuzzer.cs" />
