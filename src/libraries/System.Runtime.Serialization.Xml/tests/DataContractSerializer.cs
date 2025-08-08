@@ -169,6 +169,38 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_DateOnlyAsRoot()
+    {
+        DateOnly[] testValues = {
+            new DateOnly(2024, 1, 15),
+            new DateOnly(1, 1, 1),
+            new DateOnly(9999, 12, 31),
+            new DateOnly(2000, 2, 29) // leap year
+        };
+
+        foreach (DateOnly value in testValues)
+        {
+            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateOnly>(value, string.Format(@"<DateOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</DateOnly>", value.ToString("O"))), value);
+        }
+    }
+
+    [Fact]
+    public static void DCS_TimeOnlyAsRoot()
+    {
+        TimeOnly[] testValues = {
+            new TimeOnly(14, 30, 45, 123),
+            new TimeOnly(0, 0, 0),
+            new TimeOnly(23, 59, 59, 999, 999),
+            new TimeOnly(12, 30, 0)
+        };
+
+        foreach (TimeOnly value in testValues)
+        {
+            Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<TimeOnly>(value, string.Format(@"<TimeOnly xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</TimeOnly>", value.ToString("O"))), value);
+        }
+    }
+
+    [Fact]
     public static void DCS_IntAsRoot()
     {
         foreach (int value in new int[] { -1, 0, 2, int.MinValue, int.MaxValue })

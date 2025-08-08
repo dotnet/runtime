@@ -967,6 +967,56 @@ public static partial class XmlSerializerTests
         }
     }
 
+    [Fact]
+    public static void Xml_TypeWithDateOnlyProperty()
+    {
+        var obj = new TypeWithDateOnlyProperty { DateOnlyProperty = new DateOnly(2024, 1, 15) };
+        var deserializedObj = SerializeAndDeserialize(obj, WithXmlHeader(@"<TypeWithDateOnlyProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+<DateOnlyProperty>2024-01-15</DateOnlyProperty>
+</TypeWithDateOnlyProperty>"));
+        Assert.StrictEqual(obj.DateOnlyProperty, deserializedObj.DateOnlyProperty);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithTimeOnlyProperty()
+    {
+        var obj = new TypeWithTimeOnlyProperty { TimeOnlyProperty = new TimeOnly(14, 30, 45, 123) };
+        var deserializedObj = SerializeAndDeserialize(obj, WithXmlHeader(@"<TypeWithTimeOnlyProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+<TimeOnlyProperty>14:30:45.1230000</TimeOnlyProperty>
+</TypeWithTimeOnlyProperty>"));
+        Assert.StrictEqual(obj.TimeOnlyProperty, deserializedObj.TimeOnlyProperty);
+    }
+
+    [Fact]
+    public static void Xml_DeserializeEmptyDateOnlyType()
+    {
+        string xml =
+    @"<?xml version=""1.0""?>
+     <DateOnly />";
+        XmlSerializer serializer = new XmlSerializer(typeof(DateOnly));
+
+        using (StringReader reader = new StringReader(xml))
+        {
+            DateOnly deserializedObj = (DateOnly)serializer.Deserialize(reader);
+            Assert.Equal(default(DateOnly), deserializedObj);
+        }
+    }
+
+    [Fact]
+    public static void Xml_DeserializeEmptyTimeOnlyType()
+    {
+        string xml =
+    @"<?xml version=""1.0""?>
+     <TimeOnly />";
+        XmlSerializer serializer = new XmlSerializer(typeof(TimeOnly));
+
+        using (StringReader reader = new StringReader(xml))
+        {
+            TimeOnly deserializedObj = (TimeOnly)serializer.Deserialize(reader);
+            Assert.Equal(default(TimeOnly), deserializedObj);
+        }
+    }
+
     [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateTimeOffsetProperty()
     {
