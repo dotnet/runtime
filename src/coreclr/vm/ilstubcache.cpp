@@ -70,7 +70,7 @@ void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
 // static
 MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllocator, MethodTable* pMT, DWORD dwStubFlags,
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, SigTypeContext *pTypeContext,
-                                             ILStubLinker* pStubLinker)
+                                             ILStubLinker* pStubLinker, BOOL isAsync /* = FALSE */)
 {
     CONTRACT (MethodDesc*)
     {
@@ -86,6 +86,7 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
                                                            dwStubFlags,
                                                            pSigModule,
                                                            pSig, cbSig,
+                                                           isAsync,
                                                            pTypeContext,
                                                            &amTracker);
 
@@ -143,7 +144,7 @@ namespace
 
 // static
 MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTable* pMT, DWORD dwStubFlags,
-                                             Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, SigTypeContext *pTypeContext,
+                                             Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, BOOL isAsync, SigTypeContext *pTypeContext,
                                              AllocMemTracker* pamTracker)
 {
     CONTRACT (MethodDesc*)
@@ -160,7 +161,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
                                                            mcDynamic,
                                                            TRUE /* fNonVtableSlot */,
                                                            TRUE /* fNativeCodeSlot */,
-                                                           FALSE /* HasAsyncMethodData */,
+                                                           isAsync /* HasAsyncMethodData */,
                                                            pMT,
                                                            pamTracker);
 
@@ -174,6 +175,13 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->m_pszMethodName = (PTR_CUTF8)"IL_STUB";
     pMD->InitializeFlags(DynamicMethodDesc::FlagPublic | DynamicMethodDesc::FlagIsILStub);
     pMD->SetTemporaryEntryPoint(pamTracker);
+
+    if (isAsync)
+    {
+        pMD->SetHasAsyncMethodData();
+        // Async stubs are standalone methods that do not form async/task-returning variant pairs.
+        pMD->GetAddrOfAsyncMethodData()->kind = AsyncMethodKind::AsyncExplicitImpl;
+    }
 
     //
     // convert signature to a compatible signature if needed
@@ -531,7 +539,8 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         }
 
         MethodTable *pStubMT = GetOrCreateStubMethodTable(pSigLoaderModule);
-        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, pTypeContext, pamTracker);
+        BOOL isAsync = pTargetMD == NULL ? FALSE: pTargetMD->IsAsyncMethod();
+        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, isAsync, pTypeContext, pamTracker);
 
         if (SF_IsSharedStub(dwStubFlags))
         {

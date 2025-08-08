@@ -1394,9 +1394,9 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 // CreateDerivedTargetSigWithExtraParams:
 // This method is used to create the signature of the target of the ILStub for
-// instantiating, unboxing, and async variant stubs, when/where we need to
-// introduce a generic context/async continuation.
-// And since the generic context/async continuations are hidden parameters,
+// instantiating and unboxing stubs, when/where we need to
+// introduce a generic context.
+// And since the generic contexts are hidden parameters,
 // we're creating a signature that looks like non-generic but with additional
 // parameters right after the thisptr
 void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder *stubSigBuilder)
@@ -1412,8 +1412,6 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     unsigned numArgs = msig.NumFixedArgs();
     if (msig.HasGenericContextArg())
         numArgs++;
-    if (msig.HasAsyncContinuation())
-        numArgs++;
     // ParamCount
     stubSigBuilder->AppendData(numArgs); // +1 is for context param
 
@@ -1427,11 +1425,6 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
         // The hidden context parameter
         stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
     }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
 #endif // !TARGET_X86
 
     // Copy rest of the arguments
@@ -1443,11 +1436,6 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     }
 
 #ifdef TARGET_X86
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
-
     if (msig.HasGenericContextArg())
     {
         // The hidden context parameter
@@ -1474,9 +1462,6 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     MetaSig msig(pTargetMD);
 
     _ASSERTE(msig.HasThis());
-
-    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
-    _ASSERTE(!msig.HasAsyncContinuation());
 
     ILStubLinker sl(pTargetMD->GetModule(),
                     pTargetMD->GetSignature(),
@@ -1527,7 +1512,8 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
     // Do the calli
-    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
+    int token = pTargetMD->IsAsyncMethod() ? TOKEN_ILSTUB_TARGET_SIG_ASYNC : TOKEN_ILSTUB_TARGET_SIG;
+    pCode->EmitCALLI(token, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;
@@ -1540,7 +1526,8 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
                                                             pTargetMD->GetModule(),
                                                             pSig, cbSig,
                                                             &typeContext,
-                                                            &sl);
+                                                            &sl,
+                                                            pTargetMD->IsAsyncMethod());
 
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
@@ -1593,9 +1580,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // TODO: (async) instantiating/unboxing stubs https://github.com/dotnet/runtime/issues/117266
-    _ASSERTE(!msig.HasAsyncContinuation());
-
     // Build the new signature
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
@@ -1631,7 +1615,8 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
     // Do the calli
-    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
+    int token = pTargetMD->IsAsyncMethod() ? TOKEN_ILSTUB_TARGET_SIG_ASYNC : TOKEN_ILSTUB_TARGET_SIG;
+    pCode->EmitCALLI(token, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;
@@ -1644,7 +1629,8 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
                                                             pTargetMD->GetModule(),
                                                             pSig, cbSig,
                                                             &typeContext,
-                                                            &sl);
+                                                            &sl,
+                                                            pTargetMD->IsAsyncMethod());
 
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 

@@ -480,6 +480,9 @@ static void ConvToJitSig(
         IfFailThrow(sig.GetCallingConvInfo(&data));
         sigRet->callConv = (CorInfoCallConv) data;
 
+        if (token == TOKEN_ILSTUB_TARGET_SIG_ASYNC)
+            sigRet->callConv = (CorInfoCallConv)(sigRet->callConv | CORINFO_CALLCONV_ASYNCCALL);
+
 #if defined(TARGET_UNIX) || defined(TARGET_ARM)
         if ((isCallConv(sigRet->callConv, IMAGE_CEE_CS_CALLCONV_VARARG)) ||
             (isCallConv(sigRet->callConv, IMAGE_CEE_CS_CALLCONV_NATIVEVARARG)))
@@ -1796,7 +1799,6 @@ CEEInfo::findSig(
     if (IsDynamicScope(scopeHnd))
     {
         sig = GetDynamicResolver(scopeHnd)->ResolveSignature(sigTok);
-        sigTok = mdTokenNil;
     }
     else
     {

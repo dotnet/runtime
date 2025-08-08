@@ -118,7 +118,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
             PCCOR_SIGNATURE pSig;
             uint32_t cbSig;
 
-            if (token == TOKEN_ILSTUB_TARGET_SIG)
+            if (token == TOKEN_ILSTUB_TARGET_SIG || token == TOKEN_ILSTUB_TARGET_SIG_ASYNC)
             {
                 // Build the current target sig into the buffer.
                 cbSig = GetStubTargetMethodSigSize();
