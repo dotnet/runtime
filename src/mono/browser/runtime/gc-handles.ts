@@ -28,6 +28,18 @@ export const _js_owned_object_table = new Map<GCHandle, WeakRefInternal<any>>();
 const _gcv_handle_free_list: GCHandle[] = [];
 let _next_gcv_handle = -2;
 
+// Convert bigint to number, but throw if it's out of safe integer range.
+function normalize_handle (js_handle: JSHandle | GCHandle): any {
+    const handle = typeof js_handle === "bigint" ? Number(js_handle) : js_handle;
+    if (!Number.isSafeInteger(handle)) {
+        if (typeof js_handle === "bigint") {
+            throw new Error("js_handle value is out of safe integer range. Converted from bigint.");
+        } else {
+            throw new Error("js_handle value is out of safe integer range.");
+        }
+    }
+    return handle;
+}
 // GCVHandle is like GCHandle, but it's not tracked and allocated by the mono GC, but just by JS.
 // It's used when we need to create GCHandle-like identity ahead of time, before calling Mono.
 // they have negative values, so that they don't collide with GCHandles.
@@ -37,19 +49,23 @@ export function alloc_gcv_handle (): GCHandle {
 }
 
 export function free_gcv_handle (gcv_handle: GCHandle): void {
-    _gcv_handle_free_list.push(gcv_handle);
+    const handle = normalize_handle(gcv_handle);
+    _gcv_handle_free_list.push(handle);
 }
 
 export function is_jsv_handle (js_handle: JSHandle): boolean {
-    return (js_handle as any) < -1;
+    const handle = normalize_handle(js_handle);
+    return (handle as any) < -1;
 }
 
 export function is_js_handle (js_handle: JSHandle): boolean {
-    return (js_handle as any) > 0;
+    const handle = normalize_handle(js_handle);
+    return (handle as any) > 0;
 }
 
 export function is_gcv_handle (gc_handle: GCHandle): boolean {
-    return (gc_handle as any) < -1;
+    const handle = normalize_handle(gc_handle);
+    return (handle as any) < -1;
 }
 
 // NOTE: FinalizationRegistry and WeakRef are missing on Safari below 14.1
@@ -61,12 +77,12 @@ export const js_owned_gc_handle_symbol = Symbol.for("wasm js_owned_gc_handle");
 export const cs_owned_js_handle_symbol = Symbol.for("wasm cs_owned_js_handle");
 export const do_not_force_dispose = Symbol.for("wasm do_not_force_dispose");
 
-
 export function mono_wasm_get_jsobj_from_js_handle (js_handle: JSHandle): any {
-    if (is_js_handle(js_handle))
-        return _cs_owned_objects_by_js_handle[<any>js_handle];
-    if (is_jsv_handle(js_handle))
-        return _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
+    const handle = normalize_handle(js_handle);
+    if (is_js_handle(<any>handle))
+        return _cs_owned_objects_by_js_handle[<any>handle];
+    if (is_jsv_handle(<any>handle))
+        return _cs_owned_objects_by_jsv_handle[0 - <any>handle];
     return null;
 }
 
@@ -93,24 +109,26 @@ export function mono_wasm_get_js_handle (js_obj: any): JSHandle {
 
 export function register_with_jsv_handle (js_obj: any, jsv_handle: JSHandle) {
     assert_js_interop();
+    const handle = normalize_handle(jsv_handle);
     // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
-    _cs_owned_objects_by_jsv_handle[0 - <any>jsv_handle] = js_obj;
+    _cs_owned_objects_by_jsv_handle[0 - <any>handle] = js_obj;
 
     if (Object.isExtensible(js_obj)) {
-        js_obj[cs_owned_js_handle_symbol] = jsv_handle;
+        js_obj[cs_owned_js_handle_symbol] = handle;
     }
 }
 
 // note: in MT, this is called from locked JSProxyContext. Don't call anything that would need locking.
 export function mono_wasm_release_cs_owned_object (js_handle: JSHandle): void {
     let obj: any;
-    if (is_js_handle(js_handle)) {
-        obj = _cs_owned_objects_by_js_handle[<any>js_handle];
-        _cs_owned_objects_by_js_handle[<any>js_handle] = undefined;
-        _js_handle_free_list.push(js_handle);
-    } else if (is_jsv_handle(js_handle)) {
-        obj = _cs_owned_objects_by_jsv_handle[0 - <any>js_handle];
-        _cs_owned_objects_by_jsv_handle[0 - <any>js_handle] = undefined;
+    const handle = normalize_handle(js_handle);
+    if (is_js_handle(handle)) {
+        obj = _cs_owned_objects_by_js_handle[<any>handle];
+        _cs_owned_objects_by_js_handle[<any>handle] = undefined;
+        _js_handle_free_list.push(handle);
+    } else if (is_jsv_handle(handle)) {
+        obj = _cs_owned_objects_by_jsv_handle[0 - <any>handle];
+        _cs_owned_objects_by_jsv_handle[0 - <any>handle] = undefined;
         // see free list in JSProxyContext.FreeJSVHandle
     }
     mono_assert(obj !== undefined && obj !== null, "ObjectDisposedException");
@@ -121,50 +139,53 @@ export function mono_wasm_release_cs_owned_object (js_handle: JSHandle): void {
 
 export function setup_managed_proxy (owner: any, gc_handle: GCHandle): void {
     assert_js_interop();
+    const handle = normalize_handle(gc_handle);
     // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
-    owner[js_owned_gc_handle_symbol] = gc_handle;
+    owner[js_owned_gc_handle_symbol] = handle;
 
     // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
     if (_use_finalization_registry) {
         // register for GC of the C# object after the JS side is done with the object
-        _js_owned_object_registry.register(owner, gc_handle, owner);
+        _js_owned_object_registry.register(owner, handle, owner);
     }
 
     // register for instance reuse
     // NOTE: this would be leaking C# objects when the browser doesn't support FinalizationRegistry/WeakRef
     const wr = create_weak_ref(owner);
-    _js_owned_object_table.set(gc_handle, wr);
+    _js_owned_object_table.set(handle, wr);
 }
 
 export function upgrade_managed_proxy_to_strong_ref (owner: any, gc_handle: GCHandle): void {
     const sr = create_strong_ref(owner);
+    const handle = normalize_handle(gc_handle);
     if (_use_finalization_registry) {
         _js_owned_object_registry.unregister(owner);
     }
-    _js_owned_object_table.set(gc_handle, sr);
+    _js_owned_object_table.set(handle, sr);
 }
 
 export function teardown_managed_proxy (owner: any, gc_handle: GCHandle, skipManaged?: boolean): void {
     assert_js_interop();
+    let handle = normalize_handle(gc_handle);
     // The JS object associated with this gc_handle has been collected by the JS GC.
     // As such, it's not possible for this gc_handle to be invoked by JS anymore, so
     //  we can release the tracking weakref (it's null now, by definition),
     //  and tell the C# side to stop holding a reference to the managed object.
     // "The FinalizationRegistry callback is called potentially multiple times"
     if (owner) {
-        gc_handle = owner[js_owned_gc_handle_symbol];
+        handle = owner[js_owned_gc_handle_symbol];
         owner[js_owned_gc_handle_symbol] = GCHandleNull;
         if (_use_finalization_registry) {
             _js_owned_object_registry.unregister(owner);
         }
     }
-    if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle) && !skipManaged) {
+    if (handle !== GCHandleNull && _js_owned_object_table.delete(handle) && !skipManaged) {
         if (loaderHelpers.is_runtime_running() && !force_dispose_proxies_in_progress) {
-            release_js_owned_object_by_gc_handle(gc_handle);
+            release_js_owned_object_by_gc_handle(handle);
         }
     }
-    if (is_gcv_handle(gc_handle)) {
-        free_gcv_handle(gc_handle);
+    if (is_gcv_handle(handle)) {
+        free_gcv_handle(handle);
     }
 }
 
@@ -179,13 +200,13 @@ function _js_owned_object_finalized (gc_handle: GCHandle): void {
         // We're shutting down, so don't bother doing anything else.
         return;
     }
-    teardown_managed_proxy(null, gc_handle);
+    teardown_managed_proxy(null, normalize_handle(gc_handle));
 }
 
 export function _lookup_js_owned_object (gc_handle: GCHandle): any {
     if (!gc_handle)
         return null;
-    const wr = _js_owned_object_table.get(gc_handle);
+    const wr = _js_owned_object_table.get(normalize_handle(gc_handle));
     if (wr) {
         // this could be null even before _js_owned_object_finalized was called
         // TODO: are there race condition consequences ?
