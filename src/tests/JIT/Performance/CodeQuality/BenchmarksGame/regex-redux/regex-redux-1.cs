@@ -8,8 +8,8 @@
 
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
- * 
- * regex-dna program contributed by Isaac Gouy 
+ *
+ * regex-dna program contributed by Isaac Gouy
  * converted from regex-dna program
  *
 */
@@ -24,6 +24,7 @@ namespace BenchmarksGame
     public class RegexRedux_1
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118475")]
         public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);

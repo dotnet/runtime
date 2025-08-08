@@ -40,7 +40,7 @@ namespace System.Runtime.Serialization.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void Name_Set_GetReturnsExpected(string value)
+        public void Name_Set_GetReturnsExpected(string? value)
         {
             var attribute = new DataMemberAttribute() { Name = value };
             Assert.Equal(value, attribute.Name);

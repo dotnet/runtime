@@ -156,7 +156,7 @@ namespace System
                         // Process the input in chunks of 64 characters (2 * Vector512<short>).
                         // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
 
                         do
@@ -205,7 +205,7 @@ namespace System
                         // Process the input in chunks of 32 characters (2 * Vector256<short>).
                         // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector256<short>.Count));
 
                         do
@@ -263,7 +263,7 @@ namespace System
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector128<short>.Count));
 
                         do
@@ -355,7 +355,7 @@ namespace System
                         // Process the input in chunks of 64 characters (2 * Vector512<short>).
                         // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
 
                         do
@@ -404,7 +404,7 @@ namespace System
                         // Process the input in chunks of 32 characters (2 * Vector256<short>).
                         // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector256<short>.Count));
 
                         do
@@ -464,7 +464,7 @@ namespace System
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector128<short>.Count));
 
                         do
@@ -565,7 +565,7 @@ namespace System
                         // Process the input in chunks of 64 characters (2 * Vector512<short>).
                         // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
 
                         do
@@ -617,7 +617,7 @@ namespace System
                         // Process the input in chunks of 32 characters (2 * Vector256<short>).
                         // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector256<short>.Count));
 
                         do
@@ -678,7 +678,7 @@ namespace System
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector128<short>.Count));
 
                         do
@@ -781,7 +781,7 @@ namespace System
                         // Process the input in chunks of 64 characters (2 * Vector512<short>).
                         // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
 
                         do
@@ -834,7 +834,7 @@ namespace System
                         // Process the input in chunks of 32 characters (2 * Vector256<short>).
                         // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector256<short>.Count));
 
                         do
@@ -896,7 +896,7 @@ namespace System
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector128<short>.Count));
 
                         do
@@ -980,7 +980,7 @@ namespace System
                         // Process the input in chunks of 64 characters (2 * Vector512<short>).
                         // If the input length is a multiple of 64, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector512<short>.Count));
 
                         do
@@ -1030,7 +1030,7 @@ namespace System
                         // Process the input in chunks of 32 characters (2 * Vector256<short>).
                         // If the input length is a multiple of 32, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector256<short>.Count));
 
                         do
@@ -1091,7 +1091,7 @@ namespace System
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
                         // Let the fallback below handle it instead. This is why the condition is
-                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "!IsAddressGreaterThan".
+                        // ">" instead of ">=" above, and why "IsAddressLessThan" is used instead of "IsAddressLessThanOrEqualTo".
                         ref short twoVectorsAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - (2 * Vector128<short>.Count));
 
                         do
