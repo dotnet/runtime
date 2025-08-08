@@ -993,7 +993,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(NonRandomizedGetHashCode_EquivalentForStringAndSpan_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116815", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void NonRandomizedGetHashCode_EquivalentForStringAndSpan(int charValueLimit, bool ignoreCase)
         {
             // This is testing internal API. If that API changes, this test will need to be updated.

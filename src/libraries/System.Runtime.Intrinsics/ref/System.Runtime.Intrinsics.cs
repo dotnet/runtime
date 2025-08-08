@@ -6372,6 +6372,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<long> MultiplyBySelectedScalarWideningOddAndSubtract(System.Numerics.Vector<long> minuend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<uint> MultiplyBySelectedScalarWideningOddAndSubtract(System.Numerics.Vector<uint> minuend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<ulong> MultiplyBySelectedScalarWideningOddAndSubtract(System.Numerics.Vector<ulong> minuend, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingBySelectedScalarSaturateHigh(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte rightIndex) { throw null; }
+        public static System.Numerics.Vector<sbyte> MultiplyDoublingSaturateHigh(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<short> MultiplyDoublingSaturateHigh(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> MultiplyDoublingSaturateHigh(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> MultiplyDoublingSaturateHigh(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
         public static System.Numerics.Vector<short> MultiplyDoublingWideningAndAddSaturateEven(System.Numerics.Vector<short> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<int> MultiplyDoublingWideningAndAddSaturateEven(System.Numerics.Vector<int> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<long> MultiplyDoublingWideningAndAddSaturateEven(System.Numerics.Vector<long> addend, System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -6541,18 +6548,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<int> ShiftRightArithmeticAdd(System.Numerics.Vector<int> addend, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<long> ShiftRightArithmeticAdd(System.Numerics.Vector<long> addend, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<sbyte> ShiftRightArithmeticAdd(System.Numerics.Vector<sbyte> addend, System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
-        public static System.Numerics.Vector<byte> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<short> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<int> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<sbyte> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
-        public static System.Numerics.Vector<ushort> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
-        public static System.Numerics.Vector<uint> ShiftRightArithmeticNarrowingSaturateEven(System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
-        public static System.Numerics.Vector<byte> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<short> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<short> even, System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<int> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<int> even, System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<sbyte> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
-        public static System.Numerics.Vector<ushort> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
-        public static System.Numerics.Vector<uint> ShiftRightArithmeticNarrowingSaturateOdd(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<byte> ShiftRightArithmeticNarrowingSaturateUnsignedEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<ushort> ShiftRightArithmeticNarrowingSaturateUnsignedEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<uint> ShiftRightArithmeticNarrowingSaturateUnsignedEven(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }

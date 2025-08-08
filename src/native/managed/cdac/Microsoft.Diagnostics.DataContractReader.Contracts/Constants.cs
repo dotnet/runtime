@@ -30,6 +30,7 @@ public static class Constants
         public const string DacNotificationFlags = nameof(DacNotificationFlags);
         public const string OffsetOfCurrentThreadInfo = nameof(OffsetOfCurrentThreadInfo);
         public const string TlsIndexBase = nameof(TlsIndexBase);
+        public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
@@ -54,6 +55,7 @@ public static class Constants
 
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
+        public const string DefaultADID = nameof(DefaultADID);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
         public const string PlatformMetadata = nameof(PlatformMetadata);

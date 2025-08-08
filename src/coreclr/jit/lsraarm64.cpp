@@ -2185,6 +2185,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve2_MultiplyBySelectedScalar:
             case NI_Sve2_MultiplyBySelectedScalarWideningEven:
             case NI_Sve2_MultiplyBySelectedScalarWideningOdd:
+            case NI_Sve2_MultiplyDoublingBySelectedScalarSaturateHigh:
             case NI_Sve2_MultiplyDoublingWideningSaturateEvenBySelectedScalar:
             case NI_Sve2_MultiplyDoublingWideningSaturateOddBySelectedScalar:
             case NI_Sve2_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:

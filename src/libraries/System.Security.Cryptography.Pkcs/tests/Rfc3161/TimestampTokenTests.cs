@@ -341,7 +341,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void MatchV2(
             X509IncludeOption includeOption,
             SigningCertificateOption v2Option,
-            string hashAlgName)
+            string? hashAlgName)
         {
             CustomBuild_CertMatch(
                 Certificates.ValidLookingTsaCert,
@@ -361,7 +361,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(X509IncludeOption.None, "SHA1")]
         [InlineData(X509IncludeOption.WholeChain, "SHA384")]
         [InlineData(X509IncludeOption.None, "SHA384")]
-        public static void CertHashMismatchV2(X509IncludeOption includeOption, string hashAlgName)
+        public static void CertHashMismatchV2(X509IncludeOption includeOption, string? hashAlgName)
         {
             CustomBuild_CertMismatch(
                 Certificates.ValidLookingTsaCert,
@@ -417,7 +417,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             X509IncludeOption includeOption,
             SigningCertificateOption v2Option,
             SubjectIdentifierType identifierType,
-            string hashAlgName)
+            string? hashAlgName)
         {
             CustomBuild_CertMismatch(
                 Certificates.ValidLookingTsaCert,
@@ -514,7 +514,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             X509IncludeOption includeOption,
             SigningCertificateOption v1Option,
             SigningCertificateOption v2Option,
-            string hashAlgName)
+            string? hashAlgName)
         {
             CustomBuild_CertMatch(
                 Certificates.ValidLookingTsaCert,
@@ -561,7 +561,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SigningCertificateOption v1Option,
             SigningCertificateOption v2Option,
             SubjectIdentifierType identifierType,
-            string hashAlgName)
+            string? hashAlgName)
         {
             CustomBuild_CertMismatch(
                 Certificates.ValidLookingTsaCert,

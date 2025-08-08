@@ -1378,14 +1378,6 @@ LPVOID MyICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** p
     return jitInstance->mc->repGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
 }
 
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool MyICJI::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-{
-    jitInstance->mc->cr->AddCall("canGetCookieForPInvokeCalliSig");
-    return jitInstance->mc->repCanGetCookieForPInvokeCalliSig(szMetaSig);
-}
-
 // Generate a cookie based on the signature to pass to INTOP_CALLI
 LPVOID MyICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -1456,18 +1448,10 @@ CORINFO_CLASS_HANDLE MyICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fie
 }
 
 // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
-CORINFO_VARARGS_HANDLE MyICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection)
+CORINFO_VARARGS_HANDLE MyICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("getVarArgsHandle");
-    return jitInstance->mc->repGetVarArgsHandle(pSig, ppIndirection);
-}
-
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool MyICJI::canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-{
-    jitInstance->mc->cr->AddCall("canGetVarArgsHandle");
-    return jitInstance->mc->repCanGetVarArgsHandle(pSig);
+    return jitInstance->mc->repGetVarArgsHandle(pSig, methHnd, ppIndirection);
 }
 
 // Allocate a string literal on the heap and return a handle to it
