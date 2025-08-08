@@ -13,7 +13,7 @@
 
 #if defined(APPLE_HYBRID_GLOBALIZATION)
 // Enum that corresponds to C# CompareOptions
-typedef enum
+typedef enum : int32_t
 {
     None = 0x00000000,
     IgnoreCase = 0x00000001,
@@ -46,7 +46,7 @@ static NSLocale* GetCurrentLocale(const uint16_t* localeName, int32_t lNameLengt
     return currentLocale;
 }
 
-static bool IsComparisonOptionSupported(int32_t comparisonOptions)
+static bool IsComparisonOptionSupported(CompareOptions comparisonOptions)
 {
     int32_t supportedOptions = None | IgnoreCase | IgnoreNonSpace | IgnoreSymbols | IgnoreWidth | StringSort | IgnoreKanaType;
     if ((comparisonOptions | supportedOptions) != supportedOptions)
@@ -54,7 +54,7 @@ static bool IsComparisonOptionSupported(int32_t comparisonOptions)
     return true;
 }
 
-static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions, bool isLiteralSearchSupported)
+static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(CompareOptions comparisonOptions, bool isLiteralSearchSupported)
 {
     // To achieve an equivalent search behavior to the default in ICU,
     // NSLiteralSearch is employed as the default search option.
@@ -208,7 +208,7 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported(comparisonOptions))
+        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
         NSString *sourceString = [NSString stringWithCharacters: lpSource length: (NSUInteger)cwSourceLength];
@@ -329,10 +329,10 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
 
         if (nsRange.location != NSNotFound)
         {   
-            // Map the found location back to the original string if symbols were removed
             result = (Range){(int32_t)nsRange.location, (int32_t)nsRange.length};
-            if ((comparisonOptions & IgnoreSymbols) && sourceMapping.mapping != nil)
+            if (comparisonOptions & IgnoreSymbols)
             {
+                // Map the found location back to the original string if symbols were removed
                 Range mappedResult = MapRangeToOriginalString(nsRange, sourceMapping.mapping);
                 if (mappedResult.location != ERROR_INDEX_NOT_FOUND) {
                     result = mappedResult;
@@ -363,10 +363,10 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             if ((comparisonOptions & IgnoreCase) && IsIndexFound(fromBeginning, (int32_t)result.location, (int32_t)precomposedRange.location))
                 return result;
 
-            // Map the found location back to the original string if symbols were removed
             result = (Range){(int32_t)precomposedRange.location, (int32_t)precomposedRange.length};
-            if ((comparisonOptions & IgnoreSymbols) && sourceMapping.mapping != nil)
+            if (comparisonOptions & IgnoreSymbols)
             {
+                // Map the found location back to the original string if symbols were removed
                 Range mappedResult = MapRangeToOriginalString(precomposedRange, sourceMapping.mapping);
                 if (mappedResult.location != ERROR_INDEX_NOT_FOUND) {
                     result = mappedResult;
@@ -390,10 +390,10 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             if ((comparisonOptions & IgnoreCase) && IsIndexFound(fromBeginning, (int32_t)result.location, (int32_t)decomposedRange.location))
                 return result;
 
-            // Map the found location back to the original string if symbols were removed
             result = (Range){(int32_t)decomposedRange.location, (int32_t)decomposedRange.length};
-            if ((comparisonOptions & IgnoreSymbols) && sourceMapping.mapping != nil)
+            if (comparisonOptions & IgnoreSymbols)
             {
+                // Map the found location back to the original string if symbols were removed
                 Range mappedResult = MapRangeToOriginalString(decomposedRange, sourceMapping.mapping);
                 if (mappedResult.location != ERROR_INDEX_NOT_FOUND) {
                     result = mappedResult;
@@ -415,7 +415,7 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported(comparisonOptions))
+        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
@@ -453,7 +453,7 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported(comparisonOptions))
+        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
@@ -494,7 +494,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
                 sortKey[0] = '\0';
             return 1;
         }
-        if (!IsComparisonOptionSupported(options))
+        if (!IsComparisonOptionSupported((CompareOptions)options))
             return 0;
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: (NSUInteger)cwStrLength];
         if (options & IgnoreKanaType)
@@ -502,10 +502,6 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
             sourceString = ConvertToKatakana(sourceString);
         }
 
-        if (options & IgnoreSymbols)
-        { // TODO TEST
-            sourceString = RemoveSymbols(sourceString);
-        }
         NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString).precomposedStringWithCanonicalMapping;
         // If the string is empty after removing weightless characters, return 1
         if(sourceStringCleaned.length == 0)
