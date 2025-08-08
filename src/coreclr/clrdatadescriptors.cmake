@@ -82,7 +82,7 @@ function(generate_data_descriptors)
     if(MSVC)
       # /Zc:externConstexpr is required to export constexpr variables
       # from the object file, otherwise the linker will not export them.
-      # See https://learn.microsoft.com/en-us/cpp/build/reference/zcexternconstexpr
+      # See https://learn.microsoft.com/en-us/cpp/build/reference/zc-externconstexpr
       # for more details.
       target_compile_options(${LIBRARY} PRIVATE /Zc:externConstexpr)
     endif(MSVC)
