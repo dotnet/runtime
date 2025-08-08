@@ -1571,17 +1571,19 @@ void CodeGen::genLclHeap(GenTree* tree)
         if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
         {
             emit->emitIns_R_R_R(INS_maxu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
-            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, tempReg, regCnt);
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, tempReg, regCnt); // regCnt now holds ultimate SP
         }
         else
         {
-            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt); // cnt = sp - cnt; // ultimate SP
-            // If the subtraction above overflowed (i.e. sp < ultimateSP), set regCnt to lowest possible value (i.e. 0)
             emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt); // temp = overflow ? 1 : 0;
-            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -1);        // temp = overflow ? 0 : full_mask;
-            emit->emitIns_R_R_R(INS_and, EA_PTRSIZE, regCnt, regCnt, tempReg);      // cnt  = overflow ? 0 : cnt;
+
+            // sub  regCnt, SP, regCnt      // regCnt now holds ultimate SP
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
+
+            // If overflow, set regCnt to lowest possible value
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -1);   // temp = overflow ? 0 : full_mask;
+            emit->emitIns_R_R_R(INS_and, EA_PTRSIZE, regCnt, regCnt, tempReg); // cnt  = overflow ? 0 : cnt;
         }
-        // At this point 'regCnt' is set to the ultimate SP.
 
         regNumber rPageSize = internalRegisters.GetSingle(tree);
         noway_assert(rPageSize != tempReg);
