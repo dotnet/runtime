@@ -1066,7 +1066,7 @@ private:
     regMaskTP getKillSetForCall(GenTreeCall* call);
     regMaskTP getKillSetForModDiv(GenTreeOp* tree);
     regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskTP getKillSetForReturn();
+    regMaskTP getKillSetForReturn(GenTree* returnNode);
     regMaskTP getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -1142,7 +1142,8 @@ private:
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
 
-    RegRecord* getRegisterRecord(regNumber regNum);
+    RegRecord*       getRegisterRecord(regNumber regNum);
+    SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType);
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 

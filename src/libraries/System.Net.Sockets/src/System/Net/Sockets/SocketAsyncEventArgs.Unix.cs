@@ -71,9 +71,9 @@ namespace System.Net.Sockets
             CompletionCallback(bytesTransferred, SocketFlags.None, socketError);
         }
 
-        internal SocketError DoOperationConnectEx(Socket _ /*socket*/, SafeSocketHandle handle)
+        internal SocketError DoOperationConnectEx(Socket _ /*socket*/, SafeSocketHandle handle, CancellationToken cancellationToken)
         {
-            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, _buffer.Slice(_offset, _count), out int sentBytes);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, _buffer.Slice(_offset, _count), out int sentBytes, cancellationToken);
             if (socketError != SocketError.IOPending)
             {
                 FinishOperationSync(socketError, sentBytes, SocketFlags.None);
@@ -81,9 +81,9 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        internal SocketError DoOperationConnect(SafeSocketHandle handle)
+        internal SocketError DoOperationConnect(SafeSocketHandle handle, CancellationToken cancellationToken)
         {
-            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, Memory<byte>.Empty, out int _);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback, Memory<byte>.Empty, out int _, cancellationToken);
             if (socketError != SocketError.IOPending)
             {
                 FinishOperationSync(socketError, 0, SocketFlags.None);

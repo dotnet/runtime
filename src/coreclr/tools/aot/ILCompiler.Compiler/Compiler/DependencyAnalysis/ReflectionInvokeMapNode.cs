@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
                 else if (isOut && !type.IsGCPointer)
                     dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
                 else
-                    dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
+                    dependencies.Add(factory.MetadataTypeSymbol(type.NormalizeInstantiation()), reason);
             }
             catch (TypeSystemException)
             {

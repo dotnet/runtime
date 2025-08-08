@@ -2738,8 +2738,7 @@ StackFrame ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFram
     CopyOSContext(&tempContext, pRD->pCallerContext);
 
     // Now unwind it to get the context of the caller's caller.
-    EECodeInfo codeInfo(dac_cast<PCODE>(GetIP(pRD->pCallerContext)));
-    Thread::VirtualUnwindCallFrame(&tempContext, NULL, &codeInfo);
+    pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
 
     StackFrame sfRetVal = StackFrame((UINT_PTR)(GetSP(&tempContext)));
     _ASSERTE(!sfRetVal.IsNull() && !sfRetVal.IsMaxVal());
@@ -2986,7 +2985,7 @@ void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 {
     _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-    pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
+    pInlinedCallFrame->m_Datum = (PTR_PInvokeMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
 }
 
 // Mark the pinvoke frame as invoking any exception handling helper
@@ -2994,7 +2993,7 @@ void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
 {
     _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-    pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
+    pInlinedCallFrame->m_Datum = (PTR_PInvokeMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
 }
 
 static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)

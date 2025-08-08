@@ -742,6 +742,7 @@ protected:
 #endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
+    bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
 
 #if defined(TARGET_X86)
     void genCodeForLongUMod(GenTreeOp* node);
@@ -1338,7 +1339,7 @@ public:
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 #endif
 
-    void inst_SET(emitJumpKind condition, regNumber reg);
+    void inst_SET(emitJumpKind condition, regNumber reg, insOpts instOptions = INS_OPTS_NONE);
 
     void inst_RV(instruction ins, regNumber reg, var_types type, emitAttr size = EA_UNKNOWN);
 

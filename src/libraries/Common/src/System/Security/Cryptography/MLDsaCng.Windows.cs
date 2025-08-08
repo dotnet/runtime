@@ -95,15 +95,20 @@ namespace System.Security.Cryptography
             }
         }
 
-        public partial CngKey Key
+        public partial CngKey GetKey()
         {
-            get
-            {
-                ThrowIfDisposed();
+            ThrowIfDisposed();
 
-                return _key;
-            }
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
+#else
+#pragma warning disable CA1416 // only supported on: 'windows'
+            return _key.Duplicate();
+#pragma warning restore CA1416 // only supported on: 'windows'
+#endif
         }
+
+        internal CngKey KeyNoDuplicate => _key;
 
         /// <inheritdoc/>
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
@@ -144,7 +149,7 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc/>
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination)
         {
             bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(_key);
 
@@ -156,16 +161,16 @@ namespace System.Security.Cryptography
 
                     if (expandedKey is ReadOnlyMemory<byte> expandedKeyValue)
                     {
-                        if (expandedKeyValue.Length != algorithm.SecretKeySizeInBytes)
+                        if (expandedKeyValue.Length != algorithm.PrivateKeySizeInBytes)
                         {
-                            throw new CryptographicException(SR.Argument_SecretKeyWrongSizeForAlgorithm);
+                            throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                         }
 
                         expandedKeyValue.Span.CopyTo(destination);
                         return;
                     }
 
-                    // If PKCS#8 only has seed, then we can calculate the secret key
+                    // If PKCS#8 only has seed, then we can calculate the private key
                     ReadOnlyMemory<byte>? seed = mldsaPrivateKeyAsn.Seed;
 
                     if (seed is ReadOnlyMemory<byte> seedValue)
@@ -177,7 +182,7 @@ namespace System.Security.Cryptography
 
                         using (MLDsa cloned = MLDsaImplementation.ImportSeed(algorithm, seedValue.Span))
                         {
-                            cloned.ExportMLDsaSecretKey(destination);
+                            cloned.ExportMLDsaPrivateKey(destination);
                             return;
                         }
                     }
@@ -189,7 +194,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                ExportKey(CngKeyBlobFormat.PQDsaPrivateBlob, Algorithm.SecretKeySizeInBytes, destination);
+                ExportKey(CngKeyBlobFormat.PQDsaPrivateBlob, Algorithm.PrivateKeySizeInBytes, destination);
             }
         }
 
@@ -211,7 +216,7 @@ namespace System.Security.Cryptography
                     }
 
                     bytesWritten = pkcs8.Count;
-                    pkcs8.Array.CopyTo(destination);
+                    pkcs8.AsSpan().CopyTo(destination);
                     return true;
                 }
                 finally
@@ -259,6 +264,76 @@ namespace System.Security.Cryptography
 
                     return duplicatedHandle.VerifyHash(
                         data,
+                        signature,
+                        Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
+                        &paddingInfo);
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override unsafe void SignPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            Span<byte> destination)
+        {
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+                fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+                fixed (void* pContext = context)
+                {
+                    BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                    paddingInfo.pbCtx = (IntPtr)pContext;
+                    paddingInfo.cbCtx = context.Length;
+                    paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                    duplicatedHandle.SignHash(
+                        hash,
+                        destination,
+                        Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
+                        &paddingInfo);
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override unsafe bool VerifyPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            ReadOnlySpan<byte> signature)
+        {
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            using (SafeNCryptKeyHandle duplicatedHandle = _key.Handle)
+            {
+                fixed (char* pHashAlgorithmIdentifier = hashAlgorithmIdentifier)
+                fixed (void* pContext = context)
+                {
+                    BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                    paddingInfo.pbCtx = (IntPtr)pContext;
+                    paddingInfo.cbCtx = context.Length;
+                    paddingInfo.pszPreHashAlgId = (IntPtr)pHashAlgorithmIdentifier;
+
+                    return duplicatedHandle.VerifyHash(
+                        hash,
                         signature,
                         Interop.NCrypt.AsymmetricPaddingMode.NCRYPT_PAD_PQDSA_FLAG,
                         &paddingInfo);
@@ -359,8 +434,13 @@ namespace System.Security.Cryptography
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
-            _key.Dispose();
-            _key = null!;
+            if (disposing)
+            {
+                _key.Dispose();
+                _key = null!;
+            }
+
+            base.Dispose(disposing);
         }
 
         private void ExportKey(
