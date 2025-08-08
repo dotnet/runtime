@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="GB18030\TestHelper.cs" />
+    <Compile Include="GB18030\Tests\CharTests.cs" />
     <Compile Include="GB18030\Tests\ConsoleTests.cs" />
     <Compile Include="GB18030\Tests\DirectoryInfoTests.cs" />
     <Compile Include="GB18030\Tests\DirectoryTestBase.cs" />

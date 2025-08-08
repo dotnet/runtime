@@ -78,6 +78,7 @@ public static class TestHelper
 
     public static IEnumerable<object[]> EncodedTestData { get; } = s_encodedTestData.Select(data => new object[] { data });
     public static IEnumerable<object[]> DecodedTestData { get; } = s_decodedTestData.Select(data => new object[] { data });
+    public static IEnumerable<object[]> SplitNewLineDecodedTestData { get; } = s_splitNewLineDecodedTestData.Select(data => new object[] { data });
     public static IEnumerable<object[]> NonExceedingPathNameMaxDecodedTestData { get; } = s_nonExceedingPathNameMaxDecodedTestData.Select(data => new object[] { data });
 
     private static IEnumerable<byte[]> GetTestData()

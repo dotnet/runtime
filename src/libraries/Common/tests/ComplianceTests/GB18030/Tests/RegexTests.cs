@@ -26,7 +26,6 @@ public class RegexTests
     private static readonly IEnumerable<string> s_cjkExtensionANewCharacters = Enumerable.Range(s_cjkExtensionANewRange.FirstCodePoint, s_cjkExtensionANewRange.Length).Select(c => ((char)c).ToString());
     private static readonly IEnumerable<string> s_allNewCharacters = s_cjkNewCharacters.Union(s_cjkExtensionANewCharacters);
 
-    // https://learn.microsoft.com/en-us/dotnet/standard/base-types/character-classes-in-regular-expressions#supported-named-blocks
     private static readonly Dictionary<UnicodeRange, (string, string[])> s_rangeToRegexMap = new()
     {
         { s_cjkNewRange, ("IsCJKUnifiedIdeographs", s_cjkNewCharacters.ToArray()) },
