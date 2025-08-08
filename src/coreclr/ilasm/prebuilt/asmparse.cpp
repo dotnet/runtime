@@ -218,196 +218,197 @@ extern int yydebug;
     AGGRESSIVEOPTIMIZATION_ = 351, /* AGGRESSIVEOPTIMIZATION_  */
     UNMANAGEDEXP_ = 352,           /* UNMANAGEDEXP_  */
     BEFOREFIELDINIT_ = 353,        /* BEFOREFIELDINIT_  */
-    STRICT_ = 354,                 /* STRICT_  */
-    RETARGETABLE_ = 355,           /* RETARGETABLE_  */
-    WINDOWSRUNTIME_ = 356,         /* WINDOWSRUNTIME_  */
-    NOPLATFORM_ = 357,             /* NOPLATFORM_  */
-    METHOD_ = 358,                 /* METHOD_  */
-    FIELD_ = 359,                  /* FIELD_  */
-    PINNED_ = 360,                 /* PINNED_  */
-    MODREQ_ = 361,                 /* MODREQ_  */
-    MODOPT_ = 362,                 /* MODOPT_  */
-    SERIALIZABLE_ = 363,           /* SERIALIZABLE_  */
-    PROPERTY_ = 364,               /* PROPERTY_  */
-    TYPE_ = 365,                   /* TYPE_  */
-    ASSEMBLY_ = 366,               /* ASSEMBLY_  */
-    FAMANDASSEM_ = 367,            /* FAMANDASSEM_  */
-    FAMORASSEM_ = 368,             /* FAMORASSEM_  */
-    PRIVATESCOPE_ = 369,           /* PRIVATESCOPE_  */
-    HIDEBYSIG_ = 370,              /* HIDEBYSIG_  */
-    NEWSLOT_ = 371,                /* NEWSLOT_  */
-    RTSPECIALNAME_ = 372,          /* RTSPECIALNAME_  */
-    PINVOKEIMPL_ = 373,            /* PINVOKEIMPL_  */
-    _CTOR = 374,                   /* _CTOR  */
-    _CCTOR = 375,                  /* _CCTOR  */
-    LITERAL_ = 376,                /* LITERAL_  */
-    NOTSERIALIZED_ = 377,          /* NOTSERIALIZED_  */
-    INITONLY_ = 378,               /* INITONLY_  */
-    REQSECOBJ_ = 379,              /* REQSECOBJ_  */
-    CIL_ = 380,                    /* CIL_  */
-    OPTIL_ = 381,                  /* OPTIL_  */
-    MANAGED_ = 382,                /* MANAGED_  */
-    FORWARDREF_ = 383,             /* FORWARDREF_  */
-    PRESERVESIG_ = 384,            /* PRESERVESIG_  */
-    RUNTIME_ = 385,                /* RUNTIME_  */
-    INTERNALCALL_ = 386,           /* INTERNALCALL_  */
-    _IMPORT = 387,                 /* _IMPORT  */
-    NOMANGLE_ = 388,               /* NOMANGLE_  */
-    LASTERR_ = 389,                /* LASTERR_  */
-    WINAPI_ = 390,                 /* WINAPI_  */
-    AS_ = 391,                     /* AS_  */
-    BESTFIT_ = 392,                /* BESTFIT_  */
-    ON_ = 393,                     /* ON_  */
-    OFF_ = 394,                    /* OFF_  */
-    CHARMAPERROR_ = 395,           /* CHARMAPERROR_  */
-    INSTR_NONE = 396,              /* INSTR_NONE  */
-    INSTR_VAR = 397,               /* INSTR_VAR  */
-    INSTR_I = 398,                 /* INSTR_I  */
-    INSTR_I8 = 399,                /* INSTR_I8  */
-    INSTR_R = 400,                 /* INSTR_R  */
-    INSTR_BRTARGET = 401,          /* INSTR_BRTARGET  */
-    INSTR_METHOD = 402,            /* INSTR_METHOD  */
-    INSTR_FIELD = 403,             /* INSTR_FIELD  */
-    INSTR_TYPE = 404,              /* INSTR_TYPE  */
-    INSTR_STRING = 405,            /* INSTR_STRING  */
-    INSTR_SIG = 406,               /* INSTR_SIG  */
-    INSTR_TOK = 407,               /* INSTR_TOK  */
-    INSTR_SWITCH = 408,            /* INSTR_SWITCH  */
-    _CLASS = 409,                  /* _CLASS  */
-    _NAMESPACE = 410,              /* _NAMESPACE  */
-    _METHOD = 411,                 /* _METHOD  */
-    _FIELD = 412,                  /* _FIELD  */
-    _DATA = 413,                   /* _DATA  */
-    _THIS = 414,                   /* _THIS  */
-    _BASE = 415,                   /* _BASE  */
-    _NESTER = 416,                 /* _NESTER  */
-    _EMITBYTE = 417,               /* _EMITBYTE  */
-    _TRY = 418,                    /* _TRY  */
-    _MAXSTACK = 419,               /* _MAXSTACK  */
-    _LOCALS = 420,                 /* _LOCALS  */
-    _ENTRYPOINT = 421,             /* _ENTRYPOINT  */
-    _ZEROINIT = 422,               /* _ZEROINIT  */
-    _EVENT = 423,                  /* _EVENT  */
-    _ADDON = 424,                  /* _ADDON  */
-    _REMOVEON = 425,               /* _REMOVEON  */
-    _FIRE = 426,                   /* _FIRE  */
-    _OTHER = 427,                  /* _OTHER  */
-    _PROPERTY = 428,               /* _PROPERTY  */
-    _SET = 429,                    /* _SET  */
-    _GET = 430,                    /* _GET  */
-    _PERMISSION = 431,             /* _PERMISSION  */
-    _PERMISSIONSET = 432,          /* _PERMISSIONSET  */
-    REQUEST_ = 433,                /* REQUEST_  */
-    DEMAND_ = 434,                 /* DEMAND_  */
-    ASSERT_ = 435,                 /* ASSERT_  */
-    DENY_ = 436,                   /* DENY_  */
-    PERMITONLY_ = 437,             /* PERMITONLY_  */
-    LINKCHECK_ = 438,              /* LINKCHECK_  */
-    INHERITCHECK_ = 439,           /* INHERITCHECK_  */
-    REQMIN_ = 440,                 /* REQMIN_  */
-    REQOPT_ = 441,                 /* REQOPT_  */
-    REQREFUSE_ = 442,              /* REQREFUSE_  */
-    PREJITGRANT_ = 443,            /* PREJITGRANT_  */
-    PREJITDENY_ = 444,             /* PREJITDENY_  */
-    NONCASDEMAND_ = 445,           /* NONCASDEMAND_  */
-    NONCASLINKDEMAND_ = 446,       /* NONCASLINKDEMAND_  */
-    NONCASINHERITANCE_ = 447,      /* NONCASINHERITANCE_  */
-    _LINE = 448,                   /* _LINE  */
-    P_LINE = 449,                  /* P_LINE  */
-    _LANGUAGE = 450,               /* _LANGUAGE  */
-    _CUSTOM = 451,                 /* _CUSTOM  */
-    INIT_ = 452,                   /* INIT_  */
-    _SIZE = 453,                   /* _SIZE  */
-    _PACK = 454,                   /* _PACK  */
-    _VTABLE = 455,                 /* _VTABLE  */
-    _VTFIXUP = 456,                /* _VTFIXUP  */
-    FROMUNMANAGED_ = 457,          /* FROMUNMANAGED_  */
-    CALLMOSTDERIVED_ = 458,        /* CALLMOSTDERIVED_  */
-    _VTENTRY = 459,                /* _VTENTRY  */
-    RETAINAPPDOMAIN_ = 460,        /* RETAINAPPDOMAIN_  */
-    _FILE = 461,                   /* _FILE  */
-    NOMETADATA_ = 462,             /* NOMETADATA_  */
-    _HASH = 463,                   /* _HASH  */
-    _ASSEMBLY = 464,               /* _ASSEMBLY  */
-    _PUBLICKEY = 465,              /* _PUBLICKEY  */
-    _PUBLICKEYTOKEN = 466,         /* _PUBLICKEYTOKEN  */
-    ALGORITHM_ = 467,              /* ALGORITHM_  */
-    _VER = 468,                    /* _VER  */
-    _LOCALE = 469,                 /* _LOCALE  */
-    EXTERN_ = 470,                 /* EXTERN_  */
-    _MRESOURCE = 471,              /* _MRESOURCE  */
-    _MODULE = 472,                 /* _MODULE  */
-    _EXPORT = 473,                 /* _EXPORT  */
-    LEGACY_ = 474,                 /* LEGACY_  */
-    LIBRARY_ = 475,                /* LIBRARY_  */
-    X86_ = 476,                    /* X86_  */
-    AMD64_ = 477,                  /* AMD64_  */
-    ARM_ = 478,                    /* ARM_  */
-    ARM64_ = 479,                  /* ARM64_  */
-    MARSHAL_ = 480,                /* MARSHAL_  */
-    CUSTOM_ = 481,                 /* CUSTOM_  */
-    SYSSTRING_ = 482,              /* SYSSTRING_  */
-    FIXED_ = 483,                  /* FIXED_  */
-    VARIANT_ = 484,                /* VARIANT_  */
-    CURRENCY_ = 485,               /* CURRENCY_  */
-    SYSCHAR_ = 486,                /* SYSCHAR_  */
-    DECIMAL_ = 487,                /* DECIMAL_  */
-    DATE_ = 488,                   /* DATE_  */
-    BSTR_ = 489,                   /* BSTR_  */
-    TBSTR_ = 490,                  /* TBSTR_  */
-    LPSTR_ = 491,                  /* LPSTR_  */
-    LPWSTR_ = 492,                 /* LPWSTR_  */
-    LPTSTR_ = 493,                 /* LPTSTR_  */
-    OBJECTREF_ = 494,              /* OBJECTREF_  */
-    IUNKNOWN_ = 495,               /* IUNKNOWN_  */
-    IDISPATCH_ = 496,              /* IDISPATCH_  */
-    STRUCT_ = 497,                 /* STRUCT_  */
-    SAFEARRAY_ = 498,              /* SAFEARRAY_  */
-    BYVALSTR_ = 499,               /* BYVALSTR_  */
-    LPVOID_ = 500,                 /* LPVOID_  */
-    ANY_ = 501,                    /* ANY_  */
-    ARRAY_ = 502,                  /* ARRAY_  */
-    LPSTRUCT_ = 503,               /* LPSTRUCT_  */
-    IIDPARAM_ = 504,               /* IIDPARAM_  */
-    IN_ = 505,                     /* IN_  */
-    OUT_ = 506,                    /* OUT_  */
-    OPT_ = 507,                    /* OPT_  */
-    _PARAM = 508,                  /* _PARAM  */
-    _OVERRIDE = 509,               /* _OVERRIDE  */
-    WITH_ = 510,                   /* WITH_  */
-    NULL_ = 511,                   /* NULL_  */
-    ERROR_ = 512,                  /* ERROR_  */
-    HRESULT_ = 513,                /* HRESULT_  */
-    CARRAY_ = 514,                 /* CARRAY_  */
-    USERDEFINED_ = 515,            /* USERDEFINED_  */
-    RECORD_ = 516,                 /* RECORD_  */
-    FILETIME_ = 517,               /* FILETIME_  */
-    BLOB_ = 518,                   /* BLOB_  */
-    STREAM_ = 519,                 /* STREAM_  */
-    STORAGE_ = 520,                /* STORAGE_  */
-    STREAMED_OBJECT_ = 521,        /* STREAMED_OBJECT_  */
-    STORED_OBJECT_ = 522,          /* STORED_OBJECT_  */
-    BLOB_OBJECT_ = 523,            /* BLOB_OBJECT_  */
-    CF_ = 524,                     /* CF_  */
-    CLSID_ = 525,                  /* CLSID_  */
-    VECTOR_ = 526,                 /* VECTOR_  */
-    _SUBSYSTEM = 527,              /* _SUBSYSTEM  */
-    _CORFLAGS = 528,               /* _CORFLAGS  */
-    ALIGNMENT_ = 529,              /* ALIGNMENT_  */
-    _IMAGEBASE = 530,              /* _IMAGEBASE  */
-    _STACKRESERVE = 531,           /* _STACKRESERVE  */
-    _TYPEDEF = 532,                /* _TYPEDEF  */
-    _TEMPLATE = 533,               /* _TEMPLATE  */
-    _TYPELIST = 534,               /* _TYPELIST  */
-    _MSCORLIB = 535,               /* _MSCORLIB  */
-    P_DEFINE = 536,                /* P_DEFINE  */
-    P_UNDEF = 537,                 /* P_UNDEF  */
-    P_IFDEF = 538,                 /* P_IFDEF  */
-    P_IFNDEF = 539,                /* P_IFNDEF  */
-    P_ELSE = 540,                  /* P_ELSE  */
-    P_ENDIF = 541,                 /* P_ENDIF  */
-    P_INCLUDE = 542,               /* P_INCLUDE  */
-    CONSTRAINT_ = 543              /* CONSTRAINT_  */
+    ASYNC_ = 354,                  /* ASYNC_  */
+    STRICT_ = 355,                 /* STRICT_  */
+    RETARGETABLE_ = 356,           /* RETARGETABLE_  */
+    WINDOWSRUNTIME_ = 357,         /* WINDOWSRUNTIME_  */
+    NOPLATFORM_ = 358,             /* NOPLATFORM_  */
+    METHOD_ = 359,                 /* METHOD_  */
+    FIELD_ = 360,                  /* FIELD_  */
+    PINNED_ = 361,                 /* PINNED_  */
+    MODREQ_ = 362,                 /* MODREQ_  */
+    MODOPT_ = 363,                 /* MODOPT_  */
+    SERIALIZABLE_ = 364,           /* SERIALIZABLE_  */
+    PROPERTY_ = 365,               /* PROPERTY_  */
+    TYPE_ = 366,                   /* TYPE_  */
+    ASSEMBLY_ = 367,               /* ASSEMBLY_  */
+    FAMANDASSEM_ = 368,            /* FAMANDASSEM_  */
+    FAMORASSEM_ = 369,             /* FAMORASSEM_  */
+    PRIVATESCOPE_ = 370,           /* PRIVATESCOPE_  */
+    HIDEBYSIG_ = 371,              /* HIDEBYSIG_  */
+    NEWSLOT_ = 372,                /* NEWSLOT_  */
+    RTSPECIALNAME_ = 373,          /* RTSPECIALNAME_  */
+    PINVOKEIMPL_ = 374,            /* PINVOKEIMPL_  */
+    _CTOR = 375,                   /* _CTOR  */
+    _CCTOR = 376,                  /* _CCTOR  */
+    LITERAL_ = 377,                /* LITERAL_  */
+    NOTSERIALIZED_ = 378,          /* NOTSERIALIZED_  */
+    INITONLY_ = 379,               /* INITONLY_  */
+    REQSECOBJ_ = 380,              /* REQSECOBJ_  */
+    CIL_ = 381,                    /* CIL_  */
+    OPTIL_ = 382,                  /* OPTIL_  */
+    MANAGED_ = 383,                /* MANAGED_  */
+    FORWARDREF_ = 384,             /* FORWARDREF_  */
+    PRESERVESIG_ = 385,            /* PRESERVESIG_  */
+    RUNTIME_ = 386,                /* RUNTIME_  */
+    INTERNALCALL_ = 387,           /* INTERNALCALL_  */
+    _IMPORT = 388,                 /* _IMPORT  */
+    NOMANGLE_ = 389,               /* NOMANGLE_  */
+    LASTERR_ = 390,                /* LASTERR_  */
+    WINAPI_ = 391,                 /* WINAPI_  */
+    AS_ = 392,                     /* AS_  */
+    BESTFIT_ = 393,                /* BESTFIT_  */
+    ON_ = 394,                     /* ON_  */
+    OFF_ = 395,                    /* OFF_  */
+    CHARMAPERROR_ = 396,           /* CHARMAPERROR_  */
+    INSTR_NONE = 397,              /* INSTR_NONE  */
+    INSTR_VAR = 398,               /* INSTR_VAR  */
+    INSTR_I = 399,                 /* INSTR_I  */
+    INSTR_I8 = 400,                /* INSTR_I8  */
+    INSTR_R = 401,                 /* INSTR_R  */
+    INSTR_BRTARGET = 402,          /* INSTR_BRTARGET  */
+    INSTR_METHOD = 403,            /* INSTR_METHOD  */
+    INSTR_FIELD = 404,             /* INSTR_FIELD  */
+    INSTR_TYPE = 405,              /* INSTR_TYPE  */
+    INSTR_STRING = 406,            /* INSTR_STRING  */
+    INSTR_SIG = 407,               /* INSTR_SIG  */
+    INSTR_TOK = 408,               /* INSTR_TOK  */
+    INSTR_SWITCH = 409,            /* INSTR_SWITCH  */
+    _CLASS = 410,                  /* _CLASS  */
+    _NAMESPACE = 411,              /* _NAMESPACE  */
+    _METHOD = 412,                 /* _METHOD  */
+    _FIELD = 413,                  /* _FIELD  */
+    _DATA = 414,                   /* _DATA  */
+    _THIS = 415,                   /* _THIS  */
+    _BASE = 416,                   /* _BASE  */
+    _NESTER = 417,                 /* _NESTER  */
+    _EMITBYTE = 418,               /* _EMITBYTE  */
+    _TRY = 419,                    /* _TRY  */
+    _MAXSTACK = 420,               /* _MAXSTACK  */
+    _LOCALS = 421,                 /* _LOCALS  */
+    _ENTRYPOINT = 422,             /* _ENTRYPOINT  */
+    _ZEROINIT = 423,               /* _ZEROINIT  */
+    _EVENT = 424,                  /* _EVENT  */
+    _ADDON = 425,                  /* _ADDON  */
+    _REMOVEON = 426,               /* _REMOVEON  */
+    _FIRE = 427,                   /* _FIRE  */
+    _OTHER = 428,                  /* _OTHER  */
+    _PROPERTY = 429,               /* _PROPERTY  */
+    _SET = 430,                    /* _SET  */
+    _GET = 431,                    /* _GET  */
+    _PERMISSION = 432,             /* _PERMISSION  */
+    _PERMISSIONSET = 433,          /* _PERMISSIONSET  */
+    REQUEST_ = 434,                /* REQUEST_  */
+    DEMAND_ = 435,                 /* DEMAND_  */
+    ASSERT_ = 436,                 /* ASSERT_  */
+    DENY_ = 437,                   /* DENY_  */
+    PERMITONLY_ = 438,             /* PERMITONLY_  */
+    LINKCHECK_ = 439,              /* LINKCHECK_  */
+    INHERITCHECK_ = 440,           /* INHERITCHECK_  */
+    REQMIN_ = 441,                 /* REQMIN_  */
+    REQOPT_ = 442,                 /* REQOPT_  */
+    REQREFUSE_ = 443,              /* REQREFUSE_  */
+    PREJITGRANT_ = 444,            /* PREJITGRANT_  */
+    PREJITDENY_ = 445,             /* PREJITDENY_  */
+    NONCASDEMAND_ = 446,           /* NONCASDEMAND_  */
+    NONCASLINKDEMAND_ = 447,       /* NONCASLINKDEMAND_  */
+    NONCASINHERITANCE_ = 448,      /* NONCASINHERITANCE_  */
+    _LINE = 449,                   /* _LINE  */
+    P_LINE = 450,                  /* P_LINE  */
+    _LANGUAGE = 451,               /* _LANGUAGE  */
+    _CUSTOM = 452,                 /* _CUSTOM  */
+    INIT_ = 453,                   /* INIT_  */
+    _SIZE = 454,                   /* _SIZE  */
+    _PACK = 455,                   /* _PACK  */
+    _VTABLE = 456,                 /* _VTABLE  */
+    _VTFIXUP = 457,                /* _VTFIXUP  */
+    FROMUNMANAGED_ = 458,          /* FROMUNMANAGED_  */
+    CALLMOSTDERIVED_ = 459,        /* CALLMOSTDERIVED_  */
+    _VTENTRY = 460,                /* _VTENTRY  */
+    RETAINAPPDOMAIN_ = 461,        /* RETAINAPPDOMAIN_  */
+    _FILE = 462,                   /* _FILE  */
+    NOMETADATA_ = 463,             /* NOMETADATA_  */
+    _HASH = 464,                   /* _HASH  */
+    _ASSEMBLY = 465,               /* _ASSEMBLY  */
+    _PUBLICKEY = 466,              /* _PUBLICKEY  */
+    _PUBLICKEYTOKEN = 467,         /* _PUBLICKEYTOKEN  */
+    ALGORITHM_ = 468,              /* ALGORITHM_  */
+    _VER = 469,                    /* _VER  */
+    _LOCALE = 470,                 /* _LOCALE  */
+    EXTERN_ = 471,                 /* EXTERN_  */
+    _MRESOURCE = 472,              /* _MRESOURCE  */
+    _MODULE = 473,                 /* _MODULE  */
+    _EXPORT = 474,                 /* _EXPORT  */
+    LEGACY_ = 475,                 /* LEGACY_  */
+    LIBRARY_ = 476,                /* LIBRARY_  */
+    X86_ = 477,                    /* X86_  */
+    AMD64_ = 478,                  /* AMD64_  */
+    ARM_ = 479,                    /* ARM_  */
+    ARM64_ = 480,                  /* ARM64_  */
+    MARSHAL_ = 481,                /* MARSHAL_  */
+    CUSTOM_ = 482,                 /* CUSTOM_  */
+    SYSSTRING_ = 483,              /* SYSSTRING_  */
+    FIXED_ = 484,                  /* FIXED_  */
+    VARIANT_ = 485,                /* VARIANT_  */
+    CURRENCY_ = 486,               /* CURRENCY_  */
+    SYSCHAR_ = 487,                /* SYSCHAR_  */
+    DECIMAL_ = 488,                /* DECIMAL_  */
+    DATE_ = 489,                   /* DATE_  */
+    BSTR_ = 490,                   /* BSTR_  */
+    TBSTR_ = 491,                  /* TBSTR_  */
+    LPSTR_ = 492,                  /* LPSTR_  */
+    LPWSTR_ = 493,                 /* LPWSTR_  */
+    LPTSTR_ = 494,                 /* LPTSTR_  */
+    OBJECTREF_ = 495,              /* OBJECTREF_  */
+    IUNKNOWN_ = 496,               /* IUNKNOWN_  */
+    IDISPATCH_ = 497,              /* IDISPATCH_  */
+    STRUCT_ = 498,                 /* STRUCT_  */
+    SAFEARRAY_ = 499,              /* SAFEARRAY_  */
+    BYVALSTR_ = 500,               /* BYVALSTR_  */
+    LPVOID_ = 501,                 /* LPVOID_  */
+    ANY_ = 502,                    /* ANY_  */
+    ARRAY_ = 503,                  /* ARRAY_  */
+    LPSTRUCT_ = 504,               /* LPSTRUCT_  */
+    IIDPARAM_ = 505,               /* IIDPARAM_  */
+    IN_ = 506,                     /* IN_  */
+    OUT_ = 507,                    /* OUT_  */
+    OPT_ = 508,                    /* OPT_  */
+    _PARAM = 509,                  /* _PARAM  */
+    _OVERRIDE = 510,               /* _OVERRIDE  */
+    WITH_ = 511,                   /* WITH_  */
+    NULL_ = 512,                   /* NULL_  */
+    ERROR_ = 513,                  /* ERROR_  */
+    HRESULT_ = 514,                /* HRESULT_  */
+    CARRAY_ = 515,                 /* CARRAY_  */
+    USERDEFINED_ = 516,            /* USERDEFINED_  */
+    RECORD_ = 517,                 /* RECORD_  */
+    FILETIME_ = 518,               /* FILETIME_  */
+    BLOB_ = 519,                   /* BLOB_  */
+    STREAM_ = 520,                 /* STREAM_  */
+    STORAGE_ = 521,                /* STORAGE_  */
+    STREAMED_OBJECT_ = 522,        /* STREAMED_OBJECT_  */
+    STORED_OBJECT_ = 523,          /* STORED_OBJECT_  */
+    BLOB_OBJECT_ = 524,            /* BLOB_OBJECT_  */
+    CF_ = 525,                     /* CF_  */
+    CLSID_ = 526,                  /* CLSID_  */
+    VECTOR_ = 527,                 /* VECTOR_  */
+    _SUBSYSTEM = 528,              /* _SUBSYSTEM  */
+    _CORFLAGS = 529,               /* _CORFLAGS  */
+    ALIGNMENT_ = 530,              /* ALIGNMENT_  */
+    _IMAGEBASE = 531,              /* _IMAGEBASE  */
+    _STACKRESERVE = 532,           /* _STACKRESERVE  */
+    _TYPEDEF = 533,                /* _TYPEDEF  */
+    _TEMPLATE = 534,               /* _TEMPLATE  */
+    _TYPELIST = 535,               /* _TYPELIST  */
+    _MSCORLIB = 536,               /* _MSCORLIB  */
+    P_DEFINE = 537,                /* P_DEFINE  */
+    P_UNDEF = 538,                 /* P_UNDEF  */
+    P_IFDEF = 539,                 /* P_IFDEF  */
+    P_IFNDEF = 540,                /* P_IFNDEF  */
+    P_ELSE = 541,                  /* P_ELSE  */
+    P_ENDIF = 542,                 /* P_ENDIF  */
+    P_INCLUDE = 543,               /* P_INCLUDE  */
+    CONSTRAINT_ = 544              /* CONSTRAINT_  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -445,7 +446,7 @@ union YYSTYPE
         CustomDescr*  cad;
         unsigned short opcode;
 
-#line 449 "prebuilt\\asmparse.cpp"
+#line 450 "prebuilt\\asmparse.cpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -564,401 +565,402 @@ enum yysymbol_kind_t
   YYSYMBOL_AGGRESSIVEOPTIMIZATION_ = 96,   /* AGGRESSIVEOPTIMIZATION_  */
   YYSYMBOL_UNMANAGEDEXP_ = 97,             /* UNMANAGEDEXP_  */
   YYSYMBOL_BEFOREFIELDINIT_ = 98,          /* BEFOREFIELDINIT_  */
-  YYSYMBOL_STRICT_ = 99,                   /* STRICT_  */
-  YYSYMBOL_RETARGETABLE_ = 100,            /* RETARGETABLE_  */
-  YYSYMBOL_WINDOWSRUNTIME_ = 101,          /* WINDOWSRUNTIME_  */
-  YYSYMBOL_NOPLATFORM_ = 102,              /* NOPLATFORM_  */
-  YYSYMBOL_METHOD_ = 103,                  /* METHOD_  */
-  YYSYMBOL_FIELD_ = 104,                   /* FIELD_  */
-  YYSYMBOL_PINNED_ = 105,                  /* PINNED_  */
-  YYSYMBOL_MODREQ_ = 106,                  /* MODREQ_  */
-  YYSYMBOL_MODOPT_ = 107,                  /* MODOPT_  */
-  YYSYMBOL_SERIALIZABLE_ = 108,            /* SERIALIZABLE_  */
-  YYSYMBOL_PROPERTY_ = 109,                /* PROPERTY_  */
-  YYSYMBOL_TYPE_ = 110,                    /* TYPE_  */
-  YYSYMBOL_ASSEMBLY_ = 111,                /* ASSEMBLY_  */
-  YYSYMBOL_FAMANDASSEM_ = 112,             /* FAMANDASSEM_  */
-  YYSYMBOL_FAMORASSEM_ = 113,              /* FAMORASSEM_  */
-  YYSYMBOL_PRIVATESCOPE_ = 114,            /* PRIVATESCOPE_  */
-  YYSYMBOL_HIDEBYSIG_ = 115,               /* HIDEBYSIG_  */
-  YYSYMBOL_NEWSLOT_ = 116,                 /* NEWSLOT_  */
-  YYSYMBOL_RTSPECIALNAME_ = 117,           /* RTSPECIALNAME_  */
-  YYSYMBOL_PINVOKEIMPL_ = 118,             /* PINVOKEIMPL_  */
-  YYSYMBOL__CTOR = 119,                    /* _CTOR  */
-  YYSYMBOL__CCTOR = 120,                   /* _CCTOR  */
-  YYSYMBOL_LITERAL_ = 121,                 /* LITERAL_  */
-  YYSYMBOL_NOTSERIALIZED_ = 122,           /* NOTSERIALIZED_  */
-  YYSYMBOL_INITONLY_ = 123,                /* INITONLY_  */
-  YYSYMBOL_REQSECOBJ_ = 124,               /* REQSECOBJ_  */
-  YYSYMBOL_CIL_ = 125,                     /* CIL_  */
-  YYSYMBOL_OPTIL_ = 126,                   /* OPTIL_  */
-  YYSYMBOL_MANAGED_ = 127,                 /* MANAGED_  */
-  YYSYMBOL_FORWARDREF_ = 128,              /* FORWARDREF_  */
-  YYSYMBOL_PRESERVESIG_ = 129,             /* PRESERVESIG_  */
-  YYSYMBOL_RUNTIME_ = 130,                 /* RUNTIME_  */
-  YYSYMBOL_INTERNALCALL_ = 131,            /* INTERNALCALL_  */
-  YYSYMBOL__IMPORT = 132,                  /* _IMPORT  */
-  YYSYMBOL_NOMANGLE_ = 133,                /* NOMANGLE_  */
-  YYSYMBOL_LASTERR_ = 134,                 /* LASTERR_  */
-  YYSYMBOL_WINAPI_ = 135,                  /* WINAPI_  */
-  YYSYMBOL_AS_ = 136,                      /* AS_  */
-  YYSYMBOL_BESTFIT_ = 137,                 /* BESTFIT_  */
-  YYSYMBOL_ON_ = 138,                      /* ON_  */
-  YYSYMBOL_OFF_ = 139,                     /* OFF_  */
-  YYSYMBOL_CHARMAPERROR_ = 140,            /* CHARMAPERROR_  */
-  YYSYMBOL_INSTR_NONE = 141,               /* INSTR_NONE  */
-  YYSYMBOL_INSTR_VAR = 142,                /* INSTR_VAR  */
-  YYSYMBOL_INSTR_I = 143,                  /* INSTR_I  */
-  YYSYMBOL_INSTR_I8 = 144,                 /* INSTR_I8  */
-  YYSYMBOL_INSTR_R = 145,                  /* INSTR_R  */
-  YYSYMBOL_INSTR_BRTARGET = 146,           /* INSTR_BRTARGET  */
-  YYSYMBOL_INSTR_METHOD = 147,             /* INSTR_METHOD  */
-  YYSYMBOL_INSTR_FIELD = 148,              /* INSTR_FIELD  */
-  YYSYMBOL_INSTR_TYPE = 149,               /* INSTR_TYPE  */
-  YYSYMBOL_INSTR_STRING = 150,             /* INSTR_STRING  */
-  YYSYMBOL_INSTR_SIG = 151,                /* INSTR_SIG  */
-  YYSYMBOL_INSTR_TOK = 152,                /* INSTR_TOK  */
-  YYSYMBOL_INSTR_SWITCH = 153,             /* INSTR_SWITCH  */
-  YYSYMBOL__CLASS = 154,                   /* _CLASS  */
-  YYSYMBOL__NAMESPACE = 155,               /* _NAMESPACE  */
-  YYSYMBOL__METHOD = 156,                  /* _METHOD  */
-  YYSYMBOL__FIELD = 157,                   /* _FIELD  */
-  YYSYMBOL__DATA = 158,                    /* _DATA  */
-  YYSYMBOL__THIS = 159,                    /* _THIS  */
-  YYSYMBOL__BASE = 160,                    /* _BASE  */
-  YYSYMBOL__NESTER = 161,                  /* _NESTER  */
-  YYSYMBOL__EMITBYTE = 162,                /* _EMITBYTE  */
-  YYSYMBOL__TRY = 163,                     /* _TRY  */
-  YYSYMBOL__MAXSTACK = 164,                /* _MAXSTACK  */
-  YYSYMBOL__LOCALS = 165,                  /* _LOCALS  */
-  YYSYMBOL__ENTRYPOINT = 166,              /* _ENTRYPOINT  */
-  YYSYMBOL__ZEROINIT = 167,                /* _ZEROINIT  */
-  YYSYMBOL__EVENT = 168,                   /* _EVENT  */
-  YYSYMBOL__ADDON = 169,                   /* _ADDON  */
-  YYSYMBOL__REMOVEON = 170,                /* _REMOVEON  */
-  YYSYMBOL__FIRE = 171,                    /* _FIRE  */
-  YYSYMBOL__OTHER = 172,                   /* _OTHER  */
-  YYSYMBOL__PROPERTY = 173,                /* _PROPERTY  */
-  YYSYMBOL__SET = 174,                     /* _SET  */
-  YYSYMBOL__GET = 175,                     /* _GET  */
-  YYSYMBOL__PERMISSION = 176,              /* _PERMISSION  */
-  YYSYMBOL__PERMISSIONSET = 177,           /* _PERMISSIONSET  */
-  YYSYMBOL_REQUEST_ = 178,                 /* REQUEST_  */
-  YYSYMBOL_DEMAND_ = 179,                  /* DEMAND_  */
-  YYSYMBOL_ASSERT_ = 180,                  /* ASSERT_  */
-  YYSYMBOL_DENY_ = 181,                    /* DENY_  */
-  YYSYMBOL_PERMITONLY_ = 182,              /* PERMITONLY_  */
-  YYSYMBOL_LINKCHECK_ = 183,               /* LINKCHECK_  */
-  YYSYMBOL_INHERITCHECK_ = 184,            /* INHERITCHECK_  */
-  YYSYMBOL_REQMIN_ = 185,                  /* REQMIN_  */
-  YYSYMBOL_REQOPT_ = 186,                  /* REQOPT_  */
-  YYSYMBOL_REQREFUSE_ = 187,               /* REQREFUSE_  */
-  YYSYMBOL_PREJITGRANT_ = 188,             /* PREJITGRANT_  */
-  YYSYMBOL_PREJITDENY_ = 189,              /* PREJITDENY_  */
-  YYSYMBOL_NONCASDEMAND_ = 190,            /* NONCASDEMAND_  */
-  YYSYMBOL_NONCASLINKDEMAND_ = 191,        /* NONCASLINKDEMAND_  */
-  YYSYMBOL_NONCASINHERITANCE_ = 192,       /* NONCASINHERITANCE_  */
-  YYSYMBOL__LINE = 193,                    /* _LINE  */
-  YYSYMBOL_P_LINE = 194,                   /* P_LINE  */
-  YYSYMBOL__LANGUAGE = 195,                /* _LANGUAGE  */
-  YYSYMBOL__CUSTOM = 196,                  /* _CUSTOM  */
-  YYSYMBOL_INIT_ = 197,                    /* INIT_  */
-  YYSYMBOL__SIZE = 198,                    /* _SIZE  */
-  YYSYMBOL__PACK = 199,                    /* _PACK  */
-  YYSYMBOL__VTABLE = 200,                  /* _VTABLE  */
-  YYSYMBOL__VTFIXUP = 201,                 /* _VTFIXUP  */
-  YYSYMBOL_FROMUNMANAGED_ = 202,           /* FROMUNMANAGED_  */
-  YYSYMBOL_CALLMOSTDERIVED_ = 203,         /* CALLMOSTDERIVED_  */
-  YYSYMBOL__VTENTRY = 204,                 /* _VTENTRY  */
-  YYSYMBOL_RETAINAPPDOMAIN_ = 205,         /* RETAINAPPDOMAIN_  */
-  YYSYMBOL__FILE = 206,                    /* _FILE  */
-  YYSYMBOL_NOMETADATA_ = 207,              /* NOMETADATA_  */
-  YYSYMBOL__HASH = 208,                    /* _HASH  */
-  YYSYMBOL__ASSEMBLY = 209,                /* _ASSEMBLY  */
-  YYSYMBOL__PUBLICKEY = 210,               /* _PUBLICKEY  */
-  YYSYMBOL__PUBLICKEYTOKEN = 211,          /* _PUBLICKEYTOKEN  */
-  YYSYMBOL_ALGORITHM_ = 212,               /* ALGORITHM_  */
-  YYSYMBOL__VER = 213,                     /* _VER  */
-  YYSYMBOL__LOCALE = 214,                  /* _LOCALE  */
-  YYSYMBOL_EXTERN_ = 215,                  /* EXTERN_  */
-  YYSYMBOL__MRESOURCE = 216,               /* _MRESOURCE  */
-  YYSYMBOL__MODULE = 217,                  /* _MODULE  */
-  YYSYMBOL__EXPORT = 218,                  /* _EXPORT  */
-  YYSYMBOL_LEGACY_ = 219,                  /* LEGACY_  */
-  YYSYMBOL_LIBRARY_ = 220,                 /* LIBRARY_  */
-  YYSYMBOL_X86_ = 221,                     /* X86_  */
-  YYSYMBOL_AMD64_ = 222,                   /* AMD64_  */
-  YYSYMBOL_ARM_ = 223,                     /* ARM_  */
-  YYSYMBOL_ARM64_ = 224,                   /* ARM64_  */
-  YYSYMBOL_MARSHAL_ = 225,                 /* MARSHAL_  */
-  YYSYMBOL_CUSTOM_ = 226,                  /* CUSTOM_  */
-  YYSYMBOL_SYSSTRING_ = 227,               /* SYSSTRING_  */
-  YYSYMBOL_FIXED_ = 228,                   /* FIXED_  */
-  YYSYMBOL_VARIANT_ = 229,                 /* VARIANT_  */
-  YYSYMBOL_CURRENCY_ = 230,                /* CURRENCY_  */
-  YYSYMBOL_SYSCHAR_ = 231,                 /* SYSCHAR_  */
-  YYSYMBOL_DECIMAL_ = 232,                 /* DECIMAL_  */
-  YYSYMBOL_DATE_ = 233,                    /* DATE_  */
-  YYSYMBOL_BSTR_ = 234,                    /* BSTR_  */
-  YYSYMBOL_TBSTR_ = 235,                   /* TBSTR_  */
-  YYSYMBOL_LPSTR_ = 236,                   /* LPSTR_  */
-  YYSYMBOL_LPWSTR_ = 237,                  /* LPWSTR_  */
-  YYSYMBOL_LPTSTR_ = 238,                  /* LPTSTR_  */
-  YYSYMBOL_OBJECTREF_ = 239,               /* OBJECTREF_  */
-  YYSYMBOL_IUNKNOWN_ = 240,                /* IUNKNOWN_  */
-  YYSYMBOL_IDISPATCH_ = 241,               /* IDISPATCH_  */
-  YYSYMBOL_STRUCT_ = 242,                  /* STRUCT_  */
-  YYSYMBOL_SAFEARRAY_ = 243,               /* SAFEARRAY_  */
-  YYSYMBOL_BYVALSTR_ = 244,                /* BYVALSTR_  */
-  YYSYMBOL_LPVOID_ = 245,                  /* LPVOID_  */
-  YYSYMBOL_ANY_ = 246,                     /* ANY_  */
-  YYSYMBOL_ARRAY_ = 247,                   /* ARRAY_  */
-  YYSYMBOL_LPSTRUCT_ = 248,                /* LPSTRUCT_  */
-  YYSYMBOL_IIDPARAM_ = 249,                /* IIDPARAM_  */
-  YYSYMBOL_IN_ = 250,                      /* IN_  */
-  YYSYMBOL_OUT_ = 251,                     /* OUT_  */
-  YYSYMBOL_OPT_ = 252,                     /* OPT_  */
-  YYSYMBOL__PARAM = 253,                   /* _PARAM  */
-  YYSYMBOL__OVERRIDE = 254,                /* _OVERRIDE  */
-  YYSYMBOL_WITH_ = 255,                    /* WITH_  */
-  YYSYMBOL_NULL_ = 256,                    /* NULL_  */
-  YYSYMBOL_ERROR_ = 257,                   /* ERROR_  */
-  YYSYMBOL_HRESULT_ = 258,                 /* HRESULT_  */
-  YYSYMBOL_CARRAY_ = 259,                  /* CARRAY_  */
-  YYSYMBOL_USERDEFINED_ = 260,             /* USERDEFINED_  */
-  YYSYMBOL_RECORD_ = 261,                  /* RECORD_  */
-  YYSYMBOL_FILETIME_ = 262,                /* FILETIME_  */
-  YYSYMBOL_BLOB_ = 263,                    /* BLOB_  */
-  YYSYMBOL_STREAM_ = 264,                  /* STREAM_  */
-  YYSYMBOL_STORAGE_ = 265,                 /* STORAGE_  */
-  YYSYMBOL_STREAMED_OBJECT_ = 266,         /* STREAMED_OBJECT_  */
-  YYSYMBOL_STORED_OBJECT_ = 267,           /* STORED_OBJECT_  */
-  YYSYMBOL_BLOB_OBJECT_ = 268,             /* BLOB_OBJECT_  */
-  YYSYMBOL_CF_ = 269,                      /* CF_  */
-  YYSYMBOL_CLSID_ = 270,                   /* CLSID_  */
-  YYSYMBOL_VECTOR_ = 271,                  /* VECTOR_  */
-  YYSYMBOL__SUBSYSTEM = 272,               /* _SUBSYSTEM  */
-  YYSYMBOL__CORFLAGS = 273,                /* _CORFLAGS  */
-  YYSYMBOL_ALIGNMENT_ = 274,               /* ALIGNMENT_  */
-  YYSYMBOL__IMAGEBASE = 275,               /* _IMAGEBASE  */
-  YYSYMBOL__STACKRESERVE = 276,            /* _STACKRESERVE  */
-  YYSYMBOL__TYPEDEF = 277,                 /* _TYPEDEF  */
-  YYSYMBOL__TEMPLATE = 278,                /* _TEMPLATE  */
-  YYSYMBOL__TYPELIST = 279,                /* _TYPELIST  */
-  YYSYMBOL__MSCORLIB = 280,                /* _MSCORLIB  */
-  YYSYMBOL_P_DEFINE = 281,                 /* P_DEFINE  */
-  YYSYMBOL_P_UNDEF = 282,                  /* P_UNDEF  */
-  YYSYMBOL_P_IFDEF = 283,                  /* P_IFDEF  */
-  YYSYMBOL_P_IFNDEF = 284,                 /* P_IFNDEF  */
-  YYSYMBOL_P_ELSE = 285,                   /* P_ELSE  */
-  YYSYMBOL_P_ENDIF = 286,                  /* P_ENDIF  */
-  YYSYMBOL_P_INCLUDE = 287,                /* P_INCLUDE  */
-  YYSYMBOL_CONSTRAINT_ = 288,              /* CONSTRAINT_  */
-  YYSYMBOL_289_ = 289,                     /* '{'  */
-  YYSYMBOL_290_ = 290,                     /* '}'  */
-  YYSYMBOL_291_ = 291,                     /* '+'  */
-  YYSYMBOL_292_ = 292,                     /* ','  */
-  YYSYMBOL_293_ = 293,                     /* '.'  */
-  YYSYMBOL_294_ = 294,                     /* '('  */
-  YYSYMBOL_295_ = 295,                     /* ')'  */
-  YYSYMBOL_296_ = 296,                     /* ';'  */
-  YYSYMBOL_297_ = 297,                     /* '='  */
-  YYSYMBOL_298_ = 298,                     /* '['  */
-  YYSYMBOL_299_ = 299,                     /* ']'  */
-  YYSYMBOL_300_ = 300,                     /* '<'  */
-  YYSYMBOL_301_ = 301,                     /* '>'  */
-  YYSYMBOL_302_ = 302,                     /* '-'  */
-  YYSYMBOL_303_ = 303,                     /* ':'  */
-  YYSYMBOL_304_ = 304,                     /* '*'  */
-  YYSYMBOL_305_ = 305,                     /* '&'  */
-  YYSYMBOL_306_ = 306,                     /* '/'  */
-  YYSYMBOL_307_ = 307,                     /* '!'  */
-  YYSYMBOL_YYACCEPT = 308,                 /* $accept  */
-  YYSYMBOL_decls = 309,                    /* decls  */
-  YYSYMBOL_decl = 310,                     /* decl  */
-  YYSYMBOL_classNameSeq = 311,             /* classNameSeq  */
-  YYSYMBOL_compQstring = 312,              /* compQstring  */
-  YYSYMBOL_languageDecl = 313,             /* languageDecl  */
-  YYSYMBOL_id = 314,                       /* id  */
-  YYSYMBOL_dottedName = 315,               /* dottedName  */
-  YYSYMBOL_int32 = 316,                    /* int32  */
-  YYSYMBOL_int64 = 317,                    /* int64  */
-  YYSYMBOL_float64 = 318,                  /* float64  */
-  YYSYMBOL_typedefDecl = 319,              /* typedefDecl  */
-  YYSYMBOL_compControl = 320,              /* compControl  */
-  YYSYMBOL_customDescr = 321,              /* customDescr  */
-  YYSYMBOL_customDescrWithOwner = 322,     /* customDescrWithOwner  */
-  YYSYMBOL_customHead = 323,               /* customHead  */
-  YYSYMBOL_customHeadWithOwner = 324,      /* customHeadWithOwner  */
-  YYSYMBOL_customType = 325,               /* customType  */
-  YYSYMBOL_ownerType = 326,                /* ownerType  */
-  YYSYMBOL_customBlobDescr = 327,          /* customBlobDescr  */
-  YYSYMBOL_customBlobArgs = 328,           /* customBlobArgs  */
-  YYSYMBOL_customBlobNVPairs = 329,        /* customBlobNVPairs  */
-  YYSYMBOL_fieldOrProp = 330,              /* fieldOrProp  */
-  YYSYMBOL_customAttrDecl = 331,           /* customAttrDecl  */
-  YYSYMBOL_serializType = 332,             /* serializType  */
-  YYSYMBOL_moduleHead = 333,               /* moduleHead  */
-  YYSYMBOL_vtfixupDecl = 334,              /* vtfixupDecl  */
-  YYSYMBOL_vtfixupAttr = 335,              /* vtfixupAttr  */
-  YYSYMBOL_vtableDecl = 336,               /* vtableDecl  */
-  YYSYMBOL_vtableHead = 337,               /* vtableHead  */
-  YYSYMBOL_nameSpaceHead = 338,            /* nameSpaceHead  */
-  YYSYMBOL__class = 339,                   /* _class  */
-  YYSYMBOL_classHeadBegin = 340,           /* classHeadBegin  */
-  YYSYMBOL_classHead = 341,                /* classHead  */
-  YYSYMBOL_classAttr = 342,                /* classAttr  */
-  YYSYMBOL_extendsClause = 343,            /* extendsClause  */
-  YYSYMBOL_implClause = 344,               /* implClause  */
-  YYSYMBOL_classDecls = 345,               /* classDecls  */
-  YYSYMBOL_implList = 346,                 /* implList  */
-  YYSYMBOL_typeList = 347,                 /* typeList  */
-  YYSYMBOL_typeListNotEmpty = 348,         /* typeListNotEmpty  */
-  YYSYMBOL_typarsClause = 349,             /* typarsClause  */
-  YYSYMBOL_typarAttrib = 350,              /* typarAttrib  */
-  YYSYMBOL_typarAttribs = 351,             /* typarAttribs  */
-  YYSYMBOL_typars = 352,                   /* typars  */
-  YYSYMBOL_typarsRest = 353,               /* typarsRest  */
-  YYSYMBOL_tyBound = 354,                  /* tyBound  */
-  YYSYMBOL_genArity = 355,                 /* genArity  */
-  YYSYMBOL_genArityNotEmpty = 356,         /* genArityNotEmpty  */
-  YYSYMBOL_classDecl = 357,                /* classDecl  */
-  YYSYMBOL_fieldDecl = 358,                /* fieldDecl  */
-  YYSYMBOL_fieldAttr = 359,                /* fieldAttr  */
-  YYSYMBOL_atOpt = 360,                    /* atOpt  */
-  YYSYMBOL_initOpt = 361,                  /* initOpt  */
-  YYSYMBOL_repeatOpt = 362,                /* repeatOpt  */
-  YYSYMBOL_methodRef = 363,                /* methodRef  */
-  YYSYMBOL_callConv = 364,                 /* callConv  */
-  YYSYMBOL_callKind = 365,                 /* callKind  */
-  YYSYMBOL_mdtoken = 366,                  /* mdtoken  */
-  YYSYMBOL_memberRef = 367,                /* memberRef  */
-  YYSYMBOL_eventHead = 368,                /* eventHead  */
-  YYSYMBOL_eventAttr = 369,                /* eventAttr  */
-  YYSYMBOL_eventDecls = 370,               /* eventDecls  */
-  YYSYMBOL_eventDecl = 371,                /* eventDecl  */
-  YYSYMBOL_propHead = 372,                 /* propHead  */
-  YYSYMBOL_propAttr = 373,                 /* propAttr  */
-  YYSYMBOL_propDecls = 374,                /* propDecls  */
-  YYSYMBOL_propDecl = 375,                 /* propDecl  */
-  YYSYMBOL_methodHeadPart1 = 376,          /* methodHeadPart1  */
-  YYSYMBOL_marshalClause = 377,            /* marshalClause  */
-  YYSYMBOL_marshalBlob = 378,              /* marshalBlob  */
-  YYSYMBOL_marshalBlobHead = 379,          /* marshalBlobHead  */
-  YYSYMBOL_methodHead = 380,               /* methodHead  */
-  YYSYMBOL_methAttr = 381,                 /* methAttr  */
-  YYSYMBOL_pinvAttr = 382,                 /* pinvAttr  */
-  YYSYMBOL_methodName = 383,               /* methodName  */
-  YYSYMBOL_paramAttr = 384,                /* paramAttr  */
-  YYSYMBOL_implAttr = 385,                 /* implAttr  */
-  YYSYMBOL_localsHead = 386,               /* localsHead  */
-  YYSYMBOL_methodDecls = 387,              /* methodDecls  */
-  YYSYMBOL_methodDecl = 388,               /* methodDecl  */
-  YYSYMBOL_scopeBlock = 389,               /* scopeBlock  */
-  YYSYMBOL_scopeOpen = 390,                /* scopeOpen  */
-  YYSYMBOL_sehBlock = 391,                 /* sehBlock  */
-  YYSYMBOL_sehClauses = 392,               /* sehClauses  */
-  YYSYMBOL_tryBlock = 393,                 /* tryBlock  */
-  YYSYMBOL_tryHead = 394,                  /* tryHead  */
-  YYSYMBOL_sehClause = 395,                /* sehClause  */
-  YYSYMBOL_filterClause = 396,             /* filterClause  */
-  YYSYMBOL_filterHead = 397,               /* filterHead  */
-  YYSYMBOL_catchClause = 398,              /* catchClause  */
-  YYSYMBOL_finallyClause = 399,            /* finallyClause  */
-  YYSYMBOL_faultClause = 400,              /* faultClause  */
-  YYSYMBOL_handlerBlock = 401,             /* handlerBlock  */
-  YYSYMBOL_dataDecl = 402,                 /* dataDecl  */
-  YYSYMBOL_ddHead = 403,                   /* ddHead  */
-  YYSYMBOL_tls = 404,                      /* tls  */
-  YYSYMBOL_ddBody = 405,                   /* ddBody  */
-  YYSYMBOL_ddItemList = 406,               /* ddItemList  */
-  YYSYMBOL_ddItemCount = 407,              /* ddItemCount  */
-  YYSYMBOL_ddItem = 408,                   /* ddItem  */
-  YYSYMBOL_fieldSerInit = 409,             /* fieldSerInit  */
-  YYSYMBOL_bytearrayhead = 410,            /* bytearrayhead  */
-  YYSYMBOL_bytes = 411,                    /* bytes  */
-  YYSYMBOL_hexbytes = 412,                 /* hexbytes  */
-  YYSYMBOL_fieldInit = 413,                /* fieldInit  */
-  YYSYMBOL_serInit = 414,                  /* serInit  */
-  YYSYMBOL_f32seq = 415,                   /* f32seq  */
-  YYSYMBOL_f64seq = 416,                   /* f64seq  */
-  YYSYMBOL_i64seq = 417,                   /* i64seq  */
-  YYSYMBOL_i32seq = 418,                   /* i32seq  */
-  YYSYMBOL_i16seq = 419,                   /* i16seq  */
-  YYSYMBOL_i8seq = 420,                    /* i8seq  */
-  YYSYMBOL_boolSeq = 421,                  /* boolSeq  */
-  YYSYMBOL_sqstringSeq = 422,              /* sqstringSeq  */
-  YYSYMBOL_classSeq = 423,                 /* classSeq  */
-  YYSYMBOL_objSeq = 424,                   /* objSeq  */
-  YYSYMBOL_methodSpec = 425,               /* methodSpec  */
-  YYSYMBOL_instr_none = 426,               /* instr_none  */
-  YYSYMBOL_instr_var = 427,                /* instr_var  */
-  YYSYMBOL_instr_i = 428,                  /* instr_i  */
-  YYSYMBOL_instr_i8 = 429,                 /* instr_i8  */
-  YYSYMBOL_instr_r = 430,                  /* instr_r  */
-  YYSYMBOL_instr_brtarget = 431,           /* instr_brtarget  */
-  YYSYMBOL_instr_method = 432,             /* instr_method  */
-  YYSYMBOL_instr_field = 433,              /* instr_field  */
-  YYSYMBOL_instr_type = 434,               /* instr_type  */
-  YYSYMBOL_instr_string = 435,             /* instr_string  */
-  YYSYMBOL_instr_sig = 436,                /* instr_sig  */
-  YYSYMBOL_instr_tok = 437,                /* instr_tok  */
-  YYSYMBOL_instr_switch = 438,             /* instr_switch  */
-  YYSYMBOL_instr_r_head = 439,             /* instr_r_head  */
-  YYSYMBOL_instr = 440,                    /* instr  */
-  YYSYMBOL_labels = 441,                   /* labels  */
-  YYSYMBOL_tyArgs0 = 442,                  /* tyArgs0  */
-  YYSYMBOL_tyArgs1 = 443,                  /* tyArgs1  */
-  YYSYMBOL_tyArgs2 = 444,                  /* tyArgs2  */
-  YYSYMBOL_sigArgs0 = 445,                 /* sigArgs0  */
-  YYSYMBOL_sigArgs1 = 446,                 /* sigArgs1  */
-  YYSYMBOL_sigArg = 447,                   /* sigArg  */
-  YYSYMBOL_className = 448,                /* className  */
-  YYSYMBOL_slashedName = 449,              /* slashedName  */
-  YYSYMBOL_typeSpec = 450,                 /* typeSpec  */
-  YYSYMBOL_nativeType = 451,               /* nativeType  */
-  YYSYMBOL_iidParamIndex = 452,            /* iidParamIndex  */
-  YYSYMBOL_variantType = 453,              /* variantType  */
-  YYSYMBOL_type = 454,                     /* type  */
-  YYSYMBOL_simpleType = 455,               /* simpleType  */
-  YYSYMBOL_bounds1 = 456,                  /* bounds1  */
-  YYSYMBOL_bound = 457,                    /* bound  */
-  YYSYMBOL_secDecl = 458,                  /* secDecl  */
-  YYSYMBOL_secAttrSetBlob = 459,           /* secAttrSetBlob  */
-  YYSYMBOL_secAttrBlob = 460,              /* secAttrBlob  */
-  YYSYMBOL_psetHead = 461,                 /* psetHead  */
-  YYSYMBOL_nameValPairs = 462,             /* nameValPairs  */
-  YYSYMBOL_nameValPair = 463,              /* nameValPair  */
-  YYSYMBOL_truefalse = 464,                /* truefalse  */
-  YYSYMBOL_caValue = 465,                  /* caValue  */
-  YYSYMBOL_secAction = 466,                /* secAction  */
-  YYSYMBOL_esHead = 467,                   /* esHead  */
-  YYSYMBOL_extSourceSpec = 468,            /* extSourceSpec  */
-  YYSYMBOL_fileDecl = 469,                 /* fileDecl  */
-  YYSYMBOL_fileAttr = 470,                 /* fileAttr  */
-  YYSYMBOL_fileEntry = 471,                /* fileEntry  */
-  YYSYMBOL_hashHead = 472,                 /* hashHead  */
-  YYSYMBOL_assemblyHead = 473,             /* assemblyHead  */
-  YYSYMBOL_asmAttr = 474,                  /* asmAttr  */
-  YYSYMBOL_assemblyDecls = 475,            /* assemblyDecls  */
-  YYSYMBOL_assemblyDecl = 476,             /* assemblyDecl  */
-  YYSYMBOL_intOrWildcard = 477,            /* intOrWildcard  */
-  YYSYMBOL_asmOrRefDecl = 478,             /* asmOrRefDecl  */
-  YYSYMBOL_publicKeyHead = 479,            /* publicKeyHead  */
-  YYSYMBOL_publicKeyTokenHead = 480,       /* publicKeyTokenHead  */
-  YYSYMBOL_localeHead = 481,               /* localeHead  */
-  YYSYMBOL_assemblyRefHead = 482,          /* assemblyRefHead  */
-  YYSYMBOL_assemblyRefDecls = 483,         /* assemblyRefDecls  */
-  YYSYMBOL_assemblyRefDecl = 484,          /* assemblyRefDecl  */
-  YYSYMBOL_exptypeHead = 485,              /* exptypeHead  */
-  YYSYMBOL_exportHead = 486,               /* exportHead  */
-  YYSYMBOL_exptAttr = 487,                 /* exptAttr  */
-  YYSYMBOL_exptypeDecls = 488,             /* exptypeDecls  */
-  YYSYMBOL_exptypeDecl = 489,              /* exptypeDecl  */
-  YYSYMBOL_manifestResHead = 490,          /* manifestResHead  */
-  YYSYMBOL_manresAttr = 491,               /* manresAttr  */
-  YYSYMBOL_manifestResDecls = 492,         /* manifestResDecls  */
-  YYSYMBOL_manifestResDecl = 493           /* manifestResDecl  */
+  YYSYMBOL_ASYNC_ = 99,                    /* ASYNC_  */
+  YYSYMBOL_STRICT_ = 100,                  /* STRICT_  */
+  YYSYMBOL_RETARGETABLE_ = 101,            /* RETARGETABLE_  */
+  YYSYMBOL_WINDOWSRUNTIME_ = 102,          /* WINDOWSRUNTIME_  */
+  YYSYMBOL_NOPLATFORM_ = 103,              /* NOPLATFORM_  */
+  YYSYMBOL_METHOD_ = 104,                  /* METHOD_  */
+  YYSYMBOL_FIELD_ = 105,                   /* FIELD_  */
+  YYSYMBOL_PINNED_ = 106,                  /* PINNED_  */
+  YYSYMBOL_MODREQ_ = 107,                  /* MODREQ_  */
+  YYSYMBOL_MODOPT_ = 108,                  /* MODOPT_  */
+  YYSYMBOL_SERIALIZABLE_ = 109,            /* SERIALIZABLE_  */
+  YYSYMBOL_PROPERTY_ = 110,                /* PROPERTY_  */
+  YYSYMBOL_TYPE_ = 111,                    /* TYPE_  */
+  YYSYMBOL_ASSEMBLY_ = 112,                /* ASSEMBLY_  */
+  YYSYMBOL_FAMANDASSEM_ = 113,             /* FAMANDASSEM_  */
+  YYSYMBOL_FAMORASSEM_ = 114,              /* FAMORASSEM_  */
+  YYSYMBOL_PRIVATESCOPE_ = 115,            /* PRIVATESCOPE_  */
+  YYSYMBOL_HIDEBYSIG_ = 116,               /* HIDEBYSIG_  */
+  YYSYMBOL_NEWSLOT_ = 117,                 /* NEWSLOT_  */
+  YYSYMBOL_RTSPECIALNAME_ = 118,           /* RTSPECIALNAME_  */
+  YYSYMBOL_PINVOKEIMPL_ = 119,             /* PINVOKEIMPL_  */
+  YYSYMBOL__CTOR = 120,                    /* _CTOR  */
+  YYSYMBOL__CCTOR = 121,                   /* _CCTOR  */
+  YYSYMBOL_LITERAL_ = 122,                 /* LITERAL_  */
+  YYSYMBOL_NOTSERIALIZED_ = 123,           /* NOTSERIALIZED_  */
+  YYSYMBOL_INITONLY_ = 124,                /* INITONLY_  */
+  YYSYMBOL_REQSECOBJ_ = 125,               /* REQSECOBJ_  */
+  YYSYMBOL_CIL_ = 126,                     /* CIL_  */
+  YYSYMBOL_OPTIL_ = 127,                   /* OPTIL_  */
+  YYSYMBOL_MANAGED_ = 128,                 /* MANAGED_  */
+  YYSYMBOL_FORWARDREF_ = 129,              /* FORWARDREF_  */
+  YYSYMBOL_PRESERVESIG_ = 130,             /* PRESERVESIG_  */
+  YYSYMBOL_RUNTIME_ = 131,                 /* RUNTIME_  */
+  YYSYMBOL_INTERNALCALL_ = 132,            /* INTERNALCALL_  */
+  YYSYMBOL__IMPORT = 133,                  /* _IMPORT  */
+  YYSYMBOL_NOMANGLE_ = 134,                /* NOMANGLE_  */
+  YYSYMBOL_LASTERR_ = 135,                 /* LASTERR_  */
+  YYSYMBOL_WINAPI_ = 136,                  /* WINAPI_  */
+  YYSYMBOL_AS_ = 137,                      /* AS_  */
+  YYSYMBOL_BESTFIT_ = 138,                 /* BESTFIT_  */
+  YYSYMBOL_ON_ = 139,                      /* ON_  */
+  YYSYMBOL_OFF_ = 140,                     /* OFF_  */
+  YYSYMBOL_CHARMAPERROR_ = 141,            /* CHARMAPERROR_  */
+  YYSYMBOL_INSTR_NONE = 142,               /* INSTR_NONE  */
+  YYSYMBOL_INSTR_VAR = 143,                /* INSTR_VAR  */
+  YYSYMBOL_INSTR_I = 144,                  /* INSTR_I  */
+  YYSYMBOL_INSTR_I8 = 145,                 /* INSTR_I8  */
+  YYSYMBOL_INSTR_R = 146,                  /* INSTR_R  */
+  YYSYMBOL_INSTR_BRTARGET = 147,           /* INSTR_BRTARGET  */
+  YYSYMBOL_INSTR_METHOD = 148,             /* INSTR_METHOD  */
+  YYSYMBOL_INSTR_FIELD = 149,              /* INSTR_FIELD  */
+  YYSYMBOL_INSTR_TYPE = 150,               /* INSTR_TYPE  */
+  YYSYMBOL_INSTR_STRING = 151,             /* INSTR_STRING  */
+  YYSYMBOL_INSTR_SIG = 152,                /* INSTR_SIG  */
+  YYSYMBOL_INSTR_TOK = 153,                /* INSTR_TOK  */
+  YYSYMBOL_INSTR_SWITCH = 154,             /* INSTR_SWITCH  */
+  YYSYMBOL__CLASS = 155,                   /* _CLASS  */
+  YYSYMBOL__NAMESPACE = 156,               /* _NAMESPACE  */
+  YYSYMBOL__METHOD = 157,                  /* _METHOD  */
+  YYSYMBOL__FIELD = 158,                   /* _FIELD  */
+  YYSYMBOL__DATA = 159,                    /* _DATA  */
+  YYSYMBOL__THIS = 160,                    /* _THIS  */
+  YYSYMBOL__BASE = 161,                    /* _BASE  */
+  YYSYMBOL__NESTER = 162,                  /* _NESTER  */
+  YYSYMBOL__EMITBYTE = 163,                /* _EMITBYTE  */
+  YYSYMBOL__TRY = 164,                     /* _TRY  */
+  YYSYMBOL__MAXSTACK = 165,                /* _MAXSTACK  */
+  YYSYMBOL__LOCALS = 166,                  /* _LOCALS  */
+  YYSYMBOL__ENTRYPOINT = 167,              /* _ENTRYPOINT  */
+  YYSYMBOL__ZEROINIT = 168,                /* _ZEROINIT  */
+  YYSYMBOL__EVENT = 169,                   /* _EVENT  */
+  YYSYMBOL__ADDON = 170,                   /* _ADDON  */
+  YYSYMBOL__REMOVEON = 171,                /* _REMOVEON  */
+  YYSYMBOL__FIRE = 172,                    /* _FIRE  */
+  YYSYMBOL__OTHER = 173,                   /* _OTHER  */
+  YYSYMBOL__PROPERTY = 174,                /* _PROPERTY  */
+  YYSYMBOL__SET = 175,                     /* _SET  */
+  YYSYMBOL__GET = 176,                     /* _GET  */
+  YYSYMBOL__PERMISSION = 177,              /* _PERMISSION  */
+  YYSYMBOL__PERMISSIONSET = 178,           /* _PERMISSIONSET  */
+  YYSYMBOL_REQUEST_ = 179,                 /* REQUEST_  */
+  YYSYMBOL_DEMAND_ = 180,                  /* DEMAND_  */
+  YYSYMBOL_ASSERT_ = 181,                  /* ASSERT_  */
+  YYSYMBOL_DENY_ = 182,                    /* DENY_  */
+  YYSYMBOL_PERMITONLY_ = 183,              /* PERMITONLY_  */
+  YYSYMBOL_LINKCHECK_ = 184,               /* LINKCHECK_  */
+  YYSYMBOL_INHERITCHECK_ = 185,            /* INHERITCHECK_  */
+  YYSYMBOL_REQMIN_ = 186,                  /* REQMIN_  */
+  YYSYMBOL_REQOPT_ = 187,                  /* REQOPT_  */
+  YYSYMBOL_REQREFUSE_ = 188,               /* REQREFUSE_  */
+  YYSYMBOL_PREJITGRANT_ = 189,             /* PREJITGRANT_  */
+  YYSYMBOL_PREJITDENY_ = 190,              /* PREJITDENY_  */
+  YYSYMBOL_NONCASDEMAND_ = 191,            /* NONCASDEMAND_  */
+  YYSYMBOL_NONCASLINKDEMAND_ = 192,        /* NONCASLINKDEMAND_  */
+  YYSYMBOL_NONCASINHERITANCE_ = 193,       /* NONCASINHERITANCE_  */
+  YYSYMBOL__LINE = 194,                    /* _LINE  */
+  YYSYMBOL_P_LINE = 195,                   /* P_LINE  */
+  YYSYMBOL__LANGUAGE = 196,                /* _LANGUAGE  */
+  YYSYMBOL__CUSTOM = 197,                  /* _CUSTOM  */
+  YYSYMBOL_INIT_ = 198,                    /* INIT_  */
+  YYSYMBOL__SIZE = 199,                    /* _SIZE  */
+  YYSYMBOL__PACK = 200,                    /* _PACK  */
+  YYSYMBOL__VTABLE = 201,                  /* _VTABLE  */
+  YYSYMBOL__VTFIXUP = 202,                 /* _VTFIXUP  */
+  YYSYMBOL_FROMUNMANAGED_ = 203,           /* FROMUNMANAGED_  */
+  YYSYMBOL_CALLMOSTDERIVED_ = 204,         /* CALLMOSTDERIVED_  */
+  YYSYMBOL__VTENTRY = 205,                 /* _VTENTRY  */
+  YYSYMBOL_RETAINAPPDOMAIN_ = 206,         /* RETAINAPPDOMAIN_  */
+  YYSYMBOL__FILE = 207,                    /* _FILE  */
+  YYSYMBOL_NOMETADATA_ = 208,              /* NOMETADATA_  */
+  YYSYMBOL__HASH = 209,                    /* _HASH  */
+  YYSYMBOL__ASSEMBLY = 210,                /* _ASSEMBLY  */
+  YYSYMBOL__PUBLICKEY = 211,               /* _PUBLICKEY  */
+  YYSYMBOL__PUBLICKEYTOKEN = 212,          /* _PUBLICKEYTOKEN  */
+  YYSYMBOL_ALGORITHM_ = 213,               /* ALGORITHM_  */
+  YYSYMBOL__VER = 214,                     /* _VER  */
+  YYSYMBOL__LOCALE = 215,                  /* _LOCALE  */
+  YYSYMBOL_EXTERN_ = 216,                  /* EXTERN_  */
+  YYSYMBOL__MRESOURCE = 217,               /* _MRESOURCE  */
+  YYSYMBOL__MODULE = 218,                  /* _MODULE  */
+  YYSYMBOL__EXPORT = 219,                  /* _EXPORT  */
+  YYSYMBOL_LEGACY_ = 220,                  /* LEGACY_  */
+  YYSYMBOL_LIBRARY_ = 221,                 /* LIBRARY_  */
+  YYSYMBOL_X86_ = 222,                     /* X86_  */
+  YYSYMBOL_AMD64_ = 223,                   /* AMD64_  */
+  YYSYMBOL_ARM_ = 224,                     /* ARM_  */
+  YYSYMBOL_ARM64_ = 225,                   /* ARM64_  */
+  YYSYMBOL_MARSHAL_ = 226,                 /* MARSHAL_  */
+  YYSYMBOL_CUSTOM_ = 227,                  /* CUSTOM_  */
+  YYSYMBOL_SYSSTRING_ = 228,               /* SYSSTRING_  */
+  YYSYMBOL_FIXED_ = 229,                   /* FIXED_  */
+  YYSYMBOL_VARIANT_ = 230,                 /* VARIANT_  */
+  YYSYMBOL_CURRENCY_ = 231,                /* CURRENCY_  */
+  YYSYMBOL_SYSCHAR_ = 232,                 /* SYSCHAR_  */
+  YYSYMBOL_DECIMAL_ = 233,                 /* DECIMAL_  */
+  YYSYMBOL_DATE_ = 234,                    /* DATE_  */
+  YYSYMBOL_BSTR_ = 235,                    /* BSTR_  */
+  YYSYMBOL_TBSTR_ = 236,                   /* TBSTR_  */
+  YYSYMBOL_LPSTR_ = 237,                   /* LPSTR_  */
+  YYSYMBOL_LPWSTR_ = 238,                  /* LPWSTR_  */
+  YYSYMBOL_LPTSTR_ = 239,                  /* LPTSTR_  */
+  YYSYMBOL_OBJECTREF_ = 240,               /* OBJECTREF_  */
+  YYSYMBOL_IUNKNOWN_ = 241,                /* IUNKNOWN_  */
+  YYSYMBOL_IDISPATCH_ = 242,               /* IDISPATCH_  */
+  YYSYMBOL_STRUCT_ = 243,                  /* STRUCT_  */
+  YYSYMBOL_SAFEARRAY_ = 244,               /* SAFEARRAY_  */
+  YYSYMBOL_BYVALSTR_ = 245,                /* BYVALSTR_  */
+  YYSYMBOL_LPVOID_ = 246,                  /* LPVOID_  */
+  YYSYMBOL_ANY_ = 247,                     /* ANY_  */
+  YYSYMBOL_ARRAY_ = 248,                   /* ARRAY_  */
+  YYSYMBOL_LPSTRUCT_ = 249,                /* LPSTRUCT_  */
+  YYSYMBOL_IIDPARAM_ = 250,                /* IIDPARAM_  */
+  YYSYMBOL_IN_ = 251,                      /* IN_  */
+  YYSYMBOL_OUT_ = 252,                     /* OUT_  */
+  YYSYMBOL_OPT_ = 253,                     /* OPT_  */
+  YYSYMBOL__PARAM = 254,                   /* _PARAM  */
+  YYSYMBOL__OVERRIDE = 255,                /* _OVERRIDE  */
+  YYSYMBOL_WITH_ = 256,                    /* WITH_  */
+  YYSYMBOL_NULL_ = 257,                    /* NULL_  */
+  YYSYMBOL_ERROR_ = 258,                   /* ERROR_  */
+  YYSYMBOL_HRESULT_ = 259,                 /* HRESULT_  */
+  YYSYMBOL_CARRAY_ = 260,                  /* CARRAY_  */
+  YYSYMBOL_USERDEFINED_ = 261,             /* USERDEFINED_  */
+  YYSYMBOL_RECORD_ = 262,                  /* RECORD_  */
+  YYSYMBOL_FILETIME_ = 263,                /* FILETIME_  */
+  YYSYMBOL_BLOB_ = 264,                    /* BLOB_  */
+  YYSYMBOL_STREAM_ = 265,                  /* STREAM_  */
+  YYSYMBOL_STORAGE_ = 266,                 /* STORAGE_  */
+  YYSYMBOL_STREAMED_OBJECT_ = 267,         /* STREAMED_OBJECT_  */
+  YYSYMBOL_STORED_OBJECT_ = 268,           /* STORED_OBJECT_  */
+  YYSYMBOL_BLOB_OBJECT_ = 269,             /* BLOB_OBJECT_  */
+  YYSYMBOL_CF_ = 270,                      /* CF_  */
+  YYSYMBOL_CLSID_ = 271,                   /* CLSID_  */
+  YYSYMBOL_VECTOR_ = 272,                  /* VECTOR_  */
+  YYSYMBOL__SUBSYSTEM = 273,               /* _SUBSYSTEM  */
+  YYSYMBOL__CORFLAGS = 274,                /* _CORFLAGS  */
+  YYSYMBOL_ALIGNMENT_ = 275,               /* ALIGNMENT_  */
+  YYSYMBOL__IMAGEBASE = 276,               /* _IMAGEBASE  */
+  YYSYMBOL__STACKRESERVE = 277,            /* _STACKRESERVE  */
+  YYSYMBOL__TYPEDEF = 278,                 /* _TYPEDEF  */
+  YYSYMBOL__TEMPLATE = 279,                /* _TEMPLATE  */
+  YYSYMBOL__TYPELIST = 280,                /* _TYPELIST  */
+  YYSYMBOL__MSCORLIB = 281,                /* _MSCORLIB  */
+  YYSYMBOL_P_DEFINE = 282,                 /* P_DEFINE  */
+  YYSYMBOL_P_UNDEF = 283,                  /* P_UNDEF  */
+  YYSYMBOL_P_IFDEF = 284,                  /* P_IFDEF  */
+  YYSYMBOL_P_IFNDEF = 285,                 /* P_IFNDEF  */
+  YYSYMBOL_P_ELSE = 286,                   /* P_ELSE  */
+  YYSYMBOL_P_ENDIF = 287,                  /* P_ENDIF  */
+  YYSYMBOL_P_INCLUDE = 288,                /* P_INCLUDE  */
+  YYSYMBOL_CONSTRAINT_ = 289,              /* CONSTRAINT_  */
+  YYSYMBOL_290_ = 290,                     /* '{'  */
+  YYSYMBOL_291_ = 291,                     /* '}'  */
+  YYSYMBOL_292_ = 292,                     /* '+'  */
+  YYSYMBOL_293_ = 293,                     /* ','  */
+  YYSYMBOL_294_ = 294,                     /* '.'  */
+  YYSYMBOL_295_ = 295,                     /* '('  */
+  YYSYMBOL_296_ = 296,                     /* ')'  */
+  YYSYMBOL_297_ = 297,                     /* ';'  */
+  YYSYMBOL_298_ = 298,                     /* '='  */
+  YYSYMBOL_299_ = 299,                     /* '['  */
+  YYSYMBOL_300_ = 300,                     /* ']'  */
+  YYSYMBOL_301_ = 301,                     /* '<'  */
+  YYSYMBOL_302_ = 302,                     /* '>'  */
+  YYSYMBOL_303_ = 303,                     /* '-'  */
+  YYSYMBOL_304_ = 304,                     /* ':'  */
+  YYSYMBOL_305_ = 305,                     /* '*'  */
+  YYSYMBOL_306_ = 306,                     /* '&'  */
+  YYSYMBOL_307_ = 307,                     /* '/'  */
+  YYSYMBOL_308_ = 308,                     /* '!'  */
+  YYSYMBOL_YYACCEPT = 309,                 /* $accept  */
+  YYSYMBOL_decls = 310,                    /* decls  */
+  YYSYMBOL_decl = 311,                     /* decl  */
+  YYSYMBOL_classNameSeq = 312,             /* classNameSeq  */
+  YYSYMBOL_compQstring = 313,              /* compQstring  */
+  YYSYMBOL_languageDecl = 314,             /* languageDecl  */
+  YYSYMBOL_id = 315,                       /* id  */
+  YYSYMBOL_dottedName = 316,               /* dottedName  */
+  YYSYMBOL_int32 = 317,                    /* int32  */
+  YYSYMBOL_int64 = 318,                    /* int64  */
+  YYSYMBOL_float64 = 319,                  /* float64  */
+  YYSYMBOL_typedefDecl = 320,              /* typedefDecl  */
+  YYSYMBOL_compControl = 321,              /* compControl  */
+  YYSYMBOL_customDescr = 322,              /* customDescr  */
+  YYSYMBOL_customDescrWithOwner = 323,     /* customDescrWithOwner  */
+  YYSYMBOL_customHead = 324,               /* customHead  */
+  YYSYMBOL_customHeadWithOwner = 325,      /* customHeadWithOwner  */
+  YYSYMBOL_customType = 326,               /* customType  */
+  YYSYMBOL_ownerType = 327,                /* ownerType  */
+  YYSYMBOL_customBlobDescr = 328,          /* customBlobDescr  */
+  YYSYMBOL_customBlobArgs = 329,           /* customBlobArgs  */
+  YYSYMBOL_customBlobNVPairs = 330,        /* customBlobNVPairs  */
+  YYSYMBOL_fieldOrProp = 331,              /* fieldOrProp  */
+  YYSYMBOL_customAttrDecl = 332,           /* customAttrDecl  */
+  YYSYMBOL_serializType = 333,             /* serializType  */
+  YYSYMBOL_moduleHead = 334,               /* moduleHead  */
+  YYSYMBOL_vtfixupDecl = 335,              /* vtfixupDecl  */
+  YYSYMBOL_vtfixupAttr = 336,              /* vtfixupAttr  */
+  YYSYMBOL_vtableDecl = 337,               /* vtableDecl  */
+  YYSYMBOL_vtableHead = 338,               /* vtableHead  */
+  YYSYMBOL_nameSpaceHead = 339,            /* nameSpaceHead  */
+  YYSYMBOL__class = 340,                   /* _class  */
+  YYSYMBOL_classHeadBegin = 341,           /* classHeadBegin  */
+  YYSYMBOL_classHead = 342,                /* classHead  */
+  YYSYMBOL_classAttr = 343,                /* classAttr  */
+  YYSYMBOL_extendsClause = 344,            /* extendsClause  */
+  YYSYMBOL_implClause = 345,               /* implClause  */
+  YYSYMBOL_classDecls = 346,               /* classDecls  */
+  YYSYMBOL_implList = 347,                 /* implList  */
+  YYSYMBOL_typeList = 348,                 /* typeList  */
+  YYSYMBOL_typeListNotEmpty = 349,         /* typeListNotEmpty  */
+  YYSYMBOL_typarsClause = 350,             /* typarsClause  */
+  YYSYMBOL_typarAttrib = 351,              /* typarAttrib  */
+  YYSYMBOL_typarAttribs = 352,             /* typarAttribs  */
+  YYSYMBOL_typars = 353,                   /* typars  */
+  YYSYMBOL_typarsRest = 354,               /* typarsRest  */
+  YYSYMBOL_tyBound = 355,                  /* tyBound  */
+  YYSYMBOL_genArity = 356,                 /* genArity  */
+  YYSYMBOL_genArityNotEmpty = 357,         /* genArityNotEmpty  */
+  YYSYMBOL_classDecl = 358,                /* classDecl  */
+  YYSYMBOL_fieldDecl = 359,                /* fieldDecl  */
+  YYSYMBOL_fieldAttr = 360,                /* fieldAttr  */
+  YYSYMBOL_atOpt = 361,                    /* atOpt  */
+  YYSYMBOL_initOpt = 362,                  /* initOpt  */
+  YYSYMBOL_repeatOpt = 363,                /* repeatOpt  */
+  YYSYMBOL_methodRef = 364,                /* methodRef  */
+  YYSYMBOL_callConv = 365,                 /* callConv  */
+  YYSYMBOL_callKind = 366,                 /* callKind  */
+  YYSYMBOL_mdtoken = 367,                  /* mdtoken  */
+  YYSYMBOL_memberRef = 368,                /* memberRef  */
+  YYSYMBOL_eventHead = 369,                /* eventHead  */
+  YYSYMBOL_eventAttr = 370,                /* eventAttr  */
+  YYSYMBOL_eventDecls = 371,               /* eventDecls  */
+  YYSYMBOL_eventDecl = 372,                /* eventDecl  */
+  YYSYMBOL_propHead = 373,                 /* propHead  */
+  YYSYMBOL_propAttr = 374,                 /* propAttr  */
+  YYSYMBOL_propDecls = 375,                /* propDecls  */
+  YYSYMBOL_propDecl = 376,                 /* propDecl  */
+  YYSYMBOL_methodHeadPart1 = 377,          /* methodHeadPart1  */
+  YYSYMBOL_marshalClause = 378,            /* marshalClause  */
+  YYSYMBOL_marshalBlob = 379,              /* marshalBlob  */
+  YYSYMBOL_marshalBlobHead = 380,          /* marshalBlobHead  */
+  YYSYMBOL_methodHead = 381,               /* methodHead  */
+  YYSYMBOL_methAttr = 382,                 /* methAttr  */
+  YYSYMBOL_pinvAttr = 383,                 /* pinvAttr  */
+  YYSYMBOL_methodName = 384,               /* methodName  */
+  YYSYMBOL_paramAttr = 385,                /* paramAttr  */
+  YYSYMBOL_implAttr = 386,                 /* implAttr  */
+  YYSYMBOL_localsHead = 387,               /* localsHead  */
+  YYSYMBOL_methodDecls = 388,              /* methodDecls  */
+  YYSYMBOL_methodDecl = 389,               /* methodDecl  */
+  YYSYMBOL_scopeBlock = 390,               /* scopeBlock  */
+  YYSYMBOL_scopeOpen = 391,                /* scopeOpen  */
+  YYSYMBOL_sehBlock = 392,                 /* sehBlock  */
+  YYSYMBOL_sehClauses = 393,               /* sehClauses  */
+  YYSYMBOL_tryBlock = 394,                 /* tryBlock  */
+  YYSYMBOL_tryHead = 395,                  /* tryHead  */
+  YYSYMBOL_sehClause = 396,                /* sehClause  */
+  YYSYMBOL_filterClause = 397,             /* filterClause  */
+  YYSYMBOL_filterHead = 398,               /* filterHead  */
+  YYSYMBOL_catchClause = 399,              /* catchClause  */
+  YYSYMBOL_finallyClause = 400,            /* finallyClause  */
+  YYSYMBOL_faultClause = 401,              /* faultClause  */
+  YYSYMBOL_handlerBlock = 402,             /* handlerBlock  */
+  YYSYMBOL_dataDecl = 403,                 /* dataDecl  */
+  YYSYMBOL_ddHead = 404,                   /* ddHead  */
+  YYSYMBOL_tls = 405,                      /* tls  */
+  YYSYMBOL_ddBody = 406,                   /* ddBody  */
+  YYSYMBOL_ddItemList = 407,               /* ddItemList  */
+  YYSYMBOL_ddItemCount = 408,              /* ddItemCount  */
+  YYSYMBOL_ddItem = 409,                   /* ddItem  */
+  YYSYMBOL_fieldSerInit = 410,             /* fieldSerInit  */
+  YYSYMBOL_bytearrayhead = 411,            /* bytearrayhead  */
+  YYSYMBOL_bytes = 412,                    /* bytes  */
+  YYSYMBOL_hexbytes = 413,                 /* hexbytes  */
+  YYSYMBOL_fieldInit = 414,                /* fieldInit  */
+  YYSYMBOL_serInit = 415,                  /* serInit  */
+  YYSYMBOL_f32seq = 416,                   /* f32seq  */
+  YYSYMBOL_f64seq = 417,                   /* f64seq  */
+  YYSYMBOL_i64seq = 418,                   /* i64seq  */
+  YYSYMBOL_i32seq = 419,                   /* i32seq  */
+  YYSYMBOL_i16seq = 420,                   /* i16seq  */
+  YYSYMBOL_i8seq = 421,                    /* i8seq  */
+  YYSYMBOL_boolSeq = 422,                  /* boolSeq  */
+  YYSYMBOL_sqstringSeq = 423,              /* sqstringSeq  */
+  YYSYMBOL_classSeq = 424,                 /* classSeq  */
+  YYSYMBOL_objSeq = 425,                   /* objSeq  */
+  YYSYMBOL_methodSpec = 426,               /* methodSpec  */
+  YYSYMBOL_instr_none = 427,               /* instr_none  */
+  YYSYMBOL_instr_var = 428,                /* instr_var  */
+  YYSYMBOL_instr_i = 429,                  /* instr_i  */
+  YYSYMBOL_instr_i8 = 430,                 /* instr_i8  */
+  YYSYMBOL_instr_r = 431,                  /* instr_r  */
+  YYSYMBOL_instr_brtarget = 432,           /* instr_brtarget  */
+  YYSYMBOL_instr_method = 433,             /* instr_method  */
+  YYSYMBOL_instr_field = 434,              /* instr_field  */
+  YYSYMBOL_instr_type = 435,               /* instr_type  */
+  YYSYMBOL_instr_string = 436,             /* instr_string  */
+  YYSYMBOL_instr_sig = 437,                /* instr_sig  */
+  YYSYMBOL_instr_tok = 438,                /* instr_tok  */
+  YYSYMBOL_instr_switch = 439,             /* instr_switch  */
+  YYSYMBOL_instr_r_head = 440,             /* instr_r_head  */
+  YYSYMBOL_instr = 441,                    /* instr  */
+  YYSYMBOL_labels = 442,                   /* labels  */
+  YYSYMBOL_tyArgs0 = 443,                  /* tyArgs0  */
+  YYSYMBOL_tyArgs1 = 444,                  /* tyArgs1  */
+  YYSYMBOL_tyArgs2 = 445,                  /* tyArgs2  */
+  YYSYMBOL_sigArgs0 = 446,                 /* sigArgs0  */
+  YYSYMBOL_sigArgs1 = 447,                 /* sigArgs1  */
+  YYSYMBOL_sigArg = 448,                   /* sigArg  */
+  YYSYMBOL_className = 449,                /* className  */
+  YYSYMBOL_slashedName = 450,              /* slashedName  */
+  YYSYMBOL_typeSpec = 451,                 /* typeSpec  */
+  YYSYMBOL_nativeType = 452,               /* nativeType  */
+  YYSYMBOL_iidParamIndex = 453,            /* iidParamIndex  */
+  YYSYMBOL_variantType = 454,              /* variantType  */
+  YYSYMBOL_type = 455,                     /* type  */
+  YYSYMBOL_simpleType = 456,               /* simpleType  */
+  YYSYMBOL_bounds1 = 457,                  /* bounds1  */
+  YYSYMBOL_bound = 458,                    /* bound  */
+  YYSYMBOL_secDecl = 459,                  /* secDecl  */
+  YYSYMBOL_secAttrSetBlob = 460,           /* secAttrSetBlob  */
+  YYSYMBOL_secAttrBlob = 461,              /* secAttrBlob  */
+  YYSYMBOL_psetHead = 462,                 /* psetHead  */
+  YYSYMBOL_nameValPairs = 463,             /* nameValPairs  */
+  YYSYMBOL_nameValPair = 464,              /* nameValPair  */
+  YYSYMBOL_truefalse = 465,                /* truefalse  */
+  YYSYMBOL_caValue = 466,                  /* caValue  */
+  YYSYMBOL_secAction = 467,                /* secAction  */
+  YYSYMBOL_esHead = 468,                   /* esHead  */
+  YYSYMBOL_extSourceSpec = 469,            /* extSourceSpec  */
+  YYSYMBOL_fileDecl = 470,                 /* fileDecl  */
+  YYSYMBOL_fileAttr = 471,                 /* fileAttr  */
+  YYSYMBOL_fileEntry = 472,                /* fileEntry  */
+  YYSYMBOL_hashHead = 473,                 /* hashHead  */
+  YYSYMBOL_assemblyHead = 474,             /* assemblyHead  */
+  YYSYMBOL_asmAttr = 475,                  /* asmAttr  */
+  YYSYMBOL_assemblyDecls = 476,            /* assemblyDecls  */
+  YYSYMBOL_assemblyDecl = 477,             /* assemblyDecl  */
+  YYSYMBOL_intOrWildcard = 478,            /* intOrWildcard  */
+  YYSYMBOL_asmOrRefDecl = 479,             /* asmOrRefDecl  */
+  YYSYMBOL_publicKeyHead = 480,            /* publicKeyHead  */
+  YYSYMBOL_publicKeyTokenHead = 481,       /* publicKeyTokenHead  */
+  YYSYMBOL_localeHead = 482,               /* localeHead  */
+  YYSYMBOL_assemblyRefHead = 483,          /* assemblyRefHead  */
+  YYSYMBOL_assemblyRefDecls = 484,         /* assemblyRefDecls  */
+  YYSYMBOL_assemblyRefDecl = 485,          /* assemblyRefDecl  */
+  YYSYMBOL_exptypeHead = 486,              /* exptypeHead  */
+  YYSYMBOL_exportHead = 487,               /* exportHead  */
+  YYSYMBOL_exptAttr = 488,                 /* exptAttr  */
+  YYSYMBOL_exptypeDecls = 489,             /* exptypeDecls  */
+  YYSYMBOL_exptypeDecl = 490,              /* exptypeDecl  */
+  YYSYMBOL_manifestResHead = 491,          /* manifestResHead  */
+  YYSYMBOL_manresAttr = 492,               /* manresAttr  */
+  YYSYMBOL_manifestResDecls = 493,         /* manifestResDecls  */
+  YYSYMBOL_manifestResDecl = 494           /* manifestResDecl  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -1286,19 +1288,19 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  2
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   3777
+#define YYLAST   5505
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  308
+#define YYNTOKENS  309
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  186
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  846
+#define YYNRULES  862
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  1590
+#define YYNSTATES  1607
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   543
+#define YYMAXUTOK   544
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -1315,16 +1317,16 @@ static const yytype_int16 yytranslate[] =
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,   307,     2,     2,     2,     2,   305,     2,
-     294,   295,   304,   291,   292,   302,   293,   306,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,   303,   296,
-     300,   297,   301,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,   308,     2,     2,     2,     2,   306,     2,
+     295,   296,   305,   292,   293,   303,   294,   307,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,   304,   297,
+     301,   298,   302,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,   298,     2,   299,     2,     2,     2,     2,     2,     2,
+       2,   299,     2,   300,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,   289,     2,   290,     2,     2,     2,     2,
+       2,     2,     2,   290,     2,   291,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -1366,7 +1368,7 @@ static const yytype_int16 yytranslate[] =
      255,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
      275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
-     285,   286,   287,   288
+     285,   286,   287,   288,   289
 };
 
 #if YYDEBUG
@@ -1376,88 +1378,90 @@ static const yytype_int16 yyrline[] =
        0,   189,   189,   190,   193,   194,   195,   199,   200,   201,
      202,   203,   204,   205,   206,   207,   208,   209,   210,   211,
      212,   215,   216,   219,   222,   223,   224,   225,   226,   227,
-     230,   231,   234,   235,   238,   239,   241,   246,   247,   250,
-     251,   252,   255,   258,   259,   262,   263,   264,   268,   269,
-     270,   271,   272,   277,   278,   279,   280,   283,   286,   287,
-     291,   292,   296,   297,   298,   299,   302,   303,   304,   306,
-     309,   312,   318,   321,   322,   326,   332,   333,   335,   338,
-     339,   345,   348,   349,   352,   356,   357,   365,   366,   367,
-     368,   370,   372,   377,   378,   379,   386,   390,   391,   392,
-     393,   394,   395,   398,   401,   405,   408,   411,   417,   420,
-     421,   422,   423,   424,   425,   426,   427,   428,   429,   430,
-     431,   432,   433,   434,   435,   436,   437,   438,   439,   440,
-     441,   442,   443,   444,   445,   446,   449,   450,   453,   454,
-     457,   458,   461,   462,   466,   467,   470,   471,   474,   475,
-     478,   479,   480,   481,   482,   483,   484,   487,   488,   491,
-     492,   495,   496,   499,   502,   503,   506,   510,   514,   515,
-     516,   517,   518,   519,   520,   521,   522,   523,   524,   525,
-     531,   540,   541,   542,   547,   553,   554,   555,   562,   567,
-     568,   569,   570,   571,   572,   573,   574,   586,   588,   589,
-     590,   591,   592,   593,   594,   597,   598,   601,   602,   605,
-     606,   610,   627,   633,   649,   654,   655,   656,   659,   660,
-     661,   662,   665,   666,   667,   668,   669,   670,   671,   672,
-     675,   678,   683,   687,   691,   693,   695,   700,   701,   705,
-     706,   707,   710,   711,   714,   715,   716,   717,   718,   719,
-     720,   721,   725,   731,   732,   733,   736,   737,   741,   742,
-     743,   744,   745,   746,   747,   751,   757,   758,   761,   762,
-     765,   768,   784,   785,   786,   787,   788,   789,   790,   791,
-     792,   793,   794,   795,   796,   797,   798,   799,   800,   801,
-     802,   803,   804,   807,   810,   815,   816,   817,   818,   819,
-     820,   821,   822,   823,   824,   825,   826,   827,   828,   829,
-     830,   833,   834,   835,   838,   839,   840,   841,   842,   845,
-     846,   847,   848,   849,   850,   851,   852,   853,   854,   855,
-     856,   857,   858,   859,   860,   863,   867,   868,   871,   872,
-     873,   874,   876,   879,   880,   881,   882,   883,   884,   885,
-     886,   887,   888,   889,   899,   909,   911,   914,   921,   922,
-     927,   933,   934,   936,   957,   960,   964,   967,   968,   971,
-     972,   973,   977,   982,   983,   984,   985,   989,   990,   992,
-     996,  1000,  1005,  1009,  1013,  1014,  1015,  1020,  1023,  1024,
-    1027,  1028,  1029,  1032,  1033,  1036,  1037,  1040,  1041,  1046,
-    1047,  1048,  1049,  1056,  1063,  1070,  1077,  1085,  1093,  1094,
-    1095,  1096,  1097,  1098,  1102,  1105,  1107,  1109,  1111,  1113,
-    1115,  1117,  1119,  1121,  1123,  1125,  1127,  1129,  1131,  1133,
-    1135,  1137,  1139,  1143,  1146,  1147,  1150,  1151,  1155,  1156,
-    1157,  1162,  1163,  1164,  1166,  1168,  1170,  1171,  1172,  1176,
-    1180,  1184,  1188,  1192,  1196,  1200,  1204,  1208,  1212,  1216,
-    1220,  1224,  1228,  1232,  1236,  1240,  1244,  1251,  1252,  1254,
-    1258,  1259,  1261,  1265,  1266,  1270,  1271,  1274,  1275,  1278,
-    1279,  1282,  1283,  1287,  1288,  1289,  1293,  1294,  1295,  1297,
-    1301,  1302,  1306,  1312,  1315,  1318,  1321,  1324,  1327,  1330,
-    1338,  1341,  1344,  1347,  1350,  1353,  1356,  1360,  1361,  1362,
-    1363,  1364,  1365,  1366,  1367,  1376,  1377,  1378,  1385,  1393,
-    1401,  1407,  1413,  1419,  1423,  1424,  1426,  1428,  1432,  1438,
-    1441,  1442,  1443,  1444,  1445,  1449,  1450,  1453,  1454,  1457,
-    1458,  1462,  1463,  1466,  1467,  1470,  1471,  1472,  1476,  1477,
-    1478,  1479,  1480,  1481,  1482,  1483,  1486,  1492,  1499,  1500,
-    1503,  1504,  1505,  1506,  1510,  1511,  1518,  1524,  1526,  1529,
-    1531,  1532,  1534,  1536,  1537,  1538,  1539,  1540,  1541,  1542,
-    1543,  1544,  1545,  1546,  1547,  1548,  1549,  1550,  1551,  1552,
-    1554,  1556,  1561,  1566,  1569,  1571,  1573,  1574,  1575,  1576,
-    1577,  1579,  1581,  1583,  1584,  1586,  1589,  1593,  1594,  1595,
-    1596,  1598,  1599,  1600,  1601,  1602,  1603,  1604,  1605,  1608,
-    1609,  1612,  1613,  1614,  1615,  1616,  1617,  1618,  1619,  1620,
-    1621,  1622,  1623,  1624,  1625,  1626,  1627,  1628,  1629,  1630,
-    1631,  1632,  1633,  1634,  1635,  1636,  1637,  1638,  1639,  1640,
-    1641,  1642,  1643,  1644,  1645,  1646,  1647,  1648,  1649,  1650,
-    1651,  1652,  1653,  1654,  1655,  1656,  1657,  1658,  1659,  1660,
-    1664,  1670,  1671,  1672,  1673,  1674,  1675,  1676,  1677,  1678,
-    1680,  1682,  1689,  1696,  1702,  1708,  1723,  1738,  1739,  1740,
-    1741,  1742,  1743,  1744,  1747,  1748,  1749,  1750,  1751,  1752,
-    1753,  1754,  1755,  1756,  1757,  1758,  1759,  1760,  1761,  1762,
-    1763,  1764,  1767,  1768,  1771,  1772,  1773,  1774,  1777,  1781,
-    1783,  1785,  1786,  1787,  1789,  1798,  1799,  1800,  1803,  1806,
-    1811,  1812,  1816,  1817,  1820,  1823,  1824,  1827,  1830,  1833,
-    1836,  1840,  1846,  1852,  1858,  1866,  1867,  1868,  1869,  1870,
-    1871,  1872,  1873,  1874,  1875,  1876,  1877,  1878,  1879,  1880,
-    1884,  1885,  1888,  1891,  1893,  1896,  1898,  1902,  1905,  1909,
-    1912,  1916,  1919,  1925,  1927,  1930,  1931,  1934,  1935,  1938,
-    1941,  1944,  1945,  1946,  1947,  1948,  1949,  1950,  1951,  1952,
-    1953,  1956,  1957,  1960,  1961,  1962,  1965,  1966,  1969,  1970,
-    1972,  1973,  1974,  1975,  1978,  1981,  1984,  1987,  1989,  1993,
-    1994,  1997,  1998,  1999,  2000,  2003,  2006,  2009,  2010,  2011,
-    2012,  2013,  2014,  2015,  2016,  2017,  2018,  2021,  2022,  2025,
-    2026,  2027,  2028,  2030,  2032,  2033,  2036,  2037,  2041,  2042,
-    2043,  2046,  2047,  2050,  2051,  2052,  2053
+     230,   231,   234,   235,   238,   239,   241,   246,   248,   249,
+     250,   251,   252,   253,   254,   255,   256,   257,   258,   259,
+     260,   261,   262,   263,   266,   267,   268,   271,   274,   275,
+     278,   279,   280,   284,   285,   286,   287,   288,   293,   294,
+     295,   296,   299,   302,   303,   307,   308,   312,   313,   314,
+     315,   318,   319,   320,   322,   325,   328,   334,   337,   338,
+     342,   348,   349,   351,   354,   355,   361,   364,   365,   368,
+     372,   373,   381,   382,   383,   384,   386,   388,   393,   394,
+     395,   402,   406,   407,   408,   409,   410,   411,   414,   417,
+     421,   424,   427,   433,   436,   437,   438,   439,   440,   441,
+     442,   443,   444,   445,   446,   447,   448,   449,   450,   451,
+     452,   453,   454,   455,   456,   457,   458,   459,   460,   461,
+     462,   465,   466,   469,   470,   473,   474,   477,   478,   482,
+     483,   486,   487,   490,   491,   494,   495,   496,   497,   498,
+     499,   500,   503,   504,   507,   508,   511,   512,   515,   518,
+     519,   522,   526,   530,   531,   532,   533,   534,   535,   536,
+     537,   538,   539,   540,   541,   547,   556,   557,   558,   563,
+     569,   570,   571,   578,   583,   584,   585,   586,   587,   588,
+     589,   590,   602,   604,   605,   606,   607,   608,   609,   610,
+     613,   614,   617,   618,   621,   622,   626,   643,   649,   665,
+     670,   671,   672,   675,   676,   677,   678,   681,   682,   683,
+     684,   685,   686,   687,   688,   691,   694,   699,   703,   707,
+     709,   711,   716,   717,   721,   722,   723,   726,   727,   730,
+     731,   732,   733,   734,   735,   736,   737,   741,   747,   748,
+     749,   752,   753,   757,   758,   759,   760,   761,   762,   763,
+     767,   773,   774,   777,   778,   781,   784,   800,   801,   802,
+     803,   804,   805,   806,   807,   808,   809,   810,   811,   812,
+     813,   814,   815,   816,   817,   818,   819,   820,   823,   826,
+     831,   832,   833,   834,   835,   836,   837,   838,   839,   840,
+     841,   842,   843,   844,   845,   846,   849,   850,   851,   854,
+     855,   856,   857,   858,   861,   862,   863,   864,   865,   866,
+     867,   868,   869,   870,   871,   872,   873,   874,   875,   876,
+     877,   880,   884,   885,   888,   889,   890,   891,   893,   896,
+     897,   898,   899,   900,   901,   902,   903,   904,   905,   906,
+     916,   926,   928,   931,   938,   939,   944,   950,   951,   953,
+     974,   977,   981,   984,   985,   988,   989,   990,   994,   999,
+    1000,  1001,  1002,  1006,  1007,  1009,  1013,  1017,  1022,  1026,
+    1030,  1031,  1032,  1037,  1040,  1041,  1044,  1045,  1046,  1049,
+    1050,  1053,  1054,  1057,  1058,  1063,  1064,  1065,  1066,  1073,
+    1080,  1087,  1094,  1102,  1110,  1111,  1112,  1113,  1114,  1115,
+    1119,  1122,  1124,  1126,  1128,  1130,  1132,  1134,  1136,  1138,
+    1140,  1142,  1144,  1146,  1148,  1150,  1152,  1154,  1156,  1160,
+    1163,  1164,  1167,  1168,  1172,  1173,  1174,  1179,  1180,  1181,
+    1183,  1185,  1187,  1188,  1189,  1193,  1197,  1201,  1205,  1209,
+    1213,  1217,  1221,  1225,  1229,  1233,  1237,  1241,  1245,  1249,
+    1253,  1257,  1261,  1268,  1269,  1271,  1275,  1276,  1278,  1282,
+    1283,  1287,  1288,  1291,  1292,  1295,  1296,  1299,  1300,  1304,
+    1305,  1306,  1310,  1311,  1312,  1314,  1318,  1319,  1323,  1329,
+    1332,  1335,  1338,  1341,  1344,  1347,  1355,  1358,  1361,  1364,
+    1367,  1370,  1373,  1377,  1378,  1379,  1380,  1381,  1382,  1383,
+    1384,  1393,  1394,  1395,  1402,  1410,  1418,  1424,  1430,  1436,
+    1440,  1441,  1443,  1445,  1449,  1455,  1458,  1459,  1460,  1461,
+    1462,  1466,  1467,  1470,  1471,  1474,  1475,  1479,  1480,  1483,
+    1484,  1487,  1488,  1489,  1493,  1494,  1495,  1496,  1497,  1498,
+    1499,  1500,  1503,  1509,  1516,  1517,  1520,  1521,  1522,  1523,
+    1527,  1528,  1535,  1541,  1543,  1546,  1548,  1549,  1551,  1553,
+    1554,  1555,  1556,  1557,  1558,  1559,  1560,  1561,  1562,  1563,
+    1564,  1565,  1566,  1567,  1568,  1569,  1571,  1573,  1578,  1583,
+    1586,  1588,  1590,  1591,  1592,  1593,  1594,  1596,  1598,  1600,
+    1601,  1603,  1606,  1610,  1611,  1612,  1613,  1615,  1616,  1617,
+    1618,  1619,  1620,  1621,  1622,  1625,  1626,  1629,  1630,  1631,
+    1632,  1633,  1634,  1635,  1636,  1637,  1638,  1639,  1640,  1641,
+    1642,  1643,  1644,  1645,  1646,  1647,  1648,  1649,  1650,  1651,
+    1652,  1653,  1654,  1655,  1656,  1657,  1658,  1659,  1660,  1661,
+    1662,  1663,  1664,  1665,  1666,  1667,  1668,  1669,  1670,  1671,
+    1672,  1673,  1674,  1675,  1676,  1677,  1681,  1687,  1688,  1689,
+    1690,  1691,  1692,  1693,  1694,  1695,  1697,  1699,  1706,  1713,
+    1719,  1725,  1740,  1755,  1756,  1757,  1758,  1759,  1760,  1761,
+    1764,  1765,  1766,  1767,  1768,  1769,  1770,  1771,  1772,  1773,
+    1774,  1775,  1776,  1777,  1778,  1779,  1780,  1781,  1784,  1785,
+    1788,  1789,  1790,  1791,  1794,  1798,  1800,  1802,  1803,  1804,
+    1806,  1815,  1816,  1817,  1820,  1823,  1828,  1829,  1833,  1834,
+    1837,  1840,  1841,  1844,  1847,  1850,  1853,  1857,  1863,  1869,
+    1875,  1883,  1884,  1885,  1886,  1887,  1888,  1889,  1890,  1891,
+    1892,  1893,  1894,  1895,  1896,  1897,  1901,  1902,  1905,  1908,
+    1910,  1913,  1915,  1919,  1922,  1926,  1929,  1933,  1936,  1942,
+    1944,  1947,  1948,  1951,  1952,  1955,  1958,  1961,  1962,  1963,
+    1964,  1965,  1966,  1967,  1968,  1969,  1970,  1973,  1974,  1977,
+    1978,  1979,  1982,  1983,  1986,  1987,  1989,  1990,  1991,  1992,
+    1995,  1998,  2001,  2004,  2006,  2010,  2011,  2014,  2015,  2016,
+    2017,  2020,  2023,  2026,  2027,  2028,  2029,  2030,  2031,  2032,
+    2033,  2034,  2035,  2038,  2039,  2042,  2043,  2044,  2045,  2047,
+    2049,  2050,  2053,  2054,  2058,  2059,  2060,  2063,  2064,  2067,
+    2068,  2069,  2070
 };
 #endif
 
@@ -1490,7 +1494,7 @@ static const char *const yytname[] =
   "SEALED_", "NESTED_", "ABSTRACT_", "AUTO_", "SEQUENTIAL_", "EXPLICIT_",
   "ANSI_", "UNICODE_", "AUTOCHAR_", "IMPORT_", "ENUM_", "VIRTUAL_",
   "NOINLINING_", "AGGRESSIVEINLINING_", "NOOPTIMIZATION_",
-  "AGGRESSIVEOPTIMIZATION_", "UNMANAGEDEXP_", "BEFOREFIELDINIT_",
+  "AGGRESSIVEOPTIMIZATION_", "UNMANAGEDEXP_", "BEFOREFIELDINIT_", "ASYNC_",
   "STRICT_", "RETARGETABLE_", "WINDOWSRUNTIME_", "NOPLATFORM_", "METHOD_",
   "FIELD_", "PINNED_", "MODREQ_", "MODOPT_", "SERIALIZABLE_", "PROPERTY_",
   "TYPE_", "ASSEMBLY_", "FAMANDASSEM_", "FAMORASSEM_", "PRIVATESCOPE_",
@@ -1574,12 +1578,12 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-1367)
+#define YYPACT_NINF (-1345)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF (-559)
+#define YYTABLE_NINF (-575)
 
 #define yytable_value_is_error(Yyn) \
   0
@@ -1588,165 +1592,167 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-   -1367,  2062, -1367, -1367,   -51,   987, -1367,   -86,   123,  2317,
-    2317, -1367, -1367,   246,   182,   -31,   -19,    16,   105, -1367,
-     133,   272,   272,   215,   215,  1641,     9, -1367,   987,   987,
-     987,   987, -1367, -1367,   315, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367,   320,   320, -1367, -1367, -1367, -1367,   320,    74,
-   -1367,   285,   103, -1367, -1367, -1367, -1367,   729, -1367,   320,
-     272, -1367, -1367,   116,   144,   167,   169, -1367, -1367, -1367,
-   -1367, -1367,   191,   272, -1367, -1367, -1367,   368, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367,  1929,    43,    58, -1367, -1367,   181,   195,
-   -1367, -1367,   824,   502,   502,  1825,   166, -1367,  2925, -1367,
-   -1367,   202,   272,   272,   238, -1367,   620,   849,   987,   191,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,  2925,
-   -1367, -1367, -1367,   894, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367,   589, -1367,   418,   589,
-     378, -1367,  2339, -1367, -1367, -1367,    67,    50,   191,   373,
-     387, -1367,   404,  1377,   414,   254,   745, -1367,   589,    45,
-     191,   191,   191, -1367, -1367,   282,   579,   301,   314, -1367,
-    3481,  1929,   557, -1367,  3653,  2269,   335,    17,    93,   276,
-     281,   291,   317,   347,   782,   358, -1367, -1367,   320,   359,
-      61, -1367, -1367, -1367, -1367,  1130,   987,   385,  2715,   380,
-      95, -1367,   502, -1367,   330,   926, -1367,   402,   -11,   413,
-     664,   272,   272, -1367, -1367, -1367, -1367, -1367, -1367,   432,
-   -1367, -1367,    91,  1273, -1367,   447, -1367, -1367,    69,   620,
-   -1367, -1367, -1367, -1367,   533, -1367, -1367, -1367, -1367,   191,
-   -1367, -1367,   -34,   191,   926, -1367, -1367, -1367, -1367, -1367,
-     589, -1367,   741, -1367, -1367, -1367, -1367,  1582,   987,   483,
-       4,   523,   472,   191, -1367,   987,   987,   987, -1367,  2925,
-     987,   987, -1367,   507,   536,   987,    68,  2925, -1367, -1367,
-     490,   589,   413, -1367, -1367, -1367, -1367,  2862,   539, -1367,
-   -1367, -1367, -1367, -1367, -1367,   803, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,  -135,
-   -1367,  1929, -1367,  3003,   543, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367,   562, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,   272, -1367,
-     272, -1367, -1367, -1367,   272,   529,    11,  1999, -1367, -1367,
-   -1367,   537, -1367, -1367,   -44, -1367, -1367, -1367, -1367,   546,
-     208, -1367, -1367,   503,   272,   215,   296,   503,  1377,   985,
-    1929,   171,   502,  1825,   582,   320, -1367, -1367, -1367,   588,
-     272,   272, -1367,   272, -1367,   272, -1367,   215, -1367,   303,
-   -1367,   303, -1367, -1367,   559,   594,   368,   596, -1367, -1367,
-   -1367,   272,   272,   954,  3164,  1071,   581, -1367, -1367, -1367,
-     868,   191,   191, -1367,   599, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,   607,    56,
-   -1367,   987,    44,  2925,   905,   629, -1367,  2093, -1367,   923,
-     641,   651,   655,  1377, -1367, -1367,   413, -1367, -1367,    85,
-      38,   654,   937, -1367, -1367,   763,    -4, -1367,   987, -1367,
-   -1367,    38,   955,   107,   987,   987,   987,   191, -1367,   191,
-     191,   191,  1433,   191,   191,  1929,  1929,   191, -1367, -1367,
-     940,   -62, -1367,   674,   690,   926, -1367, -1367, -1367,   272,
-   -1367, -1367, -1367, -1367, -1367, -1367,   222, -1367,   691, -1367,
-     874, -1367, -1367, -1367,   272,   272, -1367,    25,  2162, -1367,
-   -1367, -1367, -1367,   702, -1367, -1367,   707,   714, -1367, -1367,
-   -1367, -1367,   715,   272,   905,  2819, -1367, -1367,   712,   272,
-     111,   137,   272,   502,  1000, -1367,   735,   100,  2432, -1367,
-    1929, -1367, -1367, -1367,   546,    28,   208,    28,    28,    28,
-     968,   973, -1367, -1367, -1367, -1367, -1367, -1367,   743,   750,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,  1582,
-   -1367,   753,   413,   320,  2925, -1367,   503,   751,   905,   756,
-     749,   757,   761,   762,   765,   766, -1367,   782,   767, -1367,
-     755,    55,   862,   785,    21,    82, -1367, -1367, -1367, -1367,
-   -1367, -1367,   320,   320, -1367,   786,   788, -1367,   320, -1367,
-     320, -1367,   792,    73,   987,   876, -1367, -1367, -1367, -1367,
-     987,   877, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367,   272,  3377,     8,   121,   987,  1085,    27,   798,
-     806, -1367,   675,   802,   810,   809, -1367,  1100, -1367, -1367,
-     825,   836,  3058,  2874,   839,   840,   575,   996,   320,   987,
-     191,   987,   987,   254,   254,   254,   846,   848,   850,   272,
-     146, -1367, -1367,  2925,   854,   847, -1367, -1367, -1367, -1367,
-   -1367, -1367,   222,   125,   843,  1929,  1929,  1741,   752, -1367,
-   -1367,  1130,   142,   164,   502,  1139, -1367, -1367, -1367,  2516,
-   -1367,   864,     1,  2005,   209,   426,   272,   873,   272,   191,
-     272,   237,   878,  2925,   575,   100, -1367,  2819,   866,   881,
-   -1367, -1367, -1367, -1367,   503, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367,   368,   272,   272,   215,    38,  1144,   905,
-     883,   871,   887,   888,   893, -1367,   225,   884, -1367,   884,
-     884,   884,   884,   884, -1367, -1367,   272, -1367,   272,   272,
-     889, -1367, -1367,   886,   899,   413,   902,   907,   910,   913,
-     915,   918,   272,   987, -1367,   191,   987,    15,   987,   919,
-   -1367, -1367, -1367,   791, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367,   914,   976,   981, -1367,
-     974,   925,    -7,  1199, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367,   914,   914, -1367,  2977, -1367, -1367,
-   -1367, -1367,   927,   320,   149,   368,   932,   987,   486, -1367,
-     905,   933,   935,   944, -1367,  2093, -1367,    92, -1367,   355,
-     365,   941,   375,   381,   388,   395,   403,   411,   417,   419,
-     425,   434,   439,   441,   449, -1367,  1230, -1367,   320, -1367,
-     272,   942,   100,   100,   191,   654, -1367, -1367,   368, -1367,
-   -1367, -1367,   939,   191,   191,   254,   100, -1367, -1367, -1367,
-   -1367,   926, -1367,   272, -1367,  1929,   374,   987, -1367, -1367,
-    1046, -1367, -1367,   470,   987, -1367, -1367,  2925,   191,   272,
-     191,   272,   481,  2925,   575,  3138,   870,  1533, -1367,  1129,
-   -1367,   905,  2196,   951, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367,   943,   948, -1367,   956,   957,   967,
-     969,   953,   575, -1367,  1117,   970,   971,  1929,   932,  1582,
-   -1367,   977,   426, -1367,  1251,  1211,  1212, -1367, -1367,   990,
-     992,   987,   476, -1367,   100,   503,   503, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367,    66,  1268, -1367, -1367,    21,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367,   993,   254,   191,
-     272,   191, -1367, -1367, -1367, -1367, -1367, -1367,  1033, -1367,
-   -1367, -1367, -1367,   905,  1005,  1008, -1367, -1367, -1367, -1367,
-   -1367,   879, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-     363, -1367,    31,    78, -1367, -1367,  2281, -1367,   997, -1367,
-   -1367,   413, -1367,  1004, -1367, -1367, -1367, -1367,  1001, -1367,
-   -1367, -1367, -1367,   413,   780,   272,   272,   272,   485,   500,
-     509,   527,   272,   272,   272,   272,   272,   272,   215,   272,
-     633,   272,   555,   272,   272,   272,   272,   272,   272,   272,
-     215,   272,  3468,   272,   189,   272,   497,   272, -1367, -1367,
-   -1367,  3236,  1012,  1013, -1367,  1018,  1022,  1024,  1025, -1367,
-    1154,  1026,  1028,  1032,  1036, -1367,   222, -1367,   374,  1377,
-   -1367,   191,    56,  1030,  1031,  1929,  1582,  1076, -1367,  1377,
-    1377,  1377,  1377, -1367, -1367, -1367, -1367, -1367, -1367,  1377,
-    1377,  1377, -1367, -1367, -1367, -1367, -1367, -1367, -1367,   413,
-   -1367,   272,   430,   722, -1367, -1367, -1367, -1367,  3377,  1037,
-     368, -1367,  1040, -1367, -1367,  1317, -1367,   368, -1367,   368,
-     272, -1367, -1367,   191, -1367,  1045, -1367, -1367, -1367,   272,
-   -1367,  1042, -1367, -1367,  1049,   619,   272,   272, -1367, -1367,
-   -1367, -1367, -1367, -1367,   905,  1048, -1367, -1367,   272, -1367,
-     -39,  1054,  1055,  1041,  1056,  1065,  1066,  1068,  1069,  1072,
-    1074,  1077,  1078,  1079, -1367,   413, -1367, -1367,   272,   742,
-   -1367,   794,  1080,  1082,  1075,  1086,  1083,   272,   272,   272,
-     272,   272,   272,   215,   272,  1089,  1088,  1101,  1096,  1103,
-    1102,  1104,  1105,  1107,  1110,  1108,  1111,  1113,  1121,  1114,
-    1122,  1128,  1127,  1132,  1131,  1133,  1141,  1134,  1143,  1148,
-    1149,  1146,  1152,  1367,  1155,  1153, -1367,   531, -1367,   168,
-   -1367, -1367,  1099, -1367, -1367,   100,   100, -1367, -1367, -1367,
-   -1367,  1929, -1367, -1367,   643, -1367,  1159, -1367,  1439,   502,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367,  2405,  1171, -1367,
-   -1367, -1367, -1367,  1172,  1183, -1367,  1929,   575, -1367, -1367,
-   -1367, -1367,  1470,    21,   272,   905,  1180,  1182,   413, -1367,
-    1184,   272, -1367,  1188,  1191,  1194,  1195,  1196,  1187,  1192,
-    1201,  1202,  1260, -1367, -1367, -1367,  1213, -1367,  1216,  1210,
-    1207,  1223,  1220,  1228,  1225,  1232,  1226, -1367,  1234, -1367,
-    1235, -1367,  1236, -1367,  1237, -1367, -1367,  1238, -1367, -1367,
-    1239, -1367,  1240, -1367,  1241, -1367,  1254, -1367,  1255, -1367,
-    1261, -1367, -1367,  1263, -1367,  1259, -1367,  1265,  1552, -1367,
-    1262,   535, -1367,  1267,  1269, -1367,   100,  1929,   575,  2925,
-   -1367, -1367, -1367,   100, -1367,  1266, -1367,  1264,  1270,   266,
-   -1367,  3447, -1367,  1271, -1367,   272,   272,   272, -1367, -1367,
-   -1367, -1367, -1367,  1274, -1367,  1275, -1367,  1278, -1367,  1280,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367,  3468, -1367, -1367,  1281,
-   -1367,  1266,  1582,  1286,  1277,  1288, -1367,    21, -1367,   905,
-   -1367,   149, -1367,  1289,  1290,  1291,   176,    57, -1367, -1367,
-   -1367, -1367,    83,    87,   101,   170,   175,   179,   106,   109,
-     162,   173,  1881,   148,   477, -1367,   932,  1295,  1544, -1367,
-     100, -1367,   635, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-     205,   206,   212,   193, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367,  1583, -1367, -1367,
-   -1367,   100,   575,  2387,  1301,   905, -1367, -1367, -1367, -1367,
-   -1367,  1302,  1305,  1306, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-     505,  1346,   100,   272, -1367,  1504,  1320,  1321,   502, -1367,
-   -1367,  2925,  1582,  1593,   575,  1266,  1327,   100,  1331, -1367
+   -1345,  1188, -1345, -1345,   -80,  5281, -1345,   -75,    61,  2078,
+    2078, -1345, -1345,   240,   223,   -67,   -30,   -20,    50, -1345,
+    4471,   275,   275,   141,   141,  1282,   -16, -1345,  5281,  5281,
+    5281,  5281, -1345, -1345,   293, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345,   290,   290, -1345, -1345, -1345, -1345,   290,    15,
+   -1345,   294,    89, -1345, -1345, -1345, -1345,   129, -1345,   290,
+     275, -1345, -1345,    97,   107,   130,   135, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345,   128,   275, -1345,
+   -1345, -1345,  4538, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,  2294,    33,
+      99, -1345, -1345,   168,   175, -1345, -1345,   451,   132,   132,
+    2151,   180, -1345,  4333, -1345, -1345,   207,   275,   275,  4880,
+   -1345,  4826,  5140,  5281,   128, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345,  4333, -1345, -1345, -1345,   614, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345,  3190, -1345,   453,  3190,   164, -1345,  3628, -1345, -1345,
+   -1345,   885,   733,   128,   377,   394, -1345,   397,  1446,   415,
+     214,   359, -1345,  3190,    64,   128,   128,   128, -1345, -1345,
+     261,   553,   274,   281, -1345,  5035,  2294,   537, -1345,  5380,
+    3613,   299,    62,    86,    94,   162,   169,   186,   317,   178,
+     322, -1345, -1345,   290,   324,    42, -1345, -1345, -1345, -1345,
+    5130,  5281,   323,  4163,   334,  2832, -1345,   132, -1345,   -13,
+     221, -1345,   360,   -33,   365,   660,   275,   275, -1345, -1345,
+   -1345, -1345, -1345, -1345,   374, -1345, -1345,    57,   164,  1535,
+   -1345,   382, -1345, -1345,   -45,  4826, -1345, -1345, -1345,    31,
+     472, -1345, -1345, -1345, -1345,   128, -1345, -1345,   -53,   128,
+     221, -1345, -1345, -1345, -1345, -1345,  3190, -1345,   663, -1345,
+   -1345, -1345, -1345,  1843,  5281,   401,  -146,   413,  5238,   128,
+   -1345,  5281,  5281,  5281, -1345,  4333,  5281,  5281, -1345,   422,
+     424,  5281,    38,  4333, -1345, -1345,   430,  3190,   365, -1345,
+   -1345, -1345, -1345,  4271,   434, -1345, -1345, -1345, -1345, -1345,
+   -1345,   416, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345,  -102, -1345,  2294, -1345,  4502,
+     441, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,   445, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345,   275, -1345,   275, -1345, -1345, -1345,
+     275,   426,   -54,  2452, -1345, -1345, -1345,   439, -1345, -1345,
+     -78, -1345, -1345, -1345, -1345,   531,  2286, -1345, -1345,  2587,
+     275,   141,   108,  2587,  1446,  3572,  2294,   140,   132,  2151,
+     449,   290, -1345, -1345, -1345,   454,   275,   275, -1345,   275,
+   -1345,   275, -1345,   141, -1345,   138, -1345,   138, -1345, -1345,
+     466,   458,  4538,   464, -1345, -1345, -1345,   275,   275,  1460,
+    1144,  1632,  2147, -1345, -1345, -1345,   721,   128,   128, -1345,
+     473, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345,   474,  2431, -1345,  5281,   -86,  4333,
+     755,   481, -1345,  2595, -1345,   765,   482,   478,   489,  1446,
+   -1345, -1345,   365, -1345, -1345,  2850,    46,   476,   769, -1345,
+   -1345,   581,   -51, -1345,  5281, -1345, -1345,    46,   772,   -29,
+    5281,  5281,  5281,   128, -1345,   128,   128,   128,  1685,   128,
+     128,  2294,  2294,   128, -1345, -1345,   775,   -81, -1345,   490,
+     506,   221, -1345, -1345, -1345,   275, -1345, -1345, -1345, -1345,
+   -1345, -1345,   187, -1345,   507, -1345,   690, -1345, -1345, -1345,
+     275,   275, -1345,   -35,  2753, -1345, -1345, -1345, -1345,   516,
+   -1345, -1345,   518,   523, -1345, -1345, -1345, -1345,   525,   275,
+     755,  3989, -1345, -1345,   513,   275,   892,  3285,   275,   132,
+     804, -1345,   529,    79,  3795, -1345,  2294, -1345, -1345, -1345,
+     531,    13,  2286,    13,    13,    13,   768,   776, -1345, -1345,
+   -1345, -1345, -1345, -1345,   536,   551, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345,  1843, -1345,   552,   365,   290,
+    4333, -1345,  2587,   555,   755,   556,   548,   557,   558,   560,
+     571,   573, -1345,   178,   574, -1345,   545,    43,   645,   575,
+      29,    34, -1345, -1345, -1345, -1345, -1345, -1345,   290,   290,
+   -1345,   577,   578, -1345,   290, -1345,   290, -1345,   582,    59,
+    5281,   656, -1345, -1345, -1345, -1345,  5281,   662, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,   275,  4789,
+      -1,   -27,  5281,   477,    21,   583,   587, -1345,  3274,   584,
+     593,   592, -1345,   878, -1345, -1345,   589,   597,  4479,  4278,
+     594,   600,  5184,   633,   290,  5281,   128,  5281,  5281,   214,
+     214,   214,   601,   596,   603,   275,   176, -1345, -1345,  4333,
+     605,   607, -1345, -1345, -1345, -1345, -1345, -1345,   187,  3976,
+     606,  2294,  2294,  1993,   739, -1345, -1345,  5130,  3292,  3387,
+     132,   886, -1345, -1345, -1345,  3969, -1345,   611,    -3,   467,
+     188,   404,   275,   609,   275,   128,   275,  -100,   612,  4333,
+    5184,    79, -1345,  3989,   615,   624, -1345, -1345, -1345, -1345,
+    2587, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,  4538,
+     275,   275,   141,    46,   900,   755,   625,   460,   627,   629,
+     631, -1345,    24,   632, -1345,   632,   632,   632,   632,   632,
+   -1345, -1345,   275, -1345,   275,   275,   635, -1345, -1345,   628,
+     638,   365,   640,   641,   639,   643,   644,   646,   275,  5281,
+   -1345,   128,  5281,    16,  5281,   647, -1345, -1345, -1345,   519,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345,   649,   698,   713, -1345,   702,   670,   -64,   929,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+     649,   649, -1345,  4385, -1345, -1345, -1345, -1345,   661,   290,
+      18,  4538,   668,  5281,  2960, -1345,   755,   679,   674,   693,
+   -1345,  2595, -1345,    65, -1345,   210,   224,   793,   238,   241,
+     254,   264,   265,   300,   311,   312,   338,   353,   354,   355,
+     368, -1345,   954, -1345,   290, -1345,   275,   687,    79,    79,
+     128,   476, -1345, -1345,  4538, -1345, -1345, -1345,   694,   128,
+     128,   214,    79, -1345, -1345, -1345, -1345,   221, -1345,   275,
+   -1345,  2294,   -60,  5281, -1345, -1345,   795, -1345, -1345,   105,
+    5281, -1345, -1345,  4333,   128,   275,   128,   275,    48,  4333,
+    5184,  4554,  1324,  1940, -1345,  2711, -1345,   755,   493,   703,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+     696,   730, -1345,   697,   707,   725,   735,   742,  5184, -1345,
+     901,   740,   743,  2294,   668,  1843, -1345,   748,   404, -1345,
+    1019,   983,   984, -1345, -1345,   754,   756,  5281,    84, -1345,
+      79,  2587,  2587, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345,    44,  1043, -1345, -1345,    29, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345,   757,   214,   128,   275,   128, -1345, -1345,
+   -1345, -1345, -1345, -1345,   818, -1345, -1345, -1345, -1345,   755,
+     774,   779, -1345, -1345, -1345, -1345, -1345,   706, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345,   143, -1345,    27,    51,
+   -1345, -1345,  3441, -1345,   780, -1345, -1345,   365, -1345,   784,
+   -1345, -1345, -1345, -1345,   791, -1345, -1345, -1345, -1345,   365,
+     378,   275,   275,   275,   384,   385,   390,   396,   275,   275,
+     275,   275,   275,   275,   141,   275,   565,   275,   562,   275,
+     275,   275,   275,   275,   275,   275,   141,   275,  3528,   275,
+     127,   275,  3090,   275, -1345, -1345, -1345,  5362,   778,   782,
+   -1345,   787,   788,   796,   797, -1345,   921,   794,   801,   803,
+     800, -1345,   187, -1345,   -60,  1446, -1345,   128,  2431,   802,
+     805,  2294,  1843,   844, -1345,  1446,  1446,  1446,  1446, -1345,
+   -1345, -1345, -1345, -1345, -1345,  1446,  1446,  1446, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345,   365, -1345,   275,   336,   486,
+   -1345, -1345, -1345, -1345,  4789,   806,  4538, -1345,   811, -1345,
+   -1345,  1087, -1345,  4538, -1345,  4538,   275, -1345, -1345,   128,
+   -1345,   813, -1345, -1345, -1345,   275, -1345,   810, -1345, -1345,
+     812,   406,   275,   275, -1345, -1345, -1345, -1345, -1345, -1345,
+     755,   828, -1345, -1345,   275, -1345,   -71,   821,   843,   816,
+     847,   849,   851,   852,   854,   855,   857,   859,   860,   861,
+   -1345,   365, -1345, -1345,   275,   233, -1345,   745,   866,   863,
+     864,   865,   867,   275,   275,   275,   275,   275,   275,   141,
+     275,   869,   872,   870,   873,   879,   874,   880,   877,   887,
+     888,   881,   889,   890,   882,   891,   893,   896,   894,   899,
+     898,   903,   902,   904,   905,   907,   908,   909,   911,  1152,
+     912,   913, -1345,  3111, -1345,  3450, -1345, -1345,   910, -1345,
+   -1345,    79,    79, -1345, -1345, -1345, -1345,  2294, -1345, -1345,
+     417, -1345,   918, -1345,  1170,   132, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345,   960,   919, -1345, -1345, -1345, -1345,   922,
+     868, -1345,  2294,  5184, -1345, -1345, -1345, -1345,  1193,    29,
+     275,   755,   917,   920,   365, -1345,   923,   275, -1345,   924,
+     926,   927,   931,   928,   925,   930,   939,   934,   975, -1345,
+   -1345, -1345,   932, -1345,   936,   950,   947,   952,   949,   956,
+     953,   958,   955, -1345,   972, -1345,   973, -1345,   974, -1345,
+     976, -1345, -1345,   986, -1345, -1345,   987, -1345,   988, -1345,
+     989, -1345,   990, -1345,   991, -1345,   997, -1345, -1345,   998,
+   -1345,  1000, -1345,   999,  1242, -1345,   970,   189, -1345,  1001,
+    1003, -1345,    79,  2294,  5184,  4333, -1345, -1345, -1345,    79,
+   -1345,   895, -1345,  1008,  1005,    76, -1345,  4828, -1345,   979,
+   -1345,   275,   275,   275, -1345, -1345, -1345, -1345, -1345,  1012,
+   -1345,  1020, -1345,  1026, -1345,  1031, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345,  3528, -1345, -1345,  1032, -1345,   895,  1843,  1033,
+    1028,  1036, -1345,    29, -1345,   755, -1345,    18, -1345,  1038,
+    1041,  1044,     8,    68, -1345, -1345, -1345, -1345,    78,    81,
+      87,    98,    74,    71,    92,    95,   102,   100,  1034,    53,
+    2978, -1345,   668,  1037,  1320, -1345,    79, -1345,   414, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345,   106,   121,   122,   104,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345,  1340, -1345, -1345, -1345,    79,  5184,  2000,
+    1053,   755, -1345, -1345, -1345, -1345, -1345,  1058,  1062,  1067,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345,   412,  1107,    79,
+     275, -1345,  1260,  1072,  1073,   132, -1345, -1345,  4333,  1843,
+    1351,  5184,   895,  1077,    79,  1078, -1345
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -1754,213 +1760,215 @@ static const yytype_int16 yypact[] =
    means the default is an error.  */
 static const yytype_int16 yydefact[] =
 {
-       2,     0,     1,    86,   106,     0,   265,   209,   390,     0,
-       0,   760,   761,     0,   222,     0,     0,   775,   781,   838,
-      93,     0,     0,     0,     0,     0,     0,    29,     0,     0,
-       0,     0,    58,    59,     0,    61,     3,    25,    26,    27,
-      84,    85,   434,   434,    19,    17,    10,     9,   434,     0,
-     109,   136,     0,     7,   272,   336,     8,     0,    18,   434,
-       0,    11,    12,     0,     0,     0,     0,   817,    37,    40,
-      38,    39,   105,     0,   189,   391,   392,   389,   745,   746,
-     747,   748,   749,   750,   751,   752,   753,   754,   755,   756,
-     757,   758,   759,     0,     0,    34,   216,   217,     0,     0,
-     223,   224,   229,   222,   222,     0,    62,    72,     0,   220,
-     215,     0,     0,     0,     0,   781,     0,     0,     0,    94,
-      42,    20,    21,    44,    43,    23,    24,   554,   711,     0,
-     688,   696,   694,     0,   697,   698,   699,   700,   701,   702,
-     707,   708,   709,   710,   671,   695,     0,   687,     0,     0,
-       0,   492,     0,   555,   556,   557,     0,     0,   558,     0,
-       0,   236,     0,   222,     0,   552,     0,   692,    30,    53,
-      55,    56,    57,    60,   436,     0,   435,     0,     0,     2,
-       0,     0,   138,   140,   222,     0,     0,   397,   397,   397,
-     397,   397,   397,     0,     0,     0,   387,   394,   434,     0,
-     763,   791,   809,   827,   841,     0,     0,     0,     0,     0,
-       0,   553,   222,   560,   721,   563,    32,     0,     0,   723,
-       0,     0,     0,   225,   226,   227,   228,   218,   219,     0,
-      74,    73,     0,     0,   104,     0,    22,   776,   777,     0,
-     782,   783,   784,   786,     0,   787,   788,   789,   790,   780,
-     839,   840,   836,    95,   693,   703,   704,   705,   706,   670,
-       0,   673,     0,   689,   691,   234,   235,     0,     0,     0,
-       0,     0,     0,   686,   684,     0,     0,     0,   231,     0,
-       0,     0,   678,     0,     0,     0,   714,   537,   677,   676,
-       0,    30,    54,    65,   437,    69,   103,     0,     0,   112,
-     133,   110,   111,   114,   115,     0,   116,   117,   118,   119,
-     120,   121,   122,   123,   113,   132,   125,   124,   134,   148,
-     137,     0,   108,     0,     0,   278,   273,   274,   275,   276,
-     277,   281,   279,   289,   280,   282,   283,   284,   285,   286,
-     287,   288,     0,   290,   314,   493,   494,   495,   496,   497,
-     498,   499,   500,   501,   502,   503,   504,   505,     0,   372,
-       0,   335,   343,   344,     0,     0,     0,     0,   365,     6,
-     350,     0,   352,   351,     0,   337,   358,   336,   339,     0,
-       0,   345,   507,     0,     0,     0,     0,     0,   222,     0,
-       0,     0,   222,     0,     0,   434,   346,   348,   349,     0,
-       0,     0,   413,     0,   412,     0,   411,     0,   410,     0,
-     408,     0,   409,   433,     0,   396,     0,     0,   722,   772,
-     762,     0,     0,     0,     0,     0,     0,   820,   819,   818,
-       0,   815,    41,   210,     0,   196,   190,   191,   192,   193,
-     198,   199,   200,   201,   195,   202,   203,   194,     0,     0,
-     388,     0,     0,     0,     0,     0,   731,   725,   730,     0,
-      35,     0,     0,   222,    76,    70,    63,   311,   312,   714,
-     313,   535,     0,    97,   778,   774,   807,   785,     0,   672,
-     690,   233,     0,     0,     0,     0,     0,   685,   683,    51,
-      52,    50,     0,    49,   559,     0,     0,    48,   715,   674,
-     716,     0,   712,     0,   538,   539,    28,    31,     5,     0,
-     126,   127,   128,   129,   130,   131,   157,   107,   139,   143,
-       0,   106,   239,   253,     0,     0,   817,     0,     0,     4,
-     181,   182,   175,     0,   141,   171,     0,     0,   336,   172,
-     173,   174,     0,     0,   295,     0,   338,   340,     0,     0,
-       0,     0,     0,   222,     0,   347,     0,   314,     0,   382,
-       0,   380,   383,   366,   368,     0,     0,     0,     0,     0,
-       0,     0,   369,   509,   508,   510,   511,    45,     0,     0,
-     506,   513,   512,   516,   515,   517,   521,   522,   520,     0,
-     523,     0,   524,   434,     0,   528,   530,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,   393,     0,     0,   401,
-       0,   765,     0,     0,     0,     0,    13,   803,   802,   794,
-     792,   795,   434,   434,   814,     0,     0,    14,   434,   812,
-     434,   810,     0,     0,     0,     0,    15,   835,   834,   828,
-       0,     0,    16,   846,   845,   842,   821,   822,   823,   824,
-     825,   826,     0,   564,   205,     0,   561,     0,     0,     0,
-     732,    76,     0,     0,     0,   726,    33,     0,   221,   230,
-      66,     0,    79,   537,     0,     0,     0,     0,   434,     0,
-     837,     0,     0,   550,   548,   549,   677,     0,     0,   718,
-     714,   675,   682,     0,     0,     0,   152,   154,   153,   155,
-     150,   151,   157,     0,     0,     0,     0,     0,   222,   176,
-     177,     0,     0,     0,   222,     0,   140,   242,   256,     0,
-     827,     0,   295,     0,     0,   266,     0,     0,     0,   360,
-       0,     0,     0,     0,     0,   314,   545,     0,     0,   542,
-     543,   364,   381,   367,     0,   384,   374,   378,   379,   377,
-     373,   375,   376,     0,     0,     0,     0,   519,     0,     0,
-       0,     0,   533,   534,     0,   514,     0,   397,   398,   397,
-     397,   397,   397,   397,   395,   400,     0,   764,     0,     0,
-       0,   797,   796,     0,     0,   800,     0,     0,     0,     0,
-       0,     0,     0,     0,   833,   829,     0,     0,     0,     0,
-     618,   572,   573,     0,   607,   574,   575,   576,   577,   578,
-     579,   609,   585,   586,   587,   588,   619,     0,     0,   615,
-       0,     0,     0,   569,   570,   571,   594,   595,   596,   613,
-     597,   598,   599,   600,   619,   619,   603,   621,   611,   617,
-     580,   270,     0,     0,   268,     0,   207,   562,     0,   719,
-       0,     0,    38,     0,   724,   725,    36,     0,    64,     0,
+       2,     0,     1,   101,   121,     0,   280,   224,   406,     0,
+       0,   776,   777,     0,   237,     0,     0,   791,   797,   854,
+     108,     0,     0,     0,     0,     0,     0,    29,     0,     0,
+       0,     0,    73,    74,     0,    76,     3,    25,    26,    27,
+      99,   100,   450,   450,    19,    17,    10,     9,   450,     0,
+     124,   151,     0,     7,   287,   352,     8,     0,    18,   450,
+       0,    11,    12,     0,     0,     0,     0,   833,    37,    55,
+      53,    42,    38,    47,    48,    49,    50,    51,    52,    39,
+      40,    41,    43,    44,    45,    46,    54,   120,     0,   204,
+     407,   408,   405,   761,   762,   763,   764,   765,   766,   767,
+     768,   769,   770,   771,   772,   773,   774,   775,     0,     0,
+      34,   231,   232,     0,     0,   238,   239,   244,   237,   237,
+       0,    77,    87,     0,   235,   230,     0,     0,     0,     0,
+     797,     0,     0,     0,   109,    57,    20,    21,    59,    58,
+      23,    24,   570,   727,     0,   704,   712,   710,     0,   713,
+     714,   715,   716,   717,   718,   723,   724,   725,   726,   687,
+     711,     0,   703,     0,     0,    38,   508,     0,   571,   572,
+     573,     0,     0,   574,     0,     0,   251,     0,   237,     0,
+     568,     0,   708,    30,    68,    70,    71,    72,    75,   452,
+       0,   451,     0,     0,     2,     0,     0,   153,   155,   237,
+       0,     0,   413,   413,   413,   413,   413,   413,     0,     0,
+       0,   403,   410,   450,     0,   779,   807,   825,   843,   857,
+       0,     0,     0,     0,     0,     0,   569,   237,   576,   737,
+     579,    32,     0,     0,   739,     0,     0,     0,   240,   241,
+     242,   243,   233,   234,     0,    89,    88,     0,     0,     0,
+     119,     0,    22,   792,   793,     0,   798,   799,   800,   802,
+       0,   803,   804,   805,   806,   796,   855,   856,   852,   110,
+     709,   719,   720,   721,   722,   686,     0,   689,     0,   705,
+     707,   249,   250,     0,     0,     0,     0,     0,     0,   702,
+     700,     0,     0,     0,   246,     0,     0,     0,   694,     0,
+       0,     0,   730,   553,   693,   692,     0,    30,    69,    80,
+     453,    84,   118,     0,     0,   127,   148,   125,   126,   129,
+     130,     0,   131,   132,   133,   134,   135,   136,   137,   138,
+     128,   147,   140,   139,   149,   163,   152,     0,   123,     0,
+       0,   293,   288,   289,   290,   291,   292,   296,   294,   304,
+     295,   297,   298,   299,   300,   301,   302,   303,     0,   305,
+     329,   509,   510,   511,   512,   513,   514,   515,   516,   517,
+     518,   519,   520,   521,     0,   388,     0,   351,   359,   360,
+       0,     0,     0,     0,   381,     6,   366,     0,   368,   367,
+       0,   353,   374,   352,   355,     0,     0,   361,   523,     0,
+       0,     0,     0,     0,   237,     0,     0,     0,   237,     0,
+       0,   450,   362,   364,   365,     0,     0,     0,   429,     0,
+     428,     0,   427,     0,   426,     0,   424,     0,   425,   449,
+       0,   412,     0,     0,   738,   788,   778,     0,     0,     0,
+       0,     0,     0,   836,   835,   834,     0,   831,    56,   225,
+       0,   211,   205,   206,   207,   208,   213,   214,   215,   216,
+     210,   217,   218,   209,     0,     0,   404,     0,     0,     0,
+       0,     0,   747,   741,   746,     0,    35,     0,     0,   237,
+      91,    85,    78,   326,   327,   730,   328,   551,     0,   112,
+     794,   790,   823,   801,     0,   688,   706,   248,     0,     0,
+       0,     0,     0,   701,   699,    66,    67,    65,     0,    64,
+     575,     0,     0,    63,   731,   690,   732,     0,   728,     0,
+     554,   555,    28,    31,     5,     0,   141,   142,   143,   144,
+     145,   146,   172,   122,   154,   158,     0,   121,   254,   268,
+       0,     0,   833,     0,     0,     4,   196,   197,   190,     0,
+     156,   186,     0,     0,   352,   187,   188,   189,     0,     0,
+     310,     0,   354,   356,     0,     0,     0,     0,     0,   237,
+       0,   363,     0,   329,     0,   398,     0,   396,   399,   382,
+     384,     0,     0,     0,     0,     0,     0,     0,   385,   525,
+     524,   526,   527,    60,     0,     0,   522,   529,   528,   532,
+     531,   533,   537,   538,   536,     0,   539,     0,   540,   450,
+       0,   544,   546,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,   409,     0,     0,   417,     0,   781,     0,     0,
+       0,     0,    13,   819,   818,   810,   808,   811,   450,   450,
+     830,     0,     0,    14,   450,   828,   450,   826,     0,     0,
+       0,     0,    15,   851,   850,   844,     0,     0,    16,   862,
+     861,   858,   837,   838,   839,   840,   841,   842,     0,   580,
+     220,     0,   577,     0,     0,     0,   748,    91,     0,     0,
+       0,   742,    33,     0,   236,   245,    81,     0,    94,   553,
+       0,     0,     0,     0,   450,     0,   853,     0,     0,   566,
+     564,   565,   693,     0,     0,   734,   730,   691,   698,     0,
+       0,     0,   167,   169,   168,   170,   165,   166,   172,     0,
+       0,     0,     0,     0,   237,   191,   192,     0,     0,     0,
+     237,     0,   155,   257,   271,     0,   843,     0,   310,     0,
+       0,   281,     0,     0,     0,   376,     0,     0,     0,     0,
+       0,   329,   561,     0,     0,   558,   559,   380,   397,   383,
+       0,   400,   390,   394,   395,   393,   389,   391,   392,     0,
+       0,     0,     0,   535,     0,     0,     0,     0,   549,   550,
+       0,   530,     0,   413,   414,   413,   413,   413,   413,   413,
+     411,   416,     0,   780,     0,     0,     0,   813,   812,     0,
+       0,   816,     0,     0,     0,     0,     0,     0,     0,     0,
+     849,   845,     0,     0,     0,     0,   634,   588,   589,     0,
+     623,   590,   591,   592,   593,   594,   595,   625,   601,   602,
+     603,   604,   635,     0,     0,   631,     0,     0,     0,   585,
+     586,   587,   610,   611,   612,   629,   613,   614,   615,   616,
+     635,   635,   619,   637,   627,   633,   596,   285,     0,     0,
+     283,     0,   222,   578,     0,   735,     0,     0,    53,     0,
+     740,   741,    36,     0,    79,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,    78,    75,   441,   434,    77,
-       0,     0,   314,   314,   313,   535,    98,    99,     0,   100,
-     101,   102,     0,   808,   232,   551,   314,   679,   680,   717,
-     713,   540,   135,     0,   158,   144,   161,     0,   149,   142,
-       0,   241,   240,   558,     0,   255,   254,     0,   816,     0,
-     184,     0,     0,     0,     0,     0,     0,     0,   167,     0,
-     291,     0,     0,     0,   302,   303,   304,   305,   297,   298,
-     299,   296,   300,   301,     0,     0,   294,     0,     0,     0,
-       0,     0,     0,   355,   353,     0,     0,     0,   207,     0,
-     356,     0,   266,   341,   314,     0,     0,   370,   371,     0,
-       0,     0,     0,   526,   314,   530,   530,   529,   399,   407,
-     406,   405,   404,   402,   403,   769,   767,   793,   804,     0,
-     806,   798,   801,   779,   805,   811,   813,     0,   830,   831,
-       0,   844,   204,   608,   581,   582,   583,   584,     0,   604,
-     610,   612,   616,     0,     0,     0,   614,   601,   602,   625,
-     626,     0,   653,   627,   628,   629,   630,   631,   632,   655,
-     637,   638,   639,   640,   623,   624,   645,   646,   647,   648,
-     649,   650,   651,   652,   622,   656,   657,   658,   659,   660,
-     661,   662,   663,   664,   665,   666,   667,   668,   669,   641,
-     605,   197,     0,     0,   589,   206,     0,   188,     0,   735,
-     736,   740,   738,     0,   737,   734,   733,   720,     0,    79,
-     727,    76,    71,    67,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,    82,    83,
-      81,     0,     0,     0,   536,     0,     0,     0,     0,    96,
-     777,     0,     0,     0,   145,   146,   157,   160,   161,   222,
-     187,   237,     0,     0,     0,     0,     0,     0,   168,   222,
-     222,   222,   222,   169,   250,   251,   249,   243,   248,   222,
-     222,   222,   170,   263,   264,   261,   257,   262,   178,   295,
-     293,     0,     0,     0,   315,   316,   317,   318,   564,   148,
-       0,   359,     0,   362,   363,     0,   342,   546,   544,     0,
-       0,    46,    47,   518,   525,     0,   531,   532,   768,     0,
-     766,     0,   832,   843,     0,     0,     0,     0,   654,   633,
-     634,   635,   636,   643,     0,     0,   644,   269,     0,   590,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,   440,   439,   438,   208,     0,     0,
-      79,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    93,    90,   457,   450,    92,     0,     0,   329,   329,
+     328,   551,   113,   114,     0,   115,   116,   117,     0,   824,
+     247,   567,   329,   695,   696,   733,   729,   556,   150,     0,
+     173,   159,   176,     0,   164,   157,     0,   256,   255,   574,
+       0,   270,   269,     0,   832,     0,   199,     0,     0,     0,
+       0,     0,     0,     0,   182,     0,   306,     0,     0,     0,
+     317,   318,   319,   320,   312,   313,   314,   311,   315,   316,
+       0,     0,   309,     0,     0,     0,     0,     0,     0,   371,
+     369,     0,     0,     0,   222,     0,   372,     0,   281,   357,
+     329,     0,     0,   386,   387,     0,     0,     0,     0,   542,
+     329,   546,   546,   545,   415,   423,   422,   421,   420,   418,
+     419,   785,   783,   809,   820,     0,   822,   814,   817,   795,
+     821,   827,   829,     0,   846,   847,     0,   860,   219,   624,
+     597,   598,   599,   600,     0,   620,   626,   628,   632,     0,
+       0,     0,   630,   617,   618,   641,   642,     0,   669,   643,
+     644,   645,   646,   647,   648,   671,   653,   654,   655,   656,
+     639,   640,   661,   662,   663,   664,   665,   666,   667,   668,
+     638,   672,   673,   674,   675,   676,   677,   678,   679,   680,
+     681,   682,   683,   684,   685,   657,   621,   212,     0,     0,
+     605,   221,     0,   203,     0,   751,   752,   756,   754,     0,
+     753,   750,   749,   736,     0,    94,   743,    91,    86,    82,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    89,     0,    88,     0,
-      87,   432,     0,   214,   213,   314,   314,   773,   681,   156,
-     163,     0,   162,   159,     0,   183,     0,   186,     0,   222,
-     244,   245,   246,   247,   260,   258,   259,     0,     0,   306,
-     307,   308,   309,     0,     0,   354,     0,     0,   547,   385,
-     386,   527,   771,     0,     0,     0,     0,     0,   606,   642,
-       0,     0,   591,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,   728,    68,   431,     0,   430,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,   421,     0,   420,
-       0,   419,     0,   418,     0,   416,   414,     0,   417,   415,
-       0,   429,     0,   428,     0,   427,     0,   426,     0,   447,
-       0,   443,   442,     0,   446,     0,   445,     0,     0,    91,
-       0,     0,   166,     0,     0,   147,   314,     0,     0,     0,
-     292,   310,   267,   314,   361,   164,   770,     0,     0,     0,
-     567,   564,   593,     0,   739,     0,     0,     0,   744,   729,
-     481,   477,   425,     0,   424,     0,   423,     0,   422,     0,
-     479,   477,   475,   473,   467,   470,   479,   477,   475,   473,
-     490,   483,   444,   486,    90,    92,     0,   212,   211,     0,
-     185,   164,     0,     0,     0,     0,   165,     0,   620,     0,
-     566,   568,   592,     0,     0,     0,     0,     0,   479,   477,
-     475,   473,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,    80,   207,     0,     0,   319,
-     314,   799,     0,   741,   742,   743,   463,   482,   462,   478,
-       0,     0,     0,     0,   453,   480,   452,   451,   476,   450,
-     474,   448,   469,   468,   449,   472,   471,   457,   456,   455,
-     454,   466,   491,   485,   484,   464,   487,     0,   465,   489,
-     252,   314,     0,     0,     0,     0,   461,   460,   459,   458,
-     488,     0,     0,     0,   324,   320,   329,   330,   331,   332,
-     333,   321,   322,   323,   325,   326,   327,   328,   271,   357,
-       0,     0,   314,     0,   565,     0,     0,     0,   222,   179,
-     334,     0,     0,     0,     0,   164,     0,   314,     0,   180
+       0,     0,     0,     0,    97,    98,    96,     0,     0,     0,
+     552,     0,     0,     0,     0,   111,   793,     0,     0,     0,
+     160,   161,   172,   175,   176,   237,   202,   252,     0,     0,
+       0,     0,     0,     0,   183,   237,   237,   237,   237,   184,
+     265,   266,   264,   258,   263,   237,   237,   237,   185,   278,
+     279,   276,   272,   277,   193,   310,   308,     0,     0,     0,
+     330,   331,   332,   333,   580,   163,     0,   375,     0,   378,
+     379,     0,   358,   562,   560,     0,     0,    61,    62,   534,
+     541,     0,   547,   548,   784,     0,   782,     0,   848,   859,
+       0,     0,     0,     0,   670,   649,   650,   651,   652,   659,
+       0,     0,   660,   284,     0,   606,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+     456,   455,   454,   223,     0,     0,    94,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,   104,     0,   103,     0,   102,   448,     0,   229,
+     228,   329,   329,   789,   697,   171,   178,     0,   177,   174,
+       0,   198,     0,   201,     0,   237,   259,   260,   261,   262,
+     275,   273,   274,     0,     0,   321,   322,   323,   324,     0,
+       0,   370,     0,     0,   563,   401,   402,   543,   787,     0,
+       0,     0,     0,     0,   622,   658,     0,     0,   607,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   744,
+      83,   447,     0,   446,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,   437,     0,   436,     0,   435,     0,   434,
+       0,   432,   430,     0,   433,   431,     0,   445,     0,   444,
+       0,   443,     0,   442,     0,   463,     0,   459,   458,     0,
+     462,     0,   461,     0,     0,   106,     0,     0,   181,     0,
+       0,   162,   329,     0,     0,     0,   307,   325,   282,   329,
+     377,   179,   786,     0,     0,     0,   583,   580,   609,     0,
+     755,     0,     0,     0,   760,   745,   497,   493,   441,     0,
+     440,     0,   439,     0,   438,     0,   495,   493,   491,   489,
+     483,   486,   495,   493,   491,   489,   506,   499,   460,   502,
+     105,   107,     0,   227,   226,     0,   200,   179,     0,     0,
+       0,     0,   180,     0,   636,     0,   582,   584,   608,     0,
+       0,     0,     0,     0,   495,   493,   491,   489,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    95,   222,     0,     0,   334,   329,   815,     0,   757,
+     758,   759,   479,   498,   478,   494,     0,     0,     0,     0,
+     469,   496,   468,   467,   492,   466,   490,   464,   485,   484,
+     465,   488,   487,   473,   472,   471,   470,   482,   507,   501,
+     500,   480,   503,     0,   481,   505,   267,   329,     0,     0,
+       0,     0,   477,   476,   475,   474,   504,     0,     0,     0,
+     339,   335,   344,   345,   346,   347,   348,   349,   336,   337,
+     338,   340,   341,   342,   343,   286,   373,     0,     0,   329,
+       0,   581,     0,     0,     0,   237,   194,   350,     0,     0,
+       0,     0,   179,     0,   329,     0,   195
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int16 yypgoto[] =
 {
-   -1367,  1443, -1367,  1336,   -72,    32,   -41,    -5,    10,    22,
-    -358, -1367,    13,   -18,  1603, -1367, -1367,  1166,  1243,  -640,
-   -1367,  -975, -1367,    26, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367,  -313, -1367, -1367, -1367,   916, -1367, -1367,
-   -1367,   451, -1367,   929,   498,   499, -1367, -1366,  -437, -1367,
-    -312, -1367, -1367,  -942, -1367,  -162,   -98, -1367,    35,  1613,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,   677,
-     462, -1367,  -311, -1367,  -702,  -667,  1297, -1367, -1367,  -243,
-   -1367,  -141, -1367, -1367,  1081, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367,   328,     7, -1367, -1367, -1367,  1035,  -150,
-    1586,   578,   -40,   -30,   805, -1367, -1058, -1367, -1367, -1324,
-   -1299, -1192, -1269, -1367, -1367, -1367, -1367,    23, -1367, -1367,
-   -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,
-   -1367, -1367, -1367,   -27,   768,   982, -1367,  -688, -1367,   692,
-     -22,  -405,   -74,   239,   130, -1367,   -23,   538, -1367,   984,
-       3,   811, -1367, -1367,   808, -1367, -1049, -1367,  1661, -1367,
-      36, -1367, -1367,   545,  1205, -1367,  1566, -1367, -1367,  -961,
-    1272, -1367, -1367, -1367, -1367, -1367, -1367, -1367, -1367,  1160,
-     975, -1367, -1367, -1367, -1367, -1367
+   -1345,  1179, -1345,  1081,  -106,    17,   -88,    -5,    10,    22,
+    -416, -1345,    32,   -11,  1355, -1345, -1345,   914,   982,  -642,
+   -1345,  -966, -1345,    11, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345,  -323, -1345, -1345, -1345,   664, -1345, -1345,
+   -1345,   197, -1345,   676,   245,   247, -1345, -1344,  -445, -1345,
+    -320, -1345, -1345,  -954, -1345,  -172,  -111, -1345,     3,  1374,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,   425,
+     213, -1345,  -317, -1345,  -708,  -687,  1055, -1345, -1345,  -248,
+   -1345,  -144, -1345, -1345,   824, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345,  -151,     9, -1345, -1345, -1345,   798,  -112,
+    1359,   335,   -44,     0,   559, -1345, -1094, -1345, -1345, -1322,
+   -1318, -1304, -1299, -1345, -1345, -1345, -1345,    12, -1345, -1345,
+   -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,
+   -1345, -1345, -1345,  -264,   521,   731, -1345,  -676, -1345,   443,
+      19,  -447,  -107,   -12,  -103, -1345,   -23,   287, -1345,   727,
+      20,   563, -1345, -1345,   570, -1345, -1064, -1345,  1427, -1345,
+      26, -1345, -1345,   292,   948, -1345,  1310, -1345, -1345,  -976,
+    1006, -1345, -1345, -1345, -1345, -1345, -1345, -1345, -1345,   906,
+     709, -1345, -1345, -1345, -1345, -1345
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int16 yydefgoto[] =
 {
-       0,     1,    36,   290,   658,   370,    71,   158,   782,  1520,
-     582,    38,   372,    40,    41,    42,    43,   106,   229,   671,
-     672,   876,  1121,   373,  1289,    45,    46,   677,    47,    48,
-      49,    50,    51,    52,   180,   182,   322,   323,   518,  1133,
-    1134,   517,   702,   703,   704,  1137,   907,  1465,  1466,   534,
-      53,   208,   846,  1067,    74,   107,   108,   109,   211,   230,
-     536,   707,   926,  1157,   537,   708,   927,  1166,    54,   952,
-     842,   843,    55,   184,   723,   471,   737,  1543,   374,   185,
-     375,   745,   377,   378,   563,   379,   380,   564,   565,   566,
-     567,   568,   569,   746,   381,    57,    77,   196,   414,   402,
-     415,   877,   878,   175,   176,  1237,   879,  1486,  1487,  1485,
-    1484,  1477,  1482,  1476,  1493,  1494,  1492,   212,   382,   383,
-     384,   385,   386,   387,   388,   389,   390,   391,   392,   393,
-     394,   395,   396,   764,   675,   503,   504,   738,   739,   740,
-     213,   165,   231,   844,  1009,  1060,   215,   167,   501,   502,
-     397,   664,   665,    59,   659,   660,  1074,  1075,    93,    60,
-     398,    62,   114,   475,   628,    63,   116,   423,   620,   783,
-     621,   622,   630,   623,    64,   424,   631,    65,   542,   205,
-     425,   639,    66,   117,   426,   645
+       0,     1,    36,   306,   674,   386,    86,   173,   798,  1536,
+     598,    38,   388,    40,    41,    42,    43,   121,   244,   687,
+     688,   892,  1137,   389,  1305,    45,    46,   693,    47,    48,
+      49,    50,    51,    52,   195,   197,   338,   339,   534,  1149,
+    1150,   533,   718,   719,   720,  1153,   923,  1481,  1482,   550,
+      53,   223,   862,  1083,    89,   122,   123,   124,   226,   245,
+     552,   723,   942,  1173,   553,   724,   943,  1182,    54,   968,
+     858,   859,    55,   199,   739,   487,   753,  1559,   390,   200,
+     391,   761,   393,   394,   579,   395,   396,   580,   581,   582,
+     583,   584,   585,   762,   397,    57,    92,   211,   430,   418,
+     431,   893,   894,   190,   191,  1253,   895,  1502,  1503,  1501,
+    1500,  1493,  1498,  1492,  1509,  1510,  1508,   227,   398,   399,
+     400,   401,   402,   403,   404,   405,   406,   407,   408,   409,
+     410,   411,   412,   780,   691,   519,   520,   754,   755,   756,
+     228,   180,   246,   860,  1025,  1076,   230,   182,   517,   518,
+     413,   680,   681,    59,   675,   676,  1090,  1091,   108,    60,
+     414,    62,   129,   491,   644,    63,   131,   439,   636,   799,
+     637,   638,   646,   639,    64,   440,   647,    65,   558,   220,
+     441,   655,    66,   132,   442,   661
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -1968,1021 +1976,1371 @@ static const yytype_int16 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int16 yytable[] =
 {
-      72,   278,   166,   164,    58,   227,   228,   159,    56,   885,
-     533,   535,   538,   177,    39,   119,  1184,   198,   178,   214,
-     932,   851,   219,   169,   170,   171,   172,    44,  1201,   199,
-     120,   121,   122,    37,   674,  1243,   209,    61,   404,   406,
-     408,   410,   412,   294,   376,   125,   126,   961,   163,   110,
-     216,   604,   216,   605,  1277,    68,    69,  -558,    70,   120,
-     161,    68,    69,   777,    70,   279,   120,   960,   419,   420,
-     200,   845,    68,    69,  1198,    70,   217,   120,  1000,   683,
-     684,   685,   120,   207,   744,   233,   344,   120,   498,   216,
-      68,    69,   120,    70,   120,  1497,   120,   292,   216,   216,
-      68,    69,   478,    70,  1241,   498,   254,   320,    99,   238,
-     120,   249,   252,   253,   453,   120,    68,    69,   120,    70,
-     736,   550,   235,   236,   259,  1491,    99,   261,   163,   267,
-      68,    69,   679,    70,   558,   712,    99,   931,    68,    69,
-     161,    70,    68,    69,   371,    70,   291,    68,    69,  1490,
-      70,   270,   273,   556,   198,   120,  1533,  1513,   206,   472,
-     466,   282,   283,   284,    67,   516,   498,   274,   417,    68,
-      69,   120,    70,    68,    69,   319,    70,  1488,   216,   123,
-     124,  1512,   123,   124,   120,   449,   577,    75,   123,   124,
-     577,   271,  1534,   482,  1125,  1126,    96,  1279,   110,    97,
-     431,   432,   123,   124,   193,   452,   578,   579,  1131,  1510,
-     578,   579,    73,    68,   120,   120,    70,   120,   120,  1586,
-    1014,   120,    98,    99,   123,   124,   585,   100,   470,   101,
-     690,   461,   462,  1280,   476,   474,   102,   691,   479,   572,
-    1015,  1069,  1070,    68,    69,   271,    70,   519,    76,  1483,
-     557,   684,  1341,   103,    95,  1489,   492,  1147,   591,   206,
-    1342,   695,   481,   483,   505,  1352,   111,   487,   104,   291,
-     489,   490,   491,   696,   697,   493,   494,   895,   457,   112,
-     497,   120,   488,   458,   268,  1179,  1195,  1511,   793,   206,
-     113,   698,   459,   554,   594,   719,   500,   206,   168,   551,
-      58,   206,   451,   485,    56,   123,   124,   577,   206,   552,
-      39,   400,   451,   713,   577,   401,   590,   368,   459,   592,
-     115,  1217,   173,    44,   848,   781,   540,   578,   579,    37,
-     539,   206,   174,    61,   578,   579,   531,   206,   206,   570,
-     218,   699,   573,   656,  -558,   181,   583,   778,   118,   532,
-     220,   593,  1508,   421,   286,   530,   287,   272,  1199,   541,
-     288,   289,   206,   179,   422,   597,   589,   499,   546,  1218,
-     547,   269,  1417,    68,   548,   608,    70,  1219,  1514,   784,
-     464,  1081,  1516,   663,   499,   465,  1082,   403,   998,   269,
-     571,   401,   183,   574,   575,  -541,  1517,   584,  1495,   269,
-     206,  1527,   262,   263,  1528,   201,   682,   576,   581,   728,
-     599,   600,   264,   601,   206,   602,   163,   376,   472,   905,
-     847,   687,   688,   110,   588,   749,   619,  1507,   161,   603,
-     657,   610,   611,   202,  1532,   730,   617,   617,   637,   643,
-     919,  1242,   895,  1535,   654,   237,   655,  1063,  1127,   618,
-     618,   638,   644,  1064,   715,   733,   203,  1529,   204,   947,
-     948,   949,   921,   232,   452,  1519,  1400,  1317,  1530,   260,
-    1521,  1506,   722,   680,  1524,   221,   105,    68,    69,   500,
-      70,   120,    68,    69,   206,    70,   742,   470,  1549,   222,
-     127,    68,    69,   216,    70,   120,   234,   368,   110,   127,
-    1546,  1547,    68,    69,   271,    70,  1501,  1548,    68,   275,
-     127,    70,   120,   700,  1068,   758,   459,   371,    99,   694,
-     978,  1536,   725,   276,   701,   747,   766,    99,  1537,   957,
-     206,   282,   283,   284,   709,   710,    68,    69,    99,    70,
-     277,  1282,    98,   785,   127,   729,   731,   100,  1283,   101,
-     280,  1069,  1070,   721,  1540,   762,   102,   459,  1469,   727,
-     281,  1470,   732,   760,   123,   124,   577,   198,  1319,  1320,
-     405,   761,    99,   103,   401,   407,   748,   293,   376,   401,
-      68,    69,  1398,    70,   757,   409,   578,   579,   104,   401,
-     580,   294,   786,   787,    68,    69,   295,    70,   790,     3,
-     791,   559,   127,   560,   561,   562,   763,  1403,  1404,   296,
-     917,   411,   533,   535,   538,   401,   923,   979,   321,   980,
-     981,   982,   983,   984,   454,    68,    69,   455,    70,   795,
-      99,   909,   910,   914,  1213,   797,   153,   154,   155,   399,
-     259,   413,   120,   794,   577,   153,   154,   155,   892,  1084,
-     505,   951,   416,  1085,   418,  1214,   153,   154,   155,  1086,
-    1415,  1215,   799,  1087,   578,   579,  1136,   206,  1216,  1092,
-     901,   884,   460,  1093,   893,  1094,   894,   450,   371,  1095,
-      68,    69,  1096,   852,   433,   875,  1097,   972,   127,  1098,
-     153,   154,   155,  1099,   467,   468,   456,  1100,   906,   899,
-     500,  1101,   913,   965,   459,  1102,   918,   920,   922,  1103,
-     959,  1104,   967,  1106,   962,  1105,    99,  1107,  1459,  1108,
-     240,   241,   242,  1109,   286,  1463,   287,   463,  1110,   884,
-     288,   289,  1111,  1112,   950,  1114,   953,  1113,   955,  1115,
-     956,  1461,  1264,  1116,  1267,   243,   473,  1117,   153,   154,
-     155,   120,   186,   477,   966,   187,   188,   189,   190,  -238,
-     191,   192,   193,   206,   968,   969,   480,   459,  1348,  1349,
-    1350,  1194,  1538,  1145,   206,   156,  1071,    14,   970,  1247,
-     506,   663,   484,  1248,   156,  1083,   985,   640,   986,   987,
-     641,   999,    98,  1001,  1249,   156,   459,   100,  1250,   101,
-    1574,   495,   997,  1251,  1065,   186,   102,  1252,   187,   188,
-     189,   190,  1544,   191,   192,   193,  1003,  1004,  1005,  1006,
-    1007,  1253,   486,   103,   915,  1254,  1073,   549,   206,   156,
-     496,  1135,  1456,   509,   153,   154,   155,   543,   104,   244,
-     555,   245,   246,   247,   248,  1069,  1070,  1129,  1122,   606,
-     282,   283,   284,  1551,    68,    69,   544,    70,  1072,  1169,
-    1321,  1322,    28,    29,    30,    31,    32,    33,    34,   916,
-     223,   642,   224,   225,   226,  1552,   596,    35,   510,   511,
-     512,   285,   598,  1183,  1576,  1185,   607,   156,     3,  1120,
-    1123,   609,  1140,   652,  1142,   750,   751,   752,  1118,  1588,
-    1146,   653,  1138,  1119,  1208,  1209,  1210,  1211,  1212,  1141,
-     459,  1335,   216,  1132,   513,   514,   515,  1585,   661,   884,
-     255,   256,   257,   258,   250,   251,   459,  1545,   540,  1143,
-     666,  1144,   539,   667,   762,   762,   206,  1406,   531,  1155,
-    1164,  1205,   637,   646,   647,   648,   668,   884,  1196,  1197,
-     669,   532,  1156,  1165,   673,   638,   676,   530,  1154,  1163,
-     689,   541,  1158,  1167,  1017,  1018,  1193,  1088,  1089,  1090,
-    1091,   625,     3,   156,   681,   692,   282,   283,   284,   649,
-     650,   651,   693,   705,   706,   763,   763,  1310,  1311,  1312,
-    1313,   716,    68,    69,  1235,    70,   717,  1314,  1315,  1316,
-     586,   128,   587,   718,   720,   129,   130,   131,   132,   133,
-    1203,   134,   135,   136,   137,   726,   138,   139,   194,   734,
-     140,   141,   142,   143,   886,   887,    99,   144,   145,   735,
-     753,   282,   283,   284,   195,   754,   146,   755,   147,  1149,
-    1150,  1151,  1152,   286,   756,   287,   765,   759,   768,   288,
-     289,   767,   769,   148,   149,   150,   770,   771,   776,   888,
-     772,   773,   775,    11,    12,    13,    14,  1343,  1344,  1345,
-    1346,  1307,  1308,  1220,   779,    28,    29,    30,    31,    32,
-      33,    34,   780,   788,  1353,   789,   792,   195,   151,     3,
-      35,   796,   798,   849,  1284,  1244,  1245,  1246,   850,   853,
-     854,   855,  1255,  1256,  1257,  1258,  1259,  1260,   856,  1262,
-    1263,  1265,   632,  1268,  1269,  1270,  1271,  1272,  1273,  1274,
-    1261,  1276,   857,  1278,  1266,  1281,   858,  1285,  1523,  1526,
-       9,    10,  1275,   882,   883,    68,    69,  1304,    70,  1325,
-     896,   903,  1338,   897,   908,   898,  1328,     3,  1329,   902,
-      14,    28,    29,    30,    31,    32,    33,    34,   924,   930,
-    1153,   963,   612,   971,   613,   974,    35,   614,   615,   286,
-     632,   287,   954,   964,   110,   288,   289,   958,   973,   975,
-     976,  1318,   401,   988,   110,   110,   110,   110,   977,   989,
-     282,   283,   284,   990,   110,   110,   110,   991,   889,   890,
-    1330,   891,   992,   427,   993,   428,   429,   994,  1008,  1332,
-     995,  1409,   430,   996,  1002,  1011,  1336,  1337,  1010,  1013,
-    1012,  1016,  1061,  1077,   286,   633,   287,  1405,  1340,  1066,
-     288,   289,  1078,  1079,  1130,    28,    29,    30,    31,    32,
-      33,    34,  1139,  1124,   616,  1171,  1172,  1178,  1347,  1351,
-      35,  1173,  1414,  1180,  1120,  1174,  1175,  1359,  1360,  1361,
-    1362,  1363,  1364,  1419,  1366,  1399,  1176,    14,  1177,  1181,
-    1182,   736,  1186,  1189,  1190,  1365,  1200,   634,    68,    69,
-     635,    70,  1204,   633,  1401,  1191,   127,  1192,  1202,   128,
-    1240,  1238,   157,   129,   130,   131,   132,   133,  1239,   134,
-     135,   136,   137,  1206,   138,   139,  1207,  1291,   140,   141,
-     142,   143,  1292,  1293,    99,   144,   145,  1294,  1295,  1296,
-     474,  1298,   884,  1299,   146,    14,   147,  1300,  1301,  1305,
-    1306,  1309,  1326,  1460,  1118,   634,  1327,   516,   635,  1119,
-    1331,   148,   149,   150,  1418,  1333,  1334,  1339,  1084,  1086,
-    1092,  1423,    28,    29,    30,    31,    32,    33,    34,  1094,
-    1096,   636,  1098,  1100,  1118,  1120,  1102,    35,  1104,  1119,
-    1354,  1106,  1108,  1110,  1356,  1395,   151,  1355,   282,   283,
-     284,  1357,  1358,   286,  1367,   287,  1462,  1368,  1498,   686,
-     289,    96,   467,   468,    97,  1370,  1369,  1502,  1371,  1373,
-    1402,  1372,  1375,   884,  1374,  1376,  1378,  1377,  1379,  1381,
-      28,    29,    30,    31,    32,    33,    34,    98,    99,  1168,
-    1380,  1382,   100,  1383,   101,    35,  1384,  1385,  1387,  1389,
-    1386,   102,   153,   154,   155,  1473,  1474,  1475,    68,    69,
-    1388,    70,  1390,  1391,  1392,  1393,   127,  1394,   103,   128,
-    1396,  1407,  1397,   129,   130,   131,   132,   133,  1408,   134,
-     135,   136,   137,   104,   138,   139,  1411,  1412,   140,   141,
-     142,   143,  1539,  1570,    99,   144,   145,  1413,  1416,  1420,
-    1581,  1421,  1247,  1422,   146,  1249,   147,  1509,  1251,  1253,
-    1425,  1424,  1515,  1509,  1518,  1426,  1522,  1428,  1515,  1509,
-    1518,   148,   149,   150,  1427,  1432,  1433,  1430,  1583,  1525,
-    1431,    28,    29,    30,    31,    32,    33,    34,  1434,  1435,
-    1515,  1509,  1518,  1436,  1437,  1439,    35,  1438,  1440,  1441,
-    1442,  1443,  1444,  1445,  1446,  1447,   151,   884,   282,   283,
-     284,    28,    29,    30,    31,    32,    33,    34,  1448,  1449,
-    1429,     3,   467,   468,  1452,  1450,    35,  1451,  1582,  1453,
-    1454,  1455,  1457,  1542,  1458,  1468,  1464,  1467,  1478,  1479,
-    1472,   469,  1480,   287,  1481,   880,  1496,   288,   289,   884,
-     157,  1499,  1500,  1577,  1503,  1504,  1505,    68,    69,  1541,
-      70,  1550,   153,   154,   155,   127,  1569,  1571,   128,  1572,
-    1573,  1575,   129,   130,   131,   132,   133,  1578,   134,   135,
-     136,   137,  1584,   138,   139,  1579,  1580,   140,   141,   142,
-     143,  1587,   297,    99,   144,   145,  1589,   507,   160,   670,
-    1324,   904,   925,   146,  1302,   147,   595,  1303,   162,  1187,
-    1323,   545,   774,   197,  1236,   743,    68,    69,  1062,    70,
-     148,   149,   150,  1128,   127,   881,  1188,   128,  1076,  1290,
-    1471,   129,   130,   131,   132,   133,  1080,   134,   135,   136,
-     137,    94,   138,   139,   900,  1297,   140,   141,   142,   143,
-     678,   239,    99,   144,   145,   151,   711,   282,   283,   284,
-       0,     0,   146,     0,   147,   929,   629,     0,     0,     0,
-       0,     0,     0,     0,     0,  1159,     0,  1160,  1161,   148,
-     149,   150,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    11,    12,    13,    14,
-       0,   469,     0,   287,     0,     0,     0,   686,   289,     0,
-     157,   153,   154,   155,   151,   152,    68,    69,     0,    70,
-       0,     0,     0,     0,   127,     0,     0,   128,     0,     0,
-       0,   129,   130,   131,   132,   133,     0,   134,   135,   136,
-     137,     0,   138,   139,     0,     0,   140,   141,   142,   143,
-       0,     0,    99,   144,   145,     0,     0,     0,     0,     0,
-       0,     0,   146,     0,   147,     0,     0,     0,     0,     0,
-     153,   154,   155,     0,     0,     0,     0,     0,     0,   148,
-     149,   150,     0,   911,    28,    29,    30,    31,    32,    33,
-      34,     0,     0,  1162,     0,     0,     0,     0,     0,    35,
-      68,    69,     0,    70,     0,     0,     0,    14,   127,     0,
-       0,   128,     0,     0,   151,   129,   130,   131,   132,   133,
-       0,   134,   135,   136,   137,     0,   138,   139,   912,     0,
-     140,   141,   142,   143,     0,     0,    99,   144,   145,     0,
-       0,     0,     0,     0,     0,     0,   146,     0,   147,     0,
-     469,     0,   287,     0,     0,     0,   288,   289,     0,   157,
-       0,     0,     0,   148,   149,   150,     0,     0,     0,     0,
-     153,   154,   155,   859,   860,   861,     0,   862,   863,   864,
-     865,     0,   866,   867,   193,     0,   868,   869,   870,   871,
-       0,     0,     0,   872,   873,     0,     0,     0,   151,   152,
-       0,     0,     0,     0,    68,    69,     0,    70,     0,   156,
-       0,     0,   127,     0,     0,   128,     0,     0,   157,   129,
-     130,   131,   132,   133,     0,   134,   135,   136,   137,     0,
-     138,   139,     0,     0,   140,   141,   142,   143,     0,     0,
-      99,   144,   145,     0,     0,     0,     0,     0,     0,     0,
-     146,     0,   147,     0,   153,   154,   155,     0,     0,     0,
-       0,   874,     0,     0,     0,     0,     0,   148,   149,   150,
-       0,     0,     0,     0,    68,    69,     0,    70,     0,     0,
-       0,     0,   127,     0,     0,   128,     0,     0,     0,   129,
-     130,   131,   132,   133,     0,   134,   135,   136,   137,     0,
-     138,   139,   151,     0,   140,   141,   142,   143,     0,   210,
-      99,   144,   145,     0,   933,     0,     0,     0,   157,     0,
-     146,   934,   147,   935,   936,   937,     0,     0,     0,     0,
-       0,     0,     2,     0,     0,     0,     0,   148,   149,   150,
+      87,   229,   181,   234,   224,   901,   294,   242,   243,   620,
+      56,   621,    44,   213,   174,   134,   549,   125,    37,   551,
+    1200,    58,   554,   184,   185,   186,   187,    61,   176,  1217,
+     948,   136,   137,    39,  1293,   867,  1259,   178,   135,   310,
+     231,   231,   690,   192,   179,   140,   141,   135,   193,   435,
+     436,   793,  1214,   699,   700,   701,   392,   566,   514,   214,
+     135,  1549,   861,   976,   231,  -574,   232,   295,   135,   760,
+     215,   231,   231,  1085,  1086,   977,   728,   135,   308,  1016,
+     138,   139,   593,   135,   494,   593,   695,   135,   360,   336,
+     135,   420,   422,   424,   426,   428,   135,  1550,   222,   752,
+     249,   135,   594,   595,   135,   594,   595,   138,   139,   138,
+     139,   135,   387,   138,   139,   135,   469,   138,   139,   593,
+     572,   270,   490,   176,   254,    90,   265,   268,   269,  1257,
+     135,   135,   178,  1513,   947,  1295,    67,   251,   252,   594,
+     595,   482,   488,  1507,   283,   574,  1506,   231,   221,   593,
+     138,   139,   201,  1499,   501,   202,   203,   204,   205,  1505,
+     206,   207,   208,  1504,  1030,   213,   286,   289,   -39,   594,
+     595,  1296,   113,   208,   287,  1529,   498,   115,  1528,   116,
+     275,   125,   290,   277,  1031,   135,   117,    91,   278,   279,
+     335,  1527,   221,   973,   221,  1526,   514,   135,   280,   532,
+     465,   201,   307,   118,   202,   203,   204,   205,   221,   206,
+     207,   208,   706,   433,   672,   447,   448,   573,   119,   707,
+     468,  1357,  1141,  1142,    88,   700,   711,   607,   287,  1358,
+     535,   126,   601,  1152,   221,   567,  1147,   111,   712,   713,
+     112,   221,   135,   221,   486,   568,   477,   478,   110,   221,
+     492,   911,   588,  1163,   729,   128,   714,   473,  1603,  1364,
+    1365,  1366,   474,   113,   114,   221,   130,   221,   115,   127,
+     116,   698,   508,   863,   183,   809,   570,   117,   497,   499,
+     521,  1195,   470,   503,   135,   471,   505,   506,   507,   475,
+    1368,   509,   510,   221,   118,   495,   513,   610,   504,   606,
+     188,   608,   189,   384,  1522,   194,   735,   715,   586,   119,
+     221,   589,   516,   475,  1211,   599,   475,  1079,  1233,   864,
+     994,   -39,    56,  1080,    44,   -39,   307,   298,   299,   300,
+      37,   233,   800,    58,   797,   437,   794,  1215,   515,    61,
+     221,  1161,   221,  1234,   624,    39,   438,   480,   555,  1551,
+     548,  1235,   481,  -574,   196,  1097,   546,   416,   221,   556,
+    1098,   417,  1014,   609,  1524,   557,   679,  1540,   475,  1485,
+    1537,   547,  1486,  1433,  1530,  -557,   475,  1532,  1511,   198,
+    1210,   419,   605,  1533,   562,   417,   563,   216,  1543,   421,
+     564,  1544,   235,   417,  1535,  -253,  1546,   217,  1545,   221,
+    1565,   488,  1562,   596,   703,   704,   587,   125,   604,   590,
+     591,   613,   176,   600,  1548,  1229,   911,  1563,  1564,   209,
+     218,   178,   221,   592,   597,   219,   615,   616,  1523,   617,
+     392,   618,   766,   767,   768,   210,  1230,   731,   765,   963,
+     964,   965,  1231,  1085,  1086,   619,   673,   626,   627,  1232,
+     634,   634,   654,   660,   738,  1258,  1143,   423,   749,   635,
+     670,   417,   671,   236,   425,   298,   299,   300,   417,   758,
+     237,   633,   633,   653,   659,  1335,  1336,  1333,   247,   716,
+     468,   427,   125,   221,   210,   417,   387,  1472,   287,   696,
+     717,   526,   527,   528,   763,   516,   301,   238,   774,   239,
+     240,   241,   250,   486,   276,  1100,   949,  1517,   782,  1101,
+     298,   299,   300,   950,   291,   951,   952,   953,   120,  1102,
+     302,   297,   303,  1103,   778,   801,   304,   305,   529,   530,
+     531,   292,   949,  1108,   293,   710,  1110,  1109,   741,   950,
+    1111,   951,   952,   953,  1019,  1020,  1021,  1022,  1023,  1112,
+     725,   726,   296,  1113,   954,   955,   956,   309,  1556,  1114,
+    1116,   745,   747,  1115,  1117,   310,   298,   299,   300,   737,
+     311,   138,   139,   593,   135,   743,   593,   312,   748,   213,
+     954,   955,   956,   298,   299,   300,   575,   777,   576,   577,
+     578,   392,   764,   594,   595,  1118,   594,   595,   337,  1119,
+     773,   957,   958,   959,   415,   960,  1120,  1122,   961,   776,
+    1121,  1123,   429,   933,   925,   926,   930,   432,   549,   939,
+     434,   551,   779,   449,   554,  1337,  1338,   957,   958,   959,
+     967,   960,   466,  1124,   961,  1419,  1420,  1125,   802,   803,
+     271,   272,   273,   274,   806,   811,   807,   387,  1126,  1128,
+    1130,   813,  1127,  1129,  1131,   472,  1431,   475,   302,   810,
+     303,   902,   903,  1132,   304,   305,   521,  1133,   476,   988,
+     479,   995,   981,   996,   997,   998,   999,  1000,   815,  1263,
+    1265,   983,   489,  1264,  1266,  1267,   917,   900,   496,  1268,
+     909,  1269,   910,   493,   908,  1270,   904,   275,   475,  1351,
+    1280,   500,  1283,   302,   475,   303,   475,  1561,  1591,   304,
+     305,   221,  1422,   502,   922,   915,   516,   511,   929,   512,
+     891,   522,   934,   936,   938,   565,   975,  1212,  1213,   525,
+     978,  1224,  1225,  1226,  1227,  1228,   559,  1477,    68,    69,
+     560,    70,   135,   571,   612,   900,  1475,  1033,  1034,   614,
+     966,   623,   969,  1479,   971,   990,   972,   622,  1087,   302,
+     625,   303,   231,   962,   679,   304,   305,  1099,   668,   669,
+     982,   677,   682,  1081,   684,   683,   302,   689,   303,   113,
+     984,   985,   702,   305,   115,   685,   116,    71,   692,  1186,
+     641,   697,   708,   117,   986,   705,   662,   663,   664,   709,
+     721,   722,  1001,    72,  1002,  1003,   732,  1015,   733,  1017,
+     118,   931,    73,   734,  1151,   736,  1145,   742,  1013,  1104,
+    1105,  1106,  1107,   750,   751,   119,    74,    75,    76,    77,
+     769,   771,    78,   665,   666,   667,   905,   906,   770,   907,
+    1560,  1185,  1359,  1360,  1361,  1362,   772,   775,   784,   792,
+    1134,   781,   783,   785,   786,  1135,   787,   932,   795,    79,
+      80,    81,    82,    83,    84,    85,  1199,   788,  1201,   789,
+     791,  1568,   812,   796,  1088,   804,   805,   808,   814,   865,
+     866,  1567,   869,  1089,   870,   871,   872,   873,   874,   898,
+      68,    69,   913,    70,  1138,   899,   912,    68,    69,   914,
+      70,   918,   919,   778,   778,   940,  1139,   946,   924,   970,
+    1158,   979,   974,  1593,  1602,  1156,  1162,   980,  1154,   987,
+     991,   989,   992,  1221,  1136,  1157,   114,   993,  1605,  1148,
+    1004,   417,  1005,  1006,  1009,   900,  1007,  1008,  1010,    71,
+    1011,  1026,  1012,  1018,  1024,  1159,    71,  1160,  1027,  1028,
+     555,  1032,   548,  1172,  1181,    72,   654,  1077,   546,  1170,
+    1179,   556,    72,   900,    73,  1029,  1082,   557,  1174,  1183,
+    1093,    73,  1094,   547,  1171,  1180,  1251,   653,    74,    75,
+      76,    77,  1209,  1095,    78,    74,    75,    76,    77,  1140,
+    1146,    78,  1155,  1326,  1327,  1328,  1329,  1190,  1187,   949,
+    1188,   779,   779,  1330,  1331,  1332,   950,  1191,   951,   952,
+     953,    79,    80,    81,    82,    83,    84,    85,    79,    80,
+      81,    82,    83,    84,    85,  1192,  1219,    28,    29,    30,
+      31,    32,    33,    34,  1189,  1193,  1369,  1194,  1196,   752,
+    1197,   288,    35,  1198,  1202,  1205,  1206,   954,   955,   956,
+    1207,  1216,  1208,  1218,  1323,  1324,   875,   876,   877,  1134,
+     878,   879,   880,   881,  1135,   882,   883,   208,  1220,   884,
+     885,   886,   887,  1222,  1307,  1254,   888,   889,  1223,  1255,
+    1134,  1256,  1308,  1309,  1310,  1135,  1539,  1542,   490,  1236,
+    1314,  1311,  1312,  1317,   957,   958,   959,  1315,   960,  1316,
+    1325,   961,  1321,   284,  1342,  1322,  1343,   532,  1341,  1347,
+    1350,  1260,  1261,  1262,  1349,  1344,  1100,  1345,  1271,  1272,
+    1273,  1274,  1275,  1276,  1354,  1278,  1279,  1281,  1355,  1284,
+    1285,  1286,  1287,  1288,  1289,  1290,  1277,  1292,  1102,  1294,
+    1282,  1297,  1108,  1301,  1110,   890,  1112,  1114,  1291,  1116,
+    1118,  1300,  1120,  1320,  1122,  1124,  1126,  1370,   125,  1371,
+    1411,  1373,     3,  1429,  1372,  1383,  1385,  1374,   125,   125,
+     125,   125,  1384,  1386,  1388,  1387,  1389,  1390,   125,   125,
+     125,  1393,  1396,  1391,  1392,  1394,  1395,  1397,     2,  1424,
+     285,   744,  1399,  1398,  1400,  1401,  1480,  1334,  1402,  1403,
+    1405,  1432,  1404,  1407,  1408,  1406,     3,  1410,  1412,  1409,
+    1421,  1423,  1418,  1413,  1425,  1427,  1346,  1436,  1428,  1263,
+    1437,  1265,  1267,  1438,  1440,  1348,  1269,  1446,   640,  1441,
+    1444,  1447,  1352,  1353,  1442,  1430,    28,    29,    30,    31,
+      32,    33,    34,  1443,  1356,  1435,  1448,  1449,  1450,  1451,
+    1470,    35,  1452,  1453,  1454,  1455,  1426,    28,    29,    30,
+      31,    32,    33,    34,  1363,  1367,  1445,  1456,  1457,  1458,
+    1471,  1459,    35,  1375,  1376,  1377,  1378,  1379,  1380,  1488,
+    1382,  1460,  1461,  1462,  1463,  1464,  1465,    68,    69,  1136,
+      70,  1381,  1466,  1467,  1469,   142,  1468,  1473,   143,  1474,
+    1417,  1484,   144,   145,   146,   147,   148,  1494,   149,   150,
+     151,   152,  1483,   153,   154,  1495,  1476,   155,   156,   157,
+     158,  1496,  1415,   114,   159,   160,  1497,   896,  1512,  1515,
+    1547,  1516,  1557,   161,  1519,   162,    71,  1520,   900,  1558,
+    1521,    14,     3,     4,     5,     6,     7,     8,  1566,  1586,
+     163,   164,   165,   641,  1588,   629,   642,  1589,   630,   631,
+    1434,    73,  1590,  1592,  1595,     9,    10,  1439,  1596,  1597,
+    1601,  1514,  1604,   313,  1606,    74,    75,    76,    77,  1518,
+     175,    78,    11,    12,    13,    14,   166,   167,   523,    15,
+      16,   611,  1340,   686,   920,    17,   941,  1318,    18,   177,
+    1136,  1319,  1478,  1203,   759,    19,    20,  1339,    79,    80,
+      81,    82,    83,    84,    85,   561,   212,  1252,  1078,   900,
+     897,   790,  1144,  1204,  1306,  1487,    28,    29,    30,    31,
+      32,    33,    34,   916,  1096,   643,  1092,   109,  1313,   694,
+     255,    35,   168,   169,   170,   945,   645,     0,   727,     0,
+       0,  1489,  1490,  1491,     0,  1587,     0,     0,     0,     0,
+     111,    21,    22,   112,    23,    24,    25,     0,    26,    27,
+      28,    29,    30,    31,    32,    33,    34,     0,     3,    14,
+       0,     0,     0,     0,  1598,    35,   113,   114,     0,     0,
+       0,   115,  1600,   116,  1165,  1166,  1167,  1168,     0,     0,
+     117,     0,     0,  1525,     0,     0,     0,     0,  1531,  1525,
+    1534,     0,  1538,     0,  1531,  1525,  1534,   118,    11,    12,
+      13,    14,     0,     0,     0,  1541,     0,     0,     0,  1555,
+       0,     0,   119,     0,     0,     0,  1531,  1525,  1534,     0,
+      68,    69,     0,    70,     0,     0,     0,     0,   142,     0,
+       0,   143,     0,   900,     0,   144,   145,   146,   147,   148,
+       0,   149,   150,   151,   152,     0,   153,   154,     0,     0,
+     155,   156,   157,   158,     0,  1599,   114,   159,   160,     0,
+       0,   171,     0,     0,     0,     0,   161,     0,   162,    71,
+     172,     0,     0,     0,     0,     0,   900,     0,     0,     0,
+    1594,     0,     0,   163,   164,   165,    28,    29,    30,    31,
+      32,    33,    34,     0,    73,  1169,     0,     0,     0,     0,
+       0,    35,     0,     0,     0,     0,     0,     0,    74,    75,
+      76,    77,     0,     0,    78,     0,     0,     9,    10,   166,
+       0,   298,   299,   300,     0,     0,     0,     0,     0,     0,
+       3,     0,     0,     0,     0,   483,   484,    14,     0,     0,
+       0,    79,    80,    81,    82,    83,    84,    85,     0,   628,
+       0,   629,     0,   648,   630,   631,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       3,     0,     0,     0,     0,     0,     0,     0,   153,   154,
-     155,     0,   938,   939,   940,     0,     0,     0,    68,    69,
-       0,    70,   553,     0,     0,     0,   127,     0,     0,   128,
-       0,     0,     0,   129,   130,   131,   132,   133,     0,   134,
-     135,   136,   137,   210,   138,   139,     0,     0,   140,   141,
-     142,   143,   157,     0,    99,   144,   145,     0,   941,   942,
-     943,     0,   944,     0,   662,   945,   147,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,   153,   154,
-     155,   148,   149,   150,     0,     0,     0,    68,    69,     0,
-      70,     0,     0,     0,     0,   127,  1531,     0,   128,     0,
-       0,     0,   129,   130,   131,   132,   133,     0,   134,   135,
-     136,   137,     0,   138,   139,     0,   151,   140,   141,   142,
-     143,     0,     0,    99,   144,   145,     0,     0,     0,     0,
-       0,     0,     0,   146,     0,   147,     4,     5,     6,     7,
-       8,     0,     0,     0,     0,     0,     0,   210,     0,     0,
-     148,   149,   150,     0,     0,   933,   157,     0,     9,    10,
-       0,     0,   934,     0,   935,   936,   937,     0,     0,     0,
-       0,     0,   153,   154,   155,    11,    12,    13,    14,     0,
-       0,     0,    15,    16,     0,   714,     0,     0,    17,     0,
-       0,    18,     0,     0,    68,     0,     0,    70,    19,    20,
-       0,     0,     0,   938,   939,   940,     0,     3,   216,     0,
-       0,     0,     0,     0,     0,     0,     0,   210,     0,     0,
-     946,     0,     0,  1221,  1222,  1223,   157,  1224,  1225,  1226,
-    1227,     0,  1228,  1229,   193,     0,  1230,  1231,  1232,  1233,
-       0,   153,   154,   155,     0,  1234,     0,     0,     0,   941,
-     942,   943,     0,   944,    21,    22,   945,    23,    24,    25,
-       0,    26,    27,    28,    29,    30,    31,    32,    33,    34,
-       0,     0,     0,     0,   265,   128,   266,     0,    35,   129,
-     130,   131,   132,   133,     0,   134,   135,   136,   137,     0,
-     138,   139,     0,     0,   140,   141,   142,   143,     0,     0,
-       0,   144,   145,     0,     0,     0,     0,     0,     0,     0,
-     146,   210,   147,     0,     0,     0,     0,     0,     0,     0,
-     157,     0,     0,     0,     0,     0,     0,   148,   149,   150,
-     345,   346,   347,   348,   349,   350,   351,   352,   353,   354,
-     355,   356,   357,     0,     0,     0,  1553,     8,     0,     0,
-       0,   358,   359,   360,   361,   362,   363,    68,     0,     0,
-      70,  1554,   151,     0,   933,     9,    10,     0,     0,     0,
-       3,   934,     0,   935,   936,   937,     0,  1555,     0,     0,
-     210,     0,    11,    12,    13,    14,  1556,     0,     0,   157,
-       0,     0,     0,   364,     0,     0,     0,     0,     0,     0,
-    1557,  1558,  1559,  1560,     0,     0,     0,   365,     0,     0,
-       0,  1170,   938,   939,   940,    78,    79,    80,    81,    82,
-      83,    84,    85,    86,    87,    88,    89,    90,    91,    92,
-       0,     0,  1561,  1562,  1563,  1564,  1565,  1566,  1567,     0,
-       0,    68,   366,   367,    70,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     3,     0,     0,     0,   941,   942,
-     943,     0,   944,     0,     0,   945,     0,     0,     0,     0,
-      28,    29,    30,    31,    32,    33,    34,     0,   368,   369,
-       0,     0,     0,     0,     0,    35,     0,     0,     0,     0,
-       0,     0,     0,   345,   346,   347,   348,   349,   350,   351,
-     352,   353,   354,   355,   356,   357,     0,     0,     0,     0,
-       8,     0,     0,     0,   358,   359,   360,   361,   362,   363,
-       0,     0,     0,     0,     0,     0,     0,     0,     9,    10,
+      68,    69,     0,    70,     0,   168,   169,   170,   142,     0,
+       0,   143,     0,     0,     0,   144,   145,   146,   147,   148,
+       0,   149,   150,   151,   152,     0,   153,   154,     0,     0,
+     155,   156,   157,   158,     0,     0,   114,   159,   160,     0,
+       0,     0,     0,     0,     0,     0,   161,     0,   162,    71,
+       0,     0,    28,    29,    30,    31,    32,    33,    34,     0,
+       0,   632,     0,   163,   164,   165,     0,    35,     0,     0,
+       0,     0,     0,     0,    73,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,    74,    75,
+      76,    77,     0,     0,    78,     0,     0,   649,     0,   166,
+       0,   298,   299,   300,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,   483,   484,     0,     0,     0,
+       0,    79,    80,    81,    82,    83,    84,    85,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,    14,
+       0,     0,     0,     0,   485,     0,   303,     0,     0,   650,
+     304,   305,   651,   172,     0,   168,   169,   170,    68,    69,
+       0,    70,     0,     0,     0,     0,   142,     0,     0,   143,
+       0,     0,     0,   144,   145,   146,   147,   148,     0,   149,
+     150,   151,   152,     0,   153,   154,     0,     0,   155,   156,
+     157,   158,     0,     0,   114,   159,   160,     0,     0,     0,
+       0,     0,     0,     0,   161,     0,   162,    71,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,    11,    12,    13,    14,     0,
-       0,     0,     0,     0,     0,     0,   364,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,   157,     0,     0,     0,
-     365,     0,     0,     0,     0,     0,     0,   345,   346,   347,
-     348,   349,   350,   351,   352,   353,   354,   355,   356,   357,
-       0,     0,     0,     0,     8,     0,  1568,     0,   358,   359,
-     360,   361,   362,   363,     0,   366,   367,     0,     0,     0,
-       0,     0,     9,    10,     0,     0,     0,     0,     0,     0,
-    1410,     0,     0,     0,     0,     0,     0,     0,     0,    11,
-      12,    13,    14,    28,    29,    30,    31,    32,    33,    34,
-     364,   368,   741,     0,     0,     0,     0,     0,    35,     0,
-       0,   128,     0,     0,   365,   129,   130,   131,   132,   133,
-       0,   134,   135,   136,   137,     0,   138,   139,     0,     0,
-     140,   141,   142,   143,   434,     0,     0,   144,   145,     0,
-       0,     0,     0,     0,     0,     0,   146,     0,   147,   366,
-     367,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,   148,   149,   150,     0,   435,     0,   436,
-     437,   438,   439,     0,     0,     0,     0,    28,    29,    30,
-      31,    32,    33,    34,     0,   368,   928,     0,     0,     0,
-       0,     0,    35,     0,     0,     0,     0,     0,   151,     0,
-       0,     0,     0,     0,     0,     0,   440,   441,   442,   443,
-       0,     0,   444,     0,     0,   128,   445,   446,   447,   129,
-     130,   131,   132,   133,     0,   134,   135,   136,   137,     0,
-     138,   139,     0,     0,   140,   141,   142,   143,     0,     0,
-       0,   144,   145,     0,     0,     0,     0,     0,     0,     0,
-     146,     0,   147,     0,     0,     0,     0,     0,     0,     0,
-       3,     0,     0,     0,     0,     0,     0,   148,   149,   150,
-     128,     0,     0,     0,   129,   130,   131,   132,   133,     0,
-     134,   135,   136,   137,     0,   138,   139,     0,     0,   140,
-     141,   142,   143,     0,     0,     0,   144,   145,     0,     0,
-       0,     0,   151,     0,     0,   146,     0,   147,     0,     0,
+       0,   163,   164,   165,    28,    29,    30,    31,    32,    33,
+      34,     0,    73,   652,     0,     0,     0,     0,     0,    35,
+       0,     0,     0,     0,     0,     0,    74,    75,    76,    77,
+       0,     0,    78,     0,     0,     0,     0,   166,     0,   298,
+     299,   300,     0,     0,     0,     0,     0,     0,     3,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,    79,
+      80,    81,    82,    83,    84,    85,     0,     0,     0,     0,
+       0,     0,     0,     0,   485,     0,   303,     0,     0,     0,
+     702,   305,     0,   172,     0,     0,     0,     0,    68,    69,
+       0,    70,     0,   168,   169,   170,   142,     0,     0,   143,
+       0,     0,     0,   144,   145,   146,   147,   148,     0,   149,
+     150,   151,   152,     0,   153,   154,     0,     0,   155,   156,
+     157,   158,     0,     0,   114,   159,   160,     0,     0,  1569,
+       0,     0,     0,     0,   161,     0,   162,    71,     0,     0,
+       0,     0,     0,     0,  1570,     0,     0,     0,     0,     0,
+       0,   163,   164,   165,     0,   927,     0,     0,     0,     0,
+    1571,     0,    73,     0,     0,     0,     0,     0,     0,  1572,
+       0,     0,     0,     0,     0,     0,    74,    75,    76,    77,
+       0,     0,    78,  1573,  1574,  1575,  1576,   166,     0,  1577,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-     448,   128,   148,   149,   150,   129,   130,   131,   132,   133,
-       0,   134,   135,   136,   137,     0,   138,   139,     0,     0,
-     140,   141,   142,   143,     0,     0,     0,   144,   145,     0,
-       0,     0,     0,     0,     0,     0,   146,   151,   147,     0,
+       0,   928,     0,  1175,     0,  1176,  1177,     0,     0,    79,
+      80,    81,    82,    83,    84,    85,  1578,  1579,  1580,  1581,
+    1582,  1583,  1584,     0,    11,    12,    13,    14,     0,     0,
+       0,     0,   485,     0,   303,     0,     0,     0,   304,   305,
+       0,   172,     0,   168,   169,   170,    68,    69,     0,    70,
+       0,     0,     0,     0,   142,     3,     0,   143,     0,     0,
+       0,   144,   145,   146,   147,   148,     0,   149,   150,   151,
+     152,     0,   153,   154,     0,     0,   155,   156,   157,   158,
+       0,     0,   114,   159,   160,     0,     0,     0,     0,     0,
+       0,     0,   161,     0,   162,    71,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,   163,
+     164,   165,    28,    29,    30,    31,    32,    33,    34,     0,
+      73,  1178,     0,     0,     0,     0,     0,    35,     0,     0,
+       0,     0,     0,     0,    74,    75,    76,    77,     0,     0,
+      78,     0,     0,     0,     0,   166,   167,    93,    94,    95,
+      96,    97,    98,    99,   100,   101,   102,   103,   104,   105,
+     106,   107,     0,     0,     0,     0,     0,    79,    80,    81,
+      82,    83,    84,    85,     0,     0,     0,     0,     0,     0,
+    1585,    68,   225,     0,    70,   135,     0,     0,     0,    68,
+      69,   172,    70,     0,     0,     0,     0,   142,     0,     0,
+     143,   168,   169,   170,   144,   145,   146,   147,   148,     0,
+     149,   150,   151,   152,     0,   153,   154,     0,     0,   155,
+     156,   157,   158,     0,     0,   114,   159,   160,     0,     0,
+      71,     0,     0,     0,    14,   161,     0,   162,    71,     0,
+       0,     0,     0,     0,   656,     0,    72,   657,     0,     0,
+       0,     0,   163,   164,   165,    73,     0,     0,     0,     0,
+       0,     0,     0,    73,     0,     0,     0,     0,     0,    74,
+      75,    76,    77,     0,     0,    78,     0,    74,    75,    76,
+      77,     0,     0,    78,     0,     0,     0,     0,   166,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,   148,   149,   150,     0,     0,  1019,  1020,
-       0,  1021,  1022,  1023,  1024,  1025,  1026,     0,  1027,  1028,
-       0,  1029,  1030,  1031,  1032,  1033,     4,     5,     6,     7,
-       8,     3,   157,     0,     0,     0,     0,     0,   151,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     9,    10,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,    11,    12,    13,    14,     0,
-       0,     0,    15,    16,     0,     0,     0,     0,    17,     0,
-     520,    18,     0,     0,     0,     0,     0,     0,    19,    20,
-     859,   860,   861,     0,   862,   863,   864,   865,     0,   866,
-     867,   193,     0,   868,   869,   870,   871,     0,     0,     0,
-     872,   873,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,   724,     0,     0,
-       0,     0,     0,     0,     0,     0,   157,     0,     0,     0,
-       0,     0,     0,     0,    21,    22,     0,    23,    24,    25,
-       0,    26,    27,    28,    29,    30,    31,    32,    33,    34,
-       0,     0,   508,     0,     0,     0,     3,   521,    35,     6,
-       7,     8,     0,     0,     0,     0,     0,     0,   874,     0,
-       0,   522,   880,     0,     0,     0,   523,     0,     0,     9,
-      10,   157,     3,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,    11,    12,    13,    14,
-       0,   524,   525,     0,     0,   520,  1034,  1035,     0,  1036,
-    1037,  1038,     0,  1039,  1040,     0,     0,  1041,  1042,     0,
-    1043,   526,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   157,  1044,  1045,  1046,  1047,  1048,  1049,  1050,
-    1051,  1052,  1053,  1054,  1055,  1056,  1057,  1058,   624,     0,
-       0,     0,   128,     0,     0,     0,   527,   528,   131,   132,
-     133,     0,   134,   135,   136,   137,     0,   138,   139,     0,
-       0,   140,   141,   142,   143,     0,     0,     0,  1286,   145,
-       0,  1059,     0,     0,    28,    29,    30,    31,    32,    33,
-      34,     0,   521,   529,     6,     7,     8,     0,     0,    35,
-       0,     0,     0,     0,     0,     0,   522,     0,     0,     0,
-       0,   523,     0,     0,     9,    10,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,  1287,     0,     0,
-       0,    11,    12,    13,    14,     0,   524,   525,     0,    28,
-      29,    30,    31,    32,    33,    34,  1288,     0,     0,     0,
-       0,     0,     0,     0,    35,     0,   526,     0,     0,     0,
-      14,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   625,     0,   613,   626,     0,   614,   615,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,   527,   528,   800,     0,     0,     0,     0,   801,   802,
-       0,   803,   804,   805,   806,   807,   808,     0,   809,   810,
-       0,   811,   812,   813,   814,   815,     0,     0,     0,    28,
-      29,    30,    31,    32,    33,    34,     0,     0,  1148,     0,
+       0,     0,    79,    80,    81,    82,    83,    84,    85,     0,
+      79,    80,    81,    82,    83,    84,    85,     0,     0,    28,
+      29,    30,    31,    32,    33,    34,    68,    69,   658,    70,
        0,     0,     0,     0,    35,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,    28,    29,    30,    31,    32,
-      33,    34,     0,     0,   627,     0,     0,   816,     0,   817,
-      35,     0,     0,   800,   818,     0,     0,     0,   801,   802,
-       0,   803,   804,   805,   806,   807,   808,     0,   809,   810,
-     819,   811,   812,   813,   814,   815,    68,    69,     0,    70,
-     859,   860,   861,     0,   862,   863,   864,   865,     0,   866,
-     867,   193,     0,   868,   869,   870,   871,     0,     0,     0,
-     872,   873,     0,   820,     0,     0,     0,     0,     0,     0,
-     298,     0,     0,     0,     0,     0,     0,   816,     0,   817,
-       0,     0,     0,     0,   818,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,   299,
-     819,     0,     0,   300,     0,     0,   301,   302,     0,     0,
-       0,   303,   304,   305,   306,   307,   308,   309,   310,   311,
-     312,   313,   314,     0,     0,     0,     0,     0,   874,   315,
-       0,     0,   316,   820,     0,     0,     0,     0,     0,   317,
-       0,     0,     0,     0,     0,     0,     0,     0,   318,     0,
-       0,     0,     0,   821,     0,   822,   823,   824,   825,   826,
-     827,   828,   829,   830,   831,   832,   833,   834,   835,   836,
-     837,   838,     0,     0,     0,   839,     0,     0,     0,     0,
-       0,     0,     0,     0,   840,     0,     0,     0,     0,     0,
+     225,     0,     0,     0,   168,   169,   170,    68,    69,   172,
+      70,     0,     0,     0,     0,   142,     0,     0,   143,     0,
+       0,     0,   144,   145,   146,   147,   148,     0,   149,   150,
+     151,   152,     0,   153,   154,    71,     0,   155,   156,   157,
+     158,     0,     0,   114,   159,   160,     0,     0,     0,     0,
+       0,    72,     0,   161,     0,   162,    71,     0,     0,     0,
+      73,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+     163,   164,   165,     0,    74,    75,    76,    77,     0,     0,
+      78,    73,     0,     0,     0,     0,     0,   298,   299,   300,
+       0,     0,     0,     0,     0,    74,    75,    76,    77,     0,
+       0,    78,     0,     0,     0,     0,   569,    79,    80,    81,
+      82,    83,    84,    85,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,   384,     0,    79,    80,
+      81,    82,    83,    84,    85,     0,     0,     0,     0,     0,
+       0,     0,    68,   225,     0,    70,   135,     0,     0,     0,
+      68,    69,   172,    70,     0,     0,     0,     0,   142,     0,
+       0,   143,   168,   169,   170,   144,   145,   146,   147,   148,
+       0,   149,   150,   151,   152,     0,   153,   154,     0,     0,
+     155,   156,   157,   158,     0,     0,   114,   159,   160,     0,
+       0,    71,     0,     0,     0,     0,   678,     0,   162,    71,
+       0,     0,     0,     0,     0,     0,     0,    72,     0,     0,
+       0,     0,     0,   163,   164,   165,    73,     0,     0,     0,
+       0,     0,     0,     0,    73,     0,     0,     0,     0,     0,
+      74,    75,    76,    77,     0,     0,    78,     0,    74,    75,
+      76,    77,     0,     0,    78,     0,     0,     0,     0,   166,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    79,    80,    81,    82,    83,    84,    85,
+       0,    79,    80,    81,    82,    83,    84,    85,     0,     3,
+     302,     0,   303,     0,     0,     0,   304,   305,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   225,   648,     0,     0,   168,   169,   170,    68,    69,
+     172,    70,     0,     0,     0,     0,   142,     0,     0,   143,
+       0,     0,     0,   144,   145,   146,   147,   148,     0,   149,
+     150,   151,   152,     0,   153,   154,     0,     0,   155,   156,
+     157,   158,     0,     0,   114,   159,   160,     0,     0,     0,
+       0,     0,     0,     0,   161,     0,   162,    71,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   163,   164,   165,     0,     0,     0,     0,     0,     0,
+       0,     0,    73,     0,     0,     0,     0,    68,    69,     0,
+      70,     0,     0,     0,     0,     0,    74,    75,    76,    77,
+       0,     0,    78,     0,     0,    68,    69,   730,    70,   135,
+       0,     0,     0,     0,     0,     0,   649,     0,     0,     0,
+     514,     0,     0,   114,     0,     0,     0,     0,     0,    79,
+      80,    81,    82,    83,    84,    85,    71,     0,     0,     0,
+       0,   114,     0,     0,   225,     0,     0,     0,     0,     0,
+       0,     0,    72,   172,    71,     0,     0,     0,    14,     0,
+       0,    73,     0,   168,   169,   170,     0,     0,   650,     0,
+      72,   651,     0,     0,     0,    74,    75,    76,    77,    73,
+       0,    78,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    74,    75,    76,    77,     0,     0,    78,
+       0,     0,     0,     0,     0,     0,     0,     0,    79,    80,
+      81,    82,    83,    84,    85,    68,    69,   231,    70,   135,
+       0,     0,     0,   142,     0,     0,    79,    80,    81,    82,
+      83,    84,    85,    68,    69,     0,    70,     0,  1084,     0,
+       0,   142,     0,    28,    29,    30,    31,    32,    33,    34,
+       0,   114,  1184,     0,     0,     0,     0,     0,    35,     0,
+       0,     0,     0,     0,    71,     0,     0,     0,     0,   114,
+       0,     0,  1552,     0,     0,  1085,  1086,     0,     0,  1553,
+      72,     0,    71,     0,     0,     0,     0,     0,     0,    73,
+       0,     0,     0,     0,     0,     0,     0,     0,    72,     0,
+     467,     0,   225,    74,    75,    76,    77,    73,     0,    78,
+       0,   172,     0,     0,     0,     0,     0,     0,   467,     0,
+       0,    74,    75,    76,    77,     0,     0,    78,     0,     0,
+       0,     0,     0,     0,     0,     0,    79,    80,    81,    82,
+      83,    84,    85,     0,     0,    68,    69,     0,    70,     0,
+       0,     0,     0,   142,    79,    80,    81,    82,    83,    84,
+      85,     0,     0,     0,     0,     0,    68,    69,     0,    70,
+     168,   169,   170,     0,   142,     0,     0,     0,     0,     0,
+       0,   114,     0,     0,  1298,     0,     0,   285,   168,   169,
+     170,  1299,     0,     0,    71,     0,     0,     0,     0,     0,
+     515,     0,   114,     0,     0,   285,     0,     0,     0,     0,
+      72,     0,  1414,     0,     0,    71,     0,     0,     0,    73,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    72,     0,    74,    75,    76,    77,     0,     0,    78,
+      73,     0,     0,     0,     0,    68,    69,     0,    70,     0,
+       0,     0,     0,   142,    74,    75,    76,    77,     0,     0,
+      78,     0,     0,     0,     0,     0,    79,    80,    81,    82,
+      83,    84,    85,     0,     0,     0,     0,     0,     0,     0,
+       0,   114,     0,     0,     0,     0,     0,    79,    80,    81,
+      82,    83,    84,    85,    71,     0,     0,     0,     0,     0,
+     168,   169,   170,     0,     0,     0,     0,     0,     0,   171,
+      72,     0,     0,     0,     0,     0,     0,     0,     0,    73,
+       0,   168,   169,   170,  1554,     0,     0,   171,     0,    68,
+      69,     0,   868,    74,    75,    76,    77,   142,     0,    78,
+      68,    69,     0,    70,     0,     0,     0,    68,    69,     0,
+      70,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,   114,    79,    80,    81,    82,
+      83,    84,    85,     0,     0,     0,     0,     0,    71,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,    71,
+       0,     0,     0,     0,    72,     0,    71,     0,     0,     0,
+     168,   169,   170,    73,     0,    72,     0,     0,     0,     0,
+       0,     0,    72,     0,    73,     0,     0,    74,    75,    76,
+      77,    73,     0,    78,     0,     0,     0,     0,    74,    75,
+      76,    77,     0,     0,    78,    74,    75,    76,    77,   171,
+       0,    78,    68,    69,     0,    70,     0,     0,     0,     0,
+      79,    80,    81,    82,    83,    84,    85,     0,     0,     0,
+     171,    79,    80,    81,    82,    83,    84,    85,    79,    80,
+      81,    82,    83,    84,    85,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,   168,   169,   170,     0,     0,     0,
+       0,    71,     0,     0,     0,     0,     0,     0,   231,     0,
+       0,     0,     0,     0,     0,    68,    69,    72,    70,     0,
+       0,     0,     0,  1237,  1238,  1239,    73,  1240,  1241,  1242,
+    1243,     0,  1244,  1245,   208,     0,  1246,  1247,  1248,  1249,
+      74,    75,    76,    77,     0,  1250,    78,     0,     0,   171,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    71,     0,     0,     0,     0,     0,
+       0,     0,     0,    79,    80,    81,    82,    83,    84,    85,
+      72,     0,     0,     0,     0,     0,     0,     0,     0,    73,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    74,    75,    76,    77,     0,     0,    78,
+     875,   876,   877,     0,   878,   879,   880,   881,     0,   882,
+     883,   208,     0,   884,   885,   886,   887,     0,     0,     0,
+     888,   889,     0,   171,     0,     0,    79,    80,    81,    82,
+      83,    84,    85,     0,   746,     0,     0,   602,   143,   603,
+       0,   935,   144,   145,   146,   147,   148,     0,   149,   150,
+     151,   152,     0,   153,   154,     0,     0,   155,   156,   157,
+     158,     0,     0,   114,   159,   160,     0,     0,    68,     0,
+       0,    70,     0,   161,     0,   162,     0,     0,     0,     0,
+       0,     3,     0,     0,     0,     0,     0,     0,     0,   890,
+     163,   164,   248,   281,   143,   282,     0,     0,   144,   145,
+     146,   147,   148,     0,   149,   150,   151,   152,     0,   153,
+     154,     0,     0,   155,   156,   157,   158,    71,     0,     0,
+     159,   160,     0,     0,     0,     0,   166,     0,     0,   161,
+       0,   162,     0,    72,     0,     0,   937,     0,     0,     0,
+       0,     0,    73,     0,     0,     0,   163,   164,   248,     0,
+       0,     0,     0,     0,     0,     0,    74,    75,    76,    77,
+       0,     0,    78,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,   166,     0,     0,     0,     0,     0,     0,    79,
+      80,    81,    82,    83,    84,    85,     0,     0,     0,  1416,
+       0,     0,     0,     0,     0,   361,   362,   363,   364,   365,
+     366,   367,   368,   369,   370,   371,   372,   373,     0,     0,
+       0,     0,     8,     0,     0,     0,   374,   375,   376,   377,
+     378,   379,     0,     0,     0,     0,     0,     0,     0,     0,
+       9,    10,     0,     0,     0,     0,     0,     0,     0,     0,
+      68,     0,     0,    70,     0,     0,     0,    11,    12,    13,
+      14,     0,     0,     3,     0,     0,     0,     0,   380,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,   381,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,    71,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,    72,     0,   382,   383,     0,
+       0,     0,     0,     0,    73,     0,     0,     0,     0,     0,
+     172,     0,     0,     0,     0,     0,     0,     0,    74,    75,
+      76,    77,     0,     0,    78,    28,    29,    30,    31,    32,
+      33,    34,     0,   384,   385,     0,     0,     0,     0,     0,
+      35,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    79,    80,    81,    82,    83,    84,    85,     0,     0,
+       0,     0,     0,     0,     0,     0,   172,   361,   362,   363,
+     364,   365,   366,   367,   368,   369,   370,   371,   372,   373,
+       0,     0,     0,     0,     8,     0,     0,     0,   374,   375,
+     376,   377,   378,   379,     0,     0,     0,     0,     0,     0,
+       0,     0,     9,    10,    68,     0,     0,    70,     0,     0,
+       0,    68,    69,     0,    70,     0,     0,     3,     0,    11,
+      12,    13,    14,     0,     0,     0,     0,     0,     0,     0,
+     380,     0,     0,     0,     0,   143,     0,     0,     0,   144,
+     145,   146,   147,   148,   381,   149,   150,   151,   152,     0,
+     153,   154,     0,    71,   155,   156,   157,   158,     0,     0,
+      71,   159,   160,     0,     0,     0,     0,     0,     0,    72,
+     161,     0,   162,     0,     0,     0,    72,     0,    73,   382,
+     383,     0,     0,     0,     0,    73,     0,   163,   164,   248,
+       0,     0,    74,    75,    76,    77,     0,     0,    78,    74,
+      75,    76,    77,     0,     0,    78,     0,    28,    29,    30,
+      31,    32,    33,    34,     0,   384,   757,     0,     0,     0,
+       0,     0,    35,   166,     0,    79,    80,    81,    82,    83,
+      84,    85,    79,    80,    81,    82,    83,    84,    85,     0,
+       0,   361,   362,   363,   364,   365,   366,   367,   368,   369,
+     370,   371,   372,   373,     0,     0,     0,     0,     8,     0,
+       0,     0,   374,   375,   376,   377,   378,   379,     0,     0,
+       0,     0,     0,     0,     0,     0,     9,    10,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,    11,    12,    13,    14,     0,     0,     0,
+       0,     0,     0,     0,   380,     0,     0,     0,     0,   143,
+       0,     0,     0,   144,   145,   146,   147,   148,   381,   149,
+     150,   151,   152,     0,   153,   154,     0,     0,   155,   156,
+     157,   158,   450,     0,     0,   159,   160,     0,     0,     0,
+       0,     0,     0,     0,   161,     0,   162,     0,     0,     0,
+       0,     0,     0,   382,   383,     0,     0,     0,     0,     0,
+       0,   163,   164,   248,     0,   451,     0,   452,   453,   454,
+     455,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    28,    29,    30,    31,    32,    33,    34,     0,   384,
+     944,     0,     0,     0,     0,     0,    35,   166,     0,     0,
+       0,   921,     0,     0,     0,   456,   457,   458,   459,     0,
+       0,   460,     0,     0,     0,   461,   462,   463,   740,     3,
+       0,     0,     0,     0,   143,     0,     0,   172,   144,   145,
+     146,   147,   148,     0,   149,   150,   151,   152,     0,   153,
+     154,     0,     0,   155,   156,   157,   158,     0,     0,     0,
+     159,   160,     0,     0,     0,     0,     0,     0,     0,   161,
+       0,   162,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,   163,   164,   248,   143,
+       0,     0,     0,   144,   145,   146,   147,   148,     0,   149,
+     150,   151,   152,     0,   153,   154,     0,     0,   155,   156,
+     157,   158,     0,     0,     0,   159,   160,     0,     0,     0,
+       0,     0,   166,     0,   161,     0,   162,     0,     0,   464,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   163,   164,   248,     0,     0,  1035,  1036,     0,  1037,
+    1038,  1039,  1040,  1041,  1042,     0,  1043,  1044,     0,  1045,
+    1046,  1047,  1048,  1049,     0,     0,     4,     5,     6,     7,
+       8,     0,     0,     0,     0,     0,     0,   166,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     9,    10,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,    11,    12,    13,    14,     0,
+       0,   172,    15,    16,     0,     0,    68,    69,    17,    70,
+       0,    18,     0,     0,     0,     0,     0,     0,    19,    20,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   875,   876,   877,     0,   878,   879,   880,   881,     0,
+     882,   883,   208,     0,   884,   885,   886,   887,     0,     0,
+       3,   888,   889,     0,     0,    71,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    72,     0,    68,    21,    22,    70,    23,    24,    25,
+      73,    26,    27,    28,    29,    30,    31,    32,    33,    34,
+       0,     0,   524,     0,    74,    75,    76,    77,    35,   536,
+      78,     0,     3,     0,     0,     0,     0,   896,     0,     0,
+       0,     0,     0,     0,     0,     0,   172,     0,     0,     0,
+     890,     0,    71,     0,     0,     0,     0,    79,    80,    81,
+      82,    83,    84,    85,     0,     0,     0,     0,    72,     0,
+       0,     0,     0,     0,     0,  1050,  1051,    73,  1052,  1053,
+    1054,   536,  1055,  1056,     0,     0,  1057,  1058,     0,  1059,
+       0,    74,    75,    76,    77,     0,     0,    78,     0,     0,
+       0,   172,  1060,  1061,  1062,  1063,  1064,  1065,  1066,  1067,
+    1068,  1069,  1070,  1071,  1072,  1073,  1074,   537,     0,     6,
+       7,     8,     0,     0,    79,    80,    81,    82,    83,    84,
+      85,   538,     0,     0,     0,     0,   539,     0,     0,     9,
+      10,     0,     0,     0,     0,     0,     0,   133,     0,     0,
+    1075,     0,     0,     0,     0,     0,    11,    12,    13,    14,
+       0,   540,   541,     0,     0,     0,     0,     0,     0,   537,
+       0,     6,     7,     8,     0,     0,     0,     0,     0,     0,
+       0,   542,     0,   538,     0,     0,     0,     0,   539,     0,
+       0,     9,    10,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,    11,    12,
+      13,    14,     0,   540,   541,     0,   543,   544,     0,     0,
+       0,    28,    29,    30,    31,    32,    33,    34,     0,     0,
+       0,     0,     0,   542,     0,     0,    35,     0,     0,     0,
+       0,     0,     0,     0,    28,    29,    30,    31,    32,    33,
+      34,     0,     0,   545,     0,     0,     0,     0,     0,    35,
+       0,     0,     0,     0,     0,   816,     0,     0,   543,   544,
+     817,   818,     0,   819,   820,   821,   822,   823,   824,     0,
+     825,   826,     0,   827,   828,   829,   830,   831,     0,     0,
+       0,    68,    69,     0,    70,     0,    28,    29,    30,    31,
+      32,    33,    34,     0,   816,  1164,     0,     0,     0,   817,
+     818,    35,   819,   820,   821,   822,   823,   824,     0,   825,
+     826,     0,   827,   828,   829,   830,   831,     0,     0,   832,
+       0,   833,     0,     0,     0,     0,   834,     0,     0,     0,
+      71,     0,     0,     0,     0,    68,    69,     0,    70,     0,
+       0,     0,     0,   835,     0,     0,    72,     0,     0,     0,
+       0,     0,     0,     0,     0,    73,     0,     0,   832,     0,
+     833,     0,     0,     0,     0,   834,     0,     0,     0,    74,
+      75,    76,    77,     0,     0,    78,   836,   256,   257,   258,
+       0,     0,   835,     0,    71,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      72,     0,   259,    80,    81,    82,    83,    84,    85,    73,
+       0,     0,     0,     0,     0,   836,     0,     0,     0,     0,
+       0,     0,     0,    74,    75,    76,    77,     0,     0,    78,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,   841,     0,     0,     0,
-       0,     0,     0,   821,     0,   822,   823,   824,   825,   826,
-     827,   828,   829,   830,   831,   832,   833,   834,   835,   836,
-     837,   838,   324,    98,     0,   839,     0,     0,   100,     0,
-     101,     0,     0,     0,   840,     0,     0,   102,     0,     0,
+       0,     0,     0,     0,     0,     0,    79,    80,    81,    82,
+      83,    84,    85,     0,     0,     0,   837,     0,   838,   839,
+     840,   841,   842,   843,   844,   845,   846,   847,   848,   849,
+     850,   851,   852,   853,   854,     0,     0,     0,   855,     0,
+      68,    69,     0,    70,     0,     0,   260,   856,   261,   262,
+     263,   264,     0,     0,     0,   837,     0,   838,   839,   840,
+     841,   842,   843,   844,   845,   846,   847,   848,   849,   850,
+     851,   852,   853,   854,   314,     0,     0,   855,     0,   857,
+       0,     0,     0,     0,     0,     0,   856,     0,   253,    71,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,   103,   325,     0,   326,   327,   328,
-     329,   330,     0,     0,     0,     0,   331,     0,     0,   104,
-       0,     0,     0,     0,     0,   332,     0,     0,     0,     0,
-     333,     0,   334,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,   335,   336,   337,   338,   339,   340,
-     341,   342,     0,     0,     0,     0,     0,   343
+       0,     0,     0,   315,     0,    72,     0,   316,     0,     0,
+     317,   318,     0,     0,    73,   319,   320,   321,   322,   323,
+     324,   325,   326,   327,   328,   329,   330,     0,    74,    75,
+      76,    77,     0,   331,    78,    68,    69,   332,    70,     0,
+       0,     0,     0,     0,   333,    68,    69,     0,    70,     0,
+       0,     0,     0,   334,     0,     0,     0,     0,     0,     0,
+       0,    79,    80,    81,    82,    83,    84,    85,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    71,     0,     0,     0,     0,    68,
+      69,     0,    70,     0,    71,     0,     0,     0,     0,     0,
+      72,     0,     0,   443,     0,   444,   445,     0,     0,    73,
+      72,     0,   446,     0,     0,   266,   267,     0,     0,    73,
+       0,     0,     0,    74,    75,    76,    77,     0,     0,    78,
+       0,     0,     0,    74,    75,    76,    77,     0,    71,    78,
+       0,     0,     0,    68,    69,     0,    70,   135,     0,     0,
+       0,     0,     0,     0,    72,     0,    79,    80,    81,    82,
+      83,    84,    85,    73,     0,     0,    79,    80,    81,    82,
+      83,    84,    85,     0,     0,     0,     0,    74,    75,    76,
+      77,     0,     0,    78,     0,     0,    68,    69,     0,    70,
+       0,     0,    71,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,   483,   484,     0,     0,    72,     0,
+      79,    80,    81,    82,    83,    84,    85,    73,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    74,    75,    76,    77,    71,     0,    78,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,    72,     0,     0,     0,     0,     0,     0,     0,     0,
+      73,     0,     0,     0,    79,    80,    81,    82,    83,    84,
+      85,     0,     0,     0,    74,    75,    76,    77,   143,     0,
+      78,     0,     0,     0,   146,   147,   148,     0,   149,   150,
+     151,   152,     0,   153,   154,     0,     0,   155,   156,   157,
+     158,     0,     0,     0,  1302,   160,     0,    79,    80,    81,
+      82,    83,    84,    85,     0,     0,     0,     0,     0,   340,
+     113,     0,     0,     0,     0,   115,     0,   116,     0,     0,
+       0,     0,     0,     0,   117,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,   118,   341,  1303,   342,   343,   344,   345,   346,     0,
+       0,     0,     0,   347,     0,     0,   119,     0,     0,     0,
+       0,     0,   348,  1304,     0,     0,     0,   349,     0,     0,
+     350,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,   351,   352,   353,   354,   355,   356,   357,   358,
+       0,     0,     0,     0,     0,   359
 };
 
 static const yytype_int16 yycheck[] =
 {
-       5,   163,    25,    25,     1,   103,   104,    25,     1,   676,
-     323,   323,   323,    43,     1,    20,   958,    57,    48,    93,
-     722,   661,    94,    28,    29,    30,    31,     1,   989,    59,
-       9,    21,    22,     1,   471,  1084,    77,     1,   188,   189,
-     190,   191,   192,    12,   185,    23,    24,   735,    25,    14,
-       7,   409,     7,   411,  1112,     5,     6,    19,     8,     9,
-      25,     5,     6,     8,     8,   163,     9,   734,     7,     8,
-      60,    63,     5,     6,     8,     8,    33,     9,    63,   484,
-     485,   486,     9,    73,    56,   108,   184,     9,    20,     7,
-       5,     6,     9,     8,     9,  1461,     9,   169,     7,     7,
-       5,     6,   136,     8,  1079,    20,   129,   181,    41,   114,
-       9,   116,   117,   118,   212,     9,     5,     6,     9,     8,
-      20,   110,   112,   113,   146,  1449,    41,   149,   105,   152,
-       5,     6,   136,     8,   377,   110,    41,   136,     5,     6,
-     105,     8,     5,     6,   185,     8,   168,     5,     6,  1448,
-       8,   156,   157,   197,   194,     9,     8,  1481,   293,   233,
-     232,   105,   106,   107,   215,   300,    20,   157,   198,     5,
-       6,     9,     8,     5,     6,   180,     8,  1446,     7,     9,
-      10,  1480,     9,    10,     9,   208,    11,    64,     9,    10,
-      11,   156,    44,   267,   882,   883,    14,     8,   163,    17,
-     205,   206,     9,    10,    33,   210,    31,    32,   896,  1478,
-      31,    32,   298,     5,     9,     9,     8,     9,     9,  1585,
-     227,     9,    40,    41,     9,    10,   388,    45,   233,    47,
-     292,   221,   222,    44,   239,   166,    54,   299,   260,   380,
-     247,    65,    66,     5,     6,   210,     8,   321,   125,  1441,
-     294,   656,   291,    71,     8,  1447,   279,   924,    87,   293,
-     299,    39,   267,   268,   287,  1240,   297,   272,    86,   291,
-     275,   276,   277,    51,    52,   280,   281,   682,   289,   298,
-     285,     9,   272,   294,   217,   952,   974,  1479,   215,   293,
-     274,    69,   291,   367,   392,   538,   286,   293,   289,   288,
-     297,   293,   217,   299,   297,     9,    10,    11,   293,   298,
-     297,   294,   217,   288,    11,   298,   390,   289,   291,   391,
-     215,   290,     7,   297,   297,   304,   323,    31,    32,   297,
-     323,   293,    12,   297,    31,    32,   323,   293,   293,   380,
-     297,   119,   383,   299,   306,    60,   387,   292,   215,   323,
-     292,   391,   295,   292,   298,   323,   300,   307,   292,   323,
-     304,   305,   293,   289,   303,   395,   389,   299,   358,   291,
-     360,   304,  1333,     5,   364,   416,     8,   299,   295,   297,
-     289,   289,   295,   457,   299,   294,   294,   294,   793,   304,
-     380,   298,   289,   383,   384,   295,   295,   387,  1456,   304,
-     293,   295,    24,    25,   295,   289,   299,   385,   386,   298,
-     400,   401,    34,   403,   293,   405,   393,   558,   492,   294,
-     299,   495,   496,   388,   389,   566,   423,  1476,   393,   407,
-     453,   421,   422,   289,  1492,   298,   423,   424,   425,   426,
-     298,  1081,   847,   295,   449,   207,   451,   298,   885,   423,
-     424,   425,   426,   304,   528,   553,   289,   295,   289,   250,
-     251,   252,   298,   297,   469,   295,   298,  1169,   295,    51,
-     295,   295,   544,   478,   295,   294,   294,     5,     6,   469,
-       8,     9,     5,     6,   293,     8,   560,   492,   295,   294,
-      13,     5,     6,     7,     8,     9,   294,   289,   463,    13,
-     295,   295,     5,     6,   469,     8,  1467,   295,     5,   136,
-      13,     8,     9,   291,    28,   589,   291,   558,    41,   509,
-     295,    44,   545,   136,   302,   566,   598,    41,    51,   292,
-     293,   105,   106,   107,   524,   525,     5,     6,    41,     8,
-     136,    44,    40,   615,    13,   550,   551,    45,    51,    47,
-     136,    65,    66,   543,  1496,   596,    54,   291,   292,   549,
-     306,   295,   552,   593,     9,    10,    11,   607,   138,   139,
-     294,   594,    41,    71,   298,   294,   566,   295,   719,   298,
-       5,     6,    51,     8,   589,   294,    31,    32,    86,   298,
-     294,    12,   622,   623,     5,     6,   295,     8,   628,    18,
-     630,    55,    13,    57,    58,    59,   596,  1295,  1296,   295,
-     708,   294,   925,   925,   925,   298,   714,   767,    61,   769,
-     770,   771,   772,   773,   294,     5,     6,   297,     8,   634,
-      41,   705,   706,   707,   271,   640,   159,   160,   161,   304,
-     662,   294,     9,   633,    11,   159,   160,   161,   678,   294,
-     673,   225,   294,   298,   295,   292,   159,   160,   161,   294,
-    1327,   298,   652,   298,    31,    32,   292,   293,   305,   294,
-     693,   676,     8,   298,   679,   294,   681,   297,   719,   298,
-       5,     6,   294,     8,   299,   672,   298,   759,    13,   294,
-     159,   160,   161,   298,   119,   120,   294,   294,   703,   689,
-     690,   298,   707,   744,   291,   294,   711,   712,   713,   298,
-     733,   294,   753,   294,   737,   298,    41,   298,  1406,   294,
-     100,   101,   102,   298,   298,  1413,   300,   295,   294,   734,
-     304,   305,   298,   294,   724,   294,   726,   298,   728,   298,
-     730,  1408,  1100,   294,  1102,   125,   299,   298,   159,   160,
-     161,     9,    23,   220,   744,    26,    27,    28,    29,   289,
-      31,    32,    33,   293,   754,   755,    25,   291,    26,    27,
-      28,   295,   295,   292,   293,   298,   848,   196,   756,   294,
-     290,   855,   299,   298,   298,   857,   776,   206,   778,   779,
-     209,   796,    40,   798,   294,   298,   291,    45,   298,    47,
-     295,   294,   792,   294,   845,    23,    54,   298,    26,    27,
-      28,    29,  1500,    31,    32,    33,    25,    26,    27,    28,
-      29,   294,   299,    71,    72,   298,   848,   298,   293,   298,
-     294,   905,   297,   294,   159,   160,   161,   294,    86,   219,
-     303,   221,   222,   223,   224,    65,    66,   888,   878,   290,
-     105,   106,   107,  1541,     5,     6,   294,     8,   848,   931,
-     138,   139,   281,   282,   283,   284,   285,   286,   287,   117,
-      46,   290,    48,    49,    50,  1542,   294,   296,    75,    76,
-      77,   136,   294,   957,  1572,   959,   292,   298,    18,   876,
-     880,   295,   910,   294,   917,   567,   568,   569,   104,  1587,
-     923,   294,   907,   109,    25,    26,    27,    28,    29,   914,
-     291,   292,     7,   903,   111,   112,   113,  1584,   289,   924,
-      26,    27,    28,    29,    75,    76,   291,   292,   925,   919,
-       7,   921,   925,   292,   975,   976,   293,   294,   925,   926,
-     927,  1013,   929,    75,    76,    77,   295,   952,   975,   976,
-     295,   925,   926,   927,   300,   929,    19,   925,   926,   927,
-      20,   925,   926,   927,   834,   835,   971,    26,    27,    28,
-      29,   208,    18,   298,    19,   301,   105,   106,   107,   111,
-     112,   113,   292,   292,   110,   975,   976,  1149,  1150,  1151,
-    1152,   289,     5,     6,  1066,     8,   289,  1159,  1160,  1161,
-      15,    16,    17,   289,   289,    20,    21,    22,    23,    24,
-    1000,    26,    27,    28,    29,   303,    31,    32,   289,    19,
-      35,    36,    37,    38,    28,    29,    41,    42,    43,   294,
-      62,   105,   106,   107,   305,    62,    51,   294,    53,   169,
-     170,   171,   172,   298,   294,   300,   295,   294,   299,   304,
-     305,   295,   295,    68,    69,    70,   295,   295,   303,    63,
-     295,   295,   295,   193,   194,   195,   196,    26,    27,    28,
-      29,  1145,  1146,  1063,   212,   281,   282,   283,   284,   285,
-     286,   287,   297,   297,   290,   297,   294,   305,   103,    18,
-     296,   215,   215,   295,  1116,  1085,  1086,  1087,   292,   297,
-     290,   292,  1092,  1093,  1094,  1095,  1096,  1097,     8,  1099,
-    1100,  1101,    41,  1103,  1104,  1105,  1106,  1107,  1108,  1109,
-    1098,  1111,   297,  1113,  1102,  1115,   290,  1117,  1486,  1487,
-     176,   177,  1110,   294,   294,     5,     6,  1142,     8,  1180,
-     294,   294,  1214,   295,   301,   295,  1187,    18,  1189,   295,
-     196,   281,   282,   283,   284,   285,   286,   287,    19,   295,
-     290,   295,   208,    19,   210,   294,   296,   213,   214,   298,
-      41,   300,   299,   292,  1139,   304,   305,   299,   295,   292,
-     292,  1171,   298,   294,  1149,  1150,  1151,  1152,   295,   303,
-     105,   106,   107,   294,  1159,  1160,  1161,   295,   202,   203,
-    1190,   205,   295,    73,   294,    75,    76,   294,   294,  1199,
-     295,  1309,    82,   295,   295,   234,  1206,  1207,   242,   294,
-     246,    22,   295,   290,   298,   154,   300,  1301,  1218,   297,
-     304,   305,   297,   289,   295,   281,   282,   283,   284,   285,
-     286,   287,   196,   301,   290,   294,   303,   294,  1238,  1239,
-     296,   303,  1326,   136,  1241,   299,   299,  1247,  1248,  1249,
-    1250,  1251,  1252,  1335,  1254,  1287,   299,   196,   299,   299,
-     299,    20,   295,    62,    62,  1253,     8,   206,     5,     6,
-     209,     8,   249,   154,  1289,   295,    13,   295,   295,    16,
-     289,   294,   307,    20,    21,    22,    23,    24,   294,    26,
-      27,    28,    29,   298,    31,    32,   298,   295,    35,    36,
-      37,    38,   299,   295,    41,    42,    43,   295,   294,   294,
-     166,   295,  1327,   295,    51,   196,    53,   295,   292,   299,
-     299,   255,   292,  1407,   104,   206,    19,   300,   209,   109,
-     295,    68,    69,    70,  1334,   303,   297,   299,   294,   294,
-     294,  1341,   281,   282,   283,   284,   285,   286,   287,   294,
-     294,   290,   294,   294,   104,  1352,   294,   296,   294,   109,
-     290,   294,   294,   294,   299,     8,   103,   295,   105,   106,
-     107,   295,   299,   298,   295,   300,  1409,   299,  1462,   304,
-     305,    14,   119,   120,    17,   299,   295,  1469,   295,   295,
-     301,   299,   295,  1408,   299,   295,   295,   299,   295,   295,
-     281,   282,   283,   284,   285,   286,   287,    40,    41,   290,
-     299,   299,    45,   295,    47,   296,   299,   295,   295,   295,
-     299,    54,   159,   160,   161,  1425,  1426,  1427,     5,     6,
-     299,     8,   299,   295,   295,   299,    13,   295,    71,    16,
-     295,   292,   299,    20,    21,    22,    23,    24,    19,    26,
-      27,    28,    29,    86,    31,    32,   295,   295,    35,    36,
-      37,    38,  1494,  1545,    41,    42,    43,   294,     8,   299,
-    1578,   299,   294,   299,    51,   294,    53,  1477,   294,   294,
-     303,   295,  1482,  1483,  1484,   303,  1486,   295,  1488,  1489,
-    1490,    68,    69,    70,   303,   295,   299,   294,  1582,  1487,
-     294,   281,   282,   283,   284,   285,   286,   287,   295,   299,
-    1510,  1511,  1512,   295,   299,   299,   296,   295,   294,   294,
-     294,   294,   294,   294,   294,   294,   103,  1542,   105,   106,
-     107,   281,   282,   283,   284,   285,   286,   287,   294,   294,
-     290,    18,   119,   120,   295,   294,   296,   294,  1581,   294,
-       8,   299,   295,    19,   295,   295,   300,   303,   294,   294,
-     299,   298,   294,   300,   294,   298,   295,   304,   305,  1584,
-     307,   295,   294,  1573,   295,   295,   295,     5,     6,   294,
-       8,     8,   159,   160,   161,    13,   295,   295,    16,   294,
-     294,   255,    20,    21,    22,    23,    24,   103,    26,    27,
-      28,    29,    19,    31,    32,   295,   295,    35,    36,    37,
-      38,   294,   179,    41,    42,    43,   295,   291,    25,   463,
-    1179,   702,   716,    51,  1136,    53,   393,  1138,    25,   962,
-    1178,   344,   607,    57,  1066,   564,     5,     6,   843,     8,
-      68,    69,    70,   885,    13,   673,   964,    16,   850,  1121,
-    1421,    20,    21,    22,    23,    24,   855,    26,    27,    28,
-      29,    10,    31,    32,   690,  1130,    35,    36,    37,    38,
-     475,   115,    41,    42,    43,   103,   526,   105,   106,   107,
-      -1,    -1,    51,    -1,    53,   720,   424,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,   172,    -1,   174,   175,    68,
-      69,    70,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   193,   194,   195,   196,
-      -1,   298,    -1,   300,    -1,    -1,    -1,   304,   305,    -1,
-     307,   159,   160,   161,   103,   104,     5,     6,    -1,     8,
-      -1,    -1,    -1,    -1,    13,    -1,    -1,    16,    -1,    -1,
+       5,   108,    25,   109,    92,   692,   178,   118,   119,   425,
+       1,   427,     1,    57,    25,    20,   339,    14,     1,   339,
+     974,     1,   339,    28,    29,    30,    31,     1,    25,  1005,
+     738,    21,    22,     1,  1128,   677,  1100,    25,     9,    12,
+       7,     7,   487,    43,    25,    23,    24,     9,    48,     7,
+       8,     8,     8,   500,   501,   502,   200,   111,    20,    59,
+       9,     8,    63,   750,     7,    19,    33,   178,     9,    56,
+      60,     7,     7,    65,    66,   751,   111,     9,   184,    63,
+       9,    10,    11,     9,   137,    11,   137,     9,   199,   196,
+       9,   203,   204,   205,   206,   207,     9,    44,    88,    20,
+     123,     9,    31,    32,     9,    31,    32,     9,    10,     9,
+      10,     9,   200,     9,    10,     9,   227,     9,    10,    11,
+     198,   144,   167,   120,   129,    64,   131,   132,   133,  1095,
+       9,     9,   120,  1477,   137,     8,   216,   127,   128,    31,
+      32,   247,   249,  1465,   167,   393,  1464,     7,   294,    11,
+       9,    10,    23,  1457,   300,    26,    27,    28,    29,  1463,
+      31,    32,    33,  1462,   228,   209,   171,   172,   137,    31,
+      32,    44,    40,    33,   171,  1497,   283,    45,  1496,    47,
+     161,   178,   172,   164,   248,     9,    54,   126,    24,    25,
+     195,  1495,   294,   293,   294,  1494,    20,     9,    34,   301,
+     223,    23,   183,    71,    26,    27,    28,    29,   294,    31,
+      32,    33,   293,   213,   300,   220,   221,   295,    86,   300,
+     225,   292,   898,   899,   299,   672,    39,    87,   225,   300,
+     337,   298,   404,   293,   294,   289,   912,    14,    51,    52,
+      17,   294,     9,   294,   249,   299,   236,   237,     8,   294,
+     255,   698,   396,   940,   289,   275,    69,   290,  1602,    26,
+      27,    28,   295,    40,    41,   294,   216,   294,    45,   299,
+      47,   300,   295,   300,   290,   216,   383,    54,   283,   284,
+     303,   968,   295,   288,     9,   298,   291,   292,   293,   292,
+    1256,   296,   297,   294,    71,   276,   301,   408,   288,   406,
+       7,   407,    12,   290,   296,   290,   554,   120,   396,    86,
+     294,   399,   302,   292,   990,   403,   292,   299,   291,   298,
+     296,   290,   313,   305,   313,   294,   307,   106,   107,   108,
+     313,   298,   298,   313,   305,   293,   293,   293,   300,   313,
+     294,   293,   294,   292,   432,   313,   304,   290,   339,   296,
+     339,   300,   295,   307,    60,   290,   339,   295,   294,   339,
+     295,   299,   809,   407,   296,   339,   473,   296,   292,   293,
+     296,   339,   296,  1349,   296,   296,   292,   296,  1472,   290,
+     296,   295,   405,   296,   374,   299,   376,   290,   296,   295,
+     380,   296,   293,   299,   296,   290,   296,   290,   296,   294,
+     296,   508,   296,   295,   511,   512,   396,   404,   405,   399,
+     400,   411,   409,   403,  1508,   272,   863,   296,   296,   290,
+     290,   409,   294,   401,   402,   290,   416,   417,  1492,   419,
+     574,   421,   583,   584,   585,   306,   293,   544,   582,   251,
+     252,   253,   299,    65,    66,   423,   469,   437,   438,   306,
+     439,   440,   441,   442,   560,  1097,   901,   295,   569,   439,
+     465,   299,   467,   295,   295,   106,   107,   108,   299,   576,
+     295,   439,   440,   441,   442,   139,   140,  1185,   298,   292,
+     485,   295,   479,   294,   306,   299,   574,   298,   485,   494,
+     303,    75,    76,    77,   582,   485,   137,    46,   605,    48,
+      49,    50,   295,   508,    51,   295,    39,  1483,   614,   299,
+     106,   107,   108,    46,   137,    48,    49,    50,   295,   295,
+     299,   307,   301,   299,   612,   631,   305,   306,   112,   113,
+     114,   137,    39,   295,   137,   525,   295,   299,   561,    46,
+     299,    48,    49,    50,    25,    26,    27,    28,    29,   295,
+     540,   541,   137,   299,    87,    88,    89,   296,  1512,   295,
+     295,   566,   567,   299,   299,    12,   106,   107,   108,   559,
+     296,     9,    10,    11,     9,   565,    11,   296,   568,   623,
+      87,    88,    89,   106,   107,   108,    55,   610,    57,    58,
+      59,   735,   582,    31,    32,   295,    31,    32,    61,   299,
+     605,   134,   135,   136,   305,   138,   295,   295,   141,   609,
+     299,   299,   295,   724,   721,   722,   723,   295,   941,   730,
+     296,   941,   612,   300,   941,   139,   140,   134,   135,   136,
+     226,   138,   298,   295,   141,  1311,  1312,   299,   638,   639,
+      26,    27,    28,    29,   644,   650,   646,   735,   295,   295,
+     295,   656,   299,   299,   299,   295,  1343,   292,   299,   649,
+     301,    28,    29,   295,   305,   306,   689,   299,     8,   775,
+     296,   783,   760,   785,   786,   787,   788,   789,   668,   295,
+     295,   769,   300,   299,   299,   295,   709,   692,    25,   299,
+     695,   295,   697,   221,   694,   299,    63,   678,   292,   293,
+    1116,   300,  1118,   299,   292,   301,   292,   293,   296,   305,
+     306,   294,   295,   300,   719,   705,   706,   295,   723,   295,
+     688,   291,   727,   728,   729,   299,   749,   991,   992,   295,
+     753,    25,    26,    27,    28,    29,   295,  1424,     5,     6,
+     295,     8,     9,   304,   295,   750,  1422,   850,   851,   295,
+     740,   293,   742,  1429,   744,   295,   746,   291,   864,   299,
+     296,   301,     7,   296,   871,   305,   306,   873,   295,   295,
+     760,   290,     7,   861,   296,   293,   299,   301,   301,    40,
+     770,   771,   305,   306,    45,   296,    47,    54,    19,   296,
+     209,    19,   302,    54,   772,    20,    75,    76,    77,   293,
+     293,   111,   792,    70,   794,   795,   290,   812,   290,   814,
+      71,    72,    79,   290,   921,   290,   904,   304,   808,    26,
+      27,    28,    29,    19,   295,    86,    93,    94,    95,    96,
+      62,   295,    99,   112,   113,   114,   203,   204,    62,   206,
+    1516,   947,    26,    27,    28,    29,   295,   295,   300,   304,
+     105,   296,   296,   296,   296,   110,   296,   118,   213,   126,
+     127,   128,   129,   130,   131,   132,   973,   296,   975,   296,
+     296,  1558,   216,   298,   864,   298,   298,   295,   216,   296,
+     293,  1557,   298,   864,   291,   293,     8,   298,   291,   295,
+       5,     6,   296,     8,   894,   295,   295,     5,     6,   296,
+       8,   296,   295,   991,   992,    19,   896,   296,   302,   300,
+     933,   296,   300,  1589,  1601,   926,   939,   293,   923,    19,
+     293,   296,   293,  1029,   892,   930,    41,   296,  1604,   919,
+     295,   299,   304,   295,   295,   940,   296,   296,   295,    54,
+     296,   243,   296,   296,   295,   935,    54,   937,   235,   247,
+     941,    22,   941,   942,   943,    70,   945,   296,   941,   942,
+     943,   941,    70,   968,    79,   295,   298,   941,   942,   943,
+     291,    79,   298,   941,   942,   943,  1082,   945,    93,    94,
+      95,    96,   987,   290,    99,    93,    94,    95,    96,   302,
+     296,    99,   197,  1165,  1166,  1167,  1168,   300,   295,    39,
+     304,   991,   992,  1175,  1176,  1177,    46,   300,    48,    49,
+      50,   126,   127,   128,   129,   130,   131,   132,   126,   127,
+     128,   129,   130,   131,   132,   300,  1016,   282,   283,   284,
+     285,   286,   287,   288,   304,   300,   291,   295,   137,    20,
+     300,   308,   297,   300,   296,    62,    62,    87,    88,    89,
+     296,     8,   296,   296,  1161,  1162,    22,    23,    24,   105,
+      26,    27,    28,    29,   110,    31,    32,    33,   250,    35,
+      36,    37,    38,   299,   296,   295,    42,    43,   299,   295,
+     105,   290,   300,   296,   296,   110,  1502,  1503,   167,  1079,
+     296,   295,   295,   293,   134,   135,   136,   296,   138,   296,
+     256,   141,   300,   218,   293,   300,    19,   301,  1196,   296,
+     298,  1101,  1102,  1103,   304,  1203,   295,  1205,  1108,  1109,
+    1110,  1111,  1112,  1113,  1230,  1115,  1116,  1117,   300,  1119,
+    1120,  1121,  1122,  1123,  1124,  1125,  1114,  1127,   295,  1129,
+    1118,  1131,   295,  1133,   295,   111,   295,   295,  1126,   295,
+     295,  1132,   295,  1158,   295,   295,   295,   291,  1155,   296,
+       8,   296,    18,   295,   300,   296,   296,   300,  1165,  1166,
+    1167,  1168,   300,   300,   300,   296,   296,   300,  1175,  1176,
+    1177,   300,   300,   296,   296,   296,   296,   296,     0,    19,
+     305,   299,   296,   300,   300,   296,   301,  1187,   300,   296,
+     296,     8,   300,   296,   296,   300,    18,   296,   296,   300,
+    1317,   293,   302,   300,  1325,   296,  1206,   300,   296,   295,
+     300,   295,   295,   300,   296,  1215,   295,   295,    84,   304,
+     296,   295,  1222,  1223,   304,  1342,   282,   283,   284,   285,
+     286,   287,   288,   304,  1234,  1351,   296,   300,   296,   300,
+       8,   297,   296,   300,   296,   300,   296,   282,   283,   284,
+     285,   286,   287,   288,  1254,  1255,   291,   295,   295,   295,
+     300,   295,   297,  1263,  1264,  1265,  1266,  1267,  1268,   300,
+    1270,   295,   295,   295,   295,   295,   295,     5,     6,  1257,
+       8,  1269,   295,   295,   295,    13,   296,   296,    16,   296,
+    1305,   296,    20,    21,    22,    23,    24,   295,    26,    27,
+      28,    29,   304,    31,    32,   295,  1423,    35,    36,    37,
+      38,   295,  1303,    41,    42,    43,   295,   299,   296,   296,
+     296,   295,   295,    51,   296,    53,    54,   296,  1343,    19,
+     296,   197,    18,   155,   156,   157,   158,   159,     8,   296,
+      68,    69,    70,   209,   296,   211,   212,   295,   214,   215,
+    1350,    79,   295,   256,   104,   177,   178,  1357,   296,   296,
+      19,  1478,   295,   194,   296,    93,    94,    95,    96,  1485,
+      25,    99,   194,   195,   196,   197,   104,   105,   307,   201,
+     202,   409,  1195,   479,   718,   207,   732,  1152,   210,    25,
+    1368,  1154,  1425,   978,   580,   217,   218,  1194,   126,   127,
+     128,   129,   130,   131,   132,   360,    57,  1082,   859,  1424,
+     689,   623,   901,   980,  1137,  1437,   282,   283,   284,   285,
+     286,   287,   288,   706,   871,   291,   866,    10,  1146,   491,
+     130,   297,   160,   161,   162,   736,   440,    -1,   542,    -1,
+      -1,  1441,  1442,  1443,    -1,  1561,    -1,    -1,    -1,    -1,
+      14,   273,   274,    17,   276,   277,   278,    -1,   280,   281,
+     282,   283,   284,   285,   286,   287,   288,    -1,    18,   197,
+      -1,    -1,    -1,    -1,  1595,   297,    40,    41,    -1,    -1,
+      -1,    45,  1599,    47,   170,   171,   172,   173,    -1,    -1,
+      54,    -1,    -1,  1493,    -1,    -1,    -1,    -1,  1498,  1499,
+    1500,    -1,  1502,    -1,  1504,  1505,  1506,    71,   194,   195,
+     196,   197,    -1,    -1,    -1,  1503,    -1,    -1,    -1,  1510,
+      -1,    -1,    86,    -1,    -1,    -1,  1526,  1527,  1528,    -1,
+       5,     6,    -1,     8,    -1,    -1,    -1,    -1,    13,    -1,
+      -1,    16,    -1,  1558,    -1,    20,    21,    22,    23,    24,
+      -1,    26,    27,    28,    29,    -1,    31,    32,    -1,    -1,
+      35,    36,    37,    38,    -1,  1598,    41,    42,    43,    -1,
+      -1,   299,    -1,    -1,    -1,    -1,    51,    -1,    53,    54,
+     308,    -1,    -1,    -1,    -1,    -1,  1601,    -1,    -1,    -1,
+    1590,    -1,    -1,    68,    69,    70,   282,   283,   284,   285,
+     286,   287,   288,    -1,    79,   291,    -1,    -1,    -1,    -1,
+      -1,   297,    -1,    -1,    -1,    -1,    -1,    -1,    93,    94,
+      95,    96,    -1,    -1,    99,    -1,    -1,   177,   178,   104,
+      -1,   106,   107,   108,    -1,    -1,    -1,    -1,    -1,    -1,
+      18,    -1,    -1,    -1,    -1,   120,   121,   197,    -1,    -1,
+      -1,   126,   127,   128,   129,   130,   131,   132,    -1,   209,
+      -1,   211,    -1,    41,   214,   215,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+       5,     6,    -1,     8,    -1,   160,   161,   162,    13,    -1,
+      -1,    16,    -1,    -1,    -1,    20,    21,    22,    23,    24,
+      -1,    26,    27,    28,    29,    -1,    31,    32,    -1,    -1,
+      35,    36,    37,    38,    -1,    -1,    41,    42,    43,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    51,    -1,    53,    54,
+      -1,    -1,   282,   283,   284,   285,   286,   287,   288,    -1,
+      -1,   291,    -1,    68,    69,    70,    -1,   297,    -1,    -1,
+      -1,    -1,    -1,    -1,    79,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    93,    94,
+      95,    96,    -1,    -1,    99,    -1,    -1,   155,    -1,   104,
+      -1,   106,   107,   108,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,   120,   121,    -1,    -1,    -1,
+      -1,   126,   127,   128,   129,   130,   131,   132,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   197,
+      -1,    -1,    -1,    -1,   299,    -1,   301,    -1,    -1,   207,
+     305,   306,   210,   308,    -1,   160,   161,   162,     5,     6,
+      -1,     8,    -1,    -1,    -1,    -1,    13,    -1,    -1,    16,
+      -1,    -1,    -1,    20,    21,    22,    23,    24,    -1,    26,
+      27,    28,    29,    -1,    31,    32,    -1,    -1,    35,    36,
+      37,    38,    -1,    -1,    41,    42,    43,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    51,    -1,    53,    54,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    68,    69,    70,   282,   283,   284,   285,   286,   287,
+     288,    -1,    79,   291,    -1,    -1,    -1,    -1,    -1,   297,
+      -1,    -1,    -1,    -1,    -1,    -1,    93,    94,    95,    96,
+      -1,    -1,    99,    -1,    -1,    -1,    -1,   104,    -1,   106,
+     107,   108,    -1,    -1,    -1,    -1,    -1,    -1,    18,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   126,
+     127,   128,   129,   130,   131,   132,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,   299,    -1,   301,    -1,    -1,    -1,
+     305,   306,    -1,   308,    -1,    -1,    -1,    -1,     5,     6,
+      -1,     8,    -1,   160,   161,   162,    13,    -1,    -1,    16,
+      -1,    -1,    -1,    20,    21,    22,    23,    24,    -1,    26,
+      27,    28,    29,    -1,    31,    32,    -1,    -1,    35,    36,
+      37,    38,    -1,    -1,    41,    42,    43,    -1,    -1,    39,
+      -1,    -1,    -1,    -1,    51,    -1,    53,    54,    -1,    -1,
+      -1,    -1,    -1,    -1,    54,    -1,    -1,    -1,    -1,    -1,
+      -1,    68,    69,    70,    -1,    72,    -1,    -1,    -1,    -1,
+      70,    -1,    79,    -1,    -1,    -1,    -1,    -1,    -1,    79,
+      -1,    -1,    -1,    -1,    -1,    -1,    93,    94,    95,    96,
+      -1,    -1,    99,    93,    94,    95,    96,   104,    -1,    99,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   118,    -1,   173,    -1,   175,   176,    -1,    -1,   126,
+     127,   128,   129,   130,   131,   132,   126,   127,   128,   129,
+     130,   131,   132,    -1,   194,   195,   196,   197,    -1,    -1,
+      -1,    -1,   299,    -1,   301,    -1,    -1,    -1,   305,   306,
+      -1,   308,    -1,   160,   161,   162,     5,     6,    -1,     8,
+      -1,    -1,    -1,    -1,    13,    18,    -1,    16,    -1,    -1,
       -1,    20,    21,    22,    23,    24,    -1,    26,    27,    28,
       29,    -1,    31,    32,    -1,    -1,    35,    36,    37,    38,
       -1,    -1,    41,    42,    43,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    51,    -1,    53,    -1,    -1,    -1,    -1,    -1,
-     159,   160,   161,    -1,    -1,    -1,    -1,    -1,    -1,    68,
-      69,    70,    -1,    72,   281,   282,   283,   284,   285,   286,
-     287,    -1,    -1,   290,    -1,    -1,    -1,    -1,    -1,   296,
-       5,     6,    -1,     8,    -1,    -1,    -1,   196,    13,    -1,
-      -1,    16,    -1,    -1,   103,    20,    21,    22,    23,    24,
-      -1,    26,    27,    28,    29,    -1,    31,    32,   117,    -1,
-      35,    36,    37,    38,    -1,    -1,    41,    42,    43,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    51,    -1,    53,    -1,
-     298,    -1,   300,    -1,    -1,    -1,   304,   305,    -1,   307,
-      -1,    -1,    -1,    68,    69,    70,    -1,    -1,    -1,    -1,
-     159,   160,   161,    22,    23,    24,    -1,    26,    27,    28,
-      29,    -1,    31,    32,    33,    -1,    35,    36,    37,    38,
-      -1,    -1,    -1,    42,    43,    -1,    -1,    -1,   103,   104,
-      -1,    -1,    -1,    -1,     5,     6,    -1,     8,    -1,   298,
-      -1,    -1,    13,    -1,    -1,    16,    -1,    -1,   307,    20,
-      21,    22,    23,    24,    -1,    26,    27,    28,    29,    -1,
-      31,    32,    -1,    -1,    35,    36,    37,    38,    -1,    -1,
-      41,    42,    43,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      51,    -1,    53,    -1,   159,   160,   161,    -1,    -1,    -1,
-      -1,   110,    -1,    -1,    -1,    -1,    -1,    68,    69,    70,
-      -1,    -1,    -1,    -1,     5,     6,    -1,     8,    -1,    -1,
-      -1,    -1,    13,    -1,    -1,    16,    -1,    -1,    -1,    20,
-      21,    22,    23,    24,    -1,    26,    27,    28,    29,    -1,
-      31,    32,   103,    -1,    35,    36,    37,    38,    -1,   298,
-      41,    42,    43,    -1,    39,    -1,    -1,    -1,   307,    -1,
-      51,    46,    53,    48,    49,    50,    -1,    -1,    -1,    -1,
-      -1,    -1,     0,    -1,    -1,    -1,    -1,    68,    69,    70,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      18,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   159,   160,
-     161,    -1,    87,    88,    89,    -1,    -1,    -1,     5,     6,
-      -1,     8,   103,    -1,    -1,    -1,    13,    -1,    -1,    16,
-      -1,    -1,    -1,    20,    21,    22,    23,    24,    -1,    26,
-      27,    28,    29,   298,    31,    32,    -1,    -1,    35,    36,
-      37,    38,   307,    -1,    41,    42,    43,    -1,   133,   134,
-     135,    -1,   137,    -1,    51,   140,    53,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   159,   160,
-     161,    68,    69,    70,    -1,    -1,    -1,     5,     6,    -1,
-       8,    -1,    -1,    -1,    -1,    13,   295,    -1,    16,    -1,
-      -1,    -1,    20,    21,    22,    23,    24,    -1,    26,    27,
-      28,    29,    -1,    31,    32,    -1,   103,    35,    36,    37,
-      38,    -1,    -1,    41,    42,    43,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    51,    -1,    53,   154,   155,   156,   157,
-     158,    -1,    -1,    -1,    -1,    -1,    -1,   298,    -1,    -1,
-      68,    69,    70,    -1,    -1,    39,   307,    -1,   176,   177,
-      -1,    -1,    46,    -1,    48,    49,    50,    -1,    -1,    -1,
-      -1,    -1,   159,   160,   161,   193,   194,   195,   196,    -1,
-      -1,    -1,   200,   201,    -1,   103,    -1,    -1,   206,    -1,
-      -1,   209,    -1,    -1,     5,    -1,    -1,     8,   216,   217,
-      -1,    -1,    -1,    87,    88,    89,    -1,    18,     7,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,   298,    -1,    -1,
-     295,    -1,    -1,    22,    23,    24,   307,    26,    27,    28,
-      29,    -1,    31,    32,    33,    -1,    35,    36,    37,    38,
-      -1,   159,   160,   161,    -1,    44,    -1,    -1,    -1,   133,
-     134,   135,    -1,   137,   272,   273,   140,   275,   276,   277,
-      -1,   279,   280,   281,   282,   283,   284,   285,   286,   287,
-      -1,    -1,    -1,    -1,    15,    16,    17,    -1,   296,    20,
-      21,    22,    23,    24,    -1,    26,    27,    28,    29,    -1,
-      31,    32,    -1,    -1,    35,    36,    37,    38,    -1,    -1,
-      -1,    42,    43,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      51,   298,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-     307,    -1,    -1,    -1,    -1,    -1,    -1,    68,    69,    70,
-     141,   142,   143,   144,   145,   146,   147,   148,   149,   150,
-     151,   152,   153,    -1,    -1,    -1,    39,   158,    -1,    -1,
-      -1,   162,   163,   164,   165,   166,   167,     5,    -1,    -1,
-       8,    54,   103,    -1,    39,   176,   177,    -1,    -1,    -1,
-      18,    46,    -1,    48,    49,    50,    -1,    70,    -1,    -1,
-     298,    -1,   193,   194,   195,   196,    79,    -1,    -1,   307,
-      -1,    -1,    -1,   204,    -1,    -1,    -1,    -1,    -1,    -1,
-      93,    94,    95,    96,    -1,    -1,    -1,   218,    -1,    -1,
-      -1,   295,    87,    88,    89,   178,   179,   180,   181,   182,
-     183,   184,   185,   186,   187,   188,   189,   190,   191,   192,
-      -1,    -1,   125,   126,   127,   128,   129,   130,   131,    -1,
-      -1,     5,   253,   254,     8,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    18,    -1,    -1,    -1,   133,   134,
-     135,    -1,   137,    -1,    -1,   140,    -1,    -1,    -1,    -1,
-     281,   282,   283,   284,   285,   286,   287,    -1,   289,   290,
-      -1,    -1,    -1,    -1,    -1,   296,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,   141,   142,   143,   144,   145,   146,   147,
-     148,   149,   150,   151,   152,   153,    -1,    -1,    -1,    -1,
-     158,    -1,    -1,    -1,   162,   163,   164,   165,   166,   167,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   176,   177,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,   193,   194,   195,   196,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   204,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   307,    -1,    -1,    -1,
-     218,    -1,    -1,    -1,    -1,    -1,    -1,   141,   142,   143,
-     144,   145,   146,   147,   148,   149,   150,   151,   152,   153,
-      -1,    -1,    -1,    -1,   158,    -1,   289,    -1,   162,   163,
-     164,   165,   166,   167,    -1,   253,   254,    -1,    -1,    -1,
-      -1,    -1,   176,   177,    -1,    -1,    -1,    -1,    -1,    -1,
-     295,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   193,
-     194,   195,   196,   281,   282,   283,   284,   285,   286,   287,
-     204,   289,   290,    -1,    -1,    -1,    -1,    -1,   296,    -1,
-      -1,    16,    -1,    -1,   218,    20,    21,    22,    23,    24,
-      -1,    26,    27,    28,    29,    -1,    31,    32,    -1,    -1,
-      35,    36,    37,    38,    39,    -1,    -1,    42,    43,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    51,    -1,    53,   253,
-     254,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    68,    69,    70,    -1,    72,    -1,    74,
-      75,    76,    77,    -1,    -1,    -1,    -1,   281,   282,   283,
-     284,   285,   286,   287,    -1,   289,   290,    -1,    -1,    -1,
-      -1,    -1,   296,    -1,    -1,    -1,    -1,    -1,   103,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   111,   112,   113,   114,
-      -1,    -1,   117,    -1,    -1,    16,   121,   122,   123,    20,
-      21,    22,    23,    24,    -1,    26,    27,    28,    29,    -1,
-      31,    32,    -1,    -1,    35,    36,    37,    38,    -1,    -1,
-      -1,    42,    43,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      51,    -1,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      18,    -1,    -1,    -1,    -1,    -1,    -1,    68,    69,    70,
-      16,    -1,    -1,    -1,    20,    21,    22,    23,    24,    -1,
-      26,    27,    28,    29,    -1,    31,    32,    -1,    -1,    35,
-      36,    37,    38,    -1,    -1,    -1,    42,    43,    -1,    -1,
-      -1,    -1,   103,    -1,    -1,    51,    -1,    53,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-     225,    16,    68,    69,    70,    20,    21,    22,    23,    24,
-      -1,    26,    27,    28,    29,    -1,    31,    32,    -1,    -1,
-      35,    36,    37,    38,    -1,    -1,    -1,    42,    43,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    51,   103,    53,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    68,    69,    70,    -1,    -1,    21,    22,
-      -1,    24,    25,    26,    27,    28,    29,    -1,    31,    32,
-      -1,    34,    35,    36,    37,    38,   154,   155,   156,   157,
-     158,    18,   307,    -1,    -1,    -1,    -1,    -1,   103,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   176,   177,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,   193,   194,   195,   196,    -1,
-      -1,    -1,   200,   201,    -1,    -1,    -1,    -1,   206,    -1,
-      67,   209,    -1,    -1,    -1,    -1,    -1,    -1,   216,   217,
-      22,    23,    24,    -1,    26,    27,    28,    29,    -1,    31,
-      32,    33,    -1,    35,    36,    37,    38,    -1,    -1,    -1,
-      42,    43,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,   298,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   307,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,   272,   273,    -1,   275,   276,   277,
-      -1,   279,   280,   281,   282,   283,   284,   285,   286,   287,
-      -1,    -1,   290,    -1,    -1,    -1,    18,   154,   296,   156,
-     157,   158,    -1,    -1,    -1,    -1,    -1,    -1,   110,    -1,
-      -1,   168,   298,    -1,    -1,    -1,   173,    -1,    -1,   176,
-     177,   307,    18,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   193,   194,   195,   196,
-      -1,   198,   199,    -1,    -1,    67,   229,   230,    -1,   232,
-     233,   234,    -1,   236,   237,    -1,    -1,   240,   241,    -1,
-     243,   218,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,   307,   256,   257,   258,   259,   260,   261,   262,
-     263,   264,   265,   266,   267,   268,   269,   270,    84,    -1,
-      -1,    -1,    16,    -1,    -1,    -1,   253,   254,    22,    23,
-      24,    -1,    26,    27,    28,    29,    -1,    31,    32,    -1,
-      -1,    35,    36,    37,    38,    -1,    -1,    -1,    42,    43,
-      -1,   304,    -1,    -1,   281,   282,   283,   284,   285,   286,
-     287,    -1,   154,   290,   156,   157,   158,    -1,    -1,   296,
-      -1,    -1,    -1,    -1,    -1,    -1,   168,    -1,    -1,    -1,
-      -1,   173,    -1,    -1,   176,   177,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    91,    -1,    -1,
-      -1,   193,   194,   195,   196,    -1,   198,   199,    -1,   281,
-     282,   283,   284,   285,   286,   287,   110,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,   296,    -1,   218,    -1,    -1,    -1,
-     196,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,   208,    -1,   210,   211,    -1,   213,   214,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,   253,   254,    16,    -1,    -1,    -1,    -1,    21,    22,
-      -1,    24,    25,    26,    27,    28,    29,    -1,    31,    32,
-      -1,    34,    35,    36,    37,    38,    -1,    -1,    -1,   281,
-     282,   283,   284,   285,   286,   287,    -1,    -1,   290,    -1,
-      -1,    -1,    -1,    -1,   296,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,   281,   282,   283,   284,   285,
-     286,   287,    -1,    -1,   290,    -1,    -1,    80,    -1,    82,
-     296,    -1,    -1,    16,    87,    -1,    -1,    -1,    21,    22,
-      -1,    24,    25,    26,    27,    28,    29,    -1,    31,    32,
-     103,    34,    35,    36,    37,    38,     5,     6,    -1,     8,
-      22,    23,    24,    -1,    26,    27,    28,    29,    -1,    31,
-      32,    33,    -1,    35,    36,    37,    38,    -1,    -1,    -1,
-      42,    43,    -1,   136,    -1,    -1,    -1,    -1,    -1,    -1,
-      39,    -1,    -1,    -1,    -1,    -1,    -1,    80,    -1,    82,
-      -1,    -1,    -1,    -1,    87,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    51,    -1,    53,    54,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    68,
-     103,    -1,    -1,    72,    -1,    -1,    75,    76,    -1,    -1,
-      -1,    80,    81,    82,    83,    84,    85,    86,    87,    88,
-      89,    90,    91,    -1,    -1,    -1,    -1,    -1,   110,    98,
-      -1,    -1,   101,   136,    -1,    -1,    -1,    -1,    -1,   108,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   117,    -1,
-      -1,    -1,    -1,   226,    -1,   228,   229,   230,   231,   232,
-     233,   234,   235,   236,   237,   238,   239,   240,   241,   242,
-     243,   244,    -1,    -1,    -1,   248,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,   257,    -1,    -1,    -1,    -1,    -1,
+      69,    70,   282,   283,   284,   285,   286,   287,   288,    -1,
+      79,   291,    -1,    -1,    -1,    -1,    -1,   297,    -1,    -1,
+      -1,    -1,    -1,    -1,    93,    94,    95,    96,    -1,    -1,
+      99,    -1,    -1,    -1,    -1,   104,   105,   179,   180,   181,
+     182,   183,   184,   185,   186,   187,   188,   189,   190,   191,
+     192,   193,    -1,    -1,    -1,    -1,    -1,   126,   127,   128,
+     129,   130,   131,   132,    -1,    -1,    -1,    -1,    -1,    -1,
+     290,     5,   299,    -1,     8,     9,    -1,    -1,    -1,     5,
+       6,   308,     8,    -1,    -1,    -1,    -1,    13,    -1,    -1,
+      16,   160,   161,   162,    20,    21,    22,    23,    24,    -1,
+      26,    27,    28,    29,    -1,    31,    32,    -1,    -1,    35,
+      36,    37,    38,    -1,    -1,    41,    42,    43,    -1,    -1,
+      54,    -1,    -1,    -1,   197,    51,    -1,    53,    54,    -1,
+      -1,    -1,    -1,    -1,   207,    -1,    70,   210,    -1,    -1,
+      -1,    -1,    68,    69,    70,    79,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    79,    -1,    -1,    -1,    -1,    -1,    93,
+      94,    95,    96,    -1,    -1,    99,    -1,    93,    94,    95,
+      96,    -1,    -1,    99,    -1,    -1,    -1,    -1,   104,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   126,   127,   128,   129,   130,   131,   132,    -1,
+     126,   127,   128,   129,   130,   131,   132,    -1,    -1,   282,
+     283,   284,   285,   286,   287,   288,     5,     6,   291,     8,
+      -1,    -1,    -1,    -1,   297,    -1,    -1,    -1,    -1,    -1,
+     299,    -1,    -1,    -1,   160,   161,   162,     5,     6,   308,
+       8,    -1,    -1,    -1,    -1,    13,    -1,    -1,    16,    -1,
+      -1,    -1,    20,    21,    22,    23,    24,    -1,    26,    27,
+      28,    29,    -1,    31,    32,    54,    -1,    35,    36,    37,
+      38,    -1,    -1,    41,    42,    43,    -1,    -1,    -1,    -1,
+      -1,    70,    -1,    51,    -1,    53,    54,    -1,    -1,    -1,
+      79,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      68,    69,    70,    -1,    93,    94,    95,    96,    -1,    -1,
+      99,    79,    -1,    -1,    -1,    -1,    -1,   106,   107,   108,
+      -1,    -1,    -1,    -1,    -1,    93,    94,    95,    96,    -1,
+      -1,    99,    -1,    -1,    -1,    -1,   104,   126,   127,   128,
+     129,   130,   131,   132,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   290,    -1,   126,   127,
+     128,   129,   130,   131,   132,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,     5,   299,    -1,     8,     9,    -1,    -1,    -1,
+       5,     6,   308,     8,    -1,    -1,    -1,    -1,    13,    -1,
+      -1,    16,   160,   161,   162,    20,    21,    22,    23,    24,
+      -1,    26,    27,    28,    29,    -1,    31,    32,    -1,    -1,
+      35,    36,    37,    38,    -1,    -1,    41,    42,    43,    -1,
+      -1,    54,    -1,    -1,    -1,    -1,    51,    -1,    53,    54,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    -1,    -1,
+      -1,    -1,    -1,    68,    69,    70,    79,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    79,    -1,    -1,    -1,    -1,    -1,
+      93,    94,    95,    96,    -1,    -1,    99,    -1,    93,    94,
+      95,    96,    -1,    -1,    99,    -1,    -1,    -1,    -1,   104,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,   126,   127,   128,   129,   130,   131,   132,
+      -1,   126,   127,   128,   129,   130,   131,   132,    -1,    18,
+     299,    -1,   301,    -1,    -1,    -1,   305,   306,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   299,    41,    -1,    -1,   160,   161,   162,     5,     6,
+     308,     8,    -1,    -1,    -1,    -1,    13,    -1,    -1,    16,
+      -1,    -1,    -1,    20,    21,    22,    23,    24,    -1,    26,
+      27,    28,    29,    -1,    31,    32,    -1,    -1,    35,    36,
+      37,    38,    -1,    -1,    41,    42,    43,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    51,    -1,    53,    54,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    68,    69,    70,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    79,    -1,    -1,    -1,    -1,     5,     6,    -1,
+       8,    -1,    -1,    -1,    -1,    -1,    93,    94,    95,    96,
+      -1,    -1,    99,    -1,    -1,     5,     6,   104,     8,     9,
+      -1,    -1,    -1,    -1,    -1,    -1,   155,    -1,    -1,    -1,
+      20,    -1,    -1,    41,    -1,    -1,    -1,    -1,    -1,   126,
+     127,   128,   129,   130,   131,   132,    54,    -1,    -1,    -1,
+      -1,    41,    -1,    -1,   299,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    70,   308,    54,    -1,    -1,    -1,   197,    -1,
+      -1,    79,    -1,   160,   161,   162,    -1,    -1,   207,    -1,
+      70,   210,    -1,    -1,    -1,    93,    94,    95,    96,    79,
+      -1,    99,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    93,    94,    95,    96,    -1,    -1,    99,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   126,   127,
+     128,   129,   130,   131,   132,     5,     6,     7,     8,     9,
+      -1,    -1,    -1,    13,    -1,    -1,   126,   127,   128,   129,
+     130,   131,   132,     5,     6,    -1,     8,    -1,    28,    -1,
+      -1,    13,    -1,   282,   283,   284,   285,   286,   287,   288,
+      -1,    41,   291,    -1,    -1,    -1,    -1,    -1,   297,    -1,
+      -1,    -1,    -1,    -1,    54,    -1,    -1,    -1,    -1,    41,
+      -1,    -1,    44,    -1,    -1,    65,    66,    -1,    -1,    51,
+      70,    -1,    54,    -1,    -1,    -1,    -1,    -1,    -1,    79,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    70,    -1,
+     218,    -1,   299,    93,    94,    95,    96,    79,    -1,    99,
+      -1,   308,    -1,    -1,    -1,    -1,    -1,    -1,   218,    -1,
+      -1,    93,    94,    95,    96,    -1,    -1,    99,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   126,   127,   128,   129,
+     130,   131,   132,    -1,    -1,     5,     6,    -1,     8,    -1,
+      -1,    -1,    -1,    13,   126,   127,   128,   129,   130,   131,
+     132,    -1,    -1,    -1,    -1,    -1,     5,     6,    -1,     8,
+     160,   161,   162,    -1,    13,    -1,    -1,    -1,    -1,    -1,
+      -1,    41,    -1,    -1,    44,    -1,    -1,   305,   160,   161,
+     162,    51,    -1,    -1,    54,    -1,    -1,    -1,    -1,    -1,
+     300,    -1,    41,    -1,    -1,   305,    -1,    -1,    -1,    -1,
+      70,    -1,    51,    -1,    -1,    54,    -1,    -1,    -1,    79,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    70,    -1,    93,    94,    95,    96,    -1,    -1,    99,
+      79,    -1,    -1,    -1,    -1,     5,     6,    -1,     8,    -1,
+      -1,    -1,    -1,    13,    93,    94,    95,    96,    -1,    -1,
+      99,    -1,    -1,    -1,    -1,    -1,   126,   127,   128,   129,
+     130,   131,   132,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    41,    -1,    -1,    -1,    -1,    -1,   126,   127,   128,
+     129,   130,   131,   132,    54,    -1,    -1,    -1,    -1,    -1,
+     160,   161,   162,    -1,    -1,    -1,    -1,    -1,    -1,   299,
+      70,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    79,
+      -1,   160,   161,   162,   296,    -1,    -1,   299,    -1,     5,
+       6,    -1,     8,    93,    94,    95,    96,    13,    -1,    99,
+       5,     6,    -1,     8,    -1,    -1,    -1,     5,     6,    -1,
+       8,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    41,   126,   127,   128,   129,
+     130,   131,   132,    -1,    -1,    -1,    -1,    -1,    54,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    54,
+      -1,    -1,    -1,    -1,    70,    -1,    54,    -1,    -1,    -1,
+     160,   161,   162,    79,    -1,    70,    -1,    -1,    -1,    -1,
+      -1,    -1,    70,    -1,    79,    -1,    -1,    93,    94,    95,
+      96,    79,    -1,    99,    -1,    -1,    -1,    -1,    93,    94,
+      95,    96,    -1,    -1,    99,    93,    94,    95,    96,   299,
+      -1,    99,     5,     6,    -1,     8,    -1,    -1,    -1,    -1,
+     126,   127,   128,   129,   130,   131,   132,    -1,    -1,    -1,
+     299,   126,   127,   128,   129,   130,   131,   132,   126,   127,
+     128,   129,   130,   131,   132,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,   160,   161,   162,    -1,    -1,    -1,
+      -1,    54,    -1,    -1,    -1,    -1,    -1,    -1,     7,    -1,
+      -1,    -1,    -1,    -1,    -1,     5,     6,    70,     8,    -1,
+      -1,    -1,    -1,    22,    23,    24,    79,    26,    27,    28,
+      29,    -1,    31,    32,    33,    -1,    35,    36,    37,    38,
+      93,    94,    95,    96,    -1,    44,    99,    -1,    -1,   299,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    54,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,   126,   127,   128,   129,   130,   131,   132,
+      70,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    79,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    93,    94,    95,    96,    -1,    -1,    99,
+      22,    23,    24,    -1,    26,    27,    28,    29,    -1,    31,
+      32,    33,    -1,    35,    36,    37,    38,    -1,    -1,    -1,
+      42,    43,    -1,   299,    -1,    -1,   126,   127,   128,   129,
+     130,   131,   132,    -1,   299,    -1,    -1,    15,    16,    17,
+      -1,   299,    20,    21,    22,    23,    24,    -1,    26,    27,
+      28,    29,    -1,    31,    32,    -1,    -1,    35,    36,    37,
+      38,    -1,    -1,    41,    42,    43,    -1,    -1,     5,    -1,
+      -1,     8,    -1,    51,    -1,    53,    -1,    -1,    -1,    -1,
+      -1,    18,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   111,
+      68,    69,    70,    15,    16,    17,    -1,    -1,    20,    21,
+      22,    23,    24,    -1,    26,    27,    28,    29,    -1,    31,
+      32,    -1,    -1,    35,    36,    37,    38,    54,    -1,    -1,
+      42,    43,    -1,    -1,    -1,    -1,   104,    -1,    -1,    51,
+      -1,    53,    -1,    70,    -1,    -1,   299,    -1,    -1,    -1,
+      -1,    -1,    79,    -1,    -1,    -1,    68,    69,    70,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    93,    94,    95,    96,
+      -1,    -1,    99,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   104,    -1,    -1,    -1,    -1,    -1,    -1,   126,
+     127,   128,   129,   130,   131,   132,    -1,    -1,    -1,   299,
+      -1,    -1,    -1,    -1,    -1,   142,   143,   144,   145,   146,
+     147,   148,   149,   150,   151,   152,   153,   154,    -1,    -1,
+      -1,    -1,   159,    -1,    -1,    -1,   163,   164,   165,   166,
+     167,   168,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+     177,   178,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+       5,    -1,    -1,     8,    -1,    -1,    -1,   194,   195,   196,
+     197,    -1,    -1,    18,    -1,    -1,    -1,    -1,   205,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   219,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    54,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    70,    -1,   254,   255,    -1,
+      -1,    -1,    -1,    -1,    79,    -1,    -1,    -1,    -1,    -1,
+     308,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    93,    94,
+      95,    96,    -1,    -1,    99,   282,   283,   284,   285,   286,
+     287,   288,    -1,   290,   291,    -1,    -1,    -1,    -1,    -1,
+     297,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   126,   127,   128,   129,   130,   131,   132,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   308,   142,   143,   144,
+     145,   146,   147,   148,   149,   150,   151,   152,   153,   154,
+      -1,    -1,    -1,    -1,   159,    -1,    -1,    -1,   163,   164,
+     165,   166,   167,   168,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   177,   178,     5,    -1,    -1,     8,    -1,    -1,
+      -1,     5,     6,    -1,     8,    -1,    -1,    18,    -1,   194,
+     195,   196,   197,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+     205,    -1,    -1,    -1,    -1,    16,    -1,    -1,    -1,    20,
+      21,    22,    23,    24,   219,    26,    27,    28,    29,    -1,
+      31,    32,    -1,    54,    35,    36,    37,    38,    -1,    -1,
+      54,    42,    43,    -1,    -1,    -1,    -1,    -1,    -1,    70,
+      51,    -1,    53,    -1,    -1,    -1,    70,    -1,    79,   254,
+     255,    -1,    -1,    -1,    -1,    79,    -1,    68,    69,    70,
+      -1,    -1,    93,    94,    95,    96,    -1,    -1,    99,    93,
+      94,    95,    96,    -1,    -1,    99,    -1,   282,   283,   284,
+     285,   286,   287,   288,    -1,   290,   291,    -1,    -1,    -1,
+      -1,    -1,   297,   104,    -1,   126,   127,   128,   129,   130,
+     131,   132,   126,   127,   128,   129,   130,   131,   132,    -1,
+      -1,   142,   143,   144,   145,   146,   147,   148,   149,   150,
+     151,   152,   153,   154,    -1,    -1,    -1,    -1,   159,    -1,
+      -1,    -1,   163,   164,   165,   166,   167,   168,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   177,   178,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,   194,   195,   196,   197,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,   205,    -1,    -1,    -1,    -1,    16,
+      -1,    -1,    -1,    20,    21,    22,    23,    24,   219,    26,
+      27,    28,    29,    -1,    31,    32,    -1,    -1,    35,    36,
+      37,    38,    39,    -1,    -1,    42,    43,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    51,    -1,    53,    -1,    -1,    -1,
+      -1,    -1,    -1,   254,   255,    -1,    -1,    -1,    -1,    -1,
+      -1,    68,    69,    70,    -1,    72,    -1,    74,    75,    76,
+      77,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   282,   283,   284,   285,   286,   287,   288,    -1,   290,
+     291,    -1,    -1,    -1,    -1,    -1,   297,   104,    -1,    -1,
+      -1,   295,    -1,    -1,    -1,   112,   113,   114,   115,    -1,
+      -1,   118,    -1,    -1,    -1,   122,   123,   124,   299,    18,
+      -1,    -1,    -1,    -1,    16,    -1,    -1,   308,    20,    21,
+      22,    23,    24,    -1,    26,    27,    28,    29,    -1,    31,
+      32,    -1,    -1,    35,    36,    37,    38,    -1,    -1,    -1,
+      42,    43,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    51,
+      -1,    53,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    68,    69,    70,    16,
+      -1,    -1,    -1,    20,    21,    22,    23,    24,    -1,    26,
+      27,    28,    29,    -1,    31,    32,    -1,    -1,    35,    36,
+      37,    38,    -1,    -1,    -1,    42,    43,    -1,    -1,    -1,
+      -1,    -1,   104,    -1,    51,    -1,    53,    -1,    -1,   226,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    68,    69,    70,    -1,    -1,    21,    22,    -1,    24,
+      25,    26,    27,    28,    29,    -1,    31,    32,    -1,    34,
+      35,    36,    37,    38,    -1,    -1,   155,   156,   157,   158,
+     159,    -1,    -1,    -1,    -1,    -1,    -1,   104,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   177,   178,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,   194,   195,   196,   197,    -1,
+      -1,   308,   201,   202,    -1,    -1,     5,     6,   207,     8,
+      -1,   210,    -1,    -1,    -1,    -1,    -1,    -1,   217,   218,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    22,    23,    24,    -1,    26,    27,    28,    29,    -1,
+      31,    32,    33,    -1,    35,    36,    37,    38,    -1,    -1,
+      18,    42,    43,    -1,    -1,    54,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    70,    -1,     5,   273,   274,     8,   276,   277,   278,
+      79,   280,   281,   282,   283,   284,   285,   286,   287,   288,
+      -1,    -1,   291,    -1,    93,    94,    95,    96,   297,    67,
+      99,    -1,    18,    -1,    -1,    -1,    -1,   299,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   308,    -1,    -1,    -1,
+     111,    -1,    54,    -1,    -1,    -1,    -1,   126,   127,   128,
+     129,   130,   131,   132,    -1,    -1,    -1,    -1,    70,    -1,
+      -1,    -1,    -1,    -1,    -1,   230,   231,    79,   233,   234,
+     235,    67,   237,   238,    -1,    -1,   241,   242,    -1,   244,
+      -1,    93,    94,    95,    96,    -1,    -1,    99,    -1,    -1,
+      -1,   308,   257,   258,   259,   260,   261,   262,   263,   264,
+     265,   266,   267,   268,   269,   270,   271,   155,    -1,   157,
+     158,   159,    -1,    -1,   126,   127,   128,   129,   130,   131,
+     132,   169,    -1,    -1,    -1,    -1,   174,    -1,    -1,   177,
+     178,    -1,    -1,    -1,    -1,    -1,    -1,   216,    -1,    -1,
+     305,    -1,    -1,    -1,    -1,    -1,   194,   195,   196,   197,
+      -1,   199,   200,    -1,    -1,    -1,    -1,    -1,    -1,   155,
+      -1,   157,   158,   159,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   219,    -1,   169,    -1,    -1,    -1,    -1,   174,    -1,
+      -1,   177,   178,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,   194,   195,
+     196,   197,    -1,   199,   200,    -1,   254,   255,    -1,    -1,
+      -1,   282,   283,   284,   285,   286,   287,   288,    -1,    -1,
+      -1,    -1,    -1,   219,    -1,    -1,   297,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,   282,   283,   284,   285,   286,   287,
+     288,    -1,    -1,   291,    -1,    -1,    -1,    -1,    -1,   297,
+      -1,    -1,    -1,    -1,    -1,    16,    -1,    -1,   254,   255,
+      21,    22,    -1,    24,    25,    26,    27,    28,    29,    -1,
+      31,    32,    -1,    34,    35,    36,    37,    38,    -1,    -1,
+      -1,     5,     6,    -1,     8,    -1,   282,   283,   284,   285,
+     286,   287,   288,    -1,    16,   291,    -1,    -1,    -1,    21,
+      22,   297,    24,    25,    26,    27,    28,    29,    -1,    31,
+      32,    -1,    34,    35,    36,    37,    38,    -1,    -1,    80,
+      -1,    82,    -1,    -1,    -1,    -1,    87,    -1,    -1,    -1,
+      54,    -1,    -1,    -1,    -1,     5,     6,    -1,     8,    -1,
+      -1,    -1,    -1,   104,    -1,    -1,    70,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    79,    -1,    -1,    80,    -1,
+      82,    -1,    -1,    -1,    -1,    87,    -1,    -1,    -1,    93,
+      94,    95,    96,    -1,    -1,    99,   137,   101,   102,   103,
+      -1,    -1,   104,    -1,    54,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      70,    -1,   126,   127,   128,   129,   130,   131,   132,    79,
+      -1,    -1,    -1,    -1,    -1,   137,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    93,    94,    95,    96,    -1,    -1,    99,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,   289,    -1,    -1,    -1,
-      -1,    -1,    -1,   226,    -1,   228,   229,   230,   231,   232,
-     233,   234,   235,   236,   237,   238,   239,   240,   241,   242,
-     243,   244,    39,    40,    -1,   248,    -1,    -1,    45,    -1,
-      47,    -1,    -1,    -1,   257,    -1,    -1,    54,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,   126,   127,   128,   129,
+     130,   131,   132,    -1,    -1,    -1,   227,    -1,   229,   230,
+     231,   232,   233,   234,   235,   236,   237,   238,   239,   240,
+     241,   242,   243,   244,   245,    -1,    -1,    -1,   249,    -1,
+       5,     6,    -1,     8,    -1,    -1,   220,   258,   222,   223,
+     224,   225,    -1,    -1,    -1,   227,    -1,   229,   230,   231,
+     232,   233,   234,   235,   236,   237,   238,   239,   240,   241,
+     242,   243,   244,   245,    39,    -1,    -1,   249,    -1,   290,
+      -1,    -1,    -1,    -1,    -1,    -1,   258,    -1,   208,    54,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    71,    72,    -1,    74,    75,    76,
-      77,    78,    -1,    -1,    -1,    -1,    83,    -1,    -1,    86,
-      -1,    -1,    -1,    -1,    -1,    92,    -1,    -1,    -1,    -1,
-      97,    -1,    99,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,   111,   112,   113,   114,   115,   116,
-     117,   118,    -1,    -1,    -1,    -1,    -1,   124
+      -1,    -1,    -1,    68,    -1,    70,    -1,    72,    -1,    -1,
+      75,    76,    -1,    -1,    79,    80,    81,    82,    83,    84,
+      85,    86,    87,    88,    89,    90,    91,    -1,    93,    94,
+      95,    96,    -1,    98,    99,     5,     6,   102,     8,    -1,
+      -1,    -1,    -1,    -1,   109,     5,     6,    -1,     8,    -1,
+      -1,    -1,    -1,   118,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,   126,   127,   128,   129,   130,   131,   132,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    54,    -1,    -1,    -1,    -1,     5,
+       6,    -1,     8,    -1,    54,    -1,    -1,    -1,    -1,    -1,
+      70,    -1,    -1,    73,    -1,    75,    76,    -1,    -1,    79,
+      70,    -1,    82,    -1,    -1,    75,    76,    -1,    -1,    79,
+      -1,    -1,    -1,    93,    94,    95,    96,    -1,    -1,    99,
+      -1,    -1,    -1,    93,    94,    95,    96,    -1,    54,    99,
+      -1,    -1,    -1,     5,     6,    -1,     8,     9,    -1,    -1,
+      -1,    -1,    -1,    -1,    70,    -1,   126,   127,   128,   129,
+     130,   131,   132,    79,    -1,    -1,   126,   127,   128,   129,
+     130,   131,   132,    -1,    -1,    -1,    -1,    93,    94,    95,
+      96,    -1,    -1,    99,    -1,    -1,     5,     6,    -1,     8,
+      -1,    -1,    54,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,   120,   121,    -1,    -1,    70,    -1,
+     126,   127,   128,   129,   130,   131,   132,    79,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    93,    94,    95,    96,    54,    -1,    99,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    70,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      79,    -1,    -1,    -1,   126,   127,   128,   129,   130,   131,
+     132,    -1,    -1,    -1,    93,    94,    95,    96,    16,    -1,
+      99,    -1,    -1,    -1,    22,    23,    24,    -1,    26,    27,
+      28,    29,    -1,    31,    32,    -1,    -1,    35,    36,    37,
+      38,    -1,    -1,    -1,    42,    43,    -1,   126,   127,   128,
+     129,   130,   131,   132,    -1,    -1,    -1,    -1,    -1,    39,
+      40,    -1,    -1,    -1,    -1,    45,    -1,    47,    -1,    -1,
+      -1,    -1,    -1,    -1,    54,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    71,    72,    91,    74,    75,    76,    77,    78,    -1,
+      -1,    -1,    -1,    83,    -1,    -1,    86,    -1,    -1,    -1,
+      -1,    -1,    92,   111,    -1,    -1,    -1,    97,    -1,    -1,
+     100,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,   112,   113,   114,   115,   116,   117,   118,   119,
+      -1,    -1,    -1,    -1,    -1,   125
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int16 yystos[] =
 {
-       0,   309,     0,    18,   154,   155,   156,   157,   158,   176,
-     177,   193,   194,   195,   196,   200,   201,   206,   209,   216,
-     217,   272,   273,   275,   276,   277,   279,   280,   281,   282,
-     283,   284,   285,   286,   287,   296,   310,   313,   319,   320,
-     321,   322,   323,   324,   331,   333,   334,   336,   337,   338,
-     339,   340,   341,   358,   376,   380,   402,   403,   458,   461,
-     467,   468,   469,   473,   482,   485,   490,   215,     5,     6,
-       8,   314,   315,   298,   362,    64,   125,   404,   178,   179,
-     180,   181,   182,   183,   184,   185,   186,   187,   188,   189,
-     190,   191,   192,   466,   466,     8,    14,    17,    40,    41,
-      45,    47,    54,    71,    86,   294,   325,   363,   364,   365,
-     366,   297,   298,   274,   470,   215,   474,   491,   215,   315,
-       9,   316,   316,     9,    10,   317,   317,    13,    16,    20,
-      21,    22,    23,    24,    26,    27,    28,    29,    31,    32,
-      35,    36,    37,    38,    42,    43,    51,    53,    68,    69,
-      70,   103,   104,   159,   160,   161,   298,   307,   315,   321,
-     322,   366,   367,   425,   448,   449,   454,   455,   289,   315,
-     315,   315,   315,     7,    12,   411,   412,   411,   411,   289,
-     342,    60,   343,   289,   381,   387,    23,    26,    27,    28,
-      29,    31,    32,    33,   289,   305,   405,   408,   410,   411,
-     316,   289,   289,   289,   289,   487,   293,   316,   359,   314,
-     298,   366,   425,   448,   450,   454,     7,    33,   297,   312,
-     292,   294,   294,    46,    48,    49,    50,   364,   364,   326,
-     367,   450,   297,   454,   294,   316,   316,   207,   315,   474,
-     100,   101,   102,   125,   219,   221,   222,   223,   224,   315,
-      75,    76,   315,   315,   454,    26,    27,    28,    29,   448,
-      51,   448,    24,    25,    34,    15,    17,   454,   217,   304,
-     315,   366,   307,   315,   316,   136,   136,   136,   363,   364,
-     136,   306,   105,   106,   107,   136,   298,   300,   304,   305,
-     311,   448,   312,   295,    12,   295,   295,   309,    39,    68,
-      72,    75,    76,    80,    81,    82,    83,    84,    85,    86,
-      87,    88,    89,    90,    91,    98,   101,   108,   117,   315,
-     450,    61,   344,   345,    39,    72,    74,    75,    76,    77,
-      78,    83,    92,    97,    99,   111,   112,   113,   114,   115,
-     116,   117,   118,   124,   364,   141,   142,   143,   144,   145,
-     146,   147,   148,   149,   150,   151,   152,   153,   162,   163,
-     164,   165,   166,   167,   204,   218,   253,   254,   289,   290,
-     313,   314,   320,   331,   386,   388,   389,   390,   391,   393,
-     394,   402,   426,   427,   428,   429,   430,   431,   432,   433,
-     434,   435,   436,   437,   438,   439,   440,   458,   468,   304,
-     294,   298,   407,   294,   407,   294,   407,   294,   407,   294,
-     407,   294,   407,   294,   406,   408,   294,   411,   295,     7,
-       8,   292,   303,   475,   483,   488,   492,    73,    75,    76,
-      82,   315,   315,   299,    39,    72,    74,    75,    76,    77,
-     111,   112,   113,   114,   117,   121,   122,   123,   225,   454,
-     297,   217,   315,   364,   294,   297,   294,   289,   294,   291,
-       8,   316,   316,   295,   289,   294,   312,   119,   120,   298,
-     315,   383,   450,   299,   166,   471,   315,   220,   136,   448,
-      25,   315,   450,   315,   299,   299,   299,   315,   316,   315,
-     315,   315,   454,   315,   315,   294,   294,   315,    20,   299,
-     316,   456,   457,   443,   444,   454,   290,   311,   290,   294,
-      75,    76,    77,   111,   112,   113,   300,   349,   346,   450,
-      67,   154,   168,   173,   198,   199,   218,   253,   254,   290,
-     313,   320,   331,   341,   357,   358,   368,   372,   380,   402,
-     458,   468,   486,   294,   294,   384,   316,   316,   316,   298,
-     110,   288,   298,   103,   450,   303,   197,   294,   387,    55,
-      57,    58,    59,   392,   395,   396,   397,   398,   399,   400,
-     314,   316,   389,   314,   316,   316,   317,    11,    31,    32,
-     294,   317,   318,   314,   316,   363,    15,    17,   366,   454,
-     450,    87,   312,   410,   364,   326,   294,   411,   294,   316,
-     316,   316,   316,   317,   318,   318,   290,   292,   314,   295,
-     316,   316,   208,   210,   213,   214,   290,   320,   331,   458,
-     476,   478,   479,   481,    84,   208,   211,   290,   472,   478,
-     480,   484,    41,   154,   206,   209,   290,   320,   331,   489,
-     206,   209,   290,   320,   331,   493,    75,    76,    77,   111,
-     112,   113,   294,   294,   315,   315,   299,   454,   312,   462,
-     463,   289,    51,   450,   459,   460,     7,   292,   295,   295,
-     325,   327,   328,   300,   356,   442,    19,   335,   472,   136,
-     315,    19,   299,   449,   449,   449,   304,   450,   450,    20,
-     292,   299,   301,   292,   316,    39,    51,    52,    69,   119,
-     291,   302,   350,   351,   352,   292,   110,   369,   373,   316,
-     316,   487,   110,   288,   103,   450,   289,   289,   289,   387,
-     289,   316,   312,   382,   298,   454,   303,   316,   298,   315,
-     298,   315,   316,   364,    19,   294,    20,   384,   445,   446,
-     447,   290,   450,   392,    56,   389,   401,   314,   316,   389,
-     401,   401,   401,    62,    62,   294,   294,   315,   450,   294,
-     411,   454,   314,   316,   441,   295,   312,   295,   299,   295,
-     295,   295,   295,   295,   406,   295,   303,     8,   292,   212,
-     297,   304,   316,   477,   297,   312,   411,   411,   297,   297,
-     411,   411,   294,   215,   316,   315,   215,   315,   215,   316,
-      16,    21,    22,    24,    25,    26,    27,    28,    29,    31,
-      32,    34,    35,    36,    37,    38,    80,    82,    87,   103,
-     136,   226,   228,   229,   230,   231,   232,   233,   234,   235,
-     236,   237,   238,   239,   240,   241,   242,   243,   244,   248,
-     257,   289,   378,   379,   451,    63,   360,   299,   297,   295,
-     292,   327,     8,   297,   290,   292,     8,   297,   290,    22,
-      23,    24,    26,    27,    28,    29,    31,    32,    35,    36,
-      37,    38,    42,    43,   110,   320,   329,   409,   410,   414,
-     298,   443,   294,   294,   315,   383,    28,    29,    63,   202,
-     203,   205,   411,   315,   315,   449,   294,   295,   295,   316,
-     457,   454,   295,   294,   351,   294,   315,   354,   301,   450,
-     450,    72,   117,   315,   450,    72,   117,   364,   315,   298,
-     315,   298,   315,   364,    19,   345,   370,   374,   290,   488,
-     295,   136,   382,    39,    46,    48,    49,    50,    87,    88,
-      89,   133,   134,   135,   137,   140,   295,   250,   251,   252,
-     316,   225,   377,   316,   299,   316,   316,   292,   299,   454,
-     383,   445,   454,   295,   292,   314,   316,   314,   316,   316,
-     317,    19,   312,   295,   294,   292,   292,   295,   295,   407,
-     407,   407,   407,   407,   407,   316,   316,   316,   294,   303,
-     294,   295,   295,   294,   294,   295,   295,   316,   449,   315,
-      63,   315,   295,    25,    26,    27,    28,    29,   294,   452,
-     242,   234,   246,   294,   227,   247,    22,   452,   452,    21,
-      22,    24,    25,    26,    27,    28,    29,    31,    32,    34,
-      35,    36,    37,    38,   229,   230,   232,   233,   234,   236,
-     237,   240,   241,   243,   256,   257,   258,   259,   260,   261,
-     262,   263,   264,   265,   266,   267,   268,   269,   270,   304,
-     453,   295,   412,   298,   304,   314,   297,   361,    28,    65,
-      66,   312,   316,   448,   464,   465,   462,   290,   297,   289,
-     459,   289,   294,   312,   294,   298,   294,   298,    26,    27,
-      28,    29,   294,   298,   294,   298,   294,   298,   294,   298,
-     294,   298,   294,   298,   294,   298,   294,   298,   294,   298,
-     294,   298,   294,   298,   294,   298,   294,   298,   104,   109,
-     320,   330,   411,   316,   301,   445,   445,   356,   442,   314,
-     295,   445,   316,   347,   348,   450,   292,   353,   315,   196,
-     321,   315,   454,   316,   316,   292,   454,   383,   290,   169,
-     170,   171,   172,   290,   313,   320,   331,   371,   468,   172,
-     174,   175,   290,   313,   320,   331,   375,   468,   290,   312,
-     295,   294,   303,   303,   299,   299,   299,   299,   294,   383,
-     136,   299,   299,   450,   361,   450,   295,   377,   447,    62,
-      62,   295,   295,   315,   295,   445,   441,   441,     8,   292,
-       8,   477,   295,   316,   249,   312,   298,   298,    25,    26,
-      27,    28,    29,   271,   292,   298,   305,   290,   291,   299,
-     316,    22,    23,    24,    26,    27,    28,    29,    31,    32,
-      35,    36,    37,    38,    44,   312,   409,   413,   294,   294,
-     289,   329,   327,   464,   316,   316,   316,   294,   298,   294,
-     298,   294,   298,   294,   298,   316,   316,   316,   316,   316,
-     316,   317,   316,   316,   318,   316,   317,   318,   316,   316,
-     316,   316,   316,   316,   316,   317,   316,   414,   316,     8,
-      44,   316,    44,    51,   448,   316,    42,    91,   110,   332,
-     455,   295,   299,   295,   295,   294,   294,   471,   295,   295,
-     295,   292,   352,   353,   315,   299,   299,   450,   450,   255,
-     363,   363,   363,   363,   363,   363,   363,   382,   316,   138,
-     139,   138,   139,   378,   349,   314,   292,    19,   314,   314,
-     316,   295,   316,   303,   297,   292,   316,   316,   312,   299,
-     316,   291,   299,    26,    27,    28,    29,   316,    26,    27,
-      28,   316,   329,   290,   290,   295,   299,   295,   299,   316,
-     316,   316,   316,   316,   316,   317,   316,   295,   299,   295,
-     299,   295,   299,   295,   299,   295,   295,   299,   295,   295,
-     299,   295,   299,   295,   299,   295,   299,   295,   299,   295,
-     299,   295,   295,   299,   295,     8,   295,   299,    51,   448,
-     298,   315,   301,   445,   445,   450,   294,   292,    19,   364,
-     295,   295,   295,   294,   450,   383,     8,   477,   316,   312,
-     299,   299,   299,   316,   295,   303,   303,   303,   295,   290,
-     294,   294,   295,   299,   295,   299,   295,   299,   295,   299,
-     294,   294,   294,   294,   294,   294,   294,   294,   294,   294,
-     294,   294,   295,   294,     8,   299,   297,   295,   295,   445,
-     450,   383,   454,   445,   300,   355,   356,   303,   295,   292,
-     295,   451,   299,   316,   316,   316,   421,   419,   294,   294,
-     294,   294,   420,   419,   418,   417,   415,   416,   420,   419,
-     418,   417,   424,   422,   423,   414,   295,   355,   450,   295,
-     294,   477,   312,   295,   295,   295,   295,   464,   295,   316,
-     420,   419,   418,   417,   295,   316,   295,   295,   316,   295,
-     317,   295,   316,   318,   295,   317,   318,   295,   295,   295,
-     295,   295,   414,     8,    44,   295,    44,    51,   295,   448,
-     361,   294,    19,   385,   445,   292,   295,   295,   295,   295,
-       8,   445,   383,    39,    54,    70,    79,    93,    94,    95,
-      96,   125,   126,   127,   128,   129,   130,   131,   289,   295,
-     312,   295,   294,   294,   295,   255,   445,   316,   103,   295,
-     295,   364,   454,   450,    19,   383,   355,   294,   445,   295
+       0,   310,     0,    18,   155,   156,   157,   158,   159,   177,
+     178,   194,   195,   196,   197,   201,   202,   207,   210,   217,
+     218,   273,   274,   276,   277,   278,   280,   281,   282,   283,
+     284,   285,   286,   287,   288,   297,   311,   314,   320,   321,
+     322,   323,   324,   325,   332,   334,   335,   337,   338,   339,
+     340,   341,   342,   359,   377,   381,   403,   404,   459,   462,
+     468,   469,   470,   474,   483,   486,   491,   216,     5,     6,
+       8,    54,    70,    79,    93,    94,    95,    96,    99,   126,
+     127,   128,   129,   130,   131,   132,   315,   316,   299,   363,
+      64,   126,   405,   179,   180,   181,   182,   183,   184,   185,
+     186,   187,   188,   189,   190,   191,   192,   193,   467,   467,
+       8,    14,    17,    40,    41,    45,    47,    54,    71,    86,
+     295,   326,   364,   365,   366,   367,   298,   299,   275,   471,
+     216,   475,   492,   216,   316,     9,   317,   317,     9,    10,
+     318,   318,    13,    16,    20,    21,    22,    23,    24,    26,
+      27,    28,    29,    31,    32,    35,    36,    37,    38,    42,
+      43,    51,    53,    68,    69,    70,   104,   105,   160,   161,
+     162,   299,   308,   316,   322,   323,   367,   368,   426,   449,
+     450,   455,   456,   290,   316,   316,   316,   316,     7,    12,
+     412,   413,   412,   412,   290,   343,    60,   344,   290,   382,
+     388,    23,    26,    27,    28,    29,    31,    32,    33,   290,
+     306,   406,   409,   411,   412,   317,   290,   290,   290,   290,
+     488,   294,   317,   360,   315,   299,   367,   426,   449,   451,
+     455,     7,    33,   298,   313,   293,   295,   295,    46,    48,
+      49,    50,   365,   365,   327,   368,   451,   298,    70,   455,
+     295,   317,   317,   208,   316,   475,   101,   102,   103,   126,
+     220,   222,   223,   224,   225,   316,    75,    76,   316,   316,
+     455,    26,    27,    28,    29,   449,    51,   449,    24,    25,
+      34,    15,    17,   455,   218,   305,   316,   367,   308,   316,
+     317,   137,   137,   137,   364,   365,   137,   307,   106,   107,
+     108,   137,   299,   301,   305,   306,   312,   449,   313,   296,
+      12,   296,   296,   310,    39,    68,    72,    75,    76,    80,
+      81,    82,    83,    84,    85,    86,    87,    88,    89,    90,
+      91,    98,   102,   109,   118,   316,   451,    61,   345,   346,
+      39,    72,    74,    75,    76,    77,    78,    83,    92,    97,
+     100,   112,   113,   114,   115,   116,   117,   118,   119,   125,
+     365,   142,   143,   144,   145,   146,   147,   148,   149,   150,
+     151,   152,   153,   154,   163,   164,   165,   166,   167,   168,
+     205,   219,   254,   255,   290,   291,   314,   315,   321,   332,
+     387,   389,   390,   391,   392,   394,   395,   403,   427,   428,
+     429,   430,   431,   432,   433,   434,   435,   436,   437,   438,
+     439,   440,   441,   459,   469,   305,   295,   299,   408,   295,
+     408,   295,   408,   295,   408,   295,   408,   295,   408,   295,
+     407,   409,   295,   412,   296,     7,     8,   293,   304,   476,
+     484,   489,   493,    73,    75,    76,    82,   316,   316,   300,
+      39,    72,    74,    75,    76,    77,   112,   113,   114,   115,
+     118,   122,   123,   124,   226,   455,   298,   218,   316,   365,
+     295,   298,   295,   290,   295,   292,     8,   317,   317,   296,
+     290,   295,   313,   120,   121,   299,   316,   384,   451,   300,
+     167,   472,   316,   221,   137,   449,    25,   316,   451,   316,
+     300,   300,   300,   316,   317,   316,   316,   316,   455,   316,
+     316,   295,   295,   316,    20,   300,   317,   457,   458,   444,
+     445,   455,   291,   312,   291,   295,    75,    76,    77,   112,
+     113,   114,   301,   350,   347,   451,    67,   155,   169,   174,
+     199,   200,   219,   254,   255,   291,   314,   321,   332,   342,
+     358,   359,   369,   373,   381,   403,   459,   469,   487,   295,
+     295,   385,   317,   317,   317,   299,   111,   289,   299,   104,
+     451,   304,   198,   295,   388,    55,    57,    58,    59,   393,
+     396,   397,   398,   399,   400,   401,   315,   317,   390,   315,
+     317,   317,   318,    11,    31,    32,   295,   318,   319,   315,
+     317,   364,    15,    17,   367,   455,   451,    87,   313,   411,
+     365,   327,   295,   412,   295,   317,   317,   317,   317,   318,
+     319,   319,   291,   293,   315,   296,   317,   317,   209,   211,
+     214,   215,   291,   321,   332,   459,   477,   479,   480,   482,
+      84,   209,   212,   291,   473,   479,   481,   485,    41,   155,
+     207,   210,   291,   321,   332,   490,   207,   210,   291,   321,
+     332,   494,    75,    76,    77,   112,   113,   114,   295,   295,
+     316,   316,   300,   455,   313,   463,   464,   290,    51,   451,
+     460,   461,     7,   293,   296,   296,   326,   328,   329,   301,
+     357,   443,    19,   336,   473,   137,   316,    19,   300,   450,
+     450,   450,   305,   451,   451,    20,   293,   300,   302,   293,
+     317,    39,    51,    52,    69,   120,   292,   303,   351,   352,
+     353,   293,   111,   370,   374,   317,   317,   488,   111,   289,
+     104,   451,   290,   290,   290,   388,   290,   317,   313,   383,
+     299,   455,   304,   317,   299,   316,   299,   316,   317,   365,
+      19,   295,    20,   385,   446,   447,   448,   291,   451,   393,
+      56,   390,   402,   315,   317,   390,   402,   402,   402,    62,
+      62,   295,   295,   316,   451,   295,   412,   455,   315,   317,
+     442,   296,   313,   296,   300,   296,   296,   296,   296,   296,
+     407,   296,   304,     8,   293,   213,   298,   305,   317,   478,
+     298,   313,   412,   412,   298,   298,   412,   412,   295,   216,
+     317,   316,   216,   316,   216,   317,    16,    21,    22,    24,
+      25,    26,    27,    28,    29,    31,    32,    34,    35,    36,
+      37,    38,    80,    82,    87,   104,   137,   227,   229,   230,
+     231,   232,   233,   234,   235,   236,   237,   238,   239,   240,
+     241,   242,   243,   244,   245,   249,   258,   290,   379,   380,
+     452,    63,   361,   300,   298,   296,   293,   328,     8,   298,
+     291,   293,     8,   298,   291,    22,    23,    24,    26,    27,
+      28,    29,    31,    32,    35,    36,    37,    38,    42,    43,
+     111,   321,   330,   410,   411,   415,   299,   444,   295,   295,
+     316,   384,    28,    29,    63,   203,   204,   206,   412,   316,
+     316,   450,   295,   296,   296,   317,   458,   455,   296,   295,
+     352,   295,   316,   355,   302,   451,   451,    72,   118,   316,
+     451,    72,   118,   365,   316,   299,   316,   299,   316,   365,
+      19,   346,   371,   375,   291,   489,   296,   137,   383,    39,
+      46,    48,    49,    50,    87,    88,    89,   134,   135,   136,
+     138,   141,   296,   251,   252,   253,   317,   226,   378,   317,
+     300,   317,   317,   293,   300,   455,   384,   446,   455,   296,
+     293,   315,   317,   315,   317,   317,   318,    19,   313,   296,
+     295,   293,   293,   296,   296,   408,   408,   408,   408,   408,
+     408,   317,   317,   317,   295,   304,   295,   296,   296,   295,
+     295,   296,   296,   317,   450,   316,    63,   316,   296,    25,
+      26,    27,    28,    29,   295,   453,   243,   235,   247,   295,
+     228,   248,    22,   453,   453,    21,    22,    24,    25,    26,
+      27,    28,    29,    31,    32,    34,    35,    36,    37,    38,
+     230,   231,   233,   234,   235,   237,   238,   241,   242,   244,
+     257,   258,   259,   260,   261,   262,   263,   264,   265,   266,
+     267,   268,   269,   270,   271,   305,   454,   296,   413,   299,
+     305,   315,   298,   362,    28,    65,    66,   313,   317,   449,
+     465,   466,   463,   291,   298,   290,   460,   290,   295,   313,
+     295,   299,   295,   299,    26,    27,    28,    29,   295,   299,
+     295,   299,   295,   299,   295,   299,   295,   299,   295,   299,
+     295,   299,   295,   299,   295,   299,   295,   299,   295,   299,
+     295,   299,   295,   299,   105,   110,   321,   331,   412,   317,
+     302,   446,   446,   357,   443,   315,   296,   446,   317,   348,
+     349,   451,   293,   354,   316,   197,   322,   316,   455,   317,
+     317,   293,   455,   384,   291,   170,   171,   172,   173,   291,
+     314,   321,   332,   372,   469,   173,   175,   176,   291,   314,
+     321,   332,   376,   469,   291,   313,   296,   295,   304,   304,
+     300,   300,   300,   300,   295,   384,   137,   300,   300,   451,
+     362,   451,   296,   378,   448,    62,    62,   296,   296,   316,
+     296,   446,   442,   442,     8,   293,     8,   478,   296,   317,
+     250,   313,   299,   299,    25,    26,    27,    28,    29,   272,
+     293,   299,   306,   291,   292,   300,   317,    22,    23,    24,
+      26,    27,    28,    29,    31,    32,    35,    36,    37,    38,
+      44,   313,   410,   414,   295,   295,   290,   330,   328,   465,
+     317,   317,   317,   295,   299,   295,   299,   295,   299,   295,
+     299,   317,   317,   317,   317,   317,   317,   318,   317,   317,
+     319,   317,   318,   319,   317,   317,   317,   317,   317,   317,
+     317,   318,   317,   415,   317,     8,    44,   317,    44,    51,
+     449,   317,    42,    91,   111,   333,   456,   296,   300,   296,
+     296,   295,   295,   472,   296,   296,   296,   293,   353,   354,
+     316,   300,   300,   451,   451,   256,   364,   364,   364,   364,
+     364,   364,   364,   383,   317,   139,   140,   139,   140,   379,
+     350,   315,   293,    19,   315,   315,   317,   296,   317,   304,
+     298,   293,   317,   317,   313,   300,   317,   292,   300,    26,
+      27,    28,    29,   317,    26,    27,    28,   317,   330,   291,
+     291,   296,   300,   296,   300,   317,   317,   317,   317,   317,
+     317,   318,   317,   296,   300,   296,   300,   296,   300,   296,
+     300,   296,   296,   300,   296,   296,   300,   296,   300,   296,
+     300,   296,   300,   296,   300,   296,   300,   296,   296,   300,
+     296,     8,   296,   300,    51,   449,   299,   316,   302,   446,
+     446,   451,   295,   293,    19,   365,   296,   296,   296,   295,
+     451,   384,     8,   478,   317,   313,   300,   300,   300,   317,
+     296,   304,   304,   304,   296,   291,   295,   295,   296,   300,
+     296,   300,   296,   300,   296,   300,   295,   295,   295,   295,
+     295,   295,   295,   295,   295,   295,   295,   295,   296,   295,
+       8,   300,   298,   296,   296,   446,   451,   384,   455,   446,
+     301,   356,   357,   304,   296,   293,   296,   452,   300,   317,
+     317,   317,   422,   420,   295,   295,   295,   295,   421,   420,
+     419,   418,   416,   417,   421,   420,   419,   418,   425,   423,
+     424,   415,   296,   356,   451,   296,   295,   478,   313,   296,
+     296,   296,   296,   465,   296,   317,   421,   420,   419,   418,
+     296,   317,   296,   296,   317,   296,   318,   296,   317,   319,
+     296,   318,   319,   296,   296,   296,   296,   296,   415,     8,
+      44,   296,    44,    51,   296,   449,   362,   295,    19,   386,
+     446,   293,   296,   296,   296,   296,     8,   446,   384,    39,
+      54,    70,    79,    93,    94,    95,    96,    99,   126,   127,
+     128,   129,   130,   131,   132,   290,   296,   313,   296,   295,
+     295,   296,   256,   446,   317,   104,   296,   296,   365,   455,
+     451,    19,   384,   356,   295,   446,   296
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int16 yyr1[] =
 {
-       0,   308,   309,   309,   310,   310,   310,   310,   310,   310,
-     310,   310,   310,   310,   310,   310,   310,   310,   310,   310,
-     310,   310,   310,   310,   310,   310,   310,   310,   310,   310,
-     311,   311,   312,   312,   313,   313,   313,   314,   314,   315,
-     315,   315,   316,   317,   317,   318,   318,   318,   319,   319,
-     319,   319,   319,   320,   320,   320,   320,   320,   320,   320,
-     320,   320,   321,   321,   321,   321,   322,   322,   322,   322,
-     323,   324,   325,   326,   326,   327,   328,   328,   328,   329,
-     329,   329,   330,   330,   331,   331,   331,   332,   332,   332,
-     332,   332,   332,   333,   333,   333,   334,   335,   335,   335,
-     335,   335,   335,   336,   337,   338,   339,   340,   341,   342,
-     342,   342,   342,   342,   342,   342,   342,   342,   342,   342,
-     342,   342,   342,   342,   342,   342,   342,   342,   342,   342,
-     342,   342,   342,   342,   342,   342,   343,   343,   344,   344,
-     345,   345,   346,   346,   347,   347,   348,   348,   349,   349,
-     350,   350,   350,   350,   350,   350,   350,   351,   351,   352,
-     352,   353,   353,   354,   355,   355,   356,   357,   357,   357,
-     357,   357,   357,   357,   357,   357,   357,   357,   357,   357,
-     357,   357,   357,   357,   357,   357,   357,   357,   358,   359,
-     359,   359,   359,   359,   359,   359,   359,   359,   359,   359,
-     359,   359,   359,   359,   359,   360,   360,   361,   361,   362,
-     362,   363,   363,   363,   363,   363,   363,   363,   364,   364,
-     364,   364,   365,   365,   365,   365,   365,   365,   365,   365,
-     366,   367,   367,   367,   367,   367,   367,   368,   368,   369,
-     369,   369,   370,   370,   371,   371,   371,   371,   371,   371,
-     371,   371,   372,   373,   373,   373,   374,   374,   375,   375,
-     375,   375,   375,   375,   375,   376,   377,   377,   378,   378,
-     379,   380,   381,   381,   381,   381,   381,   381,   381,   381,
-     381,   381,   381,   381,   381,   381,   381,   381,   381,   381,
-     381,   381,   381,   381,   381,   382,   382,   382,   382,   382,
+       0,   309,   310,   310,   311,   311,   311,   311,   311,   311,
+     311,   311,   311,   311,   311,   311,   311,   311,   311,   311,
+     311,   311,   311,   311,   311,   311,   311,   311,   311,   311,
+     312,   312,   313,   313,   314,   314,   314,   315,   315,   315,
+     315,   315,   315,   315,   315,   315,   315,   315,   315,   315,
+     315,   315,   315,   315,   316,   316,   316,   317,   318,   318,
+     319,   319,   319,   320,   320,   320,   320,   320,   321,   321,
+     321,   321,   321,   321,   321,   321,   321,   322,   322,   322,
+     322,   323,   323,   323,   323,   324,   325,   326,   327,   327,
+     328,   329,   329,   329,   330,   330,   330,   331,   331,   332,
+     332,   332,   333,   333,   333,   333,   333,   333,   334,   334,
+     334,   335,   336,   336,   336,   336,   336,   336,   337,   338,
+     339,   340,   341,   342,   343,   343,   343,   343,   343,   343,
+     343,   343,   343,   343,   343,   343,   343,   343,   343,   343,
+     343,   343,   343,   343,   343,   343,   343,   343,   343,   343,
+     343,   344,   344,   345,   345,   346,   346,   347,   347,   348,
+     348,   349,   349,   350,   350,   351,   351,   351,   351,   351,
+     351,   351,   352,   352,   353,   353,   354,   354,   355,   356,
+     356,   357,   358,   358,   358,   358,   358,   358,   358,   358,
+     358,   358,   358,   358,   358,   358,   358,   358,   358,   358,
+     358,   358,   358,   359,   360,   360,   360,   360,   360,   360,
+     360,   360,   360,   360,   360,   360,   360,   360,   360,   360,
+     361,   361,   362,   362,   363,   363,   364,   364,   364,   364,
+     364,   364,   364,   365,   365,   365,   365,   366,   366,   366,
+     366,   366,   366,   366,   366,   367,   368,   368,   368,   368,
+     368,   368,   369,   369,   370,   370,   370,   371,   371,   372,
+     372,   372,   372,   372,   372,   372,   372,   373,   374,   374,
+     374,   375,   375,   376,   376,   376,   376,   376,   376,   376,
+     377,   378,   378,   379,   379,   380,   381,   382,   382,   382,
      382,   382,   382,   382,   382,   382,   382,   382,   382,   382,
-     382,   383,   383,   383,   384,   384,   384,   384,   384,   385,
-     385,   385,   385,   385,   385,   385,   385,   385,   385,   385,
-     385,   385,   385,   385,   385,   386,   387,   387,   388,   388,
-     388,   388,   388,   388,   388,   388,   388,   388,   388,   388,
-     388,   388,   388,   388,   388,   388,   388,   388,   388,   388,
-     388,   388,   388,   388,   389,   390,   391,   392,   392,   393,
-     393,   393,   394,   395,   395,   395,   395,   396,   396,   396,
-     397,   398,   399,   400,   401,   401,   401,   402,   403,   403,
-     404,   404,   404,   405,   405,   406,   406,   407,   407,   408,
-     408,   408,   408,   408,   408,   408,   408,   408,   408,   408,
-     408,   408,   408,   408,   409,   409,   409,   409,   409,   409,
+     382,   382,   382,   382,   382,   382,   382,   382,   382,   382,
+     383,   383,   383,   383,   383,   383,   383,   383,   383,   383,
+     383,   383,   383,   383,   383,   383,   384,   384,   384,   385,
+     385,   385,   385,   385,   386,   386,   386,   386,   386,   386,
+     386,   386,   386,   386,   386,   386,   386,   386,   386,   386,
+     386,   387,   388,   388,   389,   389,   389,   389,   389,   389,
+     389,   389,   389,   389,   389,   389,   389,   389,   389,   389,
+     389,   389,   389,   389,   389,   389,   389,   389,   389,   389,
+     390,   391,   392,   393,   393,   394,   394,   394,   395,   396,
+     396,   396,   396,   397,   397,   397,   398,   399,   400,   401,
+     402,   402,   402,   403,   404,   404,   405,   405,   405,   406,
+     406,   407,   407,   408,   408,   409,   409,   409,   409,   409,
      409,   409,   409,   409,   409,   409,   409,   409,   409,   409,
-     409,   409,   409,   410,   411,   411,   412,   412,   413,   413,
-     413,   414,   414,   414,   414,   414,   414,   414,   414,   414,
-     414,   414,   414,   414,   414,   414,   414,   414,   414,   414,
-     414,   414,   414,   414,   414,   414,   414,   415,   415,   415,
-     416,   416,   416,   417,   417,   418,   418,   419,   419,   420,
-     420,   421,   421,   422,   422,   422,   423,   423,   423,   423,
-     424,   424,   425,   426,   427,   428,   429,   430,   431,   432,
-     433,   434,   435,   436,   437,   438,   439,   440,   440,   440,
-     440,   440,   440,   440,   440,   440,   440,   440,   440,   440,
-     440,   440,   440,   440,   440,   440,   440,   440,   440,   440,
-     441,   441,   441,   441,   441,   442,   442,   443,   443,   444,
-     444,   445,   445,   446,   446,   447,   447,   447,   448,   448,
-     448,   448,   448,   448,   448,   448,   448,   448,   449,   449,
-     450,   450,   450,   450,   451,   451,   451,   451,   451,   451,
-     451,   451,   451,   451,   451,   451,   451,   451,   451,   451,
-     451,   451,   451,   451,   451,   451,   451,   451,   451,   451,
-     451,   451,   451,   451,   451,   451,   451,   451,   451,   451,
-     451,   451,   451,   451,   451,   451,   451,   451,   451,   451,
-     451,   451,   451,   451,   451,   451,   451,   451,   451,   452,
-     452,   453,   453,   453,   453,   453,   453,   453,   453,   453,
-     453,   453,   453,   453,   453,   453,   453,   453,   453,   453,
-     453,   453,   453,   453,   453,   453,   453,   453,   453,   453,
-     453,   453,   453,   453,   453,   453,   453,   453,   453,   453,
-     453,   453,   453,   453,   453,   453,   453,   453,   453,   453,
+     410,   410,   410,   410,   410,   410,   410,   410,   410,   410,
+     410,   410,   410,   410,   410,   410,   410,   410,   410,   411,
+     412,   412,   413,   413,   414,   414,   414,   415,   415,   415,
+     415,   415,   415,   415,   415,   415,   415,   415,   415,   415,
+     415,   415,   415,   415,   415,   415,   415,   415,   415,   415,
+     415,   415,   415,   416,   416,   416,   417,   417,   417,   418,
+     418,   419,   419,   420,   420,   421,   421,   422,   422,   423,
+     423,   423,   424,   424,   424,   424,   425,   425,   426,   427,
+     428,   429,   430,   431,   432,   433,   434,   435,   436,   437,
+     438,   439,   440,   441,   441,   441,   441,   441,   441,   441,
+     441,   441,   441,   441,   441,   441,   441,   441,   441,   441,
+     441,   441,   441,   441,   441,   441,   442,   442,   442,   442,
+     442,   443,   443,   444,   444,   445,   445,   446,   446,   447,
+     447,   448,   448,   448,   449,   449,   449,   449,   449,   449,
+     449,   449,   449,   449,   450,   450,   451,   451,   451,   451,
+     452,   452,   452,   452,   452,   452,   452,   452,   452,   452,
+     452,   452,   452,   452,   452,   452,   452,   452,   452,   452,
+     452,   452,   452,   452,   452,   452,   452,   452,   452,   452,
+     452,   452,   452,   452,   452,   452,   452,   452,   452,   452,
+     452,   452,   452,   452,   452,   452,   452,   452,   452,   452,
+     452,   452,   452,   452,   452,   453,   453,   454,   454,   454,
      454,   454,   454,   454,   454,   454,   454,   454,   454,   454,
      454,   454,   454,   454,   454,   454,   454,   454,   454,   454,
-     454,   454,   454,   454,   455,   455,   455,   455,   455,   455,
+     454,   454,   454,   454,   454,   454,   454,   454,   454,   454,
+     454,   454,   454,   454,   454,   454,   454,   454,   454,   454,
+     454,   454,   454,   454,   454,   454,   455,   455,   455,   455,
      455,   455,   455,   455,   455,   455,   455,   455,   455,   455,
-     455,   455,   456,   456,   457,   457,   457,   457,   457,   458,
-     458,   458,   458,   458,   458,   459,   459,   459,   460,   460,
-     461,   461,   462,   462,   463,   464,   464,   465,   465,   465,
-     465,   465,   465,   465,   465,   466,   466,   466,   466,   466,
-     466,   466,   466,   466,   466,   466,   466,   466,   466,   466,
-     467,   467,   468,   468,   468,   468,   468,   468,   468,   468,
-     468,   468,   468,   469,   469,   470,   470,   471,   471,   472,
-     473,   474,   474,   474,   474,   474,   474,   474,   474,   474,
-     474,   475,   475,   476,   476,   476,   477,   477,   478,   478,
-     478,   478,   478,   478,   479,   480,   481,   482,   482,   483,
-     483,   484,   484,   484,   484,   485,   486,   487,   487,   487,
-     487,   487,   487,   487,   487,   487,   487,   488,   488,   489,
-     489,   489,   489,   489,   489,   489,   490,   490,   491,   491,
-     491,   492,   492,   493,   493,   493,   493
+     455,   455,   455,   455,   455,   455,   455,   455,   455,   455,
+     456,   456,   456,   456,   456,   456,   456,   456,   456,   456,
+     456,   456,   456,   456,   456,   456,   456,   456,   457,   457,
+     458,   458,   458,   458,   458,   459,   459,   459,   459,   459,
+     459,   460,   460,   460,   461,   461,   462,   462,   463,   463,
+     464,   465,   465,   466,   466,   466,   466,   466,   466,   466,
+     466,   467,   467,   467,   467,   467,   467,   467,   467,   467,
+     467,   467,   467,   467,   467,   467,   468,   468,   469,   469,
+     469,   469,   469,   469,   469,   469,   469,   469,   469,   470,
+     470,   471,   471,   472,   472,   473,   474,   475,   475,   475,
+     475,   475,   475,   475,   475,   475,   475,   476,   476,   477,
+     477,   477,   478,   478,   479,   479,   479,   479,   479,   479,
+     480,   481,   482,   483,   483,   484,   484,   485,   485,   485,
+     485,   486,   487,   488,   488,   488,   488,   488,   488,   488,
+     488,   488,   488,   489,   489,   490,   490,   490,   490,   490,
+     490,   490,   491,   491,   492,   492,   492,   493,   493,   494,
+     494,   494,   494
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
@@ -2992,87 +3350,89 @@ static const yytype_int8 yyr2[] =
        1,     1,     1,     4,     4,     4,     4,     1,     1,     1,
        2,     2,     3,     2,     2,     1,     1,     1,     4,     1,
        0,     2,     1,     3,     2,     4,     6,     1,     1,     1,
-       1,     3,     1,     1,     1,     1,     4,     4,     4,     4,
-       4,     4,     4,     2,     3,     2,     2,     2,     1,     1,
-       2,     1,     2,     4,     6,     3,     5,     7,     9,     3,
-       4,     7,     1,     1,     1,     2,     0,     2,     2,     0,
-       6,     2,     1,     1,     1,     1,     1,     1,     1,     1,
-       3,     2,     3,     1,     2,     3,     7,     0,     2,     2,
-       2,     2,     2,     3,     3,     2,     1,     4,     3,     0,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     3,     3,     3,     3,
-       3,     3,     2,     2,     2,     5,     0,     2,     0,     2,
-       0,     2,     3,     1,     0,     1,     1,     3,     0,     3,
-       1,     1,     1,     1,     1,     1,     4,     0,     2,     4,
-       3,     0,     2,     3,     0,     1,     5,     3,     4,     4,
-       4,     1,     1,     1,     1,     1,     2,     2,     4,    13,
-      22,     1,     1,     5,     3,     7,     5,     4,     7,     0,
-       2,     2,     2,     2,     2,     2,     2,     5,     2,     2,
-       2,     2,     2,     2,     5,     0,     2,     0,     2,     0,
-       3,     9,     9,     7,     7,     1,     1,     1,     2,     2,
-       1,     4,     0,     1,     1,     2,     2,     2,     2,     1,
-       4,     2,     5,     3,     2,     2,     1,     4,     3,     0,
-       2,     2,     0,     2,     2,     2,     2,     2,     1,     1,
-       1,     1,     9,     0,     2,     2,     0,     2,     2,     2,
-       2,     1,     1,     1,     1,     1,     0,     4,     1,     3,
-       1,    13,     0,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     5,     8,     6,     5,     0,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     4,     4,     4,     4,
-       5,     1,     1,     1,     0,     4,     4,     4,     4,     0,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     5,     1,     0,     2,     2,     1,
-       2,     4,     5,     1,     1,     1,     1,     2,     1,     1,
-       1,     1,     1,     4,     6,     4,     4,    11,     1,     5,
-       3,     7,     5,     5,     3,     1,     2,     2,     1,     2,
-       4,     4,     1,     2,     2,     2,     2,     2,     2,     2,
-       1,     2,     1,     1,     1,     4,     4,     2,     4,     2,
-       0,     1,     1,     3,     1,     3,     1,     0,     3,     5,
-       4,     3,     5,     5,     5,     5,     5,     5,     2,     2,
-       2,     2,     2,     2,     4,     4,     4,     4,     4,     4,
-       4,     4,     5,     5,     5,     5,     4,     4,     4,     4,
-       4,     4,     3,     2,     0,     1,     1,     2,     1,     1,
-       1,     1,     4,     4,     5,     4,     4,     4,     7,     7,
-       7,     7,     7,     7,     7,     7,     7,     7,     8,     8,
-       8,     8,     7,     7,     7,     7,     7,     0,     2,     2,
-       0,     2,     2,     0,     2,     0,     2,     0,     2,     0,
-       2,     0,     2,     0,     2,     2,     0,     2,     3,     2,
-       0,     2,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     2,     1,     2,     2,
-       2,     2,     2,     2,     3,     2,     2,     2,     5,     3,
-       2,     2,     2,     2,     2,     5,     4,     6,     2,     4,
-       0,     3,     3,     1,     1,     0,     3,     0,     1,     1,
-       3,     0,     1,     1,     3,     1,     3,     4,     4,     4,
-       4,     5,     1,     1,     1,     1,     1,     1,     1,     3,
-       1,     3,     4,     1,     0,    10,     6,     5,     6,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     2,     2,     2,     2,     1,     1,     1,     1,     2,
-       3,     4,     6,     5,     1,     1,     1,     1,     1,     1,
-       1,     2,     2,     1,     2,     2,     4,     1,     2,     1,
-       2,     1,     2,     1,     2,     1,     2,     1,     1,     0,
-       5,     0,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     2,     2,     2,     2,     1,     1,     1,
-       1,     1,     3,     2,     2,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     2,     1,     1,     1,     1,     1,
+       1,     1,     1,     1,     1,     1,     3,     1,     1,     1,
+       1,     4,     4,     4,     4,     4,     4,     4,     2,     3,
+       2,     2,     2,     1,     1,     2,     1,     2,     4,     6,
+       3,     5,     7,     9,     3,     4,     7,     1,     1,     1,
+       2,     0,     2,     2,     0,     6,     2,     1,     1,     1,
+       1,     1,     1,     1,     1,     3,     2,     3,     1,     2,
+       3,     7,     0,     2,     2,     2,     2,     2,     3,     3,
+       2,     1,     4,     3,     0,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     3,     3,     3,     3,     3,     3,     2,     2,     2,
+       5,     0,     2,     0,     2,     0,     2,     3,     1,     0,
+       1,     1,     3,     0,     3,     1,     1,     1,     1,     1,
+       1,     4,     0,     2,     4,     3,     0,     2,     3,     0,
+       1,     5,     3,     4,     4,     4,     1,     1,     1,     1,
+       1,     2,     2,     4,    13,    22,     1,     1,     5,     3,
+       7,     5,     4,     7,     0,     2,     2,     2,     2,     2,
+       2,     2,     5,     2,     2,     2,     2,     2,     2,     5,
+       0,     2,     0,     2,     0,     3,     9,     9,     7,     7,
+       1,     1,     1,     2,     2,     1,     4,     0,     1,     1,
+       2,     2,     2,     2,     1,     4,     2,     5,     3,     2,
+       2,     1,     4,     3,     0,     2,     2,     0,     2,     2,
+       2,     2,     2,     1,     1,     1,     1,     9,     0,     2,
+       2,     0,     2,     2,     2,     2,     1,     1,     1,     1,
+       1,     0,     4,     1,     3,     1,    13,     0,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     5,     8,     6,     5,
+       0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     4,     4,     4,     4,     5,     1,     1,     1,     0,
+       4,     4,     4,     4,     0,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       5,     1,     0,     2,     2,     1,     2,     4,     5,     1,
+       1,     1,     1,     2,     1,     1,     1,     1,     1,     4,
+       6,     4,     4,    11,     1,     5,     3,     7,     5,     5,
+       3,     1,     2,     2,     1,     2,     4,     4,     1,     2,
+       2,     2,     2,     2,     2,     2,     1,     2,     1,     1,
+       1,     4,     4,     2,     4,     2,     0,     1,     1,     3,
+       1,     3,     1,     0,     3,     5,     4,     3,     5,     5,
+       5,     5,     5,     5,     2,     2,     2,     2,     2,     2,
+       4,     4,     4,     4,     4,     4,     4,     4,     5,     5,
+       5,     5,     4,     4,     4,     4,     4,     4,     3,     2,
+       0,     1,     1,     2,     1,     1,     1,     1,     4,     4,
+       5,     4,     4,     4,     7,     7,     7,     7,     7,     7,
+       7,     7,     7,     7,     8,     8,     8,     8,     7,     7,
+       7,     7,     7,     0,     2,     2,     0,     2,     2,     0,
+       2,     0,     2,     0,     2,     0,     2,     0,     2,     0,
+       2,     2,     0,     2,     3,     2,     0,     2,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       2,     1,     3,     2,     3,     4,     2,     2,     2,     5,
-       5,     7,     4,     3,     2,     3,     2,     1,     1,     2,
-       3,     2,     1,     2,     1,     1,     1,     1,     1,     1,
-       1,     1,     1,     2,     2,     2,     2,     1,     1,     1,
-       1,     1,     1,     3,     0,     1,     1,     3,     2,     6,
-       7,     3,     3,     3,     6,     0,     1,     3,     5,     6,
-       4,     4,     1,     3,     3,     1,     1,     1,     1,     4,
-       1,     6,     6,     6,     4,     1,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     3,     2,     5,     4,     7,     6,     7,     6,
-       9,     8,     3,     8,     4,     0,     2,     0,     1,     3,
-       3,     0,     2,     2,     2,     3,     2,     2,     2,     2,
-       2,     0,     2,     3,     1,     1,     1,     1,     3,     8,
-       2,     3,     1,     1,     3,     3,     3,     4,     6,     0,
-       2,     3,     1,     3,     1,     4,     3,     0,     2,     2,
-       2,     3,     3,     3,     3,     3,     3,     0,     2,     2,
-       3,     3,     4,     2,     1,     1,     3,     5,     0,     2,
-       2,     0,     2,     4,     3,     1,     1
+       1,     1,     2,     1,     2,     2,     2,     2,     2,     2,
+       3,     2,     2,     2,     5,     3,     2,     2,     2,     2,
+       2,     5,     4,     6,     2,     4,     0,     3,     3,     1,
+       1,     0,     3,     0,     1,     1,     3,     0,     1,     1,
+       3,     1,     3,     4,     4,     4,     4,     5,     1,     1,
+       1,     1,     1,     1,     1,     3,     1,     3,     4,     1,
+       0,    10,     6,     5,     6,     1,     1,     1,     1,     1,
+       1,     1,     1,     1,     1,     1,     1,     2,     2,     2,
+       2,     1,     1,     1,     1,     2,     3,     4,     6,     5,
+       1,     1,     1,     1,     1,     1,     1,     2,     2,     1,
+       2,     2,     4,     1,     2,     1,     2,     1,     2,     1,
+       2,     1,     2,     1,     1,     0,     5,     0,     1,     1,
+       1,     1,     1,     1,     1,     1,     1,     1,     1,     2,
+       2,     2,     2,     1,     1,     1,     1,     1,     3,     2,
+       2,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+       2,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+       1,     1,     1,     1,     1,     1,     2,     1,     3,     2,
+       3,     4,     2,     2,     2,     5,     5,     7,     4,     3,
+       2,     3,     2,     1,     1,     2,     3,     2,     1,     2,
+       1,     1,     1,     1,     1,     1,     1,     1,     1,     2,
+       2,     2,     2,     1,     1,     1,     1,     1,     1,     3,
+       0,     1,     1,     3,     2,     6,     7,     3,     3,     3,
+       6,     0,     1,     3,     5,     6,     4,     4,     1,     3,
+       3,     1,     1,     1,     1,     4,     1,     6,     6,     6,
+       4,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+       1,     1,     1,     1,     1,     1,     1,     1,     3,     2,
+       5,     4,     7,     6,     7,     6,     9,     8,     3,     8,
+       4,     0,     2,     0,     1,     3,     3,     0,     2,     2,
+       2,     3,     2,     2,     2,     2,     2,     0,     2,     3,
+       1,     1,     1,     1,     3,     8,     2,     3,     1,     1,
+       3,     3,     3,     4,     6,     0,     2,     3,     1,     3,
+       1,     4,     3,     0,     2,     2,     2,     3,     3,     3,
+       3,     3,     3,     0,     2,     2,     3,     3,     4,     2,
+       1,     1,     3,     5,     0,     2,     2,     0,     2,     4,
+       3,     1,     1
 };
 
 
@@ -3538,13 +3898,13 @@ yyreduce:
   case 4: /* decl: classHead '{' classDecls '}'  */
 #line 193 "asmparse.y"
                                                                                 { PASM->EndClass(); }
-#line 3542 "prebuilt\\asmparse.cpp"
+#line 3902 "prebuilt\\asmparse.cpp"
     break;
 
   case 5: /* decl: nameSpaceHead '{' decls '}'  */
 #line 194 "asmparse.y"
                                                                                 { PASM->EndNameSpace(); }
-#line 3548 "prebuilt\\asmparse.cpp"
+#line 3908 "prebuilt\\asmparse.cpp"
     break;
 
   case 6: /* decl: methodHead methodDecls '}'  */
@@ -3553,31 +3913,31 @@ yyreduce:
                                                                                   {  PASM->m_pCurMethod->m_ulLines[1] = PASM->m_ulCurLine;
                                                                                      PASM->m_pCurMethod->m_ulColumns[1]=PASM->m_ulCurColumn;}
                                                                                   PASM->EndMethod(); }
-#line 3557 "prebuilt\\asmparse.cpp"
+#line 3917 "prebuilt\\asmparse.cpp"
     break;
 
   case 13: /* decl: assemblyHead '{' assemblyDecls '}'  */
 #line 205 "asmparse.y"
                                                                                 { PASMM->EndAssembly(); }
-#line 3563 "prebuilt\\asmparse.cpp"
+#line 3923 "prebuilt\\asmparse.cpp"
     break;
 
   case 14: /* decl: assemblyRefHead '{' assemblyRefDecls '}'  */
 #line 206 "asmparse.y"
                                                                                 { PASMM->EndAssembly(); }
-#line 3569 "prebuilt\\asmparse.cpp"
+#line 3929 "prebuilt\\asmparse.cpp"
     break;
 
   case 15: /* decl: exptypeHead '{' exptypeDecls '}'  */
 #line 207 "asmparse.y"
                                                                                 { PASMM->EndComType(); }
-#line 3575 "prebuilt\\asmparse.cpp"
+#line 3935 "prebuilt\\asmparse.cpp"
     break;
 
   case 16: /* decl: manifestResHead '{' manifestResDecls '}'  */
 #line 208 "asmparse.y"
                                                                                 { PASMM->EndManifestRes(); }
-#line 3581 "prebuilt\\asmparse.cpp"
+#line 3941 "prebuilt\\asmparse.cpp"
     break;
 
   case 20: /* decl: _SUBSYSTEM int32  */
@@ -3585,13 +3945,13 @@ yyreduce:
                                                                                 {
                                                                                   PASM->m_dwSubsystem = (yyvsp[0].int32);
                                                                                 }
-#line 3589 "prebuilt\\asmparse.cpp"
+#line 3949 "prebuilt\\asmparse.cpp"
     break;
 
   case 21: /* decl: _CORFLAGS int32  */
 #line 215 "asmparse.y"
                                                                                 { PASM->m_dwComImageFlags = (yyvsp[0].int32); }
-#line 3595 "prebuilt\\asmparse.cpp"
+#line 3955 "prebuilt\\asmparse.cpp"
     break;
 
   case 22: /* decl: _FILE ALIGNMENT_ int32  */
@@ -3599,7 +3959,7 @@ yyreduce:
                                                                                 { PASM->m_dwFileAlignment = (yyvsp[0].int32);
                                                                                   if(((yyvsp[0].int32) & ((yyvsp[0].int32) - 1))||((yyvsp[0].int32) < 0x200)||((yyvsp[0].int32) > 0x10000))
                                                                                     PASM->report->error("Invalid file alignment, must be power of 2 from 0x200 to 0x10000\n");}
-#line 3603 "prebuilt\\asmparse.cpp"
+#line 3963 "prebuilt\\asmparse.cpp"
     break;
 
   case 23: /* decl: _IMAGEBASE int64  */
@@ -3607,44 +3967,44 @@ yyreduce:
                                                                                 { PASM->m_stBaseAddress = (ULONGLONG)(*((yyvsp[0].int64))); delete (yyvsp[0].int64);
                                                                                   if(PASM->m_stBaseAddress & 0xFFFF)
                                                                                     PASM->report->error("Invalid image base, must be 0x10000-aligned\n");}
-#line 3611 "prebuilt\\asmparse.cpp"
+#line 3971 "prebuilt\\asmparse.cpp"
     break;
 
   case 24: /* decl: _STACKRESERVE int64  */
 #line 222 "asmparse.y"
                                                                                 { PASM->m_stSizeOfStackReserve = (size_t)(*((yyvsp[0].int64))); delete (yyvsp[0].int64); }
-#line 3617 "prebuilt\\asmparse.cpp"
+#line 3977 "prebuilt\\asmparse.cpp"
     break;
 
   case 29: /* decl: _MSCORLIB  */
 #line 227 "asmparse.y"
                                                                                 { PASM->m_fIsMscorlib = TRUE; }
-#line 3623 "prebuilt\\asmparse.cpp"
+#line 3983 "prebuilt\\asmparse.cpp"
     break;
 
   case 32: /* compQstring: QSTRING  */
 #line 234 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 3629 "prebuilt\\asmparse.cpp"
+#line 3989 "prebuilt\\asmparse.cpp"
     break;
 
   case 33: /* compQstring: compQstring '+' QSTRING  */
 #line 235 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 3635 "prebuilt\\asmparse.cpp"
+#line 3995 "prebuilt\\asmparse.cpp"
     break;
 
   case 34: /* languageDecl: _LANGUAGE SQSTRING  */
 #line 238 "asmparse.y"
                                                                                 { LPCSTRToGuid((yyvsp[0].string),&(PASM->m_guidLang)); }
-#line 3641 "prebuilt\\asmparse.cpp"
+#line 4001 "prebuilt\\asmparse.cpp"
     break;
 
   case 35: /* languageDecl: _LANGUAGE SQSTRING ',' SQSTRING  */
 #line 239 "asmparse.y"
                                                                                 { LPCSTRToGuid((yyvsp[-2].string),&(PASM->m_guidLang));
                                                                                   LPCSTRToGuid((yyvsp[0].string),&(PASM->m_guidLangVendor));}
-#line 3648 "prebuilt\\asmparse.cpp"
+#line 4008 "prebuilt\\asmparse.cpp"
     break;
 
   case 36: /* languageDecl: _LANGUAGE SQSTRING ',' SQSTRING ',' SQSTRING  */
@@ -3652,851 +4012,941 @@ yyreduce:
                                                                                 { LPCSTRToGuid((yyvsp[-4].string),&(PASM->m_guidLang));
                                                                                   LPCSTRToGuid((yyvsp[-2].string),&(PASM->m_guidLangVendor));
                                                                                   LPCSTRToGuid((yyvsp[-2].string),&(PASM->m_guidDoc));}
-#line 3656 "prebuilt\\asmparse.cpp"
+#line 4016 "prebuilt\\asmparse.cpp"
     break;
 
   case 37: /* id: ID  */
 #line 246 "asmparse.y"
                                                               { (yyval.string) = (yyvsp[0].string); }
-#line 3662 "prebuilt\\asmparse.cpp"
+#line 4022 "prebuilt\\asmparse.cpp"
     break;
 
-  case 38: /* id: SQSTRING  */
-#line 247 "asmparse.y"
-                                                              { (yyval.string) = (yyvsp[0].string); }
-#line 3668 "prebuilt\\asmparse.cpp"
+  case 38: /* id: NATIVE_  */
+#line 248 "asmparse.y"
+                                                              { (yyval.string) = newString("native"); }
+#line 4028 "prebuilt\\asmparse.cpp"
     break;
 
-  case 39: /* dottedName: id  */
+  case 39: /* id: CIL_  */
+#line 249 "asmparse.y"
+                                                              { (yyval.string) = newString("cil"); }
+#line 4034 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 40: /* id: OPTIL_  */
 #line 250 "asmparse.y"
-                                                              { (yyval.string) = (yyvsp[0].string); }
-#line 3674 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = newString("optil"); }
+#line 4040 "prebuilt\\asmparse.cpp"
     break;
 
-  case 40: /* dottedName: DOTTEDNAME  */
+  case 41: /* id: MANAGED_  */
 #line 251 "asmparse.y"
-                                                              { (yyval.string) = (yyvsp[0].string); }
-#line 3680 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = newString("managed"); }
+#line 4046 "prebuilt\\asmparse.cpp"
     break;
 
-  case 41: /* dottedName: dottedName '.' dottedName  */
+  case 42: /* id: UNMANAGED_  */
 #line 252 "asmparse.y"
-                                                              { (yyval.string) = newStringWDel((yyvsp[-2].string), '.', (yyvsp[0].string)); }
-#line 3686 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = newString("unmanaged"); }
+#line 4052 "prebuilt\\asmparse.cpp"
     break;
 
-  case 42: /* int32: INT32_V  */
+  case 43: /* id: FORWARDREF_  */
+#line 253 "asmparse.y"
+                                                              { (yyval.string) = newString("forwardref"); }
+#line 4058 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 44: /* id: PRESERVESIG_  */
+#line 254 "asmparse.y"
+                                                              { (yyval.string) = newString("preservesig"); }
+#line 4064 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 45: /* id: RUNTIME_  */
 #line 255 "asmparse.y"
-                                                              { (yyval.int32) = (yyvsp[0].int32); }
-#line 3692 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = newString("runtime"); }
+#line 4070 "prebuilt\\asmparse.cpp"
     break;
 
-  case 43: /* int64: INT64_V  */
+  case 46: /* id: INTERNALCALL_  */
+#line 256 "asmparse.y"
+                                                              { (yyval.string) = newString("internalcall"); }
+#line 4076 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 47: /* id: SYNCHRONIZED_  */
+#line 257 "asmparse.y"
+                                                              { (yyval.string) = newString("synchronized"); }
+#line 4082 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 48: /* id: NOINLINING_  */
 #line 258 "asmparse.y"
-                                                              { (yyval.int64) = (yyvsp[0].int64); }
-#line 3698 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = newString("noinlining"); }
+#line 4088 "prebuilt\\asmparse.cpp"
     break;
 
-  case 44: /* int64: INT32_V  */
+  case 49: /* id: AGGRESSIVEINLINING_  */
 #line 259 "asmparse.y"
-                                                              { (yyval.int64) = neg ? new int64_t((yyvsp[0].int32)) : new int64_t((unsigned)(yyvsp[0].int32)); }
-#line 3704 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = newString("aggressiveinlining"); }
+#line 4094 "prebuilt\\asmparse.cpp"
     break;
 
-  case 45: /* float64: FLOAT64  */
+  case 50: /* id: NOOPTIMIZATION_  */
+#line 260 "asmparse.y"
+                                                              { (yyval.string) = newString("nooptimization"); }
+#line 4100 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 51: /* id: AGGRESSIVEOPTIMIZATION_  */
+#line 261 "asmparse.y"
+                                                              { (yyval.string) = newString("aggressiveoptimization"); }
+#line 4106 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 52: /* id: ASYNC_  */
 #line 262 "asmparse.y"
-                                                              { (yyval.float64) = (yyvsp[0].float64); }
-#line 3710 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = newString("async"); }
+#line 4112 "prebuilt\\asmparse.cpp"
     break;
 
-  case 46: /* float64: FLOAT32_ '(' int32 ')'  */
+  case 53: /* id: SQSTRING  */
 #line 263 "asmparse.y"
-                                                              { float f; *((int32_t*) (&f)) = (yyvsp[-1].int32); (yyval.float64) = new double(f); }
-#line 3716 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = (yyvsp[0].string); }
+#line 4118 "prebuilt\\asmparse.cpp"
     break;
 
-  case 47: /* float64: FLOAT64_ '(' int64 ')'  */
-#line 264 "asmparse.y"
-                                                              { (yyval.float64) = (double*) (yyvsp[-1].int64); }
-#line 3722 "prebuilt\\asmparse.cpp"
+  case 54: /* dottedName: id  */
+#line 266 "asmparse.y"
+                                                              { (yyval.string) = (yyvsp[0].string); }
+#line 4124 "prebuilt\\asmparse.cpp"
     break;
 
-  case 48: /* typedefDecl: _TYPEDEF type AS_ dottedName  */
+  case 55: /* dottedName: DOTTEDNAME  */
+#line 267 "asmparse.y"
+                                                              { (yyval.string) = (yyvsp[0].string); }
+#line 4130 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 56: /* dottedName: dottedName '.' dottedName  */
 #line 268 "asmparse.y"
-                                                                                { PASM->AddTypeDef((yyvsp[-2].binstr),(yyvsp[0].string)); }
-#line 3728 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.string) = newStringWDel((yyvsp[-2].string), '.', (yyvsp[0].string)); }
+#line 4136 "prebuilt\\asmparse.cpp"
     break;
 
-  case 49: /* typedefDecl: _TYPEDEF className AS_ dottedName  */
-#line 269 "asmparse.y"
-                                                                                { PASM->AddTypeDef((yyvsp[-2].token),(yyvsp[0].string)); }
-#line 3734 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 50: /* typedefDecl: _TYPEDEF memberRef AS_ dottedName  */
-#line 270 "asmparse.y"
-                                                                                { PASM->AddTypeDef((yyvsp[-2].token),(yyvsp[0].string)); }
-#line 3740 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 51: /* typedefDecl: _TYPEDEF customDescr AS_ dottedName  */
+  case 57: /* int32: INT32_V  */
 #line 271 "asmparse.y"
-                                                                                { (yyvsp[-2].cad)->tkOwner = 0; PASM->AddTypeDef((yyvsp[-2].cad),(yyvsp[0].string)); }
-#line 3746 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = (yyvsp[0].int32); }
+#line 4142 "prebuilt\\asmparse.cpp"
     break;
 
-  case 52: /* typedefDecl: _TYPEDEF customDescrWithOwner AS_ dottedName  */
-#line 272 "asmparse.y"
-                                                                                { PASM->AddTypeDef((yyvsp[-2].cad),(yyvsp[0].string)); }
-#line 3752 "prebuilt\\asmparse.cpp"
+  case 58: /* int64: INT64_V  */
+#line 274 "asmparse.y"
+                                                              { (yyval.int64) = (yyvsp[0].int64); }
+#line 4148 "prebuilt\\asmparse.cpp"
     break;
 
-  case 53: /* compControl: P_DEFINE dottedName  */
-#line 277 "asmparse.y"
-                                                                                { DefineVar((yyvsp[0].string), NULL); }
-#line 3758 "prebuilt\\asmparse.cpp"
+  case 59: /* int64: INT32_V  */
+#line 275 "asmparse.y"
+                                                              { (yyval.int64) = neg ? new int64_t((yyvsp[0].int32)) : new int64_t((unsigned)(yyvsp[0].int32)); }
+#line 4154 "prebuilt\\asmparse.cpp"
     break;
 
-  case 54: /* compControl: P_DEFINE dottedName compQstring  */
+  case 60: /* float64: FLOAT64  */
 #line 278 "asmparse.y"
-                                                                                { DefineVar((yyvsp[-1].string), (yyvsp[0].binstr)); }
-#line 3764 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.float64) = (yyvsp[0].float64); }
+#line 4160 "prebuilt\\asmparse.cpp"
     break;
 
-  case 55: /* compControl: P_UNDEF dottedName  */
+  case 61: /* float64: FLOAT32_ '(' int32 ')'  */
 #line 279 "asmparse.y"
-                                                                                { UndefVar((yyvsp[0].string)); }
-#line 3770 "prebuilt\\asmparse.cpp"
+                                                              { float f; *((int32_t*) (&f)) = (yyvsp[-1].int32); (yyval.float64) = new double(f); }
+#line 4166 "prebuilt\\asmparse.cpp"
     break;
 
-  case 56: /* compControl: P_IFDEF dottedName  */
+  case 62: /* float64: FLOAT64_ '(' int64 ')'  */
 #line 280 "asmparse.y"
+                                                              { (yyval.float64) = (double*) (yyvsp[-1].int64); }
+#line 4172 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 63: /* typedefDecl: _TYPEDEF type AS_ dottedName  */
+#line 284 "asmparse.y"
+                                                                                { PASM->AddTypeDef((yyvsp[-2].binstr),(yyvsp[0].string)); }
+#line 4178 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 64: /* typedefDecl: _TYPEDEF className AS_ dottedName  */
+#line 285 "asmparse.y"
+                                                                                { PASM->AddTypeDef((yyvsp[-2].token),(yyvsp[0].string)); }
+#line 4184 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 65: /* typedefDecl: _TYPEDEF memberRef AS_ dottedName  */
+#line 286 "asmparse.y"
+                                                                                { PASM->AddTypeDef((yyvsp[-2].token),(yyvsp[0].string)); }
+#line 4190 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 66: /* typedefDecl: _TYPEDEF customDescr AS_ dottedName  */
+#line 287 "asmparse.y"
+                                                                                { (yyvsp[-2].cad)->tkOwner = 0; PASM->AddTypeDef((yyvsp[-2].cad),(yyvsp[0].string)); }
+#line 4196 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 67: /* typedefDecl: _TYPEDEF customDescrWithOwner AS_ dottedName  */
+#line 288 "asmparse.y"
+                                                                                { PASM->AddTypeDef((yyvsp[-2].cad),(yyvsp[0].string)); }
+#line 4202 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 68: /* compControl: P_DEFINE dottedName  */
+#line 293 "asmparse.y"
+                                                                                { DefineVar((yyvsp[0].string), NULL); }
+#line 4208 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 69: /* compControl: P_DEFINE dottedName compQstring  */
+#line 294 "asmparse.y"
+                                                                                { DefineVar((yyvsp[-1].string), (yyvsp[0].binstr)); }
+#line 4214 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 70: /* compControl: P_UNDEF dottedName  */
+#line 295 "asmparse.y"
+                                                                                { UndefVar((yyvsp[0].string)); }
+#line 4220 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 71: /* compControl: P_IFDEF dottedName  */
+#line 296 "asmparse.y"
                                                                                 { SkipToken = !IsVarDefined((yyvsp[0].string));
                                                                                   IfEndif++;
                                                                                 }
-#line 3778 "prebuilt\\asmparse.cpp"
+#line 4228 "prebuilt\\asmparse.cpp"
     break;
 
-  case 57: /* compControl: P_IFNDEF dottedName  */
-#line 283 "asmparse.y"
+  case 72: /* compControl: P_IFNDEF dottedName  */
+#line 299 "asmparse.y"
                                                                                 { SkipToken = IsVarDefined((yyvsp[0].string));
                                                                                   IfEndif++;
                                                                                 }
-#line 3786 "prebuilt\\asmparse.cpp"
+#line 4236 "prebuilt\\asmparse.cpp"
     break;
 
-  case 58: /* compControl: P_ELSE  */
-#line 286 "asmparse.y"
+  case 73: /* compControl: P_ELSE  */
+#line 302 "asmparse.y"
                                                                                 { if(IfEndif == 1) SkipToken = !SkipToken;}
-#line 3792 "prebuilt\\asmparse.cpp"
+#line 4242 "prebuilt\\asmparse.cpp"
     break;
 
-  case 59: /* compControl: P_ENDIF  */
-#line 287 "asmparse.y"
+  case 74: /* compControl: P_ENDIF  */
+#line 303 "asmparse.y"
                                                                                 { if(IfEndif == 0)
                                                                                     PASM->report->error("Unmatched #endif\n");
                                                                                   else IfEndif--;
                                                                                 }
-#line 3801 "prebuilt\\asmparse.cpp"
+#line 4251 "prebuilt\\asmparse.cpp"
     break;
 
-  case 60: /* compControl: P_INCLUDE QSTRING  */
-#line 291 "asmparse.y"
+  case 75: /* compControl: P_INCLUDE QSTRING  */
+#line 307 "asmparse.y"
                                                                                 { _ASSERTE(!"yylex should have dealt with this"); }
-#line 3807 "prebuilt\\asmparse.cpp"
+#line 4257 "prebuilt\\asmparse.cpp"
     break;
 
-  case 61: /* compControl: ';'  */
-#line 292 "asmparse.y"
+  case 76: /* compControl: ';'  */
+#line 308 "asmparse.y"
                                                                                 { }
-#line 3813 "prebuilt\\asmparse.cpp"
+#line 4263 "prebuilt\\asmparse.cpp"
     break;
 
-  case 62: /* customDescr: _CUSTOM customType  */
-#line 296 "asmparse.y"
+  case 77: /* customDescr: _CUSTOM customType  */
+#line 312 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[0].token), NULL); }
-#line 3819 "prebuilt\\asmparse.cpp"
+#line 4269 "prebuilt\\asmparse.cpp"
     break;
 
-  case 63: /* customDescr: _CUSTOM customType '=' compQstring  */
-#line 297 "asmparse.y"
-                                                                                { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].token), (yyvsp[0].binstr)); }
-#line 3825 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 64: /* customDescr: _CUSTOM customType '=' '{' customBlobDescr '}'  */
-#line 298 "asmparse.y"
-                                                                                { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-4].token), (yyvsp[-1].binstr)); }
-#line 3831 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 65: /* customDescr: customHead bytes ')'  */
-#line 299 "asmparse.y"
-                                                                                { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].int32), (yyvsp[-1].binstr)); }
-#line 3837 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 66: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType  */
-#line 302 "asmparse.y"
-                                                                                { (yyval.cad) = new CustomDescr((yyvsp[-2].token), (yyvsp[0].token), NULL); }
-#line 3843 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 67: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType '=' compQstring  */
-#line 303 "asmparse.y"
-                                                                                { (yyval.cad) = new CustomDescr((yyvsp[-4].token), (yyvsp[-2].token), (yyvsp[0].binstr)); }
-#line 3849 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 68: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType '=' '{' customBlobDescr '}'  */
-#line 305 "asmparse.y"
-                                                                                { (yyval.cad) = new CustomDescr((yyvsp[-6].token), (yyvsp[-4].token), (yyvsp[-1].binstr)); }
-#line 3855 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 69: /* customDescrWithOwner: customHeadWithOwner bytes ')'  */
-#line 306 "asmparse.y"
-                                                                                { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].int32), (yyvsp[-1].binstr)); }
-#line 3861 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 70: /* customHead: _CUSTOM customType '=' '('  */
-#line 309 "asmparse.y"
-                                                                                { (yyval.int32) = (yyvsp[-2].token); bParsingByteArray = TRUE; }
-#line 3867 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 71: /* customHeadWithOwner: _CUSTOM '(' ownerType ')' customType '=' '('  */
+  case 78: /* customDescr: _CUSTOM customType '=' compQstring  */
 #line 313 "asmparse.y"
+                                                                                { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].token), (yyvsp[0].binstr)); }
+#line 4275 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 79: /* customDescr: _CUSTOM customType '=' '{' customBlobDescr '}'  */
+#line 314 "asmparse.y"
+                                                                                { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-4].token), (yyvsp[-1].binstr)); }
+#line 4281 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 80: /* customDescr: customHead bytes ')'  */
+#line 315 "asmparse.y"
+                                                                                { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].int32), (yyvsp[-1].binstr)); }
+#line 4287 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 81: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType  */
+#line 318 "asmparse.y"
+                                                                                { (yyval.cad) = new CustomDescr((yyvsp[-2].token), (yyvsp[0].token), NULL); }
+#line 4293 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 82: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType '=' compQstring  */
+#line 319 "asmparse.y"
+                                                                                { (yyval.cad) = new CustomDescr((yyvsp[-4].token), (yyvsp[-2].token), (yyvsp[0].binstr)); }
+#line 4299 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 83: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType '=' '{' customBlobDescr '}'  */
+#line 321 "asmparse.y"
+                                                                                { (yyval.cad) = new CustomDescr((yyvsp[-6].token), (yyvsp[-4].token), (yyvsp[-1].binstr)); }
+#line 4305 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 84: /* customDescrWithOwner: customHeadWithOwner bytes ')'  */
+#line 322 "asmparse.y"
+                                                                                { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].int32), (yyvsp[-1].binstr)); }
+#line 4311 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 85: /* customHead: _CUSTOM customType '=' '('  */
+#line 325 "asmparse.y"
+                                                                                { (yyval.int32) = (yyvsp[-2].token); bParsingByteArray = TRUE; }
+#line 4317 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 86: /* customHeadWithOwner: _CUSTOM '(' ownerType ')' customType '=' '('  */
+#line 329 "asmparse.y"
                                                                                 { PASM->m_pCustomDescrList = NULL;
                                                                                   PASM->m_tkCurrentCVOwner = (yyvsp[-4].token);
                                                                                   (yyval.int32) = (yyvsp[-2].token); bParsingByteArray = TRUE; }
-#line 3875 "prebuilt\\asmparse.cpp"
+#line 4325 "prebuilt\\asmparse.cpp"
     break;
 
-  case 72: /* customType: methodRef  */
-#line 318 "asmparse.y"
+  case 87: /* customType: methodRef  */
+#line 334 "asmparse.y"
                                                             { (yyval.token) = (yyvsp[0].token); }
-#line 3881 "prebuilt\\asmparse.cpp"
+#line 4331 "prebuilt\\asmparse.cpp"
     break;
 
-  case 73: /* ownerType: typeSpec  */
-#line 321 "asmparse.y"
+  case 88: /* ownerType: typeSpec  */
+#line 337 "asmparse.y"
                                                             { (yyval.token) = (yyvsp[0].token); }
-#line 3887 "prebuilt\\asmparse.cpp"
+#line 4337 "prebuilt\\asmparse.cpp"
     break;
 
-  case 74: /* ownerType: memberRef  */
-#line 322 "asmparse.y"
+  case 89: /* ownerType: memberRef  */
+#line 338 "asmparse.y"
                                                             { (yyval.token) = (yyvsp[0].token); }
-#line 3893 "prebuilt\\asmparse.cpp"
+#line 4343 "prebuilt\\asmparse.cpp"
     break;
 
-  case 75: /* customBlobDescr: customBlobArgs customBlobNVPairs  */
-#line 326 "asmparse.y"
+  case 90: /* customBlobDescr: customBlobArgs customBlobNVPairs  */
+#line 342 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                                   (yyval.binstr)->appendInt16(VAL16(nCustomBlobNVPairs));
                                                                                   (yyval.binstr)->append((yyvsp[0].binstr));
                                                                                   nCustomBlobNVPairs = 0; }
-#line 3902 "prebuilt\\asmparse.cpp"
+#line 4352 "prebuilt\\asmparse.cpp"
     break;
 
-  case 76: /* customBlobArgs: %empty  */
-#line 332 "asmparse.y"
+  case 91: /* customBlobArgs: %empty  */
+#line 348 "asmparse.y"
                                                                                 { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt16(VAL16(0x0001)); }
-#line 3908 "prebuilt\\asmparse.cpp"
+#line 4358 "prebuilt\\asmparse.cpp"
     break;
 
-  case 77: /* customBlobArgs: customBlobArgs serInit  */
-#line 333 "asmparse.y"
+  case 92: /* customBlobArgs: customBlobArgs serInit  */
+#line 349 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                                   AppendFieldToCustomBlob((yyval.binstr),(yyvsp[0].binstr)); }
-#line 3915 "prebuilt\\asmparse.cpp"
+#line 4365 "prebuilt\\asmparse.cpp"
     break;
 
-  case 78: /* customBlobArgs: customBlobArgs compControl  */
-#line 335 "asmparse.y"
+  case 93: /* customBlobArgs: customBlobArgs compControl  */
+#line 351 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 3921 "prebuilt\\asmparse.cpp"
+#line 4371 "prebuilt\\asmparse.cpp"
     break;
 
-  case 79: /* customBlobNVPairs: %empty  */
-#line 338 "asmparse.y"
+  case 94: /* customBlobNVPairs: %empty  */
+#line 354 "asmparse.y"
                                                                                 { (yyval.binstr) = new BinStr(); }
-#line 3927 "prebuilt\\asmparse.cpp"
+#line 4377 "prebuilt\\asmparse.cpp"
     break;
 
-  case 80: /* customBlobNVPairs: customBlobNVPairs fieldOrProp serializType dottedName '=' serInit  */
-#line 340 "asmparse.y"
+  case 95: /* customBlobNVPairs: customBlobNVPairs fieldOrProp serializType dottedName '=' serInit  */
+#line 356 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-5].binstr); (yyval.binstr)->appendInt8((yyvsp[-4].int32));
                                                                                   (yyval.binstr)->append((yyvsp[-3].binstr));
                                                                                   AppendStringWithLength((yyval.binstr),(yyvsp[-2].string));
                                                                                   AppendFieldToCustomBlob((yyval.binstr),(yyvsp[0].binstr));
                                                                                   nCustomBlobNVPairs++; }
-#line 3937 "prebuilt\\asmparse.cpp"
+#line 4387 "prebuilt\\asmparse.cpp"
     break;
 
-  case 81: /* customBlobNVPairs: customBlobNVPairs compControl  */
-#line 345 "asmparse.y"
+  case 96: /* customBlobNVPairs: customBlobNVPairs compControl  */
+#line 361 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 3943 "prebuilt\\asmparse.cpp"
+#line 4393 "prebuilt\\asmparse.cpp"
     break;
 
-  case 82: /* fieldOrProp: FIELD_  */
-#line 348 "asmparse.y"
+  case 97: /* fieldOrProp: FIELD_  */
+#line 364 "asmparse.y"
                                                                                 { (yyval.int32) = SERIALIZATION_TYPE_FIELD; }
-#line 3949 "prebuilt\\asmparse.cpp"
+#line 4399 "prebuilt\\asmparse.cpp"
     break;
 
-  case 83: /* fieldOrProp: PROPERTY_  */
-#line 349 "asmparse.y"
+  case 98: /* fieldOrProp: PROPERTY_  */
+#line 365 "asmparse.y"
                                                                                 { (yyval.int32) = SERIALIZATION_TYPE_PROPERTY; }
-#line 3955 "prebuilt\\asmparse.cpp"
+#line 4405 "prebuilt\\asmparse.cpp"
     break;
 
-  case 84: /* customAttrDecl: customDescr  */
-#line 352 "asmparse.y"
+  case 99: /* customAttrDecl: customDescr  */
+#line 368 "asmparse.y"
                                                                                 { if((yyvsp[0].cad)->tkOwner && !(yyvsp[0].cad)->tkInterfacePair)
                                                                                     PASM->DefineCV((yyvsp[0].cad));
                                                                                   else if(PASM->m_pCustomDescrList)
                                                                                     PASM->m_pCustomDescrList->PUSH((yyvsp[0].cad)); }
-#line 3964 "prebuilt\\asmparse.cpp"
+#line 4414 "prebuilt\\asmparse.cpp"
     break;
 
-  case 85: /* customAttrDecl: customDescrWithOwner  */
-#line 356 "asmparse.y"
+  case 100: /* customAttrDecl: customDescrWithOwner  */
+#line 372 "asmparse.y"
                                                                                 { PASM->DefineCV((yyvsp[0].cad)); }
-#line 3970 "prebuilt\\asmparse.cpp"
+#line 4420 "prebuilt\\asmparse.cpp"
     break;
 
-  case 86: /* customAttrDecl: TYPEDEF_CA  */
-#line 357 "asmparse.y"
+  case 101: /* customAttrDecl: TYPEDEF_CA  */
+#line 373 "asmparse.y"
                                                                                 { CustomDescr* pNew = new CustomDescr((yyvsp[0].tdd)->m_pCA);
                                                                                   if(pNew->tkOwner == 0) pNew->tkOwner = PASM->m_tkCurrentCVOwner;
                                                                                   if(pNew->tkOwner)
                                                                                     PASM->DefineCV(pNew);
                                                                                   else if(PASM->m_pCustomDescrList)
                                                                                     PASM->m_pCustomDescrList->PUSH(pNew); }
-#line 3981 "prebuilt\\asmparse.cpp"
+#line 4431 "prebuilt\\asmparse.cpp"
     break;
 
-  case 87: /* serializType: simpleType  */
-#line 365 "asmparse.y"
+  case 102: /* serializType: simpleType  */
+#line 381 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 3987 "prebuilt\\asmparse.cpp"
+#line 4437 "prebuilt\\asmparse.cpp"
     break;
 
-  case 88: /* serializType: TYPE_  */
-#line 366 "asmparse.y"
+  case 103: /* serializType: TYPE_  */
+#line 382 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE); }
-#line 3993 "prebuilt\\asmparse.cpp"
+#line 4443 "prebuilt\\asmparse.cpp"
     break;
 
-  case 89: /* serializType: OBJECT_  */
-#line 367 "asmparse.y"
+  case 104: /* serializType: OBJECT_  */
+#line 383 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TAGGED_OBJECT); }
-#line 3999 "prebuilt\\asmparse.cpp"
+#line 4449 "prebuilt\\asmparse.cpp"
     break;
 
-  case 90: /* serializType: ENUM_ CLASS_ SQSTRING  */
-#line 368 "asmparse.y"
+  case 105: /* serializType: ENUM_ CLASS_ SQSTRING  */
+#line 384 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 AppendStringWithLength((yyval.binstr),(yyvsp[0].string)); }
-#line 4006 "prebuilt\\asmparse.cpp"
+#line 4456 "prebuilt\\asmparse.cpp"
     break;
 
-  case 91: /* serializType: ENUM_ className  */
-#line 370 "asmparse.y"
+  case 106: /* serializType: ENUM_ className  */
+#line 386 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 AppendStringWithLength((yyval.binstr),PASM->ReflectionNotation((yyvsp[0].token))); }
-#line 4013 "prebuilt\\asmparse.cpp"
+#line 4463 "prebuilt\\asmparse.cpp"
     break;
 
-  case 92: /* serializType: serializType '[' ']'  */
-#line 372 "asmparse.y"
+  case 107: /* serializType: serializType '[' ']'  */
+#line 388 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 4019 "prebuilt\\asmparse.cpp"
+#line 4469 "prebuilt\\asmparse.cpp"
     break;
 
-  case 93: /* moduleHead: _MODULE  */
-#line 377 "asmparse.y"
+  case 108: /* moduleHead: _MODULE  */
+#line 393 "asmparse.y"
                                                                                 { PASMM->SetModuleName(NULL); PASM->m_tkCurrentCVOwner=1; }
-#line 4025 "prebuilt\\asmparse.cpp"
+#line 4475 "prebuilt\\asmparse.cpp"
     break;
 
-  case 94: /* moduleHead: _MODULE dottedName  */
-#line 378 "asmparse.y"
+  case 109: /* moduleHead: _MODULE dottedName  */
+#line 394 "asmparse.y"
                                                                                 { PASMM->SetModuleName((yyvsp[0].string)); PASM->m_tkCurrentCVOwner=1; }
-#line 4031 "prebuilt\\asmparse.cpp"
+#line 4481 "prebuilt\\asmparse.cpp"
     break;
 
-  case 95: /* moduleHead: _MODULE EXTERN_ dottedName  */
-#line 379 "asmparse.y"
+  case 110: /* moduleHead: _MODULE EXTERN_ dottedName  */
+#line 395 "asmparse.y"
                                                                                 { BinStr* pbs = new BinStr();
                                                                                   unsigned L = (unsigned)strlen((yyvsp[0].string));
                                                                                   memcpy((char*)(pbs->getBuff(L)),(yyvsp[0].string),L);
                                                                                   PASM->EmitImport(pbs); delete pbs;}
-#line 4040 "prebuilt\\asmparse.cpp"
+#line 4490 "prebuilt\\asmparse.cpp"
     break;
 
-  case 96: /* vtfixupDecl: _VTFIXUP '[' int32 ']' vtfixupAttr AT_ id  */
-#line 386 "asmparse.y"
+  case 111: /* vtfixupDecl: _VTFIXUP '[' int32 ']' vtfixupAttr AT_ id  */
+#line 402 "asmparse.y"
                                                                                 { /*PASM->SetDataSection(); PASM->EmitDataLabel($7);*/
                                                                                   PASM->m_VTFList.PUSH(new VTFEntry((USHORT)(yyvsp[-4].int32), (USHORT)(yyvsp[-2].int32), (yyvsp[0].string))); }
-#line 4047 "prebuilt\\asmparse.cpp"
+#line 4497 "prebuilt\\asmparse.cpp"
     break;
 
-  case 97: /* vtfixupAttr: %empty  */
-#line 390 "asmparse.y"
+  case 112: /* vtfixupAttr: %empty  */
+#line 406 "asmparse.y"
                                                                                 { (yyval.int32) = 0; }
-#line 4053 "prebuilt\\asmparse.cpp"
+#line 4503 "prebuilt\\asmparse.cpp"
     break;
 
-  case 98: /* vtfixupAttr: vtfixupAttr INT32_  */
-#line 391 "asmparse.y"
+  case 113: /* vtfixupAttr: vtfixupAttr INT32_  */
+#line 407 "asmparse.y"
                                                                                 { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_32BIT; }
-#line 4059 "prebuilt\\asmparse.cpp"
+#line 4509 "prebuilt\\asmparse.cpp"
     break;
 
-  case 99: /* vtfixupAttr: vtfixupAttr INT64_  */
-#line 392 "asmparse.y"
-                                                                                { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_64BIT; }
-#line 4065 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 100: /* vtfixupAttr: vtfixupAttr FROMUNMANAGED_  */
-#line 393 "asmparse.y"
-                                                                                { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_FROM_UNMANAGED; }
-#line 4071 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 101: /* vtfixupAttr: vtfixupAttr CALLMOSTDERIVED_  */
-#line 394 "asmparse.y"
-                                                                                { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_CALL_MOST_DERIVED; }
-#line 4077 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 102: /* vtfixupAttr: vtfixupAttr RETAINAPPDOMAIN_  */
-#line 395 "asmparse.y"
-                                                                                { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN; }
-#line 4083 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 103: /* vtableDecl: vtableHead bytes ')'  */
-#line 398 "asmparse.y"
-                                                                                { PASM->m_pVTable = (yyvsp[-1].binstr); }
-#line 4089 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 104: /* vtableHead: _VTABLE '=' '('  */
-#line 401 "asmparse.y"
-                                                                                { bParsingByteArray = TRUE; }
-#line 4095 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 105: /* nameSpaceHead: _NAMESPACE dottedName  */
-#line 405 "asmparse.y"
-                                                                                { PASM->StartNameSpace((yyvsp[0].string)); }
-#line 4101 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 106: /* _class: _CLASS  */
+  case 114: /* vtfixupAttr: vtfixupAttr INT64_  */
 #line 408 "asmparse.y"
-                                                                                { newclass = TRUE; }
-#line 4107 "prebuilt\\asmparse.cpp"
+                                                                                { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_64BIT; }
+#line 4515 "prebuilt\\asmparse.cpp"
     break;
 
-  case 107: /* classHeadBegin: _class classAttr dottedName typarsClause  */
+  case 115: /* vtfixupAttr: vtfixupAttr FROMUNMANAGED_  */
+#line 409 "asmparse.y"
+                                                                                { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_FROM_UNMANAGED; }
+#line 4521 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 116: /* vtfixupAttr: vtfixupAttr CALLMOSTDERIVED_  */
+#line 410 "asmparse.y"
+                                                                                { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_CALL_MOST_DERIVED; }
+#line 4527 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 117: /* vtfixupAttr: vtfixupAttr RETAINAPPDOMAIN_  */
 #line 411 "asmparse.y"
+                                                                                { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN; }
+#line 4533 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 118: /* vtableDecl: vtableHead bytes ')'  */
+#line 414 "asmparse.y"
+                                                                                { PASM->m_pVTable = (yyvsp[-1].binstr); }
+#line 4539 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 119: /* vtableHead: _VTABLE '=' '('  */
+#line 417 "asmparse.y"
+                                                                                { bParsingByteArray = TRUE; }
+#line 4545 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 120: /* nameSpaceHead: _NAMESPACE dottedName  */
+#line 421 "asmparse.y"
+                                                                                { PASM->StartNameSpace((yyvsp[0].string)); }
+#line 4551 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 121: /* _class: _CLASS  */
+#line 424 "asmparse.y"
+                                                                                { newclass = TRUE; }
+#line 4557 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 122: /* classHeadBegin: _class classAttr dottedName typarsClause  */
+#line 427 "asmparse.y"
                                                                                 { if((yyvsp[0].typarlist)) FixupConstraints();
                                                                                   PASM->StartClass((yyvsp[-1].string), (yyvsp[-2].classAttr), (yyvsp[0].typarlist));
                                                                                   TyParFixupList.RESET(false);
                                                                                   newclass = FALSE;
                                                                                 }
-#line 4117 "prebuilt\\asmparse.cpp"
+#line 4567 "prebuilt\\asmparse.cpp"
     break;
 
-  case 108: /* classHead: classHeadBegin extendsClause implClause  */
-#line 417 "asmparse.y"
-                                                                                { PASM->AddClass(); }
-#line 4123 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 109: /* classAttr: %empty  */
-#line 420 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) 0; }
-#line 4129 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 110: /* classAttr: classAttr PUBLIC_  */
-#line 421 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdVisibilityMask) | tdPublic); }
-#line 4135 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 111: /* classAttr: classAttr PRIVATE_  */
-#line 422 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdVisibilityMask) | tdNotPublic); }
-#line 4141 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 112: /* classAttr: classAttr VALUE_  */
-#line 423 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | 0x80000000 | tdSealed); }
-#line 4147 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 113: /* classAttr: classAttr ENUM_  */
-#line 424 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | 0x40000000); }
-#line 4153 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 114: /* classAttr: classAttr INTERFACE_  */
-#line 425 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdInterface | tdAbstract); }
-#line 4159 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 115: /* classAttr: classAttr SEALED_  */
-#line 426 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSealed); }
-#line 4165 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 116: /* classAttr: classAttr ABSTRACT_  */
-#line 427 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdAbstract); }
-#line 4171 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 117: /* classAttr: classAttr AUTO_  */
-#line 428 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdAutoLayout); }
-#line 4177 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 118: /* classAttr: classAttr SEQUENTIAL_  */
-#line 429 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdSequentialLayout); }
-#line 4183 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 119: /* classAttr: classAttr EXPLICIT_  */
-#line 430 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdExplicitLayout); }
-#line 4189 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 120: /* classAttr: classAttr ANSI_  */
-#line 431 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdAnsiClass); }
-#line 4195 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 121: /* classAttr: classAttr UNICODE_  */
-#line 432 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdUnicodeClass); }
-#line 4201 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 122: /* classAttr: classAttr AUTOCHAR_  */
+  case 123: /* classHead: classHeadBegin extendsClause implClause  */
 #line 433 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdAutoClass); }
-#line 4207 "prebuilt\\asmparse.cpp"
+                                                                                { PASM->AddClass(); }
+#line 4573 "prebuilt\\asmparse.cpp"
     break;
 
-  case 123: /* classAttr: classAttr IMPORT_  */
-#line 434 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdImport); }
-#line 4213 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 124: /* classAttr: classAttr SERIALIZABLE_  */
-#line 435 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSerializable); }
-#line 4219 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 125: /* classAttr: classAttr WINDOWSRUNTIME_  */
+  case 124: /* classAttr: %empty  */
 #line 436 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdWindowsRuntime); }
-#line 4225 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) 0; }
+#line 4579 "prebuilt\\asmparse.cpp"
     break;
 
-  case 126: /* classAttr: classAttr NESTED_ PUBLIC_  */
+  case 125: /* classAttr: classAttr PUBLIC_  */
 #line 437 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedPublic); }
-#line 4231 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdVisibilityMask) | tdPublic); }
+#line 4585 "prebuilt\\asmparse.cpp"
     break;
 
-  case 127: /* classAttr: classAttr NESTED_ PRIVATE_  */
+  case 126: /* classAttr: classAttr PRIVATE_  */
 #line 438 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedPrivate); }
-#line 4237 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdVisibilityMask) | tdNotPublic); }
+#line 4591 "prebuilt\\asmparse.cpp"
     break;
 
-  case 128: /* classAttr: classAttr NESTED_ FAMILY_  */
+  case 127: /* classAttr: classAttr VALUE_  */
 #line 439 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamily); }
-#line 4243 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | 0x80000000 | tdSealed); }
+#line 4597 "prebuilt\\asmparse.cpp"
     break;
 
-  case 129: /* classAttr: classAttr NESTED_ ASSEMBLY_  */
+  case 128: /* classAttr: classAttr ENUM_  */
 #line 440 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedAssembly); }
-#line 4249 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | 0x40000000); }
+#line 4603 "prebuilt\\asmparse.cpp"
     break;
 
-  case 130: /* classAttr: classAttr NESTED_ FAMANDASSEM_  */
+  case 129: /* classAttr: classAttr INTERFACE_  */
 #line 441 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamANDAssem); }
-#line 4255 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdInterface | tdAbstract); }
+#line 4609 "prebuilt\\asmparse.cpp"
     break;
 
-  case 131: /* classAttr: classAttr NESTED_ FAMORASSEM_  */
+  case 130: /* classAttr: classAttr SEALED_  */
 #line 442 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamORAssem); }
-#line 4261 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSealed); }
+#line 4615 "prebuilt\\asmparse.cpp"
     break;
 
-  case 132: /* classAttr: classAttr BEFOREFIELDINIT_  */
+  case 131: /* classAttr: classAttr ABSTRACT_  */
 #line 443 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdBeforeFieldInit); }
-#line 4267 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdAbstract); }
+#line 4621 "prebuilt\\asmparse.cpp"
     break;
 
-  case 133: /* classAttr: classAttr SPECIALNAME_  */
+  case 132: /* classAttr: classAttr AUTO_  */
 #line 444 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSpecialName); }
-#line 4273 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdAutoLayout); }
+#line 4627 "prebuilt\\asmparse.cpp"
     break;
 
-  case 134: /* classAttr: classAttr RTSPECIALNAME_  */
+  case 133: /* classAttr: classAttr SEQUENTIAL_  */
 #line 445 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr)); }
-#line 4279 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdSequentialLayout); }
+#line 4633 "prebuilt\\asmparse.cpp"
     break;
 
-  case 135: /* classAttr: classAttr FLAGS_ '(' int32 ')'  */
+  case 134: /* classAttr: classAttr EXPLICIT_  */
 #line 446 "asmparse.y"
-                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].int32)); }
-#line 4285 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdExplicitLayout); }
+#line 4639 "prebuilt\\asmparse.cpp"
     break;
 
-  case 137: /* extendsClause: EXTENDS_ typeSpec  */
+  case 135: /* classAttr: classAttr ANSI_  */
+#line 447 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdAnsiClass); }
+#line 4645 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 136: /* classAttr: classAttr UNICODE_  */
+#line 448 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdUnicodeClass); }
+#line 4651 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 137: /* classAttr: classAttr AUTOCHAR_  */
+#line 449 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdAutoClass); }
+#line 4657 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 138: /* classAttr: classAttr IMPORT_  */
 #line 450 "asmparse.y"
-                                                                            { PASM->m_crExtends = (yyvsp[0].token); }
-#line 4291 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdImport); }
+#line 4663 "prebuilt\\asmparse.cpp"
     break;
 
-  case 142: /* implList: implList ',' typeSpec  */
+  case 139: /* classAttr: classAttr SERIALIZABLE_  */
+#line 451 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSerializable); }
+#line 4669 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 140: /* classAttr: classAttr WINDOWSRUNTIME_  */
+#line 452 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdWindowsRuntime); }
+#line 4675 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 141: /* classAttr: classAttr NESTED_ PUBLIC_  */
+#line 453 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedPublic); }
+#line 4681 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 142: /* classAttr: classAttr NESTED_ PRIVATE_  */
+#line 454 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedPrivate); }
+#line 4687 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 143: /* classAttr: classAttr NESTED_ FAMILY_  */
+#line 455 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamily); }
+#line 4693 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 144: /* classAttr: classAttr NESTED_ ASSEMBLY_  */
+#line 456 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedAssembly); }
+#line 4699 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 145: /* classAttr: classAttr NESTED_ FAMANDASSEM_  */
+#line 457 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamANDAssem); }
+#line 4705 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 146: /* classAttr: classAttr NESTED_ FAMORASSEM_  */
+#line 458 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamORAssem); }
+#line 4711 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 147: /* classAttr: classAttr BEFOREFIELDINIT_  */
+#line 459 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdBeforeFieldInit); }
+#line 4717 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 148: /* classAttr: classAttr SPECIALNAME_  */
+#line 460 "asmparse.y"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSpecialName); }
+#line 4723 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 149: /* classAttr: classAttr RTSPECIALNAME_  */
 #line 461 "asmparse.y"
-                                                            { PASM->AddToImplList((yyvsp[0].token)); }
-#line 4297 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr)); }
+#line 4729 "prebuilt\\asmparse.cpp"
     break;
 
-  case 143: /* implList: typeSpec  */
+  case 150: /* classAttr: classAttr FLAGS_ '(' int32 ')'  */
 #line 462 "asmparse.y"
-                                                            { PASM->AddToImplList((yyvsp[0].token)); }
-#line 4303 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].int32)); }
+#line 4735 "prebuilt\\asmparse.cpp"
     break;
 
-  case 144: /* typeList: %empty  */
+  case 152: /* extendsClause: EXTENDS_ typeSpec  */
 #line 466 "asmparse.y"
-                                                            { (yyval.binstr) = new BinStr(); }
-#line 4309 "prebuilt\\asmparse.cpp"
+                                                                            { PASM->m_crExtends = (yyvsp[0].token); }
+#line 4741 "prebuilt\\asmparse.cpp"
     break;
 
-  case 145: /* typeList: typeListNotEmpty  */
-#line 467 "asmparse.y"
-                                                            { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 4315 "prebuilt\\asmparse.cpp"
+  case 157: /* implList: implList ',' typeSpec  */
+#line 477 "asmparse.y"
+                                                            { PASM->AddToImplList((yyvsp[0].token)); }
+#line 4747 "prebuilt\\asmparse.cpp"
     break;
 
-  case 146: /* typeListNotEmpty: typeSpec  */
-#line 470 "asmparse.y"
-                                                            { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32((yyvsp[0].token)); }
-#line 4321 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 147: /* typeListNotEmpty: typeListNotEmpty ',' typeSpec  */
-#line 471 "asmparse.y"
-                                                            { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->appendInt32((yyvsp[0].token)); }
-#line 4327 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 148: /* typarsClause: %empty  */
-#line 474 "asmparse.y"
-                                                            { (yyval.typarlist) = NULL; PASM->m_TyParList = NULL;}
-#line 4333 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 149: /* typarsClause: '<' typars '>'  */
-#line 475 "asmparse.y"
-                                                            { (yyval.typarlist) = (yyvsp[-1].typarlist);   PASM->m_TyParList = (yyvsp[-1].typarlist);}
-#line 4339 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 150: /* typarAttrib: '+'  */
+  case 158: /* implList: typeSpec  */
 #line 478 "asmparse.y"
-                                                            { (yyval.int32) = gpCovariant; }
-#line 4345 "prebuilt\\asmparse.cpp"
+                                                            { PASM->AddToImplList((yyvsp[0].token)); }
+#line 4753 "prebuilt\\asmparse.cpp"
     break;
 
-  case 151: /* typarAttrib: '-'  */
-#line 479 "asmparse.y"
-                                                            { (yyval.int32) = gpContravariant; }
-#line 4351 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 152: /* typarAttrib: CLASS_  */
-#line 480 "asmparse.y"
-                                                            { (yyval.int32) = gpReferenceTypeConstraint; }
-#line 4357 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 153: /* typarAttrib: VALUETYPE_  */
-#line 481 "asmparse.y"
-                                                            { (yyval.int32) = gpNotNullableValueTypeConstraint; }
-#line 4363 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 154: /* typarAttrib: BYREFLIKE_  */
+  case 159: /* typeList: %empty  */
 #line 482 "asmparse.y"
-                                                            { (yyval.int32) = gpAllowByRefLike; }
-#line 4369 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.binstr) = new BinStr(); }
+#line 4759 "prebuilt\\asmparse.cpp"
     break;
 
-  case 155: /* typarAttrib: _CTOR  */
+  case 160: /* typeList: typeListNotEmpty  */
 #line 483 "asmparse.y"
-                                                            { (yyval.int32) = gpDefaultConstructorConstraint; }
-#line 4375 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 4765 "prebuilt\\asmparse.cpp"
     break;
 
-  case 156: /* typarAttrib: FLAGS_ '(' int32 ')'  */
-#line 484 "asmparse.y"
-                                                            { (yyval.int32) = (CorGenericParamAttr)(yyvsp[-1].int32); }
-#line 4381 "prebuilt\\asmparse.cpp"
+  case 161: /* typeListNotEmpty: typeSpec  */
+#line 486 "asmparse.y"
+                                                            { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32((yyvsp[0].token)); }
+#line 4771 "prebuilt\\asmparse.cpp"
     break;
 
-  case 157: /* typarAttribs: %empty  */
+  case 162: /* typeListNotEmpty: typeListNotEmpty ',' typeSpec  */
 #line 487 "asmparse.y"
-                                                            { (yyval.int32) = 0; }
-#line 4387 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->appendInt32((yyvsp[0].token)); }
+#line 4777 "prebuilt\\asmparse.cpp"
     break;
 
-  case 158: /* typarAttribs: typarAttrib typarAttribs  */
-#line 488 "asmparse.y"
-                                                            { (yyval.int32) = (yyvsp[-1].int32) | (yyvsp[0].int32); }
-#line 4393 "prebuilt\\asmparse.cpp"
+  case 163: /* typarsClause: %empty  */
+#line 490 "asmparse.y"
+                                                            { (yyval.typarlist) = NULL; PASM->m_TyParList = NULL;}
+#line 4783 "prebuilt\\asmparse.cpp"
     break;
 
-  case 159: /* typars: typarAttribs tyBound dottedName typarsRest  */
+  case 164: /* typarsClause: '<' typars '>'  */
 #line 491 "asmparse.y"
-                                                                     {(yyval.typarlist) = new TyParList((yyvsp[-3].int32), (yyvsp[-2].binstr), (yyvsp[-1].string), (yyvsp[0].typarlist));}
-#line 4399 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.typarlist) = (yyvsp[-1].typarlist);   PASM->m_TyParList = (yyvsp[-1].typarlist);}
+#line 4789 "prebuilt\\asmparse.cpp"
     break;
 
-  case 160: /* typars: typarAttribs dottedName typarsRest  */
-#line 492 "asmparse.y"
-                                                               {(yyval.typarlist) = new TyParList((yyvsp[-2].int32), NULL, (yyvsp[-1].string), (yyvsp[0].typarlist));}
-#line 4405 "prebuilt\\asmparse.cpp"
+  case 165: /* typarAttrib: '+'  */
+#line 494 "asmparse.y"
+                                                            { (yyval.int32) = gpCovariant; }
+#line 4795 "prebuilt\\asmparse.cpp"
     break;
 
-  case 161: /* typarsRest: %empty  */
+  case 166: /* typarAttrib: '-'  */
 #line 495 "asmparse.y"
-                                                            { (yyval.typarlist) = NULL; }
-#line 4411 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.int32) = gpContravariant; }
+#line 4801 "prebuilt\\asmparse.cpp"
     break;
 
-  case 162: /* typarsRest: ',' typars  */
+  case 167: /* typarAttrib: CLASS_  */
 #line 496 "asmparse.y"
-                                                            { (yyval.typarlist) = (yyvsp[0].typarlist); }
-#line 4417 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.int32) = gpReferenceTypeConstraint; }
+#line 4807 "prebuilt\\asmparse.cpp"
     break;
 
-  case 163: /* tyBound: '(' typeList ')'  */
+  case 168: /* typarAttrib: VALUETYPE_  */
+#line 497 "asmparse.y"
+                                                            { (yyval.int32) = gpNotNullableValueTypeConstraint; }
+#line 4813 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 169: /* typarAttrib: BYREFLIKE_  */
+#line 498 "asmparse.y"
+                                                            { (yyval.int32) = gpAllowByRefLike; }
+#line 4819 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 170: /* typarAttrib: _CTOR  */
 #line 499 "asmparse.y"
-                                                            { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 4423 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.int32) = gpDefaultConstructorConstraint; }
+#line 4825 "prebuilt\\asmparse.cpp"
     break;
 
-  case 164: /* genArity: %empty  */
-#line 502 "asmparse.y"
-                                                            { (yyval.int32)= 0; }
-#line 4429 "prebuilt\\asmparse.cpp"
+  case 171: /* typarAttrib: FLAGS_ '(' int32 ')'  */
+#line 500 "asmparse.y"
+                                                            { (yyval.int32) = (CorGenericParamAttr)(yyvsp[-1].int32); }
+#line 4831 "prebuilt\\asmparse.cpp"
     break;
 
-  case 165: /* genArity: genArityNotEmpty  */
+  case 172: /* typarAttribs: %empty  */
 #line 503 "asmparse.y"
+                                                            { (yyval.int32) = 0; }
+#line 4837 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 173: /* typarAttribs: typarAttrib typarAttribs  */
+#line 504 "asmparse.y"
+                                                            { (yyval.int32) = (yyvsp[-1].int32) | (yyvsp[0].int32); }
+#line 4843 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 174: /* typars: typarAttribs tyBound dottedName typarsRest  */
+#line 507 "asmparse.y"
+                                                                     {(yyval.typarlist) = new TyParList((yyvsp[-3].int32), (yyvsp[-2].binstr), (yyvsp[-1].string), (yyvsp[0].typarlist));}
+#line 4849 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 175: /* typars: typarAttribs dottedName typarsRest  */
+#line 508 "asmparse.y"
+                                                               {(yyval.typarlist) = new TyParList((yyvsp[-2].int32), NULL, (yyvsp[-1].string), (yyvsp[0].typarlist));}
+#line 4855 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 176: /* typarsRest: %empty  */
+#line 511 "asmparse.y"
+                                                            { (yyval.typarlist) = NULL; }
+#line 4861 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 177: /* typarsRest: ',' typars  */
+#line 512 "asmparse.y"
+                                                            { (yyval.typarlist) = (yyvsp[0].typarlist); }
+#line 4867 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 178: /* tyBound: '(' typeList ')'  */
+#line 515 "asmparse.y"
+                                                            { (yyval.binstr) = (yyvsp[-1].binstr); }
+#line 4873 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 179: /* genArity: %empty  */
+#line 518 "asmparse.y"
+                                                            { (yyval.int32)= 0; }
+#line 4879 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 180: /* genArity: genArityNotEmpty  */
+#line 519 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[0].int32); }
-#line 4435 "prebuilt\\asmparse.cpp"
+#line 4885 "prebuilt\\asmparse.cpp"
     break;
 
-  case 166: /* genArityNotEmpty: '<' '[' int32 ']' '>'  */
-#line 506 "asmparse.y"
+  case 181: /* genArityNotEmpty: '<' '[' int32 ']' '>'  */
+#line 522 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[-2].int32); }
-#line 4441 "prebuilt\\asmparse.cpp"
+#line 4891 "prebuilt\\asmparse.cpp"
     break;
 
-  case 167: /* classDecl: methodHead methodDecls '}'  */
-#line 510 "asmparse.y"
+  case 182: /* classDecl: methodHead methodDecls '}'  */
+#line 526 "asmparse.y"
                                                             { if(PASM->m_pCurMethod->m_ulLines[1] ==0)
                                                               {  PASM->m_pCurMethod->m_ulLines[1] = PASM->m_ulCurLine;
                                                                  PASM->m_pCurMethod->m_ulColumns[1]=PASM->m_ulCurColumn;}
                                                               PASM->EndMethod(); }
-#line 4450 "prebuilt\\asmparse.cpp"
+#line 4900 "prebuilt\\asmparse.cpp"
     break;
 
-  case 168: /* classDecl: classHead '{' classDecls '}'  */
-#line 514 "asmparse.y"
+  case 183: /* classDecl: classHead '{' classDecls '}'  */
+#line 530 "asmparse.y"
                                                             { PASM->EndClass(); }
-#line 4456 "prebuilt\\asmparse.cpp"
+#line 4906 "prebuilt\\asmparse.cpp"
     break;
 
-  case 169: /* classDecl: eventHead '{' eventDecls '}'  */
-#line 515 "asmparse.y"
+  case 184: /* classDecl: eventHead '{' eventDecls '}'  */
+#line 531 "asmparse.y"
                                                             { PASM->EndEvent(); }
-#line 4462 "prebuilt\\asmparse.cpp"
+#line 4912 "prebuilt\\asmparse.cpp"
     break;
 
-  case 170: /* classDecl: propHead '{' propDecls '}'  */
-#line 516 "asmparse.y"
+  case 185: /* classDecl: propHead '{' propDecls '}'  */
+#line 532 "asmparse.y"
                                                             { PASM->EndProp(); }
-#line 4468 "prebuilt\\asmparse.cpp"
+#line 4918 "prebuilt\\asmparse.cpp"
     break;
 
-  case 176: /* classDecl: _SIZE int32  */
-#line 522 "asmparse.y"
+  case 191: /* classDecl: _SIZE int32  */
+#line 538 "asmparse.y"
                                                                 { PASM->m_pCurClass->m_ulSize = (yyvsp[0].int32); }
-#line 4474 "prebuilt\\asmparse.cpp"
+#line 4924 "prebuilt\\asmparse.cpp"
     break;
 
-  case 177: /* classDecl: _PACK int32  */
-#line 523 "asmparse.y"
+  case 192: /* classDecl: _PACK int32  */
+#line 539 "asmparse.y"
                                                                 { PASM->m_pCurClass->m_ulPack = (yyvsp[0].int32); }
-#line 4480 "prebuilt\\asmparse.cpp"
+#line 4930 "prebuilt\\asmparse.cpp"
     break;
 
-  case 178: /* classDecl: exportHead '{' exptypeDecls '}'  */
-#line 524 "asmparse.y"
+  case 193: /* classDecl: exportHead '{' exptypeDecls '}'  */
+#line 540 "asmparse.y"
                                                                 { PASMM->EndComType(); }
-#line 4486 "prebuilt\\asmparse.cpp"
+#line 4936 "prebuilt\\asmparse.cpp"
     break;
 
-  case 179: /* classDecl: _OVERRIDE typeSpec DCOLON methodName WITH_ callConv type typeSpec DCOLON methodName '(' sigArgs0 ')'  */
-#line 526 "asmparse.y"
+  case 194: /* classDecl: _OVERRIDE typeSpec DCOLON methodName WITH_ callConv type typeSpec DCOLON methodName '(' sigArgs0 ')'  */
+#line 542 "asmparse.y"
                                                                 { BinStr *sig1 = parser->MakeSig((yyvsp[-7].int32), (yyvsp[-6].binstr), (yyvsp[-1].binstr));
                                                                   BinStr *sig2 = new BinStr(); sig2->append(sig1);
                                                                   PASM->AddMethodImpl((yyvsp[-11].token),(yyvsp[-9].string),sig1,(yyvsp[-5].token),(yyvsp[-3].string),sig2);
                                                                   PASM->ResetArgNameList();
                                                                 }
-#line 4496 "prebuilt\\asmparse.cpp"
+#line 4946 "prebuilt\\asmparse.cpp"
     break;
 
-  case 180: /* classDecl: _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')' WITH_ METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'  */
-#line 532 "asmparse.y"
+  case 195: /* classDecl: _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')' WITH_ METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'  */
+#line 548 "asmparse.y"
                                                                  { PASM->AddMethodImpl((yyvsp[-17].token),(yyvsp[-15].string),
                                                                       ((yyvsp[-14].int32)==0 ? parser->MakeSig((yyvsp[-19].int32),(yyvsp[-18].binstr),(yyvsp[-12].binstr)) :
                                                                       parser->MakeSig((yyvsp[-19].int32)| IMAGE_CEE_CS_CALLCONV_GENERIC,(yyvsp[-18].binstr),(yyvsp[-12].binstr),(yyvsp[-14].int32))),
@@ -4505,192 +4955,192 @@ yyreduce:
                                                                       parser->MakeSig((yyvsp[-8].int32)| IMAGE_CEE_CS_CALLCONV_GENERIC,(yyvsp[-7].binstr),(yyvsp[-1].binstr),(yyvsp[-3].int32))));
                                                                    PASM->ResetArgNameList();
                                                                  }
-#line 4509 "prebuilt\\asmparse.cpp"
+#line 4959 "prebuilt\\asmparse.cpp"
     break;
 
-  case 183: /* classDecl: _PARAM TYPE_ '[' int32 ']'  */
-#line 542 "asmparse.y"
+  case 198: /* classDecl: _PARAM TYPE_ '[' int32 ']'  */
+#line 558 "asmparse.y"
                                                             { if(((yyvsp[-1].int32) > 0) && ((yyvsp[-1].int32) <= (int)PASM->m_pCurClass->m_NumTyPars))
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurClass->m_TyPars[(yyvsp[-1].int32)-1].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter index out of range\n");
                                                             }
-#line 4519 "prebuilt\\asmparse.cpp"
+#line 4969 "prebuilt\\asmparse.cpp"
     break;
 
-  case 184: /* classDecl: _PARAM TYPE_ dottedName  */
-#line 547 "asmparse.y"
+  case 199: /* classDecl: _PARAM TYPE_ dottedName  */
+#line 563 "asmparse.y"
                                                             { int n = PASM->m_pCurClass->FindTyPar((yyvsp[0].string));
                                                               if(n >= 0)
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurClass->m_TyPars[n].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter '%s' undefined\n",(yyvsp[0].string));
                                                             }
-#line 4530 "prebuilt\\asmparse.cpp"
+#line 4980 "prebuilt\\asmparse.cpp"
     break;
 
-  case 185: /* classDecl: _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec  */
-#line 553 "asmparse.y"
+  case 200: /* classDecl: _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec  */
+#line 569 "asmparse.y"
                                                                         { PASM->AddGenericParamConstraint((yyvsp[-3].int32), 0, (yyvsp[0].token)); }
-#line 4536 "prebuilt\\asmparse.cpp"
+#line 4986 "prebuilt\\asmparse.cpp"
     break;
 
-  case 186: /* classDecl: _PARAM CONSTRAINT_ dottedName ',' typeSpec  */
-#line 554 "asmparse.y"
+  case 201: /* classDecl: _PARAM CONSTRAINT_ dottedName ',' typeSpec  */
+#line 570 "asmparse.y"
                                                                         { PASM->AddGenericParamConstraint(0, (yyvsp[-2].string), (yyvsp[0].token)); }
-#line 4542 "prebuilt\\asmparse.cpp"
+#line 4992 "prebuilt\\asmparse.cpp"
     break;
 
-  case 187: /* classDecl: _INTERFACEIMPL TYPE_ typeSpec customDescr  */
-#line 555 "asmparse.y"
+  case 202: /* classDecl: _INTERFACEIMPL TYPE_ typeSpec customDescr  */
+#line 571 "asmparse.y"
                                                                       { (yyvsp[0].cad)->tkInterfacePair = (yyvsp[-1].token);
                                                                         if(PASM->m_pCustomDescrList)
                                                                             PASM->m_pCustomDescrList->PUSH((yyvsp[0].cad));
                                                                       }
-#line 4551 "prebuilt\\asmparse.cpp"
+#line 5001 "prebuilt\\asmparse.cpp"
     break;
 
-  case 188: /* fieldDecl: _FIELD repeatOpt fieldAttr type dottedName atOpt initOpt  */
-#line 563 "asmparse.y"
+  case 203: /* fieldDecl: _FIELD repeatOpt fieldAttr type dottedName atOpt initOpt  */
+#line 579 "asmparse.y"
                                                             { (yyvsp[-3].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                               PASM->AddField((yyvsp[-2].string), (yyvsp[-3].binstr), (yyvsp[-4].fieldAttr), (yyvsp[-1].string), (yyvsp[0].binstr), (yyvsp[-5].int32)); }
-#line 4558 "prebuilt\\asmparse.cpp"
+#line 5008 "prebuilt\\asmparse.cpp"
     break;
 
-  case 189: /* fieldAttr: %empty  */
-#line 567 "asmparse.y"
+  case 204: /* fieldAttr: %empty  */
+#line 583 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) 0; }
-#line 4564 "prebuilt\\asmparse.cpp"
+#line 5014 "prebuilt\\asmparse.cpp"
     break;
 
-  case 190: /* fieldAttr: fieldAttr STATIC_  */
-#line 568 "asmparse.y"
+  case 205: /* fieldAttr: fieldAttr STATIC_  */
+#line 584 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdStatic); }
-#line 4570 "prebuilt\\asmparse.cpp"
+#line 5020 "prebuilt\\asmparse.cpp"
     break;
 
-  case 191: /* fieldAttr: fieldAttr PUBLIC_  */
-#line 569 "asmparse.y"
+  case 206: /* fieldAttr: fieldAttr PUBLIC_  */
+#line 585 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdPublic); }
-#line 4576 "prebuilt\\asmparse.cpp"
+#line 5026 "prebuilt\\asmparse.cpp"
     break;
 
-  case 192: /* fieldAttr: fieldAttr PRIVATE_  */
-#line 570 "asmparse.y"
+  case 207: /* fieldAttr: fieldAttr PRIVATE_  */
+#line 586 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdPrivate); }
-#line 4582 "prebuilt\\asmparse.cpp"
+#line 5032 "prebuilt\\asmparse.cpp"
     break;
 
-  case 193: /* fieldAttr: fieldAttr FAMILY_  */
-#line 571 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamily); }
-#line 4588 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 194: /* fieldAttr: fieldAttr INITONLY_  */
-#line 572 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdInitOnly); }
-#line 4594 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 195: /* fieldAttr: fieldAttr RTSPECIALNAME_  */
-#line 573 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (yyvsp[-1].fieldAttr); }
-#line 4600 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 196: /* fieldAttr: fieldAttr SPECIALNAME_  */
-#line 574 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdSpecialName); }
-#line 4606 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 197: /* fieldAttr: fieldAttr MARSHAL_ '(' marshalBlob ')'  */
+  case 208: /* fieldAttr: fieldAttr FAMILY_  */
 #line 587 "asmparse.y"
-                                                            { PASM->m_pMarshal = (yyvsp[-1].binstr); }
-#line 4612 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamily); }
+#line 5038 "prebuilt\\asmparse.cpp"
     break;
 
-  case 198: /* fieldAttr: fieldAttr ASSEMBLY_  */
+  case 209: /* fieldAttr: fieldAttr INITONLY_  */
 #line 588 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdAssembly); }
-#line 4618 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdInitOnly); }
+#line 5044 "prebuilt\\asmparse.cpp"
     break;
 
-  case 199: /* fieldAttr: fieldAttr FAMANDASSEM_  */
+  case 210: /* fieldAttr: fieldAttr RTSPECIALNAME_  */
 #line 589 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamANDAssem); }
-#line 4624 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.fieldAttr) = (yyvsp[-1].fieldAttr); }
+#line 5050 "prebuilt\\asmparse.cpp"
     break;
 
-  case 200: /* fieldAttr: fieldAttr FAMORASSEM_  */
+  case 211: /* fieldAttr: fieldAttr SPECIALNAME_  */
 #line 590 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamORAssem); }
-#line 4630 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdSpecialName); }
+#line 5056 "prebuilt\\asmparse.cpp"
     break;
 
-  case 201: /* fieldAttr: fieldAttr PRIVATESCOPE_  */
-#line 591 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdPrivateScope); }
-#line 4636 "prebuilt\\asmparse.cpp"
+  case 212: /* fieldAttr: fieldAttr MARSHAL_ '(' marshalBlob ')'  */
+#line 603 "asmparse.y"
+                                                            { PASM->m_pMarshal = (yyvsp[-1].binstr); }
+#line 5062 "prebuilt\\asmparse.cpp"
     break;
 
-  case 202: /* fieldAttr: fieldAttr LITERAL_  */
-#line 592 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdLiteral); }
-#line 4642 "prebuilt\\asmparse.cpp"
+  case 213: /* fieldAttr: fieldAttr ASSEMBLY_  */
+#line 604 "asmparse.y"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdAssembly); }
+#line 5068 "prebuilt\\asmparse.cpp"
     break;
 
-  case 203: /* fieldAttr: fieldAttr NOTSERIALIZED_  */
-#line 593 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdNotSerialized); }
-#line 4648 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 204: /* fieldAttr: fieldAttr FLAGS_ '(' int32 ')'  */
-#line 594 "asmparse.y"
-                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].int32)); }
-#line 4654 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 205: /* atOpt: %empty  */
-#line 597 "asmparse.y"
-                                                            { (yyval.string) = 0; }
-#line 4660 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 206: /* atOpt: AT_ id  */
-#line 598 "asmparse.y"
-                                                            { (yyval.string) = (yyvsp[0].string); }
-#line 4666 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 207: /* initOpt: %empty  */
-#line 601 "asmparse.y"
-                                                            { (yyval.binstr) = NULL; }
-#line 4672 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 208: /* initOpt: '=' fieldInit  */
-#line 602 "asmparse.y"
-                                                            { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 4678 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 209: /* repeatOpt: %empty  */
+  case 214: /* fieldAttr: fieldAttr FAMANDASSEM_  */
 #line 605 "asmparse.y"
-                                                            { (yyval.int32) = 0xFFFFFFFF; }
-#line 4684 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamANDAssem); }
+#line 5074 "prebuilt\\asmparse.cpp"
     break;
 
-  case 210: /* repeatOpt: '[' int32 ']'  */
+  case 215: /* fieldAttr: fieldAttr FAMORASSEM_  */
 #line 606 "asmparse.y"
-                                                            { (yyval.int32) = (yyvsp[-1].int32); }
-#line 4690 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamORAssem); }
+#line 5080 "prebuilt\\asmparse.cpp"
     break;
 
-  case 211: /* methodRef: callConv type typeSpec DCOLON methodName tyArgs0 '(' sigArgs0 ')'  */
-#line 611 "asmparse.y"
+  case 216: /* fieldAttr: fieldAttr PRIVATESCOPE_  */
+#line 607 "asmparse.y"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdPrivateScope); }
+#line 5086 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 217: /* fieldAttr: fieldAttr LITERAL_  */
+#line 608 "asmparse.y"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdLiteral); }
+#line 5092 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 218: /* fieldAttr: fieldAttr NOTSERIALIZED_  */
+#line 609 "asmparse.y"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdNotSerialized); }
+#line 5098 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 219: /* fieldAttr: fieldAttr FLAGS_ '(' int32 ')'  */
+#line 610 "asmparse.y"
+                                                            { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].int32)); }
+#line 5104 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 220: /* atOpt: %empty  */
+#line 613 "asmparse.y"
+                                                            { (yyval.string) = 0; }
+#line 5110 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 221: /* atOpt: AT_ id  */
+#line 614 "asmparse.y"
+                                                            { (yyval.string) = (yyvsp[0].string); }
+#line 5116 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 222: /* initOpt: %empty  */
+#line 617 "asmparse.y"
+                                                            { (yyval.binstr) = NULL; }
+#line 5122 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 223: /* initOpt: '=' fieldInit  */
+#line 618 "asmparse.y"
+                                                            { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 5128 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 224: /* repeatOpt: %empty  */
+#line 621 "asmparse.y"
+                                                            { (yyval.int32) = 0xFFFFFFFF; }
+#line 5134 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 225: /* repeatOpt: '[' int32 ']'  */
+#line 622 "asmparse.y"
+                                                            { (yyval.int32) = (yyvsp[-1].int32); }
+#line 5140 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 226: /* methodRef: callConv type typeSpec DCOLON methodName tyArgs0 '(' sigArgs0 ')'  */
+#line 627 "asmparse.y"
                                                              { PASM->ResetArgNameList();
                                                                if ((yyvsp[-3].binstr) == NULL)
                                                                {
@@ -4707,21 +5157,21 @@ yyreduce:
                                                                    parser->MakeSig(IMAGE_CEE_CS_CALLCONV_INSTANTIATION, 0, (yyvsp[-3].binstr)));
                                                                }
                                                              }
-#line 4711 "prebuilt\\asmparse.cpp"
+#line 5161 "prebuilt\\asmparse.cpp"
     break;
 
-  case 212: /* methodRef: callConv type typeSpec DCOLON methodName genArityNotEmpty '(' sigArgs0 ')'  */
-#line 628 "asmparse.y"
+  case 227: /* methodRef: callConv type typeSpec DCOLON methodName genArityNotEmpty '(' sigArgs0 ')'  */
+#line 644 "asmparse.y"
                                                              { PASM->ResetArgNameList();
                                                                if((iCallConv)&&(((yyvsp[-8].int32) & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                (yyval.token) = PASM->MakeMemberRef((yyvsp[-6].token), (yyvsp[-4].string),
                                                                  parser->MakeSig((yyvsp[-8].int32) | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, (yyvsp[-7].binstr), (yyvsp[-1].binstr), (yyvsp[-3].int32)));
                                                              }
-#line 4721 "prebuilt\\asmparse.cpp"
+#line 5171 "prebuilt\\asmparse.cpp"
     break;
 
-  case 213: /* methodRef: callConv type methodName tyArgs0 '(' sigArgs0 ')'  */
-#line 634 "asmparse.y"
+  case 228: /* methodRef: callConv type methodName tyArgs0 '(' sigArgs0 ')'  */
+#line 650 "asmparse.y"
                                                              { PASM->ResetArgNameList();
                                                                if ((yyvsp[-3].binstr) == NULL)
                                                                {
@@ -4737,300 +5187,300 @@ yyreduce:
                                                                    parser->MakeSig(IMAGE_CEE_CS_CALLCONV_INSTANTIATION, 0, (yyvsp[-3].binstr)));
                                                                }
                                                              }
-#line 4741 "prebuilt\\asmparse.cpp"
+#line 5191 "prebuilt\\asmparse.cpp"
     break;
 
-  case 214: /* methodRef: callConv type methodName genArityNotEmpty '(' sigArgs0 ')'  */
-#line 650 "asmparse.y"
+  case 229: /* methodRef: callConv type methodName genArityNotEmpty '(' sigArgs0 ')'  */
+#line 666 "asmparse.y"
                                                              { PASM->ResetArgNameList();
                                                                if((iCallConv)&&(((yyvsp[-6].int32) & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                (yyval.token) = PASM->MakeMemberRef(mdTokenNil, (yyvsp[-4].string), parser->MakeSig((yyvsp[-6].int32) | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, (yyvsp[-5].binstr), (yyvsp[-1].binstr), (yyvsp[-3].int32)));
                                                              }
-#line 4750 "prebuilt\\asmparse.cpp"
+#line 5200 "prebuilt\\asmparse.cpp"
     break;
 
-  case 215: /* methodRef: mdtoken  */
-#line 654 "asmparse.y"
-                                                             { (yyval.token) = (yyvsp[0].token); }
-#line 4756 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 216: /* methodRef: TYPEDEF_M  */
-#line 655 "asmparse.y"
-                                                             { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
-#line 4762 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 217: /* methodRef: TYPEDEF_MR  */
-#line 656 "asmparse.y"
-                                                             { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
-#line 4768 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 218: /* callConv: INSTANCE_ callConv  */
-#line 659 "asmparse.y"
-                                                              { (yyval.int32) = ((yyvsp[0].int32) | IMAGE_CEE_CS_CALLCONV_HASTHIS); }
-#line 4774 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 219: /* callConv: EXPLICIT_ callConv  */
-#line 660 "asmparse.y"
-                                                              { (yyval.int32) = ((yyvsp[0].int32) | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS); }
-#line 4780 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 220: /* callConv: callKind  */
-#line 661 "asmparse.y"
-                                                              { (yyval.int32) = (yyvsp[0].int32); }
-#line 4786 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 221: /* callConv: CALLCONV_ '(' int32 ')'  */
-#line 662 "asmparse.y"
-                                                              { (yyval.int32) = (yyvsp[-1].int32); }
-#line 4792 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 222: /* callKind: %empty  */
-#line 665 "asmparse.y"
-                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_DEFAULT; }
-#line 4798 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 223: /* callKind: DEFAULT_  */
-#line 666 "asmparse.y"
-                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_DEFAULT; }
-#line 4804 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 224: /* callKind: VARARG_  */
-#line 667 "asmparse.y"
-                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_VARARG; }
-#line 4810 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 225: /* callKind: UNMANAGED_ CDECL_  */
-#line 668 "asmparse.y"
-                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_C; }
-#line 4816 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 226: /* callKind: UNMANAGED_ STDCALL_  */
-#line 669 "asmparse.y"
-                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_STDCALL; }
-#line 4822 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 227: /* callKind: UNMANAGED_ THISCALL_  */
+  case 230: /* methodRef: mdtoken  */
 #line 670 "asmparse.y"
-                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_THISCALL; }
-#line 4828 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.token) = (yyvsp[0].token); }
+#line 5206 "prebuilt\\asmparse.cpp"
     break;
 
-  case 228: /* callKind: UNMANAGED_ FASTCALL_  */
+  case 231: /* methodRef: TYPEDEF_M  */
 #line 671 "asmparse.y"
-                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_FASTCALL; }
-#line 4834 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
+#line 5212 "prebuilt\\asmparse.cpp"
     break;
 
-  case 229: /* callKind: UNMANAGED_  */
+  case 232: /* methodRef: TYPEDEF_MR  */
 #line 672 "asmparse.y"
-                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_UNMANAGED; }
-#line 4840 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
+#line 5218 "prebuilt\\asmparse.cpp"
     break;
 
-  case 230: /* mdtoken: MDTOKEN_ '(' int32 ')'  */
+  case 233: /* callConv: INSTANCE_ callConv  */
 #line 675 "asmparse.y"
-                                                             { (yyval.token) = (yyvsp[-1].int32); }
-#line 4846 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = ((yyvsp[0].int32) | IMAGE_CEE_CS_CALLCONV_HASTHIS); }
+#line 5224 "prebuilt\\asmparse.cpp"
     break;
 
-  case 231: /* memberRef: methodSpec methodRef  */
+  case 234: /* callConv: EXPLICIT_ callConv  */
+#line 676 "asmparse.y"
+                                                              { (yyval.int32) = ((yyvsp[0].int32) | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS); }
+#line 5230 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 235: /* callConv: callKind  */
+#line 677 "asmparse.y"
+                                                              { (yyval.int32) = (yyvsp[0].int32); }
+#line 5236 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 236: /* callConv: CALLCONV_ '(' int32 ')'  */
 #line 678 "asmparse.y"
+                                                              { (yyval.int32) = (yyvsp[-1].int32); }
+#line 5242 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 237: /* callKind: %empty  */
+#line 681 "asmparse.y"
+                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_DEFAULT; }
+#line 5248 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 238: /* callKind: DEFAULT_  */
+#line 682 "asmparse.y"
+                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_DEFAULT; }
+#line 5254 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 239: /* callKind: VARARG_  */
+#line 683 "asmparse.y"
+                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_VARARG; }
+#line 5260 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 240: /* callKind: UNMANAGED_ CDECL_  */
+#line 684 "asmparse.y"
+                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_C; }
+#line 5266 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 241: /* callKind: UNMANAGED_ STDCALL_  */
+#line 685 "asmparse.y"
+                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_STDCALL; }
+#line 5272 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 242: /* callKind: UNMANAGED_ THISCALL_  */
+#line 686 "asmparse.y"
+                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_THISCALL; }
+#line 5278 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 243: /* callKind: UNMANAGED_ FASTCALL_  */
+#line 687 "asmparse.y"
+                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_FASTCALL; }
+#line 5284 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 244: /* callKind: UNMANAGED_  */
+#line 688 "asmparse.y"
+                                                              { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_UNMANAGED; }
+#line 5290 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 245: /* mdtoken: MDTOKEN_ '(' int32 ')'  */
+#line 691 "asmparse.y"
+                                                             { (yyval.token) = (yyvsp[-1].int32); }
+#line 5296 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 246: /* memberRef: methodSpec methodRef  */
+#line 694 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].token);
                                                                PASM->delArgNameList(PASM->m_firstArgName);
                                                                PASM->m_firstArgName = parser->m_ANSFirst.POP();
                                                                PASM->m_lastArgName = parser->m_ANSLast.POP();
                                                                PASM->SetMemberRefFixup((yyvsp[0].token),iOpcodeLen); }
-#line 4856 "prebuilt\\asmparse.cpp"
+#line 5306 "prebuilt\\asmparse.cpp"
     break;
 
-  case 232: /* memberRef: FIELD_ type typeSpec DCOLON dottedName  */
-#line 684 "asmparse.y"
+  case 247: /* memberRef: FIELD_ type typeSpec DCOLON dottedName  */
+#line 700 "asmparse.y"
                                                              { (yyvsp[-3].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                (yyval.token) = PASM->MakeMemberRef((yyvsp[-2].token), (yyvsp[0].string), (yyvsp[-3].binstr));
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4864 "prebuilt\\asmparse.cpp"
+#line 5314 "prebuilt\\asmparse.cpp"
     break;
 
-  case 233: /* memberRef: FIELD_ type dottedName  */
-#line 688 "asmparse.y"
+  case 248: /* memberRef: FIELD_ type dottedName  */
+#line 704 "asmparse.y"
                                                              { (yyvsp[-1].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                (yyval.token) = PASM->MakeMemberRef(mdTokenNil, (yyvsp[0].string), (yyvsp[-1].binstr));
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4872 "prebuilt\\asmparse.cpp"
+#line 5322 "prebuilt\\asmparse.cpp"
     break;
 
-  case 234: /* memberRef: FIELD_ TYPEDEF_F  */
-#line 691 "asmparse.y"
+  case 249: /* memberRef: FIELD_ TYPEDEF_F  */
+#line 707 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4879 "prebuilt\\asmparse.cpp"
+#line 5329 "prebuilt\\asmparse.cpp"
     break;
 
-  case 235: /* memberRef: FIELD_ TYPEDEF_MR  */
-#line 693 "asmparse.y"
+  case 250: /* memberRef: FIELD_ TYPEDEF_MR  */
+#line 709 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4886 "prebuilt\\asmparse.cpp"
+#line 5336 "prebuilt\\asmparse.cpp"
     break;
 
-  case 236: /* memberRef: mdtoken  */
-#line 695 "asmparse.y"
+  case 251: /* memberRef: mdtoken  */
+#line 711 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].token);
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4893 "prebuilt\\asmparse.cpp"
+#line 5343 "prebuilt\\asmparse.cpp"
     break;
 
-  case 237: /* eventHead: _EVENT eventAttr typeSpec dottedName  */
-#line 700 "asmparse.y"
-                                                                 { PASM->ResetEvent((yyvsp[0].string), (yyvsp[-1].token), (yyvsp[-2].eventAttr)); }
-#line 4899 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 238: /* eventHead: _EVENT eventAttr dottedName  */
-#line 701 "asmparse.y"
-                                                                 { PASM->ResetEvent((yyvsp[0].string), mdTypeRefNil, (yyvsp[-1].eventAttr)); }
-#line 4905 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 239: /* eventAttr: %empty  */
-#line 705 "asmparse.y"
-                                                            { (yyval.eventAttr) = (CorEventAttr) 0; }
-#line 4911 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 240: /* eventAttr: eventAttr RTSPECIALNAME_  */
-#line 706 "asmparse.y"
-                                                            { (yyval.eventAttr) = (yyvsp[-1].eventAttr); }
-#line 4917 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 241: /* eventAttr: eventAttr SPECIALNAME_  */
-#line 707 "asmparse.y"
-                                                            { (yyval.eventAttr) = (CorEventAttr) ((yyvsp[-1].eventAttr) | evSpecialName); }
-#line 4923 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 244: /* eventDecl: _ADDON methodRef  */
-#line 714 "asmparse.y"
-                                                           { PASM->SetEventMethod(0, (yyvsp[0].token)); }
-#line 4929 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 245: /* eventDecl: _REMOVEON methodRef  */
-#line 715 "asmparse.y"
-                                                           { PASM->SetEventMethod(1, (yyvsp[0].token)); }
-#line 4935 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 246: /* eventDecl: _FIRE methodRef  */
+  case 252: /* eventHead: _EVENT eventAttr typeSpec dottedName  */
 #line 716 "asmparse.y"
-                                                           { PASM->SetEventMethod(2, (yyvsp[0].token)); }
-#line 4941 "prebuilt\\asmparse.cpp"
+                                                                 { PASM->ResetEvent((yyvsp[0].string), (yyvsp[-1].token), (yyvsp[-2].eventAttr)); }
+#line 5349 "prebuilt\\asmparse.cpp"
     break;
 
-  case 247: /* eventDecl: _OTHER methodRef  */
+  case 253: /* eventHead: _EVENT eventAttr dottedName  */
 #line 717 "asmparse.y"
-                                                           { PASM->SetEventMethod(3, (yyvsp[0].token)); }
-#line 4947 "prebuilt\\asmparse.cpp"
+                                                                 { PASM->ResetEvent((yyvsp[0].string), mdTypeRefNil, (yyvsp[-1].eventAttr)); }
+#line 5355 "prebuilt\\asmparse.cpp"
     break;
 
-  case 252: /* propHead: _PROPERTY propAttr callConv type dottedName '(' sigArgs0 ')' initOpt  */
-#line 726 "asmparse.y"
+  case 254: /* eventAttr: %empty  */
+#line 721 "asmparse.y"
+                                                            { (yyval.eventAttr) = (CorEventAttr) 0; }
+#line 5361 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 255: /* eventAttr: eventAttr RTSPECIALNAME_  */
+#line 722 "asmparse.y"
+                                                            { (yyval.eventAttr) = (yyvsp[-1].eventAttr); }
+#line 5367 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 256: /* eventAttr: eventAttr SPECIALNAME_  */
+#line 723 "asmparse.y"
+                                                            { (yyval.eventAttr) = (CorEventAttr) ((yyvsp[-1].eventAttr) | evSpecialName); }
+#line 5373 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 259: /* eventDecl: _ADDON methodRef  */
+#line 730 "asmparse.y"
+                                                           { PASM->SetEventMethod(0, (yyvsp[0].token)); }
+#line 5379 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 260: /* eventDecl: _REMOVEON methodRef  */
+#line 731 "asmparse.y"
+                                                           { PASM->SetEventMethod(1, (yyvsp[0].token)); }
+#line 5385 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 261: /* eventDecl: _FIRE methodRef  */
+#line 732 "asmparse.y"
+                                                           { PASM->SetEventMethod(2, (yyvsp[0].token)); }
+#line 5391 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 262: /* eventDecl: _OTHER methodRef  */
+#line 733 "asmparse.y"
+                                                           { PASM->SetEventMethod(3, (yyvsp[0].token)); }
+#line 5397 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 267: /* propHead: _PROPERTY propAttr callConv type dottedName '(' sigArgs0 ')' initOpt  */
+#line 742 "asmparse.y"
                                                             { PASM->ResetProp((yyvsp[-4].string),
                                                               parser->MakeSig((IMAGE_CEE_CS_CALLCONV_PROPERTY |
                                                               ((yyvsp[-6].int32) & IMAGE_CEE_CS_CALLCONV_HASTHIS)),(yyvsp[-5].binstr),(yyvsp[-2].binstr)), (yyvsp[-7].propAttr), (yyvsp[0].binstr));}
-#line 4955 "prebuilt\\asmparse.cpp"
+#line 5405 "prebuilt\\asmparse.cpp"
     break;
 
-  case 253: /* propAttr: %empty  */
-#line 731 "asmparse.y"
+  case 268: /* propAttr: %empty  */
+#line 747 "asmparse.y"
                                                             { (yyval.propAttr) = (CorPropertyAttr) 0; }
-#line 4961 "prebuilt\\asmparse.cpp"
+#line 5411 "prebuilt\\asmparse.cpp"
     break;
 
-  case 254: /* propAttr: propAttr RTSPECIALNAME_  */
-#line 732 "asmparse.y"
+  case 269: /* propAttr: propAttr RTSPECIALNAME_  */
+#line 748 "asmparse.y"
                                                             { (yyval.propAttr) = (yyvsp[-1].propAttr); }
-#line 4967 "prebuilt\\asmparse.cpp"
+#line 5417 "prebuilt\\asmparse.cpp"
     break;
 
-  case 255: /* propAttr: propAttr SPECIALNAME_  */
-#line 733 "asmparse.y"
+  case 270: /* propAttr: propAttr SPECIALNAME_  */
+#line 749 "asmparse.y"
                                                             { (yyval.propAttr) = (CorPropertyAttr) ((yyvsp[-1].propAttr) | prSpecialName); }
-#line 4973 "prebuilt\\asmparse.cpp"
+#line 5423 "prebuilt\\asmparse.cpp"
     break;
 
-  case 258: /* propDecl: _SET methodRef  */
-#line 741 "asmparse.y"
+  case 273: /* propDecl: _SET methodRef  */
+#line 757 "asmparse.y"
                                                             { PASM->SetPropMethod(0, (yyvsp[0].token)); }
-#line 4979 "prebuilt\\asmparse.cpp"
+#line 5429 "prebuilt\\asmparse.cpp"
     break;
 
-  case 259: /* propDecl: _GET methodRef  */
-#line 742 "asmparse.y"
+  case 274: /* propDecl: _GET methodRef  */
+#line 758 "asmparse.y"
                                                             { PASM->SetPropMethod(1, (yyvsp[0].token)); }
-#line 4985 "prebuilt\\asmparse.cpp"
+#line 5435 "prebuilt\\asmparse.cpp"
     break;
 
-  case 260: /* propDecl: _OTHER methodRef  */
-#line 743 "asmparse.y"
+  case 275: /* propDecl: _OTHER methodRef  */
+#line 759 "asmparse.y"
                                                             { PASM->SetPropMethod(2, (yyvsp[0].token)); }
-#line 4991 "prebuilt\\asmparse.cpp"
+#line 5441 "prebuilt\\asmparse.cpp"
     break;
 
-  case 265: /* methodHeadPart1: _METHOD  */
-#line 751 "asmparse.y"
+  case 280: /* methodHeadPart1: _METHOD  */
+#line 767 "asmparse.y"
                                                             { PASM->ResetForNextMethod();
                                                               uMethodBeginLine = PASM->m_ulCurLine;
                                                               uMethodBeginColumn=PASM->m_ulCurColumn;
                                                             }
-#line 5000 "prebuilt\\asmparse.cpp"
+#line 5450 "prebuilt\\asmparse.cpp"
     break;
 
-  case 266: /* marshalClause: %empty  */
-#line 757 "asmparse.y"
+  case 281: /* marshalClause: %empty  */
+#line 773 "asmparse.y"
                                                             { (yyval.binstr) = NULL; }
-#line 5006 "prebuilt\\asmparse.cpp"
+#line 5456 "prebuilt\\asmparse.cpp"
     break;
 
-  case 267: /* marshalClause: MARSHAL_ '(' marshalBlob ')'  */
-#line 758 "asmparse.y"
+  case 282: /* marshalClause: MARSHAL_ '(' marshalBlob ')'  */
+#line 774 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 5012 "prebuilt\\asmparse.cpp"
+#line 5462 "prebuilt\\asmparse.cpp"
     break;
 
-  case 268: /* marshalBlob: nativeType  */
-#line 761 "asmparse.y"
+  case 283: /* marshalBlob: nativeType  */
+#line 777 "asmparse.y"
                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 5018 "prebuilt\\asmparse.cpp"
+#line 5468 "prebuilt\\asmparse.cpp"
     break;
 
-  case 269: /* marshalBlob: marshalBlobHead hexbytes '}'  */
-#line 762 "asmparse.y"
+  case 284: /* marshalBlob: marshalBlobHead hexbytes '}'  */
+#line 778 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 5024 "prebuilt\\asmparse.cpp"
+#line 5474 "prebuilt\\asmparse.cpp"
     break;
 
-  case 270: /* marshalBlobHead: '{'  */
-#line 765 "asmparse.y"
+  case 285: /* marshalBlobHead: '{'  */
+#line 781 "asmparse.y"
                                                              { bParsingByteArray = TRUE; }
-#line 5030 "prebuilt\\asmparse.cpp"
+#line 5480 "prebuilt\\asmparse.cpp"
     break;
 
-  case 271: /* methodHead: methodHeadPart1 methAttr callConv paramAttr type marshalClause methodName typarsClause '(' sigArgs0 ')' implAttr '{'  */
-#line 769 "asmparse.y"
+  case 286: /* methodHead: methodHeadPart1 methAttr callConv paramAttr type marshalClause methodName typarsClause '(' sigArgs0 ')' implAttr '{'  */
+#line 785 "asmparse.y"
                                                             { BinStr* sig;
                                                               if ((yyvsp[-5].typarlist) == NULL) sig = parser->MakeSig((yyvsp[-10].int32), (yyvsp[-8].binstr), (yyvsp[-3].binstr));
                                                               else {
@@ -5044,450 +5494,456 @@ yyreduce:
                                                               PASM->m_pCurMethod->m_ulLines[0] = uMethodBeginLine;
                                                               PASM->m_pCurMethod->m_ulColumns[0]=uMethodBeginColumn;
                                                             }
-#line 5048 "prebuilt\\asmparse.cpp"
+#line 5498 "prebuilt\\asmparse.cpp"
     break;
 
-  case 272: /* methAttr: %empty  */
-#line 784 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) 0; }
-#line 5054 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 273: /* methAttr: methAttr STATIC_  */
-#line 785 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdStatic); }
-#line 5060 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 274: /* methAttr: methAttr PUBLIC_  */
-#line 786 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPublic); }
-#line 5066 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 275: /* methAttr: methAttr PRIVATE_  */
-#line 787 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPrivate); }
-#line 5072 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 276: /* methAttr: methAttr FAMILY_  */
-#line 788 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamily); }
-#line 5078 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 277: /* methAttr: methAttr FINAL_  */
-#line 789 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdFinal); }
-#line 5084 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 278: /* methAttr: methAttr SPECIALNAME_  */
-#line 790 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdSpecialName); }
-#line 5090 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 279: /* methAttr: methAttr VIRTUAL_  */
-#line 791 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdVirtual); }
-#line 5096 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 280: /* methAttr: methAttr STRICT_  */
-#line 792 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdCheckAccessOnOverride); }
-#line 5102 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 281: /* methAttr: methAttr ABSTRACT_  */
-#line 793 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdAbstract); }
-#line 5108 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 282: /* methAttr: methAttr ASSEMBLY_  */
-#line 794 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdAssem); }
-#line 5114 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 283: /* methAttr: methAttr FAMANDASSEM_  */
-#line 795 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamANDAssem); }
-#line 5120 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 284: /* methAttr: methAttr FAMORASSEM_  */
-#line 796 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamORAssem); }
-#line 5126 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 285: /* methAttr: methAttr PRIVATESCOPE_  */
-#line 797 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPrivateScope); }
-#line 5132 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 286: /* methAttr: methAttr HIDEBYSIG_  */
-#line 798 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdHideBySig); }
-#line 5138 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 287: /* methAttr: methAttr NEWSLOT_  */
-#line 799 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdNewSlot); }
-#line 5144 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 288: /* methAttr: methAttr RTSPECIALNAME_  */
+  case 287: /* methAttr: %empty  */
 #line 800 "asmparse.y"
-                                                            { (yyval.methAttr) = (yyvsp[-1].methAttr); }
-#line 5150 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.methAttr) = (CorMethodAttr) 0; }
+#line 5504 "prebuilt\\asmparse.cpp"
     break;
 
-  case 289: /* methAttr: methAttr UNMANAGEDEXP_  */
+  case 288: /* methAttr: methAttr STATIC_  */
 #line 801 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdUnmanagedExport); }
-#line 5156 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdStatic); }
+#line 5510 "prebuilt\\asmparse.cpp"
     break;
 
-  case 290: /* methAttr: methAttr REQSECOBJ_  */
+  case 289: /* methAttr: methAttr PUBLIC_  */
 #line 802 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdRequireSecObject); }
-#line 5162 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPublic); }
+#line 5516 "prebuilt\\asmparse.cpp"
     break;
 
-  case 291: /* methAttr: methAttr FLAGS_ '(' int32 ')'  */
+  case 290: /* methAttr: methAttr PRIVATE_  */
 #line 803 "asmparse.y"
-                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].int32)); }
-#line 5168 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPrivate); }
+#line 5522 "prebuilt\\asmparse.cpp"
     break;
 
-  case 292: /* methAttr: methAttr PINVOKEIMPL_ '(' compQstring AS_ compQstring pinvAttr ')'  */
+  case 291: /* methAttr: methAttr FAMILY_  */
+#line 804 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamily); }
+#line 5528 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 292: /* methAttr: methAttr FINAL_  */
 #line 805 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdFinal); }
+#line 5534 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 293: /* methAttr: methAttr SPECIALNAME_  */
+#line 806 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdSpecialName); }
+#line 5540 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 294: /* methAttr: methAttr VIRTUAL_  */
+#line 807 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdVirtual); }
+#line 5546 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 295: /* methAttr: methAttr STRICT_  */
+#line 808 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdCheckAccessOnOverride); }
+#line 5552 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 296: /* methAttr: methAttr ABSTRACT_  */
+#line 809 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdAbstract); }
+#line 5558 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 297: /* methAttr: methAttr ASSEMBLY_  */
+#line 810 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdAssem); }
+#line 5564 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 298: /* methAttr: methAttr FAMANDASSEM_  */
+#line 811 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamANDAssem); }
+#line 5570 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 299: /* methAttr: methAttr FAMORASSEM_  */
+#line 812 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamORAssem); }
+#line 5576 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 300: /* methAttr: methAttr PRIVATESCOPE_  */
+#line 813 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPrivateScope); }
+#line 5582 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 301: /* methAttr: methAttr HIDEBYSIG_  */
+#line 814 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdHideBySig); }
+#line 5588 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 302: /* methAttr: methAttr NEWSLOT_  */
+#line 815 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdNewSlot); }
+#line 5594 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 303: /* methAttr: methAttr RTSPECIALNAME_  */
+#line 816 "asmparse.y"
+                                                            { (yyval.methAttr) = (yyvsp[-1].methAttr); }
+#line 5600 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 304: /* methAttr: methAttr UNMANAGEDEXP_  */
+#line 817 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdUnmanagedExport); }
+#line 5606 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 305: /* methAttr: methAttr REQSECOBJ_  */
+#line 818 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdRequireSecObject); }
+#line 5612 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 306: /* methAttr: methAttr FLAGS_ '(' int32 ')'  */
+#line 819 "asmparse.y"
+                                                            { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].int32)); }
+#line 5618 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 307: /* methAttr: methAttr PINVOKEIMPL_ '(' compQstring AS_ compQstring pinvAttr ')'  */
+#line 821 "asmparse.y"
                                                             { PASM->SetPinvoke((yyvsp[-4].binstr),0,(yyvsp[-2].binstr),(yyvsp[-1].pinvAttr));
                                                               (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-7].methAttr) | mdPinvokeImpl); }
-#line 5175 "prebuilt\\asmparse.cpp"
+#line 5625 "prebuilt\\asmparse.cpp"
     break;
 
-  case 293: /* methAttr: methAttr PINVOKEIMPL_ '(' compQstring pinvAttr ')'  */
-#line 808 "asmparse.y"
+  case 308: /* methAttr: methAttr PINVOKEIMPL_ '(' compQstring pinvAttr ')'  */
+#line 824 "asmparse.y"
                                                             { PASM->SetPinvoke((yyvsp[-2].binstr),0,NULL,(yyvsp[-1].pinvAttr));
                                                               (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-5].methAttr) | mdPinvokeImpl); }
-#line 5182 "prebuilt\\asmparse.cpp"
+#line 5632 "prebuilt\\asmparse.cpp"
     break;
 
-  case 294: /* methAttr: methAttr PINVOKEIMPL_ '(' pinvAttr ')'  */
-#line 811 "asmparse.y"
+  case 309: /* methAttr: methAttr PINVOKEIMPL_ '(' pinvAttr ')'  */
+#line 827 "asmparse.y"
                                                             { PASM->SetPinvoke(new BinStr(),0,NULL,(yyvsp[-1].pinvAttr));
                                                               (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-4].methAttr) | mdPinvokeImpl); }
-#line 5189 "prebuilt\\asmparse.cpp"
+#line 5639 "prebuilt\\asmparse.cpp"
     break;
 
-  case 295: /* pinvAttr: %empty  */
-#line 815 "asmparse.y"
+  case 310: /* pinvAttr: %empty  */
+#line 831 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) 0; }
-#line 5195 "prebuilt\\asmparse.cpp"
+#line 5645 "prebuilt\\asmparse.cpp"
     break;
 
-  case 296: /* pinvAttr: pinvAttr NOMANGLE_  */
-#line 816 "asmparse.y"
+  case 311: /* pinvAttr: pinvAttr NOMANGLE_  */
+#line 832 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmNoMangle); }
-#line 5201 "prebuilt\\asmparse.cpp"
+#line 5651 "prebuilt\\asmparse.cpp"
     break;
 
-  case 297: /* pinvAttr: pinvAttr ANSI_  */
-#line 817 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetAnsi); }
-#line 5207 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 298: /* pinvAttr: pinvAttr UNICODE_  */
-#line 818 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetUnicode); }
-#line 5213 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 299: /* pinvAttr: pinvAttr AUTOCHAR_  */
-#line 819 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetAuto); }
-#line 5219 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 300: /* pinvAttr: pinvAttr LASTERR_  */
-#line 820 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmSupportsLastError); }
-#line 5225 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 301: /* pinvAttr: pinvAttr WINAPI_  */
-#line 821 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvWinapi); }
-#line 5231 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 302: /* pinvAttr: pinvAttr CDECL_  */
-#line 822 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvCdecl); }
-#line 5237 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 303: /* pinvAttr: pinvAttr STDCALL_  */
-#line 823 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvStdcall); }
-#line 5243 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 304: /* pinvAttr: pinvAttr THISCALL_  */
-#line 824 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvThiscall); }
-#line 5249 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 305: /* pinvAttr: pinvAttr FASTCALL_  */
-#line 825 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvFastcall); }
-#line 5255 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 306: /* pinvAttr: pinvAttr BESTFIT_ ':' ON_  */
-#line 826 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmBestFitEnabled); }
-#line 5261 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 307: /* pinvAttr: pinvAttr BESTFIT_ ':' OFF_  */
-#line 827 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmBestFitDisabled); }
-#line 5267 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 308: /* pinvAttr: pinvAttr CHARMAPERROR_ ':' ON_  */
-#line 828 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmThrowOnUnmappableCharEnabled); }
-#line 5273 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 309: /* pinvAttr: pinvAttr CHARMAPERROR_ ':' OFF_  */
-#line 829 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmThrowOnUnmappableCharDisabled); }
-#line 5279 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 310: /* pinvAttr: pinvAttr FLAGS_ '(' int32 ')'  */
-#line 830 "asmparse.y"
-                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].int32)); }
-#line 5285 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 311: /* methodName: _CTOR  */
+  case 312: /* pinvAttr: pinvAttr ANSI_  */
 #line 833 "asmparse.y"
-                                                            { (yyval.string) = newString(COR_CTOR_METHOD_NAME); }
-#line 5291 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetAnsi); }
+#line 5657 "prebuilt\\asmparse.cpp"
     break;
 
-  case 312: /* methodName: _CCTOR  */
+  case 313: /* pinvAttr: pinvAttr UNICODE_  */
 #line 834 "asmparse.y"
-                                                            { (yyval.string) = newString(COR_CCTOR_METHOD_NAME); }
-#line 5297 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetUnicode); }
+#line 5663 "prebuilt\\asmparse.cpp"
     break;
 
-  case 313: /* methodName: dottedName  */
+  case 314: /* pinvAttr: pinvAttr AUTOCHAR_  */
 #line 835 "asmparse.y"
-                                                            { (yyval.string) = (yyvsp[0].string); }
-#line 5303 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetAuto); }
+#line 5669 "prebuilt\\asmparse.cpp"
     break;
 
-  case 314: /* paramAttr: %empty  */
+  case 315: /* pinvAttr: pinvAttr LASTERR_  */
+#line 836 "asmparse.y"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmSupportsLastError); }
+#line 5675 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 316: /* pinvAttr: pinvAttr WINAPI_  */
+#line 837 "asmparse.y"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvWinapi); }
+#line 5681 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 317: /* pinvAttr: pinvAttr CDECL_  */
 #line 838 "asmparse.y"
-                                                            { (yyval.int32) = 0; }
-#line 5309 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvCdecl); }
+#line 5687 "prebuilt\\asmparse.cpp"
     break;
 
-  case 315: /* paramAttr: paramAttr '[' IN_ ']'  */
+  case 318: /* pinvAttr: pinvAttr STDCALL_  */
 #line 839 "asmparse.y"
-                                                            { (yyval.int32) = (yyvsp[-3].int32) | pdIn; }
-#line 5315 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvStdcall); }
+#line 5693 "prebuilt\\asmparse.cpp"
     break;
 
-  case 316: /* paramAttr: paramAttr '[' OUT_ ']'  */
+  case 319: /* pinvAttr: pinvAttr THISCALL_  */
 #line 840 "asmparse.y"
-                                                            { (yyval.int32) = (yyvsp[-3].int32) | pdOut; }
-#line 5321 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvThiscall); }
+#line 5699 "prebuilt\\asmparse.cpp"
     break;
 
-  case 317: /* paramAttr: paramAttr '[' OPT_ ']'  */
+  case 320: /* pinvAttr: pinvAttr FASTCALL_  */
 #line 841 "asmparse.y"
-                                                            { (yyval.int32) = (yyvsp[-3].int32) | pdOptional; }
-#line 5327 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvFastcall); }
+#line 5705 "prebuilt\\asmparse.cpp"
     break;
 
-  case 318: /* paramAttr: paramAttr '[' int32 ']'  */
+  case 321: /* pinvAttr: pinvAttr BESTFIT_ ':' ON_  */
 #line 842 "asmparse.y"
-                                                            { (yyval.int32) = (yyvsp[-1].int32) + 1; }
-#line 5333 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmBestFitEnabled); }
+#line 5711 "prebuilt\\asmparse.cpp"
     break;
 
-  case 319: /* implAttr: %empty  */
+  case 322: /* pinvAttr: pinvAttr BESTFIT_ ':' OFF_  */
+#line 843 "asmparse.y"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmBestFitDisabled); }
+#line 5717 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 323: /* pinvAttr: pinvAttr CHARMAPERROR_ ':' ON_  */
+#line 844 "asmparse.y"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmThrowOnUnmappableCharEnabled); }
+#line 5723 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 324: /* pinvAttr: pinvAttr CHARMAPERROR_ ':' OFF_  */
 #line 845 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) (miIL | miManaged); }
-#line 5339 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmThrowOnUnmappableCharDisabled); }
+#line 5729 "prebuilt\\asmparse.cpp"
     break;
 
-  case 320: /* implAttr: implAttr NATIVE_  */
+  case 325: /* pinvAttr: pinvAttr FLAGS_ '(' int32 ')'  */
 #line 846 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miNative); }
-#line 5345 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].int32)); }
+#line 5735 "prebuilt\\asmparse.cpp"
     break;
 
-  case 321: /* implAttr: implAttr CIL_  */
-#line 847 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miIL); }
-#line 5351 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 322: /* implAttr: implAttr OPTIL_  */
-#line 848 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miOPTIL); }
-#line 5357 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 323: /* implAttr: implAttr MANAGED_  */
+  case 326: /* methodName: _CTOR  */
 #line 849 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFFB) | miManaged); }
-#line 5363 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.string) = newString(COR_CTOR_METHOD_NAME); }
+#line 5741 "prebuilt\\asmparse.cpp"
     break;
 
-  case 324: /* implAttr: implAttr UNMANAGED_  */
+  case 327: /* methodName: _CCTOR  */
 #line 850 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFFB) | miUnmanaged); }
-#line 5369 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.string) = newString(COR_CCTOR_METHOD_NAME); }
+#line 5747 "prebuilt\\asmparse.cpp"
     break;
 
-  case 325: /* implAttr: implAttr FORWARDREF_  */
+  case 328: /* methodName: dottedName  */
 #line 851 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miForwardRef); }
-#line 5375 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.string) = (yyvsp[0].string); }
+#line 5753 "prebuilt\\asmparse.cpp"
     break;
 
-  case 326: /* implAttr: implAttr PRESERVESIG_  */
-#line 852 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miPreserveSig); }
-#line 5381 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 327: /* implAttr: implAttr RUNTIME_  */
-#line 853 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miRuntime); }
-#line 5387 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 328: /* implAttr: implAttr INTERNALCALL_  */
+  case 329: /* paramAttr: %empty  */
 #line 854 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miInternalCall); }
-#line 5393 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.int32) = 0; }
+#line 5759 "prebuilt\\asmparse.cpp"
     break;
 
-  case 329: /* implAttr: implAttr SYNCHRONIZED_  */
+  case 330: /* paramAttr: paramAttr '[' IN_ ']'  */
 #line 855 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miSynchronized); }
-#line 5399 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.int32) = (yyvsp[-3].int32) | pdIn; }
+#line 5765 "prebuilt\\asmparse.cpp"
     break;
 
-  case 330: /* implAttr: implAttr NOINLINING_  */
+  case 331: /* paramAttr: paramAttr '[' OUT_ ']'  */
 #line 856 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miNoInlining); }
-#line 5405 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.int32) = (yyvsp[-3].int32) | pdOut; }
+#line 5771 "prebuilt\\asmparse.cpp"
     break;
 
-  case 331: /* implAttr: implAttr AGGRESSIVEINLINING_  */
+  case 332: /* paramAttr: paramAttr '[' OPT_ ']'  */
 #line 857 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miAggressiveInlining); }
-#line 5411 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.int32) = (yyvsp[-3].int32) | pdOptional; }
+#line 5777 "prebuilt\\asmparse.cpp"
     break;
 
-  case 332: /* implAttr: implAttr NOOPTIMIZATION_  */
+  case 333: /* paramAttr: paramAttr '[' int32 ']'  */
 #line 858 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miNoOptimization); }
-#line 5417 "prebuilt\\asmparse.cpp"
+                                                            { (yyval.int32) = (yyvsp[-1].int32) + 1; }
+#line 5783 "prebuilt\\asmparse.cpp"
     break;
 
-  case 333: /* implAttr: implAttr AGGRESSIVEOPTIMIZATION_  */
-#line 859 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miAggressiveOptimization); }
-#line 5423 "prebuilt\\asmparse.cpp"
+  case 334: /* implAttr: %empty  */
+#line 861 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) (miIL | miManaged); }
+#line 5789 "prebuilt\\asmparse.cpp"
     break;
 
-  case 334: /* implAttr: implAttr FLAGS_ '(' int32 ')'  */
-#line 860 "asmparse.y"
-                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].int32)); }
-#line 5429 "prebuilt\\asmparse.cpp"
+  case 335: /* implAttr: implAttr NATIVE_  */
+#line 862 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miNative); }
+#line 5795 "prebuilt\\asmparse.cpp"
     break;
 
-  case 335: /* localsHead: _LOCALS  */
+  case 336: /* implAttr: implAttr CIL_  */
 #line 863 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miIL); }
+#line 5801 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 337: /* implAttr: implAttr OPTIL_  */
+#line 864 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miOPTIL); }
+#line 5807 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 338: /* implAttr: implAttr MANAGED_  */
+#line 865 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFFB) | miManaged); }
+#line 5813 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 339: /* implAttr: implAttr UNMANAGED_  */
+#line 866 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFFB) | miUnmanaged); }
+#line 5819 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 340: /* implAttr: implAttr FORWARDREF_  */
+#line 867 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miForwardRef); }
+#line 5825 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 341: /* implAttr: implAttr PRESERVESIG_  */
+#line 868 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miPreserveSig); }
+#line 5831 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 342: /* implAttr: implAttr RUNTIME_  */
+#line 869 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miRuntime); }
+#line 5837 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 343: /* implAttr: implAttr INTERNALCALL_  */
+#line 870 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miInternalCall); }
+#line 5843 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 344: /* implAttr: implAttr SYNCHRONIZED_  */
+#line 871 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miSynchronized); }
+#line 5849 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 345: /* implAttr: implAttr NOINLINING_  */
+#line 872 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miNoInlining); }
+#line 5855 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 346: /* implAttr: implAttr AGGRESSIVEINLINING_  */
+#line 873 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miAggressiveInlining); }
+#line 5861 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 347: /* implAttr: implAttr NOOPTIMIZATION_  */
+#line 874 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miNoOptimization); }
+#line 5867 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 348: /* implAttr: implAttr AGGRESSIVEOPTIMIZATION_  */
+#line 875 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miAggressiveOptimization); }
+#line 5873 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 349: /* implAttr: implAttr ASYNC_  */
+#line 876 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miAsync); }
+#line 5879 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 350: /* implAttr: implAttr FLAGS_ '(' int32 ')'  */
+#line 877 "asmparse.y"
+                                                            { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].int32)); }
+#line 5885 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 351: /* localsHead: _LOCALS  */
+#line 880 "asmparse.y"
                                                             { PASM->delArgNameList(PASM->m_firstArgName); PASM->m_firstArgName = NULL;PASM->m_lastArgName = NULL;
                                                             }
-#line 5436 "prebuilt\\asmparse.cpp"
+#line 5892 "prebuilt\\asmparse.cpp"
     break;
 
-  case 338: /* methodDecl: _EMITBYTE int32  */
-#line 871 "asmparse.y"
+  case 354: /* methodDecl: _EMITBYTE int32  */
+#line 888 "asmparse.y"
                                                             { PASM->EmitByte((yyvsp[0].int32)); }
-#line 5442 "prebuilt\\asmparse.cpp"
+#line 5898 "prebuilt\\asmparse.cpp"
     break;
 
-  case 339: /* methodDecl: sehBlock  */
-#line 872 "asmparse.y"
+  case 355: /* methodDecl: sehBlock  */
+#line 889 "asmparse.y"
                                                             { delete PASM->m_SEHD; PASM->m_SEHD = PASM->m_SEHDstack.POP(); }
-#line 5448 "prebuilt\\asmparse.cpp"
+#line 5904 "prebuilt\\asmparse.cpp"
     break;
 
-  case 340: /* methodDecl: _MAXSTACK int32  */
-#line 873 "asmparse.y"
+  case 356: /* methodDecl: _MAXSTACK int32  */
+#line 890 "asmparse.y"
                                                             { PASM->EmitMaxStack((yyvsp[0].int32)); }
-#line 5454 "prebuilt\\asmparse.cpp"
+#line 5910 "prebuilt\\asmparse.cpp"
     break;
 
-  case 341: /* methodDecl: localsHead '(' sigArgs0 ')'  */
-#line 874 "asmparse.y"
+  case 357: /* methodDecl: localsHead '(' sigArgs0 ')'  */
+#line 891 "asmparse.y"
                                                             { PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, (yyvsp[-1].binstr)));
                                                             }
-#line 5461 "prebuilt\\asmparse.cpp"
+#line 5917 "prebuilt\\asmparse.cpp"
     break;
 
-  case 342: /* methodDecl: localsHead INIT_ '(' sigArgs0 ')'  */
-#line 876 "asmparse.y"
+  case 358: /* methodDecl: localsHead INIT_ '(' sigArgs0 ')'  */
+#line 893 "asmparse.y"
                                                             { PASM->EmitZeroInit();
                                                               PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, (yyvsp[-1].binstr)));
                                                             }
-#line 5469 "prebuilt\\asmparse.cpp"
+#line 5925 "prebuilt\\asmparse.cpp"
     break;
 
-  case 343: /* methodDecl: _ENTRYPOINT  */
-#line 879 "asmparse.y"
+  case 359: /* methodDecl: _ENTRYPOINT  */
+#line 896 "asmparse.y"
                                                             { PASM->EmitEntryPoint(); }
-#line 5475 "prebuilt\\asmparse.cpp"
+#line 5931 "prebuilt\\asmparse.cpp"
     break;
 
-  case 344: /* methodDecl: _ZEROINIT  */
-#line 880 "asmparse.y"
+  case 360: /* methodDecl: _ZEROINIT  */
+#line 897 "asmparse.y"
                                                             { PASM->EmitZeroInit(); }
-#line 5481 "prebuilt\\asmparse.cpp"
+#line 5937 "prebuilt\\asmparse.cpp"
     break;
 
-  case 347: /* methodDecl: id ':'  */
-#line 883 "asmparse.y"
+  case 363: /* methodDecl: id ':'  */
+#line 900 "asmparse.y"
                                                             { PASM->AddLabel(PASM->m_CurPC,(yyvsp[-1].string)); /*PASM->EmitLabel($1);*/ }
-#line 5487 "prebuilt\\asmparse.cpp"
+#line 5943 "prebuilt\\asmparse.cpp"
     break;
 
-  case 353: /* methodDecl: _EXPORT '[' int32 ']'  */
-#line 889 "asmparse.y"
+  case 369: /* methodDecl: _EXPORT '[' int32 ']'  */
+#line 906 "asmparse.y"
                                                             { if(PASM->m_pCurMethod->m_dwExportOrdinal == 0xFFFFFFFF)
                                                               {
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = (yyvsp[-1].int32);
@@ -5498,11 +5954,11 @@ yyreduce:
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");
                                                             }
-#line 5502 "prebuilt\\asmparse.cpp"
+#line 5958 "prebuilt\\asmparse.cpp"
     break;
 
-  case 354: /* methodDecl: _EXPORT '[' int32 ']' AS_ id  */
-#line 899 "asmparse.y"
+  case 370: /* methodDecl: _EXPORT '[' int32 ']' AS_ id  */
+#line 916 "asmparse.y"
                                                             { if(PASM->m_pCurMethod->m_dwExportOrdinal == 0xFFFFFFFF)
                                                               {
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = (yyvsp[-3].int32);
@@ -5513,68 +5969,68 @@ yyreduce:
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");
                                                             }
-#line 5517 "prebuilt\\asmparse.cpp"
+#line 5973 "prebuilt\\asmparse.cpp"
     break;
 
-  case 355: /* methodDecl: _VTENTRY int32 ':' int32  */
-#line 909 "asmparse.y"
+  case 371: /* methodDecl: _VTENTRY int32 ':' int32  */
+#line 926 "asmparse.y"
                                                             { PASM->m_pCurMethod->m_wVTEntry = (WORD)(yyvsp[-2].int32);
                                                               PASM->m_pCurMethod->m_wVTSlot = (WORD)(yyvsp[0].int32); }
-#line 5524 "prebuilt\\asmparse.cpp"
+#line 5980 "prebuilt\\asmparse.cpp"
     break;
 
-  case 356: /* methodDecl: _OVERRIDE typeSpec DCOLON methodName  */
-#line 912 "asmparse.y"
+  case 372: /* methodDecl: _OVERRIDE typeSpec DCOLON methodName  */
+#line 929 "asmparse.y"
                                                             { PASM->AddMethodImpl((yyvsp[-2].token),(yyvsp[0].string),NULL,mdTokenNil,NULL,NULL); }
-#line 5530 "prebuilt\\asmparse.cpp"
+#line 5986 "prebuilt\\asmparse.cpp"
     break;
 
-  case 357: /* methodDecl: _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'  */
-#line 915 "asmparse.y"
+  case 373: /* methodDecl: _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'  */
+#line 932 "asmparse.y"
                                                             { PASM->AddMethodImpl((yyvsp[-6].token),(yyvsp[-4].string),
                                                               ((yyvsp[-3].int32)==0 ? parser->MakeSig((yyvsp[-8].int32),(yyvsp[-7].binstr),(yyvsp[-1].binstr)) :
                                                               parser->MakeSig((yyvsp[-8].int32)| IMAGE_CEE_CS_CALLCONV_GENERIC,(yyvsp[-7].binstr),(yyvsp[-1].binstr),(yyvsp[-3].int32)))
                                                               ,mdTokenNil,NULL,NULL);
                                                               PASM->ResetArgNameList();
                                                             }
-#line 5541 "prebuilt\\asmparse.cpp"
+#line 5997 "prebuilt\\asmparse.cpp"
     break;
 
-  case 359: /* methodDecl: _PARAM TYPE_ '[' int32 ']'  */
-#line 922 "asmparse.y"
+  case 375: /* methodDecl: _PARAM TYPE_ '[' int32 ']'  */
+#line 939 "asmparse.y"
                                                             { if(((yyvsp[-1].int32) > 0) && ((yyvsp[-1].int32) <= (int)PASM->m_pCurMethod->m_NumTyPars))
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurMethod->m_TyPars[(yyvsp[-1].int32)-1].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter index out of range\n");
                                                             }
-#line 5551 "prebuilt\\asmparse.cpp"
+#line 6007 "prebuilt\\asmparse.cpp"
     break;
 
-  case 360: /* methodDecl: _PARAM TYPE_ dottedName  */
-#line 927 "asmparse.y"
+  case 376: /* methodDecl: _PARAM TYPE_ dottedName  */
+#line 944 "asmparse.y"
                                                             { int n = PASM->m_pCurMethod->FindTyPar((yyvsp[0].string));
                                                               if(n >= 0)
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurMethod->m_TyPars[n].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter '%s' undefined\n",(yyvsp[0].string));
                                                             }
-#line 5562 "prebuilt\\asmparse.cpp"
+#line 6018 "prebuilt\\asmparse.cpp"
     break;
 
-  case 361: /* methodDecl: _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec  */
-#line 933 "asmparse.y"
+  case 377: /* methodDecl: _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec  */
+#line 950 "asmparse.y"
                                                                         { PASM->m_pCurMethod->AddGenericParamConstraint((yyvsp[-3].int32), 0, (yyvsp[0].token)); }
-#line 5568 "prebuilt\\asmparse.cpp"
+#line 6024 "prebuilt\\asmparse.cpp"
     break;
 
-  case 362: /* methodDecl: _PARAM CONSTRAINT_ dottedName ',' typeSpec  */
-#line 934 "asmparse.y"
+  case 378: /* methodDecl: _PARAM CONSTRAINT_ dottedName ',' typeSpec  */
+#line 951 "asmparse.y"
                                                                         { PASM->m_pCurMethod->AddGenericParamConstraint(0, (yyvsp[-2].string), (yyvsp[0].token)); }
-#line 5574 "prebuilt\\asmparse.cpp"
+#line 6030 "prebuilt\\asmparse.cpp"
     break;
 
-  case 363: /* methodDecl: _PARAM '[' int32 ']' initOpt  */
-#line 937 "asmparse.y"
+  case 379: /* methodDecl: _PARAM '[' int32 ']' initOpt  */
+#line 954 "asmparse.y"
                                                             { if( (yyvsp[-2].int32) ) {
                                                                 ARG_NAME_LIST* pAN=PASM->findArg(PASM->m_pCurMethod->m_firstArgName, (yyvsp[-2].int32) - 1);
                                                                 if(pAN)
@@ -5593,241 +6049,241 @@ yyreduce:
                                                               }
                                                               PASM->m_tkCurrentCVOwner = 0;
                                                             }
-#line 5597 "prebuilt\\asmparse.cpp"
+#line 6053 "prebuilt\\asmparse.cpp"
     break;
 
-  case 364: /* scopeBlock: scopeOpen methodDecls '}'  */
-#line 957 "asmparse.y"
+  case 380: /* scopeBlock: scopeOpen methodDecls '}'  */
+#line 974 "asmparse.y"
                                                             { PASM->m_pCurMethod->CloseScope(); }
-#line 5603 "prebuilt\\asmparse.cpp"
+#line 6059 "prebuilt\\asmparse.cpp"
     break;
 
-  case 365: /* scopeOpen: '{'  */
-#line 960 "asmparse.y"
+  case 381: /* scopeOpen: '{'  */
+#line 977 "asmparse.y"
                                                             { PASM->m_pCurMethod->OpenScope(); }
-#line 5609 "prebuilt\\asmparse.cpp"
+#line 6065 "prebuilt\\asmparse.cpp"
     break;
 
-  case 369: /* tryBlock: tryHead scopeBlock  */
-#line 971 "asmparse.y"
+  case 385: /* tryBlock: tryHead scopeBlock  */
+#line 988 "asmparse.y"
                                                             { PASM->m_SEHD->tryTo = PASM->m_CurPC; }
-#line 5615 "prebuilt\\asmparse.cpp"
+#line 6071 "prebuilt\\asmparse.cpp"
     break;
 
-  case 370: /* tryBlock: tryHead id TO_ id  */
-#line 972 "asmparse.y"
+  case 386: /* tryBlock: tryHead id TO_ id  */
+#line 989 "asmparse.y"
                                                             { PASM->SetTryLabels((yyvsp[-2].string), (yyvsp[0].string)); }
-#line 5621 "prebuilt\\asmparse.cpp"
+#line 6077 "prebuilt\\asmparse.cpp"
     break;
 
-  case 371: /* tryBlock: tryHead int32 TO_ int32  */
-#line 973 "asmparse.y"
+  case 387: /* tryBlock: tryHead int32 TO_ int32  */
+#line 990 "asmparse.y"
                                                             { if(PASM->m_SEHD) {PASM->m_SEHD->tryFrom = (yyvsp[-2].int32);
                                                               PASM->m_SEHD->tryTo = (yyvsp[0].int32);} }
-#line 5628 "prebuilt\\asmparse.cpp"
+#line 6084 "prebuilt\\asmparse.cpp"
     break;
 
-  case 372: /* tryHead: _TRY  */
-#line 977 "asmparse.y"
+  case 388: /* tryHead: _TRY  */
+#line 994 "asmparse.y"
                                                             { PASM->NewSEHDescriptor();
                                                               PASM->m_SEHD->tryFrom = PASM->m_CurPC; }
-#line 5635 "prebuilt\\asmparse.cpp"
+#line 6091 "prebuilt\\asmparse.cpp"
     break;
 
-  case 373: /* sehClause: catchClause handlerBlock  */
-#line 982 "asmparse.y"
+  case 389: /* sehClause: catchClause handlerBlock  */
+#line 999 "asmparse.y"
                                                              { PASM->EmitTry(); }
-#line 5641 "prebuilt\\asmparse.cpp"
+#line 6097 "prebuilt\\asmparse.cpp"
     break;
 
-  case 374: /* sehClause: filterClause handlerBlock  */
-#line 983 "asmparse.y"
+  case 390: /* sehClause: filterClause handlerBlock  */
+#line 1000 "asmparse.y"
                                                              { PASM->EmitTry(); }
-#line 5647 "prebuilt\\asmparse.cpp"
+#line 6103 "prebuilt\\asmparse.cpp"
     break;
 
-  case 375: /* sehClause: finallyClause handlerBlock  */
-#line 984 "asmparse.y"
+  case 391: /* sehClause: finallyClause handlerBlock  */
+#line 1001 "asmparse.y"
                                                              { PASM->EmitTry(); }
-#line 5653 "prebuilt\\asmparse.cpp"
+#line 6109 "prebuilt\\asmparse.cpp"
     break;
 
-  case 376: /* sehClause: faultClause handlerBlock  */
-#line 985 "asmparse.y"
+  case 392: /* sehClause: faultClause handlerBlock  */
+#line 1002 "asmparse.y"
                                                              { PASM->EmitTry(); }
-#line 5659 "prebuilt\\asmparse.cpp"
+#line 6115 "prebuilt\\asmparse.cpp"
     break;
 
-  case 377: /* filterClause: filterHead scopeBlock  */
-#line 989 "asmparse.y"
+  case 393: /* filterClause: filterHead scopeBlock  */
+#line 1006 "asmparse.y"
                                                              { PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5665 "prebuilt\\asmparse.cpp"
+#line 6121 "prebuilt\\asmparse.cpp"
     break;
 
-  case 378: /* filterClause: filterHead id  */
-#line 990 "asmparse.y"
+  case 394: /* filterClause: filterHead id  */
+#line 1007 "asmparse.y"
                                                              { PASM->SetFilterLabel((yyvsp[0].string));
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5672 "prebuilt\\asmparse.cpp"
+#line 6128 "prebuilt\\asmparse.cpp"
     break;
 
-  case 379: /* filterClause: filterHead int32  */
-#line 992 "asmparse.y"
+  case 395: /* filterClause: filterHead int32  */
+#line 1009 "asmparse.y"
                                                              { PASM->m_SEHD->sehFilter = (yyvsp[0].int32);
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5679 "prebuilt\\asmparse.cpp"
+#line 6135 "prebuilt\\asmparse.cpp"
     break;
 
-  case 380: /* filterHead: FILTER_  */
-#line 996 "asmparse.y"
+  case 396: /* filterHead: FILTER_  */
+#line 1013 "asmparse.y"
                                                              { PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_FILTER;
                                                                PASM->m_SEHD->sehFilter = PASM->m_CurPC; }
-#line 5686 "prebuilt\\asmparse.cpp"
+#line 6142 "prebuilt\\asmparse.cpp"
     break;
 
-  case 381: /* catchClause: CATCH_ typeSpec  */
-#line 1000 "asmparse.y"
+  case 397: /* catchClause: CATCH_ typeSpec  */
+#line 1017 "asmparse.y"
                                                             {  PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_NONE;
                                                                PASM->SetCatchClass((yyvsp[0].token));
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5694 "prebuilt\\asmparse.cpp"
+#line 6150 "prebuilt\\asmparse.cpp"
     break;
 
-  case 382: /* finallyClause: FINALLY_  */
-#line 1005 "asmparse.y"
+  case 398: /* finallyClause: FINALLY_  */
+#line 1022 "asmparse.y"
                                                              { PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_FINALLY;
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5701 "prebuilt\\asmparse.cpp"
+#line 6157 "prebuilt\\asmparse.cpp"
     break;
 
-  case 383: /* faultClause: FAULT_  */
-#line 1009 "asmparse.y"
+  case 399: /* faultClause: FAULT_  */
+#line 1026 "asmparse.y"
                                                              { PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_FAULT;
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5708 "prebuilt\\asmparse.cpp"
+#line 6164 "prebuilt\\asmparse.cpp"
     break;
 
-  case 384: /* handlerBlock: scopeBlock  */
-#line 1013 "asmparse.y"
+  case 400: /* handlerBlock: scopeBlock  */
+#line 1030 "asmparse.y"
                                                              { PASM->m_SEHD->sehHandlerTo = PASM->m_CurPC; }
-#line 5714 "prebuilt\\asmparse.cpp"
+#line 6170 "prebuilt\\asmparse.cpp"
     break;
 
-  case 385: /* handlerBlock: HANDLER_ id TO_ id  */
-#line 1014 "asmparse.y"
+  case 401: /* handlerBlock: HANDLER_ id TO_ id  */
+#line 1031 "asmparse.y"
                                                              { PASM->SetHandlerLabels((yyvsp[-2].string), (yyvsp[0].string)); }
-#line 5720 "prebuilt\\asmparse.cpp"
+#line 6176 "prebuilt\\asmparse.cpp"
     break;
 
-  case 386: /* handlerBlock: HANDLER_ int32 TO_ int32  */
-#line 1015 "asmparse.y"
+  case 402: /* handlerBlock: HANDLER_ int32 TO_ int32  */
+#line 1032 "asmparse.y"
                                                              { PASM->m_SEHD->sehHandler = (yyvsp[-2].int32);
                                                                PASM->m_SEHD->sehHandlerTo = (yyvsp[0].int32); }
-#line 5727 "prebuilt\\asmparse.cpp"
+#line 6183 "prebuilt\\asmparse.cpp"
     break;
 
-  case 388: /* ddHead: _DATA tls id '='  */
-#line 1023 "asmparse.y"
-                                                             { PASM->EmitDataLabel((yyvsp[-1].string)); }
-#line 5733 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 390: /* tls: %empty  */
-#line 1027 "asmparse.y"
-                                                             { PASM->SetDataSection(); }
-#line 5739 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 391: /* tls: TLS_  */
-#line 1028 "asmparse.y"
-                                                             { PASM->SetTLSSection(); }
-#line 5745 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 392: /* tls: CIL_  */
-#line 1029 "asmparse.y"
-                                                             { PASM->SetILSection(); }
-#line 5751 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 397: /* ddItemCount: %empty  */
+  case 404: /* ddHead: _DATA tls id '='  */
 #line 1040 "asmparse.y"
-                                                             { (yyval.int32) = 1; }
-#line 5757 "prebuilt\\asmparse.cpp"
+                                                             { PASM->EmitDataLabel((yyvsp[-1].string)); }
+#line 6189 "prebuilt\\asmparse.cpp"
     break;
 
-  case 398: /* ddItemCount: '[' int32 ']'  */
-#line 1041 "asmparse.y"
+  case 406: /* tls: %empty  */
+#line 1044 "asmparse.y"
+                                                             { PASM->SetDataSection(); }
+#line 6195 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 407: /* tls: TLS_  */
+#line 1045 "asmparse.y"
+                                                             { PASM->SetTLSSection(); }
+#line 6201 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 408: /* tls: CIL_  */
+#line 1046 "asmparse.y"
+                                                             { PASM->SetILSection(); }
+#line 6207 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 413: /* ddItemCount: %empty  */
+#line 1057 "asmparse.y"
+                                                             { (yyval.int32) = 1; }
+#line 6213 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 414: /* ddItemCount: '[' int32 ']'  */
+#line 1058 "asmparse.y"
                                                              { (yyval.int32) = (yyvsp[-1].int32);
                                                                if((yyvsp[-1].int32) <= 0) { PASM->report->error("Illegal item count: %d\n",(yyvsp[-1].int32));
                                                                   if(!PASM->OnErrGo) (yyval.int32) = 1; }}
-#line 5765 "prebuilt\\asmparse.cpp"
+#line 6221 "prebuilt\\asmparse.cpp"
     break;
 
-  case 399: /* ddItem: CHAR_ '*' '(' compQstring ')'  */
-#line 1046 "asmparse.y"
+  case 415: /* ddItem: CHAR_ '*' '(' compQstring ')'  */
+#line 1063 "asmparse.y"
                                                              { PASM->EmitDataString((yyvsp[-1].binstr)); }
-#line 5771 "prebuilt\\asmparse.cpp"
+#line 6227 "prebuilt\\asmparse.cpp"
     break;
 
-  case 400: /* ddItem: '&' '(' id ')'  */
-#line 1047 "asmparse.y"
+  case 416: /* ddItem: '&' '(' id ')'  */
+#line 1064 "asmparse.y"
                                                              { PASM->EmitDD((yyvsp[-1].string)); }
-#line 5777 "prebuilt\\asmparse.cpp"
+#line 6233 "prebuilt\\asmparse.cpp"
     break;
 
-  case 401: /* ddItem: bytearrayhead bytes ')'  */
-#line 1048 "asmparse.y"
+  case 417: /* ddItem: bytearrayhead bytes ')'  */
+#line 1065 "asmparse.y"
                                                              { PASM->EmitData((yyvsp[-1].binstr)->ptr(),(yyvsp[-1].binstr)->length()); }
-#line 5783 "prebuilt\\asmparse.cpp"
+#line 6239 "prebuilt\\asmparse.cpp"
     break;
 
-  case 402: /* ddItem: FLOAT32_ '(' float64 ')' ddItemCount  */
-#line 1050 "asmparse.y"
+  case 418: /* ddItem: FLOAT32_ '(' float64 ')' ddItemCount  */
+#line 1067 "asmparse.y"
                                                              { float f = (float) (*(yyvsp[-2].float64)); float* p = new (nothrow) float[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i < (yyvsp[0].int32); i++) p[i] = f;
                                                                  PASM->EmitData(p, sizeof(float)*(yyvsp[0].int32)); delete (yyvsp[-2].float64); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(float)*(yyvsp[0].int32)); }
-#line 5794 "prebuilt\\asmparse.cpp"
+#line 6250 "prebuilt\\asmparse.cpp"
     break;
 
-  case 403: /* ddItem: FLOAT64_ '(' float64 ')' ddItemCount  */
-#line 1057 "asmparse.y"
+  case 419: /* ddItem: FLOAT64_ '(' float64 ')' ddItemCount  */
+#line 1074 "asmparse.y"
                                                              { double* p = new (nothrow) double[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i<(yyvsp[0].int32); i++) p[i] = *((yyvsp[-2].float64));
                                                                  PASM->EmitData(p, sizeof(double)*(yyvsp[0].int32)); delete (yyvsp[-2].float64); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(double)*(yyvsp[0].int32)); }
-#line 5805 "prebuilt\\asmparse.cpp"
+#line 6261 "prebuilt\\asmparse.cpp"
     break;
 
-  case 404: /* ddItem: INT64_ '(' int64 ')' ddItemCount  */
-#line 1064 "asmparse.y"
+  case 420: /* ddItem: INT64_ '(' int64 ')' ddItemCount  */
+#line 1081 "asmparse.y"
                                                              { int64_t* p = new (nothrow) int64_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i<(yyvsp[0].int32); i++) p[i] = *((yyvsp[-2].int64));
                                                                  PASM->EmitData(p, sizeof(int64_t)*(yyvsp[0].int32)); delete (yyvsp[-2].int64); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(int64_t)*(yyvsp[0].int32)); }
-#line 5816 "prebuilt\\asmparse.cpp"
+#line 6272 "prebuilt\\asmparse.cpp"
     break;
 
-  case 405: /* ddItem: INT32_ '(' int32 ')' ddItemCount  */
-#line 1071 "asmparse.y"
+  case 421: /* ddItem: INT32_ '(' int32 ')' ddItemCount  */
+#line 1088 "asmparse.y"
                                                              { int32_t* p = new (nothrow) int32_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i<(yyvsp[0].int32); i++) p[i] = (yyvsp[-2].int32);
                                                                  PASM->EmitData(p, sizeof(int32_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(int32_t)*(yyvsp[0].int32)); }
-#line 5827 "prebuilt\\asmparse.cpp"
+#line 6283 "prebuilt\\asmparse.cpp"
     break;
 
-  case 406: /* ddItem: INT16_ '(' int32 ')' ddItemCount  */
-#line 1078 "asmparse.y"
+  case 422: /* ddItem: INT16_ '(' int32 ')' ddItemCount  */
+#line 1095 "asmparse.y"
                                                              { int16_t i = (int16_t) (yyvsp[-2].int32); FAIL_UNLESS(i == (yyvsp[-2].int32), ("Value %d too big\n", (yyvsp[-2].int32)));
                                                                int16_t* p = new (nothrow) int16_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
@@ -5835,11 +6291,11 @@ yyreduce:
                                                                  PASM->EmitData(p, sizeof(int16_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(int16_t)*(yyvsp[0].int32)); }
-#line 5839 "prebuilt\\asmparse.cpp"
+#line 6295 "prebuilt\\asmparse.cpp"
     break;
 
-  case 407: /* ddItem: INT8_ '(' int32 ')' ddItemCount  */
-#line 1086 "asmparse.y"
+  case 423: /* ddItem: INT8_ '(' int32 ')' ddItemCount  */
+#line 1103 "asmparse.y"
                                                              { int8_t i = (int8_t) (yyvsp[-2].int32); FAIL_UNLESS(i == (yyvsp[-2].int32), ("Value %d too big\n", (yyvsp[-2].int32)));
                                                                int8_t* p = new (nothrow) int8_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
@@ -5847,726 +6303,726 @@ yyreduce:
                                                                  PASM->EmitData(p, sizeof(int8_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(int8_t)*(yyvsp[0].int32)); }
-#line 5851 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 408: /* ddItem: FLOAT32_ ddItemCount  */
-#line 1093 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(float)*(yyvsp[0].int32)); }
-#line 5857 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 409: /* ddItem: FLOAT64_ ddItemCount  */
-#line 1094 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(double)*(yyvsp[0].int32)); }
-#line 5863 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 410: /* ddItem: INT64_ ddItemCount  */
-#line 1095 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(int64_t)*(yyvsp[0].int32)); }
-#line 5869 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 411: /* ddItem: INT32_ ddItemCount  */
-#line 1096 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(int32_t)*(yyvsp[0].int32)); }
-#line 5875 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 412: /* ddItem: INT16_ ddItemCount  */
-#line 1097 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(int16_t)*(yyvsp[0].int32)); }
-#line 5881 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 413: /* ddItem: INT8_ ddItemCount  */
-#line 1098 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(int8_t)*(yyvsp[0].int32)); }
-#line 5887 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 414: /* fieldSerInit: FLOAT32_ '(' float64 ')'  */
-#line 1102 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4);
-                                                               float f = (float)(*(yyvsp[-1].float64));
-                                                               (yyval.binstr)->appendInt32(*((int32_t*)&f)); delete (yyvsp[-1].float64); }
-#line 5895 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 415: /* fieldSerInit: FLOAT64_ '(' float64 ')'  */
-#line 1105 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8);
-                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].float64)); delete (yyvsp[-1].float64); }
-#line 5902 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 416: /* fieldSerInit: FLOAT32_ '(' int32 ')'  */
-#line 1107 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4);
-                                                               (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 5909 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 417: /* fieldSerInit: FLOAT64_ '(' int64 ')'  */
-#line 1109 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8);
-                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
-#line 5916 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 418: /* fieldSerInit: INT64_ '(' int64 ')'  */
-#line 1111 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I8);
-                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
-#line 5923 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 419: /* fieldSerInit: INT32_ '(' int32 ')'  */
-#line 1113 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I4);
-                                                               (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 5930 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 420: /* fieldSerInit: INT16_ '(' int32 ')'  */
-#line 1115 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I2);
-                                                               (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
-#line 5937 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 421: /* fieldSerInit: INT8_ '(' int32 ')'  */
-#line 1117 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I1);
-                                                               (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
-#line 5944 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 422: /* fieldSerInit: UNSIGNED_ INT64_ '(' int64 ')'  */
-#line 1119 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8);
-                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
-#line 5951 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 423: /* fieldSerInit: UNSIGNED_ INT32_ '(' int32 ')'  */
-#line 1121 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4);
-                                                               (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 5958 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 424: /* fieldSerInit: UNSIGNED_ INT16_ '(' int32 ')'  */
-#line 1123 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2);
-                                                               (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
-#line 5965 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 425: /* fieldSerInit: UNSIGNED_ INT8_ '(' int32 ')'  */
-#line 1125 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1);
-                                                               (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
-#line 5972 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 426: /* fieldSerInit: UINT64_ '(' int64 ')'  */
-#line 1127 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8);
-                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
-#line 5979 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 427: /* fieldSerInit: UINT32_ '(' int32 ')'  */
-#line 1129 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4);
-                                                               (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 5986 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 428: /* fieldSerInit: UINT16_ '(' int32 ')'  */
-#line 1131 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2);
-                                                               (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
-#line 5993 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 429: /* fieldSerInit: UINT8_ '(' int32 ')'  */
-#line 1133 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1);
-                                                               (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
-#line 6000 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 430: /* fieldSerInit: CHAR_ '(' int32 ')'  */
-#line 1135 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CHAR);
-                                                               (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
-#line 6007 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 431: /* fieldSerInit: BOOL_ '(' truefalse ')'  */
-#line 1137 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_BOOLEAN);
-                                                               (yyval.binstr)->appendInt8((yyvsp[-1].int32));}
-#line 6014 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 432: /* fieldSerInit: bytearrayhead bytes ')'  */
-#line 1139 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING);
-                                                               (yyval.binstr)->append((yyvsp[-1].binstr)); delete (yyvsp[-1].binstr);}
-#line 6021 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 433: /* bytearrayhead: BYTEARRAY_ '('  */
-#line 1143 "asmparse.y"
-                                                             { bParsingByteArray = TRUE; }
-#line 6027 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 434: /* bytes: %empty  */
-#line 1146 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6033 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 435: /* bytes: hexbytes  */
-#line 1147 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6039 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 436: /* hexbytes: HEXBYTE  */
-#line 1150 "asmparse.y"
-                                                             { int8_t i = (int8_t) (yyvsp[0].int32); (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(i); }
-#line 6045 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 437: /* hexbytes: hexbytes HEXBYTE  */
-#line 1151 "asmparse.y"
-                                                             { int8_t i = (int8_t) (yyvsp[0].int32); (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(i); }
-#line 6051 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 438: /* fieldInit: fieldSerInit  */
-#line 1155 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6057 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 439: /* fieldInit: compQstring  */
-#line 1156 "asmparse.y"
-                                                             { (yyval.binstr) = BinStrToUnicode((yyvsp[0].binstr),true); (yyval.binstr)->insertInt8(ELEMENT_TYPE_STRING);}
-#line 6063 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 440: /* fieldInit: NULLREF_  */
-#line 1157 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CLASS);
-                                                               (yyval.binstr)->appendInt32(0); }
-#line 6070 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 441: /* serInit: fieldSerInit  */
-#line 1162 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6076 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 442: /* serInit: STRING_ '(' NULLREF_ ')'  */
-#line 1163 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING); (yyval.binstr)->appendInt8(0xFF); }
-#line 6082 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 443: /* serInit: STRING_ '(' SQSTRING ')'  */
-#line 1164 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING);
-                                                               AppendStringWithLength((yyval.binstr),(yyvsp[-1].string)); delete [] (yyvsp[-1].string);}
-#line 6089 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 444: /* serInit: TYPE_ '(' CLASS_ SQSTRING ')'  */
-#line 1166 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE);
-                                                               AppendStringWithLength((yyval.binstr),(yyvsp[-1].string)); delete [] (yyvsp[-1].string);}
-#line 6096 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 445: /* serInit: TYPE_ '(' className ')'  */
-#line 1168 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE);
-                                                               AppendStringWithLength((yyval.binstr),PASM->ReflectionNotation((yyvsp[-1].token)));}
-#line 6103 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 446: /* serInit: TYPE_ '(' NULLREF_ ')'  */
-#line 1170 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE); (yyval.binstr)->appendInt8(0xFF); }
-#line 6109 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 447: /* serInit: OBJECT_ '(' serInit ')'  */
-#line 1171 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TAGGED_OBJECT);}
-#line 6115 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 448: /* serInit: FLOAT32_ '[' int32 ']' '(' f32seq ')'  */
-#line 1173 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_R4);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6123 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 449: /* serInit: FLOAT64_ '[' int32 ']' '(' f64seq ')'  */
-#line 1177 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_R8);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6131 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 450: /* serInit: INT64_ '[' int32 ']' '(' i64seq ')'  */
-#line 1181 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_I8);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6139 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 451: /* serInit: INT32_ '[' int32 ']' '(' i32seq ')'  */
-#line 1185 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_I4);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6147 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 452: /* serInit: INT16_ '[' int32 ']' '(' i16seq ')'  */
-#line 1189 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_I2);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6155 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 453: /* serInit: INT8_ '[' int32 ']' '(' i8seq ')'  */
-#line 1193 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_I1);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6163 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 454: /* serInit: UINT64_ '[' int32 ']' '(' i64seq ')'  */
-#line 1197 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U8);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6171 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 455: /* serInit: UINT32_ '[' int32 ']' '(' i32seq ')'  */
-#line 1201 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U4);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6179 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 456: /* serInit: UINT16_ '[' int32 ']' '(' i16seq ')'  */
-#line 1205 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U2);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6187 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 457: /* serInit: UINT8_ '[' int32 ']' '(' i8seq ')'  */
-#line 1209 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U1);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6195 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 458: /* serInit: UNSIGNED_ INT64_ '[' int32 ']' '(' i64seq ')'  */
-#line 1213 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U8);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6203 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 459: /* serInit: UNSIGNED_ INT32_ '[' int32 ']' '(' i32seq ')'  */
-#line 1217 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U4);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6211 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 460: /* serInit: UNSIGNED_ INT16_ '[' int32 ']' '(' i16seq ')'  */
-#line 1221 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U2);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6219 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 461: /* serInit: UNSIGNED_ INT8_ '[' int32 ']' '(' i8seq ')'  */
-#line 1225 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U1);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6227 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 462: /* serInit: CHAR_ '[' int32 ']' '(' i16seq ')'  */
-#line 1229 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_CHAR);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6235 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 463: /* serInit: BOOL_ '[' int32 ']' '(' boolSeq ')'  */
-#line 1233 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_BOOLEAN);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6243 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 464: /* serInit: STRING_ '[' int32 ']' '(' sqstringSeq ')'  */
-#line 1237 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_STRING);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6251 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 465: /* serInit: TYPE_ '[' int32 ']' '(' classSeq ')'  */
-#line 1241 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TYPE);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6259 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 466: /* serInit: OBJECT_ '[' int32 ']' '(' objSeq ')'  */
-#line 1245 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
-                                                               (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TAGGED_OBJECT);
-                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6267 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 467: /* f32seq: %empty  */
-#line 1251 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6273 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 468: /* f32seq: f32seq float64  */
-#line 1252 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               float f = (float) (*(yyvsp[0].float64)); (yyval.binstr)->appendInt32(*((int32_t*)&f)); delete (yyvsp[0].float64); }
-#line 6280 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 469: /* f32seq: f32seq int32  */
-#line 1254 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               (yyval.binstr)->appendInt32((yyvsp[0].int32)); }
-#line 6287 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 470: /* f64seq: %empty  */
-#line 1258 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6293 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 471: /* f64seq: f64seq float64  */
-#line 1259 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].float64)); delete (yyvsp[0].float64); }
-#line 6300 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 472: /* f64seq: f64seq int64  */
-#line 1261 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
 #line 6307 "prebuilt\\asmparse.cpp"
     break;
 
-  case 473: /* i64seq: %empty  */
-#line 1265 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
+  case 424: /* ddItem: FLOAT32_ ddItemCount  */
+#line 1110 "asmparse.y"
+                                                             { PASM->EmitData(NULL, sizeof(float)*(yyvsp[0].int32)); }
 #line 6313 "prebuilt\\asmparse.cpp"
     break;
 
-  case 474: /* i64seq: i64seq int64  */
-#line 1266 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
-#line 6320 "prebuilt\\asmparse.cpp"
+  case 425: /* ddItem: FLOAT64_ ddItemCount  */
+#line 1111 "asmparse.y"
+                                                             { PASM->EmitData(NULL, sizeof(double)*(yyvsp[0].int32)); }
+#line 6319 "prebuilt\\asmparse.cpp"
     break;
 
-  case 475: /* i32seq: %empty  */
-#line 1270 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6326 "prebuilt\\asmparse.cpp"
+  case 426: /* ddItem: INT64_ ddItemCount  */
+#line 1112 "asmparse.y"
+                                                             { PASM->EmitData(NULL, sizeof(int64_t)*(yyvsp[0].int32)); }
+#line 6325 "prebuilt\\asmparse.cpp"
     break;
 
-  case 476: /* i32seq: i32seq int32  */
-#line 1271 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt32((yyvsp[0].int32));}
-#line 6332 "prebuilt\\asmparse.cpp"
+  case 427: /* ddItem: INT32_ ddItemCount  */
+#line 1113 "asmparse.y"
+                                                             { PASM->EmitData(NULL, sizeof(int32_t)*(yyvsp[0].int32)); }
+#line 6331 "prebuilt\\asmparse.cpp"
     break;
 
-  case 477: /* i16seq: %empty  */
-#line 1274 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6338 "prebuilt\\asmparse.cpp"
+  case 428: /* ddItem: INT16_ ddItemCount  */
+#line 1114 "asmparse.y"
+                                                             { PASM->EmitData(NULL, sizeof(int16_t)*(yyvsp[0].int32)); }
+#line 6337 "prebuilt\\asmparse.cpp"
     break;
 
-  case 478: /* i16seq: i16seq int32  */
-#line 1275 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt16((yyvsp[0].int32));}
-#line 6344 "prebuilt\\asmparse.cpp"
+  case 429: /* ddItem: INT8_ ddItemCount  */
+#line 1115 "asmparse.y"
+                                                             { PASM->EmitData(NULL, sizeof(int8_t)*(yyvsp[0].int32)); }
+#line 6343 "prebuilt\\asmparse.cpp"
     break;
 
-  case 479: /* i8seq: %empty  */
-#line 1278 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6350 "prebuilt\\asmparse.cpp"
+  case 430: /* fieldSerInit: FLOAT32_ '(' float64 ')'  */
+#line 1119 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4);
+                                                               float f = (float)(*(yyvsp[-1].float64));
+                                                               (yyval.binstr)->appendInt32(*((int32_t*)&f)); delete (yyvsp[-1].float64); }
+#line 6351 "prebuilt\\asmparse.cpp"
     break;
 
-  case 480: /* i8seq: i8seq int32  */
-#line 1279 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8((yyvsp[0].int32)); }
-#line 6356 "prebuilt\\asmparse.cpp"
+  case 431: /* fieldSerInit: FLOAT64_ '(' float64 ')'  */
+#line 1122 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8);
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].float64)); delete (yyvsp[-1].float64); }
+#line 6358 "prebuilt\\asmparse.cpp"
     break;
 
-  case 481: /* boolSeq: %empty  */
-#line 1282 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6362 "prebuilt\\asmparse.cpp"
+  case 432: /* fieldSerInit: FLOAT32_ '(' int32 ')'  */
+#line 1124 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4);
+                                                               (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
+#line 6365 "prebuilt\\asmparse.cpp"
     break;
 
-  case 482: /* boolSeq: boolSeq truefalse  */
-#line 1283 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               (yyval.binstr)->appendInt8((yyvsp[0].int32));}
-#line 6369 "prebuilt\\asmparse.cpp"
+  case 433: /* fieldSerInit: FLOAT64_ '(' int64 ')'  */
+#line 1126 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8);
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
+#line 6372 "prebuilt\\asmparse.cpp"
     break;
 
-  case 483: /* sqstringSeq: %empty  */
-#line 1287 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6375 "prebuilt\\asmparse.cpp"
+  case 434: /* fieldSerInit: INT64_ '(' int64 ')'  */
+#line 1128 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I8);
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
+#line 6379 "prebuilt\\asmparse.cpp"
     break;
 
-  case 484: /* sqstringSeq: sqstringSeq NULLREF_  */
-#line 1288 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(0xFF); }
-#line 6381 "prebuilt\\asmparse.cpp"
+  case 435: /* fieldSerInit: INT32_ '(' int32 ')'  */
+#line 1130 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I4);
+                                                               (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
+#line 6386 "prebuilt\\asmparse.cpp"
     break;
 
-  case 485: /* sqstringSeq: sqstringSeq SQSTRING  */
-#line 1289 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               AppendStringWithLength((yyval.binstr),(yyvsp[0].string)); delete [] (yyvsp[0].string);}
-#line 6388 "prebuilt\\asmparse.cpp"
+  case 436: /* fieldSerInit: INT16_ '(' int32 ')'  */
+#line 1132 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I2);
+                                                               (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
+#line 6393 "prebuilt\\asmparse.cpp"
     break;
 
-  case 486: /* classSeq: %empty  */
-#line 1293 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6394 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 487: /* classSeq: classSeq NULLREF_  */
-#line 1294 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(0xFF); }
+  case 437: /* fieldSerInit: INT8_ '(' int32 ')'  */
+#line 1134 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I1);
+                                                               (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
 #line 6400 "prebuilt\\asmparse.cpp"
     break;
 
-  case 488: /* classSeq: classSeq CLASS_ SQSTRING  */
-#line 1295 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-2].binstr);
-                                                               AppendStringWithLength((yyval.binstr),(yyvsp[0].string)); delete [] (yyvsp[0].string);}
+  case 438: /* fieldSerInit: UNSIGNED_ INT64_ '(' int64 ')'  */
+#line 1136 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8);
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
 #line 6407 "prebuilt\\asmparse.cpp"
     break;
 
-  case 489: /* classSeq: classSeq className  */
-#line 1297 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               AppendStringWithLength((yyval.binstr),PASM->ReflectionNotation((yyvsp[0].token)));}
+  case 439: /* fieldSerInit: UNSIGNED_ INT32_ '(' int32 ')'  */
+#line 1138 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4);
+                                                               (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
 #line 6414 "prebuilt\\asmparse.cpp"
     break;
 
-  case 490: /* objSeq: %empty  */
-#line 1301 "asmparse.y"
+  case 440: /* fieldSerInit: UNSIGNED_ INT16_ '(' int32 ')'  */
+#line 1140 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2);
+                                                               (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
+#line 6421 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 441: /* fieldSerInit: UNSIGNED_ INT8_ '(' int32 ')'  */
+#line 1142 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1);
+                                                               (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
+#line 6428 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 442: /* fieldSerInit: UINT64_ '(' int64 ')'  */
+#line 1144 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8);
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
+#line 6435 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 443: /* fieldSerInit: UINT32_ '(' int32 ')'  */
+#line 1146 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4);
+                                                               (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
+#line 6442 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 444: /* fieldSerInit: UINT16_ '(' int32 ')'  */
+#line 1148 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2);
+                                                               (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
+#line 6449 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 445: /* fieldSerInit: UINT8_ '(' int32 ')'  */
+#line 1150 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1);
+                                                               (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
+#line 6456 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 446: /* fieldSerInit: CHAR_ '(' int32 ')'  */
+#line 1152 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CHAR);
+                                                               (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
+#line 6463 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 447: /* fieldSerInit: BOOL_ '(' truefalse ')'  */
+#line 1154 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_BOOLEAN);
+                                                               (yyval.binstr)->appendInt8((yyvsp[-1].int32));}
+#line 6470 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 448: /* fieldSerInit: bytearrayhead bytes ')'  */
+#line 1156 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING);
+                                                               (yyval.binstr)->append((yyvsp[-1].binstr)); delete (yyvsp[-1].binstr);}
+#line 6477 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 449: /* bytearrayhead: BYTEARRAY_ '('  */
+#line 1160 "asmparse.y"
+                                                             { bParsingByteArray = TRUE; }
+#line 6483 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 450: /* bytes: %empty  */
+#line 1163 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6420 "prebuilt\\asmparse.cpp"
+#line 6489 "prebuilt\\asmparse.cpp"
     break;
 
-  case 491: /* objSeq: objSeq serInit  */
-#line 1302 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 6426 "prebuilt\\asmparse.cpp"
+  case 451: /* bytes: hexbytes  */
+#line 1164 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 6495 "prebuilt\\asmparse.cpp"
     break;
 
-  case 492: /* methodSpec: METHOD_  */
+  case 452: /* hexbytes: HEXBYTE  */
+#line 1167 "asmparse.y"
+                                                             { int8_t i = (int8_t) (yyvsp[0].int32); (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(i); }
+#line 6501 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 453: /* hexbytes: hexbytes HEXBYTE  */
+#line 1168 "asmparse.y"
+                                                             { int8_t i = (int8_t) (yyvsp[0].int32); (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(i); }
+#line 6507 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 454: /* fieldInit: fieldSerInit  */
+#line 1172 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 6513 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 455: /* fieldInit: compQstring  */
+#line 1173 "asmparse.y"
+                                                             { (yyval.binstr) = BinStrToUnicode((yyvsp[0].binstr),true); (yyval.binstr)->insertInt8(ELEMENT_TYPE_STRING);}
+#line 6519 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 456: /* fieldInit: NULLREF_  */
+#line 1174 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CLASS);
+                                                               (yyval.binstr)->appendInt32(0); }
+#line 6526 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 457: /* serInit: fieldSerInit  */
+#line 1179 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 6532 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 458: /* serInit: STRING_ '(' NULLREF_ ')'  */
+#line 1180 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING); (yyval.binstr)->appendInt8(0xFF); }
+#line 6538 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 459: /* serInit: STRING_ '(' SQSTRING ')'  */
+#line 1181 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING);
+                                                               AppendStringWithLength((yyval.binstr),(yyvsp[-1].string)); delete [] (yyvsp[-1].string);}
+#line 6545 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 460: /* serInit: TYPE_ '(' CLASS_ SQSTRING ')'  */
+#line 1183 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE);
+                                                               AppendStringWithLength((yyval.binstr),(yyvsp[-1].string)); delete [] (yyvsp[-1].string);}
+#line 6552 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 461: /* serInit: TYPE_ '(' className ')'  */
+#line 1185 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE);
+                                                               AppendStringWithLength((yyval.binstr),PASM->ReflectionNotation((yyvsp[-1].token)));}
+#line 6559 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 462: /* serInit: TYPE_ '(' NULLREF_ ')'  */
+#line 1187 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE); (yyval.binstr)->appendInt8(0xFF); }
+#line 6565 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 463: /* serInit: OBJECT_ '(' serInit ')'  */
+#line 1188 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TAGGED_OBJECT);}
+#line 6571 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 464: /* serInit: FLOAT32_ '[' int32 ']' '(' f32seq ')'  */
+#line 1190 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_R4);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6579 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 465: /* serInit: FLOAT64_ '[' int32 ']' '(' f64seq ')'  */
+#line 1194 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_R8);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6587 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 466: /* serInit: INT64_ '[' int32 ']' '(' i64seq ')'  */
+#line 1198 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_I8);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6595 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 467: /* serInit: INT32_ '[' int32 ']' '(' i32seq ')'  */
+#line 1202 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_I4);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6603 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 468: /* serInit: INT16_ '[' int32 ']' '(' i16seq ')'  */
+#line 1206 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_I2);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6611 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 469: /* serInit: INT8_ '[' int32 ']' '(' i8seq ')'  */
+#line 1210 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_I1);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6619 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 470: /* serInit: UINT64_ '[' int32 ']' '(' i64seq ')'  */
+#line 1214 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U8);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6627 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 471: /* serInit: UINT32_ '[' int32 ']' '(' i32seq ')'  */
+#line 1218 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U4);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6635 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 472: /* serInit: UINT16_ '[' int32 ']' '(' i16seq ')'  */
+#line 1222 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U2);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6643 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 473: /* serInit: UINT8_ '[' int32 ']' '(' i8seq ')'  */
+#line 1226 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U1);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6651 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 474: /* serInit: UNSIGNED_ INT64_ '[' int32 ']' '(' i64seq ')'  */
+#line 1230 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U8);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6659 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 475: /* serInit: UNSIGNED_ INT32_ '[' int32 ']' '(' i32seq ')'  */
+#line 1234 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U4);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6667 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 476: /* serInit: UNSIGNED_ INT16_ '[' int32 ']' '(' i16seq ')'  */
+#line 1238 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U2);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6675 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 477: /* serInit: UNSIGNED_ INT8_ '[' int32 ']' '(' i8seq ')'  */
+#line 1242 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_U1);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6683 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 478: /* serInit: CHAR_ '[' int32 ']' '(' i16seq ')'  */
+#line 1246 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_CHAR);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6691 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 479: /* serInit: BOOL_ '[' int32 ']' '(' boolSeq ')'  */
+#line 1250 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_BOOLEAN);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6699 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 480: /* serInit: STRING_ '[' int32 ']' '(' sqstringSeq ')'  */
+#line 1254 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_STRING);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6707 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 481: /* serInit: TYPE_ '[' int32 ']' '(' classSeq ')'  */
+#line 1258 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TYPE);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6715 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 482: /* serInit: OBJECT_ '[' int32 ']' '(' objSeq ')'  */
+#line 1262 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
+                                                               (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TAGGED_OBJECT);
+                                                               (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
+#line 6723 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 483: /* f32seq: %empty  */
+#line 1268 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6729 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 484: /* f32seq: f32seq float64  */
+#line 1269 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
+                                                               float f = (float) (*(yyvsp[0].float64)); (yyval.binstr)->appendInt32(*((int32_t*)&f)); delete (yyvsp[0].float64); }
+#line 6736 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 485: /* f32seq: f32seq int32  */
+#line 1271 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
+                                                               (yyval.binstr)->appendInt32((yyvsp[0].int32)); }
+#line 6743 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 486: /* f64seq: %empty  */
+#line 1275 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6749 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 487: /* f64seq: f64seq float64  */
+#line 1276 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].float64)); delete (yyvsp[0].float64); }
+#line 6756 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 488: /* f64seq: f64seq int64  */
+#line 1278 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
+#line 6763 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 489: /* i64seq: %empty  */
+#line 1282 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6769 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 490: /* i64seq: i64seq int64  */
+#line 1283 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
+#line 6776 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 491: /* i32seq: %empty  */
+#line 1287 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6782 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 492: /* i32seq: i32seq int32  */
+#line 1288 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt32((yyvsp[0].int32));}
+#line 6788 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 493: /* i16seq: %empty  */
+#line 1291 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6794 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 494: /* i16seq: i16seq int32  */
+#line 1292 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt16((yyvsp[0].int32));}
+#line 6800 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 495: /* i8seq: %empty  */
+#line 1295 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6806 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 496: /* i8seq: i8seq int32  */
+#line 1296 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8((yyvsp[0].int32)); }
+#line 6812 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 497: /* boolSeq: %empty  */
+#line 1299 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6818 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 498: /* boolSeq: boolSeq truefalse  */
+#line 1300 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
+                                                               (yyval.binstr)->appendInt8((yyvsp[0].int32));}
+#line 6825 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 499: /* sqstringSeq: %empty  */
+#line 1304 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6831 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 500: /* sqstringSeq: sqstringSeq NULLREF_  */
+#line 1305 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(0xFF); }
+#line 6837 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 501: /* sqstringSeq: sqstringSeq SQSTRING  */
 #line 1306 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
+                                                               AppendStringWithLength((yyval.binstr),(yyvsp[0].string)); delete [] (yyvsp[0].string);}
+#line 6844 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 502: /* classSeq: %empty  */
+#line 1310 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6850 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 503: /* classSeq: classSeq NULLREF_  */
+#line 1311 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(0xFF); }
+#line 6856 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 504: /* classSeq: classSeq CLASS_ SQSTRING  */
+#line 1312 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-2].binstr);
+                                                               AppendStringWithLength((yyval.binstr),(yyvsp[0].string)); delete [] (yyvsp[0].string);}
+#line 6863 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 505: /* classSeq: classSeq className  */
+#line 1314 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr);
+                                                               AppendStringWithLength((yyval.binstr),PASM->ReflectionNotation((yyvsp[0].token)));}
+#line 6870 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 506: /* objSeq: %empty  */
+#line 1318 "asmparse.y"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 6876 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 507: /* objSeq: objSeq serInit  */
+#line 1319 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
+#line 6882 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 508: /* methodSpec: METHOD_  */
+#line 1323 "asmparse.y"
                                                              { parser->m_ANSFirst.PUSH(PASM->m_firstArgName);
                                                                parser->m_ANSLast.PUSH(PASM->m_lastArgName);
                                                                PASM->m_firstArgName = NULL;
                                                                PASM->m_lastArgName = NULL; }
-#line 6435 "prebuilt\\asmparse.cpp"
+#line 6891 "prebuilt\\asmparse.cpp"
     break;
 
-  case 493: /* instr_none: INSTR_NONE  */
-#line 1312 "asmparse.y"
+  case 509: /* instr_none: INSTR_NONE  */
+#line 1329 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6441 "prebuilt\\asmparse.cpp"
+#line 6897 "prebuilt\\asmparse.cpp"
     break;
 
-  case 494: /* instr_var: INSTR_VAR  */
-#line 1315 "asmparse.y"
+  case 510: /* instr_var: INSTR_VAR  */
+#line 1332 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6447 "prebuilt\\asmparse.cpp"
+#line 6903 "prebuilt\\asmparse.cpp"
     break;
 
-  case 495: /* instr_i: INSTR_I  */
-#line 1318 "asmparse.y"
+  case 511: /* instr_i: INSTR_I  */
+#line 1335 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6453 "prebuilt\\asmparse.cpp"
+#line 6909 "prebuilt\\asmparse.cpp"
     break;
 
-  case 496: /* instr_i8: INSTR_I8  */
-#line 1321 "asmparse.y"
+  case 512: /* instr_i8: INSTR_I8  */
+#line 1338 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6459 "prebuilt\\asmparse.cpp"
+#line 6915 "prebuilt\\asmparse.cpp"
     break;
 
-  case 497: /* instr_r: INSTR_R  */
-#line 1324 "asmparse.y"
+  case 513: /* instr_r: INSTR_R  */
+#line 1341 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6465 "prebuilt\\asmparse.cpp"
+#line 6921 "prebuilt\\asmparse.cpp"
     break;
 
-  case 498: /* instr_brtarget: INSTR_BRTARGET  */
-#line 1327 "asmparse.y"
+  case 514: /* instr_brtarget: INSTR_BRTARGET  */
+#line 1344 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6471 "prebuilt\\asmparse.cpp"
+#line 6927 "prebuilt\\asmparse.cpp"
     break;
 
-  case 499: /* instr_method: INSTR_METHOD  */
-#line 1330 "asmparse.y"
+  case 515: /* instr_method: INSTR_METHOD  */
+#line 1347 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode));
                                                                if((!PASM->OnErrGo)&&
                                                                (((yyvsp[0].opcode) == CEE_NEWOBJ)||
                                                                 ((yyvsp[0].opcode) == CEE_CALLVIRT)))
                                                                   iCallConv = IMAGE_CEE_CS_CALLCONV_HASTHIS;
                                                              }
-#line 6482 "prebuilt\\asmparse.cpp"
+#line 6938 "prebuilt\\asmparse.cpp"
     break;
 
-  case 500: /* instr_field: INSTR_FIELD  */
-#line 1338 "asmparse.y"
+  case 516: /* instr_field: INSTR_FIELD  */
+#line 1355 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6488 "prebuilt\\asmparse.cpp"
+#line 6944 "prebuilt\\asmparse.cpp"
     break;
 
-  case 501: /* instr_type: INSTR_TYPE  */
-#line 1341 "asmparse.y"
+  case 517: /* instr_type: INSTR_TYPE  */
+#line 1358 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6494 "prebuilt\\asmparse.cpp"
+#line 6950 "prebuilt\\asmparse.cpp"
     break;
 
-  case 502: /* instr_string: INSTR_STRING  */
-#line 1344 "asmparse.y"
-                                                             { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6500 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 503: /* instr_sig: INSTR_SIG  */
-#line 1347 "asmparse.y"
-                                                             { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6506 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 504: /* instr_tok: INSTR_TOK  */
-#line 1350 "asmparse.y"
-                                                             { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); iOpcodeLen = PASM->OpcodeLen((yyval.instr)); }
-#line 6512 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 505: /* instr_switch: INSTR_SWITCH  */
-#line 1353 "asmparse.y"
-                                                             { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6518 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 506: /* instr_r_head: instr_r '('  */
-#line 1356 "asmparse.y"
-                                                             { (yyval.instr) = (yyvsp[-1].instr); bParsingByteArray = TRUE; }
-#line 6524 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 507: /* instr: instr_none  */
-#line 1360 "asmparse.y"
-                                                             { PASM->EmitOpcode((yyvsp[0].instr)); }
-#line 6530 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 508: /* instr: instr_var int32  */
+  case 518: /* instr_string: INSTR_STRING  */
 #line 1361 "asmparse.y"
-                                                             { PASM->EmitInstrVar((yyvsp[-1].instr), (yyvsp[0].int32)); }
-#line 6536 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
+#line 6956 "prebuilt\\asmparse.cpp"
     break;
 
-  case 509: /* instr: instr_var id  */
-#line 1362 "asmparse.y"
-                                                             { PASM->EmitInstrVarByName((yyvsp[-1].instr), (yyvsp[0].string)); }
-#line 6542 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 510: /* instr: instr_i int32  */
-#line 1363 "asmparse.y"
-                                                             { PASM->EmitInstrI((yyvsp[-1].instr), (yyvsp[0].int32)); }
-#line 6548 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 511: /* instr: instr_i8 int64  */
+  case 519: /* instr_sig: INSTR_SIG  */
 #line 1364 "asmparse.y"
-                                                             { PASM->EmitInstrI8((yyvsp[-1].instr), (yyvsp[0].int64)); }
-#line 6554 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
+#line 6962 "prebuilt\\asmparse.cpp"
     break;
 
-  case 512: /* instr: instr_r float64  */
-#line 1365 "asmparse.y"
-                                                             { PASM->EmitInstrR((yyvsp[-1].instr), (yyvsp[0].float64)); delete ((yyvsp[0].float64));}
-#line 6560 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 513: /* instr: instr_r int64  */
-#line 1366 "asmparse.y"
-                                                             { double f = (double) (*(yyvsp[0].int64)); PASM->EmitInstrR((yyvsp[-1].instr), &f); }
-#line 6566 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 514: /* instr: instr_r_head bytes ')'  */
+  case 520: /* instr_tok: INSTR_TOK  */
 #line 1367 "asmparse.y"
+                                                             { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); iOpcodeLen = PASM->OpcodeLen((yyval.instr)); }
+#line 6968 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 521: /* instr_switch: INSTR_SWITCH  */
+#line 1370 "asmparse.y"
+                                                             { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
+#line 6974 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 522: /* instr_r_head: instr_r '('  */
+#line 1373 "asmparse.y"
+                                                             { (yyval.instr) = (yyvsp[-1].instr); bParsingByteArray = TRUE; }
+#line 6980 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 523: /* instr: instr_none  */
+#line 1377 "asmparse.y"
+                                                             { PASM->EmitOpcode((yyvsp[0].instr)); }
+#line 6986 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 524: /* instr: instr_var int32  */
+#line 1378 "asmparse.y"
+                                                             { PASM->EmitInstrVar((yyvsp[-1].instr), (yyvsp[0].int32)); }
+#line 6992 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 525: /* instr: instr_var id  */
+#line 1379 "asmparse.y"
+                                                             { PASM->EmitInstrVarByName((yyvsp[-1].instr), (yyvsp[0].string)); }
+#line 6998 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 526: /* instr: instr_i int32  */
+#line 1380 "asmparse.y"
+                                                             { PASM->EmitInstrI((yyvsp[-1].instr), (yyvsp[0].int32)); }
+#line 7004 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 527: /* instr: instr_i8 int64  */
+#line 1381 "asmparse.y"
+                                                             { PASM->EmitInstrI8((yyvsp[-1].instr), (yyvsp[0].int64)); }
+#line 7010 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 528: /* instr: instr_r float64  */
+#line 1382 "asmparse.y"
+                                                             { PASM->EmitInstrR((yyvsp[-1].instr), (yyvsp[0].float64)); delete ((yyvsp[0].float64));}
+#line 7016 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 529: /* instr: instr_r int64  */
+#line 1383 "asmparse.y"
+                                                             { double f = (double) (*(yyvsp[0].int64)); PASM->EmitInstrR((yyvsp[-1].instr), &f); }
+#line 7022 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 530: /* instr: instr_r_head bytes ')'  */
+#line 1384 "asmparse.y"
                                                              { unsigned L = (yyvsp[-1].binstr)->length();
                                                                FAIL_UNLESS(L >= sizeof(float), ("%d hexbytes, must be at least %d\n",
                                                                            L,sizeof(float)));
@@ -6576,34 +7032,34 @@ yyreduce:
                                                                                     : (double)(*(float *)((yyvsp[-1].binstr)->ptr()));
                                                                    PASM->EmitInstrR((yyvsp[-2].instr),&f); }
                                                                delete (yyvsp[-1].binstr); }
-#line 6580 "prebuilt\\asmparse.cpp"
+#line 7036 "prebuilt\\asmparse.cpp"
     break;
 
-  case 515: /* instr: instr_brtarget int32  */
-#line 1376 "asmparse.y"
+  case 531: /* instr: instr_brtarget int32  */
+#line 1393 "asmparse.y"
                                                              { PASM->EmitInstrBrOffset((yyvsp[-1].instr), (yyvsp[0].int32)); }
-#line 6586 "prebuilt\\asmparse.cpp"
+#line 7042 "prebuilt\\asmparse.cpp"
     break;
 
-  case 516: /* instr: instr_brtarget id  */
-#line 1377 "asmparse.y"
+  case 532: /* instr: instr_brtarget id  */
+#line 1394 "asmparse.y"
                                                              { PASM->EmitInstrBrTarget((yyvsp[-1].instr), (yyvsp[0].string)); }
-#line 6592 "prebuilt\\asmparse.cpp"
+#line 7048 "prebuilt\\asmparse.cpp"
     break;
 
-  case 517: /* instr: instr_method methodRef  */
-#line 1379 "asmparse.y"
+  case 533: /* instr: instr_method methodRef  */
+#line 1396 "asmparse.y"
                                                              { PASM->SetMemberRefFixup((yyvsp[0].token),PASM->OpcodeLen((yyvsp[-1].instr)));
                                                                PASM->EmitInstrI((yyvsp[-1].instr),(yyvsp[0].token));
                                                                PASM->m_tkCurrentCVOwner = (yyvsp[0].token);
                                                                PASM->m_pCustomDescrList = NULL;
                                                                iCallConv = 0;
                                                              }
-#line 6603 "prebuilt\\asmparse.cpp"
+#line 7059 "prebuilt\\asmparse.cpp"
     break;
 
-  case 518: /* instr: instr_field type typeSpec DCOLON dottedName  */
-#line 1386 "asmparse.y"
+  case 534: /* instr: instr_field type typeSpec DCOLON dottedName  */
+#line 1403 "asmparse.y"
                                                              { (yyvsp[-3].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                mdToken mr = PASM->MakeMemberRef((yyvsp[-2].token), (yyvsp[0].string), (yyvsp[-3].binstr));
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-4].instr)));
@@ -6611,11 +7067,11 @@ yyreduce:
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6615 "prebuilt\\asmparse.cpp"
+#line 7071 "prebuilt\\asmparse.cpp"
     break;
 
-  case 519: /* instr: instr_field type dottedName  */
-#line 1394 "asmparse.y"
+  case 535: /* instr: instr_field type dottedName  */
+#line 1411 "asmparse.y"
                                                              { (yyvsp[-1].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                mdToken mr = PASM->MakeMemberRef(mdTokenNil, (yyvsp[0].string), (yyvsp[-1].binstr));
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-2].instr)));
@@ -6623,1067 +7079,1067 @@ yyreduce:
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6627 "prebuilt\\asmparse.cpp"
+#line 7083 "prebuilt\\asmparse.cpp"
     break;
 
-  case 520: /* instr: instr_field mdtoken  */
-#line 1401 "asmparse.y"
+  case 536: /* instr: instr_field mdtoken  */
+#line 1418 "asmparse.y"
                                                              { mdToken mr = (yyvsp[0].token);
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-1].instr)));
                                                                PASM->EmitInstrI((yyvsp[-1].instr),mr);
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6638 "prebuilt\\asmparse.cpp"
+#line 7094 "prebuilt\\asmparse.cpp"
     break;
 
-  case 521: /* instr: instr_field TYPEDEF_F  */
-#line 1407 "asmparse.y"
+  case 537: /* instr: instr_field TYPEDEF_F  */
+#line 1424 "asmparse.y"
                                                              { mdToken mr = (yyvsp[0].tdd)->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-1].instr)));
                                                                PASM->EmitInstrI((yyvsp[-1].instr),mr);
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6649 "prebuilt\\asmparse.cpp"
+#line 7105 "prebuilt\\asmparse.cpp"
     break;
 
-  case 522: /* instr: instr_field TYPEDEF_MR  */
-#line 1413 "asmparse.y"
+  case 538: /* instr: instr_field TYPEDEF_MR  */
+#line 1430 "asmparse.y"
                                                              { mdToken mr = (yyvsp[0].tdd)->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-1].instr)));
                                                                PASM->EmitInstrI((yyvsp[-1].instr),mr);
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6660 "prebuilt\\asmparse.cpp"
+#line 7116 "prebuilt\\asmparse.cpp"
     break;
 
-  case 523: /* instr: instr_type typeSpec  */
-#line 1419 "asmparse.y"
+  case 539: /* instr: instr_type typeSpec  */
+#line 1436 "asmparse.y"
                                                              { PASM->EmitInstrI((yyvsp[-1].instr), (yyvsp[0].token));
                                                                PASM->m_tkCurrentCVOwner = (yyvsp[0].token);
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6669 "prebuilt\\asmparse.cpp"
+#line 7125 "prebuilt\\asmparse.cpp"
     break;
 
-  case 524: /* instr: instr_string compQstring  */
-#line 1423 "asmparse.y"
+  case 540: /* instr: instr_string compQstring  */
+#line 1440 "asmparse.y"
                                                              { PASM->EmitInstrStringLiteral((yyvsp[-1].instr), (yyvsp[0].binstr),TRUE); }
-#line 6675 "prebuilt\\asmparse.cpp"
+#line 7131 "prebuilt\\asmparse.cpp"
     break;
 
-  case 525: /* instr: instr_string ANSI_ '(' compQstring ')'  */
-#line 1425 "asmparse.y"
+  case 541: /* instr: instr_string ANSI_ '(' compQstring ')'  */
+#line 1442 "asmparse.y"
                                                              { PASM->EmitInstrStringLiteral((yyvsp[-4].instr), (yyvsp[-1].binstr),FALSE); }
-#line 6681 "prebuilt\\asmparse.cpp"
+#line 7137 "prebuilt\\asmparse.cpp"
     break;
 
-  case 526: /* instr: instr_string bytearrayhead bytes ')'  */
-#line 1427 "asmparse.y"
+  case 542: /* instr: instr_string bytearrayhead bytes ')'  */
+#line 1444 "asmparse.y"
                                                              { PASM->EmitInstrStringLiteral((yyvsp[-3].instr), (yyvsp[-1].binstr),FALSE,TRUE); }
-#line 6687 "prebuilt\\asmparse.cpp"
+#line 7143 "prebuilt\\asmparse.cpp"
     break;
 
-  case 527: /* instr: instr_sig callConv type '(' sigArgs0 ')'  */
-#line 1429 "asmparse.y"
+  case 543: /* instr: instr_sig callConv type '(' sigArgs0 ')'  */
+#line 1446 "asmparse.y"
                                                              { PASM->EmitInstrSig((yyvsp[-5].instr), parser->MakeSig((yyvsp[-4].int32), (yyvsp[-3].binstr), (yyvsp[-1].binstr)));
                                                                PASM->ResetArgNameList();
                                                              }
-#line 6695 "prebuilt\\asmparse.cpp"
+#line 7151 "prebuilt\\asmparse.cpp"
     break;
 
-  case 528: /* instr: instr_tok ownerType  */
-#line 1433 "asmparse.y"
+  case 544: /* instr: instr_tok ownerType  */
+#line 1450 "asmparse.y"
                                                              { PASM->EmitInstrI((yyvsp[-1].instr),(yyvsp[0].token));
                                                                PASM->m_tkCurrentCVOwner = (yyvsp[0].token);
                                                                PASM->m_pCustomDescrList = NULL;
                                                                iOpcodeLen = 0;
                                                              }
-#line 6705 "prebuilt\\asmparse.cpp"
+#line 7161 "prebuilt\\asmparse.cpp"
     break;
 
-  case 529: /* instr: instr_switch '(' labels ')'  */
-#line 1438 "asmparse.y"
+  case 545: /* instr: instr_switch '(' labels ')'  */
+#line 1455 "asmparse.y"
                                                              { PASM->EmitInstrSwitch((yyvsp[-3].instr), (yyvsp[-1].labels)); }
-#line 6711 "prebuilt\\asmparse.cpp"
+#line 7167 "prebuilt\\asmparse.cpp"
     break;
 
-  case 530: /* labels: %empty  */
-#line 1441 "asmparse.y"
-                                                              { (yyval.labels) = 0; }
-#line 6717 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 531: /* labels: id ',' labels  */
-#line 1442 "asmparse.y"
-                                                              { (yyval.labels) = new Labels((yyvsp[-2].string), (yyvsp[0].labels), TRUE); }
-#line 6723 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 532: /* labels: int32 ',' labels  */
-#line 1443 "asmparse.y"
-                                                              { (yyval.labels) = new Labels((char *)(UINT_PTR)(yyvsp[-2].int32), (yyvsp[0].labels), FALSE); }
-#line 6729 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 533: /* labels: id  */
-#line 1444 "asmparse.y"
-                                                              { (yyval.labels) = new Labels((yyvsp[0].string), NULL, TRUE); }
-#line 6735 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 534: /* labels: int32  */
-#line 1445 "asmparse.y"
-                                                              { (yyval.labels) = new Labels((char *)(UINT_PTR)(yyvsp[0].int32), NULL, FALSE); }
-#line 6741 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 535: /* tyArgs0: %empty  */
-#line 1449 "asmparse.y"
-                                                             { (yyval.binstr) = NULL; }
-#line 6747 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 536: /* tyArgs0: '<' tyArgs1 '>'  */
-#line 1450 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 6753 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 537: /* tyArgs1: %empty  */
-#line 1453 "asmparse.y"
-                                                             { (yyval.binstr) = NULL; }
-#line 6759 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 538: /* tyArgs1: tyArgs2  */
-#line 1454 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6765 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 539: /* tyArgs2: type  */
-#line 1457 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6771 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 540: /* tyArgs2: tyArgs2 ',' type  */
+  case 546: /* labels: %empty  */
 #line 1458 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 6777 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.labels) = 0; }
+#line 7173 "prebuilt\\asmparse.cpp"
     break;
 
-  case 541: /* sigArgs0: %empty  */
+  case 547: /* labels: id ',' labels  */
+#line 1459 "asmparse.y"
+                                                              { (yyval.labels) = new Labels((yyvsp[-2].string), (yyvsp[0].labels), TRUE); }
+#line 7179 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 548: /* labels: int32 ',' labels  */
+#line 1460 "asmparse.y"
+                                                              { (yyval.labels) = new Labels((char *)(UINT_PTR)(yyvsp[-2].int32), (yyvsp[0].labels), FALSE); }
+#line 7185 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 549: /* labels: id  */
+#line 1461 "asmparse.y"
+                                                              { (yyval.labels) = new Labels((yyvsp[0].string), NULL, TRUE); }
+#line 7191 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 550: /* labels: int32  */
 #line 1462 "asmparse.y"
-                                                             { (yyval.binstr) = new BinStr(); }
-#line 6783 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.labels) = new Labels((char *)(UINT_PTR)(yyvsp[0].int32), NULL, FALSE); }
+#line 7197 "prebuilt\\asmparse.cpp"
     break;
 
-  case 542: /* sigArgs0: sigArgs1  */
-#line 1463 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[0].binstr);}
-#line 6789 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 543: /* sigArgs1: sigArg  */
+  case 551: /* tyArgs0: %empty  */
 #line 1466 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6795 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.binstr) = NULL; }
+#line 7203 "prebuilt\\asmparse.cpp"
     break;
 
-  case 544: /* sigArgs1: sigArgs1 ',' sigArg  */
+  case 552: /* tyArgs0: '<' tyArgs1 '>'  */
 #line 1467 "asmparse.y"
-                                                             { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 6801 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.binstr) = (yyvsp[-1].binstr); }
+#line 7209 "prebuilt\\asmparse.cpp"
     break;
 
-  case 545: /* sigArg: ELLIPSIS  */
+  case 553: /* tyArgs1: %empty  */
 #line 1470 "asmparse.y"
-                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_SENTINEL); }
-#line 6807 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.binstr) = NULL; }
+#line 7215 "prebuilt\\asmparse.cpp"
     break;
 
-  case 546: /* sigArg: paramAttr type marshalClause  */
+  case 554: /* tyArgs1: tyArgs2  */
 #line 1471 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[-1].binstr)); PASM->addArgName(NULL, (yyvsp[-1].binstr), (yyvsp[0].binstr), (yyvsp[-2].int32)); }
-#line 6813 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 7221 "prebuilt\\asmparse.cpp"
     break;
 
-  case 547: /* sigArg: paramAttr type marshalClause id  */
-#line 1472 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[-2].binstr)); PASM->addArgName((yyvsp[0].string), (yyvsp[-2].binstr), (yyvsp[-1].binstr), (yyvsp[-3].int32));}
-#line 6819 "prebuilt\\asmparse.cpp"
+  case 555: /* tyArgs2: type  */
+#line 1474 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 7227 "prebuilt\\asmparse.cpp"
     break;
 
-  case 548: /* className: '[' dottedName ']' slashedName  */
-#line 1476 "asmparse.y"
-                                                              { (yyval.token) = PASM->ResolveClassRef(PASM->GetAsmRef((yyvsp[-2].string)), (yyvsp[0].string), NULL); delete[] (yyvsp[-2].string);}
-#line 6825 "prebuilt\\asmparse.cpp"
+  case 556: /* tyArgs2: tyArgs2 ',' type  */
+#line 1475 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
+#line 7233 "prebuilt\\asmparse.cpp"
     break;
 
-  case 549: /* className: '[' mdtoken ']' slashedName  */
-#line 1477 "asmparse.y"
-                                                              { (yyval.token) = PASM->ResolveClassRef((yyvsp[-2].token), (yyvsp[0].string), NULL); }
-#line 6831 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 550: /* className: '[' '*' ']' slashedName  */
-#line 1478 "asmparse.y"
-                                                              { (yyval.token) = PASM->ResolveClassRef(mdTokenNil, (yyvsp[0].string), NULL); }
-#line 6837 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 551: /* className: '[' _MODULE dottedName ']' slashedName  */
+  case 557: /* sigArgs0: %empty  */
 #line 1479 "asmparse.y"
-                                                                   { (yyval.token) = PASM->ResolveClassRef(PASM->GetModRef((yyvsp[-2].string)),(yyvsp[0].string), NULL); delete[] (yyvsp[-2].string);}
-#line 6843 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.binstr) = new BinStr(); }
+#line 7239 "prebuilt\\asmparse.cpp"
     break;
 
-  case 552: /* className: slashedName  */
+  case 558: /* sigArgs0: sigArgs1  */
 #line 1480 "asmparse.y"
-                                                              { (yyval.token) = PASM->ResolveClassRef(1,(yyvsp[0].string),NULL); }
-#line 6849 "prebuilt\\asmparse.cpp"
+                                                             { (yyval.binstr) = (yyvsp[0].binstr);}
+#line 7245 "prebuilt\\asmparse.cpp"
     break;
 
-  case 553: /* className: mdtoken  */
-#line 1481 "asmparse.y"
-                                                              { (yyval.token) = (yyvsp[0].token); }
-#line 6855 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 554: /* className: TYPEDEF_T  */
-#line 1482 "asmparse.y"
-                                                              { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
-#line 6861 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 555: /* className: _THIS  */
+  case 559: /* sigArgs1: sigArg  */
 #line 1483 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 7251 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 560: /* sigArgs1: sigArgs1 ',' sigArg  */
+#line 1484 "asmparse.y"
+                                                             { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
+#line 7257 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 561: /* sigArg: ELLIPSIS  */
+#line 1487 "asmparse.y"
+                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_SENTINEL); }
+#line 7263 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 562: /* sigArg: paramAttr type marshalClause  */
+#line 1488 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[-1].binstr)); PASM->addArgName(NULL, (yyvsp[-1].binstr), (yyvsp[0].binstr), (yyvsp[-2].int32)); }
+#line 7269 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 563: /* sigArg: paramAttr type marshalClause id  */
+#line 1489 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[-2].binstr)); PASM->addArgName((yyvsp[0].string), (yyvsp[-2].binstr), (yyvsp[-1].binstr), (yyvsp[-3].int32));}
+#line 7275 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 564: /* className: '[' dottedName ']' slashedName  */
+#line 1493 "asmparse.y"
+                                                              { (yyval.token) = PASM->ResolveClassRef(PASM->GetAsmRef((yyvsp[-2].string)), (yyvsp[0].string), NULL); delete[] (yyvsp[-2].string);}
+#line 7281 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 565: /* className: '[' mdtoken ']' slashedName  */
+#line 1494 "asmparse.y"
+                                                              { (yyval.token) = PASM->ResolveClassRef((yyvsp[-2].token), (yyvsp[0].string), NULL); }
+#line 7287 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 566: /* className: '[' '*' ']' slashedName  */
+#line 1495 "asmparse.y"
+                                                              { (yyval.token) = PASM->ResolveClassRef(mdTokenNil, (yyvsp[0].string), NULL); }
+#line 7293 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 567: /* className: '[' _MODULE dottedName ']' slashedName  */
+#line 1496 "asmparse.y"
+                                                                   { (yyval.token) = PASM->ResolveClassRef(PASM->GetModRef((yyvsp[-2].string)),(yyvsp[0].string), NULL); delete[] (yyvsp[-2].string);}
+#line 7299 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 568: /* className: slashedName  */
+#line 1497 "asmparse.y"
+                                                              { (yyval.token) = PASM->ResolveClassRef(1,(yyvsp[0].string),NULL); }
+#line 7305 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 569: /* className: mdtoken  */
+#line 1498 "asmparse.y"
+                                                              { (yyval.token) = (yyvsp[0].token); }
+#line 7311 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 570: /* className: TYPEDEF_T  */
+#line 1499 "asmparse.y"
+                                                              { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
+#line 7317 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 571: /* className: _THIS  */
+#line 1500 "asmparse.y"
                                                               { if(PASM->m_pCurClass != NULL) (yyval.token) = PASM->m_pCurClass->m_cl;
                                                                 else { (yyval.token) = 0; PASM->report->error(".this outside class scope\n"); }
                                                               }
-#line 6869 "prebuilt\\asmparse.cpp"
+#line 7325 "prebuilt\\asmparse.cpp"
     break;
 
-  case 556: /* className: _BASE  */
-#line 1486 "asmparse.y"
+  case 572: /* className: _BASE  */
+#line 1503 "asmparse.y"
                                                               { if(PASM->m_pCurClass != NULL) {
                                                                   (yyval.token) = PASM->m_pCurClass->m_crExtends;
                                                                   if(RidFromToken((yyval.token)) == 0)
                                                                     PASM->report->error(".base undefined\n");
                                                                 } else { (yyval.token) = 0; PASM->report->error(".base outside class scope\n"); }
                                                               }
-#line 6880 "prebuilt\\asmparse.cpp"
+#line 7336 "prebuilt\\asmparse.cpp"
     break;
 
-  case 557: /* className: _NESTER  */
-#line 1492 "asmparse.y"
+  case 573: /* className: _NESTER  */
+#line 1509 "asmparse.y"
                                                               { if(PASM->m_pCurClass != NULL) {
                                                                   if(PASM->m_pCurClass->m_pEncloser != NULL) (yyval.token) = PASM->m_pCurClass->m_pEncloser->m_cl;
                                                                   else { (yyval.token) = 0; PASM->report->error(".nester undefined\n"); }
                                                                 } else { (yyval.token) = 0; PASM->report->error(".nester outside class scope\n"); }
                                                               }
-#line 6890 "prebuilt\\asmparse.cpp"
+#line 7346 "prebuilt\\asmparse.cpp"
     break;
 
-  case 558: /* slashedName: dottedName  */
-#line 1499 "asmparse.y"
+  case 574: /* slashedName: dottedName  */
+#line 1516 "asmparse.y"
                                                               { (yyval.string) = (yyvsp[0].string); }
-#line 6896 "prebuilt\\asmparse.cpp"
+#line 7352 "prebuilt\\asmparse.cpp"
     break;
 
-  case 559: /* slashedName: slashedName '/' dottedName  */
-#line 1500 "asmparse.y"
+  case 575: /* slashedName: slashedName '/' dottedName  */
+#line 1517 "asmparse.y"
                                                               { (yyval.string) = newStringWDel((yyvsp[-2].string), NESTING_SEP, (yyvsp[0].string)); }
-#line 6902 "prebuilt\\asmparse.cpp"
+#line 7358 "prebuilt\\asmparse.cpp"
     break;
 
-  case 560: /* typeSpec: className  */
-#line 1503 "asmparse.y"
+  case 576: /* typeSpec: className  */
+#line 1520 "asmparse.y"
                                                               { (yyval.token) = (yyvsp[0].token);}
-#line 6908 "prebuilt\\asmparse.cpp"
+#line 7364 "prebuilt\\asmparse.cpp"
     break;
 
-  case 561: /* typeSpec: '[' dottedName ']'  */
-#line 1504 "asmparse.y"
+  case 577: /* typeSpec: '[' dottedName ']'  */
+#line 1521 "asmparse.y"
                                                               { (yyval.token) = PASM->GetAsmRef((yyvsp[-1].string)); delete[] (yyvsp[-1].string);}
-#line 6914 "prebuilt\\asmparse.cpp"
+#line 7370 "prebuilt\\asmparse.cpp"
     break;
 
-  case 562: /* typeSpec: '[' _MODULE dottedName ']'  */
-#line 1505 "asmparse.y"
+  case 578: /* typeSpec: '[' _MODULE dottedName ']'  */
+#line 1522 "asmparse.y"
                                                               { (yyval.token) = PASM->GetModRef((yyvsp[-1].string)); delete[] (yyvsp[-1].string);}
-#line 6920 "prebuilt\\asmparse.cpp"
+#line 7376 "prebuilt\\asmparse.cpp"
     break;
 
-  case 563: /* typeSpec: type  */
-#line 1506 "asmparse.y"
+  case 579: /* typeSpec: type  */
+#line 1523 "asmparse.y"
                                                               { (yyval.token) = PASM->ResolveTypeSpec((yyvsp[0].binstr)); }
-#line 6926 "prebuilt\\asmparse.cpp"
+#line 7382 "prebuilt\\asmparse.cpp"
     break;
 
-  case 564: /* nativeType: %empty  */
-#line 1510 "asmparse.y"
+  case 580: /* nativeType: %empty  */
+#line 1527 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); }
-#line 6932 "prebuilt\\asmparse.cpp"
+#line 7388 "prebuilt\\asmparse.cpp"
     break;
 
-  case 565: /* nativeType: CUSTOM_ '(' compQstring ',' compQstring ',' compQstring ',' compQstring ')'  */
-#line 1512 "asmparse.y"
+  case 581: /* nativeType: CUSTOM_ '(' compQstring ',' compQstring ',' compQstring ',' compQstring ')'  */
+#line 1529 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_CUSTOMMARSHALER);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-7].binstr)->length()); (yyval.binstr)->append((yyvsp[-7].binstr));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-5].binstr)->length()); (yyval.binstr)->append((yyvsp[-5].binstr));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-3].binstr)->length()); (yyval.binstr)->append((yyvsp[-3].binstr));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].binstr)->length()); (yyval.binstr)->append((yyvsp[-1].binstr));
                                                                 PASM->report->warn("Deprecated 4-string form of custom marshaler, first two strings ignored\n");}
-#line 6943 "prebuilt\\asmparse.cpp"
+#line 7399 "prebuilt\\asmparse.cpp"
     break;
 
-  case 566: /* nativeType: CUSTOM_ '(' compQstring ',' compQstring ')'  */
-#line 1519 "asmparse.y"
+  case 582: /* nativeType: CUSTOM_ '(' compQstring ',' compQstring ')'  */
+#line 1536 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_CUSTOMMARSHALER);
                                                                 corEmitInt((yyval.binstr),0);
                                                                 corEmitInt((yyval.binstr),0);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-3].binstr)->length()); (yyval.binstr)->append((yyvsp[-3].binstr));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].binstr)->length()); (yyval.binstr)->append((yyvsp[-1].binstr)); }
-#line 6953 "prebuilt\\asmparse.cpp"
+#line 7409 "prebuilt\\asmparse.cpp"
     break;
 
-  case 567: /* nativeType: FIXED_ SYSSTRING_ '[' int32 ']'  */
-#line 1524 "asmparse.y"
+  case 583: /* nativeType: FIXED_ SYSSTRING_ '[' int32 ']'  */
+#line 1541 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_FIXEDSYSSTRING);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].int32)); }
-#line 6960 "prebuilt\\asmparse.cpp"
+#line 7416 "prebuilt\\asmparse.cpp"
     break;
 
-  case 568: /* nativeType: FIXED_ ARRAY_ '[' int32 ']' nativeType  */
-#line 1527 "asmparse.y"
+  case 584: /* nativeType: FIXED_ ARRAY_ '[' int32 ']' nativeType  */
+#line 1544 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_FIXEDARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-2].int32)); (yyval.binstr)->append((yyvsp[0].binstr)); }
-#line 6967 "prebuilt\\asmparse.cpp"
+#line 7423 "prebuilt\\asmparse.cpp"
     break;
 
-  case 569: /* nativeType: VARIANT_  */
-#line 1529 "asmparse.y"
+  case 585: /* nativeType: VARIANT_  */
+#line 1546 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_VARIANT);
                                                                 PASM->report->warn("Deprecated native type 'variant'\n"); }
-#line 6974 "prebuilt\\asmparse.cpp"
+#line 7430 "prebuilt\\asmparse.cpp"
     break;
 
-  case 570: /* nativeType: CURRENCY_  */
-#line 1531 "asmparse.y"
+  case 586: /* nativeType: CURRENCY_  */
+#line 1548 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_CURRENCY); }
-#line 6980 "prebuilt\\asmparse.cpp"
+#line 7436 "prebuilt\\asmparse.cpp"
     break;
 
-  case 571: /* nativeType: SYSCHAR_  */
-#line 1532 "asmparse.y"
+  case 587: /* nativeType: SYSCHAR_  */
+#line 1549 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_SYSCHAR);
                                                                 PASM->report->warn("Deprecated native type 'syschar'\n"); }
-#line 6987 "prebuilt\\asmparse.cpp"
+#line 7443 "prebuilt\\asmparse.cpp"
     break;
 
-  case 572: /* nativeType: VOID_  */
-#line 1534 "asmparse.y"
+  case 588: /* nativeType: VOID_  */
+#line 1551 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_VOID);
                                                                 PASM->report->warn("Deprecated native type 'void'\n"); }
-#line 6994 "prebuilt\\asmparse.cpp"
+#line 7450 "prebuilt\\asmparse.cpp"
     break;
 
-  case 573: /* nativeType: BOOL_  */
-#line 1536 "asmparse.y"
+  case 589: /* nativeType: BOOL_  */
+#line 1553 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_BOOLEAN); }
-#line 7000 "prebuilt\\asmparse.cpp"
+#line 7456 "prebuilt\\asmparse.cpp"
     break;
 
-  case 574: /* nativeType: INT8_  */
-#line 1537 "asmparse.y"
+  case 590: /* nativeType: INT8_  */
+#line 1554 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_I1); }
-#line 7006 "prebuilt\\asmparse.cpp"
+#line 7462 "prebuilt\\asmparse.cpp"
     break;
 
-  case 575: /* nativeType: INT16_  */
-#line 1538 "asmparse.y"
+  case 591: /* nativeType: INT16_  */
+#line 1555 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_I2); }
-#line 7012 "prebuilt\\asmparse.cpp"
+#line 7468 "prebuilt\\asmparse.cpp"
     break;
 
-  case 576: /* nativeType: INT32_  */
-#line 1539 "asmparse.y"
+  case 592: /* nativeType: INT32_  */
+#line 1556 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_I4); }
-#line 7018 "prebuilt\\asmparse.cpp"
+#line 7474 "prebuilt\\asmparse.cpp"
     break;
 
-  case 577: /* nativeType: INT64_  */
-#line 1540 "asmparse.y"
+  case 593: /* nativeType: INT64_  */
+#line 1557 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_I8); }
-#line 7024 "prebuilt\\asmparse.cpp"
+#line 7480 "prebuilt\\asmparse.cpp"
     break;
 
-  case 578: /* nativeType: FLOAT32_  */
-#line 1541 "asmparse.y"
+  case 594: /* nativeType: FLOAT32_  */
+#line 1558 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_R4); }
-#line 7030 "prebuilt\\asmparse.cpp"
+#line 7486 "prebuilt\\asmparse.cpp"
     break;
 
-  case 579: /* nativeType: FLOAT64_  */
-#line 1542 "asmparse.y"
+  case 595: /* nativeType: FLOAT64_  */
+#line 1559 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_R8); }
-#line 7036 "prebuilt\\asmparse.cpp"
+#line 7492 "prebuilt\\asmparse.cpp"
     break;
 
-  case 580: /* nativeType: ERROR_  */
-#line 1543 "asmparse.y"
+  case 596: /* nativeType: ERROR_  */
+#line 1560 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_ERROR); }
-#line 7042 "prebuilt\\asmparse.cpp"
+#line 7498 "prebuilt\\asmparse.cpp"
     break;
 
-  case 581: /* nativeType: UNSIGNED_ INT8_  */
-#line 1544 "asmparse.y"
+  case 597: /* nativeType: UNSIGNED_ INT8_  */
+#line 1561 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U1); }
-#line 7048 "prebuilt\\asmparse.cpp"
+#line 7504 "prebuilt\\asmparse.cpp"
     break;
 
-  case 582: /* nativeType: UNSIGNED_ INT16_  */
-#line 1545 "asmparse.y"
+  case 598: /* nativeType: UNSIGNED_ INT16_  */
+#line 1562 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U2); }
-#line 7054 "prebuilt\\asmparse.cpp"
+#line 7510 "prebuilt\\asmparse.cpp"
     break;
 
-  case 583: /* nativeType: UNSIGNED_ INT32_  */
-#line 1546 "asmparse.y"
+  case 599: /* nativeType: UNSIGNED_ INT32_  */
+#line 1563 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U4); }
-#line 7060 "prebuilt\\asmparse.cpp"
+#line 7516 "prebuilt\\asmparse.cpp"
     break;
 
-  case 584: /* nativeType: UNSIGNED_ INT64_  */
-#line 1547 "asmparse.y"
+  case 600: /* nativeType: UNSIGNED_ INT64_  */
+#line 1564 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U8); }
-#line 7066 "prebuilt\\asmparse.cpp"
+#line 7522 "prebuilt\\asmparse.cpp"
     break;
 
-  case 585: /* nativeType: UINT8_  */
-#line 1548 "asmparse.y"
+  case 601: /* nativeType: UINT8_  */
+#line 1565 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U1); }
-#line 7072 "prebuilt\\asmparse.cpp"
+#line 7528 "prebuilt\\asmparse.cpp"
     break;
 
-  case 586: /* nativeType: UINT16_  */
-#line 1549 "asmparse.y"
+  case 602: /* nativeType: UINT16_  */
+#line 1566 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U2); }
-#line 7078 "prebuilt\\asmparse.cpp"
+#line 7534 "prebuilt\\asmparse.cpp"
     break;
 
-  case 587: /* nativeType: UINT32_  */
-#line 1550 "asmparse.y"
+  case 603: /* nativeType: UINT32_  */
+#line 1567 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U4); }
-#line 7084 "prebuilt\\asmparse.cpp"
+#line 7540 "prebuilt\\asmparse.cpp"
     break;
 
-  case 588: /* nativeType: UINT64_  */
-#line 1551 "asmparse.y"
+  case 604: /* nativeType: UINT64_  */
+#line 1568 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U8); }
-#line 7090 "prebuilt\\asmparse.cpp"
+#line 7546 "prebuilt\\asmparse.cpp"
     break;
 
-  case 589: /* nativeType: nativeType '*'  */
-#line 1552 "asmparse.y"
+  case 605: /* nativeType: nativeType '*'  */
+#line 1569 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(NATIVE_TYPE_PTR);
                                                                 PASM->report->warn("Deprecated native type '*'\n"); }
-#line 7097 "prebuilt\\asmparse.cpp"
+#line 7553 "prebuilt\\asmparse.cpp"
     break;
 
-  case 590: /* nativeType: nativeType '[' ']'  */
-#line 1554 "asmparse.y"
+  case 606: /* nativeType: nativeType '[' ']'  */
+#line 1571 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); if((yyval.binstr)->length()==0) (yyval.binstr)->appendInt8(NATIVE_TYPE_MAX);
                                                                 (yyval.binstr)->insertInt8(NATIVE_TYPE_ARRAY); }
-#line 7104 "prebuilt\\asmparse.cpp"
+#line 7560 "prebuilt\\asmparse.cpp"
     break;
 
-  case 591: /* nativeType: nativeType '[' int32 ']'  */
-#line 1556 "asmparse.y"
+  case 607: /* nativeType: nativeType '[' int32 ']'  */
+#line 1573 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-3].binstr); if((yyval.binstr)->length()==0) (yyval.binstr)->appendInt8(NATIVE_TYPE_MAX);
                                                                 (yyval.binstr)->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt((yyval.binstr),0);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].int32));
                                                                 corEmitInt((yyval.binstr),0); }
-#line 7114 "prebuilt\\asmparse.cpp"
+#line 7570 "prebuilt\\asmparse.cpp"
     break;
 
-  case 592: /* nativeType: nativeType '[' int32 '+' int32 ']'  */
-#line 1561 "asmparse.y"
+  case 608: /* nativeType: nativeType '[' int32 '+' int32 ']'  */
+#line 1578 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-5].binstr); if((yyval.binstr)->length()==0) (yyval.binstr)->appendInt8(NATIVE_TYPE_MAX);
                                                                 (yyval.binstr)->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].int32));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-3].int32));
                                                                 corEmitInt((yyval.binstr),ntaSizeParamIndexSpecified); }
-#line 7124 "prebuilt\\asmparse.cpp"
+#line 7580 "prebuilt\\asmparse.cpp"
     break;
 
-  case 593: /* nativeType: nativeType '[' '+' int32 ']'  */
-#line 1566 "asmparse.y"
+  case 609: /* nativeType: nativeType '[' '+' int32 ']'  */
+#line 1583 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-4].binstr); if((yyval.binstr)->length()==0) (yyval.binstr)->appendInt8(NATIVE_TYPE_MAX);
                                                                 (yyval.binstr)->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].int32)); }
-#line 7132 "prebuilt\\asmparse.cpp"
+#line 7588 "prebuilt\\asmparse.cpp"
     break;
 
-  case 594: /* nativeType: DECIMAL_  */
-#line 1569 "asmparse.y"
+  case 610: /* nativeType: DECIMAL_  */
+#line 1586 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_DECIMAL);
                                                                 PASM->report->warn("Deprecated native type 'decimal'\n"); }
-#line 7139 "prebuilt\\asmparse.cpp"
+#line 7595 "prebuilt\\asmparse.cpp"
     break;
 
-  case 595: /* nativeType: DATE_  */
-#line 1571 "asmparse.y"
+  case 611: /* nativeType: DATE_  */
+#line 1588 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_DATE);
                                                                 PASM->report->warn("Deprecated native type 'date'\n"); }
-#line 7146 "prebuilt\\asmparse.cpp"
+#line 7602 "prebuilt\\asmparse.cpp"
     break;
 
-  case 596: /* nativeType: BSTR_  */
-#line 1573 "asmparse.y"
+  case 612: /* nativeType: BSTR_  */
+#line 1590 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_BSTR); }
-#line 7152 "prebuilt\\asmparse.cpp"
+#line 7608 "prebuilt\\asmparse.cpp"
     break;
 
-  case 597: /* nativeType: LPSTR_  */
-#line 1574 "asmparse.y"
+  case 613: /* nativeType: LPSTR_  */
+#line 1591 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPSTR); }
-#line 7158 "prebuilt\\asmparse.cpp"
+#line 7614 "prebuilt\\asmparse.cpp"
     break;
 
-  case 598: /* nativeType: LPWSTR_  */
-#line 1575 "asmparse.y"
+  case 614: /* nativeType: LPWSTR_  */
+#line 1592 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPWSTR); }
-#line 7164 "prebuilt\\asmparse.cpp"
+#line 7620 "prebuilt\\asmparse.cpp"
     break;
 
-  case 599: /* nativeType: LPTSTR_  */
-#line 1576 "asmparse.y"
+  case 615: /* nativeType: LPTSTR_  */
+#line 1593 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPTSTR); }
-#line 7170 "prebuilt\\asmparse.cpp"
+#line 7626 "prebuilt\\asmparse.cpp"
     break;
 
-  case 600: /* nativeType: OBJECTREF_  */
-#line 1577 "asmparse.y"
+  case 616: /* nativeType: OBJECTREF_  */
+#line 1594 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_OBJECTREF);
                                                                 PASM->report->warn("Deprecated native type 'objectref'\n"); }
-#line 7177 "prebuilt\\asmparse.cpp"
+#line 7633 "prebuilt\\asmparse.cpp"
     break;
 
-  case 601: /* nativeType: IUNKNOWN_ iidParamIndex  */
-#line 1579 "asmparse.y"
+  case 617: /* nativeType: IUNKNOWN_ iidParamIndex  */
+#line 1596 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_IUNKNOWN);
                                                                 if((yyvsp[0].int32) != -1) corEmitInt((yyval.binstr),(yyvsp[0].int32)); }
-#line 7184 "prebuilt\\asmparse.cpp"
+#line 7640 "prebuilt\\asmparse.cpp"
     break;
 
-  case 602: /* nativeType: IDISPATCH_ iidParamIndex  */
-#line 1581 "asmparse.y"
+  case 618: /* nativeType: IDISPATCH_ iidParamIndex  */
+#line 1598 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_IDISPATCH);
                                                                 if((yyvsp[0].int32) != -1) corEmitInt((yyval.binstr),(yyvsp[0].int32)); }
-#line 7191 "prebuilt\\asmparse.cpp"
+#line 7647 "prebuilt\\asmparse.cpp"
     break;
 
-  case 603: /* nativeType: STRUCT_  */
-#line 1583 "asmparse.y"
+  case 619: /* nativeType: STRUCT_  */
+#line 1600 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_STRUCT); }
-#line 7197 "prebuilt\\asmparse.cpp"
+#line 7653 "prebuilt\\asmparse.cpp"
     break;
 
-  case 604: /* nativeType: INTERFACE_ iidParamIndex  */
-#line 1584 "asmparse.y"
+  case 620: /* nativeType: INTERFACE_ iidParamIndex  */
+#line 1601 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_INTF);
                                                                 if((yyvsp[0].int32) != -1) corEmitInt((yyval.binstr),(yyvsp[0].int32)); }
-#line 7204 "prebuilt\\asmparse.cpp"
+#line 7660 "prebuilt\\asmparse.cpp"
     break;
 
-  case 605: /* nativeType: SAFEARRAY_ variantType  */
-#line 1586 "asmparse.y"
+  case 621: /* nativeType: SAFEARRAY_ variantType  */
+#line 1603 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_SAFEARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[0].int32));
                                                                 corEmitInt((yyval.binstr),0);}
-#line 7212 "prebuilt\\asmparse.cpp"
+#line 7668 "prebuilt\\asmparse.cpp"
     break;
 
-  case 606: /* nativeType: SAFEARRAY_ variantType ',' compQstring  */
-#line 1589 "asmparse.y"
+  case 622: /* nativeType: SAFEARRAY_ variantType ',' compQstring  */
+#line 1606 "asmparse.y"
                                                                  { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_SAFEARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-2].int32));
                                                                 corEmitInt((yyval.binstr),(yyvsp[0].binstr)->length()); (yyval.binstr)->append((yyvsp[0].binstr)); }
-#line 7220 "prebuilt\\asmparse.cpp"
+#line 7676 "prebuilt\\asmparse.cpp"
     break;
 
-  case 607: /* nativeType: INT_  */
-#line 1593 "asmparse.y"
+  case 623: /* nativeType: INT_  */
+#line 1610 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_INT); }
-#line 7226 "prebuilt\\asmparse.cpp"
+#line 7682 "prebuilt\\asmparse.cpp"
     break;
 
-  case 608: /* nativeType: UNSIGNED_ INT_  */
-#line 1594 "asmparse.y"
+  case 624: /* nativeType: UNSIGNED_ INT_  */
+#line 1611 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_UINT); }
-#line 7232 "prebuilt\\asmparse.cpp"
+#line 7688 "prebuilt\\asmparse.cpp"
     break;
 
-  case 609: /* nativeType: UINT_  */
-#line 1595 "asmparse.y"
+  case 625: /* nativeType: UINT_  */
+#line 1612 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_UINT); }
-#line 7238 "prebuilt\\asmparse.cpp"
+#line 7694 "prebuilt\\asmparse.cpp"
     break;
 
-  case 610: /* nativeType: NESTED_ STRUCT_  */
-#line 1596 "asmparse.y"
+  case 626: /* nativeType: NESTED_ STRUCT_  */
+#line 1613 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_NESTEDSTRUCT);
                                                                 PASM->report->warn("Deprecated native type 'nested struct'\n"); }
-#line 7245 "prebuilt\\asmparse.cpp"
+#line 7701 "prebuilt\\asmparse.cpp"
     break;
 
-  case 611: /* nativeType: BYVALSTR_  */
-#line 1598 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_BYVALSTR); }
-#line 7251 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 612: /* nativeType: ANSI_ BSTR_  */
-#line 1599 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_ANSIBSTR); }
-#line 7257 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 613: /* nativeType: TBSTR_  */
-#line 1600 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_TBSTR); }
-#line 7263 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 614: /* nativeType: VARIANT_ BOOL_  */
-#line 1601 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_VARIANTBOOL); }
-#line 7269 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 615: /* nativeType: METHOD_  */
-#line 1602 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_FUNC); }
-#line 7275 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 616: /* nativeType: AS_ ANY_  */
-#line 1603 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_ASANY); }
-#line 7281 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 617: /* nativeType: LPSTRUCT_  */
-#line 1604 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPSTRUCT); }
-#line 7287 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 618: /* nativeType: TYPEDEF_TS  */
-#line 1605 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[0].tdd)->m_pbsTypeSpec); }
-#line 7293 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 619: /* iidParamIndex: %empty  */
-#line 1608 "asmparse.y"
-                                                              { (yyval.int32) = -1; }
-#line 7299 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 620: /* iidParamIndex: '(' IIDPARAM_ '=' int32 ')'  */
-#line 1609 "asmparse.y"
-                                                              { (yyval.int32) = (yyvsp[-1].int32); }
-#line 7305 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 621: /* variantType: %empty  */
-#line 1612 "asmparse.y"
-                                                              { (yyval.int32) = VT_EMPTY; }
-#line 7311 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 622: /* variantType: NULL_  */
-#line 1613 "asmparse.y"
-                                                              { (yyval.int32) = VT_NULL; }
-#line 7317 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 623: /* variantType: VARIANT_  */
-#line 1614 "asmparse.y"
-                                                              { (yyval.int32) = VT_VARIANT; }
-#line 7323 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 624: /* variantType: CURRENCY_  */
+  case 627: /* nativeType: BYVALSTR_  */
 #line 1615 "asmparse.y"
-                                                              { (yyval.int32) = VT_CY; }
-#line 7329 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_BYVALSTR); }
+#line 7707 "prebuilt\\asmparse.cpp"
     break;
 
-  case 625: /* variantType: VOID_  */
+  case 628: /* nativeType: ANSI_ BSTR_  */
 #line 1616 "asmparse.y"
-                                                              { (yyval.int32) = VT_VOID; }
-#line 7335 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_ANSIBSTR); }
+#line 7713 "prebuilt\\asmparse.cpp"
     break;
 
-  case 626: /* variantType: BOOL_  */
+  case 629: /* nativeType: TBSTR_  */
 #line 1617 "asmparse.y"
-                                                              { (yyval.int32) = VT_BOOL; }
-#line 7341 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_TBSTR); }
+#line 7719 "prebuilt\\asmparse.cpp"
     break;
 
-  case 627: /* variantType: INT8_  */
+  case 630: /* nativeType: VARIANT_ BOOL_  */
 #line 1618 "asmparse.y"
-                                                              { (yyval.int32) = VT_I1; }
-#line 7347 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_VARIANTBOOL); }
+#line 7725 "prebuilt\\asmparse.cpp"
     break;
 
-  case 628: /* variantType: INT16_  */
+  case 631: /* nativeType: METHOD_  */
 #line 1619 "asmparse.y"
-                                                              { (yyval.int32) = VT_I2; }
-#line 7353 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_FUNC); }
+#line 7731 "prebuilt\\asmparse.cpp"
     break;
 
-  case 629: /* variantType: INT32_  */
+  case 632: /* nativeType: AS_ ANY_  */
 #line 1620 "asmparse.y"
-                                                              { (yyval.int32) = VT_I4; }
-#line 7359 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_ASANY); }
+#line 7737 "prebuilt\\asmparse.cpp"
     break;
 
-  case 630: /* variantType: INT64_  */
+  case 633: /* nativeType: LPSTRUCT_  */
 #line 1621 "asmparse.y"
-                                                              { (yyval.int32) = VT_I8; }
-#line 7365 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPSTRUCT); }
+#line 7743 "prebuilt\\asmparse.cpp"
     break;
 
-  case 631: /* variantType: FLOAT32_  */
+  case 634: /* nativeType: TYPEDEF_TS  */
 #line 1622 "asmparse.y"
-                                                              { (yyval.int32) = VT_R4; }
-#line 7371 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[0].tdd)->m_pbsTypeSpec); }
+#line 7749 "prebuilt\\asmparse.cpp"
     break;
 
-  case 632: /* variantType: FLOAT64_  */
-#line 1623 "asmparse.y"
-                                                              { (yyval.int32) = VT_R8; }
-#line 7377 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 633: /* variantType: UNSIGNED_ INT8_  */
-#line 1624 "asmparse.y"
-                                                              { (yyval.int32) = VT_UI1; }
-#line 7383 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 634: /* variantType: UNSIGNED_ INT16_  */
+  case 635: /* iidParamIndex: %empty  */
 #line 1625 "asmparse.y"
-                                                              { (yyval.int32) = VT_UI2; }
-#line 7389 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = -1; }
+#line 7755 "prebuilt\\asmparse.cpp"
     break;
 
-  case 635: /* variantType: UNSIGNED_ INT32_  */
+  case 636: /* iidParamIndex: '(' IIDPARAM_ '=' int32 ')'  */
 #line 1626 "asmparse.y"
-                                                              { (yyval.int32) = VT_UI4; }
-#line 7395 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = (yyvsp[-1].int32); }
+#line 7761 "prebuilt\\asmparse.cpp"
     break;
 
-  case 636: /* variantType: UNSIGNED_ INT64_  */
-#line 1627 "asmparse.y"
-                                                              { (yyval.int32) = VT_UI8; }
-#line 7401 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 637: /* variantType: UINT8_  */
-#line 1628 "asmparse.y"
-                                                              { (yyval.int32) = VT_UI1; }
-#line 7407 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 638: /* variantType: UINT16_  */
+  case 637: /* variantType: %empty  */
 #line 1629 "asmparse.y"
-                                                              { (yyval.int32) = VT_UI2; }
-#line 7413 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_EMPTY; }
+#line 7767 "prebuilt\\asmparse.cpp"
     break;
 
-  case 639: /* variantType: UINT32_  */
+  case 638: /* variantType: NULL_  */
 #line 1630 "asmparse.y"
-                                                              { (yyval.int32) = VT_UI4; }
-#line 7419 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_NULL; }
+#line 7773 "prebuilt\\asmparse.cpp"
     break;
 
-  case 640: /* variantType: UINT64_  */
+  case 639: /* variantType: VARIANT_  */
 #line 1631 "asmparse.y"
-                                                              { (yyval.int32) = VT_UI8; }
-#line 7425 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_VARIANT; }
+#line 7779 "prebuilt\\asmparse.cpp"
     break;
 
-  case 641: /* variantType: '*'  */
+  case 640: /* variantType: CURRENCY_  */
 #line 1632 "asmparse.y"
-                                                              { (yyval.int32) = VT_PTR; }
-#line 7431 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_CY; }
+#line 7785 "prebuilt\\asmparse.cpp"
     break;
 
-  case 642: /* variantType: variantType '[' ']'  */
+  case 641: /* variantType: VOID_  */
 #line 1633 "asmparse.y"
-                                                              { (yyval.int32) = (yyvsp[-2].int32) | VT_ARRAY; }
-#line 7437 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_VOID; }
+#line 7791 "prebuilt\\asmparse.cpp"
     break;
 
-  case 643: /* variantType: variantType VECTOR_  */
+  case 642: /* variantType: BOOL_  */
 #line 1634 "asmparse.y"
-                                                              { (yyval.int32) = (yyvsp[-1].int32) | VT_VECTOR; }
-#line 7443 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_BOOL; }
+#line 7797 "prebuilt\\asmparse.cpp"
     break;
 
-  case 644: /* variantType: variantType '&'  */
+  case 643: /* variantType: INT8_  */
 #line 1635 "asmparse.y"
-                                                              { (yyval.int32) = (yyvsp[-1].int32) | VT_BYREF; }
-#line 7449 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_I1; }
+#line 7803 "prebuilt\\asmparse.cpp"
     break;
 
-  case 645: /* variantType: DECIMAL_  */
+  case 644: /* variantType: INT16_  */
 #line 1636 "asmparse.y"
-                                                              { (yyval.int32) = VT_DECIMAL; }
-#line 7455 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_I2; }
+#line 7809 "prebuilt\\asmparse.cpp"
     break;
 
-  case 646: /* variantType: DATE_  */
+  case 645: /* variantType: INT32_  */
 #line 1637 "asmparse.y"
-                                                              { (yyval.int32) = VT_DATE; }
-#line 7461 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_I4; }
+#line 7815 "prebuilt\\asmparse.cpp"
     break;
 
-  case 647: /* variantType: BSTR_  */
+  case 646: /* variantType: INT64_  */
 #line 1638 "asmparse.y"
-                                                              { (yyval.int32) = VT_BSTR; }
-#line 7467 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_I8; }
+#line 7821 "prebuilt\\asmparse.cpp"
     break;
 
-  case 648: /* variantType: LPSTR_  */
+  case 647: /* variantType: FLOAT32_  */
 #line 1639 "asmparse.y"
-                                                              { (yyval.int32) = VT_LPSTR; }
-#line 7473 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_R4; }
+#line 7827 "prebuilt\\asmparse.cpp"
     break;
 
-  case 649: /* variantType: LPWSTR_  */
+  case 648: /* variantType: FLOAT64_  */
 #line 1640 "asmparse.y"
-                                                              { (yyval.int32) = VT_LPWSTR; }
-#line 7479 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_R8; }
+#line 7833 "prebuilt\\asmparse.cpp"
     break;
 
-  case 650: /* variantType: IUNKNOWN_  */
+  case 649: /* variantType: UNSIGNED_ INT8_  */
 #line 1641 "asmparse.y"
-                                                              { (yyval.int32) = VT_UNKNOWN; }
-#line 7485 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UI1; }
+#line 7839 "prebuilt\\asmparse.cpp"
     break;
 
-  case 651: /* variantType: IDISPATCH_  */
+  case 650: /* variantType: UNSIGNED_ INT16_  */
 #line 1642 "asmparse.y"
-                                                              { (yyval.int32) = VT_DISPATCH; }
-#line 7491 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UI2; }
+#line 7845 "prebuilt\\asmparse.cpp"
     break;
 
-  case 652: /* variantType: SAFEARRAY_  */
+  case 651: /* variantType: UNSIGNED_ INT32_  */
 #line 1643 "asmparse.y"
-                                                              { (yyval.int32) = VT_SAFEARRAY; }
-#line 7497 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UI4; }
+#line 7851 "prebuilt\\asmparse.cpp"
     break;
 
-  case 653: /* variantType: INT_  */
+  case 652: /* variantType: UNSIGNED_ INT64_  */
 #line 1644 "asmparse.y"
-                                                              { (yyval.int32) = VT_INT; }
-#line 7503 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UI8; }
+#line 7857 "prebuilt\\asmparse.cpp"
     break;
 
-  case 654: /* variantType: UNSIGNED_ INT_  */
+  case 653: /* variantType: UINT8_  */
 #line 1645 "asmparse.y"
-                                                              { (yyval.int32) = VT_UINT; }
-#line 7509 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UI1; }
+#line 7863 "prebuilt\\asmparse.cpp"
     break;
 
-  case 655: /* variantType: UINT_  */
+  case 654: /* variantType: UINT16_  */
 #line 1646 "asmparse.y"
-                                                              { (yyval.int32) = VT_UINT; }
-#line 7515 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UI2; }
+#line 7869 "prebuilt\\asmparse.cpp"
     break;
 
-  case 656: /* variantType: ERROR_  */
+  case 655: /* variantType: UINT32_  */
 #line 1647 "asmparse.y"
-                                                              { (yyval.int32) = VT_ERROR; }
-#line 7521 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UI4; }
+#line 7875 "prebuilt\\asmparse.cpp"
     break;
 
-  case 657: /* variantType: HRESULT_  */
+  case 656: /* variantType: UINT64_  */
 #line 1648 "asmparse.y"
-                                                              { (yyval.int32) = VT_HRESULT; }
-#line 7527 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UI8; }
+#line 7881 "prebuilt\\asmparse.cpp"
     break;
 
-  case 658: /* variantType: CARRAY_  */
+  case 657: /* variantType: '*'  */
 #line 1649 "asmparse.y"
-                                                              { (yyval.int32) = VT_CARRAY; }
-#line 7533 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_PTR; }
+#line 7887 "prebuilt\\asmparse.cpp"
     break;
 
-  case 659: /* variantType: USERDEFINED_  */
+  case 658: /* variantType: variantType '[' ']'  */
 #line 1650 "asmparse.y"
-                                                              { (yyval.int32) = VT_USERDEFINED; }
-#line 7539 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = (yyvsp[-2].int32) | VT_ARRAY; }
+#line 7893 "prebuilt\\asmparse.cpp"
     break;
 
-  case 660: /* variantType: RECORD_  */
+  case 659: /* variantType: variantType VECTOR_  */
 #line 1651 "asmparse.y"
-                                                              { (yyval.int32) = VT_RECORD; }
-#line 7545 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = (yyvsp[-1].int32) | VT_VECTOR; }
+#line 7899 "prebuilt\\asmparse.cpp"
     break;
 
-  case 661: /* variantType: FILETIME_  */
+  case 660: /* variantType: variantType '&'  */
 #line 1652 "asmparse.y"
-                                                              { (yyval.int32) = VT_FILETIME; }
-#line 7551 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = (yyvsp[-1].int32) | VT_BYREF; }
+#line 7905 "prebuilt\\asmparse.cpp"
     break;
 
-  case 662: /* variantType: BLOB_  */
+  case 661: /* variantType: DECIMAL_  */
 #line 1653 "asmparse.y"
-                                                              { (yyval.int32) = VT_BLOB; }
-#line 7557 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_DECIMAL; }
+#line 7911 "prebuilt\\asmparse.cpp"
     break;
 
-  case 663: /* variantType: STREAM_  */
+  case 662: /* variantType: DATE_  */
 #line 1654 "asmparse.y"
-                                                              { (yyval.int32) = VT_STREAM; }
-#line 7563 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_DATE; }
+#line 7917 "prebuilt\\asmparse.cpp"
     break;
 
-  case 664: /* variantType: STORAGE_  */
+  case 663: /* variantType: BSTR_  */
 #line 1655 "asmparse.y"
-                                                              { (yyval.int32) = VT_STORAGE; }
-#line 7569 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_BSTR; }
+#line 7923 "prebuilt\\asmparse.cpp"
     break;
 
-  case 665: /* variantType: STREAMED_OBJECT_  */
+  case 664: /* variantType: LPSTR_  */
 #line 1656 "asmparse.y"
-                                                              { (yyval.int32) = VT_STREAMED_OBJECT; }
-#line 7575 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_LPSTR; }
+#line 7929 "prebuilt\\asmparse.cpp"
     break;
 
-  case 666: /* variantType: STORED_OBJECT_  */
+  case 665: /* variantType: LPWSTR_  */
 #line 1657 "asmparse.y"
-                                                              { (yyval.int32) = VT_STORED_OBJECT; }
-#line 7581 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_LPWSTR; }
+#line 7935 "prebuilt\\asmparse.cpp"
     break;
 
-  case 667: /* variantType: BLOB_OBJECT_  */
+  case 666: /* variantType: IUNKNOWN_  */
 #line 1658 "asmparse.y"
-                                                              { (yyval.int32) = VT_BLOB_OBJECT; }
-#line 7587 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_UNKNOWN; }
+#line 7941 "prebuilt\\asmparse.cpp"
     break;
 
-  case 668: /* variantType: CF_  */
+  case 667: /* variantType: IDISPATCH_  */
 #line 1659 "asmparse.y"
-                                                              { (yyval.int32) = VT_CF; }
-#line 7593 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_DISPATCH; }
+#line 7947 "prebuilt\\asmparse.cpp"
     break;
 
-  case 669: /* variantType: CLSID_  */
+  case 668: /* variantType: SAFEARRAY_  */
 #line 1660 "asmparse.y"
-                                                              { (yyval.int32) = VT_CLSID; }
-#line 7599 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.int32) = VT_SAFEARRAY; }
+#line 7953 "prebuilt\\asmparse.cpp"
     break;
 
-  case 670: /* type: CLASS_ className  */
+  case 669: /* variantType: INT_  */
+#line 1661 "asmparse.y"
+                                                              { (yyval.int32) = VT_INT; }
+#line 7959 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 670: /* variantType: UNSIGNED_ INT_  */
+#line 1662 "asmparse.y"
+                                                              { (yyval.int32) = VT_UINT; }
+#line 7965 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 671: /* variantType: UINT_  */
+#line 1663 "asmparse.y"
+                                                              { (yyval.int32) = VT_UINT; }
+#line 7971 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 672: /* variantType: ERROR_  */
 #line 1664 "asmparse.y"
+                                                              { (yyval.int32) = VT_ERROR; }
+#line 7977 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 673: /* variantType: HRESULT_  */
+#line 1665 "asmparse.y"
+                                                              { (yyval.int32) = VT_HRESULT; }
+#line 7983 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 674: /* variantType: CARRAY_  */
+#line 1666 "asmparse.y"
+                                                              { (yyval.int32) = VT_CARRAY; }
+#line 7989 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 675: /* variantType: USERDEFINED_  */
+#line 1667 "asmparse.y"
+                                                              { (yyval.int32) = VT_USERDEFINED; }
+#line 7995 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 676: /* variantType: RECORD_  */
+#line 1668 "asmparse.y"
+                                                              { (yyval.int32) = VT_RECORD; }
+#line 8001 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 677: /* variantType: FILETIME_  */
+#line 1669 "asmparse.y"
+                                                              { (yyval.int32) = VT_FILETIME; }
+#line 8007 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 678: /* variantType: BLOB_  */
+#line 1670 "asmparse.y"
+                                                              { (yyval.int32) = VT_BLOB; }
+#line 8013 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 679: /* variantType: STREAM_  */
+#line 1671 "asmparse.y"
+                                                              { (yyval.int32) = VT_STREAM; }
+#line 8019 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 680: /* variantType: STORAGE_  */
+#line 1672 "asmparse.y"
+                                                              { (yyval.int32) = VT_STORAGE; }
+#line 8025 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 681: /* variantType: STREAMED_OBJECT_  */
+#line 1673 "asmparse.y"
+                                                              { (yyval.int32) = VT_STREAMED_OBJECT; }
+#line 8031 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 682: /* variantType: STORED_OBJECT_  */
+#line 1674 "asmparse.y"
+                                                              { (yyval.int32) = VT_STORED_OBJECT; }
+#line 8037 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 683: /* variantType: BLOB_OBJECT_  */
+#line 1675 "asmparse.y"
+                                                              { (yyval.int32) = VT_BLOB_OBJECT; }
+#line 8043 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 684: /* variantType: CF_  */
+#line 1676 "asmparse.y"
+                                                              { (yyval.int32) = VT_CF; }
+#line 8049 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 685: /* variantType: CLSID_  */
+#line 1677 "asmparse.y"
+                                                              { (yyval.int32) = VT_CLSID; }
+#line 8055 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 686: /* type: CLASS_ className  */
+#line 1681 "asmparse.y"
                                                               { if((yyvsp[0].token) == PASM->m_tkSysString)
                                                                 {     (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING); }
                                                                 else if((yyvsp[0].token) == PASM->m_tkSysObject)
                                                                 {     (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_OBJECT); }
                                                                 else
                                                                  (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_CLASS, (yyvsp[0].token)); }
-#line 7610 "prebuilt\\asmparse.cpp"
+#line 8066 "prebuilt\\asmparse.cpp"
     break;
 
-  case 671: /* type: OBJECT_  */
-#line 1670 "asmparse.y"
+  case 687: /* type: OBJECT_  */
+#line 1687 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_OBJECT); }
-#line 7616 "prebuilt\\asmparse.cpp"
+#line 8072 "prebuilt\\asmparse.cpp"
     break;
 
-  case 672: /* type: VALUE_ CLASS_ className  */
-#line 1671 "asmparse.y"
+  case 688: /* type: VALUE_ CLASS_ className  */
+#line 1688 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, (yyvsp[0].token)); }
-#line 7622 "prebuilt\\asmparse.cpp"
+#line 8078 "prebuilt\\asmparse.cpp"
     break;
 
-  case 673: /* type: VALUETYPE_ className  */
-#line 1672 "asmparse.y"
+  case 689: /* type: VALUETYPE_ className  */
+#line 1689 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, (yyvsp[0].token)); }
-#line 7628 "prebuilt\\asmparse.cpp"
+#line 8084 "prebuilt\\asmparse.cpp"
     break;
 
-  case 674: /* type: type '[' ']'  */
-#line 1673 "asmparse.y"
+  case 690: /* type: type '[' ']'  */
+#line 1690 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 7634 "prebuilt\\asmparse.cpp"
+#line 8090 "prebuilt\\asmparse.cpp"
     break;
 
-  case 675: /* type: type '[' bounds1 ']'  */
-#line 1674 "asmparse.y"
+  case 691: /* type: type '[' bounds1 ']'  */
+#line 1691 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeArray(ELEMENT_TYPE_ARRAY, (yyvsp[-3].binstr), (yyvsp[-1].binstr)); }
-#line 7640 "prebuilt\\asmparse.cpp"
+#line 8096 "prebuilt\\asmparse.cpp"
     break;
 
-  case 676: /* type: type '&'  */
-#line 1675 "asmparse.y"
+  case 692: /* type: type '&'  */
+#line 1692 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_BYREF); }
-#line 7646 "prebuilt\\asmparse.cpp"
+#line 8102 "prebuilt\\asmparse.cpp"
     break;
 
-  case 677: /* type: type '*'  */
-#line 1676 "asmparse.y"
+  case 693: /* type: type '*'  */
+#line 1693 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_PTR); }
-#line 7652 "prebuilt\\asmparse.cpp"
+#line 8108 "prebuilt\\asmparse.cpp"
     break;
 
-  case 678: /* type: type PINNED_  */
-#line 1677 "asmparse.y"
+  case 694: /* type: type PINNED_  */
+#line 1694 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_PINNED); }
-#line 7658 "prebuilt\\asmparse.cpp"
+#line 8114 "prebuilt\\asmparse.cpp"
     break;
 
-  case 679: /* type: type MODREQ_ '(' typeSpec ')'  */
-#line 1678 "asmparse.y"
+  case 695: /* type: type MODREQ_ '(' typeSpec ')'  */
+#line 1695 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_CMOD_REQD, (yyvsp[-1].token));
                                                                 (yyval.binstr)->append((yyvsp[-4].binstr)); }
-#line 7665 "prebuilt\\asmparse.cpp"
+#line 8121 "prebuilt\\asmparse.cpp"
     break;
 
-  case 680: /* type: type MODOPT_ '(' typeSpec ')'  */
-#line 1680 "asmparse.y"
+  case 696: /* type: type MODOPT_ '(' typeSpec ')'  */
+#line 1697 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_CMOD_OPT, (yyvsp[-1].token));
                                                                 (yyval.binstr)->append((yyvsp[-4].binstr)); }
-#line 7672 "prebuilt\\asmparse.cpp"
+#line 8128 "prebuilt\\asmparse.cpp"
     break;
 
-  case 681: /* type: methodSpec callConv type '*' '(' sigArgs0 ')'  */
-#line 1683 "asmparse.y"
+  case 697: /* type: methodSpec callConv type '*' '(' sigArgs0 ')'  */
+#line 1700 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeSig((yyvsp[-5].int32), (yyvsp[-4].binstr), (yyvsp[-1].binstr));
                                                                 (yyval.binstr)->insertInt8(ELEMENT_TYPE_FNPTR);
                                                                 PASM->delArgNameList(PASM->m_firstArgName);
                                                                 PASM->m_firstArgName = parser->m_ANSFirst.POP();
                                                                 PASM->m_lastArgName = parser->m_ANSLast.POP();
                                                               }
-#line 7683 "prebuilt\\asmparse.cpp"
+#line 8139 "prebuilt\\asmparse.cpp"
     break;
 
-  case 682: /* type: type '<' tyArgs1 '>'  */
-#line 1689 "asmparse.y"
+  case 698: /* type: type '<' tyArgs1 '>'  */
+#line 1706 "asmparse.y"
                                                               { if((yyvsp[-1].binstr) == NULL) (yyval.binstr) = (yyvsp[-3].binstr);
                                                                 else {
                                                                   (yyval.binstr) = new BinStr();
@@ -7691,33 +8147,33 @@ yyreduce:
                                                                   (yyval.binstr)->append((yyvsp[-3].binstr));
                                                                   corEmitInt((yyval.binstr), corCountArgs((yyvsp[-1].binstr)));
                                                                   (yyval.binstr)->append((yyvsp[-1].binstr)); delete (yyvsp[-3].binstr); delete (yyvsp[-1].binstr); }}
-#line 7695 "prebuilt\\asmparse.cpp"
+#line 8151 "prebuilt\\asmparse.cpp"
     break;
 
-  case 683: /* type: '!' '!' int32  */
-#line 1696 "asmparse.y"
+  case 699: /* type: '!' '!' int32  */
+#line 1713 "asmparse.y"
                                                               { //if(PASM->m_pCurMethod)  {
                                                                 //  if(($3 < 0)||((DWORD)$3 >= PASM->m_pCurMethod->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid method type parameter '%d'\n",$3);
                                                                   (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_MVAR); corEmitInt((yyval.binstr), (yyvsp[0].int32));
                                                                 //} else PASM->report->error("Method type parameter '%d' outside method scope\n",$3);
                                                               }
-#line 7706 "prebuilt\\asmparse.cpp"
+#line 8162 "prebuilt\\asmparse.cpp"
     break;
 
-  case 684: /* type: '!' int32  */
-#line 1702 "asmparse.y"
+  case 700: /* type: '!' int32  */
+#line 1719 "asmparse.y"
                                                               { //if(PASM->m_pCurClass)  {
                                                                 //  if(($2 < 0)||((DWORD)$2 >= PASM->m_pCurClass->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid type parameter '%d'\n",$2);
                                                                   (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_VAR); corEmitInt((yyval.binstr), (yyvsp[0].int32));
                                                                 //} else PASM->report->error("Type parameter '%d' outside class scope\n",$2);
                                                               }
-#line 7717 "prebuilt\\asmparse.cpp"
+#line 8173 "prebuilt\\asmparse.cpp"
     break;
 
-  case 685: /* type: '!' '!' dottedName  */
-#line 1708 "asmparse.y"
+  case 701: /* type: '!' '!' dottedName  */
+#line 1725 "asmparse.y"
                                                               { int eltype = ELEMENT_TYPE_MVAR;
                                                                 int n=-1;
                                                                 if(PASM->m_pCurMethod) n = PASM->m_pCurMethod->FindTyPar((yyvsp[0].string));
@@ -7733,11 +8189,11 @@ yyreduce:
                                                                 n = 0x1FFFFFFF; }
                                                                 (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(eltype); corEmitInt((yyval.binstr),n);
                                                               }
-#line 7737 "prebuilt\\asmparse.cpp"
+#line 8193 "prebuilt\\asmparse.cpp"
     break;
 
-  case 686: /* type: '!' dottedName  */
-#line 1723 "asmparse.y"
+  case 702: /* type: '!' dottedName  */
+#line 1740 "asmparse.y"
                                                               { int eltype = ELEMENT_TYPE_VAR;
                                                                 int n=-1;
                                                                 if(PASM->m_pCurClass && !newclass) n = PASM->m_pCurClass->FindTyPar((yyvsp[0].string));
@@ -7753,926 +8209,926 @@ yyreduce:
                                                                 n = 0x1FFFFFFF; }
                                                                 (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(eltype); corEmitInt((yyval.binstr),n);
                                                               }
-#line 7757 "prebuilt\\asmparse.cpp"
+#line 8213 "prebuilt\\asmparse.cpp"
     break;
 
-  case 687: /* type: TYPEDREF_  */
-#line 1738 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_TYPEDBYREF); }
-#line 7763 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 688: /* type: VOID_  */
-#line 1739 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_VOID); }
-#line 7769 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 689: /* type: NATIVE_ INT_  */
-#line 1740 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I); }
-#line 7775 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 690: /* type: NATIVE_ UNSIGNED_ INT_  */
-#line 1741 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U); }
-#line 7781 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 691: /* type: NATIVE_ UINT_  */
-#line 1742 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U); }
-#line 7787 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 692: /* type: simpleType  */
-#line 1743 "asmparse.y"
-                                                              { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 7793 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 693: /* type: ELLIPSIS type  */
-#line 1744 "asmparse.y"
-                                                               { (yyval.binstr) = (yyvsp[0].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_SENTINEL); }
-#line 7799 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 694: /* simpleType: CHAR_  */
-#line 1747 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CHAR); }
-#line 7805 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 695: /* simpleType: STRING_  */
-#line 1748 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING); }
-#line 7811 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 696: /* simpleType: BOOL_  */
-#line 1749 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_BOOLEAN); }
-#line 7817 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 697: /* simpleType: INT8_  */
-#line 1750 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I1); }
-#line 7823 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 698: /* simpleType: INT16_  */
-#line 1751 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I2); }
-#line 7829 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 699: /* simpleType: INT32_  */
-#line 1752 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I4); }
-#line 7835 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 700: /* simpleType: INT64_  */
-#line 1753 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I8); }
-#line 7841 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 701: /* simpleType: FLOAT32_  */
-#line 1754 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4); }
-#line 7847 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 702: /* simpleType: FLOAT64_  */
+  case 703: /* type: TYPEDREF_  */
 #line 1755 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8); }
-#line 7853 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_TYPEDBYREF); }
+#line 8219 "prebuilt\\asmparse.cpp"
     break;
 
-  case 703: /* simpleType: UNSIGNED_ INT8_  */
+  case 704: /* type: VOID_  */
 #line 1756 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1); }
-#line 7859 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_VOID); }
+#line 8225 "prebuilt\\asmparse.cpp"
     break;
 
-  case 704: /* simpleType: UNSIGNED_ INT16_  */
+  case 705: /* type: NATIVE_ INT_  */
 #line 1757 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2); }
-#line 7865 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I); }
+#line 8231 "prebuilt\\asmparse.cpp"
     break;
 
-  case 705: /* simpleType: UNSIGNED_ INT32_  */
+  case 706: /* type: NATIVE_ UNSIGNED_ INT_  */
 #line 1758 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4); }
-#line 7871 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U); }
+#line 8237 "prebuilt\\asmparse.cpp"
     break;
 
-  case 706: /* simpleType: UNSIGNED_ INT64_  */
+  case 707: /* type: NATIVE_ UINT_  */
 #line 1759 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8); }
-#line 7877 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U); }
+#line 8243 "prebuilt\\asmparse.cpp"
     break;
 
-  case 707: /* simpleType: UINT8_  */
+  case 708: /* type: simpleType  */
 #line 1760 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1); }
-#line 7883 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 708: /* simpleType: UINT16_  */
-#line 1761 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2); }
-#line 7889 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 709: /* simpleType: UINT32_  */
-#line 1762 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4); }
-#line 7895 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 710: /* simpleType: UINT64_  */
-#line 1763 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8); }
-#line 7901 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 711: /* simpleType: TYPEDEF_TS  */
-#line 1764 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[0].tdd)->m_pbsTypeSpec); }
-#line 7907 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 712: /* bounds1: bound  */
-#line 1767 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 7913 "prebuilt\\asmparse.cpp"
+#line 8249 "prebuilt\\asmparse.cpp"
     break;
 
-  case 713: /* bounds1: bounds1 ',' bound  */
+  case 709: /* type: ELLIPSIS type  */
+#line 1761 "asmparse.y"
+                                                               { (yyval.binstr) = (yyvsp[0].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_SENTINEL); }
+#line 8255 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 710: /* simpleType: CHAR_  */
+#line 1764 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CHAR); }
+#line 8261 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 711: /* simpleType: STRING_  */
+#line 1765 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING); }
+#line 8267 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 712: /* simpleType: BOOL_  */
+#line 1766 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_BOOLEAN); }
+#line 8273 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 713: /* simpleType: INT8_  */
+#line 1767 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I1); }
+#line 8279 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 714: /* simpleType: INT16_  */
 #line 1768 "asmparse.y"
-                                                              { (yyval.binstr) = (yyvsp[-2].binstr); (yyvsp[-2].binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 7919 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I2); }
+#line 8285 "prebuilt\\asmparse.cpp"
     break;
 
-  case 714: /* bound: %empty  */
+  case 715: /* simpleType: INT32_  */
+#line 1769 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I4); }
+#line 8291 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 716: /* simpleType: INT64_  */
+#line 1770 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I8); }
+#line 8297 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 717: /* simpleType: FLOAT32_  */
 #line 1771 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0x7FFFFFFF); (yyval.binstr)->appendInt32(0x7FFFFFFF);  }
-#line 7925 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4); }
+#line 8303 "prebuilt\\asmparse.cpp"
     break;
 
-  case 715: /* bound: ELLIPSIS  */
+  case 718: /* simpleType: FLOAT64_  */
 #line 1772 "asmparse.y"
-                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0x7FFFFFFF); (yyval.binstr)->appendInt32(0x7FFFFFFF);  }
-#line 7931 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8); }
+#line 8309 "prebuilt\\asmparse.cpp"
     break;
 
-  case 716: /* bound: int32  */
+  case 719: /* simpleType: UNSIGNED_ INT8_  */
 #line 1773 "asmparse.y"
-                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0); (yyval.binstr)->appendInt32((yyvsp[0].int32)); }
-#line 7937 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1); }
+#line 8315 "prebuilt\\asmparse.cpp"
     break;
 
-  case 717: /* bound: int32 ELLIPSIS int32  */
+  case 720: /* simpleType: UNSIGNED_ INT16_  */
 #line 1774 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2); }
+#line 8321 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 721: /* simpleType: UNSIGNED_ INT32_  */
+#line 1775 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4); }
+#line 8327 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 722: /* simpleType: UNSIGNED_ INT64_  */
+#line 1776 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8); }
+#line 8333 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 723: /* simpleType: UINT8_  */
+#line 1777 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1); }
+#line 8339 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 724: /* simpleType: UINT16_  */
+#line 1778 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2); }
+#line 8345 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 725: /* simpleType: UINT32_  */
+#line 1779 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4); }
+#line 8351 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 726: /* simpleType: UINT64_  */
+#line 1780 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8); }
+#line 8357 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 727: /* simpleType: TYPEDEF_TS  */
+#line 1781 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[0].tdd)->m_pbsTypeSpec); }
+#line 8363 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 728: /* bounds1: bound  */
+#line 1784 "asmparse.y"
+                                                              { (yyval.binstr) = (yyvsp[0].binstr); }
+#line 8369 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 729: /* bounds1: bounds1 ',' bound  */
+#line 1785 "asmparse.y"
+                                                              { (yyval.binstr) = (yyvsp[-2].binstr); (yyvsp[-2].binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
+#line 8375 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 730: /* bound: %empty  */
+#line 1788 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0x7FFFFFFF); (yyval.binstr)->appendInt32(0x7FFFFFFF);  }
+#line 8381 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 731: /* bound: ELLIPSIS  */
+#line 1789 "asmparse.y"
+                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0x7FFFFFFF); (yyval.binstr)->appendInt32(0x7FFFFFFF);  }
+#line 8387 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 732: /* bound: int32  */
+#line 1790 "asmparse.y"
+                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0); (yyval.binstr)->appendInt32((yyvsp[0].int32)); }
+#line 8393 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 733: /* bound: int32 ELLIPSIS int32  */
+#line 1791 "asmparse.y"
                                                                { FAIL_UNLESS((yyvsp[-2].int32) <= (yyvsp[0].int32), ("lower bound %d must be <= upper bound %d\n", (yyvsp[-2].int32), (yyvsp[0].int32)));
                                                                 if ((yyvsp[-2].int32) > (yyvsp[0].int32)) { YYERROR; };
                                                                 (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32((yyvsp[-2].int32)); (yyval.binstr)->appendInt32((yyvsp[0].int32)-(yyvsp[-2].int32)+1); }
-#line 7945 "prebuilt\\asmparse.cpp"
+#line 8401 "prebuilt\\asmparse.cpp"
     break;
 
-  case 718: /* bound: int32 ELLIPSIS  */
-#line 1777 "asmparse.y"
+  case 734: /* bound: int32 ELLIPSIS  */
+#line 1794 "asmparse.y"
                                                                { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32((yyvsp[-1].int32)); (yyval.binstr)->appendInt32(0x7FFFFFFF); }
-#line 7951 "prebuilt\\asmparse.cpp"
+#line 8407 "prebuilt\\asmparse.cpp"
     break;
 
-  case 719: /* secDecl: _PERMISSION secAction typeSpec '(' nameValPairs ')'  */
-#line 1782 "asmparse.y"
+  case 735: /* secDecl: _PERMISSION secAction typeSpec '(' nameValPairs ')'  */
+#line 1799 "asmparse.y"
                                                               { PASM->AddPermissionDecl((yyvsp[-4].secAct), (yyvsp[-3].token), (yyvsp[-1].pair)); }
-#line 7957 "prebuilt\\asmparse.cpp"
+#line 8413 "prebuilt\\asmparse.cpp"
     break;
 
-  case 720: /* secDecl: _PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'  */
-#line 1784 "asmparse.y"
+  case 736: /* secDecl: _PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'  */
+#line 1801 "asmparse.y"
                                                               { PASM->AddPermissionDecl((yyvsp[-5].secAct), (yyvsp[-4].token), (yyvsp[-1].binstr)); }
-#line 7963 "prebuilt\\asmparse.cpp"
+#line 8419 "prebuilt\\asmparse.cpp"
     break;
 
-  case 721: /* secDecl: _PERMISSION secAction typeSpec  */
-#line 1785 "asmparse.y"
+  case 737: /* secDecl: _PERMISSION secAction typeSpec  */
+#line 1802 "asmparse.y"
                                                               { PASM->AddPermissionDecl((yyvsp[-1].secAct), (yyvsp[0].token), (NVPair *)NULL); }
-#line 7969 "prebuilt\\asmparse.cpp"
+#line 8425 "prebuilt\\asmparse.cpp"
     break;
 
-  case 722: /* secDecl: psetHead bytes ')'  */
-#line 1786 "asmparse.y"
+  case 738: /* secDecl: psetHead bytes ')'  */
+#line 1803 "asmparse.y"
                                                               { PASM->AddPermissionSetDecl((yyvsp[-2].secAct), (yyvsp[-1].binstr)); }
-#line 7975 "prebuilt\\asmparse.cpp"
+#line 8431 "prebuilt\\asmparse.cpp"
     break;
 
-  case 723: /* secDecl: _PERMISSIONSET secAction compQstring  */
-#line 1788 "asmparse.y"
+  case 739: /* secDecl: _PERMISSIONSET secAction compQstring  */
+#line 1805 "asmparse.y"
                                                               { PASM->AddPermissionSetDecl((yyvsp[-1].secAct),BinStrToUnicode((yyvsp[0].binstr),true));}
-#line 7981 "prebuilt\\asmparse.cpp"
+#line 8437 "prebuilt\\asmparse.cpp"
     break;
 
-  case 724: /* secDecl: _PERMISSIONSET secAction '=' '{' secAttrSetBlob '}'  */
-#line 1790 "asmparse.y"
+  case 740: /* secDecl: _PERMISSIONSET secAction '=' '{' secAttrSetBlob '}'  */
+#line 1807 "asmparse.y"
                                                               { BinStr* ret = new BinStr();
                                                                 ret->insertInt8('.');
                                                                 corEmitInt(ret, nSecAttrBlobs);
                                                                 ret->append((yyvsp[-1].binstr));
                                                                 PASM->AddPermissionSetDecl((yyvsp[-4].secAct),ret);
                                                                 nSecAttrBlobs = 0; }
-#line 7992 "prebuilt\\asmparse.cpp"
+#line 8448 "prebuilt\\asmparse.cpp"
     break;
 
-  case 725: /* secAttrSetBlob: %empty  */
-#line 1798 "asmparse.y"
+  case 741: /* secAttrSetBlob: %empty  */
+#line 1815 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); nSecAttrBlobs = 0;}
-#line 7998 "prebuilt\\asmparse.cpp"
+#line 8454 "prebuilt\\asmparse.cpp"
     break;
 
-  case 726: /* secAttrSetBlob: secAttrBlob  */
-#line 1799 "asmparse.y"
+  case 742: /* secAttrSetBlob: secAttrBlob  */
+#line 1816 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[0].binstr); nSecAttrBlobs = 1; }
-#line 8004 "prebuilt\\asmparse.cpp"
+#line 8460 "prebuilt\\asmparse.cpp"
     break;
 
-  case 727: /* secAttrSetBlob: secAttrBlob ',' secAttrSetBlob  */
-#line 1800 "asmparse.y"
+  case 743: /* secAttrSetBlob: secAttrBlob ',' secAttrSetBlob  */
+#line 1817 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); nSecAttrBlobs++; }
-#line 8010 "prebuilt\\asmparse.cpp"
+#line 8466 "prebuilt\\asmparse.cpp"
     break;
 
-  case 728: /* secAttrBlob: typeSpec '=' '{' customBlobNVPairs '}'  */
-#line 1804 "asmparse.y"
+  case 744: /* secAttrBlob: typeSpec '=' '{' customBlobNVPairs '}'  */
+#line 1821 "asmparse.y"
                                                               { (yyval.binstr) = PASM->EncodeSecAttr(PASM->ReflectionNotation((yyvsp[-4].token)),(yyvsp[-1].binstr),nCustomBlobNVPairs);
                                                                 nCustomBlobNVPairs = 0; }
-#line 8017 "prebuilt\\asmparse.cpp"
+#line 8473 "prebuilt\\asmparse.cpp"
     break;
 
-  case 729: /* secAttrBlob: CLASS_ SQSTRING '=' '{' customBlobNVPairs '}'  */
-#line 1807 "asmparse.y"
+  case 745: /* secAttrBlob: CLASS_ SQSTRING '=' '{' customBlobNVPairs '}'  */
+#line 1824 "asmparse.y"
                                                               { (yyval.binstr) = PASM->EncodeSecAttr((yyvsp[-4].string),(yyvsp[-1].binstr),nCustomBlobNVPairs);
                                                                 nCustomBlobNVPairs = 0; }
-#line 8024 "prebuilt\\asmparse.cpp"
+#line 8480 "prebuilt\\asmparse.cpp"
     break;
 
-  case 730: /* psetHead: _PERMISSIONSET secAction '=' '('  */
-#line 1811 "asmparse.y"
+  case 746: /* psetHead: _PERMISSIONSET secAction '=' '('  */
+#line 1828 "asmparse.y"
                                                               { (yyval.secAct) = (yyvsp[-2].secAct); bParsingByteArray = TRUE; }
-#line 8030 "prebuilt\\asmparse.cpp"
+#line 8486 "prebuilt\\asmparse.cpp"
     break;
 
-  case 731: /* psetHead: _PERMISSIONSET secAction BYTEARRAY_ '('  */
-#line 1813 "asmparse.y"
+  case 747: /* psetHead: _PERMISSIONSET secAction BYTEARRAY_ '('  */
+#line 1830 "asmparse.y"
                                                               { (yyval.secAct) = (yyvsp[-2].secAct); bParsingByteArray = TRUE; }
-#line 8036 "prebuilt\\asmparse.cpp"
+#line 8492 "prebuilt\\asmparse.cpp"
     break;
 
-  case 732: /* nameValPairs: nameValPair  */
-#line 1816 "asmparse.y"
+  case 748: /* nameValPairs: nameValPair  */
+#line 1833 "asmparse.y"
                                                               { (yyval.pair) = (yyvsp[0].pair); }
-#line 8042 "prebuilt\\asmparse.cpp"
+#line 8498 "prebuilt\\asmparse.cpp"
     break;
 
-  case 733: /* nameValPairs: nameValPair ',' nameValPairs  */
-#line 1817 "asmparse.y"
+  case 749: /* nameValPairs: nameValPair ',' nameValPairs  */
+#line 1834 "asmparse.y"
                                                               { (yyval.pair) = (yyvsp[-2].pair)->Concat((yyvsp[0].pair)); }
-#line 8048 "prebuilt\\asmparse.cpp"
+#line 8504 "prebuilt\\asmparse.cpp"
     break;
 
-  case 734: /* nameValPair: compQstring '=' caValue  */
-#line 1820 "asmparse.y"
+  case 750: /* nameValPair: compQstring '=' caValue  */
+#line 1837 "asmparse.y"
                                                               { (yyvsp[-2].binstr)->appendInt8(0); (yyval.pair) = new NVPair((yyvsp[-2].binstr), (yyvsp[0].binstr)); }
-#line 8054 "prebuilt\\asmparse.cpp"
+#line 8510 "prebuilt\\asmparse.cpp"
     break;
 
-  case 735: /* truefalse: TRUE_  */
-#line 1823 "asmparse.y"
+  case 751: /* truefalse: TRUE_  */
+#line 1840 "asmparse.y"
                                                               { (yyval.int32) = 1; }
-#line 8060 "prebuilt\\asmparse.cpp"
+#line 8516 "prebuilt\\asmparse.cpp"
     break;
 
-  case 736: /* truefalse: FALSE_  */
-#line 1824 "asmparse.y"
+  case 752: /* truefalse: FALSE_  */
+#line 1841 "asmparse.y"
                                                               { (yyval.int32) = 0; }
-#line 8066 "prebuilt\\asmparse.cpp"
+#line 8522 "prebuilt\\asmparse.cpp"
     break;
 
-  case 737: /* caValue: truefalse  */
-#line 1827 "asmparse.y"
+  case 753: /* caValue: truefalse  */
+#line 1844 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_BOOLEAN);
                                                                 (yyval.binstr)->appendInt8((yyvsp[0].int32)); }
-#line 8074 "prebuilt\\asmparse.cpp"
+#line 8530 "prebuilt\\asmparse.cpp"
     break;
 
-  case 738: /* caValue: int32  */
-#line 1830 "asmparse.y"
+  case 754: /* caValue: int32  */
+#line 1847 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_I4);
                                                                 (yyval.binstr)->appendInt32((yyvsp[0].int32)); }
-#line 8082 "prebuilt\\asmparse.cpp"
+#line 8538 "prebuilt\\asmparse.cpp"
     break;
 
-  case 739: /* caValue: INT32_ '(' int32 ')'  */
-#line 1833 "asmparse.y"
+  case 755: /* caValue: INT32_ '(' int32 ')'  */
+#line 1850 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_I4);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8090 "prebuilt\\asmparse.cpp"
+#line 8546 "prebuilt\\asmparse.cpp"
     break;
 
-  case 740: /* caValue: compQstring  */
-#line 1836 "asmparse.y"
+  case 756: /* caValue: compQstring  */
+#line 1853 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_STRING);
                                                                 (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr);
                                                                 (yyval.binstr)->appendInt8(0); }
-#line 8099 "prebuilt\\asmparse.cpp"
+#line 8555 "prebuilt\\asmparse.cpp"
     break;
 
-  case 741: /* caValue: className '(' INT8_ ':' int32 ')'  */
-#line 1840 "asmparse.y"
+  case 757: /* caValue: className '(' INT8_ ':' int32 ')'  */
+#line 1857 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 char* sz = PASM->ReflectionNotation((yyvsp[-5].token));
                                                                 strcpy_s((char *)(yyval.binstr)->getBuff((unsigned)strlen(sz) + 1), strlen(sz) + 1,sz);
                                                                 (yyval.binstr)->appendInt8(1);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8110 "prebuilt\\asmparse.cpp"
+#line 8566 "prebuilt\\asmparse.cpp"
     break;
 
-  case 742: /* caValue: className '(' INT16_ ':' int32 ')'  */
-#line 1846 "asmparse.y"
+  case 758: /* caValue: className '(' INT16_ ':' int32 ')'  */
+#line 1863 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 char* sz = PASM->ReflectionNotation((yyvsp[-5].token));
                                                                 strcpy_s((char *)(yyval.binstr)->getBuff((unsigned)strlen(sz) + 1), strlen(sz) + 1,sz);
                                                                 (yyval.binstr)->appendInt8(2);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8121 "prebuilt\\asmparse.cpp"
+#line 8577 "prebuilt\\asmparse.cpp"
     break;
 
-  case 743: /* caValue: className '(' INT32_ ':' int32 ')'  */
-#line 1852 "asmparse.y"
+  case 759: /* caValue: className '(' INT32_ ':' int32 ')'  */
+#line 1869 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 char* sz = PASM->ReflectionNotation((yyvsp[-5].token));
                                                                 strcpy_s((char *)(yyval.binstr)->getBuff((unsigned)strlen(sz) + 1), strlen(sz) + 1,sz);
                                                                 (yyval.binstr)->appendInt8(4);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8132 "prebuilt\\asmparse.cpp"
+#line 8588 "prebuilt\\asmparse.cpp"
     break;
 
-  case 744: /* caValue: className '(' int32 ')'  */
-#line 1858 "asmparse.y"
+  case 760: /* caValue: className '(' int32 ')'  */
+#line 1875 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 char* sz = PASM->ReflectionNotation((yyvsp[-3].token));
                                                                 strcpy_s((char *)(yyval.binstr)->getBuff((unsigned)strlen(sz) + 1), strlen(sz) + 1,sz);
                                                                 (yyval.binstr)->appendInt8(4);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8143 "prebuilt\\asmparse.cpp"
+#line 8599 "prebuilt\\asmparse.cpp"
     break;
 
-  case 745: /* secAction: REQUEST_  */
-#line 1866 "asmparse.y"
+  case 761: /* secAction: REQUEST_  */
+#line 1883 "asmparse.y"
                                                               { (yyval.secAct) = dclRequest; }
-#line 8149 "prebuilt\\asmparse.cpp"
+#line 8605 "prebuilt\\asmparse.cpp"
     break;
 
-  case 746: /* secAction: DEMAND_  */
-#line 1867 "asmparse.y"
-                                                              { (yyval.secAct) = dclDemand; }
-#line 8155 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 747: /* secAction: ASSERT_  */
-#line 1868 "asmparse.y"
-                                                              { (yyval.secAct) = dclAssert; }
-#line 8161 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 748: /* secAction: DENY_  */
-#line 1869 "asmparse.y"
-                                                              { (yyval.secAct) = dclDeny; }
-#line 8167 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 749: /* secAction: PERMITONLY_  */
-#line 1870 "asmparse.y"
-                                                              { (yyval.secAct) = dclPermitOnly; }
-#line 8173 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 750: /* secAction: LINKCHECK_  */
-#line 1871 "asmparse.y"
-                                                              { (yyval.secAct) = dclLinktimeCheck; }
-#line 8179 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 751: /* secAction: INHERITCHECK_  */
-#line 1872 "asmparse.y"
-                                                              { (yyval.secAct) = dclInheritanceCheck; }
-#line 8185 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 752: /* secAction: REQMIN_  */
-#line 1873 "asmparse.y"
-                                                              { (yyval.secAct) = dclRequestMinimum; }
-#line 8191 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 753: /* secAction: REQOPT_  */
-#line 1874 "asmparse.y"
-                                                              { (yyval.secAct) = dclRequestOptional; }
-#line 8197 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 754: /* secAction: REQREFUSE_  */
-#line 1875 "asmparse.y"
-                                                              { (yyval.secAct) = dclRequestRefuse; }
-#line 8203 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 755: /* secAction: PREJITGRANT_  */
-#line 1876 "asmparse.y"
-                                                              { (yyval.secAct) = dclPrejitGrant; }
-#line 8209 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 756: /* secAction: PREJITDENY_  */
-#line 1877 "asmparse.y"
-                                                              { (yyval.secAct) = dclPrejitDenied; }
-#line 8215 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 757: /* secAction: NONCASDEMAND_  */
-#line 1878 "asmparse.y"
-                                                              { (yyval.secAct) = dclNonCasDemand; }
-#line 8221 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 758: /* secAction: NONCASLINKDEMAND_  */
-#line 1879 "asmparse.y"
-                                                              { (yyval.secAct) = dclNonCasLinkDemand; }
-#line 8227 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 759: /* secAction: NONCASINHERITANCE_  */
-#line 1880 "asmparse.y"
-                                                              { (yyval.secAct) = dclNonCasInheritance; }
-#line 8233 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 760: /* esHead: _LINE  */
+  case 762: /* secAction: DEMAND_  */
 #line 1884 "asmparse.y"
-                                                              { PASM->ResetLineNumbers(); nCurrPC = PASM->m_CurPC; PENV->bExternSource = TRUE; PENV->bExternSourceAutoincrement = FALSE; }
-#line 8239 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.secAct) = dclDemand; }
+#line 8611 "prebuilt\\asmparse.cpp"
     break;
 
-  case 761: /* esHead: P_LINE  */
+  case 763: /* secAction: ASSERT_  */
 #line 1885 "asmparse.y"
-                                                              { PASM->ResetLineNumbers(); nCurrPC = PASM->m_CurPC; PENV->bExternSource = TRUE; PENV->bExternSourceAutoincrement = TRUE; }
-#line 8245 "prebuilt\\asmparse.cpp"
+                                                              { (yyval.secAct) = dclAssert; }
+#line 8617 "prebuilt\\asmparse.cpp"
     break;
 
-  case 762: /* extSourceSpec: esHead int32 SQSTRING  */
-#line 1888 "asmparse.y"
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-1].int32);
-                                                                PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1);
-                                                                PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8253 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 763: /* extSourceSpec: esHead int32  */
-#line 1891 "asmparse.y"
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[0].int32);
-                                                                PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1); }
-#line 8260 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 764: /* extSourceSpec: esHead int32 ':' int32 SQSTRING  */
-#line 1893 "asmparse.y"
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-3].int32);
-                                                                PENV->nExtCol=(yyvsp[-1].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);
-                                                                PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8268 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 765: /* extSourceSpec: esHead int32 ':' int32  */
-#line 1896 "asmparse.y"
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-2].int32);
-                                                                PENV->nExtCol=(yyvsp[0].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);}
-#line 8275 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 766: /* extSourceSpec: esHead int32 ':' int32 ',' int32 SQSTRING  */
-#line 1899 "asmparse.y"
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-5].int32);
-                                                                PENV->nExtCol=(yyvsp[-3].int32); PENV->nExtColEnd = (yyvsp[-1].int32);
-                                                                PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8283 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 767: /* extSourceSpec: esHead int32 ':' int32 ',' int32  */
-#line 1903 "asmparse.y"
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-4].int32);
-                                                                PENV->nExtCol=(yyvsp[-2].int32); PENV->nExtColEnd = (yyvsp[0].int32); }
-#line 8290 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 768: /* extSourceSpec: esHead int32 ',' int32 ':' int32 SQSTRING  */
-#line 1906 "asmparse.y"
-                                                              { PENV->nExtLine = (yyvsp[-5].int32); PENV->nExtLineEnd = (yyvsp[-3].int32);
-                                                                PENV->nExtCol=(yyvsp[-1].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);
-                                                                PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8298 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 769: /* extSourceSpec: esHead int32 ',' int32 ':' int32  */
-#line 1910 "asmparse.y"
-                                                              { PENV->nExtLine = (yyvsp[-4].int32); PENV->nExtLineEnd = (yyvsp[-2].int32);
-                                                                PENV->nExtCol=(yyvsp[0].int32); PENV->nExtColEnd = static_cast<unsigned>(-1); }
-#line 8305 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 770: /* extSourceSpec: esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING  */
-#line 1913 "asmparse.y"
-                                                              { PENV->nExtLine = (yyvsp[-7].int32); PENV->nExtLineEnd = (yyvsp[-5].int32);
-                                                                PENV->nExtCol=(yyvsp[-3].int32); PENV->nExtColEnd = (yyvsp[-1].int32);
-                                                                PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8313 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 771: /* extSourceSpec: esHead int32 ',' int32 ':' int32 ',' int32  */
-#line 1917 "asmparse.y"
-                                                              { PENV->nExtLine = (yyvsp[-6].int32); PENV->nExtLineEnd = (yyvsp[-4].int32);
-                                                                PENV->nExtCol=(yyvsp[-2].int32); PENV->nExtColEnd = (yyvsp[0].int32); }
-#line 8320 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 772: /* extSourceSpec: esHead int32 QSTRING  */
-#line 1919 "asmparse.y"
-                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-1].int32) - 1;
-                                                                PENV->nExtCol = 0; PENV->nExtColEnd = static_cast<unsigned>(-1);
-                                                                PASM->SetSourceFileName((yyvsp[0].binstr));}
-#line 8328 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 773: /* fileDecl: _FILE fileAttr dottedName fileEntry hashHead bytes ')' fileEntry  */
-#line 1926 "asmparse.y"
-                                                              { PASMM->AddFile((yyvsp[-5].string), (yyvsp[-6].fileAttr)|(yyvsp[-4].fileAttr)|(yyvsp[0].fileAttr), (yyvsp[-2].binstr)); }
-#line 8334 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 774: /* fileDecl: _FILE fileAttr dottedName fileEntry  */
-#line 1927 "asmparse.y"
-                                                              { PASMM->AddFile((yyvsp[-1].string), (yyvsp[-2].fileAttr)|(yyvsp[0].fileAttr), NULL); }
-#line 8340 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 775: /* fileAttr: %empty  */
-#line 1930 "asmparse.y"
-                                                              { (yyval.fileAttr) = (CorFileFlags) 0; }
-#line 8346 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 776: /* fileAttr: fileAttr NOMETADATA_  */
-#line 1931 "asmparse.y"
-                                                              { (yyval.fileAttr) = (CorFileFlags) ((yyvsp[-1].fileAttr) | ffContainsNoMetaData); }
-#line 8352 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 777: /* fileEntry: %empty  */
-#line 1934 "asmparse.y"
-                                                              { (yyval.fileAttr) = (CorFileFlags) 0; }
-#line 8358 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 778: /* fileEntry: _ENTRYPOINT  */
-#line 1935 "asmparse.y"
-                                                              { (yyval.fileAttr) = (CorFileFlags) 0x80000000; }
-#line 8364 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 779: /* hashHead: _HASH '=' '('  */
-#line 1938 "asmparse.y"
-                                                              { bParsingByteArray = TRUE; }
-#line 8370 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 780: /* assemblyHead: _ASSEMBLY asmAttr dottedName  */
-#line 1941 "asmparse.y"
-                                                              { PASMM->StartAssembly((yyvsp[0].string), NULL, (DWORD)(yyvsp[-1].asmAttr), FALSE); }
-#line 8376 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 781: /* asmAttr: %empty  */
-#line 1944 "asmparse.y"
-                                                              { (yyval.asmAttr) = (CorAssemblyFlags) 0; }
-#line 8382 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 782: /* asmAttr: asmAttr RETARGETABLE_  */
-#line 1945 "asmparse.y"
-                                                              { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afRetargetable); }
-#line 8388 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 783: /* asmAttr: asmAttr WINDOWSRUNTIME_  */
-#line 1946 "asmparse.y"
-                                                              { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afContentType_WindowsRuntime); }
-#line 8394 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 784: /* asmAttr: asmAttr NOPLATFORM_  */
-#line 1947 "asmparse.y"
-                                                              { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afPA_NoPlatform); }
-#line 8400 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 785: /* asmAttr: asmAttr LEGACY_ LIBRARY_  */
-#line 1948 "asmparse.y"
-                                                              { (yyval.asmAttr) = (yyvsp[-2].asmAttr); }
-#line 8406 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 786: /* asmAttr: asmAttr CIL_  */
-#line 1949 "asmparse.y"
-                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_MSIL); }
-#line 8412 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 787: /* asmAttr: asmAttr X86_  */
-#line 1950 "asmparse.y"
-                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_x86); }
-#line 8418 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 788: /* asmAttr: asmAttr AMD64_  */
-#line 1951 "asmparse.y"
-                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_AMD64); }
-#line 8424 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 789: /* asmAttr: asmAttr ARM_  */
-#line 1952 "asmparse.y"
-                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_ARM); }
-#line 8430 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 790: /* asmAttr: asmAttr ARM64_  */
-#line 1953 "asmparse.y"
-                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_ARM64); }
-#line 8436 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 793: /* assemblyDecl: _HASH ALGORITHM_ int32  */
-#line 1960 "asmparse.y"
-                                                              { PASMM->SetAssemblyHashAlg((yyvsp[0].int32)); }
-#line 8442 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 796: /* intOrWildcard: int32  */
-#line 1965 "asmparse.y"
-                                                              { (yyval.int32) = (yyvsp[0].int32); }
-#line 8448 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 797: /* intOrWildcard: '*'  */
-#line 1966 "asmparse.y"
-                                                              { (yyval.int32) = 0xFFFF; }
-#line 8454 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 798: /* asmOrRefDecl: publicKeyHead bytes ')'  */
-#line 1969 "asmparse.y"
-                                                              { PASMM->SetAssemblyPublicKey((yyvsp[-1].binstr)); }
-#line 8460 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 799: /* asmOrRefDecl: _VER intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard  */
-#line 1971 "asmparse.y"
-                                                              { PASMM->SetAssemblyVer((USHORT)(yyvsp[-6].int32), (USHORT)(yyvsp[-4].int32), (USHORT)(yyvsp[-2].int32), (USHORT)(yyvsp[0].int32)); }
-#line 8466 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 800: /* asmOrRefDecl: _LOCALE compQstring  */
-#line 1972 "asmparse.y"
-                                                              { (yyvsp[0].binstr)->appendInt8(0); PASMM->SetAssemblyLocale((yyvsp[0].binstr),TRUE); }
-#line 8472 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 801: /* asmOrRefDecl: localeHead bytes ')'  */
-#line 1973 "asmparse.y"
-                                                              { PASMM->SetAssemblyLocale((yyvsp[-1].binstr),FALSE); }
-#line 8478 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 804: /* publicKeyHead: _PUBLICKEY '=' '('  */
-#line 1978 "asmparse.y"
-                                                              { bParsingByteArray = TRUE; }
-#line 8484 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 805: /* publicKeyTokenHead: _PUBLICKEYTOKEN '=' '('  */
-#line 1981 "asmparse.y"
-                                                              { bParsingByteArray = TRUE; }
-#line 8490 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 806: /* localeHead: _LOCALE '=' '('  */
-#line 1984 "asmparse.y"
-                                                              { bParsingByteArray = TRUE; }
-#line 8496 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 807: /* assemblyRefHead: _ASSEMBLY EXTERN_ asmAttr dottedName  */
-#line 1988 "asmparse.y"
-                                                              { PASMM->StartAssembly((yyvsp[0].string), NULL, (yyvsp[-1].asmAttr), TRUE); }
-#line 8502 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 808: /* assemblyRefHead: _ASSEMBLY EXTERN_ asmAttr dottedName AS_ dottedName  */
-#line 1990 "asmparse.y"
-                                                              { PASMM->StartAssembly((yyvsp[-2].string), (yyvsp[0].string), (yyvsp[-3].asmAttr), TRUE); }
-#line 8508 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 811: /* assemblyRefDecl: hashHead bytes ')'  */
-#line 1997 "asmparse.y"
-                                                              { PASMM->SetAssemblyHashBlob((yyvsp[-1].binstr)); }
-#line 8514 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 813: /* assemblyRefDecl: publicKeyTokenHead bytes ')'  */
-#line 1999 "asmparse.y"
-                                                              { PASMM->SetAssemblyPublicKeyToken((yyvsp[-1].binstr)); }
-#line 8520 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 814: /* assemblyRefDecl: AUTO_  */
-#line 2000 "asmparse.y"
-                                                              { PASMM->SetAssemblyAutodetect(); }
-#line 8526 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 815: /* exptypeHead: _CLASS EXTERN_ exptAttr dottedName  */
-#line 2003 "asmparse.y"
-                                                              { PASMM->StartComType((yyvsp[0].string), (yyvsp[-1].exptAttr));}
-#line 8532 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 816: /* exportHead: _EXPORT exptAttr dottedName  */
-#line 2006 "asmparse.y"
-                                                                              { PASMM->StartComType((yyvsp[0].string), (yyvsp[-1].exptAttr)); }
-#line 8538 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 817: /* exptAttr: %empty  */
-#line 2009 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) 0; }
-#line 8544 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 818: /* exptAttr: exptAttr PRIVATE_  */
-#line 2010 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdNotPublic); }
-#line 8550 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 819: /* exptAttr: exptAttr PUBLIC_  */
-#line 2011 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdPublic); }
-#line 8556 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 820: /* exptAttr: exptAttr FORWARDER_  */
-#line 2012 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdForwarder); }
-#line 8562 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 821: /* exptAttr: exptAttr NESTED_ PUBLIC_  */
-#line 2013 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedPublic); }
-#line 8568 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 822: /* exptAttr: exptAttr NESTED_ PRIVATE_  */
-#line 2014 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedPrivate); }
-#line 8574 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 823: /* exptAttr: exptAttr NESTED_ FAMILY_  */
-#line 2015 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamily); }
-#line 8580 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 824: /* exptAttr: exptAttr NESTED_ ASSEMBLY_  */
-#line 2016 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedAssembly); }
-#line 8586 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 825: /* exptAttr: exptAttr NESTED_ FAMANDASSEM_  */
-#line 2017 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamANDAssem); }
-#line 8592 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 826: /* exptAttr: exptAttr NESTED_ FAMORASSEM_  */
-#line 2018 "asmparse.y"
-                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamORAssem); }
-#line 8598 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 829: /* exptypeDecl: _FILE dottedName  */
-#line 2025 "asmparse.y"
-                                                              { PASMM->SetComTypeFile((yyvsp[0].string)); }
-#line 8604 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 830: /* exptypeDecl: _CLASS EXTERN_ slashedName  */
-#line 2026 "asmparse.y"
-                                                               { PASMM->SetComTypeComType((yyvsp[0].string)); }
-#line 8610 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 831: /* exptypeDecl: _ASSEMBLY EXTERN_ dottedName  */
-#line 2027 "asmparse.y"
-                                                              { PASMM->SetComTypeAsmRef((yyvsp[0].string)); }
-#line 8616 "prebuilt\\asmparse.cpp"
-    break;
-
-  case 832: /* exptypeDecl: MDTOKEN_ '(' int32 ')'  */
-#line 2028 "asmparse.y"
-                                                              { if(!PASMM->SetComTypeImplementationTok((yyvsp[-1].int32)))
-                                                                  PASM->report->error("Invalid implementation of exported type\n"); }
+  case 764: /* secAction: DENY_  */
+#line 1886 "asmparse.y"
+                                                              { (yyval.secAct) = dclDeny; }
 #line 8623 "prebuilt\\asmparse.cpp"
     break;
 
-  case 833: /* exptypeDecl: _CLASS int32  */
+  case 765: /* secAction: PERMITONLY_  */
+#line 1887 "asmparse.y"
+                                                              { (yyval.secAct) = dclPermitOnly; }
+#line 8629 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 766: /* secAction: LINKCHECK_  */
+#line 1888 "asmparse.y"
+                                                              { (yyval.secAct) = dclLinktimeCheck; }
+#line 8635 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 767: /* secAction: INHERITCHECK_  */
+#line 1889 "asmparse.y"
+                                                              { (yyval.secAct) = dclInheritanceCheck; }
+#line 8641 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 768: /* secAction: REQMIN_  */
+#line 1890 "asmparse.y"
+                                                              { (yyval.secAct) = dclRequestMinimum; }
+#line 8647 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 769: /* secAction: REQOPT_  */
+#line 1891 "asmparse.y"
+                                                              { (yyval.secAct) = dclRequestOptional; }
+#line 8653 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 770: /* secAction: REQREFUSE_  */
+#line 1892 "asmparse.y"
+                                                              { (yyval.secAct) = dclRequestRefuse; }
+#line 8659 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 771: /* secAction: PREJITGRANT_  */
+#line 1893 "asmparse.y"
+                                                              { (yyval.secAct) = dclPrejitGrant; }
+#line 8665 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 772: /* secAction: PREJITDENY_  */
+#line 1894 "asmparse.y"
+                                                              { (yyval.secAct) = dclPrejitDenied; }
+#line 8671 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 773: /* secAction: NONCASDEMAND_  */
+#line 1895 "asmparse.y"
+                                                              { (yyval.secAct) = dclNonCasDemand; }
+#line 8677 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 774: /* secAction: NONCASLINKDEMAND_  */
+#line 1896 "asmparse.y"
+                                                              { (yyval.secAct) = dclNonCasLinkDemand; }
+#line 8683 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 775: /* secAction: NONCASINHERITANCE_  */
+#line 1897 "asmparse.y"
+                                                              { (yyval.secAct) = dclNonCasInheritance; }
+#line 8689 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 776: /* esHead: _LINE  */
+#line 1901 "asmparse.y"
+                                                              { PASM->ResetLineNumbers(); nCurrPC = PASM->m_CurPC; PENV->bExternSource = TRUE; PENV->bExternSourceAutoincrement = FALSE; }
+#line 8695 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 777: /* esHead: P_LINE  */
+#line 1902 "asmparse.y"
+                                                              { PASM->ResetLineNumbers(); nCurrPC = PASM->m_CurPC; PENV->bExternSource = TRUE; PENV->bExternSourceAutoincrement = TRUE; }
+#line 8701 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 778: /* extSourceSpec: esHead int32 SQSTRING  */
+#line 1905 "asmparse.y"
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-1].int32);
+                                                                PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1);
+                                                                PASM->SetSourceFileName((yyvsp[0].string));}
+#line 8709 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 779: /* extSourceSpec: esHead int32  */
+#line 1908 "asmparse.y"
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[0].int32);
+                                                                PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1); }
+#line 8716 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 780: /* extSourceSpec: esHead int32 ':' int32 SQSTRING  */
+#line 1910 "asmparse.y"
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-3].int32);
+                                                                PENV->nExtCol=(yyvsp[-1].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);
+                                                                PASM->SetSourceFileName((yyvsp[0].string));}
+#line 8724 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 781: /* extSourceSpec: esHead int32 ':' int32  */
+#line 1913 "asmparse.y"
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-2].int32);
+                                                                PENV->nExtCol=(yyvsp[0].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);}
+#line 8731 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 782: /* extSourceSpec: esHead int32 ':' int32 ',' int32 SQSTRING  */
+#line 1916 "asmparse.y"
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-5].int32);
+                                                                PENV->nExtCol=(yyvsp[-3].int32); PENV->nExtColEnd = (yyvsp[-1].int32);
+                                                                PASM->SetSourceFileName((yyvsp[0].string));}
+#line 8739 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 783: /* extSourceSpec: esHead int32 ':' int32 ',' int32  */
+#line 1920 "asmparse.y"
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-4].int32);
+                                                                PENV->nExtCol=(yyvsp[-2].int32); PENV->nExtColEnd = (yyvsp[0].int32); }
+#line 8746 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 784: /* extSourceSpec: esHead int32 ',' int32 ':' int32 SQSTRING  */
+#line 1923 "asmparse.y"
+                                                              { PENV->nExtLine = (yyvsp[-5].int32); PENV->nExtLineEnd = (yyvsp[-3].int32);
+                                                                PENV->nExtCol=(yyvsp[-1].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);
+                                                                PASM->SetSourceFileName((yyvsp[0].string));}
+#line 8754 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 785: /* extSourceSpec: esHead int32 ',' int32 ':' int32  */
+#line 1927 "asmparse.y"
+                                                              { PENV->nExtLine = (yyvsp[-4].int32); PENV->nExtLineEnd = (yyvsp[-2].int32);
+                                                                PENV->nExtCol=(yyvsp[0].int32); PENV->nExtColEnd = static_cast<unsigned>(-1); }
+#line 8761 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 786: /* extSourceSpec: esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING  */
+#line 1930 "asmparse.y"
+                                                              { PENV->nExtLine = (yyvsp[-7].int32); PENV->nExtLineEnd = (yyvsp[-5].int32);
+                                                                PENV->nExtCol=(yyvsp[-3].int32); PENV->nExtColEnd = (yyvsp[-1].int32);
+                                                                PASM->SetSourceFileName((yyvsp[0].string));}
+#line 8769 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 787: /* extSourceSpec: esHead int32 ',' int32 ':' int32 ',' int32  */
+#line 1934 "asmparse.y"
+                                                              { PENV->nExtLine = (yyvsp[-6].int32); PENV->nExtLineEnd = (yyvsp[-4].int32);
+                                                                PENV->nExtCol=(yyvsp[-2].int32); PENV->nExtColEnd = (yyvsp[0].int32); }
+#line 8776 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 788: /* extSourceSpec: esHead int32 QSTRING  */
+#line 1936 "asmparse.y"
+                                                              { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-1].int32) - 1;
+                                                                PENV->nExtCol = 0; PENV->nExtColEnd = static_cast<unsigned>(-1);
+                                                                PASM->SetSourceFileName((yyvsp[0].binstr));}
+#line 8784 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 789: /* fileDecl: _FILE fileAttr dottedName fileEntry hashHead bytes ')' fileEntry  */
+#line 1943 "asmparse.y"
+                                                              { PASMM->AddFile((yyvsp[-5].string), (yyvsp[-6].fileAttr)|(yyvsp[-4].fileAttr)|(yyvsp[0].fileAttr), (yyvsp[-2].binstr)); }
+#line 8790 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 790: /* fileDecl: _FILE fileAttr dottedName fileEntry  */
+#line 1944 "asmparse.y"
+                                                              { PASMM->AddFile((yyvsp[-1].string), (yyvsp[-2].fileAttr)|(yyvsp[0].fileAttr), NULL); }
+#line 8796 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 791: /* fileAttr: %empty  */
+#line 1947 "asmparse.y"
+                                                              { (yyval.fileAttr) = (CorFileFlags) 0; }
+#line 8802 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 792: /* fileAttr: fileAttr NOMETADATA_  */
+#line 1948 "asmparse.y"
+                                                              { (yyval.fileAttr) = (CorFileFlags) ((yyvsp[-1].fileAttr) | ffContainsNoMetaData); }
+#line 8808 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 793: /* fileEntry: %empty  */
+#line 1951 "asmparse.y"
+                                                              { (yyval.fileAttr) = (CorFileFlags) 0; }
+#line 8814 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 794: /* fileEntry: _ENTRYPOINT  */
+#line 1952 "asmparse.y"
+                                                              { (yyval.fileAttr) = (CorFileFlags) 0x80000000; }
+#line 8820 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 795: /* hashHead: _HASH '=' '('  */
+#line 1955 "asmparse.y"
+                                                              { bParsingByteArray = TRUE; }
+#line 8826 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 796: /* assemblyHead: _ASSEMBLY asmAttr dottedName  */
+#line 1958 "asmparse.y"
+                                                              { PASMM->StartAssembly((yyvsp[0].string), NULL, (DWORD)(yyvsp[-1].asmAttr), FALSE); }
+#line 8832 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 797: /* asmAttr: %empty  */
+#line 1961 "asmparse.y"
+                                                              { (yyval.asmAttr) = (CorAssemblyFlags) 0; }
+#line 8838 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 798: /* asmAttr: asmAttr RETARGETABLE_  */
+#line 1962 "asmparse.y"
+                                                              { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afRetargetable); }
+#line 8844 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 799: /* asmAttr: asmAttr WINDOWSRUNTIME_  */
+#line 1963 "asmparse.y"
+                                                              { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afContentType_WindowsRuntime); }
+#line 8850 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 800: /* asmAttr: asmAttr NOPLATFORM_  */
+#line 1964 "asmparse.y"
+                                                              { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afPA_NoPlatform); }
+#line 8856 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 801: /* asmAttr: asmAttr LEGACY_ LIBRARY_  */
+#line 1965 "asmparse.y"
+                                                              { (yyval.asmAttr) = (yyvsp[-2].asmAttr); }
+#line 8862 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 802: /* asmAttr: asmAttr CIL_  */
+#line 1966 "asmparse.y"
+                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_MSIL); }
+#line 8868 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 803: /* asmAttr: asmAttr X86_  */
+#line 1967 "asmparse.y"
+                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_x86); }
+#line 8874 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 804: /* asmAttr: asmAttr AMD64_  */
+#line 1968 "asmparse.y"
+                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_AMD64); }
+#line 8880 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 805: /* asmAttr: asmAttr ARM_  */
+#line 1969 "asmparse.y"
+                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_ARM); }
+#line 8886 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 806: /* asmAttr: asmAttr ARM64_  */
+#line 1970 "asmparse.y"
+                                                              { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_ARM64); }
+#line 8892 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 809: /* assemblyDecl: _HASH ALGORITHM_ int32  */
+#line 1977 "asmparse.y"
+                                                              { PASMM->SetAssemblyHashAlg((yyvsp[0].int32)); }
+#line 8898 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 812: /* intOrWildcard: int32  */
+#line 1982 "asmparse.y"
+                                                              { (yyval.int32) = (yyvsp[0].int32); }
+#line 8904 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 813: /* intOrWildcard: '*'  */
+#line 1983 "asmparse.y"
+                                                              { (yyval.int32) = 0xFFFF; }
+#line 8910 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 814: /* asmOrRefDecl: publicKeyHead bytes ')'  */
+#line 1986 "asmparse.y"
+                                                              { PASMM->SetAssemblyPublicKey((yyvsp[-1].binstr)); }
+#line 8916 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 815: /* asmOrRefDecl: _VER intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard  */
+#line 1988 "asmparse.y"
+                                                              { PASMM->SetAssemblyVer((USHORT)(yyvsp[-6].int32), (USHORT)(yyvsp[-4].int32), (USHORT)(yyvsp[-2].int32), (USHORT)(yyvsp[0].int32)); }
+#line 8922 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 816: /* asmOrRefDecl: _LOCALE compQstring  */
+#line 1989 "asmparse.y"
+                                                              { (yyvsp[0].binstr)->appendInt8(0); PASMM->SetAssemblyLocale((yyvsp[0].binstr),TRUE); }
+#line 8928 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 817: /* asmOrRefDecl: localeHead bytes ')'  */
+#line 1990 "asmparse.y"
+                                                              { PASMM->SetAssemblyLocale((yyvsp[-1].binstr),FALSE); }
+#line 8934 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 820: /* publicKeyHead: _PUBLICKEY '=' '('  */
+#line 1995 "asmparse.y"
+                                                              { bParsingByteArray = TRUE; }
+#line 8940 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 821: /* publicKeyTokenHead: _PUBLICKEYTOKEN '=' '('  */
+#line 1998 "asmparse.y"
+                                                              { bParsingByteArray = TRUE; }
+#line 8946 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 822: /* localeHead: _LOCALE '=' '('  */
+#line 2001 "asmparse.y"
+                                                              { bParsingByteArray = TRUE; }
+#line 8952 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 823: /* assemblyRefHead: _ASSEMBLY EXTERN_ asmAttr dottedName  */
+#line 2005 "asmparse.y"
+                                                              { PASMM->StartAssembly((yyvsp[0].string), NULL, (yyvsp[-1].asmAttr), TRUE); }
+#line 8958 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 824: /* assemblyRefHead: _ASSEMBLY EXTERN_ asmAttr dottedName AS_ dottedName  */
+#line 2007 "asmparse.y"
+                                                              { PASMM->StartAssembly((yyvsp[-2].string), (yyvsp[0].string), (yyvsp[-3].asmAttr), TRUE); }
+#line 8964 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 827: /* assemblyRefDecl: hashHead bytes ')'  */
+#line 2014 "asmparse.y"
+                                                              { PASMM->SetAssemblyHashBlob((yyvsp[-1].binstr)); }
+#line 8970 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 829: /* assemblyRefDecl: publicKeyTokenHead bytes ')'  */
+#line 2016 "asmparse.y"
+                                                              { PASMM->SetAssemblyPublicKeyToken((yyvsp[-1].binstr)); }
+#line 8976 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 830: /* assemblyRefDecl: AUTO_  */
+#line 2017 "asmparse.y"
+                                                              { PASMM->SetAssemblyAutodetect(); }
+#line 8982 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 831: /* exptypeHead: _CLASS EXTERN_ exptAttr dottedName  */
+#line 2020 "asmparse.y"
+                                                              { PASMM->StartComType((yyvsp[0].string), (yyvsp[-1].exptAttr));}
+#line 8988 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 832: /* exportHead: _EXPORT exptAttr dottedName  */
+#line 2023 "asmparse.y"
+                                                                              { PASMM->StartComType((yyvsp[0].string), (yyvsp[-1].exptAttr)); }
+#line 8994 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 833: /* exptAttr: %empty  */
+#line 2026 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) 0; }
+#line 9000 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 834: /* exptAttr: exptAttr PRIVATE_  */
+#line 2027 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdNotPublic); }
+#line 9006 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 835: /* exptAttr: exptAttr PUBLIC_  */
+#line 2028 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdPublic); }
+#line 9012 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 836: /* exptAttr: exptAttr FORWARDER_  */
+#line 2029 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdForwarder); }
+#line 9018 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 837: /* exptAttr: exptAttr NESTED_ PUBLIC_  */
 #line 2030 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedPublic); }
+#line 9024 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 838: /* exptAttr: exptAttr NESTED_ PRIVATE_  */
+#line 2031 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedPrivate); }
+#line 9030 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 839: /* exptAttr: exptAttr NESTED_ FAMILY_  */
+#line 2032 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamily); }
+#line 9036 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 840: /* exptAttr: exptAttr NESTED_ ASSEMBLY_  */
+#line 2033 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedAssembly); }
+#line 9042 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 841: /* exptAttr: exptAttr NESTED_ FAMANDASSEM_  */
+#line 2034 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamANDAssem); }
+#line 9048 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 842: /* exptAttr: exptAttr NESTED_ FAMORASSEM_  */
+#line 2035 "asmparse.y"
+                                                              { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamORAssem); }
+#line 9054 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 845: /* exptypeDecl: _FILE dottedName  */
+#line 2042 "asmparse.y"
+                                                              { PASMM->SetComTypeFile((yyvsp[0].string)); }
+#line 9060 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 846: /* exptypeDecl: _CLASS EXTERN_ slashedName  */
+#line 2043 "asmparse.y"
+                                                               { PASMM->SetComTypeComType((yyvsp[0].string)); }
+#line 9066 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 847: /* exptypeDecl: _ASSEMBLY EXTERN_ dottedName  */
+#line 2044 "asmparse.y"
+                                                              { PASMM->SetComTypeAsmRef((yyvsp[0].string)); }
+#line 9072 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 848: /* exptypeDecl: MDTOKEN_ '(' int32 ')'  */
+#line 2045 "asmparse.y"
+                                                              { if(!PASMM->SetComTypeImplementationTok((yyvsp[-1].int32)))
+                                                                  PASM->report->error("Invalid implementation of exported type\n"); }
+#line 9079 "prebuilt\\asmparse.cpp"
+    break;
+
+  case 849: /* exptypeDecl: _CLASS int32  */
+#line 2047 "asmparse.y"
                                                               { if(!PASMM->SetComTypeClassTok((yyvsp[0].int32)))
                                                                   PASM->report->error("Invalid TypeDefID of exported type\n"); }
-#line 8630 "prebuilt\\asmparse.cpp"
+#line 9086 "prebuilt\\asmparse.cpp"
     break;
 
-  case 836: /* manifestResHead: _MRESOURCE manresAttr dottedName  */
-#line 2036 "asmparse.y"
+  case 852: /* manifestResHead: _MRESOURCE manresAttr dottedName  */
+#line 2053 "asmparse.y"
                                                               { PASMM->StartManifestRes((yyvsp[0].string), (yyvsp[0].string), (yyvsp[-1].manresAttr)); }
-#line 8636 "prebuilt\\asmparse.cpp"
+#line 9092 "prebuilt\\asmparse.cpp"
     break;
 
-  case 837: /* manifestResHead: _MRESOURCE manresAttr dottedName AS_ dottedName  */
-#line 2038 "asmparse.y"
+  case 853: /* manifestResHead: _MRESOURCE manresAttr dottedName AS_ dottedName  */
+#line 2055 "asmparse.y"
                                                               { PASMM->StartManifestRes((yyvsp[-2].string), (yyvsp[0].string), (yyvsp[-3].manresAttr)); }
-#line 8642 "prebuilt\\asmparse.cpp"
+#line 9098 "prebuilt\\asmparse.cpp"
     break;
 
-  case 838: /* manresAttr: %empty  */
-#line 2041 "asmparse.y"
+  case 854: /* manresAttr: %empty  */
+#line 2058 "asmparse.y"
                                                               { (yyval.manresAttr) = (CorManifestResourceFlags) 0; }
-#line 8648 "prebuilt\\asmparse.cpp"
+#line 9104 "prebuilt\\asmparse.cpp"
     break;
 
-  case 839: /* manresAttr: manresAttr PUBLIC_  */
-#line 2042 "asmparse.y"
+  case 855: /* manresAttr: manresAttr PUBLIC_  */
+#line 2059 "asmparse.y"
                                                               { (yyval.manresAttr) = (CorManifestResourceFlags) ((yyvsp[-1].manresAttr) | mrPublic); }
-#line 8654 "prebuilt\\asmparse.cpp"
+#line 9110 "prebuilt\\asmparse.cpp"
     break;
 
-  case 840: /* manresAttr: manresAttr PRIVATE_  */
-#line 2043 "asmparse.y"
+  case 856: /* manresAttr: manresAttr PRIVATE_  */
+#line 2060 "asmparse.y"
                                                               { (yyval.manresAttr) = (CorManifestResourceFlags) ((yyvsp[-1].manresAttr) | mrPrivate); }
-#line 8660 "prebuilt\\asmparse.cpp"
+#line 9116 "prebuilt\\asmparse.cpp"
     break;
 
-  case 843: /* manifestResDecl: _FILE dottedName AT_ int32  */
-#line 2050 "asmparse.y"
+  case 859: /* manifestResDecl: _FILE dottedName AT_ int32  */
+#line 2067 "asmparse.y"
                                                               { PASMM->SetManifestResFile((yyvsp[-2].string), (ULONG)(yyvsp[0].int32)); }
-#line 8666 "prebuilt\\asmparse.cpp"
+#line 9122 "prebuilt\\asmparse.cpp"
     break;
 
-  case 844: /* manifestResDecl: _ASSEMBLY EXTERN_ dottedName  */
-#line 2051 "asmparse.y"
+  case 860: /* manifestResDecl: _ASSEMBLY EXTERN_ dottedName  */
+#line 2068 "asmparse.y"
                                                               { PASMM->SetManifestResAsmRef((yyvsp[0].string)); }
-#line 8672 "prebuilt\\asmparse.cpp"
+#line 9128 "prebuilt\\asmparse.cpp"
     break;
 
 
-#line 8676 "prebuilt\\asmparse.cpp"
+#line 9132 "prebuilt\\asmparse.cpp"
 
       default: break;
     }
@@ -8865,7 +9321,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 2056 "asmparse.y"
+#line 2073 "asmparse.y"
 
 
 #include "grammar_after.cpp"

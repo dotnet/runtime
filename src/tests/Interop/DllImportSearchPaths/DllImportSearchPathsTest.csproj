@@ -4,6 +4,7 @@
     <!-- in its output folder for the purpose of testing assembly loading. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SetIlcRPath>false</SetIlcRPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
@@ -29,6 +30,7 @@
     <!-- NativeLibrary has multiple copies so tests can load different ones without using a cached load -->
     <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(LibrarySubdirectory)/%(Filename)-copy%(Extension)')" />
     <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(LibrarySubdirectory)/%(Filename)-default-flags%(Extension)')" />
+    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(LibrarySubdirectory)/%(Filename)-system32%(Extension)')" />
     <Move SourceFiles="@(NativeLibrariesToMove)" DestinationFiles="@(NativeLibrariesToMove -> '$(LibrarySubdirectory)/%(Filename)%(Extension)')" />
   </Target>
 
@@ -45,5 +47,7 @@
       <NativeLibrariesToCopy Include="$(LibrarySubdirectory)/NativeLibrary.*" />
     </ItemGroup>
     <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(NativeOutputPath)/%(Filename)-in-native%(Extension)')" />
+    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(NativeOutputPath)/%(Filename)-in-native-default-flags%(Extension)')" />
+    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(NativeOutputPath)/%(Filename)-in-native-system32%(Extension)')" />
   </Target>
 </Project>

@@ -14,7 +14,10 @@
 
 int Z_INTERNAL is_kernel_version_greater_or_equal_to_6_5() {
     struct utsname buffer;
-    uname(&buffer);
+    if (uname(&buffer) == -1) {
+        // uname failed
+        return 0;
+    }
 
     int major, minor;
     if (sscanf(buffer.release, "%d.%d", &major, &minor) != 2) {
@@ -49,4 +52,20 @@ void Z_INTERNAL riscv_check_features(struct riscv_cpu_features *features) {
         riscv_check_features_runtime(features);
     else
         riscv_check_features_compile_time(features);
+    if (features->has_rvv) {
+        size_t e8m1_vec_len;
+        intptr_t vtype_reg_val;
+        // Check that a vuint8m1_t vector is at least 16 bytes and that tail
+        // agnostic and mask agnostic mode are supported
+        //
+        __asm__ volatile(
+                "vsetvli %0, zero, e8, m1, ta, ma\n\t"
+                "csrr %1, vtype"
+                : "=r"(e8m1_vec_len), "=r"(vtype_reg_val));
+
+        // The RVV target is supported if the VILL bit of VTYPE (the MSB bit of
+        // VTYPE) is not set and the length of a vuint8m1_t vector is at least 16
+        // bytes
+        features->has_rvv = (vtype_reg_val >= 0 && e8m1_vec_len >= 16);
+    }
 }

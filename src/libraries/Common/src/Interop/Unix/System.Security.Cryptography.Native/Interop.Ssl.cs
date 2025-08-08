@@ -83,6 +83,24 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead", SetLastError = true)]
         internal static partial int SslRead(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDefaultSignatureAlgorithms")]
+        private static unsafe partial int GetDefaultSignatureAlgorithms(Span<ushort> algorithms, ref int algorithmCount);
+
+        internal static ushort[] GetDefaultSignatureAlgorithms()
+        {
+            // 256 algorithms should be more than enough for any use case.
+            Span<ushort> algorithms = stackalloc ushort[256];
+            int algorithmCount = algorithms.Length;
+            int res = GetDefaultSignatureAlgorithms(algorithms, ref algorithmCount);
+
+            if (res != 0 || algorithmCount > algorithms.Length)
+            {
+                throw Interop.OpenSsl.CreateSslException(SR.net_ssl_get_default_sigalgs_failed);
+            }
+
+            return algorithms.Slice(0, algorithmCount).ToArray();
+        }
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRenegotiate")]
         internal static partial int SslRenegotiate(SafeSslHandle ssl, out SslErrorCode error);
 
@@ -185,6 +203,12 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetPostHandshakeAuth")]
         internal static partial void SslSetPostHandshakeAuth(SafeSslHandle ssl, int value);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSigalgs")]
+        internal static unsafe partial int SslSetSigalgs(SafeSslHandle ssl, byte* str);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetClientSigalgs")]
+        internal static unsafe partial int SslSetClientSigalgs(SafeSslHandle ssl, byte* str);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
         private static partial int Tls13SupportedImpl();

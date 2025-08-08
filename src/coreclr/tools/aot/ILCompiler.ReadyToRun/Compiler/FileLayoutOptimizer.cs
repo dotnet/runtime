@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 
 using Internal.TypeSystem;
 
@@ -29,12 +30,14 @@ namespace ILCompiler
         DefaultSort,
         ExclusiveWeight,
         HotCold,
+        InstrumentedHotCold,
         HotWarmCold,
 #if READYTORUN
         CallFrequency,
 #endif
         PettisHansen,
         Random,
+        Explicit,
     }
 
     public enum FileLayoutAlgorithm
@@ -49,13 +52,15 @@ namespace ILCompiler
                                               MethodLayoutAlgorithm methodAlgorithm,
                                               FileLayoutAlgorithm fileAlgorithm,
                                               ProfileDataManager profileData,
-                                              NodeFactory nodeFactory)
+                                              NodeFactory nodeFactory,
+                                              string orderFile = null)
         {
             _logger = logger;
             _methodLayoutAlgorithm = methodAlgorithm;
             _fileLayoutAlgorithm = fileAlgorithm;
             _profileData = profileData;
             _nodeFactory = nodeFactory;
+            _orderFile = orderFile;
         }
 
         private Logger _logger;
@@ -63,6 +68,7 @@ namespace ILCompiler
         private FileLayoutAlgorithm _fileLayoutAlgorithm = FileLayoutAlgorithm.DefaultSort;
         private ProfileDataManager _profileData;
         private NodeFactory _nodeFactory;
+        private string _orderFile;
 
         public ImmutableArray<DependencyNodeCore<NodeFactory>> ApplyProfilerGuidedMethodSort(ImmutableArray<DependencyNodeCore<NodeFactory>> nodes)
         {
@@ -153,6 +159,10 @@ namespace ILCompiler
                     }
                     break;
 
+                case MethodLayoutAlgorithm.InstrumentedHotCold:
+                    methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => (_profileData[left.Method] != null).CompareTo(_profileData[right.Method] != null));
+                    break;
+
                 case MethodLayoutAlgorithm.HotWarmCold:
                     methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => ComputeHotWarmColdRegion(left).CompareTo(ComputeHotWarmColdRegion(right)));
 
@@ -193,6 +203,33 @@ namespace ILCompiler
                         methods[i] = methods[j];
                         methods[j] = temp;
                     }
+                    break;
+
+                case MethodLayoutAlgorithm.Explicit:
+                    var nameMap = new Dictionary<string, MethodWithGCInfo>(methods.Count);
+                    var order = new Dictionary<MethodWithGCInfo, int>(methods.Count);
+
+                    for (int i = 0; i < methods.Count; i++)
+                    {
+                        nameMap[methods[i].GetMangledName(_nodeFactory.NameMangler)] = methods[i];
+                        order[methods[i]] = int.MaxValue;
+                    }
+
+                    using (StreamReader sr = new StreamReader(_orderFile))
+                    {
+                        int line = 0;
+                        while (!sr.EndOfStream)
+                        {
+                            string symbolName = sr.ReadLine();
+                            if (string.IsNullOrEmpty(symbolName)
+                                || !nameMap.TryGetValue(symbolName, out MethodWithGCInfo m))
+                                continue;
+
+                            order[m] = line++;
+                        }
+                    }
+
+                    methods.MergeSortAllowDuplicates((MethodWithGCInfo left, MethodWithGCInfo right) => order[left].CompareTo(order[right]));
                     break;
 
                 default:

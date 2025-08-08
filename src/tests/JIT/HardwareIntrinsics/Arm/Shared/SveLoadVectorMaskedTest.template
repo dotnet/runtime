@@ -24,7 +24,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new LoadUnaryOpTest__{TestName}();
+            var test = new LoadVectorMaskTest__{TestName}();
 
             if (test.IsSupported)
             {
@@ -56,7 +56,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class LoadUnaryOpTest__{TestName}
+    public sealed unsafe class LoadVectorMaskTest__{TestName}
     {
         private struct DataTable
         {
@@ -121,7 +121,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(LoadUnaryOpTest__{TestName} testClass)
+            public void RunStructFldScenario(LoadVectorMaskTest__{TestName} testClass)
             {
                 {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
 
@@ -148,7 +148,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public LoadUnaryOpTest__{TestName}()
+        public LoadVectorMaskTest__{TestName}()
         {
             Succeeded = true;
 

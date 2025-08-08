@@ -87,8 +87,14 @@ namespace System.Formats.Tar.Tests
         private DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
             new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
-        private decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
-            ((decimal)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
+        protected DateTimeOffset? TryGetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
+        {
+            if (!ea.ContainsKey(fieldName))
+            {
+                return default;
+            }
+            return GetDateTimeOffsetFromTimestampString(ea[fieldName]);
+        }
 
         protected DateTimeOffset GetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
         {
@@ -102,12 +108,6 @@ namespace System.Formats.Tar.Tests
             return GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
         }
 
-        protected string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
-        {
-            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
-            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
-        }
-
         protected void VerifyExtendedAttributeTimestamp(PaxTarEntry paxEntry, string fieldName, DateTimeOffset minimumTime)
         {
             DateTimeOffset converted = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, fieldName);
@@ -117,11 +117,9 @@ namespace System.Formats.Tar.Tests
         protected void VerifyExtendedAttributeTimestamps(PaxTarEntry pax)
         {
             Assert.NotNull(pax.ExtendedAttributes);
-            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 3); // Expect to at least collect mtime, ctime and atime
+            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 1); // Expect to at least collect mtime
 
             VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
         }
 
         public static IEnumerable<object[]> GetPaxExtendedAttributesRoundtripTestData()

@@ -67,7 +67,7 @@
 //          ...guarded code...
 //      } EX_CATCH {
 //          ...handler...
-//      } EX_END_CATCH(SwallowAllExceptions)
+//      } EX_END_CATCH
 //
 //
 // EX_TRY blocks can be nested.
@@ -369,55 +369,38 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #endif // TARGET_UNIX
 
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                        \
+// The purpose of the INSTALL_UNWIND_AND_CONTINUE_HANDLER is to translate an exception to a managed
+// exception before it hits managed code.
+
+#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                              \
     {                                                                                       \
         MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
-        bool       __fExceptionCaught = false;                                             \
-        SCAN_EHMARKER();                                                                    \
-        if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();
+        bool       __fExceptionCaught = false;                                              \
+        if (true) PAL_CPP_TRY {
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER                                                 \
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                            \
-    /* The purpose of the INSTALL_UNWIND_AND_CONTINUE_HANDLER is to translate an exception to a managed */ \
-    /* exception before it hits managed code. */
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 
-// Optimized version for helper method frame. Avoids redundant GetThread() calls.
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(pHelperFrame)                           \
-    {                                                                                       \
-        Exception* __pUnCException  = NULL;                                                 \
-        Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
-        bool       __fExceptionCaught = false;                                             \
-        SCAN_EHMARKER();                                                                    \
-        if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();
-
-#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                      \
-            SCAN_EHMARKER_END_TRY();                                                        \
+#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                             \
         }                                                                                   \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \
-            SCAN_EHMARKER_CATCH();                                                          \
             __pUnCException = Exception::GetOOMException();                                 \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
-            __fExceptionCaught = true;                                                     \
-            SCAN_EHMARKER_END_CATCH();                                                      \
+            __fExceptionCaught = true;                                                      \
         }                                                                                   \
         PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
         {                                                                                   \
-            SCAN_EHMARKER_CATCH();                                                          \
             CONSISTENCY_CHECK(NULL != __pException);                                        \
             __pUnCException = __pException;                                                 \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
             __fExceptionCaught = true;                                                     \
-            SCAN_EHMARKER_END_CATCH();                                                      \
         }                                                                                   \
         PAL_CPP_ENDTRY                                                                      \
         if (__fExceptionCaught)                                                            \
         {                                                                                   \
-            SCAN_EHMARKER_CATCH();                                                          \
             UnwindAndContinueRethrowHelperAfterCatch(__pUnCEntryFrame, __pUnCException, nativeRethrow);    \
         }                                                                                   \
     }                                                                                       \
@@ -454,7 +437,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 // Adds a record to the contract chain.
 //==========================================================================
 
-#define CANNOTTHROWCOMPLUSEXCEPTION() ANNOTATION_NOTHROW; \
+#define CANNOTTHROWCOMPLUSEXCEPTION() \
     COMPlusCannotThrowExceptionHelper _dummyvariable(TRUE, __FUNCTION__, __FILE__, __LINE__);
 
 extern const char *g_ExceptionFile;
@@ -476,9 +459,7 @@ extern DWORD g_ExceptionLine;
 
 #else // ENABLE_CONTRACTS && !DACCESS_COMPILE
 
-#define CANNOTTHROWCOMPLUSEXCEPTION() ANNOTATION_NOTHROW
-#define BEGINCANNOTTHROWCOMPLUSEXCEPTION_SEH() ANNOTATION_NOTHROW
-#define ENDCANNOTTHROWCOMPLUSEXCEPTION_SEH()
+#define CANNOTTHROWCOMPLUSEXCEPTION()
 
 #define COMPlusThrow                        RealCOMPlusThrow
 #define COMPlusThrowNonLocalized            RealCOMPlusThrowNonLocalized

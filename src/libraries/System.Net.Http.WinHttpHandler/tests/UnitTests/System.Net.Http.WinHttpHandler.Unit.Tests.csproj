@@ -24,6 +24,8 @@
              Link="Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs"
              Link="Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
+             Link="Common\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"

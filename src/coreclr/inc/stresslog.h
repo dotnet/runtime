@@ -75,7 +75,7 @@
 
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
-                StressLog::LogMsg(facility, level, 0, msg);                         \
+                StressLog::LogMsg(level, facility, 0, msg);                         \
             } while(0)
 
 #define STRESS_LOG1(facility, level, msg, data1) \
@@ -347,19 +347,24 @@ typedef USHORT
     static StressLog theLog;    // We only have one log, and this is it
 };
 
-
-template<>
-void* StressLog::ConvertArgument(float arg) = delete;
-
 #if TARGET_64BIT
 template<>
 inline void* StressLog::ConvertArgument(double arg)
 {
     return (void*)(size_t)(*((uint64_t*)&arg));
 }
+
+// COMPAT: Convert 32-bit floats to 64-bit doubles.
+template<>
+inline void* StressLog::ConvertArgument(float arg)
+{
+    return StressLog::ConvertArgument((double)arg);
+}
 #else
 template<>
 void* StressLog::ConvertArgument(double arg) = delete;
+template<>
+void* StressLog::ConvertArgument(float arg) = delete;
 
 // COMPAT: Truncate 64-bit integer arguments to 32-bit
 template<>

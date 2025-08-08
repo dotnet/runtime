@@ -311,11 +311,11 @@ void PEImage::OpenMDImport()
         if(pMeta==NULL)
             return;
 
-        IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
-                                                 cMeta,
-                                                 ofRead,
-                                                 IID_IMDInternalImport,
-                                                 (void **) &m_pNewImport));
+        IfFailThrow(GetMDInternalInterface((void *) pMeta,
+                                           cMeta,
+                                           ofRead,
+                                           IID_IMDInternalImport,
+                                           (void **) &m_pNewImport));
 
         if(InterlockedCompareExchangeT(&m_pMDImport, m_pNewImport, NULL))
         {
@@ -370,11 +370,11 @@ void PEImage::GetMVID(GUID *pMvid)
 
     SafeComHolder<IMDInternalImport> pMDImport;
 
-    IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
-                                             cMeta,
-                                             ofRead,
-                                             IID_IMDInternalImport,
-                                             (void **) &pMDImport));
+    IfFailThrow(GetMDInternalInterface((void *) pMeta,
+                                       cMeta,
+                                       ofRead,
+                                       IID_IMDInternalImport,
+                                       (void **) &pMDImport));
 
     pMDImport->GetScopeProps(NULL, &MvidDEBUG);
 
@@ -636,11 +636,13 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
         _ASSERTE(bIsLoadedLayoutSuitable || bIsFlatLayoutSuitable);
 
+#ifndef PEIMAGE_FLAT_LAYOUT_ONLY
         if (bIsLoadedLayoutPreferred)
         {
             _ASSERTE(bIsLoadedLayoutSuitable);
             pRetVal = PEImage::CreateLoadedLayout(!bIsFlatLayoutSuitable);
         }
+#endif
 
         if (pRetVal == NULL)
         {
@@ -758,8 +760,6 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 }
 #endif // !TARGET_UNIX
 
-#endif //DACCESS_COMPILE
-
 HANDLE PEImage::GetFileHandle()
 {
     CONTRACTL
@@ -776,11 +776,7 @@ HANDLE PEImage::GetFileHandle()
 
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
-#if !defined(DACCESS_COMPILE)
         EEFileLoadException::Throw(GetPathToLoad(), hr);
-#else // defined(DACCESS_COMPILE)
-        ThrowHR(hr);
-#endif // !defined(DACCESS_COMPILE)
     }
 
     return m_hFile;
@@ -819,6 +815,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 
+#endif // !DACCESS_COMPILE
 
 BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 {

@@ -6,34 +6,35 @@
 
 namespace ILLink.Shared
 {
-	internal static class MessageFormat
-	{
-		public static string FormatRequiresAttributeMessageArg (string? message)
-		{
-			if (!string.IsNullOrEmpty (message))
-				return $" {message}{(message!.TrimEnd ().EndsWith (".") ? "" : ".")}";
+    internal static class MessageFormat
+    {
+        public static string FormatRequiresAttributeMessageArg(string? message)
+        {
+            if (!string.IsNullOrEmpty(message))
+                return $" {message}{(message!.TrimEnd().EndsWith(".") ? "" : ".")}";
 
-			return string.Empty;
-		}
+            return string.Empty;
+        }
 
-		public static string FormatRequiresAttributeUrlArg (string? url)
-		{
-			if (!string.IsNullOrEmpty (url))
-				return $" {url}";
+        public static string FormatRequiresAttributeUrlArg(string? url)
+        {
+            if (!string.IsNullOrEmpty(url))
+                return $" {url}";
 
-			return string.Empty;
-		}
+            return string.Empty;
+        }
 
-		public static string FormatRequiresAttributeMismatch (bool memberHasAttribute, bool isInterface, params object[] args)
-		{
-			string format = (memberHasAttribute, isInterface) switch {
-				(false, true) => SharedStrings.InterfaceRequiresMismatchMessage,
-				(true, true) => SharedStrings.ImplementationRequiresMismatchMessage,
-				(false, false) => SharedStrings.BaseRequiresMismatchMessage,
-				(true, false) => SharedStrings.DerivedRequiresMismatchMessage
-			};
+        public static string FormatRequiresAttributeMismatch(bool memberHasAttribute, bool isInterface, params object[] args)
+        {
+            string format = (memberHasAttribute, isInterface) switch
+            {
+                (false, true) => SharedStrings.InterfaceRequiresMismatchMessage,
+                (true, true) => SharedStrings.ImplementationRequiresMismatchMessage,
+                (false, false) => SharedStrings.BaseRequiresMismatchMessage,
+                (true, false) => SharedStrings.DerivedRequiresMismatchMessage
+            };
 
-			return string.Format (format, args);
-		}
-	}
+            return string.Format(format, args);
+        }
+    }
 }

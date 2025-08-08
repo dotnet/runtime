@@ -170,11 +170,7 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<TTo>();
 
-#if MONO
-            return Unsafe.As<Vector512<TFrom>, Vector512<TTo>>(ref vector);
-#else
             return Unsafe.BitCast<Vector512<TFrom>, Vector512<TTo>>(vector);
-#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector512{T}" /> as a new <see langword="Vector512&lt;Byte&gt;" />.</summary>
@@ -3753,7 +3749,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="Vector256.Cos(Vector256{double})" />
+        /// <inheritdoc cref="Vector256.SinCos(Vector256{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<double> Sin, Vector512<double> Cos) SinCos(Vector512<double> vector)
         {
@@ -3773,7 +3769,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="Vector256.Cos(Vector256{float})" />
+        /// <inheritdoc cref="Vector256.SinCos(Vector256{float})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector512<float> Sin, Vector512<float> Cos) SinCos(Vector512<float> vector)
         {

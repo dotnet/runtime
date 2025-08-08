@@ -892,14 +892,14 @@ namespace System.Linq.Tests
         public void SingleElementPredicateFalse()
         {
             int[] source = [3];
-            Assert.Empty(source.Where(IsEven));
+            Assert.DoesNotContain(source, IsEven);
         }
 
         [Fact]
         public void PredicateFalseForAll()
         {
             int[] source = [9, 7, 15, 3, 27];
-            Assert.Empty(source.Where(IsEven));
+            Assert.DoesNotContain(source, IsEven);
         }
 
         [Fact]

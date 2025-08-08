@@ -28,9 +28,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SlhDsaTestHelpers.AssertImportPublicKey(
                 AssertSlhDsaIsOnlyPublicAncestor, info.Algorithm, info.PublicKey);
 
-            // Tests ImportSecretKey, ImportPKCS8PrivateKey, ImportPem (with PRIVATE KEY)
-            SlhDsaTestHelpers.AssertImportSecretKey(
-                AssertSlhDsaIsOnlyPublicAncestor, info.Algorithm, info.SecretKey);
+            // Tests ImportPrivateKey, ImportPKCS8PrivateKey, ImportPem (with PRIVATE KEY)
+            SlhDsaTestHelpers.AssertImportPrivateKey(
+                AssertSlhDsaIsOnlyPublicAncestor, info.Algorithm, info.PrivateKey);
 
             // Tests ImportEncryptedPKCS8PrivateKey, ImportEncryptedPem (with ENCRYPTED PRIVATE KEY)
             SlhDsaTestHelpers.AssertImportEncryptedPkcs8PrivateKey(import =>
@@ -71,32 +71,32 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     // Verify the roundtripped object has the same key
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
                     AssertExtensions.SequenceEqual(slhDsa.ExportSlhDsaPublicKey(), roundTrippedSlhDsa.ExportSlhDsaPublicKey());
-                    Assert.Throws<CryptographicException>(() => roundTrippedSlhDsa.ExportSlhDsaSecretKey());
+                    Assert.Throws<CryptographicException>(() => roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                 }, algorithm, exportedPublicKey);
             });
         }
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public void RoundTrip_Export_Import_SecretKey(SlhDsaAlgorithm algorithm)
+        public void RoundTrip_Export_Import_PrivateKey(SlhDsaAlgorithm algorithm)
         {
             // Generate new key
             using SlhDsa slhDsa = GenerateKey(algorithm);
 
-            SlhDsaTestHelpers.AssertExportSlhDsaSecretKey(export =>
+            SlhDsaTestHelpers.AssertExportSlhDsaPrivateKey(export =>
             {
-                // Roundtrip using secret key. First export it.
-                byte[] exportedSecretKey = export(slhDsa);
-                SlhDsaTestHelpers.AssertImportSecretKey(import =>
+                // Roundtrip using private key. First export it.
+                byte[] exportedPrivateKey = export(slhDsa);
+                SlhDsaTestHelpers.AssertImportPrivateKey(import =>
                 {
                     // Then import it.
                     using SlhDsa roundTrippedSlhDsa = import();
 
                     // Verify the roundtripped object has the same key
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(slhDsa.ExportSlhDsaSecretKey(), roundTrippedSlhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(slhDsa.ExportSlhDsaPrivateKey(), roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                     AssertExtensions.SequenceEqual(slhDsa.ExportSlhDsaPublicKey(), roundTrippedSlhDsa.ExportSlhDsaPublicKey());
-                }, algorithm, exportedSecretKey);
+                }, algorithm, exportedPrivateKey);
             });
         }
 
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Generate new key
             using SlhDsa slhDsa = GenerateKey(algorithm);
-            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
+            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
             byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
 
             SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
                     AssertExtensions.SequenceEqual(publicKey, roundTrippedSlhDsa.ExportSlhDsaPublicKey());
-                    AssertExtensions.SequenceEqual(secretKey, roundTrippedSlhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(privateKey, roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                 }));
         }
 
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             // Generate new key
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
-            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
+            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
 
             SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
                 SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
                     AssertExtensions.SequenceEqual(publicKey, roundTrippedSlhDsa.ExportSlhDsaPublicKey());
-                    AssertExtensions.SequenceEqual(secretKey, roundTrippedSlhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(privateKey, roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                 }));
         }
 
@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Generate new key
             using SlhDsa slhDsa = GenerateKey(algorithm);
-            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
+            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
             byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
 
             PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 1);
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(secretKey, roundTrippedSlhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(privateKey, roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                     AssertExtensions.SequenceEqual(publicKey, roundTrippedSlhDsa.ExportSlhDsaPublicKey());
                 }));
         }
@@ -174,18 +174,18 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Generate new key
             using SlhDsa slhDsa = GenerateKey(algorithm);
-            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
+            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
             byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
 
             SlhDsaTestHelpers.AssertExportToPrivateKeyPem(export =>
                 SlhDsaTestHelpers.AssertImportFromPem(import =>
                 {
                     // Roundtrip it using PEM
-                    SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
+                    using SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
 
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(secretKey, roundTrippedSlhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(privateKey, roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                     AssertExtensions.SequenceEqual(publicKey, roundTrippedSlhDsa.ExportSlhDsaPublicKey());
                 }));
         }
@@ -196,19 +196,19 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Generate new key
             using SlhDsa slhDsa = GenerateKey(algorithm);
-            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
+            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
             byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
 
             SlhDsaTestHelpers.AssertExportToPublicKeyPem(export =>
                 SlhDsaTestHelpers.AssertImportFromPem(import =>
                 {
                     // Roundtrip it using PEM
-                    SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
+                    using SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
 
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
                     AssertExtensions.SequenceEqual(publicKey, roundTrippedSlhDsa.ExportSlhDsaPublicKey());
-                    Assert.Throws<CryptographicException>(() => roundTrippedSlhDsa.ExportSlhDsaSecretKey());
+                    Assert.Throws<CryptographicException>(() => roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                 }));
         }
 
@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             // Generate new key
             using SlhDsa slhDsa = GenerateKey(algorithm);
-            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
+            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
             byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
 
             PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 1);
@@ -231,7 +231,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(secretKey, roundTrippedSlhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(privateKey, roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                     AssertExtensions.SequenceEqual(publicKey, roundTrippedSlhDsa.ExportSlhDsaPublicKey());
                 }));
         }
@@ -246,7 +246,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportPublicKey(import =>
                 SlhDsaTestHelpers.AssertExportSlhDsaPublicKey(export =>
-                    AssertExtensions.SequenceEqual(info.PublicKey, export(import()))),
+                    SlhDsaTestHelpers.WithDispose(import(), slhDsa =>
+                        AssertExtensions.SequenceEqual(info.PublicKey, export(slhDsa)))),
                 info.Algorithm,
                 info.PublicKey);
         }
@@ -255,11 +256,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(SlhDsaTestData.GeneratedKeyInfosData), MemberType = typeof(SlhDsaTestData))]
         public void RoundTrip_Import_Export_PrivateKey(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
-            SlhDsaTestHelpers.AssertImportSecretKey(import =>
-                SlhDsaTestHelpers.AssertExportSlhDsaSecretKey(export =>
-                    AssertExtensions.SequenceEqual(info.SecretKey, export(import()))),
+            SlhDsaTestHelpers.AssertImportPrivateKey(import =>
+                SlhDsaTestHelpers.AssertExportSlhDsaPrivateKey(export =>
+                    SlhDsaTestHelpers.WithDispose(import(), slhDsa =>
+                        AssertExtensions.SequenceEqual(info.PrivateKey, export(slhDsa)))),
                 info.Algorithm,
-                info.SecretKey);
+                info.PrivateKey);
         }
 
         [Theory]
@@ -268,7 +270,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
                 SlhDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
-                    AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, export(import(info.Pkcs8PublicKey)))));
+                    SlhDsaTestHelpers.WithDispose(import(info.Pkcs8PublicKey), slhDsa =>
+                        AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, export(slhDsa)))));
         }
 
         [Theory]
@@ -277,7 +280,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportFromPem(import =>
                 SlhDsaTestHelpers.AssertExportToPublicKeyPem(export =>
-                    Assert.Equal(info.PublicKeyPem, export(import(info.PublicKeyPem)))));
+                    SlhDsaTestHelpers.WithDispose(import(info.PublicKeyPem), slhDsa =>
+                        Assert.Equal(info.PublicKeyPem, export(slhDsa)))));
         }
 
         [Theory]
@@ -286,7 +290,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
                 SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
-                    AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey, export(import(info.Pkcs8PrivateKey)))));
+                    SlhDsaTestHelpers.WithDispose(import(info.Pkcs8PrivateKey), slhDsa =>
+                        AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey, export(slhDsa)))));
         }
 
         [Theory]
@@ -295,7 +300,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             SlhDsaTestHelpers.AssertImportFromPem(import =>
                 SlhDsaTestHelpers.AssertExportToPrivateKeyPem(export =>
-                    Assert.Equal(info.PrivateKeyPem, export(import(info.PrivateKeyPem)))));
+                    SlhDsaTestHelpers.WithDispose(import(info.PrivateKeyPem), slhDsa =>
+                        Assert.Equal(info.PrivateKeyPem, export(slhDsa)))));
         }
 
         #endregion Roundtrip by importing then exporting
@@ -308,8 +314,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsa.ImportPkcs8PrivateKey(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
-            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
-            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
+            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
+            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, privateKey);
         }
 
         [Fact]
@@ -329,8 +335,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsa.ImportFromPem(pem);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
-            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
-            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
+            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
+            AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, privateKey);
         }
 
         [Fact]
@@ -359,7 +365,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] skPrf = vector.SecretKeyPrf;
             byte[] pkSeed = vector.PublicKeySeed;
 
-            byte[] sk = vector.SecretKey;
+            byte[] sk = vector.PrivateKey;
             byte[] pk = vector.PublicKey;
 
             // Sanity test for input vectors: SLH-DSA keys are composed of skSeed, skPrf and pkSeed
@@ -368,14 +374,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.SequenceEqual(pkSeed.AsSpan(), sk.AsSpan(skSeed.Length + skPrf.Length, pkSeed.Length));
             AssertExtensions.SequenceEqual(pkSeed.AsSpan(), pk.AsSpan(0, pkSeed.Length));
 
-            // Import secret key and verify exports
-            using (SlhDsa secretSlhDsa = ImportSlhDsaSecretKey(vector.Algorithm, sk))
+            // Import private key and verify exports
+            using (SlhDsa privateSlhDsa = ImportSlhDsaPrivateKey(vector.Algorithm, sk))
             {
-                byte[] pubKey = secretSlhDsa.ExportSlhDsaPublicKey();
+                byte[] pubKey = privateSlhDsa.ExportSlhDsaPublicKey();
                 AssertExtensions.SequenceEqual(pk, pubKey);
 
-                byte[] secretKey = secretSlhDsa.ExportSlhDsaSecretKey();
-                AssertExtensions.SequenceEqual(sk, secretKey);
+                byte[] privateKey = privateSlhDsa.ExportSlhDsaPrivateKey();
+                AssertExtensions.SequenceEqual(sk, privateKey);
             }
 
             // Import public key and verify exports
@@ -384,12 +390,29 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 byte[] pubKey = publicSlhDsa.ExportSlhDsaPublicKey();
                 AssertExtensions.SequenceEqual(pk, pubKey);
 
-                byte[] secretKey = new byte[vector.Algorithm.SecretKeySizeInBytes];
-                Assert.Throws<CryptographicException>(() => publicSlhDsa.ExportSlhDsaSecretKey(secretKey));
+                byte[] privateKey = new byte[vector.Algorithm.PrivateKeySizeInBytes];
+                Assert.Throws<CryptographicException>(() => publicSlhDsa.ExportSlhDsaPrivateKey(privateKey));
             }
         }
 
         #endregion NIST test vectors
+
+        [Fact]
+        public static void ImportPkcs8_BerEncoding()
+        {
+            // Private key is DER encoded, so create a BER encoding from it by making it use indefinite length encoding.
+            byte[] privateKeyPkcs8 = SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8;
+
+            // Two 0x00 bytes at the end signal the end of the indefinite length encoding
+            byte[] indefiniteLengthOctet = new byte[privateKeyPkcs8.Length + 2];
+            privateKeyPkcs8.CopyTo(indefiniteLengthOctet);
+            indefiniteLengthOctet[1] = 0b1000_0000; // change length to indefinite
+
+            SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
+                SlhDsaTestHelpers.AssertExportSlhDsaPrivateKey(export =>
+                    SlhDsaTestHelpers.WithDispose(import(indefiniteLengthOctet), slhDsa =>
+                        AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, export(slhDsa)))));
+        }
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
@@ -419,7 +442,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(SlhDsaTestData.GeneratedKeyInfosData), MemberType = typeof(SlhDsaTestData))]
         public void ExportEncryptedPkcs8PrivateKey_PbeParameters(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
-            using SlhDsa slhDsa = ImportSlhDsaSecretKey(info.Algorithm, info.SecretKey);
+            using SlhDsa slhDsa = ImportSlhDsaPrivateKey(info.Algorithm, info.PrivateKey);
             SlhDsaTestHelpers.EncryptionPasswordType passwordTypeToTest =
                 SlhDsaTestHelpers.GetValidPasswordTypes(info.EncryptionParameters);
 
@@ -437,7 +460,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(SlhDsaTestData.GeneratedKeyInfosData), MemberType = typeof(SlhDsaTestData))]
         public void ExportKey_DestinationTooSmall(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
-            using SlhDsa slhDsa = ImportSlhDsaSecretKey(info.Algorithm, info.SecretKey);
+            using SlhDsa slhDsa = ImportSlhDsaPrivateKey(info.Algorithm, info.PrivateKey);
             byte[] pkcs8PrivateKey = slhDsa.ExportPkcs8PrivateKey();
             byte[] spki = slhDsa.ExportSubjectPublicKeyInfo();
             byte[] encryptedPkcs8 = slhDsa.ExportEncryptedPkcs8PrivateKey(info.EncryptionPassword, info.EncryptionParameters);
@@ -495,6 +518,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         protected override SlhDsa GenerateKey(SlhDsaAlgorithm algorithm) => SlhDsa.GenerateKey(algorithm);
         protected override SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => SlhDsa.ImportSlhDsaPublicKey(algorithm, source);
-        protected override SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => SlhDsa.ImportSlhDsaSecretKey(algorithm, source);
+        protected override SlhDsa ImportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) => SlhDsa.ImportSlhDsaPrivateKey(algorithm, source);
     }
 }

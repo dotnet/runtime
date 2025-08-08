@@ -14,7 +14,7 @@ Wasm.Build.Tests.Blazor.DllImportTests
 Wasm.Build.Tests.Blazor.NativeTests
 Wasm.Build.Tests.Blazor.NoopNativeRebuildTest
 Wasm.Build.Tests.Blazor.WorkloadRequiredTests
-Wasm.Build.Tests.Blazor.SignalRClientTests
+Wasm.Build.Tests.Blazor.EventPipeDiagnosticsTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.ConfigSrcTests
 Wasm.Build.Tests.DllImportTests
@@ -37,7 +37,6 @@ Wasm.Build.Tests.LibraryInitializerTests
 Wasm.Build.Tests.SatelliteLoadingTests
 Wasm.Build.Tests.ModuleConfigTests
 Wasm.Build.Tests.MemoryTests
-Wasm.Build.Tests.AspNetCore.SignalRClientTests
 Wasm.Build.Tests.WasmBuildAppTest
 Wasm.Build.Tests.WasmNativeDefaultsTests
 Wasm.Build.Tests.WasmRunOutOfAppBundleTests
@@ -49,3 +48,4 @@ Wasm.Build.Tests.DebugLevelTests
 Wasm.Build.Tests.PreloadingTests
 Wasm.Build.Tests.EnvVariablesTests
 Wasm.Build.Tests.HttpTests
+Wasm.Build.Tests.DiagnosticsTests

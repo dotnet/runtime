@@ -49,12 +49,8 @@ using std::nothrow;
 
 #define CoreLibName_W W("System.Private.CoreLib")
 #define CoreLibName_IL_W W("System.Private.CoreLib.dll")
-#define CoreLibName_NI_W W("System.Private.CoreLib.ni.dll")
-#define CoreLibName_TLB_W W("System.Private.CoreLib.tlb")
 #define CoreLibName_A "System.Private.CoreLib"
 #define CoreLibName_IL_A "System.Private.CoreLib.dll"
-#define CoreLibName_NI_A "System.Private.CoreLib.ni.dll"
-#define CoreLibName_TLB_A "System.Private.CoreLib.tlb"
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
@@ -729,8 +725,6 @@ void    SplitPathInterior(
 
 #include "ostype.h"
 
-#define CLRGetTickCount64() GetTickCount64()
-
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to allocate it.
@@ -850,13 +844,14 @@ inline void SetBit(BYTE * pcBits,int iBit,int bOn)
 #endif
 
 template<typename T>
-class SimpleListNode
+class SimpleListNode final
 {
 public:
-    SimpleListNode(const T& _t)
+    SimpleListNode(T const& _t)
+        : data{ _t }
+        , next{}
     {
-        data = _t;
-        next = 0;
+        LIMITED_METHOD_CONTRACT;
     }
 
     T                  data;
@@ -864,43 +859,45 @@ public:
 };
 
 template<typename T>
-class SimpleList
+class SimpleList final
 {
 public:
-    typedef SimpleListNode<T> NodeType;
+    typedef SimpleListNode<T> Node;
 
     SimpleList()
+        : _head{}
     {
-        head = NULL;
+        LIMITED_METHOD_CONTRACT;
     }
 
-    void LinkHead(NodeType* pNode)
+    void LinkHead(Node* pNode)
     {
-        pNode->next = head;
-                      head = pNode;
+        LIMITED_METHOD_CONTRACT;
+        pNode->next = _head;
+        _head = pNode;
     }
 
-    NodeType* UnlinkHead()
+    Node* UnlinkHead()
     {
-        NodeType* ret = head;
+        LIMITED_METHOD_CONTRACT;
+        Node* ret = _head;
 
-        if (head)
+        if (_head)
         {
-            head = head->next;
+            _head = _head->next;
         }
         return ret;
     }
 
-    NodeType* Head()
+    Node* Head()
     {
-        return head;
+        LIMITED_METHOD_CONTRACT;
+        return _head;
     }
 
-protected:
-
-    NodeType* head;
+private:
+    Node* _head;
 };
-
 
 //*****************************************************************************
 // This class implements a dynamic array of structures for which the order of
@@ -941,6 +938,37 @@ public:
         // Free the chunk of memory.
         if (m_pTable != NULL)
             ALLOCATOR::Free(this, m_pTable);
+    }
+
+    CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
+    CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
+    CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
+        : m_iCount{ 0 }
+        , m_iSize{ 0 }
+        , m_pTable{ NULL}
+    {
+        LIMITED_METHOD_CONTRACT;
+        other.m_iCount = 0;
+        other.m_iSize = 0;
+        other.m_pTable = NULL;
+    }
+    CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator&& other)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (this != &other)
+        {
+            if (m_pTable != NULL)
+                ALLOCATOR::Free(this, m_pTable);
+
+            m_iCount = other.m_iCount;
+            m_iSize = other.m_iSize;
+            m_pTable = other.m_pTable;
+
+            other.m_iCount = 0;
+            other.m_iSize = 0;
+            other.m_pTable = NULL;
+        }
+        return *this;
     }
 
     void Clear()
@@ -1063,12 +1091,11 @@ public:
 
 #endif // #ifndef DACCESS_COMPILE
 
-    USHORT Count()
+    INT32 Count()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        _ASSERTE(FitsIn<USHORT>(m_iCount));
-        return static_cast<USHORT>(m_iCount);
+        return m_iCount;
     }
 
 private:
@@ -3202,14 +3229,6 @@ inline HRESULT FakeCoCreateInstance(REFCLSID   rclsid,
 };
 
 //*****************************************************************************
-// Gets the directory based on the location of the module. This routine
-// is called at COR setup time. Set is called during EEStartup and by the
-// MetaData dispenser.
-//*****************************************************************************
-HRESULT GetInternalSystemDirectory(_Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
-LPCWSTR GetInternalSystemDirectory(_Out_opt_ DWORD * pdwLength = NULL);
-
-//*****************************************************************************
 // This function validates the given Method/Field/Standalone signature. (util.cpp)
 //*****************************************************************************
 struct IMDInternalImport;
@@ -3328,6 +3347,16 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
 //  Deposit the jump offset into pcaddu18i+jirl instructions
 //*****************************************************************************
 void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
+
+//*****************************************************************************
+//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+INT64 GetRiscV64AuipcItype(UINT32 * pCode);
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
 
 //*****************************************************************************
 // Returns whether the offset fits into bl instruction
