@@ -25,10 +25,20 @@ namespace System.Threading
 
         internal static Lock GetLockObject(int index)
         {
-            return GCHandle<Lock>.FromIntPtr(GetLockHandleInternal(index)).Target;
+            IntPtr lockHandle = GetLockHandleIfExists(index);
+            if (lockHandle != 0)
+            {
+                return GCHandle<Lock>.FromIntPtr(lockHandle).Target;
+            }
+            object? lockObj = null;
+            GetLockObject(index, ObjectHandleOnStack.Create(ref lockObj));
+            return (Lock)lockObj!;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SyncTable_GetLockHandle")]
-        private static partial IntPtr GetLockHandleInternal(int index);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr GetLockHandleIfExists(int index);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SyncTable_GetLockObject")]
+        private static partial void GetLockObject(int index, ObjectHandleOnStack obj);
     }
 }

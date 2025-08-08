@@ -304,7 +304,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(SyncTable_AssignEntry)
-    DllImportEntry(SyncTable_GetLockHandle)
+    DllImportEntry(SyncTable_GetLockObject)
     DllImportEntry(WaitHandle_WaitOneCore)
     DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
     DllImportEntry(WaitHandle_SignalAndWait)

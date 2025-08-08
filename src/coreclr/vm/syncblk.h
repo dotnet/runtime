@@ -484,6 +484,12 @@ class SyncBlock
    // Returns false when the lock is not locked or has not been created yet.
    BOOL TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel);
 
+   OBJECTHANDLE GetLockIfExists()
+   {
+       WRAPPER_NO_CONTRACT;
+       return m_Lock;
+   }
+
    OBJECTHANDLE GetLock();
 
     // True is the syncblock and its index are disposable.

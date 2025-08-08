@@ -252,6 +252,10 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
+FCFuncStart(gSyncTableFuncs)
+    FCFuncElement("GetLockHandleIfExists", SyncTable_GetLockHandleIfExists)
+FCFuncEnd()
+
 FCFuncStart(gCastHelpers)
     FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
 FCFuncEnd()
@@ -400,6 +404,7 @@ FCClassElement("RuntimeTypeHandle", "System", gCOMTypeHandleFuncs)
 FCClassElement("Signature", "System", gSignatureNative)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
+FCClassElement("SyncTable", "System.Threading", gSyncTableFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 
 #undef FCFuncElement

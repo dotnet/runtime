@@ -919,20 +919,25 @@ extern "C" int32_t QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack ob
     return index;
 }
 
-extern "C" OBJECTHANDLE QCALLTYPE SyncTable_GetLockHandle(int idx)
+FCIMPL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, int idx)
+{
+    FCALL_CONTRACT;
+    
+    _ASSERTE(0 <= idx && idx < SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
+    return SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLockIfExists();
+}
+FCIMPLEND
+
+extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOnStack obj)
 {
     QCALL_CONTRACT;
-
-    OBJECTHANDLE handle = NULL;
 
     BEGIN_QCALL;
     
     GCX_COOP();
 
     _ASSERTE(0 <= idx && idx < SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
-    handle = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock();
+    obj.Set(ObjectFromHandle(SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock()));
 
     END_QCALL;
-
-    return handle;
 }
