@@ -760,8 +760,8 @@ class DeadCodeElimination
             // We only expect to be able to get rid of it when optimizing
 #if !DEBUG
             ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
-            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
 #endif
+            ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
 
             ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UnusedFromVirtual));
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UsedFromVirtual));
