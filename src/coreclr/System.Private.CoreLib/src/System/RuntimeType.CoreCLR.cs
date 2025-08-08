@@ -1489,7 +1489,7 @@ namespace System
             }
 
             // No namespace, full instantiation, and assembly.
-            internal string GetName() => ConstructName(ref m_name, TypeNameFormatFlags.FormatBasic)!;
+            internal string GetName() => m_name ?? ConstructName(ref m_name, TypeNameFormatFlags.FormatBasic)!;
 
             // No assembly.
             internal string? GetFullName() => m_fullName ??
@@ -1498,7 +1498,7 @@ namespace System
                     : null);
 
             // No full instantiation and assembly.
-            internal string GetToString() => ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace)!;
+            internal string GetToString() => m_toString ?? ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace)!;
 
             internal string? GetAssemblyQualifiedName() => m_assemblyQualifiedName ??
                 (IsFullNameRoundtripCompatible(m_runtimeType)
@@ -1512,7 +1512,7 @@ namespace System
                 // Theoretically generic types instantiated with generic type definitions can be round-tripped, e.g. List`1<Dictionary`2>.
                 // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
                 // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
-                Type rootElementType = runtimeType.GetRootElementType();
+                Type rootElementType = runtimeType.IsPointer ? runtimeType : runtimeType.GetRootElementType();
                 if (!rootElementType.IsGenericTypeDefinition && rootElementType.ContainsGenericParameters)
                     return false;
 
@@ -1529,12 +1529,9 @@ namespace System
                 // @Optimization - Use ConstructName to populate m_namespace
                 if (m_namespace == null)
                 {
-                    Type type = m_runtimeType;
-
+                    Type type = m_runtimeType.GetRootElementType();
                     if (type.IsFunctionPointer)
                         return null;
-
-                    type = type.GetRootElementType();
 
                     while (type.IsNested)
                         type = type.DeclaringType!;

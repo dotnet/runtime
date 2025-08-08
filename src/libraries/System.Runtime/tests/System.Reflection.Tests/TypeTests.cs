@@ -57,7 +57,8 @@ namespace System.Reflection.Tests
         public static void Namespace_FunctionPointers_ReturnsNull()
         {
             Assert.Null(typeof(delegate*<void>).Namespace);
-            Assert.Null(typeof(delegate*<void*>).Namespace);
+            Assert.Null(typeof(delegate*<void>*).Namespace);
+            Assert.Null(typeof(delegate*<void>**).Namespace);
         }
 
         [Fact]
@@ -162,6 +163,7 @@ namespace System.Reflection.Tests
         {
             Assert.Null(typeof(delegate*<void>).FullName);
             Assert.Equal("System.Void()*", typeof(delegate*<void>*).FullName);
+            Assert.Equal("System.Void()**", typeof(delegate*<void>**).FullName);
         }
 
         [Fact]
