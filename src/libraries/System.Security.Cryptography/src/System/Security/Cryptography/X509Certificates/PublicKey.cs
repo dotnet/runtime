@@ -108,6 +108,24 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PublicKey" /> class
+        /// using SubjectPublicKeyInfo from an <see cref="CompositeMLDsa" />.
+        /// </summary>
+        /// <param name="key">
+        /// An <see cref="CompositeMLDsa" /> key to obtain the SubjectPublicKeyInfo from.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded. The
+        /// <see cref="CompositeMLDsa.ExportSubjectPublicKeyInfo" /> must return a
+        /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public PublicKey(CompositeMLDsa key) : this(key.ExportSubjectPublicKeyInfo())
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         private PublicKey(byte[] subjectPublicKeyInfo)
         {
             DecodeSubjectPublicKeyInfo(
