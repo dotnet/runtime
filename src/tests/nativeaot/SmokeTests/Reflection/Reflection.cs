@@ -77,6 +77,7 @@ internal static class ReflectionTest
         TestMethodsNeededFromNativeLayout.Run();
         TestFieldAndParamMetadata.Run();
         TestActivationWithoutConstructor.Run();
+        TestNestedMakeGeneric.Run();
 
         //
         // Mostly functionality tests
@@ -894,6 +895,24 @@ internal static class ReflectionTest
         struct StructForCreateInstanceDirect<T> where T : class;
         struct StructForCreateInstanceIndirect<T> where T : class;
         struct StructForGetUninitializedObject<T> where T : class;
+    }
+
+    class TestNestedMakeGeneric
+    {
+        class Outie<T> where T : class;
+        class Innie<T> where T : class;
+        class Atom;
+
+        public static void Run()
+        {
+            Type inner = typeof(Innie<>).MakeGenericType(GetAtom());
+            Type outer = typeof(Outie<>).MakeGenericType(inner);
+
+            Console.WriteLine(Activator.CreateInstance(outer));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
+        }
     }
 
     class TestCreateDelegate
