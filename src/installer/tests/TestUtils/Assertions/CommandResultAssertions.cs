@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> HaveStdOutContaining(string pattern)
         {
-            CurrentAssertionChain.ForCondition(Result.StdOut.Contains(pattern))
+            CurrentAssertionChain.ForCondition(!string.IsNullOrEmpty(Result.StdOut) && Result.StdOut.Contains(pattern))
                 .FailWith($"The command output did not contain expected result: '{pattern}'{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }
@@ -98,7 +98,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> HaveStdErrContaining(string pattern)
         {
-            CurrentAssertionChain.ForCondition(Result.StdErr.Contains(pattern))
+            CurrentAssertionChain.ForCondition(!string.IsNullOrEmpty(Result.StdErr) && Result.StdErr.Contains(pattern))
                 .FailWith($"The command error output did not contain expected result: '{pattern}'{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);
         }

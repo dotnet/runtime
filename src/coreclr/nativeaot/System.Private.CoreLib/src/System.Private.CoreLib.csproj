@@ -159,6 +159,7 @@
     <Compile Include="System\CrashInfo.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\Java\JavaMarshal.NativeAot.cs" Condition="'$(FeatureJavaMarshal)' == 'true'" />
     <Compile Include="System\Activator.NativeAot.cs" />
     <Compile Include="System\AppContext.NativeAot.cs" />
     <Compile Include="System\ArgIterator.cs" />

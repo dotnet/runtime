@@ -195,7 +195,7 @@ namespace System.IO.Compression.Tests
             Stream source = await OpenEntryStream(async, e);
             byte[] buffer = new byte[s_bufferSize];
             int read = await source.ReadAsync(buffer, 0, buffer.Length);   // We don't want to inflate this large archive entirely
-                                                                // just making sure it read successfully
+                                                                           // just making sure it read successfully
             Assert.Equal(s_bufferSize, read);
             foreach (byte b in buffer)
             {
@@ -564,7 +564,7 @@ namespace System.IO.Compression.Tests
             byte[] buffer2 = new byte[1024];
             file.Seek(0, SeekOrigin.Begin);
 
-            while (await s.ReadAsync(buffer1, 0, buffer1.Length) != 0 )
+            while (await s.ReadAsync(buffer1, 0, buffer1.Length) != 0)
             {
                 await file.ReadAsync(buffer2, 0, buffer2.Length);
                 Assert.Equal(buffer1, buffer2);
@@ -1418,7 +1418,7 @@ namespace System.IO.Compression.Tests
             // for first.bin would normally be skipped (because it hasn't changed) but it needs to be rewritten
             // because the central directory headers will be rewritten with a valid value and the local file header
             // needs to match.
-            await using (ZipArchive updatedArchive = await ZipArchive.CreateAsync(updatedStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding:  null))
+            await using (ZipArchive updatedArchive = await ZipArchive.CreateAsync(updatedStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null))
             {
                 ZipArchiveEntry newEntry = updatedArchive.CreateEntry("second.bin", CompressionLevel.NoCompression);
 
@@ -1656,6 +1656,39 @@ namespace System.IO.Compression.Tests
                     await es.WriteAsync(buffer, 0, buffer.Length);
                     await es.WriteAsync(buffer.AsMemory());
                 }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ReadArchive_FrontTruncatedFile_Throws(bool async)
+        {
+            for (int i = 1; i < s_slightlyIncorrectZip64.Length - 1; i++)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(
+                    // The archive is truncated, so it should throw an exception
+                    () => CreateZipArchive(async, new MemoryStream(s_slightlyIncorrectZip64, i, s_slightlyIncorrectZip64.Length - i), ZipArchiveMode.Read));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ReadArchive_Zip64EocdLocatorInvalidOffset_Throws(bool async)
+        {
+            byte[] data = s_slightlyIncorrectZip64.ToArray();
+
+            foreach (long offset in new[] { -1, int.MaxValue - 1 })
+            {
+                // Find Zip64 EOCD locator record
+                int eocdlOffset = data.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 0x06, 0x07 });
+                Assert.True(eocdlOffset >= 0, "Zip64 EOCD locator not found in test data");
+
+                // skip 4B signature and 4B index of disk, then overwrite the 8B offset to start of central directory
+                BinaryPrimitives.WriteInt64LittleEndian(data.AsSpan(eocdlOffset + 8, 8), offset);
+
+                await Assert.ThrowsAsync<InvalidDataException>(
+                    // The archive is truncated, so it should throw an exception
+                    () => CreateZipArchive(async, new MemoryStream(data), ZipArchiveMode.Read));
             }
         }
 

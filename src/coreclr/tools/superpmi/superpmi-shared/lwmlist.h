@@ -21,8 +21,6 @@ LWM(GetPgoInstrumentationResults, DWORDLONG, Agnostic_GetPgoInstrumentationResul
 LWM(AsCorInfoType, DWORDLONG, DWORD)
 LWM(CanAccessClass, Agnostic_CanAccessClassIn, Agnostic_CanAccessClassOut)
 LWM(CanCast, DLDL, DWORD)
-LWM(CanGetCookieForPInvokeCalliSig, CanGetCookieForPInvokeCalliSigValue, DWORD)
-LWM(CanGetVarArgsHandle, CanGetVarArgsHandleValue, DWORD)
 LWM(CanInline, DLDL, Agnostic_CanInline)
 LWM(CanTailCall, Agnostic_CanTailCall, DWORD)
 LWM(CheckMethodModifier, Agnostic_CheckMethodModifier, DWORD)

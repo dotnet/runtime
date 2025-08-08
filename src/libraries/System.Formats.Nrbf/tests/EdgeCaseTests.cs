@@ -144,4 +144,48 @@ public class EdgeCaseTests : ReadTests
         Assert.Equal(input.Ticks, classRecord.GetDateTime(nameof(ClassWithDateTime.Value)).Ticks);
         Assert.Equal(input.Kind, classRecord.GetDateTime(nameof(ClassWithDateTime.Value)).Kind);
     }
+
+    [Fact]
+    public void CanReadUserClassStoredAsSystemClass()
+    {
+        // For the following data, BinaryFormatter serializes the ClassWithNullableStructField class
+        // as a record with a single field called "NullableField" with BinaryType.SystemClass (!!!)
+        // and TypeName being System.Nullable`1[[SampleStruct, $AssemblyName]].
+        // It most likely does so, because it's System.Nullable<$NonSystemStruct>.
+        // But later it serializes the SampleStruct as a ClassWithMembersAndTypes record,
+        // not SystemClassWithMembersAndTypes.
+        // It does so, only when the payload contains at least one class with the nullable field being null.
+
+        using MemoryStream stream = Serialize(
+            new ClassWithNullableStructField[]
+            {
+                new ClassWithNullableStructField() { NullableField = null }, // having a null here is crucial for the test
+                new ClassWithNullableStructField() { NullableField = new ClassWithNullableStructField.SampleStruct() { Value = 42 } }
+            }
+        );
+
+        SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)NrbfDecoder.Decode(stream);
+        SerializationRecord[] records = arrayRecord.GetArray();
+        Assert.Equal(2, arrayRecord.Length);
+        Assert.All(records, record => Assert.True(record.TypeNameMatches(typeof(ClassWithNullableStructField))));
+        Assert.Null(((ClassRecord)records[0]).GetClassRecord(nameof(ClassWithNullableStructField.NullableField)));
+
+        ClassRecord? notNullRecord = ((ClassRecord)records[1]).GetClassRecord(nameof(ClassWithNullableStructField.NullableField));
+        Assert.NotNull(notNullRecord);
+        Assert.Equal(42, notNullRecord.GetInt32(nameof(ClassWithNullableStructField.SampleStruct.Value)));
+    }
+
+    [Serializable]
+    public class ClassWithNullableStructField
+    {
+#pragma warning disable IDE0001 // Simplify names
+        public System.Nullable<SampleStruct> NullableField;
+#pragma warning restore IDE0001
+
+        [Serializable]
+        public struct SampleStruct
+        {
+            public int Value;
+        }
+    }
 }

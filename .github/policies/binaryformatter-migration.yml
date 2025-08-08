@@ -19,7 +19,7 @@ configuration:
           - adamsitnik
           - bartonjs
           - jeffhandley
-          - terrajobst
+          - JeremyKuhne
           replyTemplate: >-
             Tagging subscribers to 'binaryformatter-migration': ${mentionees}
           assignMentionees: False

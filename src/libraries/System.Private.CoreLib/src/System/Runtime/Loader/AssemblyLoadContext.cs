@@ -15,7 +15,7 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
-        // Keep in sync with MonoManagedAssemblyLoadContextInternalState in object-internals.h
+        // Keep in sync with MonoAssemblyLoadContextInternalState in object-internals.h
         private enum InternalState
         {
             /// <summary>
@@ -42,7 +42,7 @@ namespace System.Runtime.Loader
 #region private data members
         // If you modify this field, you must also update the
         // AssemblyLoadContextBaseObject structure in object.h
-        // and MonoManagedAssemblyLoadContext in object-internals.h
+        // and MonoAssemblyLoadContext in object-internals.h
 
         // Contains the reference to VM's representation of the AssemblyLoadContext
         private readonly IntPtr _nativeAssemblyLoadContext;
@@ -604,9 +604,9 @@ namespace System.Runtime.Loader
 #if !NATIVEAOT
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static RuntimeAssembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static RuntimeAssembly? Resolve(IntPtr gchAssemblyLoadContext, AssemblyName assemblyName)
         {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
 
             return context.ResolveUsingLoad(assemblyName);
         }

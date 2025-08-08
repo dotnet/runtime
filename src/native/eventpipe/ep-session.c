@@ -765,7 +765,7 @@ session_tracepoint_write_event (
 		return false;
 
 	// Setup iovec array
-	const int max_non_parameter_iov = 8;
+	const int max_non_parameter_iov = 9;
 	const int max_static_io_capacity = 30; // Should account for most events that use EventData structs
 	struct iovec static_io[max_static_io_capacity];
 	struct iovec *io = static_io;
@@ -823,22 +823,34 @@ session_tracepoint_write_event (
 
 	uint64_t session_mask = ep_session_get_mask (session);
 	bool should_write_metadata = !ep_event_was_metadata_written (ep_event, session_mask);
+	uint8_t extension_metadata[1 + sizeof(uint32_t)] = {0};
 	if (should_write_metadata) {
-		uint8_t extension_metadata[1 + sizeof(uint32_t)];
-		uint32_t metadata_len = ep_event_get_metadata_len (ep_event);
+		EventPipeProvider *event_provider = ep_event_get_provider (ep_event);
+		const ep_char16_t *provider_name_utf16 = ep_provider_get_provider_name_utf16 (event_provider);
+		uint32_t provider_name_len = (uint32_t)ep_rt_utf16_string_len (provider_name_utf16);
+		uint32_t provider_name_size_bytes = (provider_name_len + 1) * sizeof (ep_char16_t);
+		uint32_t event_metadata_len = ep_event_get_metadata_len (ep_event);
+		uint32_t complete_metadata_len = provider_name_size_bytes + event_metadata_len;
+
 		extension_metadata[0] = 0x01; // label
-		*(uint32_t*)&extension_metadata[1] = metadata_len;
+		*(uint32_t*)&extension_metadata[1] = complete_metadata_len;
 		io[io_index].iov_base = extension_metadata;
 		io[io_index].iov_len = sizeof(extension_metadata);
 		io_index++;
 		extension_len += sizeof(extension_metadata);
 		io_bytes_to_write += sizeof(extension_metadata);
 
-		io[io_index].iov_base = (void *)ep_event_get_metadata (ep_event);
-		io[io_index].iov_len = metadata_len;
+		io[io_index].iov_base = (void *)provider_name_utf16;
+		io[io_index].iov_len = provider_name_size_bytes;
 		io_index++;
-		extension_len += metadata_len;
-		io_bytes_to_write += metadata_len;
+		extension_len += provider_name_size_bytes;
+		io_bytes_to_write += provider_name_size_bytes;
+
+		io[io_index].iov_base = (void *)ep_event_get_metadata (ep_event);
+		io[io_index].iov_len = event_metadata_len;
+		io_index++;
+		extension_len += event_metadata_len;
+		io_bytes_to_write += event_metadata_len;
 	}
 
 	// Extension Activity IDs

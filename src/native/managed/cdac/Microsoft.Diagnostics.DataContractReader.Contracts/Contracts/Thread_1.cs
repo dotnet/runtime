@@ -68,6 +68,18 @@ internal readonly struct Thread_1 : IThread
             GetThreadFromLink(thread.LinkNext));
     }
 
+    // happens inside critical section
+    TargetPointer IThread.IdToThread(uint id)
+    {
+        TargetPointer idDispenserPtr = _target.ReadGlobalPointer(Constants.Globals.ThinlockThreadIdDispenser);
+        TargetPointer idDispenser = _target.ReadPointer(idDispenserPtr);
+        Data.IdDispenser idDispenserObj = _target.ProcessedData.GetOrAdd<Data.IdDispenser>(idDispenser);
+        TargetPointer threadPtr = TargetPointer.Null;
+        if (id < idDispenserObj.HighestId)
+            threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
+        return threadPtr;
+    }
+
     private TargetPointer GetThreadFromLink(TargetPointer threadLink)
     {
         if (threadLink == TargetPointer.Null)

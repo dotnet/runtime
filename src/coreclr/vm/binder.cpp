@@ -1170,10 +1170,10 @@ void CoreLibBinder::CheckExtended()
             }
         }
         else
-        if (pMD->IsNDirect())
+        if (pMD->IsPInvoke())
         {
-            NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-            NDirect::PopulateNDirectMethodDesc(pNMD);
+            PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
+            PInvoke::PopulatePInvokeMethodDesc(pNMD);
 
             if (pNMD->IsQCall() && QCallResolveDllImport(pNMD->GetEntrypointName()) == nullptr)
             {

@@ -765,6 +765,13 @@ bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCa
 
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
+    
+    size_t stacksize = GetDefaultStackSizeSetting();
+    if (stacksize != 0)
+    {
+        st = pthread_attr_setstacksize(&attrs, stacksize);
+        ASSERT(st == 0);
+    }
 
     static const int NormalPriority = 0;
     static const int HighestPriority = -20;

@@ -145,7 +145,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
         }
 
-        [UnexpectedWarning("IL2109", "DerivedWithoutRequires", Tool.Analyzer | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/107660")]
         class DerivedWithoutRequires : BaseWithRequires
         {
             [ExpectedWarning("IL2026", "--Requires--")]

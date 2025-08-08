@@ -35,8 +35,9 @@ struct InterpMethod
     // This stub is used for calling the interpreted method from JITted/AOTed code
     CallStubHeader *pCallStub;
     bool initLocals;
+    bool unmanagedCallersOnly;
 
-    InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t allocaSize, void** pDataItems, bool initLocals)
+    InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t allocaSize, void** pDataItems, bool initLocals, bool unmanagedCallersOnly)
     {
 #if DEBUG
         this->self = this;
@@ -45,6 +46,7 @@ struct InterpMethod
         this->allocaSize = allocaSize;
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;
+        this->unmanagedCallersOnly = unmanagedCallersOnly;
         pCallStub = NULL;
     }
 
@@ -155,6 +157,13 @@ struct InterpGenericLookup
     // here is to allow for the generic dictionary to change in size without requiring any locks.
     uint16_t                sizeOffset;
     uint16_t                offsets[InterpGenericLookup_MaxIndirections];
+};
+
+enum class PInvokeCallFlags : int32_t
+{
+    None = 0,
+    Indirect = 1 << 0, // The call target address is indirect
+    SuppressGCTransition = 1 << 1, // The pinvoke is marked by the SuppressGCTransition attribute
 };
 
 #endif

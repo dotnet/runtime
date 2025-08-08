@@ -166,9 +166,9 @@ internal partial class MockDescriptors
                 } while (cur.Value < end);
             }
 
-            public MockMemorySpace.ReadContext GetReadContext()
+            public MockMemorySpace.MemoryContext GetMemoryContext()
             {
-                return _builder.GetReadContext();
+                return _builder.GetMemoryContext();
             }
         }
 

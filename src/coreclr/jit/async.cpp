@@ -1730,10 +1730,8 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
     BasicBlock* resumeBB      = m_comp->fgNewBBafter(BBJ_ALWAYS, m_lastResumptionBB, true);
     FlowEdge*   remainderEdge = m_comp->fgAddRefPred(remainder, resumeBB);
 
-    // It does not really make sense to inherit from the target, but given this
-    // is always 0% this just propagates the profile weight flag + sets
-    // BBF_RUN_RARELY.
-    resumeBB->inheritWeightPercentage(remainder, 0);
+    resumeBB->bbSetRunRarely();
+    resumeBB->CopyFlags(remainder, BBF_PROF_WEIGHT);
     resumeBB->SetTargetEdge(remainderEdge);
     resumeBB->clearTryIndex();
     resumeBB->clearHndIndex();

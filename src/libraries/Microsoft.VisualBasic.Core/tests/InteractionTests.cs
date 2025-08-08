@@ -334,7 +334,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(new object[] { true, "red", false, "green", false, "blue" }, "red")]
         [InlineData(new object[] { false, "red", true, "green", false, "blue" }, "green")]
         [InlineData(new object[] { false, "red", false, "green", true, "blue" }, "blue")]
-        public void Switch(object[] VarExpr, object expected)
+        public void Switch(object[]? VarExpr, object? expected)
         {
             Assert.Equal(expected, Interaction.Switch(VarExpr));
         }

@@ -51,8 +51,9 @@ internal class CustomAssemblyResolver : AssemblyLoadContext
     protected override Assembly Load(AssemblyName assemblyName)
     {
         string strPath;
-        if (assemblyName.Name.StartsWith("System."))
+        if (assemblyName.Name.StartsWith("System.", StringComparison.Ordinal) || assemblyName.Name.StartsWith("Microsoft.", StringComparison.Ordinal))
         {
+            // If the assembly is a framework assembly, we load it from the framework path.
             strPath = Path.Combine(_frameworkPath, assemblyName.Name + ".dll");
         }
         else

@@ -18,6 +18,16 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
     return comp->gtNewLclVarNode(tmpNum);
 };
 
+static void InheritFlags(BasicBlock* dst, const BasicBlock* flagSrc)
+{
+    // Currently, all of our "new block" helpers set BBF_INTERNAL flag by default.
+    if (!flagSrc->HasFlag(BBF_INTERNAL))
+    {
+        dst->RemoveFlags(BBF_INTERNAL);
+        dst->SetFlags(BBF_IMPORTED);
+    }
+}
+
 //------------------------------------------------------------------------------
 // SplitAtTreeAndReplaceItWithLocal : Split block at the given tree and replace it with a local
 //    See comments in gtSplitTree and fgSplitBlockBeforeTree
@@ -242,7 +252,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     }
 
     GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
-    GenTree* sigNode = call->gtArgs.GetArgByIndex(1)->GetNode();
 
     // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
     GenTree* slotPtrTree   = gtCloneExpr(ctxTree);
@@ -440,6 +449,19 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
         // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
+    }
+
+    //
+    // Update flags in all new blocks
+    //
+
+    InheritFlags(nullcheckBb, prevBb);
+    InheritFlags(fastPathBb, prevBb);
+    InheritFlags(fallbackBb, prevBb);
+    InheritFlags(block, prevBb);
+    if (needsSizeCheck)
+    {
+        InheritFlags(sizeCheckBb, prevBb);
     }
 
     // All blocks are expected to be in the same EH region
@@ -1441,7 +1463,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     {
         assert(isInitOffset == 0);
 
-        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
         isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;
         isInitedActualValueNode->SetHasOrderingSideEffect();
 
@@ -1479,8 +1501,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         else
         {
             assert(staticBaseAddr.accessType == IAT_PVALUE);
-            replacementNode =
-                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+            replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR);
         }
     }
 
@@ -1545,6 +1566,14 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->inheritWeightPercentage(isInitedBb, 0);
+
+    //
+    // Update flags in all new blocks
+    //
+
+    InheritFlags(block, prevBb);
+    InheritFlags(isInitedBb, prevBb);
+    InheritFlags(helperCallBb, prevBb);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));

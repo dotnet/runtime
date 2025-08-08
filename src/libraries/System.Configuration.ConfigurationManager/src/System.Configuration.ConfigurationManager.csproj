@@ -3,9 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
-    <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
-    <IsTrimmable>false</IsTrimmable>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>

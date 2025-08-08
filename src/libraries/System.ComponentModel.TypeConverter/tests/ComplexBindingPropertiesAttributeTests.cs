@@ -19,7 +19,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData("DataSource")]
         [InlineData(null)]
-        public void Ctor_DataSource(string dataSource)
+        public void Ctor_DataSource(string? dataSource)
         {
             var attribute = new ComplexBindingPropertiesAttribute(dataSource);
             Assert.Same(dataSource, attribute.DataSource);
@@ -29,7 +29,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData("DataSource", "DataMember")]
         [InlineData(null, null)]
-        public void Ctor_DataSource_DataMember(string dataSource, string dataMember)
+        public void Ctor_DataSource_DataMember(string? dataSource, string? dataMember)
         {
             var attribute = new ComplexBindingPropertiesAttribute(dataSource, dataMember);
             Assert.Same(dataSource, attribute.DataSource);

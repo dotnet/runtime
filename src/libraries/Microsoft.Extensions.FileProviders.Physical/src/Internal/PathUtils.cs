@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
         private static char[] GetInvalidFilterChars() => GetInvalidFileNameChars()
             .Where(c => c != '*' && c != '|' && c != '?').ToArray();
 
-#if NET8_0_OR_GREATER
+#if NET
         private static readonly SearchValues<char> _invalidFileNameChars = SearchValues.Create(GetInvalidFileNameChars());
         private static readonly SearchValues<char> _invalidFilterChars = SearchValues.Create(GetInvalidFilterChars());
 

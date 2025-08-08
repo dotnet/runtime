@@ -87,7 +87,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
 #if NET
-#if NET8_0_OR_GREATER
+#if NET
             Span<byte> span = stackalloc byte[MaximumVersionLength];
 #else
             Span<char> span = stackalloc char[MaximumVersionLength];
@@ -110,7 +110,7 @@ namespace System.Text.Json.Serialization.Converters
             ArgumentNullException.ThrowIfNull(value);
 
 #if NET
-#if NET8_0_OR_GREATER
+#if NET
             Span<byte> span = stackalloc byte[MaximumVersionLength];
 #else
             Span<char> span = stackalloc char[MaximumVersionLength];

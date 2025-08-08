@@ -2701,8 +2701,8 @@ private:
         DWORD               dwImplFlags,
         DWORD               dwMemberAttrs,
         BOOL                fEnC,
-        DWORD               RVA,          // Only needed for NDirect case
-        IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
+        DWORD               RVA,          // Only needed for PInvoke case
+        IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the Async thunk case
         AsyncMethodKind     asyncKind

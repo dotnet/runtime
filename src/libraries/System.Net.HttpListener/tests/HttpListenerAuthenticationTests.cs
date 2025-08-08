@@ -111,7 +111,7 @@ namespace System.Net.Tests
         [InlineData("  ExampleRealm  ")]
         [InlineData("")]
         [InlineData(null)]
-        public async Task BasicAuthentication_RealmSet_SendsChallengeToClient(string realm)
+        public async Task BasicAuthentication_RealmSet_SendsChallengeToClient(string? realm)
         {
             _listener.Realm = realm;
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;

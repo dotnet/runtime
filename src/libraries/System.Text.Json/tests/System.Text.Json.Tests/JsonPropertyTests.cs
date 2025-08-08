@@ -96,7 +96,7 @@ namespace System.Text.Json.Tests
         [InlineData("hello")]
         [InlineData("")]
         [InlineData(null)]
-        public static void NameEquals_InvalidInstance_Throws(string text)
+        public static void NameEquals_InvalidInstance_Throws(string? text)
         {
             string ErrorMessage = new InvalidOperationException().Message;
             JsonProperty prop = default;

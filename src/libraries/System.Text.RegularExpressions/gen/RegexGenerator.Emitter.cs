@@ -302,42 +302,104 @@ namespace System.Text.RegularExpressions.Generator
                 "Regex.InfiniteMatchTimeout" :
                 $"TimeSpan.FromMilliseconds({matchTimeout.ToString(CultureInfo.InvariantCulture)})";
 
+        private const string IsBoundary = nameof(IsBoundary);
+        private const string IsECMABoundary = nameof(IsECMABoundary);
+        private const string IsWordChar = nameof(IsWordChar);
+        private const string IsBoundaryWordChar = nameof(IsBoundaryWordChar);
+        private const string IsPostWordCharBoundary = nameof(IsPostWordCharBoundary);
+        private const string IsPreWordCharBoundary = nameof(IsPreWordCharBoundary);
+        private const string IsECMABoundaryWordChar = nameof(IsECMABoundaryWordChar);
+        private const string WordCategoriesMask = nameof(WordCategoriesMask);
+        private const string WordCharBitmap = nameof(WordCharBitmap);
+
+        private static void AddWordCharHelpersSupport(Dictionary<string, string[]> requiredHelpers)
+        {
+            const string WordCharHelpersSupport = nameof(WordCharHelpersSupport);
+            if (!requiredHelpers.ContainsKey(WordCharHelpersSupport))
+            {
+                requiredHelpers.Add(WordCharHelpersSupport,
+                [
+                    "/// <summary>Provides a mask of Unicode categories that combine to form [\\w].</summary>",
+                    $"private const int {WordCategoriesMask} =",
+                    "    1 << (int)UnicodeCategory.UppercaseLetter |",
+                    "    1 << (int)UnicodeCategory.LowercaseLetter |",
+                    "    1 << (int)UnicodeCategory.TitlecaseLetter |",
+                    "    1 << (int)UnicodeCategory.ModifierLetter |",
+                    "    1 << (int)UnicodeCategory.OtherLetter |",
+                    "    1 << (int)UnicodeCategory.NonSpacingMark |",
+                    "    1 << (int)UnicodeCategory.DecimalDigitNumber |",
+                    "    1 << (int)UnicodeCategory.ConnectorPunctuation;",
+                    "",
+                    "/// <summary>Gets a bitmap for whether each character 0 through 127 is in [\\w]</summary>",
+                    $"private static ReadOnlySpan<byte> {WordCharBitmap} => new byte[]",
+                    "{",
+                    "    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,",
+                    "    0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07",
+                    "};",
+                ]);
+            }
+        }
+
         /// <summary>Adds the IsWordChar helper to the required helpers collection.</summary>
         private static void AddIsWordCharHelper(Dictionary<string, string[]> requiredHelpers)
         {
-            const string IsWordChar = nameof(IsWordChar);
             if (!requiredHelpers.ContainsKey(IsWordChar))
             {
                 requiredHelpers.Add(IsWordChar,
                 [
-                    "/// <summary>Determines whether the character is part of the [\\w] set.</summary>",
-                    "[MethodImpl(MethodImplOptions.AggressiveInlining)]",
-                    "internal static bool IsWordChar(char ch)",
-                    "{",
-                    "    // Mask of Unicode categories that combine to form [\\w]",
-                    "    const int WordCategoriesMask =",
-                    "        1 << (int)UnicodeCategory.UppercaseLetter |",
-                    "        1 << (int)UnicodeCategory.LowercaseLetter |",
-                    "        1 << (int)UnicodeCategory.TitlecaseLetter |",
-                    "        1 << (int)UnicodeCategory.ModifierLetter |",
-                    "        1 << (int)UnicodeCategory.OtherLetter |",
-                    "        1 << (int)UnicodeCategory.NonSpacingMark |",
-                    "        1 << (int)UnicodeCategory.DecimalDigitNumber |",
-                    "        1 << (int)UnicodeCategory.ConnectorPunctuation;",
-                    "",
-                    "    // Bitmap for whether each character 0 through 127 is in [\\w]",
-                    "    ReadOnlySpan<byte> ascii = new byte[]",
-                    "    {",
-                    "        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,",
-                    "        0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07",
-                    "    };",
-                    "",
-                    "    // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.",
-                    "    int chDiv8 = ch >> 3;",
-                    "    return (uint)chDiv8 < (uint)ascii.Length ?",
-                    "        (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :",
-                    "        (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;",
-                    "}",
+                    $"/// <summary>Determines whether the character is part of the [\\w] set.</summary>",
+                    $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
+                    $"internal static bool {IsWordChar}(char ch)",
+                    $"{{",
+                    $"    // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.",
+                    $"    ReadOnlySpan<byte> ascii = {WordCharBitmap};",
+                    $"    int chDiv8 = ch >> 3;",
+                    $"    return (uint)chDiv8 < (uint)ascii.Length ?",
+                    $"        (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :",
+                    $"        ({WordCategoriesMask} & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;",
+                    $"}}",
+                ]);
+
+                AddWordCharHelpersSupport(requiredHelpers);
+            }
+        }
+
+        /// <summary>Adds the IsBoundary helper to the required helpers collection.</summary>
+        private static void AddIsBoundaryWordCharHelper(Dictionary<string, string[]> requiredHelpers)
+        {
+            if (!requiredHelpers.ContainsKey(IsBoundaryWordChar))
+            {
+                requiredHelpers.Add(IsBoundaryWordChar,
+                [
+                    $"/// <summary>Determines whether the specified index is a boundary word character.</summary>",
+                    $"/// <remarks>This is the same as \\w plus U+200C ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.</remarks>",
+                    $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
+                    $"internal static bool {IsBoundaryWordChar}(char ch)",
+                    $"{{",
+                    $"    ReadOnlySpan<byte> ascii = {WordCharBitmap};",
+                    $"    int chDiv8 = ch >> 3;",
+                    $"    return (uint)chDiv8 < (uint)ascii.Length ?",
+                    $"        (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :",
+                    $"        (({WordCategoriesMask} & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0) || (ch is '\u200C' or '\u200D');",
+                    $"}}",
+                ]);
+
+                AddWordCharHelpersSupport(requiredHelpers);
+            }
+        }
+
+        /// <summary>Adds the IsECMABoundary helper to the required helpers collection.</summary>
+        private static void AddIsECMABoundaryWordCharHelper(Dictionary<string, string[]> requiredHelpers)
+        {
+            if (!requiredHelpers.ContainsKey(IsECMABoundaryWordChar))
+            {
+                requiredHelpers.Add(IsECMABoundaryWordChar,
+                [
+                    $"/// <summary>Determines whether the specified index is a boundary (ECMAScript) word character.</summary>",
+                    $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
+                    $"internal static bool {IsECMABoundaryWordChar}(char ch) =>",
+                    $"    char.IsAsciiLetterOrDigit(ch) ||",
+                    $"    ch is '_' or '\\u0130'; // latin capital letter I with dot above",
                 ]);
             }
         }
@@ -345,7 +407,6 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Adds the IsBoundary helper to the required helpers collection.</summary>
         private static void AddIsBoundaryHelper(Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
-            const string IsBoundary = nameof(IsBoundary);
             if (!requiredHelpers.ContainsKey(IsBoundary))
             {
                 string uncheckedKeyword = checkOverflow ? "unchecked" : "";
@@ -353,24 +414,62 @@ namespace System.Text.RegularExpressions.Generator
                 [
                     $"/// <summary>Determines whether the specified index is a boundary.</summary>",
                     $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
-                    $"internal static bool IsBoundary(ReadOnlySpan<char> inputSpan, int index)",
+                    $"internal static bool {IsBoundary}(ReadOnlySpan<char> inputSpan, int index)",
                     $"{{",
                     $"    int indexMinus1 = index - 1;",
-                    $"    return {uncheckedKeyword}((uint)indexMinus1 < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[indexMinus1])) !=",
-                    $"           {uncheckedKeyword}((uint)index < (uint)inputSpan.Length && IsBoundaryWordChar(inputSpan[index]));",
-                    $"",
-                    $"    static bool IsBoundaryWordChar(char ch) => IsWordChar(ch) || (ch == '\\u200C' | ch == '\\u200D');",
+                    $"    return {uncheckedKeyword}((uint)indexMinus1 < (uint)inputSpan.Length && {IsBoundaryWordChar}(inputSpan[indexMinus1])) !=",
+                    $"           {uncheckedKeyword}((uint)index < (uint)inputSpan.Length && {IsBoundaryWordChar}(inputSpan[index]));",
                     $"}}",
                 ]);
 
-                AddIsWordCharHelper(requiredHelpers);
+                AddIsBoundaryWordCharHelper(requiredHelpers);
+            }
+        }
+
+        /// <summary>Adds the IsPreWordCharBoundary helper to the required helpers collection.</summary>
+        private static void AddIsPreWordCharBoundaryHelper(Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
+        {
+            if (!requiredHelpers.ContainsKey(IsPreWordCharBoundary))
+            {
+                string uncheckedKeyword = checkOverflow ? "unchecked" : "";
+                requiredHelpers.Add(IsPreWordCharBoundary,
+                [
+                    $"/// <summary>Determines whether the specified index is a boundary.</summary>",
+                    $"/// <remarks>This variant is only employed when the subsequent character will separately be validated as a word character.</remarks>",
+                    $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
+                    $"internal static bool {IsPreWordCharBoundary}(ReadOnlySpan<char> inputSpan, int index)",
+                    $"{{",
+                    $"    int indexMinus1 = index - 1;",
+                    $"    return {uncheckedKeyword}((uint)indexMinus1 >= (uint)inputSpan.Length || !{IsBoundaryWordChar}(inputSpan[indexMinus1]));",
+                    $"}}",
+                ]);
+
+                AddIsBoundaryWordCharHelper(requiredHelpers);
+            }
+        }
+
+        /// <summary>Adds the IsPostWordCharBoundary helper to the required helpers collection.</summary>
+        private static void AddIsPostWordCharBoundaryHelper(Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
+        {
+            if (!requiredHelpers.ContainsKey(IsPostWordCharBoundary))
+            {
+                string uncheckedKeyword = checkOverflow ? "unchecked" : "";
+                requiredHelpers.Add(IsPostWordCharBoundary,
+                [
+                    $"/// <summary>Determines whether the specified index is a boundary.</summary>",
+                    $"/// <remarks>This variant is only employed when the previous character has already been validated as a word character.</remarks>",
+                    $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
+                    $"internal static bool {IsPostWordCharBoundary}(ReadOnlySpan<char> inputSpan, int index) =>",
+                    $"    {uncheckedKeyword}((uint)index >= (uint)inputSpan.Length || !{IsBoundaryWordChar}(inputSpan[index]));",
+                ]);
+
+                AddIsBoundaryWordCharHelper(requiredHelpers);
             }
         }
 
         /// <summary>Adds the IsECMABoundary helper to the required helpers collection.</summary>
         private static void AddIsECMABoundaryHelper(Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
-            const string IsECMABoundary = nameof(IsECMABoundary);
             if (!requiredHelpers.ContainsKey(IsECMABoundary))
             {
                 string uncheckedKeyword = checkOverflow ? "unchecked" : "";
@@ -378,18 +477,15 @@ namespace System.Text.RegularExpressions.Generator
                 [
                     $"/// <summary>Determines whether the specified index is a boundary (ECMAScript).</summary>",
                     $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
-                    $"internal static bool IsECMABoundary(ReadOnlySpan<char> inputSpan, int index)",
+                    $"internal static bool {IsECMABoundary}(ReadOnlySpan<char> inputSpan, int index)",
                     $"{{",
                     $"    int indexMinus1 = index - 1;",
-                    $"    return {uncheckedKeyword}((uint)indexMinus1 < (uint)inputSpan.Length && IsECMAWordChar(inputSpan[indexMinus1])) !=",
-                    $"           {uncheckedKeyword}((uint)index < (uint)inputSpan.Length && IsECMAWordChar(inputSpan[index]));",
-                    $"",
-                    $"    static bool IsECMAWordChar(char ch) =>",
-                    $"        char.IsAsciiLetterOrDigit(ch) ||",
-                    $"        ch == '_' ||",
-                    $"        ch == '\\u0130'; // latin capital letter I with dot above",
+                    $"    return {uncheckedKeyword}((uint)indexMinus1 < (uint)inputSpan.Length && {IsECMABoundaryWordChar}(inputSpan[indexMinus1])) !=",
+                    $"           {uncheckedKeyword}((uint)index < (uint)inputSpan.Length && {IsECMABoundaryWordChar}(inputSpan[index]));",
                     $"}}",
                 ]);
+
+                AddIsECMABoundaryWordCharHelper(requiredHelpers);
             }
         }
 
@@ -403,13 +499,15 @@ namespace System.Text.RegularExpressions.Generator
             // - There are only 4 or 5 characters in the needle and they're all ASCII.
 
             return chars.Length > 5 || RegexCharClass.IsAscii(chars)
-                ? EmitSearchValues(chars.ToArray(), requiredHelpers)
+                ? EmitSearchValues(chars, requiredHelpers)
                 : Literal(chars.ToString());
         }
 
         /// <summary>Adds a SearchValues instance declaration to the required helpers collection.</summary>
-        private static string EmitSearchValues(char[] chars, Dictionary<string, string[]> requiredHelpers, string? fieldName = null)
+        private static string EmitSearchValues(ReadOnlySpan<char> charsSpan, Dictionary<string, string[]> requiredHelpers, string? fieldName = null)
         {
+            char[] chars = charsSpan.ToArray();
+
             Array.Sort(chars);
 
             if (fieldName is null)
@@ -3175,20 +3273,33 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary or RegexNodeKind.ECMABoundary or RegexNodeKind.NonECMABoundary, $"Unexpected kind: {node.Kind}");
 
+                string negation = node.Kind is RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary ? "!" : "";
+
                 string call;
-                if (node.Kind is RegexNodeKind.Boundary or RegexNodeKind.NonBoundary)
+                switch (node.Kind)
                 {
-                    call = node.Kind is RegexNodeKind.Boundary ?
-                        $"!{HelpersTypeName}.IsBoundary" :
-                        $"{HelpersTypeName}.IsBoundary";
-                    AddIsBoundaryHelper(requiredHelpers, checkOverflow);
-                }
-                else
-                {
-                    call = node.Kind is RegexNodeKind.ECMABoundary ?
-                        $"!{HelpersTypeName}.IsECMABoundary" :
-                        $"{HelpersTypeName}.IsECMABoundary";
-                    AddIsECMABoundaryHelper(requiredHelpers, checkOverflow);
+                    case RegexNodeKind.Boundary or RegexNodeKind.NonBoundary:
+                        if (node.IsKnownPrecededByWordChar())
+                        {
+                            call = $"{negation}{HelpersTypeName}.{IsPostWordCharBoundary}";
+                            AddIsPostWordCharBoundaryHelper(requiredHelpers, checkOverflow);
+                        }
+                        else if (node.IsKnownSucceededByWordChar())
+                        {
+                            call = $"{negation}{HelpersTypeName}.{IsPreWordCharBoundary}";
+                            AddIsPreWordCharBoundaryHelper(requiredHelpers, checkOverflow);
+                        }
+                        else
+                        {
+                            call = $"{negation}{HelpersTypeName}.{IsBoundary}";
+                            AddIsBoundaryHelper(requiredHelpers, checkOverflow);
+                        }
+                        break;
+
+                    default:
+                        call = $"{negation}{HelpersTypeName}.{IsECMABoundary}";
+                        AddIsECMABoundaryHelper(requiredHelpers, checkOverflow);
+                        break;
                 }
 
                 using (EmitBlock(writer, $"if ({call}(inputSpan, pos{(sliceStaticPos > 0 ? $" + {sliceStaticPos}" : "")}))"))
@@ -3741,7 +3852,8 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     startingPos = ReserveName("lazyloop_starting_pos");
                     sawEmpty = ReserveName("lazyloop_empty_seen");
-                    writer.WriteLine($"int {startingPos} = pos, {sawEmpty} = 0; // the lazy loop may match empty iterations");
+                    additionalDeclarations.Add($"int {startingPos} = 0, {sawEmpty} = 0;");
+                    writer.WriteLine($"{startingPos} = {sawEmpty} = 0; // the lazy loop may match empty iterations");
                 }
 
                 // If the min count is 0, start out by jumping right to what's after the loop.  Backtracking
@@ -4069,13 +4181,6 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    // if ((uint)(sliceStaticPos + iterations - 1) >= (uint)slice.Length) goto doneLabel;
-                    if (emitLengthCheck)
-                    {
-                        EmitSpanLengthCheck(iterations);
-                        writer.WriteLine();
-                    }
-
                     // If we're able to vectorize the search, do so. Otherwise, fall back to a loop.
                     // For the loop, we're validating that each char matches the target node.
                     // For Contains{Any}, we're looking for the first thing that _doesn't_ match the target node,
@@ -4084,13 +4189,26 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         string containsExpr = indexOfExpr.Replace("IndexOf", "Contains");
 
-                        using (EmitBlock(writer, $"if ({sliceSpan}.Slice({sliceStaticPos}, {iterations}).{containsExpr})"))
+                        string condition = $"{sliceSpan}.Slice({sliceStaticPos}, {iterations}).{containsExpr}";
+                        if (emitLengthCheck)
+                        {
+                            condition = $"{SpanLengthCheck(iterations)} || {condition}";
+                        }
+
+                        using (EmitBlock(writer, $"if ({condition})"))
                         {
                             Goto(doneLabel);
                         }
                     }
                     else
                     {
+                        // if ((uint)(sliceStaticPos + iterations - 1) >= (uint)slice.Length) goto doneLabel;
+                        if (emitLengthCheck)
+                        {
+                            EmitSpanLengthCheck(iterations);
+                            writer.WriteLine();
+                        }
+
                         string repeaterSpan = "repeaterSlice"; // As this repeater doesn't wrap arbitrary node emits, this shouldn't conflict with anything
                         writer.WriteLine($"ReadOnlySpan<char> {repeaterSpan} = {sliceSpan}.Slice({sliceStaticPos}, {iterations});");
 
@@ -5514,22 +5632,103 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets a textual description of what characters match a set.</summary>
-        private static string DescribeSet(string charClass) =>
-            charClass switch
+        private static string DescribeSet(string charClass)
+        {
+            string? description = charClass switch
             {
                 RegexCharClass.AnyClass => "any character",
-                RegexCharClass.DigitClass => "a Unicode digit",
+                RegexCharClass.AsciiLetterClass => "an ASCII letter",
+                RegexCharClass.AsciiLetterOrDigitClass => "an ASCII letter or digit",
                 RegexCharClass.ECMASpaceClass => "a whitespace character (ECMA)",
                 RegexCharClass.ECMAWordClass => "a word character (ECMA)",
+                RegexCharClass.HexDigitClass => "a hexadecimal digit",
+                RegexCharClass.HexDigitLowerClass => "a lowercase hexadecimal digit",
+                RegexCharClass.HexDigitUpperClass => "an uppercase hexadecimal digit",
+                RegexCharClass.LetterClass => "a Unicode letter",
+                RegexCharClass.LetterOrDigitClass => "a Unicode letter or digit",
+                RegexCharClass.NotAsciiLetterClass => "any character other than an ASCII letter",
+                RegexCharClass.NotAsciiLetterOrDigitClass => "any character other than an ASCII letter or digit",
+                RegexCharClass.NotControlClass => "any character other than a Unicode control character",
                 RegexCharClass.NotDigitClass => "any character other than a Unicode digit",
                 RegexCharClass.NotECMASpaceClass => "any character other than a whitespace character (ECMA)",
                 RegexCharClass.NotECMAWordClass => "any character other than a word character (ECMA)",
+                RegexCharClass.NotHexDigitClass => "any character other than a hexadecimal digit",
+                RegexCharClass.NotHexDigitLowerClass => "any character other than a lowercase hexadecimal digit",
+                RegexCharClass.NotHexDigitUpperClass => "any character other than an uppercase hexadecimal digit",
+                RegexCharClass.NotLetterClass => "any character other than a Unicode letter",
+                RegexCharClass.NotLetterOrDigitClass => "any character other than a Unicode letter or digit",
+                RegexCharClass.NotLowerClass => "any character other than a Unicode lowercase letter",
+                RegexCharClass.NotNumberClass => "any character other than a Unicode number",
+                RegexCharClass.NotPunctuationClass => "any character other than a Unicode punctuation character",
+                RegexCharClass.NotSeparatorClass => "any character other than a Unicode separator",
                 RegexCharClass.NotSpaceClass => "any character other than a whitespace character",
+                RegexCharClass.NotSymbolClass => "any character other than a Unicode symbol",
+                RegexCharClass.NotUpperClass => "any character other than a Unicode uppercase letter",
                 RegexCharClass.NotWordClass => "any character other than a word character",
+                RegexCharClass.NumberClass => "a Unicode number",
+                RegexCharClass.PunctuationClass => "a Unicode punctuation character",
+                RegexCharClass.SeparatorClass => "a Unicode separator",
                 RegexCharClass.SpaceClass => "a whitespace character",
+                RegexCharClass.SymbolClass => "a Unicode symbol",
                 RegexCharClass.WordClass => "a word character",
-                _ => $"a character in the set {RegexCharClass.DescribeSet(charClass)}",
+                _ => null,
             };
+
+            if (description is not null)
+            {
+                return description;
+            }
+
+            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[1];
+            if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negatedCategories) &&
+                numCategories == 1)
+            {
+                ReadOnlySpan<string?> categoryDescriptions =
+                [
+                    "a Unicode uppercase letter", // UppercaseLetter = 0,
+                    "a Unicode lowercase letter", // LowercaseLetter = 1,
+                    "a Unicode titlecase letter", // TitlecaseLetter = 2,
+                    "a Unicode modifier letter", // ModifierLetter = 3,
+                    null, // OtherLetter = 4,
+                    "a Unicode non-spacing mark", // NonSpacingMark = 5,
+                    "a Unicode spacing-combining mark", // SpacingCombiningMark = 6,
+                    "a Unicode enclosing mark", // EnclosingMark = 7,
+                    "a Unicode digit", // DecimalDigitNumber = 8,
+                    "a Unicode letter number", // LetterNumber = 9,
+                    null, // OtherNumber = 10,
+                    "a Unicode space separator", // SpaceSeparator = 11,
+                    "a Unicode line separator", // LineSeparator = 12,
+                    "a Unicode paragraph separator", // ParagraphSeparator = 13,
+                    "a Unicode control character", // Control = 14,
+                    "a Unicode format character", // Format = 15,
+                    "a Unicode surrogate character", // Surrogate = 16,
+                    "a Unicode private-use character", // PrivateUse = 17,
+                    "a Unicode connector punctuation character", // ConnectorPunctuation = 18,
+                    "a Unicode dash punctuation character", // DashPunctuation = 19,
+                    "a Unicode open punctuation character", // OpenPunctuation = 20,
+                    "a Unicode close punctuation character", // ClosePunctuation = 21,
+                    "a Unicode initial quote punctuation character", // InitialQuotePunctuation = 22,
+                    "a Unicode final quote punctuation character", // FinalQuotePunctuation = 23,
+                    null, // OtherPunctuation = 24,
+                    "a Unicode math symbol", // MathSymbol = 25,
+                    "a Unicode currency symbol", // CurrencySymbol = 26,
+                    "a Unicode modifier symbol", // ModifierSymbol = 27,
+                    null, // OtherSymbol = 28,
+                    "an unassigned Unicode code point", // OtherNotAssigned = 29,
+                ];
+
+                int cat = (int)categories[0];
+                if ((uint)cat < (uint)categoryDescriptions.Length &&
+                    (description = categoryDescriptions[cat]) is not null)
+                {
+                    return negatedCategories ?
+                        $"any character other than {description}" :
+                        description;
+                }
+            }
+
+            return $"a character in the set {RegexCharClass.DescribeSet(charClass)}";
+        }
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
         /// <param name="writer">The writer to which the description should be written.</param>
@@ -5614,9 +5813,8 @@ namespace System.Text.RegularExpressions.Generator
                 _ when node.M == node.N => "exactly",
                 RegexNodeKind.Oneloopatomic or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Setloopatomic => "atomically",
                 RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop => "greedily",
-                RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy => "lazily",
-                RegexNodeKind.Loop => rm.Analysis.IsAtomicByAncestor(node) ? "greedily and atomically" : "greedily",
-                _ /* RegexNodeKind.Lazyloop */ => rm.Analysis.IsAtomicByAncestor(node) ? "lazily and atomically" : "lazily",
+                RegexNodeKind.Loop => rm.Analysis.IsAtomicByAncestor(node) ? "atomically" : "greedily",
+                _ => "lazily", // Onelazy or Notonelazy or Setlazy or Lazyloop
             };
 
             string bounds =

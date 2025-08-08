@@ -1245,7 +1245,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_SRCS_UNSAFE_AreSame:
                             case NI_SRCS_UNSAFE_ByteOffset:
                             case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                            case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
                             case NI_SRCS_UNSAFE_IsAddressLessThan:
+                            case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
                             case NI_SRCS_UNSAFE_IsNullRef:
                             case NI_SRCS_UNSAFE_Subtract:
                             case NI_SRCS_UNSAFE_SubtractByteOffset:
@@ -1260,7 +1262,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                     {
                                         case NI_SRCS_UNSAFE_AreSame:
                                         case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                                        case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
                                         case NI_SRCS_UNSAFE_IsAddressLessThan:
+                                        case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
                                         case NI_SRCS_UNSAFE_IsNullRef:
                                         {
                                             fgObserveInlineConstants(opcode, pushedStack, isInlining);
@@ -5212,39 +5216,6 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
     // Set to retless flag to avoid future asserts.
     bCallFinally->SetFlags(BBF_RETLESS_CALL);
     block->SetKind(BBJ_ALWAYS);
-}
-
-/*****************************************************************************
- *
- *  Is the BasicBlock bJump a forward branch?
- *   Optionally bSrc can be supplied to indicate that
- *   bJump must be forward with respect to bSrc
- */
-bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
-{
-    assert((bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest)) ||
-           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
-
-    bool        result = false;
-    BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;
-
-    while (true)
-    {
-        bTemp = bTemp->Next();
-
-        if (bTemp == nullptr)
-        {
-            break;
-        }
-
-        if (bTemp == bDest)
-        {
-            result = true;
-            break;
-        }
-    }
-
-    return result;
 }
 
 /*****************************************************************************

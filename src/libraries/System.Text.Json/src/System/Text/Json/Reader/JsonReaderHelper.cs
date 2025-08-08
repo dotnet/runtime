@@ -12,7 +12,7 @@ namespace System.Text.Json
     internal static partial class JsonReaderHelper
     {
         private const string SpecialCharacters = ". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029";
-#if NET8_0_OR_GREATER
+#if NET
         private static readonly SearchValues<char> s_specialCharacters = SearchValues.Create(SpecialCharacters);
 
         public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
@@ -31,7 +31,7 @@ namespace System.Text.Json
             {
                 newLines = 1;
                 data = data.Slice(0, lastLineFeedIndex);
-#if NET8_0_OR_GREATER
+#if NET
                 newLines += data.Count(JsonConstants.LineFeed);
 #else
                 int pos;

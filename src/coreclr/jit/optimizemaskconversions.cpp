@@ -175,37 +175,11 @@ public:
 
                 // Look for:
                 //      user: ConvertVectorToMask(use:LCL_VAR(x)))
-                // -or-
-                //      user: ConditionalSelect(use:LCL_VAR(x), y, z)
 
-                if ((user != nullptr) && user->OperIsHWIntrinsic())
+                if ((user != nullptr) && user->OperIsConvertVectorToMask())
                 {
-                    GenTreeHWIntrinsic* hwintrin = user->AsHWIntrinsic();
-                    NamedIntrinsic      ni       = hwintrin->GetHWIntrinsicId();
-
-                    if (hwintrin->OperIsConvertVectorToMask())
-                    {
-                        convertOp     = user->AsHWIntrinsic();
-                        hasConversion = true;
-                    }
-                    else if (hwintrin->OperIsVectorConditionalSelect())
-                    {
-                        // We don't actually have a convert here, but we do have a case where
-                        // the mask is being used in a ConditionalSelect and therefore can be
-                        // consumed directly as a mask. While the IR shows TYP_SIMD, it gets
-                        // handled in lowering as part of the general embedded-mask support.
-
-                        // We notably don't check that op2 supported embedded masking directly
-                        // because we can still consume the mask directly in such cases. We'll just
-                        // emit `vblendmps zmm1 {k1}, zmm2, zmm3` instead  of containing the CndSel
-                        // as part of something like `vaddps zmm1 {k1}, zmm2, zmm3`
-
-                        if (hwintrin->Op(1) == lclOp)
-                        {
-                            convertOp     = user->AsHWIntrinsic();
-                            hasConversion = true;
-                        }
-                    }
+                    convertOp     = user->AsHWIntrinsic();
+                    hasConversion = true;
                 }
                 break;
             }
@@ -402,7 +376,6 @@ public:
 
             lclOp->Data() = lclOp->Data()->AsHWIntrinsic()->Op(1);
         }
-
         else if (isLocalStore && addConversion)
         {
             // Convert
@@ -416,7 +389,6 @@ public:
             lclOp->Data() = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(), weight->simdBaseJitType,
                                                                      weight->simdSize);
         }
-
         else if (isLocalUse && removeConversion)
         {
             // Convert
@@ -426,7 +398,6 @@ public:
 
             *use = lclOp;
         }
-
         else if (isLocalUse && addConversion)
         {
             // Convert
@@ -510,7 +481,6 @@ private:
 PhaseStatus Compiler::fgOptimizeMaskConversions()
 {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-
     if (opts.OptimizationDisabled())
     {
         JITDUMP("Skipping. Optimizations Disabled\n");

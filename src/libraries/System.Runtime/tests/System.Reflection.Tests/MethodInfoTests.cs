@@ -162,7 +162,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), null, typeof(ArgumentNullException))]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), typeof(Delegate_Void_Int), typeof(ArgumentException))]
-        public void CreateDelegate_Invalid(Type type, string name, Type delegateType, Type exceptionType)
+        public void CreateDelegate_Invalid(Type type, string name, Type? delegateType, Type exceptionType)
         {
             MethodInfo methodInfo = GetMethod(type, name);
             Assert.Throws(exceptionType, () => methodInfo.CreateDelegate(delegateType));

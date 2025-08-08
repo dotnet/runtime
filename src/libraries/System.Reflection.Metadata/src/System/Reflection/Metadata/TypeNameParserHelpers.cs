@@ -15,7 +15,7 @@ namespace System.Reflection.Metadata
         internal const int Pointer = -2;
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
-#if NET8_0_OR_GREATER
+#if NET
         // Keep this in sync with GetFullTypeNameLength/NeedsEscaping
         private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
 #endif
@@ -36,7 +36,7 @@ namespace System.Reflection.Metadata
             // input, that makes the total loop complexity potentially O(m * n^2), where
             // 'n' is adversary-controlled. To avoid DoS issues here, we'll loop manually.
 
-#if NET8_0_OR_GREATER
+#if NET
             int offset = input.IndexOfAny(s_endOfFullTypeNameDelimitersSearchValues);
             if (offset < 0)
             {

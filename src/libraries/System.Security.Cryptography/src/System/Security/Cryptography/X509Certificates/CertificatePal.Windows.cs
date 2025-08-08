@@ -418,7 +418,7 @@ namespace System.Security.Cryptography.X509Certificates
             CspKeyContainerInfo? cspKeyContainerInfo = null;
             try
             {
-                CspParameters? parameters = GetPrivateKeyCsp();
+                CspParameters? parameters = CertificateHelpers.GetPrivateKeyCsp(_certContext);
 
                 if (parameters != null)
                 {

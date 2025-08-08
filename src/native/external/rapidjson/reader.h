@@ -1584,7 +1584,7 @@ private:
         // Parse frac = decimal-point 1*DIGIT
         int expFrac = 0;
         size_t decimalPosition;
-        if (Consume(s, '.')) {
+        if (!useNanOrInf && Consume(s, '.')) {
             decimalPosition = s.Length();
 
             if (RAPIDJSON_UNLIKELY(!(s.Peek() >= '0' && s.Peek() <= '9')))
@@ -1631,7 +1631,7 @@ private:
 
         // Parse exp = e [ minus / plus ] 1*DIGIT
         int exp = 0;
-        if (Consume(s, 'e') || Consume(s, 'E')) {
+        if (!useNanOrInf && (Consume(s, 'e') || Consume(s, 'E'))) {
             if (!useDouble) {
                 d = static_cast<double>(use64bit ? i64 : i);
                 useDouble = true;

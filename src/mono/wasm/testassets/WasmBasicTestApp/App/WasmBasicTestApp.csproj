@@ -20,11 +20,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Json\Json.csproj" />
     <ProjectReference Include="..\ResourceLibrary\ResourceLibrary.csproj" />
+    <ProjectReference Include="..\LazyLibrary\LazyLibrary.csproj" />
     <WasmEnvironmentVariable Include="baz" Value="boo" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestLazyLoading)' == 'true'">
     <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
+    <BlazorWebAssemblyLazyLoad Include="LazyLibrary$(WasmAssemblyExtension)" />
     <WasmExtraFilesToDeploy Include="profiler.js" />
   </ItemGroup>
 </Project>

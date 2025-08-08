@@ -5510,7 +5510,7 @@ void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 }
 
-void MethodContext::recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection, CORINFO_VARARGS_HANDLE result)
+void MethodContext::recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection, CORINFO_VARARGS_HANDLE result)
 {
     if (GetVarArgsHandle == nullptr)
         GetVarArgsHandle = new LightWeightMap<GetVarArgsHandleValue, DLDL>();
@@ -5521,6 +5521,7 @@ void MethodContext::recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirec
     key.pSig_Index = (DWORD)GetVarArgsHandle->AddBuffer((unsigned char*)pSig->pSig, pSig->cbSig);
     key.scope      = CastHandle(pSig->scope);
     key.token      = (DWORD)pSig->token;
+    key.methHnd    = CastHandle(methHnd);
 
     DLDL value;
     if (ppIndirection != nullptr)
@@ -5534,12 +5535,12 @@ void MethodContext::recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirec
 }
 void MethodContext::dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL value)
 {
-    printf("GetVarArgsHandle key sig-%s scope-%016" PRIX64 " token-%08X",
+    printf("GetVarArgsHandle key sig-%s scope-%016" PRIX64 " token-%08X methHnd-%016" PRIX64 "",
         SpmiDumpHelper::DumpPSig(key.pSig_Index, key.cbSig, GetVarArgsHandle).c_str(),
-        key.scope, key.token);
+        key.scope, key.token, key.methHnd);
     printf(", value ppIndirection-%016" PRIX64 " result-%016" PRIX64 "", value.A, value.B);
 }
-CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection)
+CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection)
 {
     GetVarArgsHandleValue key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
@@ -5547,6 +5548,7 @@ CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig
     key.pSig_Index = (DWORD)GetVarArgsHandle->Contains((unsigned char*)pSig->pSig, pSig->cbSig);
     key.scope      = CastHandle(pSig->scope);
     key.token      = (DWORD)pSig->token;
+    key.methHnd    = CastHandle(methHnd);
 
     DLDL value = LookupByKeyOrMissNoMessage(GetVarArgsHandle, key);
 
@@ -5555,37 +5557,6 @@ CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig
     if (ppIndirection != nullptr)
         *ppIndirection = (void*)value.A;
     return (CORINFO_VARARGS_HANDLE)value.B;
-}
-
-void MethodContext::recCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig, bool result)
-{
-    if (CanGetVarArgsHandle == nullptr)
-        CanGetVarArgsHandle = new LightWeightMap<CanGetVarArgsHandleValue, DWORD>();
-
-    CanGetVarArgsHandleValue key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.scope = CastHandle(pSig->scope);
-    key.token = (DWORD)pSig->token;
-
-    DWORD value = result ? 1 : 0;
-    CanGetVarArgsHandle->Add(key, value);
-    DEBUG_REC(dmpCanGetVarArgsHandle(key, value));
-}
-void MethodContext::dmpCanGetVarArgsHandle(const CanGetVarArgsHandleValue& key, DWORD value)
-{
-    printf("CanGetVarArgsHandle key scope-%016" PRIX64 " token-%08X, value result-%08X", key.scope, key.token, value);
-}
-bool MethodContext::repCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-{
-    CanGetVarArgsHandleValue key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.scope = CastHandle(pSig->scope);
-    key.token = (DWORD)pSig->token;
-
-    DWORD value = LookupByKeyOrMiss(CanGetVarArgsHandle, key, ": key %016" PRIX64 " %08X", key.scope, key.token);
-
-    DEBUG_REP(dmpCanGetVarArgsHandle(key, value));
-    return value != 0;
 }
 
 void MethodContext::recGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection, DWORD result)
@@ -6194,38 +6165,6 @@ LPVOID MethodContext::repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMet
     DEBUG_REP(dmpGetCookieForInterpreterCalliSig(key, value));
 
     return (LPVOID)value.A;
-}
-
-void MethodContext::recCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, bool result)
-{
-    if (CanGetCookieForPInvokeCalliSig == nullptr)
-        CanGetCookieForPInvokeCalliSig = new LightWeightMap<CanGetCookieForPInvokeCalliSigValue, DWORD>();
-
-    CanGetCookieForPInvokeCalliSigValue key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.scope = CastHandle(szMetaSig->scope);
-    key.token = (DWORD)szMetaSig->token;
-
-    DWORD value = result ? 1 : 0;
-    CanGetCookieForPInvokeCalliSig->Add(key, value);
-    DEBUG_REC(dmpCanGetCookieForPInvokeCalliSig(key, value));
-}
-void MethodContext::dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value)
-{
-    printf("CanGetCookieForPInvokeCalliSig key scope-%016" PRIX64 " token-%08X, value result-%08X", key.scope, key.token,
-           value);
-}
-bool MethodContext::repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-{
-    CanGetCookieForPInvokeCalliSigValue key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.scope = CastHandle(szMetaSig->scope);
-    key.token = (DWORD)szMetaSig->token;
-
-    DWORD value = LookupByKeyOrMissNoMessage(CanGetCookieForPInvokeCalliSig, key);
-
-    DEBUG_REP(dmpCanGetCookieForPInvokeCalliSig(key, value));
-    return value != 0;
 }
 
 void MethodContext::recErrorList(const char* error)

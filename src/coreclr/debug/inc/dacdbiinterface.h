@@ -2729,6 +2729,9 @@ public:
     virtual
     bool MetadataUpdatesApplied() = 0;
 
+    virtual
+    HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly) = 0;
+
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 

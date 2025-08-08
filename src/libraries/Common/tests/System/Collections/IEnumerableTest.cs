@@ -20,6 +20,7 @@ namespace Tests.Collections
         protected T DefaultValue => default(T);
 
         protected bool MoveNextAtEndThrowsOnModifiedCollection => true;
+        protected virtual bool CurrentAfterFullEnumerationThrows => true;
 
         protected virtual CollectionOrder CollectionOrder => CollectionOrder.Sequential;
 
@@ -352,7 +353,7 @@ namespace Tests.Collections
             VerifyModifiedEnumerator(
                 enumerator,
                 DefaultValue,
-                false,
+                CurrentAfterFullEnumerationThrows,
                 true);
         }
 

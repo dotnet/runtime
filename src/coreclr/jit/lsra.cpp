@@ -498,6 +498,35 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
     return &physRegs[regNum];
 }
 
+//------------------------------------------------------------------------
+// getAvailableGPRsForType: Returns available general-purpose registers for the given type,
+// with platform-specific restrictions applied.
+//
+// Arguments:
+//     candidates - The candidate register mask to be filtered
+//     regType    - The register type for which we need available registers
+//
+// Return Value:
+//     A filtered register mask with platform-specific restrictions applied.
+//     For AMD64: GC types and long types are restricted to low GPRs only.
+//     For other platforms: Returns the original candidates unchanged.
+//
+// Notes:
+//     On AMD64, we don't use extended GPRs (R16-R31) for GC types to ensure
+//     proper GC tracking and code generation compatibility.
+//
+SingleTypeRegSet LinearScan::getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType)
+{
+#ifdef TARGET_AMD64
+    if (varTypeIsGC(regType) || varTypeIsLong(regType))
+    {
+        // For AMD64, we don't use eGPR for GC types.
+        candidates &= (SingleTypeRegSet)RBM_LOWINT.getLow();
+    }
+#endif // TARGET_AMD64
+    return candidates;
+}
+
 #ifdef DEBUG
 
 //----------------------------------------------------------------------------
@@ -7636,25 +7665,18 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     if (tree != nullptr)
     {
         LIR::Use treeUse;
-        GenTree* useNode  = nullptr;
-        bool     foundUse = blockRange.TryGetUse(tree, &treeUse);
-        useNode           = treeUse.User();
+        bool     foundUse;
+        GenTree* useNode = tree;
 
-#ifdef TARGET_ARM64
-        if (refPosition->needsConsecutive && useNode->OperIs(GT_FIELD_LIST))
+        // Get the use of the node. If the node is contained then the actual use is the containing node
+        // (which may be much later in the LIR). Repeatedly check until there is no contained node.
+        do
         {
-            // The tree node requiring consecutive registers are represented as GT_FIELD_LIST.
-            // When restoring the upper vector, make sure to restore it at the point where
-            // GT_FIELD_LIST is consumed instead where the individual field is consumed, which
-            // will always be at GT_FIELD_LIST creation time. That way, we will restore the
-            // upper vector just before the use of them in the intrinsic.
-            LIR::Use fieldListUse;
-            foundUse = blockRange.TryGetUse(useNode, &fieldListUse);
-            treeUse  = fieldListUse;
+            foundUse = blockRange.TryGetUse(useNode, &treeUse);
             useNode  = treeUse.User();
-        }
-#endif
-        assert(foundUse);
+            assert(foundUse);
+        } while (useNode->isContained());
+
         JITDUMP("before %d.%s:\n", useNode->gtTreeID, GenTree::OpName(useNode->gtOper));
 
         // We need to insert the restore prior to the use, not (necessarily) immediately after the lclVar.
@@ -8694,6 +8716,9 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     }
 #else  // !TARGET_ARM
     SingleTypeRegSet freeRegs = allRegs(type);
+    // We call getTempRegForResolution() with only either TYP_INT or TYP_FLOAT.
+    // We are being conservative with eGPR usage when type is TYP_INT since it could be a reference type.
+    freeRegs = getAvailableGPRsForType(freeRegs, (type == TYP_INT) ? TYP_REF : type);
 #endif // !TARGET_ARM
 
 #ifdef DEBUG
@@ -13466,7 +13491,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
     {
         preferences = candidates;
     }
-
+    candidates = linearScan->getAvailableGPRsForType(candidates, regType);
 #ifdef DEBUG
     candidates = linearScan->stressLimitRegs(refPosition, regType, candidates);
 #endif
@@ -13934,7 +13959,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
             }
         }
     }
-
+    candidates = linearScan->getAvailableGPRsForType(candidates, regType);
 #ifdef DEBUG
     candidates = linearScan->stressLimitRegs(refPosition, regType, candidates);
 #endif

@@ -4,7 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if !NET8_0_OR_GREATER
+#if !NET
 using System.Runtime.CompilerServices;
 #endif
 
@@ -201,7 +201,7 @@ namespace System.Collections.Frozen
 
         internal static unsafe bool IsAllAscii(ReadOnlySpan<char> s)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return System.Text.Ascii.IsValid(s);
 #else
             fixed (char* src = s)
@@ -238,14 +238,14 @@ namespace System.Collections.Frozen
 #endif
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         private static readonly SearchValues<char> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 #endif
         internal static bool ContainsAnyAsciiLetters(ReadOnlySpan<char> s)
         {
             Debug.Assert(IsAllAscii(s));
 
-#if NET8_0_OR_GREATER
+#if NET
             return s.ContainsAny(s_asciiLetters);
 #else
             foreach (char c in s)

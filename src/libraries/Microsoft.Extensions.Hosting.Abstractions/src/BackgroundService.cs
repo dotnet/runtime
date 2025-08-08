@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Hosting
             }
             finally
             {
-#if NET8_0_OR_GREATER
+#if NET
                 await _executeTask.WaitAsync(cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 #else
                 // Wait until the task completes or the stop token triggers

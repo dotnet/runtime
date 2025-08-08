@@ -15,7 +15,6 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <SuppressPlatformNotSupportedAssemblyDocXmlError>true</SuppressPlatformNotSupportedAssemblyDocXmlError>
 
-    <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>

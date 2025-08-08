@@ -8,7 +8,7 @@
 
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
- 
+
    submitted by Josh Goldfoot
    Modified to reduce memory and do more in parallel by Anthony Lloyd
  */
@@ -254,6 +254,7 @@ namespace BenchmarksGame
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118475")]
         public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);

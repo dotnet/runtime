@@ -312,7 +312,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefaultNullableDateTime", 0, null)]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithEnum", 0, AttributeTargets.All)]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithNullableEnum", 0, (int)AttributeTargets.All)]
-        public void DefaultValue(Type type, string name, int index, object expected)
+        public void DefaultValue(Type type, string name, int index, object? expected)
         {
             ParameterInfo parameterInfo = GetParameterInfo(type, name, index);
             Assert.Equal(expected, parameterInfo.DefaultValue);
@@ -320,7 +320,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefaultDateTime", 0, null)]
-        public void DefaultValue_broken_on_NETFX(Type type, string name, int index, object expected)
+        public void DefaultValue_broken_on_NETFX(Type type, string name, int index, object? expected)
         {
             ParameterInfo parameterInfo = GetParameterInfo(type, name, index);
             Assert.Equal(expected, parameterInfo.DefaultValue);

@@ -4315,7 +4315,7 @@ public class MyArgumentException : Exception, ISerializable
         _paramName = paramName;
     }
 
-#if NET8_0_OR_GREATER
+#if NET
     [Obsolete("Exception..ctor(SerializationInfo, StreamingContext) is obsolete.", DiagnosticId = "SYSLIB0051")]
 #endif
     protected MyArgumentException(SerializationInfo info, StreamingContext context) : base(info, context) {
@@ -4334,7 +4334,7 @@ public class MyArgumentException : Exception, ISerializable
         }
     }
 
-#if NET8_0_OR_GREATER
+#if NET
     [Obsolete("Exception.GetObjectData is obsolete.", DiagnosticId = "SYSLIB0051")]
 #endif
     public override void GetObjectData(SerializationInfo info, StreamingContext context)

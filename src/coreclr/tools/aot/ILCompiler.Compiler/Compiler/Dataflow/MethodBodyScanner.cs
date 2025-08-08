@@ -592,15 +592,20 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.conv_r8:
                     case ILOpcode.ldind_ref:
                     case ILOpcode.ldobj:
-                    case ILOpcode.mkrefany:
                     case ILOpcode.unbox:
                     case ILOpcode.unbox_any:
-                    case ILOpcode.box:
                     case ILOpcode.neg:
                     case ILOpcode.not:
                         PopUnknown(currentStack, 1, methodBody, offset);
                         PushUnknown(currentStack);
                         reader.Skip(opcode);
+                        break;
+
+                    case ILOpcode.box:
+                    case ILOpcode.mkrefany:
+                        HandleTypeTokenAccess(methodBody, offset, (TypeDesc)methodBody.GetObject(reader.ReadILToken()));
+                        PopUnknown(currentStack, 1, methodBody, offset);
+                        PushUnknown(currentStack);
                         break;
 
                     case ILOpcode.isinst:
@@ -622,6 +627,7 @@ namespace ILCompiler.Dataflow
                         {
                             StackSlot count = PopUnknown(currentStack, 1, methodBody, offset);
                             var arrayElement = (TypeDesc)methodBody.GetObject(reader.ReadILToken());
+                            HandleTypeTokenAccess(methodBody, offset, arrayElement);
                             currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElement)));
                         }
                         break;

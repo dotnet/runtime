@@ -10,7 +10,7 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [InlineData(typeof(string), typeof(string))]
         [InlineData(null, typeof(object))]
-        public void SetBaseTypeConstraint(Type baseTypeConstraint, Type expectedBaseType)
+        public void SetBaseTypeConstraint(Type? baseTypeConstraint, Type expectedBaseType)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             string[] typeParamNames = new string[] { "TFirst" };

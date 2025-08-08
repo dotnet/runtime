@@ -7,7 +7,7 @@
 
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
-    IMPORT NDirectImportWorker
+    IMPORT PInvokeImportWorker
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
 #endif
@@ -96,15 +96,15 @@
     LEAF_END
 
 ; ------------------------------------------------------------------
-; The call in ndirect import precode points to this function.
-        NESTED_ENTRY NDirectImportThunk
+; The call in PInvokeImportPrecode points to this function.
+        NESTED_ENTRY PInvokeImportThunk
 
         PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
         SAVE_ARGUMENT_REGISTERS        sp, 16
         SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
 
         mov     x0, x12
-        bl      NDirectImportWorker
+        bl      PInvokeImportWorker
         mov     x12, x0
 
         ; pop the stack and restore original register state
@@ -112,7 +112,7 @@
         RESTORE_ARGUMENT_REGISTERS        sp, 16
         EPILOG_RESTORE_REG_PAIR           fp, lr, #224!
 
-        ; If we got back from NDirectImportWorker, the MD has been successfully
+        ; If we got back from PInvokeImportWorker, the MD has been successfully
         ; linked. Proceed to execute the original DLL call.
         EPILOG_BRANCH_REG x12
 

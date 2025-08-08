@@ -708,12 +708,7 @@ struct GetVarArgsHandleValue
     DWORD     pSig_Index;
     DWORDLONG scope;
     DWORD     token;
-};
-
-struct CanGetVarArgsHandleValue
-{
-    DWORDLONG scope;
-    DWORD     token;
+    DWORDLONG methHnd;
 };
 
 struct GetCookieForPInvokeCalliSigValue
@@ -728,12 +723,6 @@ struct GetCookieForInterpreterCalliSigValue
 {
     DWORD     cbSig;
     DWORD     pSig_Index;
-    DWORDLONG scope;
-    DWORD     token;
-};
-
-struct CanGetCookieForPInvokeCalliSigValue
-{
     DWORDLONG scope;
     DWORD     token;
 };

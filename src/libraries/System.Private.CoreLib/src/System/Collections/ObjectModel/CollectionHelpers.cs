@@ -9,7 +9,7 @@ namespace System.Collections.ObjectModel
     {
         internal static void ValidateCopyToArguments(int sourceCount, Array array, int index)
         {
-#if NET8_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(array);
 #else
             ArgumentNullException.ThrowIfNull(array);
@@ -25,7 +25,7 @@ namespace System.Collections.ObjectModel
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-#if NET8_0_OR_GREATER
+#if NET
             ArgumentOutOfRangeException.ThrowIfNegative(index);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(index, array.Length);
 #else

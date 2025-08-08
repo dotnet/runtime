@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
@@ -20,16 +21,16 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false })]
-        public void TopLevelMain(Configuration config, bool aot)
-            => TestMain("top_level",
+        public async Task TopLevelMain(Configuration config, bool aot)
+            => await TestMain("top_level",
                     @"System.Console.WriteLine(""Hello, World!""); return await System.Threading.Tasks.Task.FromResult(42);",
                     config, aot);
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false })]
-        public void AsyncMain(Configuration config, bool aot)
-            => TestMain("async_main", @"
+        public async Task AsyncMain(Configuration config, bool aot)
+            => await TestMain("async_main", @"
             using System;
             using System.Threading.Tasks;
 
@@ -44,8 +45,8 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false })]
-        public void NonAsyncMain(Configuration config, bool aot)
-            => TestMain("non_async_main", @"
+        public async Task NonAsyncMain(Configuration config, bool aot)
+            => await TestMain("non_async_main", @"
                 using System;
                 using System.Threading.Tasks;
 
@@ -59,8 +60,8 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false })]
-        public void ExceptionFromMain(Configuration config, bool aot)
-            => TestMain("main_exception", """
+        public async Task ExceptionFromMain(Configuration config, bool aot)
+            => await TestMain("main_exception", """
                 using System;
                 using System.Threading.Tasks;
 
@@ -84,21 +85,21 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
-        public void Bug49588_RegressionTest_AOT(Configuration config, bool aot)
-            => TestMain("bug49588_aot", s_bug49588_ProgramCS, config, aot);
+        public async Task Bug49588_RegressionTest_AOT(Configuration config, bool aot)
+            => await TestMain("bug49588_aot", s_bug49588_ProgramCS, config, aot);
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false })]
-        public void Bug49588_RegressionTest_NativeRelinking(Configuration config, bool aot)
-            => TestMain("bug49588_native_relinking", s_bug49588_ProgramCS, config, aot,
+        public async Task Bug49588_RegressionTest_NativeRelinking(Configuration config, bool aot)
+            => await TestMain("bug49588_native_relinking", s_bug49588_ProgramCS, config, aot,
                         extraArgs: "-p:WasmBuildNative=true",
                         isNativeBuild: true);
 
         [Theory]
         [BuildAndRun]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/97449")]
-        public void PropertiesFromRuntimeConfigJson(Configuration config, bool aot)
-            => TestMain("runtime_config_json",
+        public async Task PropertiesFromRuntimeConfigJson(Configuration config, bool aot)
+            => await TestMain("runtime_config_json",
                         @"
                         using System;
                         using System.Runtime.CompilerServices;
@@ -121,8 +122,8 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/97449")]
-        public void PropertiesFromCsproj(Configuration config, bool aot)
-            => TestMain("csproj_properties",
+        public async Task PropertiesFromCsproj(Configuration config, bool aot)
+            => await TestMain("csproj_properties",
                         @"
                         using System;
                         using System.Runtime.CompilerServices;

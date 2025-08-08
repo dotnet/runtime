@@ -89,19 +89,19 @@ namespace System.Xml.XmlResolverTests
         }
 
         [Fact]
-        public void XmlResolverGetEntityAsyncWithInvalidData()
+        public async Task XmlResolverGetEntityAsyncWithInvalidData()
         {
             var xmlResolver = new XmlPreloadedResolver(XmlKnownDtds.Xhtml10);
-            Assert.ThrowsAsync<ArgumentNullException>(() => xmlResolver.GetEntityAsync(null, null, null));
-            Assert.ThrowsAsync<XmlException>(() => xmlResolver.GetEntityAsync(new Uri("https://DummyUri"), null, null));
-            Assert.ThrowsAsync<XmlException>(() =>
+            await Assert.ThrowsAsync<ArgumentNullException>(() => xmlResolver.GetEntityAsync(null, null, null));
+            await Assert.ThrowsAsync<XmlException>(() => xmlResolver.GetEntityAsync(new Uri("https://DummyUri"), null, null));
+            await Assert.ThrowsAsync<XmlException>(() =>
                 xmlResolver.GetEntityAsync(new Uri("-//W3C//ENTITIES Latin 1 for XHTML//EN", UriKind.RelativeOrAbsolute), null, typeof(string)));
 
             xmlResolver = new XmlPreloadedResolver(new XmlPreloadedResolver(), XmlKnownDtds.Xhtml10);
-            Assert.ThrowsAsync<XmlException>(() =>
+            await Assert.ThrowsAsync<XmlException>(() =>
                 xmlResolver.GetEntityAsync(new Uri("https://DummyUri", UriKind.RelativeOrAbsolute), null, typeof(string)));
 
-            Assert.ThrowsAsync<XmlException>(() =>
+            await Assert.ThrowsAsync<XmlException>(() =>
                 xmlResolver.GetEntityAsync(new Uri("-//W3C//ENTITIES Latin 1 for XHTML//EN", UriKind.RelativeOrAbsolute), null, typeof(TextReader)));
         }
 

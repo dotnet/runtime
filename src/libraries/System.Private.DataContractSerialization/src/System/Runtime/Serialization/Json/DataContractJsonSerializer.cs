@@ -206,11 +206,20 @@ namespace System.Runtime.Serialization.Json
         // These Get/Set methods mirror the extensions that were added to DCS in the early days of Core, which allowed
         // using a slimmed-down surrogate on both NetFx and Core via type-forwarding mechanisms. That's why these are
         // a pair of methods instead of making the property itself public.
+
+        /// <summary>
+        /// Gets the current serialization surrogate provider.
+        /// </summary>
+        /// <returns>The current <see cref="ISerializationSurrogateProvider"/> instance, or <see langword="null"/> if no provider is set.</returns>
         public ISerializationSurrogateProvider? GetSerializationSurrogateProvider()
         {
             return SerializationSurrogateProvider;
         }
 
+        /// <summary>
+        /// Sets the serialization surrogate provider.
+        /// </summary>
+        /// <param name="provider">The <see cref="ISerializationSurrogateProvider"/> to use for serialization, or <see langword="null"/> to remove the current provider.</param>
         public void SetSerializationSurrogateProvider(ISerializationSurrogateProvider? provider)
         {
             SerializationSurrogateProvider = provider;
