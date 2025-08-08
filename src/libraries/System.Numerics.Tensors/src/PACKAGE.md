@@ -42,11 +42,11 @@ foreach (var movie in top3MoviesTensorPrimitives)
 }
 
 // Using higher-level Tensor types for multi-dimensional operations  
-var data1 = new float[] { 1f, 2f, 3f, 4f, 5f, 6f };
-var data2 = new float[] { 6f, 5f, 4f, 3f, 2f, 1f };
-var tensor1 = Tensor.Create(data1, [2, 3]); // 2x3 tensor
-var tensor2 = Tensor.Create(data2, [2, 3]); // 2x3 tensor
-var result = Tensor.Add(tensor1.AsReadOnlyTensorSpan(), tensor2.AsReadOnlyTensorSpan());
+float[] data1 = [1f, 2f, 3f, 4f, 5f, 6f];
+float[] data2 = [6f, 5f, 4f, 3f, 2f, 1f];
+Tensor<float> tensor1 = Tensor.Create(data1, [2, 3]); // 2x3 tensor
+Tensor<float> tensor2 = Tensor.Create(data2, [2, 3]); // 2x3 tensor
+Tensor<float> result = tensor1 + tensor2;
 ```
 
 ## Main Types
