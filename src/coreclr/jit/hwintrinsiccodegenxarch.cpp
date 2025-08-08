@@ -2014,8 +2014,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
             noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-            bool     isEBPbased;
-            unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+            bool isEBPbased;
+            int  offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
             if (!isEBPbased)
@@ -2183,8 +2183,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
                 noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-                bool     isEBPbased;
-                unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+                bool isEBPbased;
+                int  offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
                 if (!isEBPbased)
@@ -2623,7 +2623,8 @@ void CodeGen::genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             regNumber   op1Reg = op1->GetRegNum();
             GenTree*    op2    = node->Op(2);
 
-            assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
+            assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg) ||
+                   genIsSameLocalVar(op1, op2));
             emit->emitIns_Mov(INS_mov, emitTypeSize(targetType), targetReg, op1Reg, /* canSkip */ true);
 
 #ifdef TARGET_AMD64

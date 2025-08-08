@@ -35,8 +35,28 @@ namespace System.Security.Cryptography
 #if NETFRAMEWORK
             // RSA-PSS requires RSACng on .NET Framework
             private static RSACng CreateRSA() => new RSACng();
+            private static RSACng CreateRSA(int keySizeInBits) => new RSACng(keySizeInBits);
+#elif NETSTANDARD2_0
+            private static RSA CreateRSA() => RSA.Create();
+
+            private static RSA CreateRSA(int keySizeInBits)
+            {
+                RSA rsa = RSA.Create();
+
+                try
+                {
+                    rsa.KeySize = keySizeInBits;
+                    return rsa;
+                }
+                catch
+                {
+                    rsa.Dispose();
+                    throw;
+                }
+            }
 #else
             private static RSA CreateRSA() => RSA.Create();
+            private static RSA CreateRSA(int keySizeInBits) => RSA.Create(keySizeInBits);
 #endif
 
             internal override int SignData(
@@ -80,8 +100,25 @@ namespace System.Security.Cryptography
 #endif
             }
 
-            public static RsaComponent GenerateKey(RsaAlgorithm algorithm) =>
-                throw new NotImplementedException();
+            public static RsaComponent GenerateKey(RsaAlgorithm algorithm)
+            {
+                RSA? rsa = null;
+
+                try
+                {
+                    rsa = CreateRSA(algorithm.KeySizeInBits);
+
+                    // RSA key generation is lazy, so we need to force it to happen eagerly.
+                    _ = rsa.ExportParameters(includePrivateParameters: false);
+
+                    return new RsaComponent(rsa, algorithm.HashAlgorithmName, algorithm.Padding);
+                }
+                catch (CryptographicException)
+                {
+                    rsa?.Dispose();
+                    throw;
+                }
+            }
 
             public static RsaComponent ImportPrivateKey(RsaAlgorithm algorithm, ReadOnlySpan<byte> source)
             {
@@ -91,21 +128,43 @@ namespace System.Security.Cryptography
 
                 try
                 {
+                    int bytesRead;
                     rsa = CreateRSA();
 
 #if NET
-                    rsa.ImportRSAPrivateKey(source, out int bytesRead);
+                    rsa.ImportRSAPrivateKey(source, out bytesRead);
+#else
+                    try
+                    {
+                        AsnDecoder.ReadEncodedValue(
+                            source,
+                            AsnEncodingRules.BER,
+                            out _,
+                            out _,
+                            out bytesRead);
+
+                        RSAKeyFormatHelper.FromPkcs1PrivateKey(
+                            source.Slice(0, bytesRead),
+                            rsaParameters =>
+                            {
+                                rsa.ImportParameters(rsaParameters);
+                                return true;
+                            });
+                    }
+                    catch (AsnContentException e)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                    }
+#endif
+                    if (rsa.KeySize != algorithm.KeySizeInBits)
+                    {
+                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                    }
 
                     if (bytesRead != source.Length)
                     {
                         throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                     }
-#else
-                    ConvertRSAPrivateKeyToParameters(algorithm, source, (in parameters) =>
-                    {
-                        rsa.ImportParameters(parameters);
-                    });
-#endif
                 }
                 catch (CryptographicException)
                 {
@@ -124,21 +183,43 @@ namespace System.Security.Cryptography
 
                 try
                 {
+                    int bytesRead;
                     rsa = CreateRSA();
 
 #if NET
-                    rsa.ImportRSAPublicKey(source, out int bytesRead);
+                    rsa.ImportRSAPublicKey(source, out bytesRead);
+#else
+                    try
+                    {
+                        AsnDecoder.ReadEncodedValue(
+                            source,
+                            AsnEncodingRules.BER,
+                            out _,
+                            out _,
+                            out bytesRead);
+
+                        RSAKeyFormatHelper.FromPkcs1PublicKey(
+                            source.Slice(0, bytesRead),
+                            rsaParameters =>
+                            {
+                                rsa.ImportParameters(rsaParameters);
+                                return true;
+                            });
+                    }
+                    catch (AsnContentException e)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                    }
+#endif
+                    if (rsa.KeySize != algorithm.KeySizeInBits)
+                    {
+                        throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
+                    }
 
                     if (bytesRead != source.Length)
                     {
                         throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                     }
-#else
-                    ConvertRSAPublicKeyToParameters(algorithm, source, (in parameters) =>
-                    {
-                        rsa.ImportParameters(parameters);
-                    });
-#endif
                 }
                 catch (CryptographicException)
                 {
@@ -199,118 +280,6 @@ namespace System.Security.Cryptography
 
                 base.Dispose(disposing);
             }
-
-#if !NET
-            private delegate void ConvertRSAKeyToParametersCallback(in RSAParameters source);
-
-            private static unsafe void ConvertRSAPublicKeyToParameters(
-                RsaAlgorithm algorithm,
-                ReadOnlySpan<byte> key,
-                ConvertRSAKeyToParametersCallback callback)
-            {
-                Debug.Assert(algorithm.KeySizeInBits % 8 == 0);
-                int modulusLength = algorithm.KeySizeInBits / 8;
-                RSAParameters parameters = default;
-
-                try
-                {
-                    AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
-                    AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
-
-                    parameters.Modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
-
-                    if (parameters.Modulus.Length != modulusLength)
-                    {
-                        throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
-                    }
-
-                    parameters.Exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
-
-                    sequenceReader.ThrowIfNotEmpty();
-                    reader.ThrowIfNotEmpty();
-                }
-                catch (AsnContentException e)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-                }
-
-                callback(in parameters);
-            }
-
-            private static unsafe void ConvertRSAPrivateKeyToParameters(
-                RsaAlgorithm algorithm,
-                ReadOnlySpan<byte> key,
-                ConvertRSAKeyToParametersCallback callback)
-            {
-                int modulusLength = algorithm.KeySizeInBits / 8;
-                int halfModulusLength = modulusLength / 2;
-
-                RSAParameters parameters = new()
-                {
-                    D = new byte[modulusLength],
-                    P = new byte[halfModulusLength],
-                    Q = new byte[halfModulusLength],
-                    DP = new byte[halfModulusLength],
-                    DQ = new byte[halfModulusLength],
-                    InverseQ = new byte[halfModulusLength],
-                };
-
-                using (PinAndClear.Track(parameters.D))
-                using (PinAndClear.Track(parameters.P))
-                using (PinAndClear.Track(parameters.Q))
-                using (PinAndClear.Track(parameters.DP))
-                using (PinAndClear.Track(parameters.DQ))
-                using (PinAndClear.Track(parameters.InverseQ))
-                {
-                    try
-                    {
-                        AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
-                        AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
-
-                        if (!sequenceReader.TryReadInt32(out int version))
-                        {
-                            sequenceReader.ThrowIfNotEmpty();
-                        }
-
-                        const int MaxSupportedVersion = 0;
-
-                        if (version > MaxSupportedVersion)
-                        {
-                            throw new CryptographicException(
-                                SR.Format(
-                                    SR.Cryptography_RSAPrivateKey_VersionTooNew,
-                                    version,
-                                    MaxSupportedVersion));
-                        }
-
-                        parameters.Modulus = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
-
-                        if (parameters.Modulus.Length != modulusLength)
-                        {
-                            throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
-                        }
-
-                        parameters.Exponent = sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes();
-
-                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.D);
-                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.P);
-                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.Q);
-                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DP);
-                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.DQ);
-                        sequenceReader.ReadIntegerBytes().ToUnsignedIntegerBytes(parameters.InverseQ);
-
-                        sequenceReader.ThrowIfNotEmpty();
-                        reader.ThrowIfNotEmpty();
-                    }
-                    catch (AsnContentException e)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-                    }
-
-                    callback(in parameters);
-                }
-            }
-#endif
         }
     }
 }

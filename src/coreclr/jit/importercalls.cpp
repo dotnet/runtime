@@ -618,7 +618,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
          * to the arg list next after we pop them */
     }
 
-    //--------------------------- Inline NDirect ------------------------------
+    //--------------------------- Inline PInvoke ------------------------------
     // If this is a call to a PInvoke method, we may be able to inline the invocation frame.
     //
     impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, compCurBB);
@@ -652,24 +652,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     else if ((opcode == CEE_CALLI) && ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_DEFAULT) &&
              ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG))
     {
-        if (!info.compCompHnd->canGetCookieForPInvokeCalliSig(sig))
-        {
-            // Normally this only happens with inlining.
-            // However, a generic method (or type) being NGENd into another module
-            // can run into this issue as well.  There's not an easy fall-back for AOT
-            // so instead we fallback to JIT.
-            if (compIsForInlining())
-            {
-                compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_PINVOKE_COOKIE);
-            }
-            else
-            {
-                IMPL_LIMITATION("Can't get PInvoke cookie (cross module generics)");
-            }
-
-            return TYP_UNDEF;
-        }
-
         GenTree* cookie = eeGetPInvokeCookie(sig);
 
         // This cookie is required to be either a simple GT_CNS_INT or
@@ -705,7 +687,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             JITDUMP("Call is an async task await\n");
 
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
+            asyncInfo.SaveAndRestoreSynchronizationContextField = true;
 
             if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
             {
@@ -729,7 +712,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
         }
 
-        // For tailcalls the context does not need saving/restoring: it will be
+        // For tailcalls the contexts does not need saving/restoring: they will be
         // overwritten by the caller anyway.
         //
         // More specifically, if we can show that
@@ -738,7 +721,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // context. We do not do that optimization yet.
         if (tailCallFlags != 0)
         {
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::None;
+            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
+            asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
+            asyncInfo.SaveAndRestoreSynchronizationContextField = false;
         }
 
         call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
@@ -763,13 +748,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
     {
         void *varCookie, *pVarCookie;
-        if (!info.compCompHnd->canGetVarArgsHandle(sig))
-        {
-            compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_VARARGS_COOKIE);
-            return TYP_UNDEF;
-        }
-
-        varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
+        varCookie = info.compCompHnd->getVarArgsHandle(sig, methHnd, &pVarCookie);
         assert((!varCookie) != (!pVarCookie));
         varArgsCookie = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
     }
@@ -5500,6 +5479,25 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             return gtFoldExpr(tmp);
         }
 
+        case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_GE, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
         case NI_SRCS_UNSAFE_IsAddressLessThan:
         {
             assert(sig->sigInst.methInstCount == 1);
@@ -5513,6 +5511,25 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_LT, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
+        case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ldc.i4.0
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_LE, TYP_INT, op1, op2);
             tmp->gtFlags |= GTF_UNSIGNED;
             return gtFoldExpr(tmp);
         }
@@ -6808,7 +6825,7 @@ void Compiler::impCheckForPInvokeCall(
         }
     }
 
-    JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s\n", info.compFullName));
+    JITLOG((LL_INFO1000000, "\nInline a PINVOKE call from method %s\n", info.compFullName));
 
     call->gtFlags |= GTF_CALL_UNMANAGED;
     call->unmgdCallConv = unmanagedCallConv;
@@ -6817,7 +6834,6 @@ void Compiler::impCheckForPInvokeCall(
         info.compUnmanagedCallCountWithGCTransition++;
     }
 
-    // AMD64 convention is same for native and managed
     if (unmanagedCallConv == CorInfoCallConvExtension::C ||
         unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
     {
@@ -6946,6 +6962,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     const int               maxLikelyMethods = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyMethods[maxLikelyMethods];
     unsigned                numberOfMethods = 0;
+    bool                    isInferredGDV   = false;
 
     // TODO-GDV: R2R support requires additional work to reacquire the
     // entrypoint, similar to what happens at the end of impDevirtualizeCall.
@@ -6958,6 +6975,39 @@ void Compiler::pickGDV(GenTreeCall*           call,
         assert(!call->IsHelperCall());
         numberOfMethods = getLikelyMethods(likelyMethods, maxLikelyMethods, pgoInfo.PgoSchema, pgoInfo.PgoSchemaCount,
                                            pgoInfo.PgoData, ilOffset);
+    }
+
+    if ((numberOfClasses < 1) && (numberOfMethods < 1) && hasEnumeratorLikelyTypeMap())
+    {
+        // See if we can infer a GDV here for enumerator var uses
+        //
+        CallArg* const thisArg = call->gtArgs.FindWellKnownArg(WellKnownArg::ThisPointer);
+
+        if (thisArg != nullptr)
+        {
+            GenTree* const thisNode = thisArg->GetEarlyNode();
+            if (thisNode->OperIs(GT_LCL_VAR))
+            {
+                GenTreeLclVarCommon* thisLclNode = thisNode->AsLclVarCommon();
+                LclVarDsc* const     thisVarDsc  = lvaGetDesc(thisLclNode);
+                unsigned const       thisLclNum  = thisLclNode->GetLclNum();
+
+                if (thisVarDsc->lvIsEnumerator)
+                {
+                    VarToLikelyClassMap* const map = getImpEnumeratorLikelyTypeMap();
+                    InferredGdvEntry           e;
+                    if (map->Lookup(thisLclNum, &e))
+                    {
+                        JITDUMP("Recalling that V%02u has %u%% likely class %s\n", thisLclNum, e.m_likelihood,
+                                eeGetClassName(e.m_classHandle));
+                        numberOfClasses             = 1;
+                        likelyClasses[0].handle     = (INT_PTR)e.m_classHandle;
+                        likelyClasses[0].likelihood = e.m_likelihood;
+                        isInferredGDV               = true;
+                    }
+                }
+            }
+        }
     }
 
     if ((numberOfClasses < 1) && (numberOfMethods < 1))
@@ -7146,6 +7196,58 @@ void Compiler::pickGDV(GenTreeCall*           call,
                     JITDUMP("Accepting type %s with likelihood %u as a candidate\n",
                             eeGetClassName(classGuesses[guessIdx]), likelihoods[guessIdx])
                 }
+
+                // If the 'this' arg to the call is an enumerator var, record any
+                // dominant likely class so we can possibly infer a GDV at places where we
+                // never observed the var's value. (eg an unreached Dispose call if
+                // control is hijacked out of Tier0+i by OSR).
+                //
+                // Note enumerator vars are special as they are generally not redefined
+                // and we want to ensure all methods called on them get inlined to enable
+                // escape analysis to kick in, if possible.
+                //
+                const unsigned dominantLikelihood = 50;
+
+                if (!isInferredGDV && (likelihoods[guessIdx] >= dominantLikelihood))
+                {
+                    CallArg* const thisArg = call->gtArgs.FindWellKnownArg(WellKnownArg::ThisPointer);
+
+                    if (thisArg != nullptr)
+                    {
+                        GenTree* const thisNode = thisArg->GetEarlyNode();
+                        if (thisNode->OperIs(GT_LCL_VAR))
+                        {
+                            GenTreeLclVarCommon* thisLclNode = thisNode->AsLclVarCommon();
+                            LclVarDsc* const     thisVarDsc  = lvaGetDesc(thisLclNode);
+                            unsigned const       thisLclNum  = thisLclNode->GetLclNum();
+
+                            if (thisVarDsc->lvIsEnumerator)
+                            {
+                                VarToLikelyClassMap* const map = getImpEnumeratorLikelyTypeMap();
+
+                                // If we have multiple type observations, we just use the first.
+                                //
+                                // Note importation order is somewhat reverse-post-orderish;
+                                // a block is only imported if one of its imported preds is imported.
+                                //
+                                // Enumerator vars tend to have a dominating MoveNext call that will
+                                // be the one subsequent uses will see, if they lack their own
+                                // type observations.
+                                //
+                                if (!map->Lookup(thisLclNum))
+                                {
+                                    InferredGdvEntry e;
+                                    e.m_classHandle = classGuesses[guessIdx];
+                                    e.m_likelihood  = likelihoods[guessIdx];
+
+                                    JITDUMP("Remembering that V%02u has %u%% likely class %s\n", thisLclNum,
+                                            e.m_likelihood, eeGetClassName(e.m_classHandle));
+                                    map->Set(thisLclNum, e);
+                                }
+                            }
+                        }
+                    }
+                }
             }
             else
             {
@@ -7203,6 +7305,38 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
     CORINFO_ARG_LIST_HANDLE sigParam  = sig.args;
     unsigned                numParams = sig.numArgs;
     unsigned                numArgs   = 0;
+
+    var_types gdvType  = JITtype2varType(sig.retType);
+    var_types callType = call->gtReturnType;
+
+    const bool sameRetTypes =
+        (genActualType(callType) == genActualType(gdvType)) || (varTypeIsStruct(callType) && varTypeIsStruct(gdvType));
+    if (!sameRetTypes)
+    {
+        JITDUMP("Incompatible method GDV: Return types do not match - bail out.\n");
+        return false;
+    }
+
+    if (varTypeIsStruct(gdvType))
+    {
+        assert(varTypeIsStruct(callType));
+
+        CORINFO_SIG_INFO callSig;
+        info.compCompHnd->getMethodSig(call->gtCallMethHnd, &callSig);
+
+        structPassingKind callRetKind;
+        structPassingKind gdvRetKind;
+        getReturnTypeForStruct(callSig.retTypeClass, call->GetUnmanagedCallConv(), &callRetKind);
+        getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &gdvRetKind);
+
+        if ((callRetKind != gdvRetKind) ||
+            !ClassLayout::AreCompatible(typGetObjLayout(callSig.retTypeClass), typGetObjLayout(sig.retTypeClass)))
+        {
+            JITDUMP("Incompatible method GDV: Return struct types do not match - bail out.\n");
+            return false;
+        }
+    }
+
     for (CallArg& arg : call->gtArgs.Args())
     {
         switch (arg.GetWellKnownArg())
@@ -10720,9 +10854,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_SRCS_UNSAFE_IsAddressGreaterThan;
                             }
+                            else if (strcmp(methodName, "IsAddressGreaterThanOrEqualTo") == 0)
+                            {
+                                result = NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo;
+                            }
                             else if (strcmp(methodName, "IsAddressLessThan") == 0)
                             {
                                 result = NI_SRCS_UNSAFE_IsAddressLessThan;
+                            }
+                            else if (strcmp(methodName, "IsAddressLessThanOrEqualTo") == 0)
+                            {
+                                result = NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo;
                             }
                             else if (strcmp(methodName, "IsNullRef") == 0)
                             {

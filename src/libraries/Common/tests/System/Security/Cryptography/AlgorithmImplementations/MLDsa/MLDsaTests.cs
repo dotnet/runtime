@@ -6,7 +6,6 @@ using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -86,6 +85,10 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("signature", () => mldsa.VerifyPreHash(hash, null, null));
             AssertExtensions.Throws<ArgumentNullException>("hashAlgorithmOid", () => mldsa.VerifyPreHash(hash, signature, null));
 
+            AssertExtensions.Throws<ArgumentNullException>("externalMu", () => mldsa.SignMu(null));
+            AssertExtensions.Throws<ArgumentNullException>("externalMu", () => mldsa.VerifyMu(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("signature", () => mldsa.VerifyMu(Array.Empty<byte>(), null));
+
             AssertExtensions.Throws<ArgumentNullException>("password", () => mldsa.ExportEncryptedPkcs8PrivateKey((string)null, pbeParameters));
             AssertExtensions.Throws<ArgumentNullException>("password", () => mldsa.ExportEncryptedPkcs8PrivateKeyPem((string)null, pbeParameters));
             AssertExtensions.Throws<ArgumentNullException>("password", () => mldsa.TryExportEncryptedPkcs8PrivateKey((string)null, pbeParameters, Span<byte>.Empty, out _));
@@ -108,11 +111,16 @@ namespace System.Security.Cryptography.Tests
             using MLDsa mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
             int publicKeySize = algorithm.PublicKeySizeInBytes;
-            int secretKeySize = algorithm.SecretKeySizeInBytes;
+            int privateKeySize = algorithm.PrivateKeySizeInBytes;
             int privateSeedSize = algorithm.PrivateSeedSizeInBytes;
             int signatureSize = algorithm.SignatureSizeInBytes;
             byte[] signature = new byte[signatureSize];
             byte[] hash = new byte[HashInfo.Sha256.OutputSize];
+            byte[] mu = new byte[64];
+            byte[] shortMu = new byte[mu.Length - 1];
+            byte[] longMu = new byte[mu.Length + 1];
+            byte[] shortSignature = new byte[signatureSize - 1];
+            byte[] longSignature = new byte[signatureSize + 1];
 
             if (shouldDispose)
             {
@@ -122,14 +130,16 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPublicKey(new byte[publicKeySize - 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPublicKey(new byte[publicKeySize + 1]));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaSecretKey(new byte[secretKeySize - 1]));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaSecretKey(new byte[secretKeySize + 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPrivateKey(new byte[privateKeySize - 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPrivateKey(new byte[privateKeySize + 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPrivateSeed(new byte[privateSeedSize - 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.ExportMLDsaPrivateSeed(new byte[privateSeedSize + 1]));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize - 1], ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize + 1], ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize], new byte[signatureSize - 1], HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
-            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize], new byte[signatureSize + 1], HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, shortSignature, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, longSignature, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignMu(mu, shortSignature));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignMu(mu, longSignature));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize], shortSignature, HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
+            AssertExtensions.Throws<ArgumentException>("destination", () => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize], longSignature, HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
 
             // Context length must be less than 256
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignData(ReadOnlySpan<byte>.Empty, signature, new byte[256]));
@@ -138,6 +148,12 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.VerifyData(Array.Empty<byte>(), signature, new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignPreHash(hash.AsSpan(), signature, HashInfo.Sha256.Oid, new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => mldsa.SignPreHash(hash, HashInfo.Sha256.Oid, new byte[256]));
+
+            // Mu must be the correct size
+            AssertExtensions.Throws<ArgumentException>("externalMu", () => mldsa.SignMu(shortMu));
+            AssertExtensions.Throws<ArgumentException>("externalMu", () => mldsa.SignMu(longMu));
+            AssertExtensions.Throws<ArgumentException>("externalMu", () => mldsa.SignMu(shortMu, signature));
+            AssertExtensions.Throws<ArgumentException>("externalMu", () => mldsa.SignMu(longMu, signature));
 
             // Hash length of known OID hash algorithms must be correct
             AssertExtensions.Throws<CryptographicException>(() => mldsa.SignPreHash(new byte[HashInfo.Sha512.OutputSize - 1], new byte[signatureSize], HashInfo.Sha512.Oid, ReadOnlySpan<byte>.Empty));
@@ -385,30 +401,30 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
-        public static void ExportMLDsaSecretKey_CallsCore(MLDsaAlgorithm algorithm)
+        public static void ExportMLDsaPrivateKey_CallsCore(MLDsaAlgorithm algorithm)
         {
             using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
-            mldsa.ExportMLDsaSecretKeyHook = _ => { };
+            mldsa.ExportMLDsaPrivateKeyHook = _ => { };
             mldsa.AddFillDestination(1);
 
-            int secretKeySize = algorithm.SecretKeySizeInBytes;
+            int privateKeySize = algorithm.PrivateKeySizeInBytes;
 
             // Array overload
-            byte[] exported = mldsa.ExportMLDsaSecretKey();
-            Assert.Equal(1, mldsa.ExportMLDsaSecretKeyCoreCallCount);
-            Assert.Equal(secretKeySize, exported.Length);
+            byte[] exported = mldsa.ExportMLDsaPrivateKey();
+            Assert.Equal(1, mldsa.ExportMLDsaPrivateKeyCoreCallCount);
+            Assert.Equal(privateKeySize, exported.Length);
             AssertExpectedFill(exported, fillElement: 1);
 
             // Span overload
-            byte[] secretKey = CreatePaddedFilledArray(secretKeySize, 42);
+            byte[] privateKey = CreatePaddedFilledArray(privateKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            Memory<byte> destination = secretKey.AsMemory(PaddingSize, secretKeySize);
+            Memory<byte> destination = privateKey.AsMemory(PaddingSize, privateKeySize);
             mldsa.AddDestinationBufferIsSameAssertion(destination);
 
-            mldsa.ExportMLDsaSecretKey(destination.Span);
-            Assert.Equal(2, mldsa.ExportMLDsaSecretKeyCoreCallCount);
-            AssertExpectedFill(secretKey, fillElement: 1, paddingElement: 42, PaddingSize, secretKeySize);
+            mldsa.ExportMLDsaPrivateKey(destination.Span);
+            Assert.Equal(2, mldsa.ExportMLDsaPrivateKeyCoreCallCount);
+            AssertExpectedFill(privateKey, fillElement: 1, paddingElement: 42, PaddingSize, privateKeySize);
         }
 
         [Theory]
@@ -570,9 +586,9 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
-        public static void ExportPkcs8PrivateKey_DoesNotCallExportMLDsaSecretKey(MLDsaAlgorithm algorithm)
+        public static void ExportPkcs8PrivateKey_DoesNotCallExportMLDsaPrivateKey(MLDsaAlgorithm algorithm)
         {
-            byte[] secretKeyBytes = CreateFilledArray(algorithm.SecretKeySizeInBytes, 42);
+            byte[] privateKeyBytes = CreateFilledArray(algorithm.PrivateKeySizeInBytes, 42);
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
@@ -580,7 +596,7 @@ namespace System.Security.Cryptography.Tests
                     Algorithm = MLDsaTestHelpers.AlgorithmToOid(algorithm),
                     Parameters = null,
                 },
-                PrivateKey = secretKeyBytes,
+                PrivateKey = privateKeyBytes,
             };
             byte[] minimalEncoding = pkcs8.Encode();
 
@@ -606,8 +622,8 @@ namespace System.Security.Cryptography.Tests
 
                 byte[] exported = export(mldsa);
 
-                // Assert that the PKCS#8 private key is NOT generated with the secret key but from our test callback
-                Assert.Equal(0, mldsa.ExportMLDsaSecretKeyCoreCallCount);
+                // Assert that the PKCS#8 private key is NOT generated with the private key but from our test callback
+                Assert.Equal(0, mldsa.ExportMLDsaPrivateKeyCoreCallCount);
                 AssertExtensions.GreaterThan(mldsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
 
                 PrivateKeyInfoAsn exportedPkcs8 = PrivateKeyInfoAsn.Decode(exported, AsnEncodingRules.DER);
@@ -711,7 +727,7 @@ namespace System.Security.Cryptography.Tests
         {
             using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
-            byte[] secretKeyBytes = CreateFilledArray(algorithm.SecretKeySizeInBytes, 42);
+            byte[] privateKeyBytes = CreateFilledArray(algorithm.PrivateKeySizeInBytes, 42);
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
@@ -719,7 +735,7 @@ namespace System.Security.Cryptography.Tests
                     Algorithm = MLDsaTestHelpers.AlgorithmToOid(MLDsaAlgorithm.MLDsa44),
                     Parameters = null,
                 },
-                PrivateKey = secretKeyBytes,
+                PrivateKey = privateKeyBytes,
             };
 
             byte[] minimalEncoding = pkcs8.Encode();
@@ -755,7 +771,7 @@ namespace System.Security.Cryptography.Tests
         {
             using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
 
-            byte[] secretKeyBytes = CreateFilledArray(algorithm.SecretKeySizeInBytes, 42);
+            byte[] privateKeyBytes = CreateFilledArray(algorithm.PrivateKeySizeInBytes, 42);
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
@@ -763,7 +779,7 @@ namespace System.Security.Cryptography.Tests
                     Algorithm = MLDsaTestHelpers.AlgorithmToOid(MLDsaAlgorithm.MLDsa44),
                     Parameters = null,
                 },
-                PrivateKey = secretKeyBytes,
+                PrivateKey = privateKeyBytes,
             };
 
             byte[] minimalEncoding = pkcs8.Encode();
@@ -913,6 +929,82 @@ namespace System.Security.Cryptography.Tests
                 // Sanity check that the code to export the private key was called
                 Assert.Equal(numberOfCalls, mldsa.TryExportPkcs8PrivateKeyCoreCallCount);
             });
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void SignExternalMu_GetsMuAndDestination(MLDsaAlgorithm algorithm)
+        {
+            using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
+            int signatureSize = algorithm.SignatureSizeInBytes;
+            byte[] buffer = CreatePaddedFilledArray(signatureSize, 0x42);
+            Memory<byte> signature = buffer.AsMemory(PaddingSize, signatureSize);
+            byte[] mu = new byte[64];
+
+            mldsa.SignMuHook = (mu, destination) => destination.Fill(0xAB);
+            mldsa.AddLengthAssertion();
+            mldsa.AddDataBufferIsSameAssertion(mu);
+            mldsa.AddDestinationBufferIsSameAssertion(signature);
+
+            mldsa.SignMu(mu, signature.Span);
+            Assert.Equal(1, mldsa.SignMuCoreCallCount);
+
+            AssertExpectedFill(buffer, fillElement: 0xAB, paddingElement: 0x42, PaddingSize, signatureSize);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void VerifyExternalMu_GetsMuAndSignature(MLDsaAlgorithm algorithm)
+        {
+            using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
+            byte[] buffer = CreatePaddedFilledArray(algorithm.SignatureSizeInBytes, 0x42);
+            Memory<byte> signature = buffer.AsMemory(PaddingSize, algorithm.SignatureSizeInBytes);
+            byte[] mu = new byte[64];
+
+            mldsa.VerifyMuHook = (mu, signature) => true;
+            mldsa.AddLengthAssertion();
+            mldsa.AddDataBufferIsSameAssertion(mu);
+            mldsa.AddDestinationBufferIsSameAssertion(signature);
+
+            mldsa.VerifyMu(mu, signature.Span);
+            Assert.Equal(1, mldsa.VerifyMuCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void VerifyExternalMu_EarlyFalseForWrongSizeMu(MLDsaAlgorithm algorithm)
+        {
+            using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
+            byte[] mu = new byte[100];
+            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
+            const int CorrectMuLength = 64;
+
+            for (int i = 0; i < mu.Length; i++)
+            {
+                // Don't check with the correct length, since the callback is Assert.Fail.
+                if (i == CorrectMuLength)
+                {
+                    continue;
+                }
+
+                AssertExtensions.FalseExpression(mldsa.VerifyMu(mu.AsSpan(0, i), signature));
+            }
+
+            Assert.Equal(0, mldsa.VerifyMuCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void VerifyExternalMu_EarlyFalseForWrongSizeSignature(MLDsaAlgorithm algorithm)
+        {
+            using MLDsaTestImplementation mldsa = MLDsaTestImplementation.CreateOverriddenCoreMethodsFail(algorithm);
+            byte[] mu = new byte[64];
+            byte[] signature = new byte[mldsa.Algorithm.SignatureSizeInBytes + 1];
+
+            AssertExtensions.FalseExpression(mldsa.VerifyMu(mu, signature));
+            AssertExtensions.FalseExpression(mldsa.VerifyMu(mu, signature.AsSpan(2)));
+
+            Assert.Equal(0, mldsa.VerifyMuCoreCallCount);
         }
 
         private static void AssertExpectedFill(ReadOnlySpan<byte> source, byte fillElement) =>

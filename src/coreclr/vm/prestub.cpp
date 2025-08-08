@@ -706,15 +706,20 @@ namespace
         _ASSERTE(pConfig != NULL);
         _ASSERTE(pDecoderMemory != NULL);
 
+        if (!pMD->MayHaveILHeader())
+            return NULL;
+
         COR_ILMETHOD_DECODER* pHeader = NULL;
+
         COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
 
         // For a Runtime Async method the methoddef maps to a Task-returning thunk with runtime-provided implementation,
         // while the default IL belongs to the Async implementation variant.
         // By default the config captures the default methoddesc, which would be a thunk, thus no IL header.
         // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
-        if (ilHeader == NULL && pMD->IsAsyncVariantMethod() && !pMD->IsAsyncThunkMethod())
+        if (ilHeader == NULL && pMD->IsAsyncVariantMethod())
         {
+            _ASSERTE(!pMD->IsAsyncThunkMethod());
             ilHeader = pMD->GetILHeader();
         }
 
@@ -1984,17 +1989,41 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+static InterpThreadContext* GetInterpThreadContext()
 {
-    // Argument registers are in the TransitionBlock
-    // The stack arguments are right after the pTransitionBlock
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
     if (threadContext == nullptr || threadContext->pStackStart == nullptr)
     {
         COMPlusThrow(kOutOfMemoryException);
     }
+
+    return threadContext;
+}
+
+EXTERN_C void STDCALL ReversePInvokeBadTransition();
+
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+{
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = GetInterpThreadContext();
     int8_t *sp = threadContext->pStackPointer;
+
+    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+
+    if (pInterpreterCode->Method->unmanagedCallersOnly)
+    {
+        Thread* thread = GetThreadNULLOk();
+        if (thread == NULL)
+            CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
+
+        // Verify the current thread isn't in COOP mode.
+        if (thread->PreemptiveGCDisabled())
+            ReversePInvokeBadTransition();
+    }
+
+    GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
     // InterpMethodContextFrame. This is important for the stack walking code.
@@ -2019,6 +2048,20 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     frames.interpreterFrame.Pop();
 
     return frames.interpMethodContextFrame.pRetVal;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
+{
+    // copy the arguments to the stack
+    if (size > 0 && pArgs != nullptr)
+    {
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t *sp = threadContext->pStackPointer;
+
+        memcpy(sp, pArgs, size);
+    }
+
+    return ExecuteInterpretedMethod(pTransitionBlock, byteCodeAddr, retBuff);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -2214,7 +2257,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
         pCode = PrepareInitialCode(callerGCMode);
     } // end else if (IsIL() || IsNoMetadata())
-    else if (IsNDirect())
+    else if (IsPInvoke())
     {
         if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
         {
@@ -2314,13 +2357,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, FALSE);
 
 Return:
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
     InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
     if (pInterpreterCode != NULL)
     {
         CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
     }
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && FEATURE_JIT
 
     RETURN pCode;
 }
@@ -2362,7 +2405,7 @@ PCODE TheUMThunkPreStub()
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
 }
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 

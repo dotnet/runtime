@@ -39,6 +39,10 @@ if (DEFINED CLR_CMAKE_ICU_DIR)
   include_directories(${CLR_CMAKE_ICU_DIR}/include)
 endif(DEFINED CLR_CMAKE_ICU_DIR)
 
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+    add_compile_options(-fwasm-exceptions)
+endif()
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------
@@ -173,6 +177,12 @@ endif(CLR_CMAKE_HOST_WIN32)
 #  - all clr specific feature variable should also be added in this file
 #----------------------------------
 include(clrdefinitions.cmake)
+
+#--------------------------------
+# Data descriptors mechanics
+#  - all clr specific data descriptor helpers should be included in this file
+#----------------------------------
+include(clrdatadescriptors.cmake)
 
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)

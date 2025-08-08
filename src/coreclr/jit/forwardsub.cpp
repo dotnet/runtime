@@ -569,8 +569,11 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Consider instead using the height of the fwdSubNode.
     //
     unsigned const nodeLimit = 16;
+    auto           countNode = [](GenTree* tree) -> unsigned {
+        return 1;
+    };
 
-    if (gtComplexityExceeds(fwdSubNode, nodeLimit))
+    if (gtComplexityExceeds(fwdSubNode, nodeLimit, countNode))
     {
         JITDUMP(" tree to sub has more than %u nodes\n", nodeLimit);
         return false;
@@ -633,7 +636,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // height of the fwdSubNode.
     //
     unsigned const nextTreeLimit = 200;
-    if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(fwdSubNode, 1))
+    if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(fwdSubNode, 1, countNode))
     {
         JITDUMP(" next stmt tree is too large (%u)\n", fsv.GetComplexity());
         return false;

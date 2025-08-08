@@ -1829,6 +1829,46 @@ void CallArgs::Remove(CallArg* arg)
     assert(!"Did not find arg to remove in CallArgs::Remove");
 }
 
+//---------------------------------------------------------------
+// RemoveUnsafe: Remove an argument from the argument list, without validation.
+//
+// Parameters:
+//   arg - The arg to remove.
+//
+// Remarks:
+//   This function will break ABI information of other arguments. The caller
+//   needs to know what they are doing.
+//
+void CallArgs::RemoveUnsafe(CallArg* arg)
+{
+    CallArg** slot = &m_lateHead;
+    while (*slot != nullptr)
+    {
+        if (*slot == arg)
+        {
+            *slot = arg->GetLateNext();
+            break;
+        }
+
+        slot = &(*slot)->LateNextRef();
+    }
+
+    slot = &m_head;
+    while (*slot != nullptr)
+    {
+        if (*slot == arg)
+        {
+            *slot = arg->GetNext();
+            RemovedWellKnownArg(arg->GetWellKnownArg());
+            return;
+        }
+
+        slot = &(*slot)->NextRef();
+    }
+
+    assert(!"Did not find arg to remove in CallArgs::Remove");
+}
+
 #ifdef TARGET_XARCH
 //---------------------------------------------------------------
 // NeedsVzeroupper: Determines if the call needs a vzeroupper emitted before it is invoked
@@ -7687,10 +7727,9 @@ GenTreeFlags Compiler::gtTokenToIconFlags(unsigned token)
 // gtNewIndOfIconHandleNode: Creates an indirection GenTree node of a constant handle
 //
 // Arguments:
-//    indType     - The type returned by the indirection node
-//    addr        - The constant address to read from
-//    iconFlags   - The GTF_ICON flag value that specifies the kind of handle that we have
-//    isInvariant - The indNode should also be marked as invariant
+//    indType   - The type returned by the indirection node
+//    addr      - The constant address to read from
+//    iconFlags - The GTF_ICON flag value that specifies the kind of handle that we have
 //
 // Return Value:
 //    Returns a GT_IND node representing value at the address provided by 'addr'
@@ -7699,21 +7738,17 @@ GenTreeFlags Compiler::gtTokenToIconFlags(unsigned token)
 //    The GT_IND node is marked as non-faulting.
 //    If the indirection is not invariant, we also mark the indNode as GTF_GLOB_REF.
 //
-GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant)
+GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags)
 {
     GenTree*     addrNode   = gtNewIconHandleNode(addr, iconFlags);
     GenTreeFlags indirFlags = GTF_IND_NONFAULTING; // This indirection won't cause an exception.
-
-    if (isInvariant)
+    if (GenTree::HandleKindDataIsInvariant(iconFlags))
     {
-        // This indirection also is invariant.
         indirFlags |= GTF_IND_INVARIANT;
-
-        if (iconFlags == GTF_ICON_STR_HDL)
-        {
-            // String literals are never null
-            indirFlags |= GTF_IND_NONNULL;
-        }
+    }
+    if (GenTree::HandleKindDataIsNotNull(iconFlags))
+    {
+        indirFlags |= GTF_IND_NONNULL;
     }
 
     GenTree* indNode = gtNewIndir(indType, addrNode, indirFlags);
@@ -7783,13 +7818,13 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
             // Create an indirection
-            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL, true);
+            tree = gtNewIndOfIconHandleNode(TYP_REF, (size_t)pValue, GTF_ICON_STR_HDL);
             INDEBUG(tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue);
             break;
 
         case IAT_PPVALUE: // The value needs to be accessed via a double indirection
             // Create the first indirection.
-            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_CONST_PTR, true);
+            tree = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pValue, GTF_ICON_CONST_PTR);
             INDEBUG(tree->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)pValue);
             // Create the second indirection.
             tree = gtNewIndir(TYP_REF, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
@@ -9908,7 +9943,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     }
     else if (tree->IsAsync())
     {
-        copy->asyncInfo = tree->asyncInfo;
+        copy->asyncInfo = new (this, CMK_Async) AsyncCallInfo(*tree->asyncInfo);
     }
     else if (tree->IsTailPrefixedCall())
     {
@@ -10795,45 +10830,35 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     }
 }
 
+static const uint8_t g_handleKindsFlags[] = {
+#define HANDLE_KIND(name, description, flags) flags,
+#include "handlekinds.h"
+};
+
 //------------------------------------------------------------------------------
-// HandleKindDataIsInvariant: Returns true if the data referred to by a handle
+// HandleKindDataIsInvariant: Returns true if the data pointed to by a handle
 // address is guaranteed to be invariant.
 //
 // Arguments:
-//    flags - GenTree flags for handle.
+//    flags - the handle kind
 //
-/* static */
 bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
 {
-    GenTreeFlags handleKind = flags & GTF_ICON_HDL_MASK;
-    assert(handleKind != GTF_EMPTY);
+    unsigned handleKindIndex = HandleKindToHandleKindIndex(flags);
+    return (g_handleKindsFlags[handleKindIndex] & HKF_INVARIANT) != 0;
+}
 
-    switch (handleKind)
-    {
-        case GTF_ICON_SCOPE_HDL:
-        case GTF_ICON_CLASS_HDL:
-        case GTF_ICON_METHOD_HDL:
-        case GTF_ICON_FIELD_HDL:
-        case GTF_ICON_STR_HDL:
-        case GTF_ICON_CONST_PTR:
-        case GTF_ICON_VARG_HDL:
-        case GTF_ICON_PINVKI_HDL:
-        case GTF_ICON_TOKEN_HDL:
-        case GTF_ICON_TLS_HDL:
-        case GTF_ICON_CIDMID_HDL:
-        case GTF_ICON_FIELD_SEQ:
-        case GTF_ICON_STATIC_ADDR_PTR:
-        case GTF_ICON_SECREL_OFFSET:
-        case GTF_ICON_TLSGD_OFFSET:
-            return true;
-        case GTF_ICON_FTN_ADDR:
-        case GTF_ICON_GLOBAL_PTR:
-        case GTF_ICON_STATIC_HDL:
-        case GTF_ICON_BBC_PTR:
-        case GTF_ICON_STATIC_BOX_PTR:
-        default:
-            return false;
-    }
+//------------------------------------------------------------------------------
+// HandleKindDataIsNotNull: Returns true if the data pointed to by a handle
+// address is guaranteed to be non-null if interpreted as a pointer.
+//
+// Arguments:
+//    flags - the handle kind
+//
+bool GenTree::HandleKindDataIsNotNull(GenTreeFlags flags)
+{
+    unsigned handleKindIndex = HandleKindToHandleKindIndex(flags);
+    return (g_handleKindsFlags[handleKindIndex] & HKF_NONNULL) != 0;
 }
 
 #ifdef DEBUG
@@ -10874,48 +10899,10 @@ const char* GenTree::gtGetHandleKindString(GenTreeFlags flags)
     {
         case 0:
             return "";
-        case GTF_ICON_SCOPE_HDL:
-            return "GTF_ICON_SCOPE_HDL";
-        case GTF_ICON_CLASS_HDL:
-            return "GTF_ICON_CLASS_HDL";
-        case GTF_ICON_METHOD_HDL:
-            return "GTF_ICON_METHOD_HDL";
-        case GTF_ICON_FIELD_HDL:
-            return "GTF_ICON_FIELD_HDL";
-        case GTF_ICON_STATIC_HDL:
-            return "GTF_ICON_STATIC_HDL";
-        case GTF_ICON_STR_HDL:
-            return "GTF_ICON_STR_HDL";
-        case GTF_ICON_OBJ_HDL:
-            return "GTF_ICON_OBJ_HDL";
-        case GTF_ICON_CONST_PTR:
-            return "GTF_ICON_CONST_PTR";
-        case GTF_ICON_GLOBAL_PTR:
-            return "GTF_ICON_GLOBAL_PTR";
-        case GTF_ICON_VARG_HDL:
-            return "GTF_ICON_VARG_HDL";
-        case GTF_ICON_PINVKI_HDL:
-            return "GTF_ICON_PINVKI_HDL";
-        case GTF_ICON_TOKEN_HDL:
-            return "GTF_ICON_TOKEN_HDL";
-        case GTF_ICON_TLS_HDL:
-            return "GTF_ICON_TLS_HDL";
-        case GTF_ICON_FTN_ADDR:
-            return "GTF_ICON_FTN_ADDR";
-        case GTF_ICON_CIDMID_HDL:
-            return "GTF_ICON_CIDMID_HDL";
-        case GTF_ICON_BBC_PTR:
-            return "GTF_ICON_BBC_PTR";
-        case GTF_ICON_STATIC_BOX_PTR:
-            return "GTF_ICON_STATIC_BOX_PTR";
-        case GTF_ICON_FIELD_SEQ:
-            return "GTF_ICON_FIELD_SEQ";
-        case GTF_ICON_STATIC_ADDR_PTR:
-            return "GTF_ICON_STATIC_ADDR_PTR";
-        case GTF_ICON_SECREL_OFFSET:
-            return "GTF_ICON_SECREL_OFFSET";
-        case GTF_ICON_TLSGD_OFFSET:
-            return "GTF_ICON_TLSGD_OFFSET";
+#define HANDLE_KIND(name, description, flags)                                                                          \
+    case name:                                                                                                         \
+        return #name;
+#include "handlekinds.h"
         default:
             return "ILLEGAL!";
     }
@@ -11571,9 +11558,9 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 {
                     printf("(AX)"); // Variable has address exposed.
                 }
-                if (varDsc->IsHiddenBufferStructArg())
+                if (varDsc->IsDefinedViaAddress())
                 {
-                    printf("(RB)"); // Variable is hidden return buffer
+                    printf("(DA)"); // Variable is defined via address
                 }
                 if (varDsc->lvUnusedStruct)
                 {
@@ -12048,7 +12035,7 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
-                eePrintObjectDescription(" ", (CORINFO_OBJECT_HANDLE)tree->AsIntCon()->gtIconVal);
+                eePrintObjectDescription(" ", CORINFO_OBJECT_HANDLE(tree->AsIntCon()->IconValue()));
             }
             else
             {
@@ -12095,93 +12082,43 @@ void Compiler::gtDispConst(GenTree* tree)
                     }
                 }
 
-                if (tree->IsIconHandle())
+                switch (tree->GetIconHandleFlag())
                 {
-                    switch (tree->GetIconHandleFlag())
-                    {
-                        case GTF_ICON_SCOPE_HDL:
-                            printf(" scope");
-                            break;
-                        case GTF_ICON_CLASS_HDL:
-                            if (IsAot())
-                            {
-                                printf(" class");
-                            }
-                            else
-                            {
-                                printf(" class %s", eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
-                            }
-                            break;
-                        case GTF_ICON_METHOD_HDL:
-                            if (IsAot())
-                            {
-                                printf(" method");
-                            }
-                            else
-                            {
-                                printf(" method %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)iconVal));
-                            }
-                            break;
-                        case GTF_ICON_FIELD_HDL:
-                            if (IsAot())
-                            {
-                                printf(" field");
-                            }
-                            else
-                            {
-                                printf(" field %s", eeGetFieldName((CORINFO_FIELD_HANDLE)iconVal, true));
-                            }
-                            break;
-                        case GTF_ICON_STATIC_HDL:
-                            printf(" static");
-                            break;
-                        case GTF_ICON_OBJ_HDL:
-                        case GTF_ICON_STR_HDL:
-                            unreached(); // These cases are handled above
-                            break;
-                        case GTF_ICON_CONST_PTR:
-                            printf(" const ptr");
-                            break;
-                        case GTF_ICON_GLOBAL_PTR:
-                            printf(" global ptr");
-                            break;
-                        case GTF_ICON_VARG_HDL:
-                            printf(" vararg");
-                            break;
-                        case GTF_ICON_PINVKI_HDL:
-                            printf(" pinvoke");
-                            break;
-                        case GTF_ICON_TOKEN_HDL:
-                            printf(" token");
-                            break;
-                        case GTF_ICON_TLS_HDL:
-                            printf(" tls");
-                            break;
-                        case GTF_ICON_FTN_ADDR:
-                            printf(" ftn");
-                            break;
-                        case GTF_ICON_CIDMID_HDL:
-                            printf(" cid/mid");
-                            break;
-                        case GTF_ICON_BBC_PTR:
-                            printf(" bbc");
-                            break;
-                        case GTF_ICON_STATIC_BOX_PTR:
-                            printf(" static box ptr");
-                            break;
-                        case GTF_ICON_STATIC_ADDR_PTR:
-                            printf(" static base addr cell");
-                            break;
-                        case GTF_ICON_SECREL_OFFSET:
-                            printf(" relative offset in section");
-                            break;
-                        case GTF_ICON_TLSGD_OFFSET:
-                            printf(" tls global dynamic offset");
-                            break;
-                        default:
-                            printf(" UNKNOWN");
-                            break;
-                    }
+                    case GTF_EMPTY:
+                        break;
+#define HANDLE_KIND(name, description, flags)                                                                          \
+    case name:                                                                                                         \
+        printf(" %s", description);                                                                                    \
+        break;
+#include "handlekinds.h"
+                    default:
+                        printf(" ILLEGAL");
+                        break;
+                }
+
+                // Print additional details for some handles.
+                switch (tree->GetIconHandleFlag())
+                {
+                    case GTF_ICON_CLASS_HDL:
+                        if (!IsAot())
+                        {
+                            printf(" %s", eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
+                        }
+                        break;
+                    case GTF_ICON_METHOD_HDL:
+                        if (!IsAot())
+                        {
+                            printf(" %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)iconVal));
+                        }
+                        break;
+                    case GTF_ICON_FIELD_HDL:
+                        if (!IsAot())
+                        {
+                            printf(" %s", eeGetFieldName((CORINFO_FIELD_HANDLE)iconVal, true));
+                        }
+                        break;
+                    default:
+                        break;
                 }
 
 #ifdef FEATURE_SIMD
@@ -12239,19 +12176,7 @@ void Compiler::gtDispConst(GenTree* tree)
                 break;
             }
 
-            constexpr int maxLiteralLength      = 256;
-            char16_t      str[maxLiteralLength] = {};
-            int len = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, maxLiteralLength);
-            if (len < 0)
-            {
-                printf("<unknown string literal>");
-            }
-            else
-            {
-                char dst[maxLiteralLength];
-                convertUtf16ToUtf8ForPrinting(str, len, dst, maxLiteralLength);
-                printf("\"%.50s%s\"", dst, len > 50 ? "..." : "");
-            }
+            eePrintStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX);
         }
         break;
 
@@ -13199,6 +13124,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "&lcl arr";
         case WellKnownArg::RuntimeMethodHandle:
             return "meth hnd";
+        case WellKnownArg::AsyncSuspendedIndicator:
+            return "async susp";
         default:
             return nullptr;
     }
@@ -17825,65 +17752,6 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
     return walker.GetFlags();
 }
 
-//-----------------------------------------------------------
-// gtComplexityExceeds: Check if a tree exceeds a specified complexity in terms
-// of number of sub nodes.
-//
-// Arguments:
-//     tree       - The tree to check
-//     limit      - The limit in terms of number of nodes
-//     complexity - [out, optional] the actual node count (if not greater than limit)
-//
-// Return Value:
-//     True if there are more than limit nodes in tree; otherwise false.
-//
-bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity)
-{
-    struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
-    {
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        ComplexityVisitor(Compiler* comp, unsigned limit)
-            : GenTreeVisitor(comp)
-            , m_limit(limit)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            if (++m_numNodes > m_limit)
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
-
-        unsigned NumNodes()
-        {
-            return m_numNodes;
-        }
-
-    private:
-        unsigned m_limit;
-        unsigned m_numNodes = 0;
-    };
-
-    ComplexityVisitor visitor(this, limit);
-
-    fgWalkResult result = visitor.WalkTree(&tree, nullptr);
-
-    if (complexity != nullptr)
-    {
-        *complexity = visitor.NumNodes();
-    }
-
-    return (result == WALK_ABORT);
-}
-
 bool GenTree::IsPhiNode()
 {
     return (OperGet() == GT_PHI_ARG) || (OperGet() == GT_PHI) || IsPhiDefn();
@@ -19577,7 +19445,33 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
+
+    return node->AsLclVarCommon();
+}
+
+//------------------------------------------------------------------------
+// gtCallGetDefinedAsyncSuspendedIndicatorLclAddr:
+//   Get the tree corresponding to the address of the indicator local that this call defines.
+//
+// Parameters:
+//   call - the Call node
+//
+// Returns:
+//   A tree representing the address of a local.
+//
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call)
+{
+    if (!call->IsAsync() || !call->GetAsyncInfo().HasSuspensionIndicatorDef)
+    {
+        return nullptr;
+    }
+
+    CallArg* asyncSuspensionIndicatorArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
+    assert(asyncSuspensionIndicatorArg != nullptr);
+    GenTree* node = asyncSuspensionIndicatorArg->GetNode();
+
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
 
     return node->AsLclVarCommon();
 }
@@ -19914,7 +19808,13 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 bool GenTree::SupportsSettingZeroFlag()
 {
 #if defined(TARGET_XARCH)
-    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
+    if (OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
+    {
+        // Shift/Rotate instructions do not update the flags in case of count being zero.
+        return gtGetOp2()->IsNeverZero();
+    }
+
+    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
     {
         return true;
     }
@@ -28466,22 +28366,6 @@ bool GenTree::OperIsConvertVectorToMask() const
 }
 
 //------------------------------------------------------------------------
-// OperIsVectorConditionalSelect: Is this a vector ConditionalSelect hwintrinsic
-//
-// Return Value:
-//    true if the node is a vector ConditionalSelect hwintrinsic
-//    otherwise; false
-//
-bool GenTree::OperIsVectorConditionalSelect() const
-{
-    if (OperIsHWIntrinsic())
-    {
-        return AsHWIntrinsic()->OperIsVectorConditionalSelect();
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
 // OperIsVectorFusedMultiplyOp: Is this a vector FusedMultiplyOp hwintrinsic
 //
 // Return Value:
@@ -32418,10 +32302,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
                 GenTreeHWIntrinsic* cvtOp2 = (effectiveOper == GT_NOT) ? cvtOp1 : op2->AsHWIntrinsic();
 
-                unsigned simdBaseTypeSize = genTypeSize(simdBaseType);
+                var_types op1SimdBaseType = cvtOp1->GetSimdBaseType();
+                var_types op2SimdBaseType = cvtOp2->GetSimdBaseType();
 
-                if ((genTypeSize(cvtOp1->GetSimdBaseType()) == simdBaseTypeSize) &&
-                    (genTypeSize(cvtOp2->GetSimdBaseType()) == simdBaseTypeSize))
+                if (genTypeSize(op1SimdBaseType) == genTypeSize(op2SimdBaseType))
                 {
                     // We need both operands to be the same kind of mask; otherwise
                     // the bitwise operation can differ in how it performs
@@ -32473,6 +32357,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         tree->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
                         tree->gtFlags &= ~GTF_REVERSE_OPS;
                     }
+
+                    // The bitwise operation is likely normalized to int or uint, while
+                    // the underlying convert ops may be a small type. We need to preserve
+                    // such a small type since that indicates how many elements are in the mask.
+                    simdBaseJitType = cvtOp1->GetSimdBaseJitType();
+                    tree->SetSimdBaseJitType(simdBaseJitType);
 
                     tree->gtType = TYP_MASK;
                     DEBUG_DESTROY_NODE(op1);
