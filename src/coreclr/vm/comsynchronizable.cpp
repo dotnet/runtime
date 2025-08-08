@@ -900,17 +900,10 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
     }
 }
 
-extern "C" BOOL QCALLTYPE ThreadNative_CurrentThreadIsFinalizerThread()
+FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
 {
-    QCALL_CONTRACT;
+    FCALL_CONTRACT;
 
-    BOOL retval = FALSE;
-
-    BEGIN_QCALL;
-
-    retval = IsFinalizerThread() ? TRUE : FALSE;
-
-    END_QCALL;
-
-    return retval;
+    FC_BOOL_RET(IsFinalizerThread());
 }
+FCIMPLEND

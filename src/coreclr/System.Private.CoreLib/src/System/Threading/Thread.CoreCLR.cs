@@ -513,10 +513,6 @@ namespace System.Threading
             static void PollGCWorker() => PollGCInternal();
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CurrentThreadIsFinalizerThread")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool CurrentThreadIsFinalizerThread();
-
         [StructLayout(LayoutKind.Sequential)]
         private struct NativeThreadClass
         {

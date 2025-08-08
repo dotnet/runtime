@@ -517,10 +517,5 @@ namespace System.Threading
             }
             s_allDone.WaitOne();
         }
-
-        internal static bool CurrentThreadIsFinalizerThread()
-        {
-            return RuntimeImports.RhpCurrentThreadIsFinalizerThread();
-        }
     }
 }

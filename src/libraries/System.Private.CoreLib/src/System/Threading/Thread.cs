@@ -791,5 +791,11 @@ namespace System.Threading
             }
         }
 #endif
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+#if NATIVEAOT
+        [RuntimeImport(RuntimeLibrary, "RhpCurrentThreadIsFinalizerThread")]
+#endif
+        internal static extern bool CurrentThreadIsFinalizerThread();
     }
 }

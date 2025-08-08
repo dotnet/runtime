@@ -216,7 +216,11 @@ namespace System.IO
 
             if (createdFile)
             {
-                SetFileSize(fileHandle, sharedMemoryFilePath, (long)sharedDataTotalByteCount);
+                if (Interop.Sys.FTruncate(fileHandle, (long)sharedDataTotalByteCount) < 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                }
             }
             else
             {
@@ -231,7 +235,11 @@ namespace System.IO
                     throw new InvalidOperationException(SR.Format(SR.IO_SharedMemory_InvalidHeader, sharedMemoryFilePath));
                 }
 
-                SetFileSize(fileHandle, sharedMemoryFilePath, (long)sharedDataTotalByteCount);
+                if (Interop.Sys.FTruncate(fileHandle, (long)sharedDataTotalByteCount) < 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
+                }
             }
 
             // Acquire and hold a shared file lock on the shared memory file as long as it is open, to indicate that this process is
@@ -295,21 +303,6 @@ namespace System.IO
             {
                 nuint alignMask = alignment - 1;
                 return (nuint)((value + alignMask) & ~alignMask);
-            }
-
-            static void SetFileSize(SafeFileHandle fd, string path, long size)
-            {
-                if (Interop.Sys.FTruncate(fd, size) < 0)
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error is not Interop.Error.EBADF and not Interop.Error.EINVAL)
-                    {
-                        // We know the file descriptor is valid and we know the size argument to FTruncate is correct,
-                        // so if EBADF or EINVAL is returned, it means we're dealing with a special file that can't be
-                        // truncated.  Ignore the error in such cases; in all others, throw.
-                        throw Interop.GetExceptionForIoErrno(errorInfo, path);
-                    }
-                }
             }
         }
 
@@ -417,14 +410,7 @@ namespace System.IO
                 }
             }
 
-            if (OperatingSystem.IsAndroid())
-            {
-                return "/data/local/tmp/";
-            }
-            else
-            {
-                return "/tmp/";
-            }
+            return "/tmp/";
         }
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
