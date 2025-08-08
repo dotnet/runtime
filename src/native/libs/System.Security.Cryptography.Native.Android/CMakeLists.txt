@@ -56,7 +56,7 @@ add_library(System.Security.Cryptography.Native.Android-Static
 # necessary to put this symbol in a separate .a archive so that we can exclude it
 # from hiding described above.
 #
-add_library(System.Security.Cryptography.Native.Android-StaticJNIExport
+add_library(System.Security.Cryptography.Native.Android.JNIExport-Static
     STATIC
     pal_trust_manager_jni_export.c
 )
@@ -68,16 +68,16 @@ target_link_libraries(System.Security.Cryptography.Native.Android
 
 set_target_properties(System.Security.Cryptography.Native.Android PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
 set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android" CLEAN_DIRECT_OUTPUT 1)
-set_target_properties(System.Security.Cryptography.Native.Android-StaticJNIExport PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android.JNIExport"  CLEAN_DIRECT_OUTPUT 1)
+set_target_properties(System.Security.Cryptography.Native.Android.JNIExport-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android.JNIExport"  CLEAN_DIRECT_OUTPUT 1)
 
 if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Security.Cryptography.Native.Android PROGRAMS .)
 endif()
 
 install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
-install (TARGETS System.Security.Cryptography.Native.Android-StaticJNIExport DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+install (TARGETS System.Security.Cryptography.Native.Android.JNIExport-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
 if(CLR_CMAKE_HOST_ANDROID)
     install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION sharedFramework COMPONENT runtime)
-    install (TARGETS System.Security.Cryptography.Native.Android-StaticJNIExport DESTINATION sharedFramework COMPONENT runtime)
+    install (TARGETS System.Security.Cryptography.Native.Android.JNIExport-Static DESTINATION sharedFramework COMPONENT runtime)
 endif()
