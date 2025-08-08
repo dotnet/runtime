@@ -1416,7 +1416,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     m_s1 = NoRange; // indicates that there is no active range of stack arguments
     m_s2 = 0;
     m_routineIndex = 0;
-    m_totalStackSize = 0;
+    m_totalStackSize = argIt.SizeOfArgStack();
 #if LOG_COMPUTE_CALL_STUB
     printf("ComputeCallStub\n");
 #endif
@@ -1527,7 +1527,6 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     }
     else if (m_s1 != NoRange)
     {
-        m_totalStackSize += m_s2 - m_s1 + 1;
         pRoutines[m_routineIndex++] = GetStackRoutine();
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
     }
@@ -1571,7 +1570,6 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     {
         // No stack argument is used to pass the current argument, but we already have a range of stack arguments,
         // store the routine for the range
-        m_totalStackSize += m_s2 - m_s1 + 1;
         pRoutines[m_routineIndex++] = GetStackRoutine();
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
         m_s1 = NoRange;
@@ -1650,7 +1648,6 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         else
         {
             // Discontinuous range - store a routine for the current and start a new one
-            m_totalStackSize += m_s2 - m_s1 + 1;
             pRoutines[m_routineIndex++] = GetStackRoutine();
             pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
             m_s1 = argLocDesc.m_byteStackIndex;
@@ -1699,7 +1696,6 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             _ASSERTE(argLocDesc.m_byteStackIndex != -1);
             pRoutines[m_routineIndex++] = GetStackRefRoutine();
             pRoutines[m_routineIndex++] = ((int64_t)pArgIt->GetArgSize() << 32) | argLocDesc.m_byteStackIndex;
-            m_totalStackSize += argLocDesc.m_byteStackSize;
             m_s1 = NoRange;
         }
     }

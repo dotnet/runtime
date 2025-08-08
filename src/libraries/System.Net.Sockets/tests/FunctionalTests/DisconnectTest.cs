@@ -76,23 +76,23 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Disconnect_NotConnected_ThrowsInvalidOperationException(bool reuseSocket)
+        public async Task Disconnect_NotConnected_ThrowsSocketException(bool reuseSocket)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.ThrowsAsync<InvalidOperationException>(async () => await DisconnectAsync(s, reuseSocket));
+                await Assert.ThrowsAsync<SocketException>(async () => await DisconnectAsync(s, reuseSocket));
             }
         }
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Disconnect_ObjectDisposed_ThrowsObjectDisposedException(bool reuseSocket)
+        public async Task Disconnect_ObjectDisposed_ThrowsObjectDisposedException(bool reuseSocket)
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 s.Dispose();
-                Assert.ThrowsAsync<ObjectDisposedException>(async () => await DisconnectAsync(s, reuseSocket));
+                await Assert.ThrowsAsync<ObjectDisposedException>(async () => await DisconnectAsync(s, reuseSocket));
             }
         }
     }

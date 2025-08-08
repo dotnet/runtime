@@ -112,7 +112,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void EqualsTest(nint value, object obj, bool expected)
+        public static void EqualsTest(nint value, object? obj, bool expected)
         {
             if (obj is nint other)
             {
@@ -246,7 +246,7 @@ namespace System.Tests
         [InlineData(-234, 234, -1)]
         [InlineData(-234, -432, 1)]
         [InlineData(234, null, 1)]
-        public static void CompareTo_Other_ReturnsExpected(int l, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(int l, object? value, int expected)
         {
             nint i = l;
             if (value is int intValue)
