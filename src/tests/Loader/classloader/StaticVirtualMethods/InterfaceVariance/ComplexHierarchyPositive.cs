@@ -79,14 +79,14 @@ namespace VariantStaticInterfaceDispatchRegressionTest
 
         static void TestTheFooString<T, U>(string expected) where T : IFoo<U>, new()
         {
-            Console.WriteLine($"TestTheFooString {typeof(T).Name} {typeof(T).Name} {expected}");
+            Console.WriteLine($"TestTheFooString {typeof(T).Name} {typeof(U).Name} {expected}");
             Assert.Equal(expected, GetTheFooString<T, U>());
             Assert.Equal(expected, GetTheFooStringInstance<T, U>());
         }
 
         static void TestTheBarString<T, U>(string expected) where T : IBar<U>, new()
         {
-            Console.WriteLine($"TestTheBarString {typeof(T).Name} {typeof(T).Name} {expected}");
+            Console.WriteLine($"TestTheBarString {typeof(T).Name} {typeof(U).Name} {expected}");
             Assert.Equal(expected, GetTheBarString<T, U>());
             Assert.Equal(expected, GetTheBarStringInstance<T, U>());
         }
