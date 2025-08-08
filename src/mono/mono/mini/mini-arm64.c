@@ -4204,7 +4204,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 				arm_ldrx (code, ARMREG_IP1, info_var->inst_basereg, GTMREG_TO_INT (info_var->inst_offset));
 				/* Add the bp_tramp_offset */
-				val = ((bp_tramp_offset / 4) * sizeof (target_mgreg_t)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
+				val = (bp_tramp_offset * sizeof (target_mgreg_t)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
 				/* Load the info->bp_addrs [bp_tramp_offset], which is either 0 or the address of the bp trampoline */
 				code = emit_ldrx (code, ARMREG_IP1, ARMREG_IP1, val);
 				/* Skip the load if its 0 */
@@ -6873,9 +6873,7 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 		if (enable_ptrauth)
 			NOT_IMPLEMENTED;
-		g_assert (native_offset % 4 == 0);
-		g_assert (info->bp_addrs [native_offset / 4] == 0);
-		info->bp_addrs [native_offset / 4] = (guint8*)mini_get_breakpoint_trampoline ();
+		info->bp_addrs [native_offset] = (guint8*)mini_get_breakpoint_trampoline ();
 	} else {
 		/* ip points to an ldrx */
 		code += 4;
@@ -6898,8 +6896,7 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 		if (enable_ptrauth)
 			NOT_IMPLEMENTED;
 
-		g_assert (native_offset % 4 == 0);
-		info->bp_addrs [native_offset / 4] = NULL;
+		info->bp_addrs [native_offset] = NULL;
 	} else {
 		/* ip points to an ldrx */
 		code += 4;
@@ -6967,7 +6964,7 @@ mono_arch_get_seq_point_info (guint8 *code)
 		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 
-		info = g_malloc0 (sizeof (SeqPointInfo) + (ji->code_size / 4) * sizeof(guint8*));
+		info = g_malloc0 (sizeof (SeqPointInfo) + (ji->code_size) * sizeof(guint8*));
 
 		info->ss_tramp_addr = &ss_trampoline;
 
