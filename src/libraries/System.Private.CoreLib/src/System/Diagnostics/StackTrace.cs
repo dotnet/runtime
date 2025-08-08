@@ -156,8 +156,9 @@ namespace System.Diagnostics
         /// </summary>
         public virtual StackFrame? GetFrame(int index)
         {
-            if (_stackFrames != null && index < _numOfFrames && index >= 0)
-                return _stackFrames[index + _methodsToSkip];
+            StackFrame[] stackFrames = GetFramesCore();
+            if (stackFrames != null && index < _numOfFrames && index >= 0)
+                return stackFrames[index + _methodsToSkip];
 
             return null;
         }
@@ -170,13 +171,14 @@ namespace System.Diagnostics
         /// </summary>
         public virtual StackFrame[] GetFrames()
         {
-            if (_stackFrames == null || _numOfFrames <= 0)
+            StackFrame[] stackFrames = GetFramesCore();
+            if (stackFrames == null || _numOfFrames <= 0)
                 return Array.Empty<StackFrame>();
 
             // We have to return a subset of the array. Unfortunately this
             // means we have to allocate a new array and copy over.
             StackFrame[] array = new StackFrame[_numOfFrames];
-            Array.Copy(_stackFrames, _methodsToSkip, array, 0, _numOfFrames);
+            Array.Copy(stackFrames, _methodsToSkip, array, 0, _numOfFrames);
             return array;
         }
 
