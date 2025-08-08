@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Sockets;
+using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
 namespace System.Net
@@ -93,40 +96,64 @@ namespace System.Net
             return TryParse(s.AsSpan(), out result);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPEndPoint? result)
+        internal static bool InternalTryParse<TChar>(ReadOnlySpan<TChar> s, [NotNullWhen(true)] out IPEndPoint? result)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
+
             int addressLength = s.Length;  // If there's no port then send the entire string to the address parser
-            int lastColonPos = s.LastIndexOf(':');
+            int lastColonPos = s.LastIndexOf(TChar.CreateTruncating(':'));
 
             // Look to see if this is an IPv6 address with a port.
             if (lastColonPos > 0)
             {
-                if (s[lastColonPos - 1] == ']')
+                if (s[lastColonPos - 1] == TChar.CreateTruncating(']'))
                 {
                     addressLength = lastColonPos;
                 }
                 // Look to see if this is IPv4 with a port (IPv6 will have another colon)
-                else if (s.Slice(0, lastColonPos).LastIndexOf(':') == -1)
+                else if (s.Slice(0, lastColonPos).LastIndexOf(TChar.CreateTruncating(':')) == -1)
                 {
                     addressLength = lastColonPos;
                 }
             }
 
-            if (IPAddress.TryParse(s.Slice(0, addressLength), out IPAddress? address))
+            IPAddress? address = IPAddressParser.Parse(s.Slice(0, addressLength), true);
+            if (address is not null)
             {
-                uint port = 0;
-                if (addressLength == s.Length ||
-                    (uint.TryParse(s.Slice(addressLength + 1), NumberStyles.None, CultureInfo.InvariantCulture, out port) && port <= MaxPort))
-
+                if (addressLength == s.Length)
                 {
-                    result = new IPEndPoint(address, (int)port);
+                    result = new IPEndPoint(address, 0);
                     return true;
+                }
+                else
+                {
+                    uint port;
+                    ReadOnlySpan<TChar> portSpan = s.Slice(addressLength + 1);
+                    bool isConvertedToInt;
+
+                    if (typeof(TChar) == typeof(byte))
+                    {
+                        isConvertedToInt = uint.TryParse(MemoryMarshal.Cast<TChar, byte>(portSpan), NumberStyles.None, CultureInfo.InvariantCulture, out port);
+                    }
+                    else
+                    {
+                        isConvertedToInt = uint.TryParse(MemoryMarshal.Cast<TChar, char>(portSpan), NumberStyles.None, CultureInfo.InvariantCulture, out port);
+                    }
+
+                    if (isConvertedToInt && port <= MaxPort)
+                    {
+                        result = new IPEndPoint(address, (int)port);
+                        return true;
+                    }
                 }
             }
 
             result = null;
             return false;
         }
+
+        public static bool TryParse(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPEndPoint? result) => InternalTryParse(s, out result);
 
         public static IPEndPoint Parse(string s)
         {
@@ -196,40 +223,7 @@ namespace System.Net
 
         static IPEndPoint IUtf8SpanParsable<IPEndPoint>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text);
 
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out IPEndPoint? result)
-        {
-            int addressLength = utf8Text.Length;  // If there's no port then send the entire string to the address parser
-            int lastColonPos = utf8Text.LastIndexOf((byte)':');
-
-            // Look to see if this is an IPv6 address with a port.
-            if (lastColonPos > 0)
-            {
-                if (utf8Text[lastColonPos - 1] == ']')
-                {
-                    addressLength = lastColonPos;
-                }
-                // Look to see if this is IPv4 with a port (IPv6 will have another colon)
-                else if (utf8Text.Slice(0, lastColonPos).LastIndexOf((byte)':') == -1)
-                {
-                    addressLength = lastColonPos;
-                }
-            }
-
-            if (IPAddress.TryParse(utf8Text.Slice(0, addressLength), out IPAddress? address))
-            {
-                uint port = 0;
-                if (addressLength == utf8Text.Length ||
-                    (uint.TryParse(utf8Text.Slice(addressLength + 1), NumberStyles.None, CultureInfo.InvariantCulture, out port) && port <= MaxPort))
-
-                {
-                    result = new IPEndPoint(address, (int)port);
-                    return true;
-                }
-            }
-
-            result = null;
-            return false;
-        }
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out IPEndPoint? result) => InternalTryParse(utf8Text, out result);
 
         static bool ISpanParsable<IPEndPoint>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out IPEndPoint? result) => TryParse(s, out result);
 
