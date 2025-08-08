@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 
 #pragma warning disable 0618 // ComInterfaceType.InterfaceIsDual is obsolete
@@ -507,8 +508,16 @@ namespace System.Data.Common
                 [Out] out IntPtr prgRestrictionSupport);
         }
 
-        [Guid("1CF2B120-547D-101B-8E65-08002B2BD119"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]
-        internal interface IErrorInfo
+        [Guid("0C733A74-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), GeneratedComInterface, SuppressUnmanagedCodeSecurity]
+        internal partial interface ISQLErrorInfo
+        {
+            [return: MarshalAs(UnmanagedType.I4)]
+            int GetSQLInfo(
+                [MarshalAs(UnmanagedType.BStr)] out string pbstrSQLState);
+        }
+
+        [Guid("1CF2B120-547D-101B-8E65-08002B2BD119"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), GeneratedComInterface, SuppressUnmanagedCodeSecurity]
+        internal partial interface IErrorInfo
         {
             [Obsolete("not used", true)] void GetGUID(/*deleted parameter signature*/);
 
@@ -539,8 +548,8 @@ namespace System.Data.Common
                 /* [out] */ DWORD *pdwHelpContext) = 0;
 #endif
 
-        [Guid("0C733A67-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]
-        internal interface IErrorRecords
+        [Guid("0C733A67-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), GeneratedComInterface, SuppressUnmanagedCodeSecurity]
+        internal partial interface IErrorRecords
         {
             [Obsolete("not used", true)] void AddErrorRecord(/*deleted parameter signature*/);
 
@@ -548,14 +557,14 @@ namespace System.Data.Common
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetCustomErrorObject( // may return E_NOINTERFACE when asking for IID_ISQLErrorInfo
-                [In] int ulRecordNum,
-                [In] in Guid riid,
-                [Out, MarshalAs(UnmanagedType.Interface)] out ISQLErrorInfo ppObject);
+                int ulRecordNum,
+                in Guid riid,
+                out ISQLErrorInfo ppObject);
 
             [return: MarshalAs(UnmanagedType.Interface)]
             IErrorInfo GetErrorInfo(
-                [In] int ulRecordNum,
-                [In] int lcid);
+                int ulRecordNum,
+                int lcid);
 
             [Obsolete("not used", true)] void GetErrorParameters(/*deleted parameter signature*/);
 
@@ -723,14 +732,6 @@ namespace System.Data.Common
 
             //[PreserveSig]
             //int GetSpecification(/*deleted parameter signature*/);
-        }
-
-        [Guid("0C733A74-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]
-        internal interface ISQLErrorInfo
-        {
-            [return: MarshalAs(UnmanagedType.I4)]
-            int GetSQLInfo(
-                [Out, MarshalAs(UnmanagedType.BStr)] out string pbstrSQLState);
         }
 
         [Guid("0C733A5F-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]
