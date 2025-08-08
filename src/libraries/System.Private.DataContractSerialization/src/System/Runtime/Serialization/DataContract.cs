@@ -657,6 +657,8 @@ namespace System.Runtime.Serialization.DataContracts
                             "Byte[]" => typeof(byte[]),
                             "Object" => typeof(object),
                             "TimeSpan" => typeof(TimeSpan),
+                            "DateOnly" => typeof(DateOnly),
+                            "TimeOnly" => typeof(TimeOnly),
                             "Guid" => typeof(Guid),
                             "Uri" => typeof(Uri),
                             "Xml.XmlQualifiedName" => typeof(XmlQualifiedName),
@@ -745,6 +747,10 @@ namespace System.Runtime.Serialization.DataContracts
                             dataContract = new QNameDataContract();
                         else if (type == typeof(TimeSpan))
                             dataContract = new TimeSpanDataContract();
+                        else if (type == typeof(DateOnly))
+                            dataContract = new DateOnlyDataContract();
+                        else if (type == typeof(TimeOnly))
+                            dataContract = new TimeOnlyDataContract();
                         else if (type == typeof(Guid))
                             dataContract = new GuidDataContract();
                         else if (type == typeof(Enum) || type == typeof(ValueType))
@@ -864,6 +870,10 @@ namespace System.Runtime.Serialization.DataContracts
                         dataContract = new GuidDataContract();
                     else if (DictionaryGlobals.CharLocalName.Value == name)
                         dataContract = new CharDataContract();
+                    else if (DictionaryGlobals.DateOnlyLocalName.Value == name)
+                        dataContract = new DateOnlyDataContract();
+                    else if (DictionaryGlobals.TimeOnlyLocalName.Value == name)
+                        dataContract = new TimeOnlyDataContract();
                     else if ("ArrayOfanyType" == name)
                         dataContract = new CollectionDataContract(typeof(Array));
                 }

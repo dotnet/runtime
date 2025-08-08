@@ -8,7 +8,7 @@ namespace System.Runtime.Serialization
     internal static class DictionaryGlobals
     {
         // Update array size when adding new strings or templates
-        private static readonly XmlDictionary s_dictionary = new XmlDictionary(61);
+        private static readonly XmlDictionary s_dictionary = new XmlDictionary(63);
 
         // 0
         public static readonly XmlDictionaryString SchemaInstanceNamespace = s_dictionary.Add(Globals.SchemaInstanceNamespace);
@@ -96,5 +96,7 @@ namespace System.Runtime.Serialization
 
         // 60
         public static readonly XmlDictionaryString AsmxTypesNamespace = s_dictionary.Add("http://microsoft.com/wsdl/types/");
+        public static readonly XmlDictionaryString DateOnlyLocalName = s_dictionary.Add("DateOnly");
+        public static readonly XmlDictionaryString TimeOnlyLocalName = s_dictionary.Add("TimeOnly");
     }
 }

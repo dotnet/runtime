@@ -698,6 +698,54 @@ namespace System.Runtime.Serialization
             }
         }
 
+        internal DateOnly ReadElementContentAsDateOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowNotAtElement();
+
+            string str = reader.ReadElementContentAsString();
+            try
+            {
+                return XmlConvert.ToDateOnly(str);
+            }
+            catch (ArgumentException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(str, "DateOnly", exception);
+            }
+            catch (FormatException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(str, "DateOnly", exception);
+            }
+            catch (OverflowException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(str, "DateOnly", exception);
+            }
+        }
+
+        internal TimeOnly ReadElementContentAsTimeOnly()
+        {
+            if (isEndOfEmptyElement)
+                ThrowNotAtElement();
+
+            string str = reader.ReadElementContentAsString();
+            try
+            {
+                return XmlConvert.ToTimeOnly(str);
+            }
+            catch (ArgumentException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(str, "TimeOnly", exception);
+            }
+            catch (FormatException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(str, "TimeOnly", exception);
+            }
+            catch (OverflowException exception)
+            {
+                throw XmlExceptionHelper.CreateConversionException(str, "TimeOnly", exception);
+            }
+        }
+
         internal Guid ReadContentAsGuid()
         {
             string str = reader.ReadContentAsString();
