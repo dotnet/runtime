@@ -137,7 +137,7 @@ namespace System.Linq
                     startIndex = CalculateStartIndex(true, startIndex, buffer.TotalCount);
                     endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, buffer.TotalCount);
                     int requestCount = endIndex - startIndex;
-                    Debug.Assert(requestCount >= 0 && requestCount <= buffer.TotalCount);
+                    if (requestCount < 0) return;
                     source = buffer.Build(requestCount, out startIndex);
                     endIndex = startIndex + requestCount;
                 }
@@ -311,7 +311,7 @@ namespace System.Linq
             private void SlowEnqueue(in T item)
             {
                 int newCapacity = _buffer.Length * 2;
-                if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
+                if ((uint)newCapacity > Array.MaxLength) newCapacity = Math.Max(maxCapacity, Array.MaxLength);
 
                 T[] newArray;
                 if (newCapacity >= maxCapacity)
