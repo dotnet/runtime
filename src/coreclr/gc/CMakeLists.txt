@@ -147,6 +147,7 @@ if(FEATURE_STANDALONE_GC)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)
 
+  add_definitions(-DGC_DESCRIPTOR)
   add_subdirectory(datadescriptor)
 
   install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)
