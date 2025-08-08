@@ -1191,7 +1191,7 @@ namespace System.Collections.Immutable
                 list = new List<T>(this.Count + addedItems.Length);
                 list.AddRange(this);
             }
-#if NET8_0_OR_GREATER
+#if NET
             list.AddRange(addedItems);
 #else
             foreach (var item in addedItems)
