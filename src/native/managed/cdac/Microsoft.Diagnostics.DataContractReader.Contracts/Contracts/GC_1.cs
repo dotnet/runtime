@@ -27,7 +27,7 @@ internal readonly struct GC_1 : IGC
     string[] IGC.GetGCIdentifiers()
     {
         string gcIdentifiers = _target.ReadGlobalString(Constants.Globals.GCIdentifiers);
-        return gcIdentifiers.Split(',');
+        return gcIdentifiers.Split(", ");
     }
 
     uint IGC.GetGCHeapCount()

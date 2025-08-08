@@ -49,7 +49,7 @@ Constants used:
 GCHeapType GetGCIdentifiers()
 {
     string gcIdentifiers = _target.ReadGlobalString("GCIdentifiers");
-    return gcIdentifiers.Split(',');
+    return gcIdentifiers.Split(", ");
 }
 
 uint GetGCHeapCount()

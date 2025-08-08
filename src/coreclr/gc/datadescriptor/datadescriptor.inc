@@ -29,8 +29,8 @@ CDAC_GLOBALS_BEGIN()
 
 // CDAC_GLOBAL_STRING takes a single value argument.
 // To avoid issues with commas in the string we wrap the input string in a macro.
-#define GC_IDENTIFIER GC_TYPE ## , ## HEAP_TYPE
-CDAC_GLOBAL_STRING(GCIdentifiers, GC_IDENTIFIER)
+#define GC_IDENTIFIER(...) __VA_ARGS__ // GC_IDENTIFIER(gc, heap) expands to: gc, heap
+CDAC_GLOBAL_STRING(GCIdentifiers, GC_IDENTIFIER(GC_TYPE, HEAP_TYPE))
 
 CDAC_GLOBAL_POINTER(MaxGeneration, &::g_max_generation)
 CDAC_GLOBAL_POINTER(StructureInvalidCount, (&GCScan::m_GcStructuresInvalidCnt))
