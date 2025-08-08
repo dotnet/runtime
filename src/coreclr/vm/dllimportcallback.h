@@ -142,7 +142,7 @@ public:
 class UMEntryThunkData
 {
     friend class UMEntryThunkFreeList;
-    friend class NDirectStubLinker;
+    friend class PInvokeStubLinker;
 
     // The start of the managed code.
     // if m_pObjectHandle is non-NULL, this field is still set to help with diagnostic of call on collected delegate crashes

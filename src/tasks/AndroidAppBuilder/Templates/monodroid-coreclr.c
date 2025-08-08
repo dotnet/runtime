@@ -177,7 +177,7 @@ mono_droid_execute_assembly (const char* executable_path, void* coreclr_handle, 
     return rv;
 }
 
-#define PROPERTY_COUNT 3
+#define PROPERTY_COUNT %AppContextPropertyCount%
 
 static int
 mono_droid_runtime_init (const char* executable)
@@ -202,17 +202,10 @@ mono_droid_runtime_init (const char* executable)
     g_host_contract.external_assembly_probe = &external_assembly_probe;
 
     const char* appctx_keys[PROPERTY_COUNT];
-    appctx_keys[0] = "RUNTIME_IDENTIFIER";
-    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
-    appctx_keys[2] = "HOST_RUNTIME_CONTRACT";
+%AppContextKeys%
 
     const char* appctx_values[PROPERTY_COUNT];
-    appctx_values[0] = ANDROID_RUNTIME_IDENTIFIER;
-    appctx_values[1] = g_bundle_path;
-
-    char contract_str[19]; // 0x + 16 hex digits + '\0'
-    snprintf(contract_str, 19, "0x%zx", (size_t)(&g_host_contract));
-    appctx_values[2] = contract_str;
+%AppContextValues%
 
     LOG_INFO ("Calling coreclr_initialize");
     int rv = coreclr_initialize (

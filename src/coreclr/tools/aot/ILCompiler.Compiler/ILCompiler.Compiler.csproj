@@ -548,6 +548,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ISpecialUnboxThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MetadataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MetadataEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodAssociatedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHeaderNode.cs" />

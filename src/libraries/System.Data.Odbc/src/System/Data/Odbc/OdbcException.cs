@@ -35,7 +35,7 @@ namespace System.Data.Odbc
             HResult = HResults.OdbcException;
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         private OdbcException(SerializationInfo si, StreamingContext sc) : base(si, sc)
@@ -53,7 +53,7 @@ namespace System.Data.Odbc
             }
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

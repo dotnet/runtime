@@ -913,7 +913,7 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     {
         PTR_Module pModule = GetModule();
         PTR_MethodDesc pMethodDesc = dac_cast<PTR_MethodDesc>(pModule->LookupMethodDef(GetMethodDef()));
-        if (pMethodDesc != NULL)
+        if (pMethodDesc != NULL && pMethodDesc->MayHaveILHeader())
         {
             pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader());
         }

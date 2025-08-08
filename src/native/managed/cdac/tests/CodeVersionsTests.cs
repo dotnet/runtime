@@ -145,7 +145,7 @@ public class CodeVersionsTests
 
         TestPlaceholderTarget target = new TestPlaceholderTarget(
             arch,
-            builder.Builder.GetReadContext().ReadFromTarget,
+            builder.Builder.GetMemoryContext().ReadFromTarget,
             builder.Types);
 
         IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
