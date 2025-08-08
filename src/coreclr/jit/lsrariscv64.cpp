@@ -790,9 +790,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_INC_SATURATE:
             assert(dstCount == 1);
             srcCount = 1;
-            BuildUse(tree->gtGetOp1());
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
+            setDelayFree(BuildUse(tree->gtGetOp1()));
             BuildDef(tree);
             break;
     } // end switch (tree->OperGet())
