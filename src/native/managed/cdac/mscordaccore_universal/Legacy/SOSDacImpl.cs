@@ -117,7 +117,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             if (addr == 0)
-                throw new ReturnHResultException(HResults.E_INVALIDARG);
+                throw new ArgumentException();
 
             *data = default;
             data->AppDomainPtr = addr;
@@ -343,7 +343,7 @@ internal sealed unsafe partial class SOSDacImpl
             ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
             if (addr == systemDomain)
                 // We shouldn't be asking for the assemblies in SystemDomain
-                throw new ReturnHResultException(HResults.E_INVALIDARG);
+                throw new ArgumentException();
 
             ILoader loader = _target.Contracts.Loader;
             List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
@@ -574,7 +574,7 @@ internal sealed unsafe partial class SOSDacImpl
             string name = stackWalk.GetFrameName(new(vtable));
 
             if (string.IsNullOrEmpty(name))
-                throw new ReturnHResultException(HResults.E_INVALIDARG);
+                throw new ArgumentException();
 
             OutputBufferHelpers.CopyStringToBuffer(frameName, count, pNeeded, name);
 
@@ -681,7 +681,7 @@ internal sealed unsafe partial class SOSDacImpl
         {
             // API is implemented for x64 only
             if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X64)
-                throw new ReturnHResultException(HResults.E_FAIL);
+                throw new Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
 
@@ -1134,7 +1134,7 @@ internal sealed unsafe partial class SOSDacImpl
 
             CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
             if (handle is not CodeBlockHandle codeHandle)
-                throw new ReturnHResultException(HResults.E_FAIL);
+                throw new Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
 
@@ -1253,7 +1253,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             if (mt == 0 || data == null)
-                throw new ReturnHResultException(HResults.E_INVALIDARG);
+                throw new ArgumentException();
 
             TargetPointer mtAddress = mt.ToTargetPointer(_target);
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
@@ -2174,7 +2174,7 @@ internal sealed unsafe partial class SOSDacImpl
             *pNeeded = (int)MaxClrNotificationArgs;
             TargetPointer basePtr = _target.ReadGlobalPointer(Constants.Globals.ClrNotificationArguments);
             if (_target.ReadNUInt(basePtr).Value == 0)
-                throw new ReturnHResultException(HResults.E_FAIL);
+                throw new Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
             {
@@ -2288,7 +2288,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             if (methodTable == 0 || assemblyLoadContext == null)
-                throw new ReturnHResultException(HResults.E_INVALIDARG);
+                throw new ArgumentException();
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.ILoader loaderContract = _target.Contracts.Loader;
