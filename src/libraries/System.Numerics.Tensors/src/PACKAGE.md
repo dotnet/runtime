@@ -41,7 +41,7 @@ foreach (var movie in top3MoviesTensorPrimitives)
     Console.WriteLine(movie);
 }
 
-// Using higher-level Tensor types for multi-dimensional operations  
+// Using higher-level Tensor types for multi-dimensional operations
 float[] data1 = [1f, 2f, 3f, 4f, 5f, 6f];
 float[] data2 = [6f, 5f, 4f, 3f, 2f, 1f];
 Tensor<float> tensor1 = Tensor.Create(data1, [2, 3]); // 2x3 tensor
@@ -54,7 +54,7 @@ Tensor<float> result = tensor1 + tensor2;
 The main types provided by this library are:
 
 * `System.Numerics.Tensors.TensorPrimitives` - Low-level operations on spans of numeric data
-* `System.Numerics.Tensors.Tensor<T>` - Generic tensor class for multi-dimensional arrays  
+* `System.Numerics.Tensors.Tensor<T>` - Generic tensor class for multi-dimensional arrays
 * `System.Numerics.Tensors.TensorSpan<T>` - Span-like view over tensor data
 * `System.Numerics.Tensors.ReadOnlyTensorSpan<T>` - Read-only span-like view over tensor data
 * `System.Numerics.Tensors.Tensor` - Static class with high-level tensor operations
