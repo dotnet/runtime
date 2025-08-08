@@ -909,6 +909,8 @@ extern "C" int32_t QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack ob
 
     BEGIN_QCALL;
 
+    GCX_COOP();
+
     // Force creation of a SyncBlock for the object.
     index = (int32_t)obj.Get()->GetSyncBlock()->GetSyncBlockIndex();
 
@@ -924,6 +926,8 @@ extern "C" OBJECTHANDLE QCALLTYPE SyncTable_GetLockHandle(int idx)
     OBJECTHANDLE handle = NULL;
 
     BEGIN_QCALL;
+    
+    GCX_COOP();
 
     _ASSERTE(0 <= idx && idx < SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
     handle = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock();
