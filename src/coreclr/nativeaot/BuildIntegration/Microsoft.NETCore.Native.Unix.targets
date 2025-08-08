@@ -144,9 +144,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
       <!-- No OpenSSL on Apple platforms or Android -->
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true' and '$(_IsApplePlatform)' != 'true' and '$(_targetOS)' != 'android'" />
-      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Android" Condition="'$(_targetOS)' == 'android'" />
-      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Android.JNIExport" Condition="'$(_targetOS)' == 'android'" />
-      <IlcArg Include="--export-dynamic-symbol:Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate" Condition="'$(_targetOS)' == 'android'" />
+    </ItemGroup>
+    
+    </ItemGroup Condition="'$(_targetOS)' == 'android'">
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Android" />
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Android.JNIExport" />
+      <IlcArg Include="--export-dynamic-symbol:Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate" />
     </ItemGroup>
 
     <ItemGroup>
