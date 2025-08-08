@@ -5943,61 +5943,38 @@ mono_marshal_is_loading_type_info (MonoClass *klass)
 	return g_slist_find (loads_list, klass) != NULL;
 }
 
-/**
- * mono_marshal_load_type_info:
- *
- * Initialize \c klass::marshal_info using information from metadata. This function can
- * recursively call itself, and the caller is responsible to avoid that by calling
- * \c mono_marshal_is_loading_type_info beforehand.
- *
- * LOCKING: Acquires the loader lock.
- */
-MonoMarshalType *
-mono_marshal_load_type_info (MonoClass* klass)
+static void
+mono_marshal_load_extended_layout_type_info(MonoClass* klass, MonoMarshalType* info)
 {
-	int j, count = 0;
-	guint32 native_size = 0, min_align = 1, packing, explicit_size = 0;
-	MonoMarshalType *info;
+	int j = 0;
+	gpointer iter = NULL;
 	MonoClassField* field;
-	gpointer iter;
-	guint32 layout;
-	GSList *loads_list;
 
-	g_assert (klass != NULL);
-
-	info = mono_class_get_marshal_info (klass);
-	if (info)
-		return info;
-
-	if (!m_class_is_inited (klass))
-		mono_class_init_internal (klass);
-
-	info = mono_class_get_marshal_info (klass);
-	if (info)
-		return info;
-
-	/*
-	 * This function can recursively call itself, so we keep the list of classes which are
-	 * under initialization in a TLS list.
-	 */
-	g_assert (!mono_marshal_is_loading_type_info (klass));
-	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
-	loads_list = g_slist_prepend (loads_list, klass);
-	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
-
-	iter = NULL;
+	info->native_size = mono_class_instance_size(klass) - MONO_ABI_SIZEOF (MonoObject);
+	info->min_align = mono_class_min_align(klass);
+ 
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
+
 		if (mono_field_is_deleted (field))
 			continue;
-		count++;
+
+		info->fields [j].field = field;
+		info->fields [j].offset = mono_field_get_offset (field);
 	}
+}
+
+static void
+mono_marshal_load_standard_layout_type_info(MonoClass* klass, MonoMarshalType* info)
+{
+	int j;
+	guint32 native_size = 0, min_align = 1, packing, explicit_size = 0;
+	MonoClassField* field;
+	gpointer iter;
+	guint32 layout;
 
 	layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
-
-	info = (MonoMarshalType *)mono_image_alloc0 (m_class_get_image (klass), MONO_SIZEOF_MARSHAL_TYPE + sizeof (MonoMarshalField) * count);
-	info->num_fields = count;
 
 	/* Try to find a size for this type in metadata */
 	explicit_size = mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, &native_size);
@@ -6108,6 +6085,70 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (m_class_get_rank (klass) && !mono_marshal_is_loading_type_info (m_class_get_element_class (klass))) {
 		mono_marshal_load_type_info (m_class_get_element_class (klass));
 	}
+}
+
+/**
+ * mono_marshal_load_type_info:
+ *
+ * Initialize \c klass::marshal_info using information from metadata. This function can
+ * recursively call itself, and the caller is responsible to avoid that by calling
+ * \c mono_marshal_is_loading_type_info beforehand.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+MonoMarshalType *
+mono_marshal_load_type_info (MonoClass* klass)
+{
+	int count = 0;
+	MonoMarshalType *info;
+	MonoClassField* field;
+	gpointer iter;
+	guint32 layout;
+	GSList *loads_list;
+
+	g_assert (klass != NULL);
+
+	info = mono_class_get_marshal_info (klass);
+	if (info)
+		return info;
+
+	if (!m_class_is_inited (klass))
+		mono_class_init_internal (klass);
+
+	info = mono_class_get_marshal_info (klass);
+	if (info)
+		return info;
+
+	/*
+	 * This function can recursively call itself, so we keep the list of classes which are
+	 * under initialization in a TLS list.
+	 */
+	g_assert (!mono_marshal_is_loading_type_info (klass));
+	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
+	loads_list = g_slist_prepend (loads_list, klass);
+	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
+
+	iter = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+		count++;
+	}
+
+	info = (MonoMarshalType *)mono_image_alloc0 (m_class_get_image (klass), MONO_SIZEOF_MARSHAL_TYPE + sizeof (MonoMarshalField) * count);
+	info->num_fields = count;
+
+
+	layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
+
+	if (layout == TYPE_ATTRIBUTE_EXTENDED_LAYOUT) {
+		mono_marshal_load_extended_layout_type_info(klass, info);
+	} else {
+		mono_marshal_load_standard_layout_type_info(klass, info);
+	}
+
 
 	loads_list = (GSList *)mono_native_tls_get_value (load_type_info_tls_id);
 	loads_list = g_slist_remove (loads_list, klass);
