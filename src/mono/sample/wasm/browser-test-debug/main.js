@@ -61,7 +61,10 @@ try {
     const config = getConfig();
     const exports = await getAssemblyExports(config.mainAssemblyName);
 
+    document.getElementById("out").innerHTML = `NOT PASSED`;
+
     await exports.Sample.Test.DoTestMethod();
+    document.getElementById("out").innerHTML = `PASSED`;
 
     let exit_code = await runMain(config.mainAssemblyName, []);
     
