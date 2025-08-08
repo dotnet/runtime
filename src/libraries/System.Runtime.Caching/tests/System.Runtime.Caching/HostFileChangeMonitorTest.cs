@@ -37,6 +37,7 @@ using System.Runtime.Caching;
 using System.Runtime.Caching.Hosting;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using MonoTests.Common;
 using Xunit;
 
@@ -248,7 +249,7 @@ namespace MonoTests.System.Runtime.Caching
 
         [OuterLoop]
         [Fact]
-        public void Reasonable_Delay()
+        public async Task Reasonable_Delay()
         {
             Tuple<string, string, string, IList<string>> setup = null;
             try
@@ -272,11 +273,13 @@ namespace MonoTests.System.Runtime.Caching
                 File.WriteAllText(setup.Item2, "I am the first file. Updated.");
 
                 // Wait for the monitor to detect the change - 5s should be more than enough
-                for (int i = 0; i < 250; i++)
+                var delay = 5000;
+                var inc = 50;
+                for (int i = 0; i < delay; i += inc)
                 {
                     if (!mc.Contains("key"))
                         break;
-                    Thread.Sleep(20);
+                    await Task.Delay(inc);
                 }
 
                 Assert.Null(mc["key"]);
