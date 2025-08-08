@@ -1364,6 +1364,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     regNumber            targetReg                = tree->GetRegNum();
     regNumber            regCnt                   = REG_NA;
     regNumber            tempReg                  = REG_NA;
+    regNumber            spSourceReg              = REG_SPBASE;
     var_types            type                     = genActualType(size->gtType);
     emitAttr             easz                     = emitTypeSize(type);
     BasicBlock*          endLabel                 = nullptr; // can optimize for riscv64.
@@ -1567,11 +1568,10 @@ void CodeGen::genLclHeap(GenTree* tree)
             tempReg = internalRegisters.Extract(tree);
 
         assert(regCnt != tempReg);
-        // regCnt now holds the number of bytes to localloc, after the sequence it will be set to the ultimate SP
         if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
         {
-            emit->emitIns_R_R_R(INS_maxu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt); // temp = max(sp, cnt);
-            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, tempReg, regCnt);      // cnt  = temp - cnt;
+            emit->emitIns_R_R_R(INS_maxu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, tempReg, regCnt);
         }
         else
         {
@@ -1581,8 +1581,9 @@ void CodeGen::genLclHeap(GenTree* tree)
             emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -1);        // temp = overflow ? 0 : full_mask;
             emit->emitIns_R_R_R(INS_and, EA_PTRSIZE, regCnt, regCnt, tempReg);      // cnt  = overflow ? 0 : cnt;
         }
-        regNumber rPageSize = internalRegisters.GetSingle(tree);
+        // At this point 'regCnt' is set to the ultimate SP.
 
+        regNumber rPageSize = internalRegisters.GetSingle(tree);
         noway_assert(rPageSize != tempReg);
 
         emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
@@ -1599,6 +1600,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // we're going to assume the worst and probe.
         // Move the final value to SP
         emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
+        spSourceReg = regCnt; // regCnt may be same as targetReg which gives advantage in returning the address below
     }
 
 ALLOC_DONE:
@@ -1621,13 +1623,12 @@ ALLOC_DONE:
         // Return the stackalloc'ed address in result register.
         // TargetReg = SP + stackAdjustment.
         //
-        genInstrWithConstant(INS_addi, EA_PTRSIZE, targetReg, REG_SPBASE, (ssize_t)stackAdjustment, tempReg);
+        genInstrWithConstant(INS_addi, EA_PTRSIZE, targetReg, spSourceReg, (ssize_t)stackAdjustment, tempReg);
     }
     else // stackAdjustment == 0
     {
-        // Move the final value of SP to targetReg (if necessary; targetReg may be same as regCnt which also holds SP)
-        regNumber spSrc = (regCnt == REG_NA) ? REG_SPBASE : regCnt;
-        emit->emitIns_Mov(EA_PTRSIZE, targetReg, spSrc, true);
+        // Move the final value of SP to targetReg
+        emit->emitIns_Mov(EA_PTRSIZE, targetReg, spSourceReg, true);
     }
 
 BAILOUT:
