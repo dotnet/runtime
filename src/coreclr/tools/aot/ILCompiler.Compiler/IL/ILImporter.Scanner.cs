@@ -959,6 +959,24 @@ namespace Internal.IL
                     }
                 }
 
+                // We might also be able to optimize this if this is something like typeof(Foo).IsValueType
+                // that doesn't need reflection metadata for the answer.
+                if (helperId != ReadyToRunHelperId.NecessaryTypeHandle)
+                {
+                    reader = new ILReader(_ilBytes, _currentOffset);
+                    if (reader.HasNext
+                        && reader.ReadILOpcode() == ILOpcode.call
+                        && IsTypeGetTypeFromHandle((MethodDesc)_methodIL.GetObject(reader.ReadILToken())))
+                    {
+                        if (reader.HasNext
+                            && reader.ReadILOpcode() is ILOpcode.callvirt or ILOpcode.call
+                            && _methodIL.GetObject(reader.ReadILToken()) is MethodDesc{ Name: "get_IsValueType" or "get_IsEnum"})
+                        {
+                            helperId = ReadyToRunHelperId.NecessaryTypeHandle;
+                        }
+                    }
+                }
+
                 _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (TypeDesc)_canonMethodIL.GetObject(token));
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
