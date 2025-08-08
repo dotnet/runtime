@@ -1215,8 +1215,13 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
         pDataItems[i] = m_dataItems.Get(i);
 
     bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
+    CORJIT_FLAGS corJitFlags;
+    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
+    assert(jitFlagsSize == sizeof(corJitFlags));
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals);
+    bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
 
     return pMethod;
 }
@@ -2707,6 +2712,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
+    bool isDelegateInvoke = false;
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
     CORINFO_CALL_INFO callInfo;
@@ -2742,6 +2748,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
+            NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+            if ((ni == NI_System_StubHelpers_NextCallReturnAddress) && (m_ip[5] == CEE_POP))
+            {
+                // Call to System.StubHelpers.NextCallReturnAddress followed by CEE_POP is a special case that we handle
+                // as a no-op.
+                m_ip += 6; // Skip the call and the CEE_POP
+                return;
+            }
+
             // If we are being asked explicitly to compile an intrinsic for interpreting, we need to forcibly enable
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
@@ -2749,13 +2764,17 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             bool isMustExpand = (callInfo.hMethod == m_methodHnd);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
-                NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
                 if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
                 {
                     m_ip += 5;
                     return;
                 }
             }
+        }
+
+        if (callInfo.methodFlags & CORINFO_FLG_DELEGATE_INVOKE)
+        {
+            isDelegateInvoke = true;
         }
 
         if (callInfo.thisTransform != CORINFO_NO_THIS_TRANSFORM)
@@ -3031,16 +3050,28 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     // before the call.
                     // TODO: Add null checking behavior somewhere here!
                 }
-                AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
+                if (isDelegateInvoke)
+                {
+                    assert(!isPInvoke && !isMarshaledPInvoke);
+                    AddIns(INTOP_CALLDELEGATE);
+                }
+                else
+                {
+                    AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
+                }
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
                 if (isPInvoke && !isMarshaledPInvoke)
                 {
                     CORINFO_CONST_LOOKUP lookup;
                     m_compHnd->getAddressOfPInvokeTarget(callInfo.hMethod, &lookup);
                     m_pLastNewIns->data[1] = GetDataItemIndex(lookup.addr);
-                    m_pLastNewIns->data[2] = lookup.accessType == IAT_PVALUE;
                     if (lookup.accessType == IAT_PPVALUE)
                         NO_WAY("IAT_PPVALUE pinvokes not implemented in interpreter");
+                    bool suppressGCTransition = false;
+                    m_compHnd->getUnmanagedCallConv(callInfo.hMethod, nullptr, &suppressGCTransition);
+                    m_pLastNewIns->data[2] =
+                        ((lookup.accessType == IAT_PVALUE) ? (int32_t)PInvokeCallFlags::Indirect : 0) |
+                        (suppressGCTransition ? (int32_t)PInvokeCallFlags::SuppressGCTransition : 0);
                 }
             }
             break;
@@ -3072,7 +3103,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             break;
 
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
-            if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getClassAttribs(resolvedCallToken.hClass) & CORINFO_FLG_SHAREDINST))
+            if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getMethodAttribs(callInfo.hMethod) & CORINFO_FLG_SHAREDINST))
             {
                 assert(extraParamArgLocation == INT_MAX);
                 // We should not have a type argument for the ldvirtftn path since we don't know
@@ -5782,17 +5813,34 @@ DO_LDFTN:
                 CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
 
                 m_pStackPointer -= 2;
-                if (elemCorType == CORINFO_TYPE_CLASS)
+                if ((elemCorType == CORINFO_TYPE_CLASS) && !readonly)
                 {
-                    AddIns(INTOP_LDELEMA_REF);
-                    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
-                    PushInterpType(InterpTypeByRef, elemClsHnd);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                    m_pLastNewIns->data[0] = m_compHnd->getClassSize(elemClsHnd);
-                    m_pLastNewIns->data[1] = GetDataItemIndex(elemClsHnd);
+                    CORINFO_GENERICHANDLE_RESULT embedInfo;
+                    m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
+                    DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
+
+                    if (embedInfo.lookup.lookupKind.needsRuntimeLookup)
+                    {
+                        GenericHandleData handleData = GenericHandleToGenericHandleData(embedInfo);
+
+                        AddIns(INTOP_LDELEMA_REF_GENERIC);
+                        m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, handleData.genericVar);
+                        PushInterpType(InterpTypeByRef, elemClsHnd);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+                    }
+                    else
+                    {
+                        AddIns(INTOP_LDELEMA_REF);
+                        m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                        PushInterpType(InterpTypeByRef, elemClsHnd);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_pLastNewIns->data[0] = GetDataItemIndex(elemClsHnd);
+                    }
                 }
                 else
                 {
+                    readonly = false; // If readonly was set, it is no longer needed as its been handled.
                     AddIns(INTOP_LDELEMA);
                     m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
                     PushInterpType(InterpTypeByRef, elemClsHnd);
