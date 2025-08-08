@@ -16,11 +16,15 @@ namespace System.Data.Common
         [LibraryImport(Interop.Libraries.OleAut32)]
         internal static unsafe partial OleDbHResult GetErrorInfo(
             int dwReserved,
+            [MarshalUsing(typeof(UniqueComInterfaceMarshaller<IErrorInfo>))]
             out IErrorInfo? ppIErrorInfo);
 
-        internal static void ReleaseErrorInfoObject(IErrorInfo errorInfo)
+        internal static void ReleaseComWrappersObject(object? obj)
         {
-            ((ComObject)(object)errorInfo).FinalRelease();
+            if (obj is not null)
+            {
+                ((ComObject)obj).FinalRelease();
+            }
         }
     }
 }

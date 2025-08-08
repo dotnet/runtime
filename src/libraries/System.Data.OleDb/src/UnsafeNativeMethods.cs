@@ -519,7 +519,7 @@ namespace System.Data.Common
         [Guid("1CF2B120-547D-101B-8E65-08002B2BD119"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), GeneratedComInterface, SuppressUnmanagedCodeSecurity]
         internal partial interface IErrorInfo
         {
-            [Obsolete("not used", true)] void GetGUID(/*deleted parameter signature*/);
+            [Obsolete("not used")] void GetGUID(/*deleted parameter signature*/);
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetSource(
@@ -551,22 +551,23 @@ namespace System.Data.Common
         [Guid("0C733A67-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), GeneratedComInterface, SuppressUnmanagedCodeSecurity]
         internal partial interface IErrorRecords
         {
-            [Obsolete("not used", true)] void AddErrorRecord(/*deleted parameter signature*/);
+            [Obsolete("not used")] void AddErrorRecord(/*deleted parameter signature*/);
 
-            [Obsolete("not used", true)] void GetBasicErrorInfo(/*deleted parameter signature*/);
+            [Obsolete("not used")] void GetBasicErrorInfo(/*deleted parameter signature*/);
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetCustomErrorObject( // may return E_NOINTERFACE when asking for IID_ISQLErrorInfo
                 int ulRecordNum,
                 in Guid riid,
+                [MarshalUsing(typeof(UniqueComInterfaceMarshaller<ISQLErrorInfo>))]
                 out ISQLErrorInfo ppObject);
 
-            [return: MarshalAs(UnmanagedType.Interface)]
+            [return: MarshalUsing(typeof(UniqueComInterfaceMarshaller<IErrorInfo>))]
             IErrorInfo GetErrorInfo(
                 int ulRecordNum,
                 int lcid);
 
-            [Obsolete("not used", true)] void GetErrorParameters(/*deleted parameter signature*/);
+            [Obsolete("not used")] void GetErrorParameters(/*deleted parameter signature*/);
 
             int GetRecordCount();
         }
