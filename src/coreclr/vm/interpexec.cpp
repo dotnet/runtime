@@ -1604,7 +1604,7 @@ MAIN_LOOP:
                     ip += 4;
                     break;
                 case INTOP_CGT_UN_I8:
-                    LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint32_t) > LOCAL_VAR(ip[3], uint32_t);
+                    LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], uint64_t) > LOCAL_VAR(ip[3], uint64_t);
                     ip += 4;
                     break;
                 case INTOP_CGT_UN_R4:
