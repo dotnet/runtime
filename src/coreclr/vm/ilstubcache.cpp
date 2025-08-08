@@ -55,7 +55,7 @@ void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
     SigPointer  sigPtr(pSig, cbSig);
 
     SigBuilder sigBuilder;
-    sigPtr.ConvertToInternalSignature(pSigModule, pTypeContext, &sigBuilder, /* bSkipCustomModifier */ TRUE);
+    sigPtr.ConvertToInternalSignature(pSigModule, pTypeContext, &sigBuilder, /* bSkipCustomModifier */ FALSE);
 
     DWORD cbNewSig;
     PVOID pConvertedSig = sigBuilder.GetSignature(&cbNewSig);
