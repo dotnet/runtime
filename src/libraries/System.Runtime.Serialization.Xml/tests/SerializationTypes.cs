@@ -1158,6 +1158,16 @@ public class TypeWithDefaultTimeSpanProperty
     }
 }
 
+public class TypeWithDateOnlyProperty
+{
+    public DateOnly DateOnlyProperty;
+}
+
+public class TypeWithTimeOnlyProperty
+{
+    public TimeOnly TimeOnlyProperty;
+}
+
 public class TypeWithByteProperty
 {
     public byte ByteProperty;
