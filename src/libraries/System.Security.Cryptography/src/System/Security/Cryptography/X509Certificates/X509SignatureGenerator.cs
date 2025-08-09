@@ -90,6 +90,8 @@ namespace System.Security.Cryptography.X509Certificates
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static X509SignatureGenerator CreateForCompositeMLDsa(CompositeMLDsa key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             throw new PlatformNotSupportedException();
         }
     }

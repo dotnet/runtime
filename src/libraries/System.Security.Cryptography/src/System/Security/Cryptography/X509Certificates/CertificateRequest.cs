@@ -309,6 +309,9 @@ namespace System.Security.Cryptography.X509Certificates
             string subjectName,
             CompositeMLDsa key)
         {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
             throw new PlatformNotSupportedException();
         }
 
@@ -330,6 +333,9 @@ namespace System.Security.Cryptography.X509Certificates
             X500DistinguishedName subjectName,
             CompositeMLDsa key)
         {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
             throw new PlatformNotSupportedException();
         }
 

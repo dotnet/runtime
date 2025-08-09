@@ -646,7 +646,7 @@ namespace System.Security.Cryptography
         public static bool operator !=(System.Security.Cryptography.CompositeMLDsaAlgorithm? left, System.Security.Cryptography.CompositeMLDsaAlgorithm? right) { throw null; }
         public override string ToString() { throw null; }
     }
-[System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class CompositeMLDsaCng : System.Security.Cryptography.CompositeMLDsa
     {
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -3362,7 +3362,7 @@ namespace System.Security.Cryptography.X509Certificates
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed partial class CertificateRequest
     {
-[System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.CompositeMLDsa key) { }
         public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -3479,7 +3479,7 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class PublicKey
     {
         public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
-[System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
         public PublicKey(System.Security.Cryptography.CompositeMLDsa key) { }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
         public PublicKey(System.Security.Cryptography.MLDsa key) { }
@@ -3495,6 +3495,9 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
         public static System.Security.Cryptography.X509Certificates.PublicKey CreateFromSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
         public byte[] ExportSubjectPublicKeyInfo() { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public System.Security.Cryptography.CompositeMLDsa? GetCompositeMLDsaPublicKey() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
@@ -3822,7 +3825,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.X509Certificates.X500DistinguishedName SubjectName { get { throw null; } }
         public string Thumbprint { get { throw null; } }
         public int Version { get { throw null; } }
-[System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(System.Security.Cryptography.CompositeMLDsa privateKey) { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 CopyWithPrivateKey(System.Security.Cryptography.ECDiffieHellman privateKey) { throw null; }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -4254,7 +4257,7 @@ namespace System.Security.Cryptography.X509Certificates
         protected X509SignatureGenerator() { }
         public System.Security.Cryptography.X509Certificates.PublicKey PublicKey { get { throw null; } }
         protected abstract System.Security.Cryptography.X509Certificates.PublicKey BuildPublicKey();
-[System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.X509Certificates.X509SignatureGenerator CreateForCompositeMLDsa(System.Security.Cryptography.CompositeMLDsa key) { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509SignatureGenerator CreateForECDsa(System.Security.Cryptography.ECDsa key) { throw null; }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]

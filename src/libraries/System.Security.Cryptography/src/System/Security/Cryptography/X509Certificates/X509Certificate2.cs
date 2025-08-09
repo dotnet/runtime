@@ -1101,7 +1101,13 @@ namespace System.Security.Cryptography.X509Certificates
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public CompositeMLDsa? GetCompositeMLDsaPublicKey()
         {
-            throw new PlatformNotSupportedException();
+            if (CompositeMLDsaAlgorithm.GetAlgorithmFromOid(GetKeyAlgorithm()) is null)
+            {
+                return null;
+            }
+
+            Debug.Assert(!OperatingSystem.IsBrowser());
+            return PublicKey.GetCompositeMLDsaPublicKey();
         }
 
         /// <summary>
@@ -1110,12 +1116,20 @@ namespace System.Security.Cryptography.X509Certificates
         /// <returns>
         ///   The private key, or <see langword="null"/> if this certificate does not have a Composite ML-DSA private key.
         /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Retrieving a Composite ML-DSA private key from a certificate is not supported on this platform.
+        /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public CompositeMLDsa? GetCompositeMLDsaPrivateKey()
         {
+            if (CompositeMLDsaAlgorithm.GetAlgorithmFromOid(GetKeyAlgorithm()) is null)
+            {
+                return null;
+            }
+
             throw new PlatformNotSupportedException();
         }
 
@@ -1139,9 +1153,38 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Combining a certificate and a Composite ML-DSA private key is not supported on this platform.
+        /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public X509Certificate2 CopyWithPrivateKey(CompositeMLDsa privateKey)
         {
+            ArgumentNullException.ThrowIfNull(privateKey);
+
+            if (HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (CompositeMLDsa? publicKey = GetCompositeMLDsaPublicKey())
+            {
+                if (publicKey is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+                }
+
+                if (publicKey.Algorithm != privateKey.Algorithm)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+
+                byte[] pk1 = publicKey.ExportCompositeMLDsaPublicKey();
+                byte[] pk2 = privateKey.ExportCompositeMLDsaPublicKey();
+
+                if (!pk1.SequenceEqual(pk2))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+            }
+
             throw new PlatformNotSupportedException();
         }
 
