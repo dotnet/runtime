@@ -428,7 +428,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             public static TSelf Parse(string s, IFormatProvider provider) => TSelf.Parse(s, provider);
 
-            public static bool TryParse(string s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
+            public static bool TryParse(string? s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
         }
 
         [Theory]
@@ -485,7 +485,7 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("E:E:E:E:E:E:0:1", true, "e:e:e:e:e:e:0:1", 0)]
         [InlineData("[E:E:E:E:E:E:0:1]:443", true, "e:e:e:e:e:e:0:1", 443)]
         [InlineData("[E:E:E:E:E:E:0:1]:1a35", false, "", 0)]
-        public static void TryParseIParsable(string input, bool parsed, string address, int port)
+        public static void TryParseIParsable(string? input, bool parsed, string address, int port)
         {
             Assert.Equal(parsed, ParsableHelper<IPEndPoint>.TryParse(input, CultureInfo.InvariantCulture, out IPEndPoint result));
 
