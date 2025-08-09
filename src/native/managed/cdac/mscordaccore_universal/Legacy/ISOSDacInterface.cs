@@ -188,6 +188,12 @@ internal struct DacpMethodTableFieldData
     public ushort wContextStaticsSize;
 };
 
+internal enum MethodTableInitializationFlags
+{
+    MethodTableInitialized = 1,
+    MethodTableInitializationFailed = 2
+};
+
 internal struct DacpReJitData
 {
     // FIXME[cdac]: the C++ definition enum doesn't have an explicit underlying type or constant values for the flags
@@ -647,7 +653,7 @@ internal unsafe partial interface ISOSDacInterface14
     [PreserveSig]
     int GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
     [PreserveSig]
-    int GetMethodTableInitializationFlags(ClrDataAddress methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus);
+    int GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus);
 }
 
 [GeneratedComInterface]

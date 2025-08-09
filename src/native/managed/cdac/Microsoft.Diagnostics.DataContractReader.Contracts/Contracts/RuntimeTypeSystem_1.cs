@@ -90,6 +90,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         LoaderModuleAttachedToChunk              = 0x8000,
     }
 
+    internal enum MethodTableAuxiliaryFlags : uint
+    {
+        Initialized               = 0x0001,
+        HasCheckedCanCompareBitsOrUseFastGetHashCode  = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
+        CanCompareBitsOrUseFastGetHashCode    = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
+        IsTlsIndexAllocated       = 0x0008,
+        HasApproxParent           = 0x0010,
+        MayHaveOpenInterfaceInInterfaceMap    = 0x0020,
+        IsNotFullyLoaded          = 0x0040,
+        DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
+
+        IsInitError               = 0x0100,
+        IsStaticDataAllocated     = 0x0200,     // When this is set, if the class can be marked as initialized without any further code execution it will be.
+        HasCheckedStreamOverride  = 0x0400,
+        StreamOverriddenRead      = 0x0800,
+        StreamOverriddenWrite     = 0x1000,
+        EnsuredInstanceActive     = 0x2000,
+    };
+
     internal struct MethodDesc
     {
         private readonly Data.MethodDesc _desc;
@@ -405,6 +424,24 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return default;
 
         return _target.ProcessedData.GetOrAdd<TypeInstantiation>(typeHandle.Address).TypeHandles;
+    }
+
+    public bool IsClassInited(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        MethodTableAuxiliaryData auxiliaryData = _target.ProcessedData.GetOrAdd<MethodTableAuxiliaryData>(methodTable.AuxiliaryData);
+        return (auxiliaryData.Flags & (uint)MethodTableAuxiliaryFlags.Initialized) != 0;
+    }
+
+    public bool IsInitError(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        MethodTableAuxiliaryData auxiliaryData = _target.ProcessedData.GetOrAdd<MethodTableAuxiliaryData>(methodTable.AuxiliaryData);
+        return (auxiliaryData.Flags & (uint)MethodTableAuxiliaryFlags.IsInitError) != 0;
     }
 
     private sealed class TypeInstantiation : IData<TypeInstantiation>
