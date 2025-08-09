@@ -148,19 +148,12 @@ static void PulseAllHelper(Thread* pThread)
     }
     CONTRACTL_END;
 
-    EX_TRY
-    {
-        // GetExposedObject() will either throw, or we have a valid object.  Note
-        // that we re-acquire it each time, since it may move during calls.
-        pThread->GetExposedObject()->EnterObjMonitor();
-        pThread->GetExposedObject()->PulseAll();
-        pThread->GetExposedObject()->LeaveObjMonitor();
-    }
-    EX_CATCH
-    {
-        // just keep going...
-    }
-    EX_END_CATCH
+    // GetExposedObject() will either throw, or we have a valid object.  Note
+    // that we re-acquire it each time, since it may move during calls.
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__PULSE_THREAD_OBJECT);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
+    CALL_MANAGED_METHOD_NORET(args);
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
@@ -601,7 +594,7 @@ static BOOL DoJoin(THREADBASEREF dyingThread, INT32 timeout)
                    ? INFINITE
                    : (DWORD) timeout);
 
-    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, (WaitMode)(WaitMode_Alertable/*alertable*/|WaitMode_InDeadlock));
+    DWORD rv = DyingInternal->JoinEx(dwTimeOut32, WaitMode_Alertable);
     switch(rv)
     {
         case WAIT_OBJECT_0:
@@ -898,4 +891,45 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
     {
         pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
     }
+}
+
+extern "C" int32_t QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack obj)
+{
+    QCALL_CONTRACT;
+
+    int32_t index = -1;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    // Force creation of a SyncBlock for the object.
+    index = (int32_t)obj.Get()->GetSyncBlock()->GetSyncBlockIndex();
+
+    END_QCALL;
+
+    return index;
+}
+
+FCIMPL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, int idx)
+{
+    FCALL_CONTRACT;
+    
+    _ASSERTE(0 <= idx && idx < SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
+    return SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLockIfExists();
+}
+FCIMPLEND
+
+extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOnStack obj)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    
+    GCX_COOP();
+
+    _ASSERTE(0 <= idx && idx < SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
+    obj.Set(ObjectFromHandle(SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock()));
+
+    END_QCALL;
 }
