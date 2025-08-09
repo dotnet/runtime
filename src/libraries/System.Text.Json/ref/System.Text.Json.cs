@@ -463,6 +463,10 @@ namespace System.Text.Json
         public void MakeReadOnly(bool populateMissingResolver) { }
         public bool TryGetTypeInfo(System.Type type, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.Json.Serialization.Metadata.JsonTypeInfo? typeInfo) { throw null; }
     }
+    public static class JsonSerializerOptionsExtensions
+    {
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> GetTypeInfo<T>(this JsonSerializerOptions options) { throw null; }
+    }
     public enum JsonTokenType : byte
     {
         None = (byte)0,
