@@ -148,7 +148,7 @@ public:
       FormatFullInst      = 0x00000002, // Include namespace and assembly in generic types (regardless of other flag settings)
       FormatAssembly      = 0x00000004, // Include assembly display name in type names
       FormatSignature     = 0x00000008, // Include signature in method names
-      FormatNoVersion     = 0x00000010, // Suppress version and culture information in all assembly names
+      // unused           = 0x00000010,
 #ifdef _DEBUG
       FormatDebug         = 0x00000020, // For debug printing of types only
 #endif
@@ -165,11 +165,11 @@ public:
 
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
     // and enclose each parameter in square brackets to disambiguate the commas
-    // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
+    // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly
     static void AppendInst(SString& s, Instantiation inst, DWORD format = FormatNamespace);
 
     // Append a representation of the type t to the string s
-    // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
+    // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly
     static void AppendType(SString& s, TypeHandle t, DWORD format = FormatNamespace);
 
     // Append a representation of the type t to the string s, using the generic
@@ -183,7 +183,7 @@ public:
     static void AppendMethod(SString& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format = FormatNamespace|FormatSignature);
 
     // Append a representation of the method m to the string s
-    // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatSignature  FormatNoVersion
+    // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatSignature
     static void AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD format);
 
     // Append the field name and generic instantiation info.

@@ -1318,6 +1318,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void FullName_FunctionPointers_ReturnsExpected()
+        {
+            Assert.Null(typeof(delegate*<void>).FullName);
+            Assert.Null(typeof(delegate*<void>*).FullName);
+            Assert.Null(typeof(delegate*<void>**).FullName);
+        }
+
+        [Fact]
         public void Guid()
         {
             Assert.Equal(new Guid("FD80F123-BEDD-4492-B50A-5D46AE94DD4E"), typeof(TypeInfoTests).GetTypeInfo().GUID);
@@ -1488,6 +1496,14 @@ namespace System.Reflection.Tests
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);
+        }
+
+        [Fact]
+        public static void Namespace_FunctionPointers_ReturnsNull()
+        {
+            Assert.Null(typeof(delegate*<void>).Namespace);
+            Assert.Null(typeof(delegate*<void>*).Namespace);
+            Assert.Null(typeof(delegate*<void>**).Namespace);
         }
 
         [Theory]
