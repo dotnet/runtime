@@ -10456,18 +10456,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetIsNullable();
         }
-        else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeMethodHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
         else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
         {
             EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
