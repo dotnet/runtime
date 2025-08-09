@@ -395,6 +395,86 @@ namespace System.Security.Cryptography.X509Certificates
 #endif
         }
 
+        /// <summary>
+        ///   Gets the <see cref="CompositeMLDsa"/> public key from this certificate.
+        /// </summary>
+        /// <param name="certificate">
+        ///   The X.509 certificate that contains the public key.
+        /// </param>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if this certificate does not have a Composite ML-DSA public key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="certificate"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The certificate has a Composite ML-DSA public key, but the platform does not support Composite ML-DSA.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The public key was invalid, or otherwise could not be imported.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CompositeMLDsa? GetCompositeMLDsaPublicKey(this X509Certificate2 certificate)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        ///   Gets the <see cref="CompositeMLDsa"/> private key from this certificate.
+        /// </summary>
+        /// <param name="certificate">
+        ///   The X.509 certificate that contains the private key.
+        /// </param>
+        /// <returns>
+        ///   The private key, or <see langword="null"/> if this certificate does not have a Composite ML-DSA private key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///  <paramref name="certificate"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Retrieving a Composite ML-DSA private key from a certificate is not supported on this platform.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred accessing the private key.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CompositeMLDsa? GetCompositeMLDsaPrivateKey(this X509Certificate2 certificate)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        ///   Combines a private key with a certificate containing the associated public key into a
+        ///   new instance that can access the private key.
+        /// </summary>
+        /// <param name="certificate">
+        ///   The X.509 certificate that contains the public key.
+        /// </param>
+        /// <param name="privateKey">
+        ///   The Composite ML-DSA private key that corresponds to the Composite ML-DSA public key in this certificate.
+        /// </param>
+        /// <returns>
+        ///   A new certificate with the <see cref="X509Certificate2.HasPrivateKey" /> property set to <see langword="true"/>.
+        ///   The current certificate isn't modified.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="certificate"/> or <paramref name="privateKey"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The specified private key doesn't match the public key for this certificate.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The certificate already has an associated private key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Combining a certificate and a Composite ML-DSA private key is not supported on this platform.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, CompositeMLDsa privateKey)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
 #if !NET10_0_OR_GREATER
         private static ArraySegment<byte> GetCertificateSubjectPublicKeyInfo(X509Certificate2 certificate)
         {

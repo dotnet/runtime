@@ -497,6 +497,10 @@
              Link="Common\System\Security\Cryptography\CngHelpers.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyPropertyName.cs"
              Link="Common\System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.cs"
