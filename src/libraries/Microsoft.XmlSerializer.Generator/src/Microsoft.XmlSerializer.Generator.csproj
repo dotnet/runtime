@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <AssemblyName>dotnet-Microsoft.XmlSerializer.Generator</AssemblyName>
+    <AssemblyName>Microsoft.XmlSerializer.Generator</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>..\..\System.Private.Xml\src\Resources\Strings.resx</StringResourcesPath>
-    <StringResourcesName>FxResources.$(AssemblyName.Replace('-', '_')).SR</StringResourcesName>
+    <StringResourcesName>FxResources.$(AssemblyName).SR</StringResourcesName>
     <OutputType>Exe</OutputType>
     <Nullable>disable</Nullable>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
@@ -27,15 +27,9 @@
 
   <ItemGroup>
     <!-- Set an empty PackagePath to place this file in the root of the package -->
-    <None Include="build\prefercliruntime"
-          PackagePath=""
-          Pack="true" />
-    <None Include="build\Microsoft.XmlSerializer.Generator.targets"
-          PackagePath="build"
-          Pack="true" />
-    <None Include="build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json"
-          PackagePath="lib\netstandard2.0"
-          Pack="true" />
+    <None Include="build\prefercliruntime" PackagePath="" Pack="true" />
+    <None Include="build\Microsoft.XmlSerializer.Generator.targets" PackagePath="build" Pack="true" />
+    <None Include="build\Microsoft.XmlSerializer.Generator.runtimeconfig.json" PackagePath="lib\netstandard2.0" Pack="true" />
   </ItemGroup>
 
   <Import Project="GenerateThisAssemblyCs.targets" />
