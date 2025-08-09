@@ -23,9 +23,8 @@ Revision History:
 #include "pal/dbgmsg.h"
 #include "pal/environ.h"
 
-#if HAVE_CRT_EXTERNS_H
-#include <crt_externs.h>
-#endif
+#include "minipal/env.h"
+#include "minipal/mutex.h"
 
 #include <stdlib.h>
 
@@ -895,35 +894,6 @@ char* EnvironGetenv(const char* name, BOOL copyValue)
     return retValue;
 }
 
-
-/*++
-Function:
-  EnvironGetSystemEnvironment
-
-Get a pointer to the array of pointers representing the process's
-environment.
-
-See 'man environ' for details.
-
-Return Value
-
-    A pointer to the environment.
-
---*/
-char** EnvironGetSystemEnvironment()
-{
-    char** sysEnviron;
-
-#if HAVE__NSGETENVIRON
-    sysEnviron = *(_NSGetEnviron());
-#else   // HAVE__NSGETENVIRON
-    extern char **environ;
-    sysEnviron = environ;
-#endif  // HAVE__NSGETENVIRON
-
-    return sysEnviron;
-}
-
 /*++
 Function:
   EnvironInitialize
@@ -943,7 +913,8 @@ EnvironInitialize(void)
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     minipal_mutex_enter(&gcsEnvironment);
 
-    char** sourceEnviron = EnvironGetSystemEnvironment();
+    char** sourceEnviron = minipal_env_get_environ_copy();
+    _ASSERT(sourceEnviron != NULL);
 
     int variableCount = 0;
     while (sourceEnviron[variableCount] != nullptr)
@@ -965,13 +936,17 @@ EnvironInitialize(void)
         _ASSERTE(palEnvironment != nullptr);
         for (int i = 0; i < variableCount; ++i)
         {
-            palEnvironment[i] = strdup(sourceEnviron[i]);
+            // Transfer ownership of the string to palEnvironment.
+            palEnvironment[i] = sourceEnviron[i];
+            sourceEnviron[i] = nullptr;
             palEnvironmentCount++;
         }
 
         // Set the entry after the last variable to null to indicate the end.
         palEnvironment[variableCount] = nullptr;
     }
+
+    minipal_env_free_environ(sourceEnviron);
 
     minipal_mutex_leave(&gcsEnvironment);
     return ret;
