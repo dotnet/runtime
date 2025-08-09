@@ -204,6 +204,16 @@ namespace System.Net.Security
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
 
+                Exception? validationException = sslContext?.SslStreamProxy.ValidationException;
+
+                // Fail before even attempting handshake if validationException is not null
+                if (validationException is not null)
+                {
+                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, validationException);
+                    sslContext!.ReadPendingWrites(ref token);
+                    return token;
+                }
+
                 PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamHandshake(sslHandle);
                 SecurityStatusPalErrorCode statusCode = ret switch
                 {
@@ -212,7 +222,13 @@ namespace System.Net.Security
                     _ => SecurityStatusPalErrorCode.InternalError
                 };
 
-                Exception? validationException = sslContext?.SslStreamProxy.ValidationException;
+                // Check again after handshake attempt if validationException is not null
+                validationException = sslContext?.SslStreamProxy.ValidationException;
+                if (validationException is not null)
+                {
+                    statusCode = SecurityStatusPalErrorCode.InternalError;
+                }
+
                 token.Status = new SecurityStatusPal(statusCode, validationException);
                 sslContext!.ReadPendingWrites(ref token);
                 return token;

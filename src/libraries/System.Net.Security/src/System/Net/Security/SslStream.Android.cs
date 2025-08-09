@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
@@ -89,6 +90,11 @@ namespace System.Net.Security
                 try
                 {
                     proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate();
+                    if (!proxy.ValidationResult.IsValid)
+                    {
+                        // Throw AuthenticationException if validation failed
+                        proxy.ValidationException = new AuthenticationException(SR.net_ssl_io_cert_custom_validation);
+                    }
                     return proxy.ValidationResult.IsValid;
                 }
                 catch (Exception exception)
