@@ -204,7 +204,7 @@ namespace System.Linq.Tests
             if (!PlatformDetection.IsLinqSpeedOptimized)
             {
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1));
-                yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));            
+                yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
                 yield return WrapArgs(Enumerable.Range(1, 20).Reverse());
                 yield return WrapArgs(Enumerable.Range(1, 20).OrderBy(x => -x));

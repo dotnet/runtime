@@ -177,7 +177,11 @@ namespace System.Linq
 
             public override bool Contains(TResult value)
             {
-                if (!typeof(TResult).IsValueType && // don't box TResult
+                // Avoid checking for IList when size-optimized because it keeps IList
+                // implementations which may otherwise be trimmed. Since List<T> implements
+                // IList and List<T> is popular, this could potentially be a lot of code.
+                if (!IsSizeOptimized &&
+                    !typeof(TResult).IsValueType && // don't box TResult
                     _source is IList list)
                 {
                     return list.Contains(value);
