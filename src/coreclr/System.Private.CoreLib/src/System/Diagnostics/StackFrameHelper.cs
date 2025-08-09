@@ -118,7 +118,7 @@ namespace System.Diagnostics
                     // ENC or the source/line info was already retrieved, the method token is 0.
                     if (rgiMethodToken![index] != 0)
                     {
-                        GetSourceLineInfo(s_stackTraceSymbolsCache!, rgAssembly![index], rgAssemblyPath![index]!, rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
+                        GetSourceLineInfo(s_stackTraceSymbolsCache, rgAssembly![index], rgAssemblyPath![index], rgLoadedPeAddress![index], rgiLoadedPeSize![index], rgiIsFileLayout![index],
                             rgInMemoryPdbAddress![index], rgiInMemoryPdbSize![index], rgiMethodToken![index],
                             rgiILOffset![index], out rgFilename![index], out rgiLineNumber![index], out rgiColumnNumber![index]);
                     }

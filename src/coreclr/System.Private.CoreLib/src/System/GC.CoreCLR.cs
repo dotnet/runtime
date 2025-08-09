@@ -884,7 +884,7 @@ namespace System
 
             ref GCConfigurationContext context = ref Unsafe.As<byte, GCConfigurationContext>(ref *(byte*)configurationContext);
             Debug.Assert(context.Configurations != null);
-            Dictionary<string, object> configurationDictionary = context.Configurations!;
+            Dictionary<string, object> configurationDictionary = context.Configurations;
 
             string nameAsString = Marshal.PtrToStringUTF8((IntPtr)name)!;
             switch (type)

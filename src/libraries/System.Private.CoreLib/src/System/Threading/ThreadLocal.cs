@@ -349,7 +349,7 @@ namespace System.Threading
             // If the slot array is not big enough to hold this ID, increase the table size.
             if (id >= slotArray.Length)
             {
-                GrowTable(ref slotArray!, id + 1);
+                GrowTable(ref slotArray, id + 1);
                 Debug.Assert(ts_finalizationHelper != null, "Should have been initialized when this thread's slot array was created.");
                 ts_finalizationHelper.SlotArray = slotArray;
                 ts_slotArray = slotArray;

@@ -218,7 +218,7 @@ namespace System.IO
         [return: NotNullIfNotNull(nameof(path))]
         internal static string? TrimEndingDirectorySeparator(string? path) =>
             EndsInDirectorySeparator(path) && !IsRoot(path.AsSpan()) ?
-                path!.Substring(0, path.Length - 1) :
+                path.Substring(0, path.Length - 1) :
                 path;
 
         /// <summary>
