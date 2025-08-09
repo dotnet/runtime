@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
                 Assert.Null(handler.ServerCertificateCustomValidationCallback);
-                Assert.True(handler.CheckCertificateRevocationList);
+                Assert.False(handler.CheckCertificateRevocationList);
             }
         }
 
