@@ -36,6 +36,10 @@ internal readonly struct Loader_1 : ILoader
         BeingUnloaded = 0x100000,
     }
 
+    private enum PEImageFlags : uint
+    {
+        FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+    };
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -195,6 +199,59 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
+    private static uint AlignUp(uint value, uint alignment)
+    {
+        if (alignment == 0)
+            throw new ArgumentException("Alignment must be greater than zero.", nameof(alignment));
+        return (value + alignment - 1) & ~(alignment - 1);
+    }
+
+    private static bool IsMapped(Data.PEImageLayout peImageLayout)
+    {
+        return (peImageLayout.Flags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    }
+
+    private TargetPointer FindNTHeaders(Data.PEImageLayout imageLayout)
+    {
+        Data.ImageDosHeader dosHeader = _target.ProcessedData.GetOrAdd<Data.ImageDosHeader>(imageLayout.Base);
+        return imageLayout.Base + (uint)dosHeader.Lfanew;
+    }
+
+    private TargetPointer RvaToSection(int rva, Data.PEImageLayout imageLayout)
+    {
+        TargetPointer ntHeadersPtr = FindNTHeaders(imageLayout);
+        Data.ImageNTHeaders ntHeaders = _target.ProcessedData.GetOrAdd<Data.ImageNTHeaders>(ntHeadersPtr);
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.ImageNTHeaders);
+        int offset = type.Fields[nameof(Data.ImageNTHeaders.OptionalHeader)].Offset;
+        TargetPointer section = ntHeadersPtr + (uint)offset + ntHeaders.FileHeader.SizeOfOptionalHeader;
+        TargetPointer sectionEnd = section + _target.GetTypeInfo(DataType.ImageSectionHeader).Size!.Value * ntHeaders.FileHeader.NumberOfSections;
+        uint sectionAlignment = ntHeaders.OptionalHeader.SectionAlignment;
+        while (section < sectionEnd)
+        {
+            Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
+            if (rva < sectionHeader.VirtualAddress + AlignUp(sectionHeader.VirtualSize, sectionAlignment))
+            {
+                if (rva < sectionHeader.VirtualAddress)
+                    return TargetPointer.Null;
+                else
+                    return section;
+            }
+            section += _target.GetTypeInfo(DataType.ImageSectionHeader).Size!.Value;
+        }
+        return TargetPointer.Null;
+    }
+
+    private uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
+    {
+        TargetPointer section = RvaToSection(rva, imageLayout);
+        if (section == TargetPointer.Null)
+            return (uint)rva;
+
+        Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
+        uint offset = (uint)(rva - sectionHeader.VirtualAddress) + sectionHeader.PointerToRawData;
+        return offset;
+    }
+
     TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     {
         Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
@@ -204,7 +261,12 @@ internal readonly struct Loader_1 : ILoader
         if (peImage.LoadedImageLayout == TargetPointer.Null)
             throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
         Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
-        return peImageLayout.Base + (uint)rva;
+        uint offset;
+        if (IsMapped(peImageLayout))
+            offset = (uint)rva;
+        else
+            offset = RvaToOffset(rva, peImageLayout);
+        return peImageLayout.Base + offset;
     }
 
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)

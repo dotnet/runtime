@@ -132,6 +132,15 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ArrayListBlock` | `Size` | Size of data section in block |
 | `ArrayListBlock` | `ArrayStart` | Start of data section in block |
 | `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
+| `ImageDosHeader` | `Lfanew` | Offset to NT headers |
+| `ImageNTHeaders` | `OptionalHeader` | Optional header |
+| `ImageNTHeaders` | `FileHeader` | File header |
+| `ImageOptionalHeader` | `SectionAlignment` | Alignment of sections in memory |
+| `ImageFileHeader` | `NumberOfSections` | Number of sections in the PE file |
+| `ImageFileHeader` | `SizeOfOptionalHeader` | Size of optional header on disk |
+| `ImageSectionHeader` | `VirtualAddress` | Virtual address of the section |
+| `ImageSectionHeader` | `VirtualSize` | Virtual size of the section |
+| `ImageSectionHeader` | `PointerToRawData` | Offset to section data |
 
 
 ### Global variables used:
@@ -157,6 +166,11 @@ private enum ModuleFlags_1 : uint
     EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
     ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
 }
+
+private enum PEImageFlags : uint
+{
+    FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+};
 ```
 
 ### Method Implementations
@@ -329,8 +343,68 @@ TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
     if(peImageLayout == TargetPointer.Null)
         throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
-    baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
-    return baseAddress + (uint)rva;
+
+    // Get base address and flags from PEImageLayout
+    TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
+    uint imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
+
+    bool isMapped = (imageFlags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+
+    uint offset;
+    if (isMapped)
+    {
+        offset = (uint)rva;
+    }
+    else
+    {
+        // find NT headers using DOS header
+        uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::Lfanew offset */);
+        TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
+
+        TargetPointer optionalHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeader offset */;
+        uint sectionAlignment = target.Read<uint>(optionalHeaderPtr + /* ImageOptionalHeader::SectionAlignment offset */);
+
+        // Get number of sections from file header
+        TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeader offset */;
+        uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSections offset */);
+
+        // Calculate first section address (after NT headers and optional header)
+        uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeader offset */);
+        TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeader offset */ + imageFileHeaderSize;
+
+        // Find the section containing this RVA
+        TargetPointer sectionPtr = TargetPointer.Null;
+        uint sectionHeaderSize = /* sizeof(ImageSectionHeader native struct) */;
+
+        for (uint i = 0; i < numberOfSections; i++)
+        {
+            TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
+            uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddress offset */);
+            uint virtualSize = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualSize offset */);
+
+            uint alignedVirtualSize = (virtualSize + sectionAlignment - 1) & ~(sectionAlignment - 1);
+            if (rva < VirtualAddress + alignedVirtualSize)
+            {
+                if (rva < virtualAddress)
+                    sectionPtr = TargetPointer.Null;
+                else
+                    sectionPtr = currentSectionPtr;
+                break;
+            }
+        }
+        if (sectionPtr == TargetPointer.Null)
+        {
+            offset = (uint)rva;
+        }
+        else
+        {
+            // Convert RVA to file offset using section information
+            uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddress offset */);
+            uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawData offset */);
+            offset = ((rva - sectionVirtualAddress) + sectionPointerToRawData);
+        }
+    }
+    return baseAddress + offset;
 }
 
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
