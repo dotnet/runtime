@@ -167,7 +167,7 @@ namespace System.Linq
                     // they're covariant. It's not worthwhile checking for List<T> to use the ListWhereSelectIterator
                     // because List<> is not covariant.
                     Func<object, bool> isTResult = static o => o is TResult;
-                    return objectSource is object[] array ?
+                    return !IsSizeOptimized && objectSource is object[] array ?
                         new ArrayWhereSelectIterator<object, TResult2>(array, isTResult, localSelector) :
                         new IEnumerableWhereSelectIterator<object, TResult2>(objectSource, isTResult, localSelector);
                 }
