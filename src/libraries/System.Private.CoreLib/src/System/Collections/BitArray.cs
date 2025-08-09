@@ -744,7 +744,7 @@ namespace System.Collections
                     Vector256<byte> lowerShuffleMask_CopyToBoolArray256 = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector512<byte> shuffleMask = Vector512.Create(lowerShuffleMask_CopyToBoolArray256, upperShuffleMask_CopyToBoolArray256);
                     Vector512<byte> bitMask = Vector512.Create(0x80402010_08040201).AsByte();
-                    Vector512<byte> ones = Vector512.Create((byte)1);
+                    Vector512<byte> ones = Vector512<byte>.One;
 
                     fixed (bool* destination = &boolArray[index])
                     {
@@ -766,7 +766,7 @@ namespace System.Collections
                 {
                     Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
-                    Vector256<byte> ones = Vector256.Create((byte)1);
+                    Vector256<byte> ones = Vector256<byte>.One;
 
                     fixed (bool* destination = &boolArray[index])
                     {
@@ -788,7 +788,7 @@ namespace System.Collections
                 {
                     Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
-                    Vector128<byte> ones = Vector128.Create((byte)1);
+                    Vector128<byte> ones = Vector128<byte>.One;
                     Vector128<byte> bitMask128 = Vector128.Create(0x80402010_08040201).AsByte();
 
                     fixed (bool* destination = &boolArray[index])
@@ -812,7 +812,7 @@ namespace System.Collections
                 }
                 else if (AdvSimd.Arm64.IsSupported)
                 {
-                    Vector128<byte> ones = Vector128.Create((byte)1);
+                    Vector128<byte> ones = Vector128<byte>.One;
                     Vector128<byte> bitMask128 = Vector128.Create(0x80402010_08040201).AsByte();
 
                     fixed (bool* destination = &boolArray[index])

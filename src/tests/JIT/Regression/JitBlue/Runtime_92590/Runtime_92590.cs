@@ -13,22 +13,22 @@ public class Runtime_92590
     {
         Span<byte> bytes = stackalloc byte[4];
         bytes.Fill(0xff);
-        TestByteByte(ref bytes[0], 0, Vector256.Create((byte)1));
+        TestByteByte(ref bytes[0], 0, Vector256<byte>.One);
 
         Assert.True(bytes.SequenceEqual(stackalloc byte[] { 0x2, 0xff, 0xff, 0xff }));
 
         bytes.Fill(0xff);
-        TestByteInt(ref bytes[0], 0, Vector256.Create(1));
+        TestByteInt(ref bytes[0], 0, Vector256<int>.One);
 
         Assert.True(bytes.SequenceEqual(stackalloc byte[] { 0x2, 0xff, 0xff, 0xff }));
 
         int i = int.MaxValue;
-        TestIntByte(ref i, 0, Vector256.Create((byte)1));
+        TestIntByte(ref i, 0, Vector256<byte>.One);
 
         Assert.Equal(2, i);
 
         i = int.MaxValue;
-        TestIntInt(ref i, 0, Vector256.Create(1));
+        TestIntInt(ref i, 0, Vector256<int>.One);
 
         Assert.Equal(2, i);
     }
