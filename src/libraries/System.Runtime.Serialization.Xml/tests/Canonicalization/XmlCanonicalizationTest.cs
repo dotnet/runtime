@@ -258,7 +258,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                 Encoding encoding = Encoding.GetEncoding((string)input.Arguments[1].Value);
 
                 bool mustSupportV14N = input.Arguments[2].Value == "true";
-                string baselineFileName = "ReaderWriter_C14N_BaselineXML_OnlyLF.xml";
+                string baselineFileName = "baselines/ReaderWriter_C14N_BaselineXML_OnlyLF.xml";
 
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.PreserveWhitespace = true;
@@ -324,7 +324,7 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                 }
                 else
                 {
-                    sb.Append($" {prefix}:{localName}=\"{2}\" xmlns:{value}=\"{namespaceUri}\"");
+                    sb.Append($" {prefix}:{localName}=\"{value}\" xmlns:{prefix}=\"{namespaceUri}\"");
                 }
             }
             sb.Append(">Hello world</Element></Root>");
