@@ -4573,4 +4573,18 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(deserializedDesktopObject);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(value, deserializedDesktopObject);
     }
+
+    [Fact]
+    public static void DCS_CompareInfoAsRoot()
+    {
+        CompareInfo compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+        Assert.StrictEqual(compareInfo, DataContractSerializerHelper.SerializeAndDeserialize<CompareInfo>(compareInfo, @"<CompareInfo xmlns=""http://schemas.datacontract.org/2004/07/System.Globalization"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><culture>127</culture><m_SortVersion><m_NlsVersion>31129</m_NlsVersion><m_SortId>00007999-0000-0000-0000-00000000007f</m_SortId></m_SortVersion><m_name/></CompareInfo>"));
+    }
+
+    [Fact]
+    public static void DCS_SortVersionAsRoot()
+    {
+        SortVersion sortVersion = CultureInfo.InvariantCulture.CompareInfo.Version;
+        Assert.StrictEqual(sortVersion, DataContractSerializerHelper.SerializeAndDeserialize<SortVersion>(sortVersion, @"<SortVersion xmlns=""http://schemas.datacontract.org/2004/07/System.Globalization"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_NlsVersion>31129</m_NlsVersion><m_SortId>00007999-0000-0000-0000-00000000007f</m_SortId></SortVersion>"));
+    }
 }
