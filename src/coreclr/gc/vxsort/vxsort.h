@@ -4,6 +4,7 @@
 #ifndef VXSORT_VXSORT_H
 #define VXSORT_VXSORT_H
 
+#if defined(TARGET_AMD64)
 #ifdef __GNUC__
 #ifdef __clang__
 #pragma clang attribute push (__attribute__((target("popcnt"))), apply_to = any(function))
@@ -12,9 +13,13 @@
 #pragma GCC target("popcnt")
 #endif
 #endif
+#endif // TARGET_AMD64
 
 #include <assert.h>
+
+#if defined(TARGET_AMD64)
 #include <immintrin.h>
+#endif
 
 #include <minipal/utils.h>
 
@@ -26,6 +31,7 @@
 #endif //VXSORT_STATS
 #include "packer.h"
 #include "smallsort/bitonic_sort.h"
+#include "../introsort.h"
 
 namespace vxsort {
 using vxsort::smallsort::bitonic;
@@ -194,7 +200,12 @@ private:
             vxsort_stats<T>::bump_small_sorts();
             vxsort_stats<T>::record_small_sort_size(length);
 #endif
+#if defined(TARGET_AMD64)
             bitonic<T, M>::sort(left, length);
+#else
+            // Default to the scalar version
+            bitonic<T, vector_machine::scalar>::sort(left, length);
+#endif
             return;
         }
 
@@ -310,9 +321,9 @@ private:
         dataVec = MT::partition_vector(dataVec, mask);
         MT::store_vec(reinterpret_cast<TV*>(left), dataVec);
         MT::store_vec(reinterpret_cast<TV*>(right), dataVec);
-        auto popCount = -_mm_popcnt_u64(mask);
-        right += popCount;
-        left += popCount + N;
+        auto popCount = MT::mask_popcount(mask);
+        right -= popCount;
+        left += N - popCount;
     }
 
     static INLINE void partition_block_with_compress(TV& dataVec,
@@ -320,11 +331,11 @@ private:
                                                      T*& left,
                                                      T*& right) {
         auto mask = MT::get_cmpgt_mask(dataVec, P);
-        auto popCount = -_mm_popcnt_u64(mask);
+        auto popCount = MT::mask_popcount(mask);
         MT::store_compress_vec(reinterpret_cast<TV*>(left), dataVec, ~mask);
-        MT::store_compress_vec(reinterpret_cast<TV*>(right + N + popCount), dataVec, mask);
-        right += popCount;
-        left += popCount + N;
+        MT::store_compress_vec(reinterpret_cast<TV*>(right + N - popCount), dataVec, mask);
+        right -= popCount;
+        left += N - popCount;
     }
 
     template<int InnerUnroll>
@@ -581,8 +592,8 @@ private:
         TV LT0 = MT::load_vec(preAlignedLeft);
         auto rtMask = MT::get_cmpgt_mask(RT0, P);
         auto ltMask = MT::get_cmpgt_mask(LT0, P);
-        const auto rtPopCountRightPart = max(_mm_popcnt_u32(rtMask), rightAlign);
-        const auto ltPopCountRightPart = _mm_popcnt_u32(ltMask);
+        const auto rtPopCountRightPart = max(MT::mask_popcount(rtMask), (T)rightAlign);
+        const auto ltPopCountRightPart = MT::mask_popcount(ltMask);
         const auto rtPopCountLeftPart  = N - rtPopCountRightPart;
         const auto ltPopCountLeftPart  = N - ltPopCountRightPart;
 
@@ -656,6 +667,8 @@ private:
 
 }  // namespace gcsort
 
+#if defined(TARGET_AMD64)
 #include "vxsort_targets_disable.h"
+#endif
 
 #endif
