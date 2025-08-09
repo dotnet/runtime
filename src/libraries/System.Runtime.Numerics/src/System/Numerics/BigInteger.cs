@@ -1892,6 +1892,14 @@ namespace System.Numerics
             return (Half)(double)value;
         }
 
+        /// <summary>Explicitly converts a big integer to a <see cref="BFloat16" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to <see cref="BFloat16" /> value.</returns>
+        public static explicit operator BFloat16(BigInteger value)
+        {
+            return (BFloat16)(double)value;
+        }
+
         public static explicit operator short(BigInteger value)
         {
             return checked((short)((int)value));
@@ -2141,6 +2149,14 @@ namespace System.Numerics
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a big integer.</returns>
         public static explicit operator BigInteger(Half value)
+        {
+            return new BigInteger((float)value);
+        }
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
+        public static explicit operator BigInteger(BFloat16 value)
         {
             return new BigInteger((float)value);
         }
@@ -4248,6 +4264,12 @@ namespace System.Numerics
                 result = checked((BigInteger)actualValue);
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = checked((BigInteger)actualValue);
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -4363,6 +4385,12 @@ namespace System.Numerics
             {
                 Half actualValue = (Half)(object)value;
                 result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = BFloat16.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -4482,6 +4510,12 @@ namespace System.Numerics
                 result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = BFloat16.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -4592,6 +4626,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -4734,6 +4774,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -4939,6 +4985,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
