@@ -61,6 +61,7 @@ TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
+TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
@@ -317,6 +318,19 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     size = target.Read<uint>(peImageLayout + /* PEImageLayout::Size offset */);
     imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
     return true;
+}
+
+TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+{
+    TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
+    if(peImage == TargetPointer.Null)
+        throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
+
+    TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
+    if(peImageLayout == TargetPointer.Null)
+        throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+    baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
+    return baseAddress + (uint)rva;
 }
 
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
