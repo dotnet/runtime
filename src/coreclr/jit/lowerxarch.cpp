@@ -9781,14 +9781,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             for (GenTree* longOp : op1->Operands())
                             {
-                                if (!varTypeIsSmall(longOp) && IsContainableMemoryOp(longOp) &&
-                                    IsSafeToContainMem(node, longOp))
+                                if (!varTypeIsSmall(longOp))
                                 {
-                                    MakeSrcContained(node, longOp);
-                                }
-                                else if (IsSafeToMarkRegOptional(node, longOp))
-                                {
-                                    MakeSrcRegOptional(node, longOp);
+                                    if (IsContainableMemoryOp(longOp) && IsSafeToContainMem(node, longOp))
+                                    {
+                                        MakeSrcContained(node, longOp);
+                                    }
+                                    else if (IsSafeToMarkRegOptional(node, longOp))
+                                    {
+                                        MakeSrcRegOptional(node, longOp);
+                                    }
                                 }
                             }
 
