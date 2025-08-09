@@ -62,6 +62,9 @@ TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
+IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
+IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
+
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
@@ -92,6 +95,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
+| `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
+| `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
 | `Module` | `FieldDefToDescMap` | Mapping table |
 | `Module` | `ManifestModuleReferencesMap` | Mapping table |
 | `Module` | `MemberRefToDescMap` | Mapping table |
@@ -121,6 +126,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
 | `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
 | `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
+| `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
@@ -130,7 +136,15 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
 | `ArrayListBlock` | `Size` | Size of data section in block |
 | `ArrayListBlock` | `ArrayStart` | Start of data section in block |
-| `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
+| `EETypeHashTable` | `Buckets` | Pointer to hash table buckets |
+| `EETypeHashTable` | `Count` | Count of elements in the hash table |
+| `EETypeHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
+| `EETypeHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
+| `InstMethodHashTable` | `Buckets` | Pointer to hash table buckets |
+| `InstMethodHashTable` | `Count` | Count of elements in the hash table |
+| `InstMethodHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
+| `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
+
 
 
 ### Global variables used:
@@ -332,6 +346,30 @@ bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint 
     return true;
 }
 
+IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle)
+{
+    TargetPointer availableTypeParams = target.ReadPointer(handle.Address + /* Module::AvailableTypeParams offset */);
+
+    if (availableTypeParams == TargetPointer.Null) return [];
+
+    // EETypeHashTable is read as a DacEnumerableHash table.
+    // For more information on how this is read, see section below.
+    EETypeHashTable typeHashTable = // read EETypeHashTable at availableTypeParams
+    return typeHashTable.Entries.Select(entry => entry.TypeHandle);
+}
+
+IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle)
+{
+    TargetPointer instMethodHashTable = target.ReadPointer(handle.Address + /* Module::InstMethodHashTable offset */);
+
+    if (instMethodHashTable == TargetPointer.Null) return [];
+
+    // InstMethodHashTable is read as a DacEnumerableHash table.
+    // For more information on how this is read, see section below.
+    InstMethodHashTable methodHashTable = // read InstMethodHashTable at instMethodHashTable
+    return methodHashTable.Entries.Select(entry => entry.MethodDesc);
+}
+
 bool IsProbeExtensionResultValid(ModuleHandle handle)
 {
     TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
@@ -472,4 +510,74 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
 }
 
+```
+
+### DacEnumerableHash (EETypeHashTable and InstMethodHashTable)
+
+Both `EETypeHashTable` and `InstMethodHashTable` are based on the templated `DacEnumerableHash`. Because the base class is templated on the derived type, offsets may be different in derived types.
+
+The base implementation of `DacEnumerableHash` uses four datadescriptors:
+| Datadescriptor | Purpose |
+| --- | --- |
+| `Buckets` | Pointer to the bucket array |
+| `Count` | Number of elements in the hash table |
+| `VolatileEntryValue` | The data held by an entry, defined by the derived class |
+| `VolatileEntryNextEntry` | The next pointer on an hash table entry |
+
+The hash table is laid out as an array of `VolatileEntry` pointers's (buckets), each possibly forming a chain for values that hash into that bucket. The first three buckets are special and reserved for metadata. Instead of containing a `VolatileEntry`, these pointers are read as values with the following meanings.
+
+| Reserved Bucket offset | Purpose |
+| --- | --- |
+| `0` | Length of the Bucket array, this value does not include the first 3 slots which are special |
+| `1` | Pointer to the next bucket array, not currently used in the cDAC |
+| `2` | End sentinel for the current bucket array, not currently used in the cDAC |
+
+The current cDAC implementation does not use the 'hash' part of the table at all. Instead it iterates all elements in the table. Following the existing iteration logic in the runtime (and DAC), resizing the table while iterating is not supported. Given this constraint, the pointer to the next bucket array (resized data table) and the current end sentinel are not required to iterate all entries.
+
+To read all entries in the hash table:
+1. Read the length bucket to find the number of chains `n`.
+2. Initialize a list of elements `entries = []`.
+3. For each chain, (buckets with offsets `3..n + 3`):
+    1. Read the pointer in the bucket as `volatileEntryPtr`.
+    2. If `volatileEntryPtr & 0x1 == 0x1`, this is an end sentinel and we stop reading this chain.
+    3. Otherwise, add `volatileEntryPtr + /* VolatileEntryValue offset */` to entries. This points to the derived class defined data type.
+    4. Set `volatileEntryPtr` to the value of the pointer located at `volatileEntryPtr + /* VolatileEntryNextEntry offset */` and go to step 3.2.
+4. Return `entries` to be further parsed by derived classes.
+
+While both EETypeHashTable and InstMethodHashTable store pointer sized data types, they both use the LSBs as special flags.
+
+#### EETypeHashTable
+EETypeHashTable uses the LSB to indicate if the TypeHandle is a hot entry. The cDAC implementation separates each value `value` in the table into two parts. The actual TypeHandle pointer and the associated flags.
+
+```csharp
+class EETypeHashTable
+{
+    private const ulong FLAG_MASK = 0x1ul;
+
+    public IReadOnlyList<Entry> Entires { get; }
+
+    public readonly struct Entry(TargetPointer value)
+    {
+        public TargetPointer TypeHandle { get; } = value & ~FLAG_MASK;
+        public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
+}
+```
+
+#### InstMethodHashTable
+InstMethodHashTable uses the 2 LSBs as flags for the MethodDesc. The cDAC implementation separates each value `value` in the table into two parts. The actual MethodDesc pointer and the associated flags.
+
+```csharp
+class InstMethodHashTable
+{
+    private const ulong FLAG_MASK = 0x3ul;
+
+    public IReadOnlyList<Entry> Entires { get; }
+
+    public readonly struct Entry(TargetPointer value)
+    {
+        public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
+        public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
+}
 ```

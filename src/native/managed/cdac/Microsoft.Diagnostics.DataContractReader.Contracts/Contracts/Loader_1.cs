@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -211,6 +212,29 @@ internal readonly struct Loader_1 : ILoader
         size = growableSymbolStream.Size;
 
         return true;
+    }
+
+    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.AvailableTypeParams == TargetPointer.Null)
+            return [];
+
+        EETypeHashTable typeHashTable = _target.ProcessedData.GetOrAdd<EETypeHashTable>(module.AvailableTypeParams);
+        return typeHashTable.Entries.Select(entry => entry.TypeHandle);
+    }
+
+    IEnumerable<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.InstMethodHashTable == TargetPointer.Null)
+            return [];
+
+        InstMethodHashTable methodHashTable = _target.ProcessedData.GetOrAdd<InstMethodHashTable>(module.InstMethodHashTable);
+
+        return methodHashTable.Entries.Select(entry => entry.MethodDesc);
     }
 
     bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)

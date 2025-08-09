@@ -24,7 +24,8 @@ internal sealed class CachingContractRegistry : ContractRegistry
     {
         _target = target;
         _tryGetContractVersion = tryGetContractVersion;
-        _factories = new() {
+        _factories = new()
+        {
             [typeof(IException)] = new ExceptionFactory(),
             [typeof(ILoader)] = new LoaderFactory(),
             [typeof(IEcmaMetadata)] = new EcmaMetadataFactory(),
