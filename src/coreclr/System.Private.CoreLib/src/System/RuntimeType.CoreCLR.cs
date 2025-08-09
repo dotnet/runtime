@@ -1520,7 +1520,7 @@ namespace System
 
                 // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
                 // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
-                if (!runtimeType.IsPointer && rootElementType.IsFunctionPointer)
+                if (rootElementType.IsFunctionPointer)
                     return false;
 
                 return true;

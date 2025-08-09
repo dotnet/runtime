@@ -1321,8 +1321,8 @@ namespace System.Reflection.Tests
         public static void FullName_FunctionPointers_ReturnsExpected()
         {
             Assert.Null(typeof(delegate*<void>).FullName);
-            Assert.Equal("System.Void()*", typeof(delegate*<void>*).FullName);
-            Assert.Equal("System.Void()**", typeof(delegate*<void>**).FullName);
+            Assert.Null(typeof(delegate*<void>*).FullName);
+            Assert.Null(typeof(delegate*<void>**).FullName);
         }
 
         [Fact]
