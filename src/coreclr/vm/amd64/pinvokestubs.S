@@ -109,11 +109,10 @@ NESTED_ENTRY VarargPInvokeGenILStub, _TEXT, NoHandler
         mov             r13, PINVOKE_CALLI_SIGTOKEN_REGISTER
 
         //
-        // VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
+        // VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie* pVASigCookie)
         //
         lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
         mov             rsi, PINVOKE_CALLI_SIGTOKEN_REGISTER    // pVASigCookie
-        mov             rdx, METHODDESC_REGISTER                // pMD
         call            C_FUNC(VarargPInvokeStubWorker)
 
         //
