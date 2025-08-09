@@ -1432,8 +1432,10 @@ namespace System
             #endregion
 
             #region Private Members
-            private string ConstructName([NotNull] ref string? name, TypeNameFormatFlags formatFlags) =>
-                name ??= new RuntimeTypeHandle(m_runtimeType).ConstructName(formatFlags);
+            // This is the slow path for construction. Mark it to avoid inlining it into the caller.
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private string ConstructName(ref string? name, TypeNameFormatFlags formatFlags) =>
+                name = new RuntimeTypeHandle(m_runtimeType).ConstructName(formatFlags);
 
             private T[] GetMemberList<T>(ref MemberInfoCache<T>? m_cache, MemberListType listType, string? name, CacheType cacheType)
                 where T : MemberInfo
