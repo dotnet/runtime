@@ -219,5 +219,22 @@ namespace System.IO.Compression
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
         }
+
+        [Fact]
+        public void EmptyDeflateStream_WritesOutput()
+        {
+            // Test that empty DeflateStream now writes output - the universal fix
+            // This ensures empty deflate streams are properly finalized
+            using (var ms = new MemoryStream())
+            {
+                using (var deflateStream = new DeflateStream(ms, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write nothing
+                }
+
+                // DeflateStream should now write output even for empty streams
+                Assert.True(ms.Length > 0, "Empty DeflateStream should write finalization data");
+            }
+        }
     }
 }
