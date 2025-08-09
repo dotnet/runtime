@@ -4573,4 +4573,104 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(deserializedDesktopObject);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(value, deserializedDesktopObject);
     }
+
+    [Fact]
+    public static void DCS_SortedList_IntSimpleType()
+    {
+        var value = new System.Collections.Generic.SortedList<int, SerializationTypes.SimpleType>();
+        value.Add(1, new SerializationTypes.SimpleType { P1 = "Test1", P2 = 10 });
+        value.Add(2, new SerializationTypes.SimpleType { P1 = "Test2", P2 = 20 });
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize(value, 
+            @"<ArrayOfKeyValueOfintSimpleType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfintSimpleType><Key>1</Key><Value xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes""><a:P1>Test1</a:P1><a:P2>10</a:P2></Value></KeyValueOfintSimpleType><KeyValueOfintSimpleType><Key>2</Key><Value xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes""><a:P1>Test2</a:P1><a:P2>20</a:P2></Value></KeyValueOfintSimpleType></ArrayOfKeyValueOfintSimpleType>", 
+            skipStringCompare: true);
+        Assert.NotNull(deserializedValue);
+        Assert.Equal(value.Count, deserializedValue.Count);
+        Assert.Equal(value[1].P1, deserializedValue[1].P1);
+        Assert.Equal(value[1].P2, deserializedValue[1].P2);
+        Assert.Equal(value[2].P1, deserializedValue[2].P1);
+        Assert.Equal(value[2].P2, deserializedValue[2].P2);
+    }
+
+    [Fact]
+    public static void DCS_ObservableCollection_Int()
+    {
+        var value = new System.Collections.ObjectModel.ObservableCollection<int>();
+        value.Add(1);
+        value.Add(2);
+        value.Add(3);
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize(value, 
+            @"<ArrayOfint xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><int>1</int><int>2</int><int>3</int></ArrayOfint>", 
+            skipStringCompare: true);
+        Assert.NotNull(deserializedValue);
+        Assert.Equal(value.Count, deserializedValue.Count);
+        Assert.Equal(value[0], deserializedValue[0]);
+        Assert.Equal(value[1], deserializedValue[1]);
+        Assert.Equal(value[2], deserializedValue[2]);
+    }
+
+    [Fact]
+    public static void DCS_ReadOnlyDictionary_IntString()
+    {
+        var dict = new Dictionary<int, string>();
+        dict[1] = "One";
+        dict[2] = "Two";
+        var value = new System.Collections.ObjectModel.ReadOnlyDictionary<int, string>(dict);
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize(value, 
+            @"<ReadOnlyDictionaryOfintstring xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><m_dictionary xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfintstring><a:Key>1</a:Key><a:Value>One</a:Value></a:KeyValueOfintstring><a:KeyValueOfintstring><a:Key>2</a:Key><a:Value>Two</a:Value></a:KeyValueOfintstring></m_dictionary></ReadOnlyDictionary>", 
+            skipStringCompare: true);
+        Assert.NotNull(deserializedValue);
+        Assert.Equal(value.Count, deserializedValue.Count);
+        Assert.Equal(value[1], deserializedValue[1]);
+        Assert.Equal(value[2], deserializedValue[2]);
+    }
+
+    [Fact]
+    public static void DCS_ReadOnlyObservableCollection_Int()
+    {
+        var sourceCollection = new System.Collections.ObjectModel.ObservableCollection<int>();
+        sourceCollection.Add(1);
+        sourceCollection.Add(2);
+        sourceCollection.Add(3);
+        var value = new System.Collections.ObjectModel.ReadOnlyObservableCollection<int>(sourceCollection);
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize(value, 
+            @"<ReadOnlyObservableCollectionOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.ObjectModel"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><list xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>1</a:int><a:int>2</a:int><a:int>3</a:int></list></ReadOnlyObservableCollectionOfint>", 
+            skipStringCompare: true);
+        Assert.NotNull(deserializedValue);
+        Assert.Equal(value.Count, deserializedValue.Count);
+        Assert.Equal(value[0], deserializedValue[0]);
+        Assert.Equal(value[1], deserializedValue[1]);
+        Assert.Equal(value[2], deserializedValue[2]);
+    }
+
+    [Fact]
+    public static void DCS_ListDictionary()
+    {
+        var value = new System.Collections.Specialized.ListDictionary();
+        value.Add("Key1", "Value1");
+        value.Add("Key2", "Value2");
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize(value, 
+            @"<ArrayOfKeyValueOfanyTypeanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><KeyValueOfanyTypeanyType><Key i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">Key1</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">Value1</Value></KeyValueOfanyTypeanyType><KeyValueOfanyTypeanyType><Key i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">Key2</Key><Value i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">Value2</Value></KeyValueOfanyTypeanyType></ArrayOfKeyValueOfanyTypeanyType>", 
+            skipStringCompare: true);
+        Assert.NotNull(deserializedValue);
+        Assert.Equal(value.Count, deserializedValue.Count);
+        Assert.Equal(value["Key1"], deserializedValue["Key1"]);
+        Assert.Equal(value["Key2"], deserializedValue["Key2"]);
+    }
+
+    [Fact]
+    public static void DCS_StringCollection()
+    {
+        var value = new System.Collections.Specialized.StringCollection();
+        value.Add("First");
+        value.Add("Second");
+        value.Add("Third");
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize(value, 
+            @"<ArrayOfstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><string>First</string><string>Second</string><string>Third</string></ArrayOfstring>", 
+            skipStringCompare: true);
+        Assert.NotNull(deserializedValue);
+        Assert.Equal(value.Count, deserializedValue.Count);
+        Assert.Equal(value[0], deserializedValue[0]);
+        Assert.Equal(value[1], deserializedValue[1]);
+        Assert.Equal(value[2], deserializedValue[2]);
+    }
 }
