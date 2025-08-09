@@ -82,6 +82,7 @@
     <Compile Include="System\Linq\Union.SpeedOpt.cs" />
     <Compile Include="System\Linq\Utilities.cs" />
     <Compile Include="System\Linq\Where.cs" />
+    <Compile Include="System\Linq\Where.SizeOpt.cs" />
     <Compile Include="System\Linq\Where.SpeedOpt.cs" />
     <Compile Include="System\Linq\Zip.cs" />
   </ItemGroup>
