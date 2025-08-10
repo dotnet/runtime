@@ -1714,8 +1714,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
             <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/**">
-          <Issue>NYI on Mono</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/UnhandledExceptionHandler/NoEffectInMainThread/*">
+          <Issue>Test issue. The test relies on overriding the process return code.</Issue>
         </ExcludeList>
     </ItemGroup>
 
