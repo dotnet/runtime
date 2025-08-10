@@ -276,6 +276,8 @@
 			<!-- class.c: initialize_object_slots -->
 			<method name="Finalize" />
 			<method name="GetHashCode" />
+			<!-- gc.c: mono_gc_run_finalize -->
+			<method name="GuardedFinalize" />
 		</type>
 
 		<!-- appdomain.c (create_domain_objects) domain->out_of_memory_ex -->

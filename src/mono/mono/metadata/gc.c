@@ -291,9 +291,10 @@ mono_gc_run_finalize (void *obj, void *data)
 
 #ifndef HOST_WASM
 	if (!finalize_runtime_invoke) {
-		MonoMethod *finalize_method = mono_class_get_method_from_name_checked (mono_defaults.object_class, "Finalize", 0, 0, error);
+		MonoMethod *finalize_method = mono_class_get_method_from_name_checked (mono_defaults.object_class, "GuardedFinalize", 0, 0, error);
+
 		mono_error_assert_ok (error);
-		MonoMethod *invoke = mono_marshal_get_runtime_invoke (finalize_method, TRUE);
+		MonoMethod *invoke = mono_marshal_get_runtime_invoke_full (finalize_method, FALSE, TRUE);
 
 		finalize_runtime_invoke = (RuntimeInvokeFunction)mono_compile_method_checked (invoke, error);
 		mono_error_assert_ok (error); /* expect this not to fail */
@@ -316,7 +317,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
 #ifdef HOST_WASM
-	MonoMethod* finalizer = mono_class_get_finalizer (o->vtable->klass);
+	MonoMethod* finalizer = mono_class_get_method_from_name_checked (mono_defaults.object_class, "GuardedFinalize", 0, 0, error);
 	if (finalizer) { // null finalizers work fine when using the vcall invoke as Object has an empty one
 		gpointer params [1];
 		params [0] = NULL;
