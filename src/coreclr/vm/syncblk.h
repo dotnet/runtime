@@ -442,7 +442,9 @@ class SyncBlock
 
   public:
     SyncBlock(DWORD indx)
-        : m_dwSyncIndex(indx)
+        : m_Lock(NULL)
+        , m_thinLock(0)
+        , m_dwSyncIndex(indx)
 #ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
 #endif // FEATURE_METADATA_UPDATER
