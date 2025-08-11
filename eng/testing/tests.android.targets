@@ -21,7 +21,7 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(TestNativeAOT)' == 'true'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <_UseLibPrefix>true</_UseLibPrefix>
+    <_UseNativeLibPrefix>true</_UseNativeLibPrefix>
     <MainLibraryFileName>lib$(TargetName).so</MainLibraryFileName>
   </PropertyGroup>
 
