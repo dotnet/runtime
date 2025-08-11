@@ -1404,6 +1404,8 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     STANDARD_VM_CONTRACT;
 
     BYTE callingConvention = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    if (msig.HasAsyncContinuation())
+        callingConvention = IMAGE_CEE_CS_CALLCONV_ASYNC;
     if (msig.HasThis())
         callingConvention |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     // CallingConvention
@@ -1411,6 +1413,8 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
 
     unsigned numArgs = msig.NumFixedArgs();
     if (msig.HasGenericContextArg())
+        numArgs++;
+    if (msig.HasAsyncContinuation())
         numArgs++;
     // ParamCount
     stubSigBuilder->AppendData(numArgs); // +1 is for context param
@@ -1425,6 +1429,11 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
         // The hidden context parameter
         stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
     }
+
+    if (msig.HasAsyncContinuation())
+    {
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
+    }
 #endif // !TARGET_X86
 
     // Copy rest of the arguments
@@ -1436,6 +1445,11 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     }
 
 #ifdef TARGET_X86
+    if (msig.HasAsyncContinuation())
+    {
+        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
+    }
+
     if (msig.HasGenericContextArg())
     {
         // The hidden context parameter
@@ -1484,11 +1498,16 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
 
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
     // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
+    }
+
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
     }
 #endif
 
@@ -1500,7 +1519,12 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitSUB();
     pCode->EmitLDIND_I();
 
-#if !defined(TARGET_X86)
+#ifndef TARGET_X86
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+    }
+
     // Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
@@ -1512,8 +1536,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
     // Do the calli
-    int token = pTargetMD->IsAsyncMethod() ? TOKEN_ILSTUB_TARGET_SIG_ASYNC : TOKEN_ILSTUB_TARGET_SIG;
-    pCode->EmitCALLI(token, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;
@@ -1591,32 +1614,43 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
         pCode->EmitLoadThis();
     }
 
-#if defined(TARGET_X86)
+#ifdef TARGET_X86
     // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-#endif // TARGET_X86
+
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+    }
 
     // Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
+#else
+    // Push the hidden context param
+    // InstantiatingStub
+    pCode->EmitLDC((TADDR)pHiddenArg);
 
-#if !defined(TARGET_X86)
-    // Push the rest of the arguments for not x86
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+    }
+
+    // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-#endif // !TARGET_X86
+#endif
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
     // Do the calli
-    int token = pTargetMD->IsAsyncMethod() ? TOKEN_ILSTUB_TARGET_SIG_ASYNC : TOKEN_ILSTUB_TARGET_SIG;
-    pCode->EmitCALLI(token, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;

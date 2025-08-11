@@ -240,7 +240,7 @@ ILStubResolver::ResolveSignature(
 {
     STANDARD_VM_CONTRACT;
 
-    if (token == TOKEN_ILSTUB_TARGET_SIG || token == TOKEN_ILSTUB_TARGET_SIG_ASYNC)
+    if (token == TOKEN_ILSTUB_TARGET_SIG)
         return m_pCompileTimeState->m_StubTargetMethodSig;
 
     return m_pCompileTimeState->m_tokenLookupMap.LookupSig(token);
