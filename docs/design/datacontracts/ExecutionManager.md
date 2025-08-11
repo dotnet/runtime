@@ -317,9 +317,7 @@ code allocated in that address range), level 4 entires point to level 3 maps and
 
 ### Native Format
 
-The ReadyToRun image stores data in a compressed native foramt defined in [nativeformatreader.h](../../../src/coreclr/vm/nativeformatreader.h). 
-
-The ReadyToRunJitManager interacts with this format through t
+The ReadyToRun image stores data in a compressed native foramt defined in [nativeformatreader.h](../../../src/coreclr/vm/nativeformatreader.h).
 
 ### NibbleMap
 
