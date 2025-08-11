@@ -133,6 +133,17 @@ export function add_offset (
         return (ptr as number) + offset;
     }
 }
+export function normalizePointer (inPtr: bigint | number): any {
+    const ptr = typeof inPtr === "bigint" ? Number(inPtr) : inPtr;
+    if (!Number.isSafeInteger(ptr)) {
+        if (typeof inPtr === "bigint") {
+            throw new Error("pointer value is out of safe integer range. Converted from bigint.");
+        } else {
+            throw new Error("pointer value is out of safe integer range.");
+        }
+    }
+    return ptr;
+}
 export function get_sig (signature: JSFunctionSignature, index: number): JSMarshalerType {
     mono_assert(signature, "Null signatures");
     return add_offset(signature, (index * JSMarshalerTypeSize) + JSMarshalerSignatureHeaderSize) as any;
