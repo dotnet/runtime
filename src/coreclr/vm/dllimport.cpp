@@ -48,6 +48,7 @@
 #endif // FEATURE_COMINTEROP
 
 #include "eventtrace.h"
+#include "interpexec.h"
 
 namespace
 {
@@ -5643,6 +5644,15 @@ PCODE JitILStub(MethodDesc* pStubMD)
             //
 
             pCode = pStubMD->PrepareInitialCode();
+#ifdef FEATURE_INTERPRETER
+            // Interpreter-TODO: Figure out how to create the call stub for the IL stub only when it is
+            // needed, like we do for the regular methods.
+            InterpByteCodeStart *pInterpreterCode = pStubMD->GetInterpreterCode();
+            if (pInterpreterCode != NULL)
+            {
+                CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
+            }
+#endif // FEATURE_INTERPRETER
 
             _ASSERTE(pCode == pStubMD->GetNativeCode());
         }
