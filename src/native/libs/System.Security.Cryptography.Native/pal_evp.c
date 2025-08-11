@@ -10,31 +10,37 @@
 
 #define SUCCESS 1
 
-static const EVP_MD* g_evpFetchMd5 = NULL;
-static pthread_once_t g_evpFetch = PTHREAD_ONCE_INIT;
-
-static void EnsureFetchEvpMdAlgorithms(void)
-{
-    // This is called from a pthread_once - this method should not be called directly.
-
 #ifdef NEED_OPENSSL_3_0
-    if (API_EXISTS(EVP_MD_fetch))
-    {
-        ERR_clear_error();
-
-        // Try to fetch an MD5 implementation that will work regardless if
-        // FIPS is enforced or not.
-        g_evpFetchMd5 = EVP_MD_fetch(NULL, "MD5", "-fips");
+#define SETUP_MD_FETCH(export, fn, name, query) \
+    static const EVP_MD* g_evpFetch##name = NULL; \
+    static pthread_once_t g_evpFetchInit##name = PTHREAD_ONCE_INIT; \
+    static void EnsureFetchEvpMd##name(void) \
+    { \
+        if (API_EXISTS(EVP_MD_fetch)) \
+        { \
+            ERR_clear_error(); \
+            g_evpFetch##name = EVP_MD_fetch(NULL, #name, query); \
+        } \
+\
+        if (g_evpFetch##name == NULL) \
+        { \
+            g_evpFetch##name = fn(); \
+        } \
+    } \
+    \
+    const EVP_MD* export(void) \
+    { \
+        pthread_once(&g_evpFetchInit##name, EnsureFetchEvpMd##name); \
+        return g_evpFetch##name; \
+    }
+#else
+#define SETUP_MD_FETCH(export, fn, name) \
+    const EVP_MD* export(void)
+    { \
+        return fn(); \
     }
 #endif
 
-    // No error queue impact.
-    // If EVP_MD_fetch is unavailable, use the implicit loader. If it failed, use the implicit loader as a last resort.
-    if (g_evpFetchMd5 == NULL)
-    {
-        g_evpFetchMd5 = EVP_md5();
-    }
-}
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
@@ -291,35 +297,13 @@ int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
     return EVP_MD_get_size(md);
 }
 
-const EVP_MD* CryptoNative_EvpMd5(void)
-{
-    pthread_once(&g_evpFetch, EnsureFetchEvpMdAlgorithms);
-    return g_evpFetchMd5;
-}
-
-const EVP_MD* CryptoNative_EvpSha1(void)
-{
-    // No error queue impact.
-    return EVP_sha1();
-}
-
-const EVP_MD* CryptoNative_EvpSha256(void)
-{
-    // No error queue impact.
-    return EVP_sha256();
-}
-
-const EVP_MD* CryptoNative_EvpSha384(void)
-{
-    // No error queue impact.
-    return EVP_sha384();
-}
-
-const EVP_MD* CryptoNative_EvpSha512(void)
-{
-    // No error queue impact.
-    return EVP_sha512();
-}
+// MD5 should use a non-FIPS implementation if it is available. We should not fail
+// to fetch MD5 even on a FIPS enforced system.
+SETUP_MD_FETCH(CryptoNative_EvpMd5, EVP_md5, MD5, "-fips")
+SETUP_MD_FETCH(CryptoNative_EvpSha1, EVP_sha1, SHA1, NULL)
+SETUP_MD_FETCH(CryptoNative_EvpSha256, EVP_sha256, SHA256, NULL)
+SETUP_MD_FETCH(CryptoNative_EvpSha384, EVP_sha384, SHA384, NULL)
+SETUP_MD_FETCH(CryptoNative_EvpSha512, EVP_sha512, SHA512, NULL)
 
 const EVP_MD* CryptoNative_EvpSha3_256(void)
 {
