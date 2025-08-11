@@ -2270,7 +2270,7 @@ namespace System
 
         public override string ToString()
         {
-            return getFullName(false, false);
+            return getFullName(false, false)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -2296,8 +2296,16 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetGenericArgumentsInternal(QCallTypeHandle type, ObjectHandleOnStack res, bool runtimeArray);
 
-        internal string getFullName(bool full_name, bool assembly_qualified)
+        internal string? getFullName(bool full_name, bool assembly_qualified)
         {
+            // If full name or assembly qualified name is requested,
+            // ensure that the type is compatible with full name round-tripping.
+            if ((full_name || assembly_qualified)
+                && !IsFullNameRoundtripCompatible(this))
+            {
+                return null;
+            }
+
             var this_type = this;
             string? res = null;
             getFullName(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res), full_name, assembly_qualified);
@@ -2428,10 +2436,13 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetNamespace(QCallTypeHandle type, ObjectHandleOnStack res);
 
-        public override string Namespace
+        public override string? Namespace
         {
             get
             {
+                if (!IsFullNameRoundtripCompatible(this))
+                    return null;
+
                 var this_type = this;
                 string? res = null;
                 GetNamespace(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
