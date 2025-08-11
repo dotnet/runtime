@@ -3825,29 +3825,52 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
 {
     STANDARD_VM_CONTRACT;
 
-    Module *pModuleOfTypeDef;
-    mdTypeDef tkTypeDef;
+    MethodTable *pMTFound = NULL;
 
-    ClassLoader::ResolveTokenToTypeDefThrowing(module, typeDefOrRef, &pModuleOfTypeDef, &tkTypeDef);
-
-    MethodTable *pMT = pModuleOfTypeDef->LookupTypeDef(tkTypeDef).AsMethodTable();
-    if (pMT != NULL)
+    if (TypeFromToken(typeDefOrRef) == mdtTypeDef)
     {
-        if (pMT->IsByRefLike())
+        pMTFound = module->LookupTypeDef(typeDefOrRef).AsMethodTable();
+    }
+    else if (TypeFromToken(typeDefOrRef) == mdtTypeRef)
+    {
+        pMTFound = module->LookupTypeRef(typeDefOrRef).AsMethodTable();
+    }
+
+    if ((pMTFound == NULL) && (typeDefOrRef != GetCl()))
+    {
+        EX_TRY
+        {
+            pMTFound = ClassLoader::LoadTypeDefOrRefThrowing(module, typeDefOrRef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_APPROXPARENTS).AsMethodTable();
+        }
+        EX_CATCH
+        {
+            // If this failed, we can fall back to directly working with the type definition, so catch all the exceptions
+        }
+        EX_END_CATCH
+    }
+
+    if (pMTFound != NULL)
+    {
+        if (pMTFound->IsByRefLike())
         {
             BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_STATICFIELD);
         }
 
-        if (pMT->IsEnum())
+        if (pMTFound->IsEnum())
         {
-            return pMT->GetApproxFieldDescListRaw()[0].GetFieldType();
+            return pMTFound->GetApproxFieldDescListRaw()[0].GetFieldType();
         }
         else
         {
-            _ASSERTE(pMT->IsValueType());
+            _ASSERTE(pMTFound->IsValueType());
             return ELEMENT_TYPE_VALUETYPE;
         }
     }
+
+    Module *pModuleOfTypeDef;
+    mdTypeDef tkTypeDef;
+
+    ClassLoader::ResolveTokenToTypeDefThrowing(module, typeDefOrRef, &pModuleOfTypeDef, &tkTypeDef);
 
     // First check to see if the type is byref-like
     if (pModuleOfTypeDef->GetCustomAttribute(tkTypeDef,
