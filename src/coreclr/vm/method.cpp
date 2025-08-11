@@ -1188,20 +1188,15 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     }
     CONTRACTL_END
 
-    RVA rva = GetRVA();
-    if (rva == 0)
-    {
-        return NULL;
-    }
-
     Module *pModule = GetModule();
 
-    // Always pickup overrides like reflection emit, EnC, etc.
+    // Always pickup overrides like reflection emit, EnC, etc. irrespective of RVA.
+    // Profilers can attach dynamic IL to methods with zero RVA.
     TADDR pIL = pModule->GetDynamicIL(GetMemberDef());
 
     if (pIL == (TADDR)NULL)
     {
-        pIL = pModule->GetIL(rva);
+        pIL = pModule->GetIL(GetRVA());
     }
 
 #ifdef _DEBUG_IMPL

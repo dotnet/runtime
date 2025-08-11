@@ -22,7 +22,6 @@ elseif(CMAKE_CROSSCOMPILING)
     set(ARCH ${CMAKE_C_COMPILER_TARGET})
 else()
     # Let preprocessor parse archdetect.c and raise an error containing the arch identifier
-    enable_language(C)
     try_run(
         run_result_unused
         compile_result_unused

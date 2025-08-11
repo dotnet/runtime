@@ -28,9 +28,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_NativeIntermediateAssembly Include="@(IntermediateAssembly->'$(NativeOutputPath)%(Filename)$(NativeBinaryExt)')" />
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
-      <IntermediateAssembly Include="@(_NativeIntermediateAssembly)" />
+      <IntermediateAssembly Include="$(NativeBinary)" />
     </ItemGroup>
   </Target>
 

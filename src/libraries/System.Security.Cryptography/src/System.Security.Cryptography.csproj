@@ -382,6 +382,8 @@
              Link="Common\System\Security\Cryptography\CompositeMLDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaAlgorithm.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
@@ -571,6 +573,7 @@
     <Compile Include="System\Security\Cryptography\DSASignatureFormat.cs" />
     <Compile Include="System\Security\Cryptography\DSASignatureFormatter.cs" />
     <Compile Include="System\Security\Cryptography\ECAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\EccKeyFormatHelper.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.ECCurveType.cs" />
     <Compile Include="System\Security\Cryptography\ECCurve.NamedCurves.cs" />
@@ -1034,6 +1037,8 @@
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAOpenSsl.cs"
@@ -1862,10 +1867,14 @@
              Link="Common\System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
@@ -1876,6 +1885,8 @@
              Link="Common\System\Security\Cryptography\DSACng.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSACng.SignVerify.cs"
              Link="Common\System\Security\Cryptography\DSACng.SignVerify.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs"
+             Link="Common\System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.HashAlgorithm.cs"
              Link="Common\System\Security\Cryptography\ECCng.HashAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.cs"
