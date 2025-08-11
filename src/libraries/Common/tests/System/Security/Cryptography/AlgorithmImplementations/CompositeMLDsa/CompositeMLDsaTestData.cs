@@ -43,8 +43,6 @@ namespace System.Security.Cryptography.Tests
         internal static CompositeMLDsaTestVector[] SupportedAlgorithmIetfVectors =>
             field ??= AllIetfVectors.Where(v => CompositeMLDsa.IsAlgorithmSupported(v.Algorithm)).ToArray();
 
-        public static bool AreAlgorithmIetfVectorsSupported => SupportedAlgorithmIetfVectors.Any();
-
         public static IEnumerable<object[]> SupportedAlgorithmIetfVectorsTestData =>
                 SupportedAlgorithmIetfVectors.Select(v => new object[] { v });
 
