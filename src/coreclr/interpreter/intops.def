@@ -53,7 +53,8 @@ OPDEF(INTOP_STELEM_VT, "stelem.vt", 6, 0, 3, InterpOpTwoInts)
 OPDEF(INTOP_STELEM_VT_NOREF, "stelem.vt.noref", 5, 0, 3, InterpOpInt)
 
 OPDEF(INTOP_LDELEMA, "ldelema", 5, 1, 2, InterpOpInt)
-OPDEF(INTOP_LDELEMA_REF, "ldelema.ref", 6, 1, 2, InterpOpTwoInts)
+OPDEF(INTOP_LDELEMA_REF, "ldelema.ref", 5, 1, 2, InterpOpClassHandle)
+OPDEF(INTOP_LDELEMA_REF_GENERIC, "ldelema.ref.generic", 6, 1, 3, InterpOpGenericLookup)
 
 OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
@@ -356,6 +357,7 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLDELEGATE, "call.delegate", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLI, "calli", 5, 1, 2, InterpOpLdPtr)
 OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_PINVOKE, "call.pinvoke", 6, 1, 1, InterpOpMethodHandle) // inlined (no marshaling wrapper) pinvokes only
