@@ -33,7 +33,7 @@ CDAC_GLOBALS_BEGIN()
 CDAC_GLOBAL_STRING(GCIdentifiers, GC_IDENTIFIER(GC_TYPE, HEAP_TYPE))
 
 CDAC_GLOBAL_POINTER(MaxGeneration, &::g_max_generation)
-CDAC_GLOBAL_POINTER(StructureInvalidCount, (&GCScan::m_GcStructuresInvalidCnt))
+CDAC_GLOBAL_POINTER(StructureInvalidCount, ADDRESS_OF_VOLATILE(GCScan::m_GcStructuresInvalidCnt))
 
 #ifdef SERVER_GC
 CDAC_GLOBAL_POINTER(NumHeaps, &GC_NAMESPACE::gc_heap::n_heaps)

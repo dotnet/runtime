@@ -429,7 +429,7 @@ public:
     // Gets the raw value of the variable.  This is dangerous, as it permits the variable to be
     // accessed without using Load and Store
     //
-    inline T& RawValue() { return m_val; }
+    inline constexpr T& RawValue() { return m_val; }
 
     //
     // Allow casts from Volatile<T> to T.  Note that this allows implicit casts, so you can
@@ -596,6 +596,7 @@ public:
 #define VOLATILE(T) T RAW_KEYWORD(volatile)
 #else
 #define VOLATILE(T) Volatile<T>
+#define USING_VOLATILE_CLASS
 #endif
 
 #endif // DACCESS_COMPILE
