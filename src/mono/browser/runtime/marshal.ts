@@ -133,7 +133,7 @@ export function add_offset (
         return (ptr as number) + offset;
     }
 }
-export function normalizePointer (inPtr: bigint | number): any {
+export function normalizePointer (inPtr: bigint | number | VoidPtr): any {
     const ptr = typeof inPtr === "bigint" ? Number(inPtr) : inPtr;
     if (!Number.isSafeInteger(ptr)) {
         if (typeof inPtr === "bigint") {
@@ -535,9 +535,10 @@ abstract class MemoryView implements IMemoryView {
     _unsafe_create_view (): TypedArray {
         // this view must be short lived so that it doesn't fail after wasm memory growth
         // for that reason we also don't give the view out to end user and provide set/slice/copyTo API instead
-        const view = this._viewType == MemoryViewType.Byte ? new Uint8Array(localHeapViewU8().buffer, <any>this._pointer, this._length)
-            : this._viewType == MemoryViewType.Int32 ? new Int32Array(localHeapViewI32().buffer, <any>this._pointer, this._length)
-                : this._viewType == MemoryViewType.Double ? new Float64Array(localHeapViewF64().buffer, <any>this._pointer, this._length)
+
+        const view = this._viewType == MemoryViewType.Byte ? new Uint8Array(localHeapViewU8().buffer, <any>normalizePointer(this._pointer), this._length)
+            : this._viewType == MemoryViewType.Int32 ? new Int32Array(localHeapViewI32().buffer, <any>normalizePointer(this._pointer), this._length)
+                : this._viewType == MemoryViewType.Double ? new Float64Array(localHeapViewF64().buffer, <any>normalizePointer(this._pointer), this._length)
                     : null;
         if (!view) throw new Error("NotImplementedException");
         return view;

@@ -781,13 +781,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalNullableIntPtrCases))]
         public void JsImportNullableIntPtr(IntPtr? value)
         {
+            string expectedType = IntPtr.Size == 4 ? "number" : "bigint";
             JsImportTest(value,
                 JavaScriptTestHelper.store1_NullableIntPtr,
                 JavaScriptTestHelper.retrieve1_NullableIntPtr,
                 JavaScriptTestHelper.echo1_NullableIntPtr,
                 JavaScriptTestHelper.throw1_NullableIntPtr,
                 JavaScriptTestHelper.identity1_NullableIntPtr,
-                "number");
+               expectedType);
         }
 
         #endregion NullableIntPtr
