@@ -144,12 +144,12 @@ namespace LibraryImportGenerator.UnitTests
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(source,
-                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.TypeNotSupportedWithMarshallingInfoParameter)
                     .WithLocation(0)
-                    .WithArguments(nameof(MarshalAsAttribute), "i1"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported)
+                    .WithArguments("int", "i1"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.TypeNotSupportedWithMarshallingInfoParameter)
                     .WithLocation(1)
-                    .WithArguments(nameof(MarshalAsAttribute), "b2"));
+                    .WithArguments("bool", "b2"));
         }
 
         [Fact]
@@ -171,12 +171,12 @@ namespace LibraryImportGenerator.UnitTests
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(source,
-                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.TypeNotSupportedWithMarshallingInfoReturn)
                     .WithLocation(0)
-                    .WithArguments(nameof(MarshalAsAttribute), "Method1"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
+                    .WithArguments("int", "Method1"),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.TypeNotSupportedWithMarshallingInfoReturn)
                     .WithLocation(1)
-                    .WithArguments(nameof(MarshalAsAttribute), "Method2"));
+                    .WithArguments("bool", "Method2"));
         }
 
         [Fact]
@@ -200,15 +200,15 @@ namespace LibraryImportGenerator.UnitTests
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
                     .WithLocation(0)
                     .WithArguments(1, nameof(UnmanagedType)),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.TypeNotSupportedWithMarshallingInfoReturn)
                     .WithLocation(1)
-                    .WithArguments(nameof(MarshalAsAttribute), "Method1"),
+                    .WithArguments("int", "Method1"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ConfigurationValueNotSupported)
                     .WithLocation(2)
                     .WithArguments(0, nameof(UnmanagedType)),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsParameterConfigurationNotSupported)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.TypeNotSupportedWithMarshallingInfoParameter)
                     .WithLocation(3)
-                    .WithArguments(nameof(MarshalAsAttribute), "b"));
+                    .WithArguments("bool", "b"));
         }
 
         [Fact]
