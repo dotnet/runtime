@@ -187,7 +187,9 @@ namespace HostActivation.Tests
         }
 
         [Theory]
+        [InlineData("9")]
         [InlineData("9.0")]
+        [InlineData("9.0.x")]
         [InlineData("invalid")]
         public void Info_GlobalJson_InvalidData(string version)
         {
