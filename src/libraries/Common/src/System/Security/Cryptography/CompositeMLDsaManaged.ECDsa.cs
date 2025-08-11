@@ -223,7 +223,6 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
 
-
                     AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
                     try
