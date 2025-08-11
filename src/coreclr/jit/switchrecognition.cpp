@@ -66,6 +66,15 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+//------------------------------------------------------------------------------
+// SkipFallthroughBlocks : Skip all fallthrough blocks (empty BBJ_ALWAYS blocks)
+//
+// Arguments:
+//    block - the block to process
+//
+// Return Value:
+//    block that is not an empty fallthrough block
+//
 static BasicBlock* SkipFallthroughBlocks(BasicBlock* block)
 {
     // FALLTHROUGH
