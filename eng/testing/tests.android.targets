@@ -18,7 +18,6 @@
 
   <ItemGroup Condition="'$(TestNativeAOT)' == 'true'">
     <Compile Include="$(RepoTasksDir)AndroidAppBuilder\Templates\monodroid-nativeaot.cs" />
-    <DirectPInvoke Condition="" Include="@(NetCoreAppNativeLibrary)" />
   </ItemGroup>
   <PropertyGroup Condition="'$(TestNativeAOT)' == 'true'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

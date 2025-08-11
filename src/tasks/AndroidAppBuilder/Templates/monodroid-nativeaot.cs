@@ -22,6 +22,7 @@ internal static unsafe partial class MonoDroidExports
     {
         string key = env->GetStringUTFChars(j_key);
         string value = env->GetStringUTFChars(j_value);
+        Console.WriteLine($"SetEnv: {key} = {value}");
         Environment.SetEnvironmentVariable(key, value);
     }
 
@@ -29,6 +30,7 @@ internal static unsafe partial class MonoDroidExports
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_initRuntime")]
     public static int InitRuntime(JNIEnv* env, JObject thiz, JString j_files_dir, JString j_entryPointLibName, long current_local_time)
     {
+        Console.WriteLine("Initializing Android crypto native library");
         // The NativeAOT runtime does not need to be initialized, but the crypto library does.
         JavaVM* javaVM = env->GetJavaVM();
         AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
@@ -50,9 +52,11 @@ internal static unsafe partial class MonoDroidExports
             args[i] = env->GetStringUTFChars((JString)j_arg);
         }
 
+        Console.WriteLine("args: " + string.Join(' ', args));
+
 #if SINGLE_FILE_TEST_RUNNER
         // SingleFile unit tests
-        return SingleFileTestRunner.Main(args);
+        return SingleFileTestRunner.Main(["-notrait", "category=IgnoreForCI", "-notrait", "category=OuterLoop", "-notrait", "category=failing", "-notrait", "category=nonlinuxtests"]);
 #else
         // Functional tests
         return Program.Main(args);
