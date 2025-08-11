@@ -268,7 +268,7 @@ namespace ILCompiler.PEWriter
 
             Console.WriteLine($"R2RPEBuilder wrote {outputStream.Length} byte(s)");
             if (outputStream.Length != sizeOfImage)
-                throw new BadImageFormatException("R2R image was truncated during writing");
+                throw new BadImageFormatException($"R2R image was truncated during writing. Expected {sizeOfImage} bytes but wrote {outputStream.Length} bytes.");
         }
 
         /// <summary>
