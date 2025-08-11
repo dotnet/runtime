@@ -68,10 +68,6 @@ public abstract class ContractRegistry
     /// </summary>
     public abstract IRuntimeInfo RuntimeInfo { get; }
     /// <summary>
-    /// Gets an instance of the ECall contract for the target.
-    /// </summary>
-    public abstract IECall ECall { get; }
-    /// <summary>
     /// Gets an instance of the DebugInfo contract for the target.
     /// </summary>
     public abstract IDebugInfo DebugInfo { get; }
