@@ -11,7 +11,7 @@
 #define SUCCESS 1
 
 #ifdef NEED_OPENSSL_3_0
-#define SETUP_MD_FETCH(export, fn, name, query) \
+#define BUILD_MD_FETCH(export, fn, name, query) \
     static const EVP_MD* g_evpFetch##export = NULL; \
     static pthread_once_t g_evpFetchInit##export = PTHREAD_ONCE_INIT; \
     static void EnsureFetchEvpMd##export(void) \
@@ -33,15 +33,15 @@
         pthread_once(&g_evpFetchInit##export, EnsureFetchEvpMd##export); \
         return g_evpFetch##export; \
     }
-#define SETUP_MD_FETCH_LIGHTUP_SHA3(...) SETUP_MD_FETCH(__VA_ARGS__)
+#define BUILD_MD_FETCH_LIGHTUP_SHA3(...) BUILD_MD_FETCH(__VA_ARGS__)
 #else
-#define SETUP_MD_FETCH(export, fn, name, query) \
+#define BUILD_MD_FETCH(export, fn, name, query) \
     const EVP_MD* export(void) \
     { \
         return fn(); \
     }
 #if HAVE_OPENSSL_SHA3
-#define SETUP_MD_FETCH_LIGHTUP_SHA3(export, fn, name, query) \
+#define BUILD_MD_FETCH_LIGHTUP_SHA3(export, fn, name, query) \
     const EVP_MD* export(void) \
     { \
         if (API_EXISTS(fn)) \
@@ -317,16 +317,16 @@ int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 
 // MD5 should use a non-FIPS implementation if it is available. We should not fail
 // to fetch MD5 even on a FIPS enforced system.
-SETUP_MD_FETCH(CryptoNative_EvpMd5, EVP_md5, "MD5", "-fips")
-SETUP_MD_FETCH(CryptoNative_EvpSha1, EVP_sha1, "SHA1", NULL)
-SETUP_MD_FETCH(CryptoNative_EvpSha256, EVP_sha256, "SHA256", NULL)
-SETUP_MD_FETCH(CryptoNative_EvpSha384, EVP_sha384, "SHA384", NULL)
-SETUP_MD_FETCH(CryptoNative_EvpSha512, EVP_sha512, "SHA512", NULL)
-SETUP_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_256, EVP_sha3_256, "SHA3-256", NULL)
-SETUP_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_384, EVP_sha3_384, "SHA3-384", NULL)
-SETUP_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_512, EVP_sha3_512, "SHA3-512", NULL)
-SETUP_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpShake128, EVP_shake128, "SHAKE-128", NULL)
-SETUP_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpShake256, EVP_shake256, "SHAKE-256", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpMd5, EVP_md5, "MD5", "-fips")
+BUILD_MD_FETCH(CryptoNative_EvpSha1, EVP_sha1, "SHA1", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha256, EVP_sha256, "SHA256", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha384, EVP_sha384, "SHA384", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha512, EVP_sha512, "SHA512", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_256, EVP_sha3_256, "SHA3-256", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_384, EVP_sha3_384, "SHA3-384", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_512, EVP_sha3_512, "SHA3-512", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpShake128, EVP_shake128, "SHAKE-128", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpShake256, EVP_shake256, "SHAKE-256", NULL)
 
 int32_t CryptoNative_GetMaxMdSize(void)
 {
