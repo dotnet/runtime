@@ -2001,12 +2001,29 @@ static InterpThreadContext* GetInterpThreadContext()
     return threadContext;
 }
 
+EXTERN_C void STDCALL ReversePInvokeBadTransition();
+
 extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
 {
     // Argument registers are in the TransitionBlock
     // The stack arguments are right after the pTransitionBlock
     InterpThreadContext *threadContext = GetInterpThreadContext();
     int8_t *sp = threadContext->pStackPointer;
+
+    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+
+    if (pInterpreterCode->Method->unmanagedCallersOnly)
+    {
+        Thread* thread = GetThreadNULLOk();
+        if (thread == NULL)
+            CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
+
+        // Verify the current thread isn't in COOP mode.
+        if (thread->PreemptiveGCDisabled())
+            ReversePInvokeBadTransition();
+    }
+
+    GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
 
     // This construct ensures that the InterpreterFrame is always stored at a higher address than the
     // InterpMethodContextFrame. This is important for the stack walking code.

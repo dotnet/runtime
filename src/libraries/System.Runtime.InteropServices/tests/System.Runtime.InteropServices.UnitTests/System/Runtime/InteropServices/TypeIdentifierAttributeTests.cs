@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData(null, null)]
         [InlineData("scope", "identifier")]
-        public void Ctor_Scope_Identifier(string scope, string identifier)
+        public void Ctor_Scope_Identifier(string? scope, string? identifier)
         {
             var attribute = new TypeIdentifierAttribute(scope, identifier);
             Assert.Equal(scope, attribute.Scope);
