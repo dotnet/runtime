@@ -146,7 +146,6 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
 
 
-
 ### Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
@@ -510,6 +509,76 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
 }
 
+```
+
+### DacEnumerableHash (EETypeHashTable and InstMethodHashTable)
+
+Both `EETypeHashTable` and `InstMethodHashTable` are based on the templated `DacEnumerableHash`. Because the base class is templated on the derived type, offsets may be different in derived types.
+
+The base implementation of `DacEnumerableHash` uses four datadescriptors:
+| Datadescriptor | Purpose |
+| --- | --- |
+| `Buckets` | Pointer to the bucket array |
+| `Count` | Number of elements in the hash table |
+| `VolatileEntryValue` | The data held by an entry, defined by the derived class |
+| `VolatileEntryNextEntry` | The next pointer on an hash table entry |
+
+The hash table is laid out as an array of `VolatileEntry` pointers's (buckets), each possibly forming a chain for values that hash into that bucket. The first three buckets are special and reserved for metadata. Instead of containing a `VolatileEntry`, these pointers are read as values with the following meanings.
+
+| Reserved Bucket offset | Purpose |
+| --- | --- |
+| `0` | Length of the Bucket array, this value does not include the first 3 slots which are special |
+| `1` | Pointer to the next bucket array, not currently used in the cDAC |
+| `2` | End sentinel for the current bucket array, not currently used in the cDAC |
+
+The current cDAC implementation does not use the 'hash' part of the table at all. Instead it iterates all elements in the table. Following the existing iteration logic in the runtime (and DAC), resizing the table while iterating is not supported. Given this constraint, the pointer to the next bucket array (resized data table) and the current end sentinel are not required to iterate all entries.
+
+To read all entries in the hash table:
+1. Read the length bucket to find the number of chains `n`.
+2. Initialize a list of elements `entries = []`.
+3. For each chain, (buckets with offsets `3..n + 3`):
+    1. Read the pointer in the bucket as `volatileEntryPtr`.
+    2. If `volatileEntryPtr & 0x1 == 0x1`, this is an end sentinel and we stop reading this chain.
+    3. Otherwise, add `volatileEntryPtr + /* VolatileEntryValue offset */` to entries. This points to the derived class defined data type.
+    4. Set `volatileEntryPtr` to the value of the pointer located at `volatileEntryPtr + /* VolatileEntryNextEntry offset */` and go to step 3.2.
+4. Return `entries` to be further parsed by derived classes.
+
+While both EETypeHashTable and InstMethodHashTable store pointer sized data types, they both use the LSBs as special flags.
+
+#### EETypeHashTable
+EETypeHashTable uses the LSB to indicate if the TypeHandle is a hot entry. The cDAC implementation separates each value `value` in the table into two parts. The actual TypeHandle pointer and the associated flags.
+
+```csharp
+class EETypeHashTable
+{
+    private const ulong FLAG_MASK = 0x1ul;
+
+    public IReadOnlyList<Entry> Entires { get; }
+
+    public readonly struct Entry(TargetPointer value)
+    {
+        public TargetPointer TypeHandle { get; } = value & ~FLAG_MASK;
+        public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
+}
+```
+
+#### InstMethodHashTable
+InstMethodHashTable uses the 2 LSBs as flags for the MethodDesc. The cDAC implementation separates each value `value` in the table into two parts. The actual MethodDesc pointer and the associated flags.
+
+```csharp
+class InstMethodHashTable
+{
+    private const ulong FLAG_MASK = 0x3ul;
+
+    public IReadOnlyList<Entry> Entires { get; }
+
+    public readonly struct Entry(TargetPointer value)
+    {
+        public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
+        public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
+}
 ```
 
 ### DacEnumerableHash (EETypeHashTable and InstMethodHashTable)
