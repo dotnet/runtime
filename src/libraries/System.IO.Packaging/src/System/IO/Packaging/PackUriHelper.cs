@@ -654,6 +654,7 @@ namespace System.IO.Packaging
             #endregion IEquatable Methods
 
             #region Overrides
+
             public override bool Equals(object? obj)
             {
                 if (obj is ValidatedPartUri other)
@@ -666,7 +667,7 @@ namespace System.IO.Packaging
                 return StringComparer.OrdinalIgnoreCase.GetHashCode(NormalizedPartUriString);
             }
 
-            #endregion Object Overrides
+            #endregion Overrides
 
             #region Internal Properties
 
