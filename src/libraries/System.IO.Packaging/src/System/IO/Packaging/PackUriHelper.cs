@@ -653,6 +653,21 @@ namespace System.IO.Packaging
 
             #endregion IEquatable Methods
 
+            #region Overrides
+            public override bool Equals(object? obj)
+            {
+                if (obj is ValidatedPartUri other)
+                    return Compare(other) == 0;
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(NormalizedPartUriString);
+            }
+
+            #endregion Object Overrides
+
             #region Internal Properties
 
             //------------------------------------------------------
