@@ -81,6 +81,8 @@ static gboolean finalizer_thread_exited;
 static MonoCoopCond exited_cond;
 
 static MonoInternalThread *gc_thread;
+
+static MonoMethod *finalize_method;
 #ifndef HOST_WASM
 static RuntimeInvokeFunction finalize_runtime_invoke;
 #endif
@@ -289,11 +291,13 @@ mono_gc_run_finalize (void *obj, void *data)
 	if (mono_log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o_name, o);
 
+	if (!finalize_method) {
+		finalize_method = mono_class_get_method_from_name_checked (mono_defaults.object_class, "GuardedFinalize", 0, 0, error);
+		mono_error_assert_ok (error);
+	}
+
 #ifndef HOST_WASM
 	if (!finalize_runtime_invoke) {
-		MonoMethod *finalize_method = mono_class_get_method_from_name_checked (mono_defaults.object_class, "GuardedFinalize", 0, 0, error);
-
-		mono_error_assert_ok (error);
 		MonoMethod *invoke = mono_marshal_get_runtime_invoke_full (finalize_method, FALSE, TRUE);
 
 		finalize_runtime_invoke = (RuntimeInvokeFunction)mono_compile_method_checked (invoke, error);
@@ -317,12 +321,9 @@ mono_gc_run_finalize (void *obj, void *data)
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
 #ifdef HOST_WASM
-	MonoMethod* finalizer = mono_class_get_method_from_name_checked (mono_defaults.object_class, "GuardedFinalize", 0, 0, error);
-	if (finalizer) { // null finalizers work fine when using the vcall invoke as Object has an empty one
-		gpointer params [1];
-		params [0] = NULL;
-		mono_runtime_try_invoke (finalizer, o, params, &exc, error);
-	}
+	gpointer params [1];
+	params [0] = NULL;
+	mono_runtime_try_invoke (finalize_method, o, params, &exc, error);
 #else
 	runtime_invoke (o, NULL, &exc, NULL);
 #endif
