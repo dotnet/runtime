@@ -6,11 +6,13 @@ using System.Configuration;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode("XML deserialization requires dynamic code")]
     internal sealed class OleDbConnectionFactory : DbConnectionFactory
     {
         private OleDbConnectionFactory() : base() { }
@@ -44,6 +46,8 @@ namespace System.Data.OleDb
             return result;
         }
 
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL3050:RequiresDynamicCode",
+            Justification = "OLE DB provider creates metadata factory with known schema.")]
         protected override DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
         {
             Debug.Assert(internalConnection != null, "internalConnection may not be null.");

@@ -4,12 +4,14 @@
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode("OleDbConnection requires dynamic code.")]
     internal sealed class OleDbMetaDataFactory : DbMetaDataFactory
     { // V1.2.3300
 
@@ -30,6 +32,7 @@ namespace System.Data.OleDb
 
         private readonly SchemaRowsetName[] _schemaMapping;
 
+        [RequiresDynamicCode("Members from serialized types may use dynamic code generation.")]
         internal OleDbMetaDataFactory(Stream XMLStream,
                                     string serverVersion,
                                     string serverVersionNormalized,

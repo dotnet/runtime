@@ -15,6 +15,9 @@ namespace System.Data.OleDb
     [DefaultProperty("Provider")]
     [RefreshProperties(RefreshProperties.All)]
     [TypeConverter(typeof(OleDbConnectionStringBuilder.OleDbConnectionStringBuilderConverter))]
+#if NET
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
+#endif
     public sealed class OleDbConnectionStringBuilder : DbConnectionStringBuilder
     {
         private enum Keywords
@@ -408,6 +411,7 @@ namespace System.Data.OleDb
             return true;
         }
 
+        [RequiresDynamicCode("OleDbConnection requires dynamic code")]
         private Dictionary<string, OleDbPropertyInfo> GetProviderInfo(string provider)
         {
             Dictionary<string, OleDbPropertyInfo>? providerInfo = _propertyInfo;
@@ -528,6 +532,7 @@ namespace System.Data.OleDb
             return providerInfo;
         }
 
+        [RequiresDynamicCode("OleDbConnection requires dynamic code")]
         private sealed class OleDbProviderConverter : StringConverter
         {
             private const int DBSOURCETYPE_DATASOURCE_TDP = 1;
@@ -599,6 +604,7 @@ namespace System.Data.OleDb
             Default = ~(ClientCursor | AggregationAfterSession),
         };
 
+        [RequiresDynamicCode("OleDbConnection requires dynamic code")]
         internal sealed class OleDbServicesConverter : TypeConverter
         {
             private StandardValuesCollection? _standardValues;
