@@ -1625,7 +1625,7 @@ ALLOC_DONE:
         // Return the stackalloc'ed address in result register.
         // TargetReg = SP + stackAdjustment.
         //
-        genInstrWithConstant(INS_addi, EA_PTRSIZE, targetReg, spSourceReg, (ssize_t)stackAdjustment, tempReg);
+        genInstrWithConstant(INS_addi, EA_PTRSIZE, targetReg, REG_SPBASE, (ssize_t)stackAdjustment, tempReg);
     }
     else // stackAdjustment == 0
     {
