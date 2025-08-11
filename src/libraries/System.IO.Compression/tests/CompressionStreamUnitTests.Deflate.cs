@@ -157,12 +157,10 @@ namespace System.IO.Compression
 
                                     case TestScenario.Read:
                                         while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { }
-                                        ;
                                         break;
 
                                     case TestScenario.ReadAsync:
                                         while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { }
-                                        ;
                                         break;
 
                                     case TestScenario.ReadByte:
