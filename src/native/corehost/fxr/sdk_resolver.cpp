@@ -154,7 +154,7 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
             main_error_prefix,
             requested.c_str());
 
-        bool has_global_file = global_json.state == global_file_info::state::valid;
+        bool has_global_file = global_json.is_data_used();
         if (has_global_file)
         {
             trace::error(_X("global.json file: %s"), global_json.path.c_str());
@@ -234,7 +234,7 @@ sdk_resolver sdk_resolver::from_nearest_global_file(const pal::string_t& cwd, bo
     else
     {
         global_file_info global_file = resolver.parse_global_file(global_file_path);
-        if (global_file.state != global_file_info::state::valid && global_file.state != global_file_info::state::__invalid_data_no_fallback)
+        if (!global_file.is_data_used())
         {
             // Fall back to a default SDK resolver
             resolver = sdk_resolver{ allow_prerelease };

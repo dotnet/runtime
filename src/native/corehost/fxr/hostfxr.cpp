@@ -290,8 +290,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
             resolved_sdk_dir.c_str());
     }
 
-    if (resolver.global_file().state == sdk_resolver::global_file_info::state::valid
-        && !resolver.global_file().path.empty())
+    if (resolver.global_file().is_data_used() && !resolver.global_file().path.empty())
     {
         result(
             hostfxr_resolve_sdk2_result_key_t::global_json_path,

@@ -51,6 +51,9 @@ public:
         state state;
         pal::string_t path;
         pal::string_t error_message;
+
+        // Whether or not the global.json is actually used for resolution.
+        bool is_data_used() const { return state == state::valid || state == state::__invalid_data_no_fallback; }
     };
 
     const global_file_info& global_file() const { return global_json; }
