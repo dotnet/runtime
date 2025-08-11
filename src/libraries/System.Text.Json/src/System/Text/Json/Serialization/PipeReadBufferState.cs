@@ -27,7 +27,9 @@ namespace System.Text.Json.Serialization
 
         public readonly bool IsFinalBlock => _isFinalBlock;
 
+#if DEBUG
         public readonly ReadOnlySequence<byte> Bytes => _sequence;
+#endif
 
         public void Advance(long bytesConsumed)
         {
@@ -72,6 +74,24 @@ namespace System.Text.Json.Serialization
         }
 
         public void Read(PipeReader utf8Json) => throw new NotImplementedException();
+
+        public Utf8JsonReader GetReader(JsonReaderState jsonReaderState)
+        {
+            if (_sequence.IsSingleSegment)
+            {
+                return new Utf8JsonReader(
+#if NET
+                    _sequence.FirstSpan,
+#else
+                    _sequence.First.Span,
+#endif
+                    IsFinalBlock, jsonReaderState);
+            }
+            else
+            {
+                return new Utf8JsonReader(_sequence, IsFinalBlock, jsonReaderState);
+            }
+        }
 
         private void ProcessReadBytes()
         {

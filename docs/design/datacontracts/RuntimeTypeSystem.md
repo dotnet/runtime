@@ -41,6 +41,8 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle);
     public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
 
+    public virtual TargetPointer GetMethodDescForSlot(TypeHandle typeHandle, ushort slot);
+
     public virtual uint GetBaseSize(TypeHandle typeHandle);
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
     public virtual uint GetComponentSize(TypeHandle typeHandle);
@@ -349,6 +351,7 @@ The contract additionally depends on these data descriptors
 | `MethodTable` | `PerInstInfo` | Either the array element type, or pointer to generic information for `MethodTable` |
 | `EEClass` | `InternalCorElementType` | An InternalCorElementType uses the enum values of a CorElementType to indicate some of the information about the type of the type which uses the EEClass In particular, all reference types are CorElementType.Class, Enums are the element type of their underlying type and ValueTypes which can exactly be represented as an element type are represented as such, all other values types are represented as CorElementType.ValueType. |
 | `EEClass` | `MethodTable` | Pointer to the canonical MethodTable of this type |
+| `EEClass` | `MethodDescChunk` | Pointer to the first MethodDescChunk of the EEClass |
 | `EEClass` | `NumMethods` | Count of methods attached to the EEClass |
 | `EEClass` | `NumNonVirtualSlots` | Count of non-virtual slots for the EEClass |
 | `EEClass` | `CorTypeAttr` | Various flags |
@@ -645,6 +648,8 @@ The version 1 `MethodDesc` APIs depend on the following globals:
 | --- | --- |
 | `MethodDescAlignment` | `MethodDescChunk` trailing data is allocated in multiples of this constant.  The size (in bytes) of each `MethodDesc` (or subclass) instance is a multiple of this constant. |
 | `MethodDescTokenRemainderBitCount` | Number of bits in the token remainder in `MethodDesc` |
+| `MethodDescSizeTable` | A pointer to the MethodDesc size table. The MethodDesc flags are used as an offset into this table to lookup the MethodDesc size. |
+
 
 In the runtime a `MethodDesc` implicitly belongs to a single `MethodDescChunk` and some common data is shared between method descriptors that belong to the same chunk.  A single method table
 will typically have multiple chunks.  There are subkinds of MethodDescs at runtime of varying sizes (but the sizes must be mutliples of `MethodDescAlignment`) and each chunk contains method descriptors of the same size.
@@ -684,6 +689,8 @@ The contract depends on the following other contracts
 | Loader |
 | PlatformMetadata |
 | ReJIT |
+| ExecutionManager |
+| PrecodeStubs |
 
 And the following enumeration definitions
 
@@ -710,6 +717,7 @@ And the following enumeration definitions
         HasNonVtableSlot = 0x0008,
         HasMethodImpl = 0x0010,
         HasNativeCodeSlot = 0x0020,
+        HasAsyncMethodData = 0x0040,
         // Mask for the above flags
         MethodDescAdditionalPointersMask = 0x0038,
         #endredion Additional pointers
@@ -885,6 +893,23 @@ And the various apis are implemented with the following algorithms
         uint tokenRange = ((uint)(_chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
 
         return 0x06000000 | tokenRange | tokenRemainder;
+    }
+
+    public uint GetMethodDescSize(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        // the runtime generates a table to lookup the size of a MethodDesc based on the flags
+        // read the location of the table and index into it using certain bits of MethodDesc.Flags
+        TargetPointer methodDescSizeTable = target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
+
+        ushort arrayOffset = (ushort)(methodDesc.Flags & (ushort)(
+            MethodDescFlags.ClassificationMask |
+            MethodDescFlags.HasNonVtableSlot |
+            MethodDescFlags.HasMethodImpl |
+            MethodDescFlags.HasNativeCodeSlot |
+            MethodDescFlags.HasAsyncMethodData));
+        return target.Read<byte>(methodDescSizeTable + arrayOffset);
     }
 
     public bool IsArrayMethod(MethodDescHandle methodDescHandle, out ArrayFunctionType functionType)
@@ -1175,5 +1200,87 @@ Getting the native code pointer for methods with a NativeCodeSlot or a stable en
             return TargetCodePointer.Null;
 
         return GetStableEntryPoint(methodDescHandle.Address, md);
+    }
+```
+
+Getting a MethodDesc for a certain slot in a MethodTable
+```csharp
+    // Based on MethodTable::IntroducedMethodIterator
+    private IEnumerable<MethodDescHandle> GetIntroducedMethods(TypeHandle typeHandle)
+    {
+        // typeHandle must represent a MethodTable
+
+        EEClass eeClass = GetClassData(typeHandle);
+
+        // pointer to the first MethodDescChunk
+        TargetPointer chunkAddr = eeClass.MethodDescChunk;
+        while (chunkAddr != TargetPointer.Null)
+        {
+            MethodDescChunk chunk = // read Data.MethodDescChunk data from chunkAddr
+            TargetPointer methodDescPtr = chunk.FirstMethodDesc;
+
+            // chunk.Count is the number of MethodDescs in the chunk - 1
+            // add 1 to get the actual number of MethodDescs within the chunk
+            for (int i = 0; i < chunk.Count + 1; i++)
+            {
+                MethodDescHandle methodDescHandle = GetMethodDescHandle(methodDescPtr);
+
+                // increment pointer to the beginning of the next MethodDesc
+                methodDescPtr += GetMethodDescSize(methodDescHandle);
+                yield return methodDescHandle;
+            }
+
+            // go to the next chunk
+            chunkAddr = chunk.Next;
+        }
+    }
+
+    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
+    {
+        // Standard path, ask ExecutionManager for the MethodDesc
+        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
+        {
+            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
+            return methodDescPtr;
+        }
+
+        // Stub path, read address as a Precode and get the MethodDesc from it
+        {
+            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
+            return methodDescPtr;
+        }
+    }
+
+    public TargetPointer GetMethodDescForSlot(TypeHandle methodTable, ushort slot)
+    {
+        if (!typeHandle.IsMethodTable())
+            throw new ArgumentException($"{nameof(typeHandle)} is not a MethodTable");
+
+        TargetPointer cannonMTPTr = GetCanonicalMethodTable(typeHandle);
+        TypeHandle canonMT = GetTypeHandle(cannonMTPTr);
+        TargetPointer slotPtr = GetAddressOfSlot(canonMT, slot);
+        TargetCodePointer pCode = _target.ReadCodePointer(slotPtr);
+
+        if (pCode == TargetCodePointer.Null)
+        {
+            // if pCode is null, we iterate through the method descs in the MT
+            while (true) // arbitrary limit to avoid infinite loop
+            {
+                foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+                {
+                    MethodDesc md = _methodDescs[mdh.Address];
+
+                    // if a MethodDesc matches the slot, return that MethodDesc
+                    if (md.Slot == slot)
+                    {
+                        return mdh.Address;
+                    }
+                }
+                canonMT = GetTypeHandle(GetCanonicalMethodTable(GetTypeHandle(GetParentMethodTable(canonMT))));
+            }
+        }
+
+        return GetMethodDescForEntrypoint(pCode);
     }
 ```

@@ -53,6 +53,7 @@ Data descriptors used:
 | StressLog | TickFrequency | Number of ticks per second for stresslog timestamps |
 | StressLog | StartTimestamp | Timestamp when the stress log was started |
 | StressLog | ModuleOffset | Offset of the module in the stress log |
+| StressLog | Modules | Offset of the stress log's module table (if StressLogHasModuleTable is `1`) |
 | StressLog | Logs | Pointer to the thread-specific logs |
 | StressLogModuleDesc | BaseAddress | Base address of the module |
 | StressLogModuleDesc | Size | Size of the module |
@@ -80,7 +81,6 @@ Global variables used:
 | StressLogChunkSize | uint | Size of a stress log chunk |
 | StressLogMaxMessageSize | ulong | Maximum size of a stress log message |
 | StressLogHasModuleTable | byte | Whether the stress log module table is present |
-| StressLogModuleTable | pointer | Pointer to the stress log's module table (if StressLogHasModuleTable is `1`) |
 
 ```csharp
 bool HasStressLog()
@@ -216,12 +216,21 @@ protected TargetPointer GetFormatPointer(ulong formatOffset)
         return new TargetPointer(stressLog.ModuleOffset + formatOffset);
     }
 
-    TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
+    TargetPointer? moduleTable;
+    if (!target.TryReadGlobalPointer(Constants.Globals.StressLogModuleTable, out moduleTable))
+    {
+        if (!target.TryReadGlobalPointer(Constants.Globals.StressLog, out TargetPointer? pStressLog))
+        {
+            throw new InvalidOperationException("StressLogModuleTable is not set and StressLog is not available, but StressLogHasModuleTable is set to 1.");
+        }
+        Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(pStressLog.Value);
+        moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
+    }
     uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
     uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
     for (uint i = 0; i < maxModules; ++i)
     {
-        StressLogModuleDesc module = new(Target, moduleTable + i * moduleEntrySize);
+        StressLogModuleDesc module = new(Target, moduleTable.Value + i * moduleEntrySize);
         ulong relativeOffset = formatOffset - cumulativeOffset;
         if (relativeOffset < module.Size.Value)
         {

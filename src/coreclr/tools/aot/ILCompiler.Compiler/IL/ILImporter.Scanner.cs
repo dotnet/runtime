@@ -550,42 +550,39 @@ namespace Internal.IL
 
             bool allowInstParam = opcode != ILOpcode.ldvirtftn && opcode != ILOpcode.ldftn;
 
-            if (directCall && resolvedConstraint && exactContextNeedsRuntimeLookup)
+            if (directCall && resolvedConstraint && (exactContextNeedsRuntimeLookup || forceUseRuntimeLookup))
             {
                 // We want to do a direct call to a shared method on a valuetype. We need to provide
                 // a generic context, but the JitInterface doesn't provide a way for us to do it from here.
                 // So we do the next best thing and ask RyuJIT to look up a fat pointer.
-                //
-                // We have the canonical version of the method - find the runtime determined version.
-                // This is simplified because we know the method is on a valuetype.
-                Debug.Assert(targetMethod.OwningType.IsValueType);
 
                 if (forceUseRuntimeLookup)
                 {
-                    // The below logic would incorrectly resolve the lookup into the first match we found,
-                    // but there was a compile-time ambiguity due to shared code. The correct fix should
-                    // use the ConstrainedMethodUseLookupResult dictionary entry so that the exact
-                    // dispatch can be computed with the help of the generic dictionary.
-                    // We fail the compilation here to avoid bad codegen. This is not actually an invalid program.
-                    // https://github.com/dotnet/runtimelab/issues/1431
-                    ThrowHelper.ThrowInvalidProgramException();
+                    var constrainedCallInfo = new ConstrainedCallInfo(_constrained, runtimeDeterminedMethod);
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ConstrainedDirectCall, constrainedCallInfo), reason);
                 }
-
-                MethodDesc targetOfLookup;
-                if (_constrained.IsRuntimeDeterminedType)
-                    targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
-                else if (_constrained.HasInstantiation)
-                    targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)_constrained);
                 else
-                    targetOfLookup = targetMethod.GetMethodDefinition();
-                if (targetOfLookup.HasInstantiation)
                 {
-                    targetOfLookup = targetOfLookup.MakeInstantiatedMethod(runtimeDeterminedMethod.Instantiation);
-                }
-                Debug.Assert(targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, targetOfLookup), reason);
+                    // We have the canonical version of the method - find the runtime determined version.
+                    // This is simplified because we know the method is on a valuetype.
+                    Debug.Assert(targetMethod.OwningType.IsValueType);
 
-                targetForDelegate = targetOfLookup;
+                    MethodDesc targetOfLookup;
+                    if (_constrained.IsRuntimeDeterminedType)
+                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
+                    else if (_constrained.HasInstantiation)
+                        targetOfLookup = _compilation.TypeSystemContext.GetMethodForInstantiatedType(targetMethod.GetTypicalMethodDefinition(), (InstantiatedType)_constrained);
+                    else
+                        targetOfLookup = targetMethod.GetMethodDefinition();
+                    if (targetOfLookup.HasInstantiation)
+                    {
+                        targetOfLookup = targetOfLookup.MakeInstantiatedMethod(runtimeDeterminedMethod.Instantiation);
+                    }
+                    Debug.Assert(targetOfLookup.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodEntry, targetOfLookup), reason);
+
+                    targetForDelegate = targetOfLookup;
+                }
             }
             else if (directCall && !allowInstParam && targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
             {
@@ -700,6 +697,7 @@ namespace Internal.IL
             {
                 Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && _constrained != null);
 
+                // TODO: https://github.com/dotnet/runtime/issues/72589
                 ThrowHelper.ThrowBadImageFormatException();
             }
             else if (method.Signature.IsStatic)
@@ -945,7 +943,7 @@ namespace Internal.IL
             if (obj is TypeDesc type)
             {
                 // We might also be able to optimize this a little if this is a ldtoken/GetTypeFromHandle/Equals sequence.
-                bool isTypeEquals = false;
+                var helperId = ReadyToRunHelperId.MetadataTypeHandle;
                 TypeEqualityPatternAnalyzer analyzer = _typeEqualityPatternAnalyzer;
                 ILReader reader = new ILReader(_ilBytes, _currentOffset);
                 while (!analyzer.IsDefault)
@@ -956,7 +954,7 @@ namespace Internal.IL
 
                     if (analyzer.IsTypeEqualityCheck)
                     {
-                        isTypeEquals = true;
+                        helperId = ReadyToRunHelperId.NecessaryTypeHandle;
                         break;
                     }
                 }
@@ -969,13 +967,17 @@ namespace Internal.IL
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
                 {
-                    reference = GetGenericLookupHelper(
-                        isTypeEquals ? ReadyToRunHelperId.NecessaryTypeHandle : ReadyToRunHelperId.TypeHandle, type);
+                    reference = GetGenericLookupHelper(helperId, type);
                 }
                 else
                 {
-                    reference = _compilation.ComputeConstantLookup(
-                        isTypeEquals ? ReadyToRunHelperId.NecessaryTypeHandle : _compilation.GetLdTokenHelperForType(type), type);
+                    if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        Debug.Assert(_methodIL.OwningMethod.Name == "GetCanonType");
+                        helperId = ReadyToRunHelperId.NecessaryTypeHandle;
+                    }
+
+                    reference = _compilation.ComputeConstantLookup(helperId, type);
                 }
                 _dependencies.Add(reference, "ldtoken");
             }

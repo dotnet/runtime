@@ -86,7 +86,9 @@ public class Program
             string test = @"using System.Text.RegularExpressions;
 var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern: "\"\"") + @"|]" + isMatchInvocation + ";";
             string fixedCode = @"using System.Text.RegularExpressions;
-var isMatch = MyRegex().IsMatch(""""); partial class Program
+var isMatch = MyRegex().IsMatch("""");
+
+partial class Program
 {
     [GeneratedRegex("""")]
     private static partial Regex MyRegex();
@@ -552,7 +554,7 @@ public partial class Program
             foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
             {
                 string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
-                
+
                 // Test both pattern and options as field constants (both should be preserved)
                 yield return new object[] { @"using System.Text.RegularExpressions;
 
@@ -685,7 +687,7 @@ public partial class Program
             foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
             {
                 string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
-                
+
                 // Test static field constants (should be preserved)
                 yield return new object[] { @"using System.Text.RegularExpressions;
 
@@ -1095,7 +1097,9 @@ partial class Program
                 },
                 FixedState =
                 {
-                    Sources = { "public class C { }", @"var r = MyRegex(); partial class Program
+                    Sources = { "public class C { }", @"var r = MyRegex();
+
+partial class Program
 {
     [System.Text.RegularExpressions.GeneratedRegex("""")]
     private static partial System.Text.RegularExpressions.Regex MyRegex();
