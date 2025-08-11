@@ -443,7 +443,12 @@ namespace System.Net
 
         #region UrlDecode implementation
 
+        // Marking UriDecodeInternal noinline to work around
+        // a jit issue where inlining this method may cause
+        // key inlinees to not be inlined
+        //
         [return: NotNullIfNotNull(nameof(value))]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static string? UrlDecodeInternal(string? value, Encoding encoding)
         {
             if (string.IsNullOrEmpty(value))
@@ -506,7 +511,12 @@ namespace System.Net
             return helper.GetString();
         }
 
+        // Marking UriDecodeInternal noinline to work around
+        // a jit issue where inlining this method may cause
+        // key inlinees to not be inlined
+        //
         [return: NotNullIfNotNull(nameof(bytes))]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static byte[]? UrlDecodeInternal(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
