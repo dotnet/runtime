@@ -2440,10 +2440,11 @@ namespace System
         {
             get
             {
-                if (!IsFullNameRoundtripCompatible(this))
+                Type type = GetRootElementType();
+                if (type.IsFunctionPointer)
                     return null;
 
-                var this_type = this;
+                var this_type = (RuntimeType)type;
                 string? res = null;
                 GetNamespace(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
                 return res!;
@@ -2454,11 +2455,6 @@ namespace System
         {
             get
             {
-                // See https://github.com/mono/mono/issues/18180 and
-                // https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/System.Private.CoreLib/src/System/RuntimeType.CoreCLR.cs#L1505-L1509
-                if (ContainsGenericParameters && !GetRootElementType().IsGenericTypeDefinition)
-                    return null;
-
                 string? fullName;
                 TypeCache? cache = Cache;
                 if ((fullName = cache.full_name) == null)
