@@ -180,7 +180,11 @@ namespace System.Threading
         private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool oneShot)
         {
             if (currentThreadID == 0)
-                currentThreadID = Environment.CurrentManagedThreadId;
+            {
+                Lock.ThreadId id = new Lock.ThreadId((uint)currentThreadID);
+                id.InitializeForCurrentThread();
+                currentThreadID = (int)id.Id;
+            }
 
             // does thread ID fit?
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)

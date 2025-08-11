@@ -1715,7 +1715,13 @@ void SyncBlock::InitializeThinLock(DWORD recursionLevel, DWORD threadId)
 
 OBJECTHANDLE SyncBlock::GetLock()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     if (m_Lock != (OBJECTHANDLE)NULL)
     {
@@ -1723,8 +1729,6 @@ OBJECTHANDLE SyncBlock::GetLock()
     }
 
     SetPrecious();
-
-    GCX_COOP();
 
     // We need to create a new lock
     OBJECTHANDLEHolder lockHandle = NULL;
@@ -1757,17 +1761,19 @@ OBJECTHANDLE SyncBlock::GetLock()
 
     OBJECTHANDLE existingHandle = InterlockedCompareExchangeT(&m_Lock, lockHandle.GetValue(), NULL);
 
-    if (existingHandle == NULL)
+    if (existingHandle != NULL)
     {
-        // Our lock instance is in the sync block now.
-        // Don't release it.
-        lockHandle.SuppressRelease();
-        // Also, clear the thin lock info.
-        // It won't be used any more, but it will look out of date.
-        m_thinLock = 0;
+        return existingHandle;
     }
 
-    return existingHandle;
+    // Our lock instance is in the sync block now.
+    // Don't release it.
+    lockHandle.SuppressRelease();
+    // Also, clear the thin lock info.
+    // It won't be used any more, but it will look out of date.
+    m_thinLock = 0;
+
+    return lockHandle;
 }
 #endif // !DACCESS_COMPILE
 

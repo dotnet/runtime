@@ -44,6 +44,9 @@ namespace System.Threading
             if (resultOrIndex < 0)
                 return;
 
+            // We may have initialized the thread Id in TryAcquire, so re-read it here.
+            currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
+
             Lock lck = resultOrIndex == 0 ?
                 ObjectHeader.GetLockObject(obj) :
                 SyncTable.GetLockObject(resultOrIndex);
@@ -72,6 +75,9 @@ namespace System.Threading
 
             if (resultOrIndex == 0)
                 return false;
+
+            // We may have initialized the thread Id in TryAcquire, so re-read it here.
+            currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
 
             Lock lck = SyncTable.GetLockObject(resultOrIndex);
 
@@ -102,6 +108,9 @@ namespace System.Threading
             int resultOrIndex = ObjectHeader.TryAcquire(obj, currentThreadID);
             if (resultOrIndex < 0)
                 return true;
+
+            // We may have initialized the thread Id in TryAcquire, so re-read it here.
+            currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
 
             Lock lck = resultOrIndex == 0 ?
                 ObjectHeader.GetLockObject(obj) :
