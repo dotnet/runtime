@@ -1571,8 +1571,6 @@ namespace ILLink.Shared.TrimAnalysis
                 yield return NullValue.Instance;
         }
 
-
-
         private bool AnalyzeGenericInstantiationTypeArray(in MultiValue arrayParam, ImmutableArray<GenericParameterValue> genericParameters)
         {
             bool hasRequirements = false;

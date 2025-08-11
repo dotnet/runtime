@@ -491,12 +491,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
         [Kept]
         class GetMethod_Name_GenericParameterCount_BindingAttr_Types
         {
-            [Kept]
             private static int OnlyCalledViaReflection()
             {
                 return 42;
             }
-            [Kept]
             private int OnlyCalledViaReflection(int foo)
             {
                 return 43;
@@ -515,8 +513,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
             [Kept]
             public static void TestNameWithIntAndBindingFlagsAndTypes()
             {
-                var method = typeof(GetMethod_Name_GenericParameterCount_BindingAttr_Types).GetMethod("OnlyCalledViaReflection", 0, BindingFlags.Public | BindingFlags.Static, new Type[] { typeof(int), typeof(int), typeof(int) });
-                method.Invoke(null, new object[] { 1, 2, 3 });
+                var method = typeof(GetMethod_Name_GenericParameterCount_BindingAttr_Types).GetMethod("OnlyCalledViaReflection", 1, BindingFlags.Public, new Type[] { typeof(int) });
+                method.Invoke(null, new object[] { });
             }
         }
 
