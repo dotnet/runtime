@@ -48,6 +48,14 @@ namespace System.Security.Cryptography
             _key = duplicateKey;
         }
 
+        /// <inheritdoc />
+        protected override void SignMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        /// <inheritdoc />
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
         private static MLDsaAlgorithm AlgorithmFromHandleWithPlatformCheck(CngKey key, out CngKey duplicateKey)
         {
             if (!Helpers.IsOSPlatformWindows)

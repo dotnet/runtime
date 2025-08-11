@@ -2999,7 +2999,7 @@ public:
 
     GenTree* gtNewJmpTableNode();
 
-    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant);
+    GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags);
 
     GenTreeIntCon*   gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
 
@@ -4488,9 +4488,16 @@ protected:
 
     // Enumerator de-abstraction support
     //
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+    struct InferredGdvEntry
+    {
+        CORINFO_CLASS_HANDLE m_classHandle;
+        unsigned m_likelihood;
+    };
 
-    // Map is only set on the root instance.
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, InferredGdvEntry> VarToLikelyClassMap;
+
+    // Maps are only set on the root instance.
     //
     NodeToUnsignedMap* impEnumeratorGdvLocalMap = nullptr;
     bool hasImpEnumeratorGdvLocalMap() { return impInlineRoot()->impEnumeratorGdvLocalMap != nullptr; }
@@ -4504,6 +4511,20 @@ protected:
         }
 
         return compiler->impEnumeratorGdvLocalMap;
+    }
+
+    VarToLikelyClassMap* impEnumeratorLikelyTypeMap = nullptr;
+    bool hasEnumeratorLikelyTypeMap() { return impInlineRoot()->impEnumeratorLikelyTypeMap != nullptr; }
+    VarToLikelyClassMap* getImpEnumeratorLikelyTypeMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impEnumeratorLikelyTypeMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impEnumeratorLikelyTypeMap = new (alloc) VarToLikelyClassMap(alloc);
+        }
+
+        return compiler->impEnumeratorLikelyTypeMap;
     }
 
     bool hasUpdatedTypeLocals = false;
@@ -6194,8 +6215,6 @@ public:
     PhaseStatus fgDetermineFirstColdBlock();
 
     bool fgDedupReturnComparison(BasicBlock* block);
-
-    bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
     bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
     PhaseStatus fgUpdateFlowGraphPhase();
@@ -8280,6 +8299,8 @@ public:
     const char* eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd);
 
 #if defined(DEBUG)
+    void eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token);
+
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 

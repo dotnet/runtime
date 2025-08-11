@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\TestAssets\SharedTypes\ComInterfaces\**\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
+    <Compile Include="..\..\Common\ComInterfaces\**\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 

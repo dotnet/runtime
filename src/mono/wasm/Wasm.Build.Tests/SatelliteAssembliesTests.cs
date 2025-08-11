@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,7 +33,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
-        public async void ResourcesFromMainAssembly(Configuration config, bool aot, bool nativeRelink, string? argCulture)
+        public async Task ResourcesFromMainAssembly(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {
             string prefix = $"sat_asm_from_main_asm";
             string extraProperties = (nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty)
@@ -57,8 +58,8 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
-        public async void ResourcesFromProjectReference(Configuration config, bool aot, bool nativeRelink, string? argCulture)
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ true })]
+        public async Task ResourcesFromProjectReference(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {
             string prefix = $"SatelliteAssemblyFromProjectRef";
             string extraProperties = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>"
@@ -110,7 +111,7 @@ namespace Wasm.Build.Tests
             // sanity check, in case we change file extensions
             Assert.Contains($"{info.ProjectName}.dll.bc", bitCodeFileNames);
 
-            Assert.Empty(bitCodeFileNames.Where(file => file.EndsWith(".resources.dll.bc")));
+            Assert.DoesNotContain(bitCodeFileNames, file => file.EndsWith(".resources.dll.bc"));
         }
 #pragma warning restore xUnit1026
 
