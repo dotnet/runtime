@@ -175,6 +175,24 @@ namespace System
             get => unchecked((nuint)nuint_t.MinValue);
         }
 
+        /// <summary>Produces the full product of two unsigned native integers.</summary>
+        /// <param name="left">The integer to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
+        /// <param name="lower">The lower half of the full product.</param>
+        /// <returns>The upper half of the full product.</returns>
+        public static nuint BigMul(nuint left, nuint right, out nuint lower)
+        {
+#if TARGET_64BIT
+            UInt128 result = ulong.BigMul(left, right);
+            lower = (nuint)result.Lower;
+            return (nuint)result.Upper;
+#else
+            ulong result = uint.BigMul((uint)left, (uint)right);
+            lower = (uint)result;
+            return (uint)(result >>> 32);
+#endif
+        }
+
         public int CompareTo(object? value)
         {
             if (value is nuint other)

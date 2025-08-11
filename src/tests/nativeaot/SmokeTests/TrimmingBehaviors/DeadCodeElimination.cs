@@ -34,6 +34,8 @@ class DeadCodeElimination
         TestGetMethodOptimization.Run();
         TestTypeOfCodegenBranchElimination.Run();
         TestInvisibleGenericsTrimming.Run();
+        TestTypeHandlesInGenericDictionaries.Run();
+        TestMetadataMethodTables.Run();
 
         return 100;
     }
@@ -1127,6 +1129,141 @@ class DeadCodeElimination
 
             IsPresentType(new PresentType<object>());
             ThrowIfNotPresent(typeof(TestInvisibleGenericsTrimming), "PresentType`1");
+        }
+    }
+
+    class TestTypeHandlesInGenericDictionaries
+    {
+        class InvisibleType1;
+        class InvisibleType2;
+        class VisibleType1;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void GenericMethod<T, U, V>(object o, string expectedNameOfV)
+        {
+            if (o is T)
+                Console.WriteLine("Yes");
+
+            if (o.GetType() == typeof(U))
+                Console.WriteLine("Yes");
+
+            if (typeof(V).Name != expectedNameOfV)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            GenericMethod<InvisibleType1, InvisibleType2, VisibleType1>(new object(), nameof(VisibleType1));
+
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType1));
+#if !DEBUG
+            ThrowIfPresent(typeof(TestTypeHandlesInGenericDictionaries), nameof(InvisibleType2));
+#endif
+        }
+    }
+
+    class TestMetadataMethodTables
+    {
+        class NotReferenced1;
+
+        class UnallocatedClass
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private NotReferenced1 GetNotReferenced() => new NotReferenced1();
+            public override string ToString() => GetNotReferenced().ToString();
+        }
+
+        struct ImplicitlyAllocatedStruct
+        {
+            public override string ToString() => nameof(ImplicitlyAllocatedStruct);
+        }
+
+        class NotReferenced2;
+
+        class UnallocatedClassInGenericDictionary
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private NotReferenced2 GetNotReferenced() => new NotReferenced2();
+            public override string ToString() => GetNotReferenced().ToString();
+        }
+
+        struct ImplicitlyAllocatedStructInGenericDictionary<T>
+        {
+            public override string ToString() => nameof(ImplicitlyAllocatedStructInGenericDictionary<>);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetTheT<T>() => typeof(T);
+
+        public static void Run()
+        {
+#if !DEBUG
+            // typeof of a class shouldn't be considered allocation
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static Type GetUnallocatedClass() => typeof(UnallocatedClass);
+
+                bool didThrow = false;
+                try
+                {
+                    RuntimeHelpers.GetUninitializedObject(GetUnallocatedClass());
+                }
+                catch (NotSupportedException)
+                {
+                    didThrow = true;
+                }
+
+                if (!didThrow)
+                    throw new Exception();
+
+                ThrowIfPresent(typeof(TestMetadataMethodTables), nameof(NotReferenced1));
+                if (GetUnallocatedClass().Name != nameof(UnallocatedClass))
+                    throw new Exception();
+            }
+
+            // same if it's in a generic dictionary
+            {
+                bool didThrow = false;
+                try
+                {
+                    RuntimeHelpers.GetUninitializedObject(GetTheT<UnallocatedClassInGenericDictionary>());
+                }
+                catch (NotSupportedException)
+                {
+                    didThrow = true;
+                }
+
+                if (!didThrow)
+                    throw new Exception();
+
+                ThrowIfPresent(typeof(TestMetadataMethodTables), nameof(NotReferenced2));
+                if (GetTheT<UnallocatedClassInGenericDictionary>().Name != nameof(UnallocatedClassInGenericDictionary))
+                    throw new Exception();
+            }
+
+            // typeof of a valuetype unfortunately needs to be (e.g. due to RuntimeHelpers.Box)
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static Type GetImplicitlyAllocatedStruct() => typeof(ImplicitlyAllocatedStruct);
+
+                object o = RuntimeHelpers.GetUninitializedObject(GetImplicitlyAllocatedStruct());
+                if (o.ToString() != nameof(ImplicitlyAllocatedStruct))
+                    throw new Exception();
+
+                if (GetImplicitlyAllocatedStruct().Name != nameof(ImplicitlyAllocatedStruct))
+                    throw new Exception();
+            }
+
+            // same in a generic dictionary
+            {
+                object o = RuntimeHelpers.GetUninitializedObject(GetTheT<ImplicitlyAllocatedStructInGenericDictionary<object>>());
+                if (o.ToString() != nameof(ImplicitlyAllocatedStructInGenericDictionary<>))
+                    throw new Exception();
+
+                if (GetTheT<ImplicitlyAllocatedStructInGenericDictionary<object>>().Name != nameof(ImplicitlyAllocatedStructInGenericDictionary<>) + "`1")
+                    throw new Exception();
+            }
+#endif
         }
     }
 

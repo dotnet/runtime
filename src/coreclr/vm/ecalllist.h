@@ -334,7 +334,7 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("TryGetHashCode", ObjectNative::TryGetHashCode)
     FCFuncElement("ContentEquals", ObjectNative::ContentEquals)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
-    FCFuncElement("AllocTailCallArgBufferWorker", TailCallHelp::AllocTailCallArgBufferWorker)
+    FCFuncElement("GetTailCallArgBuffer", TailCallHelp::GetTailCallArgBuffer)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
 FCFuncEnd()
 
@@ -356,8 +356,6 @@ FCFuncStart(gStubHelperFuncs)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("CalcVaListSize", StubHelpers::CalcVaListSize)
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
-    FCFuncElement("GetStubContext", StubHelpers::GetStubContext)
-    FCFuncElement("NextCallReturnAddress", StubHelpers::NextCallReturnAddress)
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)

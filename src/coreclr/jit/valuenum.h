@@ -1415,6 +1415,12 @@ public:
     // Returns "true" iff "vn" is a function application of the form "func(op1, op2)".
     bool IsVNBinFunc(ValueNum vn, VNFunc func, ValueNum* op1 = nullptr, ValueNum* op2 = nullptr);
 
+    // Returns "true" iff "vn" is a function application for a HWIntrinsic
+    bool IsVNHWIntrinsicFunc(ValueNum        vn,
+                             NamedIntrinsic* intrinsicId,
+                             unsigned*       simdSize,
+                             CorInfoType*    simdBaseJitType);
+
     // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
     // the cns can be on the left side if the function is commutative.
     template <typename T>

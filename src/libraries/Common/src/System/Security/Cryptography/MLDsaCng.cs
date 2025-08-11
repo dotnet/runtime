@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -48,14 +48,20 @@ namespace System.Security.Cryptography
             _key = duplicateKey;
         }
 
+        /// <inheritdoc />
+        protected override void SignMuCore(ReadOnlySpan<byte> mu, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        /// <inheritdoc />
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
         private static MLDsaAlgorithm AlgorithmFromHandleWithPlatformCheck(CngKey key, out CngKey duplicateKey)
         {
-#if !NETFRAMEWORK
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!Helpers.IsOSPlatformWindows)
             {
                 throw new PlatformNotSupportedException();
             }
-#endif
 
             return AlgorithmFromHandle(key, out duplicateKey);
         }
@@ -63,18 +69,15 @@ namespace System.Security.Cryptography
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey);
 
         /// <summary>
-        ///   Gets the key that will be used by the <see cref="MLDsaCng"/> object for any cryptographic operation that it performs.
+        ///   Gets a new <see cref="CngKey" /> representing the key used by the current instance.
         /// </summary>
-        /// <value>
-        ///   The key that will be used by the <see cref="MLDsaCng"/> object for any cryptographic operation that it performs.
-        /// </value>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
         /// </exception>
         /// <remarks>
-        ///   This <see cref="CngKey"/> object is not the same as the one passed to the <see cref="MLDsaCng"/> constructor,
+        ///   This <see cref="CngKey"/> object is not the same as the one passed to <see cref="MLDsaCng(CngKey)"/>,
         ///   if that constructor was used. However, it will point to the same CNG key.
         /// </remarks>
-        public partial CngKey Key { get; }
+        public partial CngKey GetKey();
     }
 }

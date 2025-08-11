@@ -2152,17 +2152,6 @@ namespace Mono.Linker.Steps
             MarkCustomAttributes(type, new DependencyInfo(DependencyKind.CustomAttribute, type), typeOrigin);
             MarkSecurityDeclarations(type, new DependencyInfo(DependencyKind.CustomAttribute, type), typeOrigin);
 
-            if (Context.TryResolve(type.BaseType) is TypeDefinition baseType &&
-                !Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute>(type) &&
-                Annotations.TryGetLinkerAttribute(baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode))
-            {
-
-                string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(effectiveRequiresUnreferencedCode.Message);
-                string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(effectiveRequiresUnreferencedCode.Url);
-                Context.LogWarning(typeOrigin, DiagnosticId.RequiresUnreferencedCodeOnBaseClass, type.GetDisplayName(), type.BaseType.GetDisplayName(), arg1, arg2);
-            }
-
-
             if (type.IsMulticastDelegate())
             {
                 MarkMulticastDelegate(type, typeOrigin);
@@ -4073,13 +4062,19 @@ namespace Mono.Linker.Steps
                     {
                         case MethodDefinition nestedFunction:
                             if (nestedFunction.Body is MethodBody nestedBody)
-                                requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(nestedBody), origin);
+                            {
+                                var nestedOrigin = new MessageOrigin(nestedFunction);
+                                requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(nestedBody), nestedOrigin);
+                            }
                             break;
                         case TypeDefinition stateMachineType:
                             foreach (var method in stateMachineType.Methods)
                             {
                                 if (method.Body is MethodBody stateMachineBody)
-                                    requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(stateMachineBody), origin);
+                                {
+                                    var stateMachineOrigin = new MessageOrigin(method);
+                                    requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(stateMachineBody), stateMachineOrigin);
+                                }
                             }
                             break;
                         default:

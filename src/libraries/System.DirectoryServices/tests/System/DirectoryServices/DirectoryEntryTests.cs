@@ -25,7 +25,7 @@ namespace System.DirectoryServices.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Path")]
-        public void Ctor_Path(string path)
+        public void Ctor_Path(string? path)
         {
             var entry = new DirectoryEntry(path);
             Assert.Equal(path ?? string.Empty, entry.Path);
@@ -41,7 +41,7 @@ namespace System.DirectoryServices.Tests
         [InlineData(null, null, null)]
         [InlineData("", "", "")]
         [InlineData("Path", "UserName", "Password")]
-        public void Ctor_Path_UserName_Password(string path, string userName, string password)
+        public void Ctor_Path_UserName_Password(string? path, string? userName, string? password)
         {
             var entry = new DirectoryEntry(path, userName, password);
             Assert.Equal(path ?? string.Empty, entry.Path);
@@ -57,7 +57,7 @@ namespace System.DirectoryServices.Tests
         [InlineData(null, null, null, (AuthenticationTypes)int.MinValue)]
         [InlineData("", "", "", AuthenticationTypes.Anonymous)]
         [InlineData("Path", "UserName", "Password", AuthenticationTypes.None)]
-        public void Ctor_Path_UserName_Password_AuthenticationType(string path, string userName, string password, AuthenticationTypes authenticationType)
+        public void Ctor_Path_UserName_Password_AuthenticationType(string? path, string? userName, string? password, AuthenticationTypes authenticationType)
         {
             var entry = new DirectoryEntry(path, userName, password, authenticationType);
             Assert.Equal(path ?? string.Empty, entry.Path);
@@ -72,7 +72,7 @@ namespace System.DirectoryServices.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(1)]
-        public void Ctor_InvalidAdsObject_ThrowsArgumentException(object adsObject)
+        public void Ctor_InvalidAdsObject_ThrowsArgumentException(object? adsObject)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new DirectoryEntry(adsObject));
         }

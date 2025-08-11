@@ -384,7 +384,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
     if (childNode->OperIs(GT_NEG))
     {
         // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a EQ or NE.
-        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_CAST))
+        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ))
         {
             // Cannot contain if the childs op1 is already contained
             return false;
@@ -403,31 +403,6 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             {
                 return false;
             }
-
-            if (childNode->gtGetOp1()->OperIs(GT_CAST))
-            {
-                // Grab the cast as well, we can contain this with cmn (extended-register).
-                GenTreeCast* cast   = childNode->gtGetOp1()->AsCast();
-                GenTree*     castOp = cast->CastOp();
-
-                // Cannot contain the cast from floating point.
-                if (!varTypeIsIntegral(castOp))
-                {
-                    return false;
-                }
-
-                // Cannot contain the cast if it already contains it's CastOp.
-                if (castOp->isContained())
-                {
-                    return false;
-                }
-
-                assert(!cast->gtOverflow());
-                assert(varTypeIsIntegral(cast) && varTypeIsIntegral(cast->CastToType()));
-
-                MakeSrcContained(childNode, cast);
-            }
-
             return true;
         }
 
@@ -1984,17 +1959,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (node->GetOperandCount() == 3)
                 {
-                    assert(node->GetAuxiliaryType() != TYP_UNKNOWN);
                     node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), node->Op(3), lclVar);
-                }
-                else if (node->GetOperandCount() == 2)
-                {
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
                 else
                 {
-                    assert(node->GetOperandCount() == 1);
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), lclVar);
+                    assert(node->GetOperandCount() == 2);
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
             }
 
@@ -4096,6 +4066,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplex:
+            case NI_Sve2_DotProductRotateComplex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 if (intrin.op4->IsCnsIntOrI())
@@ -4153,6 +4124,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 assert(varTypeIsIntegral(intrin.op5));
