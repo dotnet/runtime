@@ -443,7 +443,7 @@ namespace System.Net
 
         #region UrlDecode implementation
 
-        // Marking UriDecodeInternal noinline to work around
+        // Marking UrlDecodeInternal noinline to work around
         // a jit issue where inlining this method may cause
         // key inlinees to not be inlined
         //
