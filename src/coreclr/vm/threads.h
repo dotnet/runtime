@@ -642,7 +642,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        TSNC_UnhandledException2ndPass  = 0x02000000, // The unhandled exception propagation is in the 2nd pass
+        TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
