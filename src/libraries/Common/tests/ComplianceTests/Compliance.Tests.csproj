@@ -4,11 +4,13 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <UnicodeUcdVersion>16.0</UnicodeUcdVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="GB18030\TestHelper.cs" />
     <Compile Include="GB18030\Tests\CharTests.cs" />
+    <Compile Include="GB18030\Tests\CharUnicodeInfoTests.cs" />
     <Compile Include="GB18030\Tests\ConsoleTests.cs" />
     <Compile Include="GB18030\Tests\DirectoryInfoTests.cs" />
     <Compile Include="GB18030\Tests\DirectoryTestBase.cs" />
@@ -19,18 +21,14 @@
     <Compile Include="GB18030\Tests\FileTests.cs" />
     <Compile Include="GB18030\Tests\RegexTests.cs" />
     <Compile Include="GB18030\Tests\StringTests.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\tests\FunctionalTests\Regex.Tests.Common.cs"
-             Link="System\Text\RegularExpressions\tests\FunctionalTests\Regex.Tests.Common.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\tests\FunctionalTests\Regex.Tests.Common.cs" Link="System\Text\RegularExpressions\Tests\Regex.Tests.Common.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\tests\System.Globalization.Tests\System\Globalization\CharUnicodeInfoTestData.cs" Link="System\Globalization\Tests\CharUnicodeInfoTestData.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\tests\FunctionalTests\RegexGeneratorHelper.netcoreapp.cs"
-             Link="System\Text\RegularExpressions\tests\FunctionalTests\RegexGeneratorHelper.netcoreapp.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\tests\FunctionalTests\RegexGeneratorHelper.netcoreapp.cs" Link="System\Text\RegularExpressions\Tests\RegexGeneratorHelper.netcoreapp.cs" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
-                      SetTargetFramework="TargetFramework=netstandard2.0"
-                      OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -41,6 +39,14 @@
   
   <ItemGroup>
     <None Include="GB18030\Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
+      <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
+      <LogicalName>UnicodeData.txt</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

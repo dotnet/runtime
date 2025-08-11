@@ -28,8 +28,8 @@ public class StringTests
 
     public static IEnumerable<object[]> Compare_TestData() =>
         TestHelper.s_decodedTestData.SelectMany(testData =>
-        TestHelper.s_cultures.SelectMany(culture =>
-        TestHelper.s_compareOptions.Select(option => new object[] { testData, culture, option })));
+        TestHelper.Cultures.SelectMany(culture =>
+        TestHelper.CompareOptions.Select(option => new object[] { testData, culture, option })));
 
     [Theory]
     [MemberData(nameof(Compare_TestData))]
@@ -43,7 +43,7 @@ public class StringTests
 
     public static IEnumerable<object[]> Contains_TestData() =>
         TestHelper.s_decodedTestData.SelectMany(testData =>
-        TestHelper.s_nonOrdinalStringComparisons.Select(comparison => new object[] { testData, comparison  }));
+        TestHelper.NonOrdinalStringComparisons.Select(comparison => new object[] { testData, comparison  }));
 
     [Theory]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -67,7 +67,7 @@ public class StringTests
 
     public static IEnumerable<object[]> StringComparison_TestData() =>
         TestHelper.s_decodedTestData.SelectMany(decoded =>
-        TestHelper.s_nonOrdinalStringComparisons.Select(comparison => new object[] { decoded, comparison }));
+        TestHelper.NonOrdinalStringComparisons.Select(comparison => new object[] { decoded, comparison }));
 
     [Theory]
     [MemberData(nameof(StringComparison_TestData))]
@@ -91,7 +91,7 @@ public class StringTests
 
     public static IEnumerable<object[]> EndsStartsWith_TestData() =>
         TestHelper.s_decodedTestData.SelectMany(testData =>
-        TestHelper.s_cultures.Select(culture => new object[] { testData, culture }));
+        TestHelper.Cultures.Select(culture => new object[] { testData, culture }));
 
     [Theory]
     [MemberData(nameof(EndsStartsWith_TestData))]
@@ -255,7 +255,7 @@ public class StringTests
 
     public static IEnumerable<object[]> Replace_NetCore_TestData() =>
         TestHelper.s_decodedTestData.SelectMany(testData =>
-        TestHelper.s_cultures.Select(culture => new object[] { testData, culture }));
+        TestHelper.Cultures.Select(culture => new object[] { testData, culture }));
 
 #if NETCOREAPP
     [Theory]

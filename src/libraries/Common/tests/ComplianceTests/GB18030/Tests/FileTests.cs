@@ -10,7 +10,7 @@ namespace GB18030.Tests;
 
 public class FileTests : FileTestBase
 {
-    private static readonly byte[] s_expectedBytes = File.ReadAllBytes(TestHelper.s_testDataFilePath);
+    private static readonly byte[] s_expectedBytes = File.ReadAllBytes(TestHelper.TestDataFilePath);
     private static readonly string s_expectedText = TestHelper.GB18030Encoding.GetString(s_expectedBytes);
 
     protected override void CreateFile(string path) => File.Create(path).Dispose();
@@ -21,7 +21,7 @@ public class FileTests : FileTestBase
     [Fact]
     public void ReadAllText()
     {
-        Assert.Equal(s_expectedText, File.ReadAllText(TestHelper.s_testDataFilePath, TestHelper.GB18030Encoding));
+        Assert.Equal(s_expectedText, File.ReadAllText(TestHelper.TestDataFilePath, TestHelper.GB18030Encoding));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class FileTests : FileTestBase
     {
         Assert.Equal(
             s_expectedText.Split([Environment.NewLine], StringSplitOptions.None),
-            File.ReadAllLines(TestHelper.s_testDataFilePath, TestHelper.GB18030Encoding));
+            File.ReadAllLines(TestHelper.TestDataFilePath, TestHelper.GB18030Encoding));
     }
 
     [Fact]
