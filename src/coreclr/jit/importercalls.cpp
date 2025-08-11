@@ -5031,10 +5031,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     {
                         op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
-                    }
-
-                    if (!isNumber)
-                    {
                         op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for Math.Min/Max non-Number"));
                     }
