@@ -78,5 +78,13 @@ function(generate_data_descriptors)
 
     # inherit definitions, include directories, and dependencies from the INTERFACE target
     target_link_libraries(${LIBRARY} PRIVATE ${DATA_DESCRIPTORS_INTERFACE_TARGET})
+
+    if(MSVC)
+      # /Zc:externConstexpr is required to export constexpr variables
+      # from the object file, otherwise the linker will not export them.
+      # See https://learn.microsoft.com/en-us/cpp/build/reference/zc-externconstexpr
+      # for more details.
+      target_compile_options(${LIBRARY} PRIVATE /Zc:externConstexpr)
+    endif(MSVC)
   endif()
 endfunction(generate_data_descriptors)
