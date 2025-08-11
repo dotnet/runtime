@@ -20,7 +20,7 @@ LOCKDIR=/tmp/androidtests.lock
 while true; do
     if mkdir "$LOCKDIR"
     then
-        trap 'rm -rf "$LOCKDIR"' EXIT INT TERM HUP QUIT
+        trap 'rm -rf "$LOCKDIR"' 0
         break
     else
         sleep 5

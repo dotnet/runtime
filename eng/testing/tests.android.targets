@@ -22,7 +22,6 @@
   <PropertyGroup Condition="'$(TestNativeAOT)' == 'true'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <_UseNativeLibPrefix>true</_UseNativeLibPrefix>
-    <MainLibraryFileName>lib$(TargetName).so</MainLibraryFileName>
   </PropertyGroup>
 
   <!-- Target that kicks off the whole test build and run flow -->
@@ -35,7 +34,7 @@
 
     <PropertyGroup>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(TestNativeAOT)' != 'true'">AndroidTestRunner.dll</MainLibraryFileName>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(TestNativeAOT)' == 'true'">$(TargetName).so</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(TestNativeAOT)' == 'true'">lib$(TargetName).so</MainLibraryFileName>
 
       <AndroidBuildDir>$(PublishDir)</AndroidBuildDir>
     </PropertyGroup>
