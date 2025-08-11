@@ -336,9 +336,9 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         *handle = 0;
         hr = HResults.S_FALSE;
 
-        int hrLocal = default;
         ulong handleLocal = default;
 #if DEBUG
+        int hrLocal = default;
         if (_legacyProcess is not null)
         {
             hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, &handleLocal);
@@ -388,9 +388,9 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
 
         IXCLRDataMethodInstance? legacyMethod = null;
-        int hrLocal = default;
 
 #if DEBUG
+        int hrLocal = default;
         if (_legacyProcess is not null)
         {
             ulong legacyHandle = emi.LegacyHandle;
