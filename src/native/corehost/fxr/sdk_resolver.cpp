@@ -26,6 +26,14 @@ namespace
         _X("latestMinor"),
         _X("latestMajor"),
     };
+
+    int get_feature_band(const fx_ver_t& version)
+    {
+        // SDK versions encode both the feature band and patch version in the SemVer patch version.
+        // They have the form x.y.znn, where z is the feature band and nn is the patch version.
+        // To get the feature band, we divide the SemVer patch by 100
+        return version.get_patch() / 100;
+    }
 }
 
 sdk_resolver::sdk_resolver(bool allow_prerelease)
@@ -404,18 +412,6 @@ sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string
         }
     }
 
-    // SDK feature bands start at 1, so setting version with a feature band < 1 and not rolling forward on feature band will always
-    // fail when trying to resolve the SDK. We want to provide an error message, but we should not fall back to the default resolver.
-    if (!requested_version.is_empty() && requested_version.get_patch() < 100
-        && (roll_forward == sdk_roll_forward_policy::disable
-            || roll_forward == sdk_roll_forward_policy::patch
-            || roll_forward == sdk_roll_forward_policy::latest_patch))
-    {
-        ret.error_message = utils::format_string(_X("Version '%s' feature band does not exist and roll-forward policy '%s' does not roll forward on feature band"), requested_version.as_str().c_str(), to_policy_name(roll_forward));
-        ret.state = global_file_info::state::__invalid_data_no_fallback;
-        return ret;
-    }
-
     const auto& allow_prerelease_value = sdk->value.FindMember(_X("allowPrerelease"));
     if (allow_prerelease_value == sdk->value.MemberEnd() || allow_prerelease_value->value.IsNull())
     {
@@ -475,6 +471,18 @@ sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string
         error_message = error_message_value->value.GetString();
     }
 
+    // SDK feature bands start at 1, so setting version with a feature band < 1 and not rolling forward on feature band will always
+    // fail when trying to resolve the SDK. We want to provide an error message, but we should not fall back to the default resolver.
+    if (!requested_version.is_empty() && get_feature_band(requested_version) < 1
+        && (roll_forward == sdk_roll_forward_policy::disable
+            || roll_forward == sdk_roll_forward_policy::patch
+            || roll_forward == sdk_roll_forward_policy::latest_patch))
+    {
+        ret.error_message = utils::format_string(_X("Version '%s' feature band does not exist and roll-forward policy '%s' does not roll forward on feature band"), requested_version.as_str().c_str(), to_policy_name(roll_forward));
+        ret.state = global_file_info::state::__invalid_data_no_fallback;
+        return ret;
+    }
+
     ret.state = global_file_info::state::valid;
     return ret;
 }
@@ -496,8 +504,8 @@ bool sdk_resolver::matches_policy(const fx_ver_t& current) const
         return true;
     }
 
-    int requested_feature = requested_version.get_patch() / 100;
-    int current_feature = current.get_patch() / 100;
+    int requested_feature = get_feature_band(requested_version);
+    int current_feature = get_feature_band(current);
 
     int requested_minor = requested_version.get_minor();
     int current_minor = current.get_minor();
@@ -552,7 +560,7 @@ bool sdk_resolver::is_better_match(const fx_ver_t& current, const fx_ver_t& prev
         is_policy_use_latest() ||
         (current.get_major() == previous.get_major() &&
          current.get_minor() == previous.get_minor() &&
-         (current.get_patch() / 100) == (previous.get_patch() / 100)))
+         (get_feature_band(current) == get_feature_band(previous))))
     {
         // Accept the later of the versions
         // This will also handle stable and prerelease comparisons
