@@ -346,8 +346,9 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 	}
 #endif    
 	init_icall_table ();
-    const bool check_symbol_lookup = false;
-    if(check_symbol_lookup)
+
+    #undef CHECK_SYMBOL_LOOKUP
+    #ifdef CHECK_SYMBOL_LOOKUP
     {
         printf("Checking mono_lookup_icall_symbol_internal\n");
         const char *p  = mono_lookup_icall_symbol_internal (mono_lookup_icall_symbol_internal);
@@ -356,6 +357,7 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 	    p  = mono_lookup_icall_symbol_internal (ves_icall_System_Environment_get_ProcessorCount);
 	    printf ("%s\n", p ? p : "null");
     }
+    #endif
 	mono_ee_interp_init (interp_opts);
 	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
