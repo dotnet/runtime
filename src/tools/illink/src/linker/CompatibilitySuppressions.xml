@@ -707,6 +707,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.GetEntryPointAssembly</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetLinkerAttributes``1(Mono.Cecil.IMemberDefinition)</Target>
   </Suppression>
   <Suppression>
@@ -816,6 +820,10 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetAppliedPreserve(Mono.Cecil.TypeDefinition,Mono.Linker.TypePreserve)</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.SetEntryPointAssembly(Mono.Cecil.AssemblyDefinition)</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -1520,6 +1528,18 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.Steps.SubStepsDispatcher.Process(Mono.Linker.LinkContext)</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_DisableGeneratedCodeHeuristics</Target>
+    <Left>ref/net10.0/illink.dll</Left>
+    <Right>lib/net10.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.set_DisableGeneratedCodeHeuristics(System.Boolean)</Target>
+    <Left>ref/net10.0/illink.dll</Left>
+    <Right>lib/net10.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>

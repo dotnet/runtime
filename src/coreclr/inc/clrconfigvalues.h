@@ -453,7 +453,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadSuspendInjection, W("INTERNAL_ThreadSusp
 ///
 /// Thread (miscellaneous)
 ///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_DefaultStackSize, W("DefaultStackSize"), 0, "Stack size to use for new VM threads when thread is created with default stack size (dwStackSize == 0).")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_DefaultStackSize, W("Thread_DefaultStackSize"), 0, "Stack size to use for new VM threads when thread is created with default stack size (dwStackSize == 0).")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Thread_DeadThreadCountThresholdForGCTrigger, W("Thread_DeadThreadCountThresholdForGCTrigger"), 75, "In the heuristics to clean up dead threads, this threshold must be reached before triggering a GC will be considered. Set to 0 to disable triggering a GC based on dead threads.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Thread_DeadThreadGCTriggerPeriodMilliseconds, W("Thread_DeadThreadGCTriggerPeriodMilliseconds"), 1000 * 60 * 30, "In the heuristics to clean up dead threads, this much time must have elapsed since the previous max-generation GC before triggering another GC will be considered")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies whether to query and use CPU group information for determining the processor count.")
@@ -684,6 +684,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,                    W("EnableAES"), 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VP2INTERSECT,     W("EnableAVX512VP2INTERSECT"),  1, "Allows AVX512VP2INTERSECT and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXIFMA,                W("EnableAVXIFMA"),             1, "Allows AVXIFMA and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,                W("EnableAVXVNNI"),             1, "Allows AVXVNNI and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNIINT,             W("EnableAVXVNNIINT"),          1, "Allows VEX versions (AVXVNNI8 & AVXVNNIINT16) hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableGFNI,                   W("EnableGFNI"),                1, "Allows GFNI and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSHA,                    W("EnableSHA"),                 1, "Allows SHA and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableVAES,                   W("EnableVAES"),                1, "Allows VAES, VPCLMULQDQ, and dependent hardware intrinsics to be disabled")
@@ -706,6 +707,9 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sv
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
 #endif
+
+// Runtime-async
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RuntimeAsync, W("RuntimeAsync"), 0, "Enables runtime async method support")
 
 ///
 /// Uncategorized

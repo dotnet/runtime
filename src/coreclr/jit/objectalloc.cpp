@@ -1324,7 +1324,8 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
     else
     {
         assert(candidate.m_onHeapReason != nullptr);
-        JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, candidate.m_onHeapReason);
+        JITDUMP("Allocating V%02u / [%06u] on the heap: %s\n", lclNum, comp->dspTreeID(candidate.m_tree),
+                candidate.m_onHeapReason);
         if ((candidate.m_allocType == OAT_NEWOBJ) || (candidate.m_allocType == OAT_NEWOBJ_HEAP))
         {
             GenTree* const stmtExpr      = candidate.m_tree;
@@ -1365,6 +1366,58 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
     {
         candidate.m_onHeapReason = "[alloc in loop]";
         return false;
+    }
+
+    // If we have done any cloning for conditional escape, verify this allocation
+    // is not on one of the "slow paths" that are now forcibly making interface calls.
+    //
+    for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
+    {
+        if (!c->m_willClone)
+        {
+            // We didn't clone so there is no check needed.
+            //
+            continue;
+        }
+
+        if (c->m_guardBlock == nullptr)
+        {
+            // This clone wasn't guarded by a GDV, so we should
+            // only have a fast path.
+            continue;
+        }
+
+        GenTree* const allocTree = candidate.m_tree->AsLclVar()->Data();
+
+        if (c->m_allocTree == allocTree)
+        {
+            // This is the conditionally escaping allocation, so it's
+            // on the fast path.
+            //
+            continue;
+        }
+
+        if (!comp->m_dfsTree->Contains(candidate.m_block))
+        {
+            // If the def block is not in the DFS tree then the allocation
+            // is not within the hammock, so it is not on the slow path.
+            //
+            continue;
+        }
+
+        // This allocation candidate might be on the "slow path". Check.
+        //
+        // c->m_guardBlock and c->m_defBlock form a GDV hammock.
+        //
+        // So if an allocation site is dominated by c->m_guardBlock and
+        // not dominated by c->m_defBlock, it is within the hammock.
+        //
+        if (comp->m_domTree->Dominates(c->m_guardBlock, candidate.m_block) &&
+            !comp->m_domTree->Dominates(c->m_defBlock, candidate.m_block))
+        {
+            candidate.m_onHeapReason = "[on slow path of conditional escape clone]";
+            return false;
+        }
     }
 
     switch (candidate.m_allocType)
@@ -2374,11 +2427,30 @@ void ObjectAllocator::UpdateAncestorTypes(
                 {
                     assert(tree == parent->AsIndir()->Data());
 
-                    // If we are storing to a GC struct field, we may need to retype the store
-                    //
                     if (varTypeIsGC(parent->TypeGet()))
                     {
-                        parent->ChangeType(newType);
+                        // We are storing a non-struct value, possibly to a struct field.
+                        //
+                        // See if we can figure out the field type from the address.
+                        // It might be TYP_BYREF even if the value we are storing is TYP_I_IMPL.
+                        //
+                        StoreInfo* const info       = m_StoreAddressToIndexMap.LookupPointer(parent);
+                        bool             wasRetyped = false;
+
+                        if (info != nullptr)
+                        {
+                            unsigned const addressIndex = info->m_index;
+                            if ((addressIndex != BAD_VAR_NUM) && !DoesIndexPointToStack(addressIndex))
+                            {
+                                parent->ChangeType(TYP_BYREF);
+                                wasRetyped = true;
+                            }
+                        }
+
+                        if (!wasRetyped)
+                        {
+                            parent->ChangeType(newType);
+                        }
                     }
                     else if (retypeFields && parent->OperIs(GT_STORE_BLK))
                     {
@@ -3613,22 +3685,24 @@ bool ObjectAllocator::ShouldClone(CloneInfo* info)
     unsigned const sizeLimit   = (sizeConfig >= 0) ? (unsigned)sizeConfig : UINT_MAX;
     unsigned       size        = 0;
     bool           shouldClone = true;
+    auto           countNode   = [&size](GenTree* tree) -> unsigned {
+        size++;
+        return 1;
+    };
 
     for (BasicBlock* const block : *info->m_blocksToClone)
     {
         // Note this overstates the size a bit since we'll resolve GDVs
         // in the clone and the original...
         //
-        unsigned const slack     = sizeLimit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(comp, slack, &blockSize))
+        unsigned const slack = sizeLimit - size;
+        if (block->ComplexityExceeds(comp, slack, countNode))
         {
             JITDUMP("Rejecting");
             JITDUMPEXEC(DumpIndex(info->m_pseudoIndex));
             JITDUMP(" cloning: exceeds size limit %u\n", sizeLimit);
             return false;
         }
-        size += blockSize;
     }
 
     // TODO: some kind of profile check...
@@ -3770,6 +3844,8 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     JITDUMP("V%02u has single def in " FMT_BB " at [%06u]\n", info->m_local, defBlock->bbNum,
             comp->dspTreeID(defStmt->GetRootNode()));
 
+    info->m_defBlock = defBlock;
+
     // We expect to be able to follow all paths from alloc block to defBlock
     // without reaching "beyond" defBlock.
     //
@@ -3845,13 +3921,50 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     // (if it does, optimization does not require cloning, as
     // there should be only one reaching def...)
     //
+    // For now we're going to just go ahead and clone, despite the
+    // fact that this is wasteful.
+    //
+    // In the transformation that follows the cloned path is the
+    // "fast" path and gets properly specialized; the original "slow
+    // path" will become unreachable and get cleaned up later on.
+    //
+    // See dotnet/runtime issue #117204.
+    //
     if (comp->m_domTree->Dominates(allocBlock, defBlock))
     {
-        JITDUMP("Unexpected, alloc site " FMT_BB " dominates def block " FMT_BB "\n", allocBlock->bbNum,
-                defBlock->bbNum);
-
-        return false;
+        JITDUMP("Unexpected, alloc site " FMT_BB " dominates def block " FMT_BB ". We will clone anyways.\n",
+                allocBlock->bbNum, defBlock->bbNum);
     }
+    else
+    {
+        // The allocation is conditional. See if we can find the GDV guard
+        // so we can check what other possible stack allocations might reach
+        // the def block.
+        //
+        BasicBlock* possibleGuardBlock = defBlock->bbIDom;
+        GuardInfo   gi;
+        if (IsGuard(possibleGuardBlock, &gi))
+        {
+            // Todo: validate guard is the right guard.
+            //
+            JITDUMP("Conditional allocation is guarded by a GDV\n");
+            info->m_guardBlock = possibleGuardBlock;
+        }
+        else
+        {
+            // The allocation is conditional but the enumerator var def is
+            // not dominated by a GDV. Perhaps we resolved the GDV already.
+            //
+            // We want to allow cloning to proceed in this case as alternative
+            // enumerators might be non-allocating (say the static empty array
+            // enumerator).
+            //
+            // But consider adding more checking in this case.
+            //
+            JITDUMP("Conditional allocation is not guarded by a GDV\n");
+        }
+    }
+
     // Classify the other local appearances
     // as Ts (allocTemps) or Us (useTemps), and look for guard appearances.
     //

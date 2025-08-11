@@ -582,12 +582,7 @@ int SharedMemoryHelpers::CreateOrOpenFile(
 void SharedMemoryHelpers::CloseFile(int fileDescriptor)
 {
     _ASSERTE(fileDescriptor != -1);
-
-    int closeResult;
-    do
-    {
-        closeResult = close(fileDescriptor);
-    } while (closeResult != 0 && errno == EINTR);
+    close(fileDescriptor);
 }
 
 int SharedMemoryHelpers::ChangeMode(LPCSTR path, mode_t mode)

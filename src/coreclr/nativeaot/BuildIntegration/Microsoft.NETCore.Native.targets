@@ -71,6 +71,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
+    <NativeBinaryPrefix Condition="'$(_UseNativeLibPrefix)' == 'true' and '$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win'">lib</NativeBinaryPrefix>
+
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_IsApplePlatform)' == 'true'">.dSYM</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_targetOS)' == 'win'">.pdb</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == ''">.dbg</NativeSymbolExt>
@@ -79,7 +81,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ExportsFileExt Condition="'$(_targetOS)' != 'win'">.exports</ExportsFileExt>
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
-    <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <NativeBinary>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
@@ -132,7 +134,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_NETCoreAppFrameworkReference Include="@(ResolvedFrameworkReference)" Condition="'%(ResolvedFrameworkReference.RuntimePackName)' == 'Microsoft.NETCore.App.Runtime.NativeAOT.$(RuntimeIdentifier)'" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == 'true'">
+    <PropertyGroup>
       <!--
         If we're actually using the runtime pack from the ResolvedFrameworkReference, pull the path from there.
         Otherwise pull it from the RuntimePackagePath.
@@ -144,35 +146,19 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(IlcFrameworkNativePath)</IlcSdkPath>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' != 'true'">
-      <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkPath>
-      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
-      <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(RuntimePackagePath)\sdk\</IlcSdkPath>
-    </PropertyGroup>
-
     <PropertyGroup>
       <!-- Define paths used in build targets to point to the runtime-specific ILCompiler implementation -->
       <IlcToolsPath Condition="'$(IlcToolsPath)' == ''">$(IlcHostPackagePath)\tools\</IlcToolsPath>
       <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == 'true'">
+    <ItemGroup>
       <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll"/>
       <FrameworkAssemblies Include="@(RuntimePackAsset)" Condition="'$(PublishAotUsingRuntimePack)' == 'true' and '%(Extension)' == '.dll'" />
       <!-- When we aren't pulling in runtime pack assets, make sure we manually grab the assets that the SDK would select from within the package. -->
       <FrameworkAssemblies Include="$(IlcFrameworkPath)**/*.dll" Condition="'$(PublishAotUsingRuntimePack)' != 'true'" />
-      <FrameworkAssemblies Include="$(IlcFrameworkNativePath)*.dll" Exclude="$(IlcFrameworkNativePath)*.Native.dll;$(IlcFrameworkNativePath)msquic.dll" Condition="'$(PublishAotUsingRuntimePack)' != 'true'" />
       <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
       <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" Exclude="@(DefaultFrameworkAssemblies)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' != 'true'">
-      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll"/>
-      <!-- Exclude unmanaged dlls -->
-      <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
-
-      <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
-      <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -237,6 +223,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_IlcMethodBodyFoldingValue Condition="$(IlcFoldIdenticalMethodBodies) == 'true' or $(StackTraceSupport) == 'false'">all</_IlcMethodBodyFoldingValue>
+      <_IlcMethodBodyFoldingValue Condition="$(_IlcMethodBodyFoldingValue) == '' and $(IlcFoldIdenticalMethodBodies) != 'false' and $(IlcMultiModule) != 'true'">generic</_IlcMethodBodyFoldingValue>
+      <_IlcMethodBodyFoldingValue Condition="$(_IlcMethodBodyFoldingValue) == '' or $(Optimize) != 'true'">none</_IlcMethodBodyFoldingValue>
+    </PropertyGroup>
+
     <ItemGroup>
       <IlcArg Include="@(IlcCompileInput)" />
       <IlcArg Include="-o:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)" />
@@ -244,10 +236,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(IlcSatelliteAssembly->'--satellite:%(Identity)')" />
       <IlcArg Include="@(MibcFile->'--mibc:%(Identity)')" />
       <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
-      <IlcArg Condition="$(_targetOS) != ''" Include="--targetos:$(_targetOS)" />
+      <!-- To the NativeAOT compiler, Android is just another linux -->
+      <IlcArg Condition="'$(_targetOS)' == 'android'" Include="--targetos:linux" />
+      <IlcArg Condition="'$(_targetOS)' != '' and '$(_targetOS)' != 'android'" Include="--targetos:$(_targetOS)" />
       <IlcArg Condition="$(_targetArchitectureWithAbi) != ''" Include="--targetarch:$(_targetArchitectureWithAbi)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
-      <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false'" Include="--dehydrate" />
+      <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false' and ($(_targetOS) != 'win' or '$(OptimizationPreference)' == 'Size' or '$(IlcDehydrate)' == 'true')" Include="--dehydrate" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(NativeDebugSymbols) == 'true'" Include="-g" />
       <IlcArg Condition="$(IlcDwarfVersion) == '5'" Include="--gdwarf-5" />
@@ -275,7 +269,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(StackTraceSupport) != 'false'" Include="--stacktracedata" />
       <IlcArg Condition="$(IlcScanReflection) != 'false'" Include="--scanreflection" />
-      <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true' or $(StackTraceSupport) == 'false'" Include="--methodbodyfolding" />
+      <IlcArg Include="--methodbodyfolding:$(_IlcMethodBodyFoldingValue)" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Speed'" Include="--Ot" />
       <IlcArg Condition="'$(_linuxLibcFlavor)' == 'bionic'" Include="--noinlinetls" />
@@ -303,6 +297,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy' or '$(TrimMode)' == 'partial'" Include="--defaultrooting" />
       <IlcArg Condition="$(IlcResilient) != 'false'" Include="--resilient" />
       <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
+      <IlcArg Condition="$(IlcOrderFile) != ''" Include="--order:$(IlcOrderFile)" />
+      <IlcArg Condition="$(IlcOrderFile) != ''" Include="--method-layout:explicit" />
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(DebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
@@ -322,7 +318,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Target Name="IlcCompile"
-      Inputs="@(IlcCompileInput);@(IlcReference);@(IlcSatelliteAssembly);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
+      Inputs="@(IlcCompileInput);@(IlcReference);@(IlcSatelliteAssembly);@(RdXmlFile);$(IlcOrderFile);%(ManagedBinary.IlcRspFile)"
       Outputs="%(ManagedBinary.IlcOutputFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Importance="high" />

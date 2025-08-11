@@ -692,3 +692,35 @@ void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDL
 
     printf("%s '%s'", prefix, str);
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// eePrintStringLiteral:
+//   Print a string literal. If missing information (in SPMI),
+//   then print a placeholder string.
+//
+// Arguments:
+//    module - The literal's scope handle
+//    token  - The literal's token
+//
+void Compiler::eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token)
+{
+    const int MAX_LITERAL_LENGTH      = 256;
+    char16_t  str[MAX_LITERAL_LENGTH] = {};
+    int       length                  = -1;
+    eeRunFunctorWithSPMIErrorTrap([&]() {
+        length = info.compCompHnd->getStringLiteral(module, token, str, MAX_LITERAL_LENGTH);
+    });
+
+    if (length < 0)
+    {
+        printf("<unknown string literal>");
+    }
+    else
+    {
+        char dst[MAX_LITERAL_LENGTH];
+        convertUtf16ToUtf8ForPrinting(str, length, dst, MAX_LITERAL_LENGTH);
+        printf("\"%.50s%s\"", dst, length > 50 ? "..." : "");
+    }
+}
+#endif // DEBUG
