@@ -156,11 +156,13 @@ namespace System.IO.Compression
                                         break;
 
                                     case TestScenario.Read:
-                                        while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { }
+                                        ;
                                         break;
 
                                     case TestScenario.ReadAsync:
-                                        while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { }
+                                        ;
                                         break;
 
                                     case TestScenario.ReadByte:
@@ -217,6 +219,21 @@ namespace System.IO.Compression
             {
                 WriteArrayInvoked = true;
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+        }
+
+        [Fact]
+        public void EmptyDeflateStream_WritesOutput()
+        {
+            using (var ms = new MemoryStream())
+            {
+                using (var deflateStream = new DeflateStream(ms, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write nothing
+                }
+
+                // DeflateStream should now write output even for empty streams
+                Assert.True(ms.Length > 0, "Empty DeflateStream should write finalization data");
             }
         }
     }
