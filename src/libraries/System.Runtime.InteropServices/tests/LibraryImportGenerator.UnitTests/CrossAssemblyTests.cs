@@ -95,10 +95,11 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task ExplicitMarshalAsAttribute_OnPrimitive_ReportsImprovedError()
+        public async Task ExplicitMarshalAsAttribute_OnPrimitive_ReportsTraditionalError()
         {
             // When there's an explicit MarshalAs attribute on a primitive type,
-            // it should report a clearer error message that doesn't confuse users
+            // it should report the traditional MarshalAs error since the user explicitly
+            // specified MarshalAs configuration
             string source = """
                 using System.Runtime.InteropServices;
 
@@ -110,11 +111,11 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            // This should produce the improved error message that focuses on the type rather than MarshalAs
+            // This should produce the traditional MarshalAs error since there's an explicit MarshalAs attribute
             await VerifyCS.VerifySourceGeneratorAsync(source,
-                VerifyCS.Diagnostic(GeneratorDiagnostics.TypeNotSupportedWithMarshallingInfoReturn)
+                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshalAsReturnConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments("int", "Method1"));
+                    .WithArguments("MarshalAsAttribute", "Method1"));
         }
 
         [Fact]

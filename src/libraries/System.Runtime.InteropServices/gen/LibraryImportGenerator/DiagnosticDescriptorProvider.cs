@@ -44,17 +44,22 @@ namespace Microsoft.Interop
         /// </summary>
         private static bool ShouldUseMarshalAsSpecificMessage(TypePositionInfo typePositionInfo)
         {
-            // For now, use a conservative approach: prefer the type-not-supported message in most cases
-            // since it's generally clearer for users. Only use the MarshalAs-specific message for
-            // very specific scenarios where it adds value.
+            // The goal is to provide clearer error messages specifically for cross-assembly scenarios
+            // where users get confusing "MarshalAsAttribute configuration" errors when they never
+            // used MarshalAsAttribute explicitly.
+            //
+            // For explicit MarshalAs attributes, the traditional message is appropriate.
+            // For inferred marshalling (especially cross-assembly types), use the type-focused message.
 
-            // In the future, we could enhance this by:
-            // 1. Checking if there are actual MarshalAs attributes in the source location
-            // 2. Analyzing the compilation context to determine if this is from external assembly
-            // 3. Providing different messages based on the specific UnmanagedType values
+            if (typePositionInfo.MarshallingAttributeInfo is MarshalAsInfo)
+            {
+                // If there's an explicit MarshalAs attribute, use the traditional message
+                // This maintains compatibility with existing scenarios and test expectations
+                return true;
+            }
 
-            // For now, always prefer the clearer type-focused message
-            _ = typePositionInfo; // Parameter kept for future enhancement
+            // No MarshalAs attribute - the marshalling behavior is inferred
+            // In this case, use the clearer type-focused message
             return false;
         }
     }
