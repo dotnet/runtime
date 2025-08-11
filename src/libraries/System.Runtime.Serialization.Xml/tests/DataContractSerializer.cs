@@ -4517,6 +4517,23 @@ public static partial class DataContractSerializerTests
         Assert.Throws<System.Runtime.Serialization.SerializationException>(() => { dcs.ReadObject(reader); });
     }
 
+    [Fact]
+    public static void DCS_ReadObject_MalformedPrefix_EmptyLocalName_ThrowsSerializationException()
+    {
+        // Regression for https://github.com/dotnet/runtime/issues/1409
+        // Uses the original repro payload that triggers an empty local-name via an unfinished prefixed element.
+        string xml = @"<Program.Obj xmlns=""http://schemas.datacontract.org/2004/07/CoreFX.Fuzz""><s:";
+        byte[] bytes = Encoding.UTF8.GetBytes(xml);
+        using (MemoryStream stream = new MemoryStream(bytes))
+        {
+            var serializer = new DataContractSerializer(typeof(CoreFX.Fuzz.Program.Obj));
+            var ex = Assert.Throws<SerializationException>(() => serializer.ReadObject(stream));
+            Assert.NotNull(ex.InnerException);
+            Assert.IsType<ArgumentException>(ex.InnerException);
+            Assert.Equal("name", ((ArgumentException)ex.InnerException).ParamName);
+        }
+    }
+
     private static T DeserializeString<T>(string stringToDeserialize, bool shouldReportDeserializationExceptions = true, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null)
     {
         DataContractSerializer dcs;
@@ -4572,5 +4589,15 @@ public static partial class DataContractSerializerTests
         var deserializedDesktopObject = DeserializeString<T>(desktopPayload, settings: settings);
         Assert.NotNull(deserializedDesktopObject);
         SerializationTestTypes.ComparisonHelper.CompareRecursively(value, deserializedDesktopObject);
+    }
+}
+
+// Test helper type
+namespace CoreFX.Fuzz
+{
+    public class Program
+    {
+        [DataContract]
+        public class Obj { }
     }
 }
