@@ -32261,8 +32261,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     // We shouldn't find AND_NOT nodes since it should only be produced in lowering
     assert(oper != GT_AND_NOT);
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-#if defined(TARGET_XARCH)
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+#ifdef TARGET_XARCH
     if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
     {
         // Comparisons that produce masks lead to more verbose trees than
