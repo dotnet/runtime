@@ -66,6 +66,23 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+static BasicBlock* SkipFallthroughBlocks(BasicBlock* block)
+{
+    // FALLTHROUGH
+    BasicBlock* origBlock = block;
+    while (block->KindIs(BBJ_ALWAYS) && (block->firstStmt() == nullptr) &&
+           BasicBlock::sameEHRegion(block, block->GetTarget()))
+    {
+        block = block->GetTarget();
+        if (block == origBlock)
+        {
+            // A cycle detected, bail out.
+            return origBlock;
+        }
+    }
+    return block;
+}
+
 //------------------------------------------------------------------------------
 // IsConstantTestCondBlock : Does the given block represent a simple BBJ_COND
 //    constant test? e.g. JTRUE(EQ/NE(X, CNS)).
@@ -124,8 +141,8 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                 }
 
                 *isReversed  = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *trueTarget  = *isReversed ? block->GetFalseTarget() : block->GetTrueTarget();
-                *falseTarget = *isReversed ? block->GetTrueTarget() : block->GetFalseTarget();
+                *trueTarget  = SkipFallthroughBlocks(*isReversed ? block->GetFalseTarget() : block->GetTrueTarget());
+                *falseTarget = SkipFallthroughBlocks(*isReversed ? block->GetTrueTarget() : block->GetFalseTarget());
 
                 if (block->FalseTargetIs(block) || block->TrueTargetIs(block))
                 {
@@ -402,7 +419,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
     const bool  isTest       = IsConstantTestCondBlock(lastBlock, false, &blockIfTrue, &blockIfFalse, &isReversed);
     assert(isTest);
 
-    assert(firstBlock->TrueTargetIs(blockIfTrue));
+    assert(SkipFallthroughBlocks(firstBlock->GetTrueTarget()) == SkipFallthroughBlocks(blockIfTrue));
     FlowEdge* const trueEdge  = firstBlock->GetTrueEdge();
     FlowEdge* const falseEdge = firstBlock->GetFalseEdge();
 
