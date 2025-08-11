@@ -97,7 +97,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData("TestEvent", null, typeof(ArgumentNullException))]
         [InlineData("", typeof(int), typeof(ArgumentException))]
         [InlineData("\0TestEvent", typeof(int), typeof(ArgumentException))]
-        public void DefineEvent_Invalid(string name, Type eventType, Type exceptionType)
+        public void DefineEvent_Invalid(string? name, Type? eventType, Type exceptionType)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             type.DefineGenericParameters("T");

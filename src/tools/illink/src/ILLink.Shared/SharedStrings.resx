@@ -1239,4 +1239,16 @@
   <data name="TypeNameIsNotAssemblyQualifiedTitle" xml:space="preserve">
     <value>Type name is not assembly qualified.</value>
   </data>
+  <data name="ReferenceNotMarkedIsTrimmableTitle" xml:space="preserve">
+    <value>Referenced assembly is not marked as trimmable.</value>
+  </data>
+  <data name="ReferenceNotMarkedIsTrimmableMessage" xml:space="preserve">
+    <value>Referenced assembly '{0}' is not built with `<IsTrimmable>true</IsTrimmable>` and may not be compatible with trimming.</value>
+  </data>
+  <data name="ReferenceNotMarkedIsAotCompatibleTitle" xml:space="preserve">
+    <value>Referenced assembly is not marked as AOT-compatible.</value>
+  </data>
+  <data name="ReferenceNotMarkedIsAotCompatibleMessage" xml:space="preserve">
+    <value>Referenced assembly '{0}' is not built with `<IsAotCompatible>true</IsAotCompatible>` and may not be compatible with AOT.</value>
+  </data>
 </root>

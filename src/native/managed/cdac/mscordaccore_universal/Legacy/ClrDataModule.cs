@@ -132,7 +132,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(_address);
             string result = string.Empty;
             try
             {
@@ -183,7 +183,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(_address);
 
             ModuleFlags moduleFlags = contract.GetFlags(handle);
             if ((moduleFlags & ModuleFlags.ReflectionEmit) != 0)
@@ -225,7 +225,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             if (!_extentsSet)
             {
                 Contracts.ILoader contract = _target.Contracts.Loader;
-                Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+                Contracts.ModuleHandle moduleHandle = contract.GetModuleHandleFromModulePtr(_address);
 
                 TargetPointer peAssembly = contract.GetPEAssembly(moduleHandle);
                 if (peAssembly == 0)
@@ -271,7 +271,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+            Contracts.ModuleHandle moduleHandle = contract.GetModuleHandleFromModulePtr(_address);
 
             if (!_extentsSet)
             {
@@ -347,7 +347,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         Unsafe.InitBlock(getModuleData, 0, (uint)sizeof(DacpGetModuleData));
 
         Contracts.ILoader contract = _target.Contracts.Loader;
-        Contracts.ModuleHandle moduleHandle = contract.GetModuleHandle(_address);
+        Contracts.ModuleHandle moduleHandle = contract.GetModuleHandleFromModulePtr(_address);
         TargetPointer peAssembly = contract.GetPEAssembly(moduleHandle);
 
         bool isReflectionEmit = (contract.GetFlags(moduleHandle) & ModuleFlags.ReflectionEmit) != 0;

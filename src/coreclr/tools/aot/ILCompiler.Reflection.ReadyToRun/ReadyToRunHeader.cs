@@ -132,7 +132,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             byte[] signature = new byte[sizeof(uint) - 1]; // -1 removes the null character at the end of the cstring
             imageReader.ReadSpanAt(ref curOffset, signature);
             curOffset = startOffset;
-            Array.Copy(Array.Empty<int>(), curOffset, signature, 0, sizeof(uint) - 1);
             SignatureString = Encoding.UTF8.GetString(signature);
             Signature = imageReader.ReadUInt32(ref curOffset);
             if (Signature != READYTORUN_SIGNATURE)

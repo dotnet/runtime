@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
             int publicKeySize = algorithm.PublicKeySizeInBytes;
-            int secretKeySize = algorithm.SecretKeySizeInBytes;
+            int privateKeySize = algorithm.PrivateKeySizeInBytes;
             int signatureSize = algorithm.SignatureSizeInBytes;
 
             if (shouldDispose)
@@ -84,8 +84,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.ExportSlhDsaPublicKey(new byte[publicKeySize - 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.ExportSlhDsaPublicKey(new byte[publicKeySize + 1]));
-            AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.ExportSlhDsaSecretKey(new byte[secretKeySize - 1]));
-            AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.ExportSlhDsaSecretKey(new byte[secretKeySize + 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.ExportSlhDsaPrivateKey(new byte[privateKeySize - 1]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.ExportSlhDsaPrivateKey(new byte[privateKeySize + 1]));
             AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize - 1], ReadOnlySpan<byte>.Empty));
             AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.SignData(ReadOnlySpan<byte>.Empty, new byte[signatureSize + 1], ReadOnlySpan<byte>.Empty));
             AssertExtensions.Throws<ArgumentException>("destination", () => slhDsa.SignPreHash(ReadOnlySpan<byte>.Empty, new byte[signatureSize - 1], "", ReadOnlySpan<byte>.Empty));
@@ -134,28 +134,20 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }, SlhDsaTestHelpers.EncryptionPasswordType.Byte);
         }
 
+        public static IEnumerable<object[]> ArgumentValidation_Hash_WrongSizeInputs()
+        {
+            foreach (bool shouldDispose in new[] { true, false })
+            {
+                foreach (HashInfo hashInfo in HashInfo.AllHashInfos())
+                {
+                    yield return new object[] { shouldDispose, hashInfo };
+                }
+            }
+        }
+
         [Theory]
-        [InlineData(true, SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(true, SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(false, SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
-        public static void ArgumentValidation_Hash_WrongSize(bool shouldDispose, string oid, int hashLength)
+        [MemberData(nameof(ArgumentValidation_Hash_WrongSizeInputs))]
+        public static void ArgumentValidation_Hash_WrongSize(bool shouldDispose, HashInfo hashInfo)
         {
             using SlhDsa slhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128f);
 
@@ -167,15 +159,15 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             byte[] signature = new byte[SlhDsaAlgorithm.SlhDsaSha2_128f.SignatureSizeInBytes];
 
-            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength - 1], oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength + 1], oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength - 1], signature, oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashLength + 1], signature, oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashInfo.OutputSize - 1], hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashInfo.OutputSize + 1], hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashInfo.OutputSize - 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.SignPreHash(new byte[hashInfo.OutputSize + 1], signature, hashInfo.Oid));
 
-            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength - 1], signature, oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength + 1], signature, oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength - 1], signature.AsSpan(), oid));
-            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashLength + 1], signature.AsSpan(), oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashInfo.OutputSize - 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashInfo.OutputSize + 1], signature, hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashInfo.OutputSize - 1], signature.AsSpan(), hashInfo.Oid));
+            Assert.Throws<CryptographicException>(() => slhDsa.VerifyPreHash(new byte[hashInfo.OutputSize + 1], signature.AsSpan(), hashInfo.Oid));
         }
 
         [Theory]
@@ -283,30 +275,30 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void ExportSlhDsaSecretKey_CallsCore(SlhDsaAlgorithm algorithm)
+        public static void ExportSlhDsaPrivateKey_CallsCore(SlhDsaAlgorithm algorithm)
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
-            slhDsa.ExportSlhDsaSecretKeyCoreHook = _ => { };
+            slhDsa.ExportSlhDsaPrivateKeyCoreHook = _ => { };
             slhDsa.AddFillDestination(1);
 
-            int secretKeySize = algorithm.SecretKeySizeInBytes;
+            int privateKeySize = algorithm.PrivateKeySizeInBytes;
 
             // Array overload
-            byte[] exported = slhDsa.ExportSlhDsaSecretKey();
-            Assert.Equal(1, slhDsa.ExportSlhDsaSecretKeyCoreCallCount);
-            Assert.Equal(secretKeySize, exported.Length);
+            byte[] exported = slhDsa.ExportSlhDsaPrivateKey();
+            Assert.Equal(1, slhDsa.ExportSlhDsaPrivateKeyCoreCallCount);
+            Assert.Equal(privateKeySize, exported.Length);
             AssertExpectedFill(exported, fillElement: 1);
 
             // Span overload
-            byte[] secretKey = CreatePaddedFilledArray(secretKeySize, 42);
+            byte[] privateKey = CreatePaddedFilledArray(privateKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
-            Memory<byte> destination = secretKey.AsMemory(PaddingSize, secretKeySize);
+            Memory<byte> destination = privateKey.AsMemory(PaddingSize, privateKeySize);
             slhDsa.AddDestinationBufferIsSameAssertion(destination);
 
-            slhDsa.ExportSlhDsaSecretKey(destination.Span);
-            Assert.Equal(2, slhDsa.ExportSlhDsaSecretKeyCoreCallCount);
-            AssertExpectedFill(secretKey, fillElement: 1, paddingElement: 42, PaddingSize, secretKeySize);
+            slhDsa.ExportSlhDsaPrivateKey(destination.Span);
+            Assert.Equal(2, slhDsa.ExportSlhDsaPrivateKeyCoreCallCount);
+            AssertExpectedFill(privateKey, fillElement: 1, paddingElement: 42, PaddingSize, privateKeySize);
         }
 
         [Theory]
@@ -412,17 +404,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Assert.Equal(2, slhDsa.VerifyDataCoreCallCount);
         }
 
+        public static IEnumerable<object[]> AllHashesAndLengths()
+        {
+            foreach (HashInfo hashInfo in HashInfo.AllHashInfos())
+            {
+                yield return new object[] { hashInfo.Oid, hashInfo.OutputSize };
+            }
+        }
+
         [Theory]
-        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [MemberData(nameof(AllHashesAndLengths))]
         [InlineData("1.0", 0)]
         [InlineData("1.0", 1)]
         [InlineData("1.0", 2)]
@@ -462,16 +453,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [MemberData(nameof(AllHashesAndLengths))]
         [InlineData("1.0", 0)]
         [InlineData("1.0", 1)]
         [InlineData("1.0", 2)]
@@ -510,16 +492,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [InlineData(SlhDsaTestHelpers.Md5Oid, 128 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha1Oid, 160 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_256Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_384Oid, 384 / 8)]
-        [InlineData(SlhDsaTestHelpers.Sha3_512Oid, 512 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake128Oid, 256 / 8)]
-        [InlineData(SlhDsaTestHelpers.Shake256Oid, 512 / 8)]
+        [MemberData(nameof(AllHashesAndLengths))]
         [InlineData("1.0", 0)]
         [InlineData("1.0", 1)]
         [InlineData("1.0", 2)]
@@ -585,31 +558,31 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void ExportPkcs8PrivateKey_CallsExportSlhDsaSecretKey(SlhDsaAlgorithm algorithm)
+        public static void ExportPkcs8PrivateKey_CallsExportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm)
         {
             SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
             {
                 using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
-                slhDsa.ExportSlhDsaSecretKeyCoreHook = _ => { };
+                slhDsa.ExportSlhDsaPrivateKeyCoreHook = _ => { };
                 slhDsa.AddLengthAssertion();
                 slhDsa.AddFillDestination(1);
 
                 // SlhDsaMockImplementation overrides TryExportPkcs8PrivateKeyCore with a stub. In order to replicate the
                 // non-overridden behavior, we will replace the stub with a call to base.TryExportPkcs8PrivateKeyCore.
-                // We can then assert that base.TryExportPkcs8PrivateKeyCore calls ExportSlhDsaSecretKeyCore as expected.
+                // We can then assert that base.TryExportPkcs8PrivateKeyCore calls ExportSlhDsaPrivateKeyCore as expected.
                 slhDsa.TryExportPkcs8PrivateKeyCoreHook = slhDsa.BaseTryExportPkcs8PrivateKeyCore;
 
                 // Invoke the export
                 byte[] exported = export(slhDsa);
 
                 // Assert that the core methods were called
-                AssertExtensions.GreaterThan(slhDsa.ExportSlhDsaSecretKeyCoreCallCount, 0);
+                AssertExtensions.GreaterThan(slhDsa.ExportSlhDsaPrivateKeyCoreCallCount, 0);
                 AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
 
                 // And check the returned data
                 PrivateKeyInfoAsn exportedPkcs8 = PrivateKeyInfoAsn.Decode(exported, AsnEncodingRules.DER);
-                AssertExtensions.SequenceEqual(CreateFilledArray(algorithm.SecretKeySizeInBytes, 1), exportedPkcs8.PrivateKey.Span);
+                AssertExtensions.SequenceEqual(CreateFilledArray(algorithm.PrivateKeySizeInBytes, 1), exportedPkcs8.PrivateKey.Span);
                 Assert.Equal(0, exportedPkcs8.Version);
                 Assert.Equal(SlhDsaTestHelpers.AlgorithmToOid(algorithm), exportedPkcs8.PrivateKeyAlgorithm.Algorithm);
                 AssertExtensions.FalseExpression(exportedPkcs8.PrivateKeyAlgorithm.Parameters.HasValue);
@@ -619,9 +592,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
         [Theory]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
-        public static void ExportPkcs8PrivateKey_DoesNotCallExportSlhDsaSecretKey(SlhDsaAlgorithm algorithm)
+        public static void ExportPkcs8PrivateKey_DoesNotCallExportSlhDsaPrivateKey(SlhDsaAlgorithm algorithm)
         {
-            byte[] secretKeyBytes = CreateFilledArray(algorithm.SecretKeySizeInBytes, 42);
+            byte[] privateKeyBytes = CreateFilledArray(algorithm.PrivateKeySizeInBytes, 42);
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
@@ -629,7 +602,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     Algorithm = SlhDsaTestHelpers.AlgorithmToOid(algorithm),
                     Parameters = null,
                 },
-                PrivateKey = secretKeyBytes,
+                PrivateKey = privateKeyBytes,
             };
             byte[] minimalEncoding = pkcs8.Encode();
 
@@ -655,8 +628,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
                 byte[] exported = export(slhDsa);
 
-                // Assert that the PKCS#8 private key is NOT generated with the secret key but from our test callback
-                Assert.Equal(0, slhDsa.ExportSlhDsaSecretKeyCoreCallCount);
+                // Assert that the PKCS#8 private key is NOT generated with the private key but from our test callback
+                Assert.Equal(0, slhDsa.ExportSlhDsaPrivateKeyCoreCallCount);
                 AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
 
                 PrivateKeyInfoAsn exportedPkcs8 = PrivateKeyInfoAsn.Decode(exported, AsnEncodingRules.DER);
@@ -716,18 +689,18 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             {
                 using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
-                slhDsa.ExportSlhDsaSecretKeyCoreHook = _ => { };
+                slhDsa.ExportSlhDsaPrivateKeyCoreHook = _ => { };
                 slhDsa.AddLengthAssertion();
                 slhDsa.AddFillDestination(1);
 
                 // SlhDsaMockImplementation overrides TryExportPkcs8PrivateKeyCore with a stub. In order to replicate the
                 // non-overridden behavior, we will replace the stub with a call to base.TryExportPkcs8PrivateKeyCore.
-                // We can then assert that base.TryExportPkcs8PrivateKeyCore calls ExportSlhDsaSecretKeyCore as expected.
+                // We can then assert that base.TryExportPkcs8PrivateKeyCore calls ExportSlhDsaPrivateKeyCore as expected.
                 slhDsa.TryExportPkcs8PrivateKeyCoreHook = slhDsa.BaseTryExportPkcs8PrivateKeyCore;
 
                 byte[] exported = export(slhDsa, "PLACEHOLDER", pbeParameters);
 
-                AssertExtensions.GreaterThan(slhDsa.ExportSlhDsaSecretKeyCoreCallCount, 0);
+                AssertExtensions.GreaterThan(slhDsa.ExportSlhDsaPrivateKeyCoreCallCount, 0);
                 AssertExtensions.GreaterThan(slhDsa.TryExportPkcs8PrivateKeyCoreCallCount, 0);
 
                 EncryptedPrivateKeyInfoAsn epki = EncryptedPrivateKeyInfoAsn.Decode(exported, AsnEncodingRules.BER);
@@ -742,16 +715,16 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public static void TryExportPkcs8PrivateKey_DestinationTooSmall(SlhDsaAlgorithm algorithm)
         {
             const int MinimumOverhead = 12;
-            int lengthCutoff = algorithm.SecretKeySizeInBytes + MinimumOverhead;
+            int lengthCutoff = algorithm.PrivateKeySizeInBytes + MinimumOverhead;
 
             // First check that the length cutoff is enforced
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
-            byte[] secretKey = new byte[lengthCutoff];
+            byte[] privateKey = new byte[lengthCutoff];
 
             // Early heuristic based bailout so no core methods are called
             AssertExtensions.FalseExpression(
-                slhDsa.TryExportPkcs8PrivateKey(secretKey.AsSpan(0, lengthCutoff - 1), out int bytesWritten));
+                slhDsa.TryExportPkcs8PrivateKey(privateKey.AsSpan(0, lengthCutoff - 1), out int bytesWritten));
             Assert.Equal(0, bytesWritten);
 
             // No bailout case: set up the core method
@@ -761,8 +734,8 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 return true;
             };
 
-            AssertExtensions.TrueExpression(slhDsa.TryExportPkcs8PrivateKey(secretKey, out bytesWritten));
-            Assert.Equal(secretKey.Length, bytesWritten);
+            AssertExtensions.TrueExpression(slhDsa.TryExportPkcs8PrivateKey(privateKey, out bytesWritten));
+            Assert.Equal(privateKey.Length, bytesWritten);
 
             // Now check that the length cutoff permits a minimal encoding
             // Build the minimal encoding:
@@ -776,7 +749,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     writer.WriteObjectIdentifier(SlhDsaTestHelpers.AlgorithmToOid(algorithm));
                 }
 
-                writer.WriteOctetString(new byte[algorithm.SecretKeySizeInBytes]);
+                writer.WriteOctetString(new byte[algorithm.PrivateKeySizeInBytes]);
             }
 
             byte[] encodedMetadata = writer.Encode();
@@ -791,7 +764,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
-            byte[] secretKeyBytes = CreateFilledArray(algorithm.SecretKeySizeInBytes, 42);
+            byte[] privateKeyBytes = CreateFilledArray(algorithm.PrivateKeySizeInBytes, 42);
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
@@ -799,7 +772,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
                     Parameters = null,
                 },
-                PrivateKey = secretKeyBytes,
+                PrivateKey = privateKeyBytes,
             };
 
             byte[] minimalEncoding = pkcs8.Encode();
@@ -835,7 +808,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         {
             using SlhDsaMockImplementation slhDsa = SlhDsaMockImplementation.Create(algorithm);
 
-            byte[] secretKeyBytes = CreateFilledArray(algorithm.SecretKeySizeInBytes, 42);
+            byte[] privateKeyBytes = CreateFilledArray(algorithm.PrivateKeySizeInBytes, 42);
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
@@ -843,7 +816,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     Algorithm = SlhDsaTestHelpers.AlgorithmToOid(SlhDsaAlgorithm.SlhDsaSha2_128s),
                     Parameters = null,
                 },
-                PrivateKey = secretKeyBytes,
+                PrivateKey = privateKeyBytes,
             };
 
             byte[] minimalEncoding = pkcs8.Encode();

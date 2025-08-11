@@ -3,6 +3,7 @@
 
 using System.Data.OleDb;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Data.Common
 {
@@ -15,27 +16,15 @@ namespace System.Data.Common
         [LibraryImport(Interop.Libraries.OleAut32)]
         internal static unsafe partial OleDbHResult GetErrorInfo(
             int dwReserved,
-            System.IntPtr* ppIErrorInfo);
+            [MarshalUsing(typeof(UniqueComInterfaceMarshaller<IErrorInfo>))]
+            out IErrorInfo? ppIErrorInfo);
 
-        internal static unsafe OleDbHResult GetErrorInfo(
-            int dwReserved,
-            out UnsafeNativeMethods.IErrorInfo? ppIErrorInfo)
+        internal static void ReleaseComWrappersObject(object? obj)
         {
-            ppIErrorInfo = null;
-            IntPtr pErrorInfo;
-            var hr = GetErrorInfo(dwReserved, &pErrorInfo);
-            if (hr == OleDbHResult.S_OK)
+            if (obj is not null)
             {
-                ppIErrorInfo = (UnsafeNativeMethods.IErrorInfo)OleDbComWrappers.Instance
-                    .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);
+                ((ComObject)obj).FinalRelease();
             }
-
-            return hr;
-        }
-
-        internal static void ReleaseErrorInfoObject(UnsafeNativeMethods.IErrorInfo errorInfo)
-        {
-            ((IDisposable)errorInfo).Dispose();
         }
     }
 }

@@ -24,32 +24,15 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexNode<TSet> _anyStar;
         internal readonly SymbolicRegexNode<TSet> _anyStarLazy;
 
-        private SymbolicRegexNode<TSet>? _epsilon;
-        internal SymbolicRegexNode<TSet> Epsilon => _epsilon ??= SymbolicRegexNode<TSet>.CreateEpsilon(this);
-
-        private SymbolicRegexNode<TSet>? _beginningAnchor;
-        internal SymbolicRegexNode<TSet> BeginningAnchor => _beginningAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BeginningAnchor);
-
-        private SymbolicRegexNode<TSet>? _endAnchor;
-        internal SymbolicRegexNode<TSet> EndAnchor => _endAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchor);
-
-        private SymbolicRegexNode<TSet>? _endAnchorZ;
-        internal SymbolicRegexNode<TSet> EndAnchorZ => _endAnchorZ ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZ);
-
-        private SymbolicRegexNode<TSet>? _endAnchorZReverse;
-        internal SymbolicRegexNode<TSet> EndAnchorZReverse => _endAnchorZReverse ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZReverse);
-
-        private SymbolicRegexNode<TSet>? _bolAnchor;
-        internal SymbolicRegexNode<TSet> BolAnchor => _bolAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BOLAnchor);
-
-        private SymbolicRegexNode<TSet>? _eolAnchor;
-        internal SymbolicRegexNode<TSet> EolAnchor => _eolAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EOLAnchor);
-
-        private SymbolicRegexNode<TSet>? _wbAnchor;
-        internal SymbolicRegexNode<TSet> BoundaryAnchor => _wbAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BoundaryAnchor);
-
-        private SymbolicRegexNode<TSet>? _nwbAnchor;
-        internal SymbolicRegexNode<TSet> NonBoundaryAnchor => _nwbAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.NonBoundaryAnchor);
+        internal SymbolicRegexNode<TSet> Epsilon => field ??= SymbolicRegexNode<TSet>.CreateEpsilon(this);
+        internal SymbolicRegexNode<TSet> BeginningAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BeginningAnchor);
+        internal SymbolicRegexNode<TSet> EndAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchor);
+        internal SymbolicRegexNode<TSet> EndAnchorZ => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZ);
+        internal SymbolicRegexNode<TSet> EndAnchorZReverse => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZReverse);
+        internal SymbolicRegexNode<TSet> BolAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BOLAnchor);
+        internal SymbolicRegexNode<TSet> EolAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EOLAnchor);
+        internal SymbolicRegexNode<TSet> BoundaryAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BoundaryAnchor);
+        internal SymbolicRegexNode<TSet> NonBoundaryAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.NonBoundaryAnchor);
 
         internal TSet _wordLetterForBoundariesSet;
         internal TSet _newLineSet;

@@ -2125,7 +2125,7 @@ struct ReversePInvokeFrame
 
 //------------------------------------------------------------------------
 // This frame is pushed by any JIT'ted method that contains one or more
-// inlined N/Direct calls. Note that the JIT'ted method keeps it pushed
+// inlined PInvoke calls. Note that the JIT'ted method keeps it pushed
 // the whole time to amortize the pushing cost across the entire method.
 //------------------------------------------------------------------------
 
@@ -2134,6 +2134,21 @@ typedef DPTR(class InlinedCallFrame) PTR_InlinedCallFrame;
 class InlinedCallFrame : public Frame
 {
 public:
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_INTERPRETER
+    InlinedCallFrame() : Frame(FrameIdentifier::InlinedCallFrame)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_Datum = NULL;
+        m_pCallSiteSP = NULL;
+        m_pCallerReturnAddress = 0;
+        m_pCalleeSavedFP = 0;
+        m_pThread = NULL;
+    }
+#endif // FEATURE_INTERPRETER
+#endif // DACCESS_COMPILE
+
     MethodDesc *GetFunction_Impl()
     {
         WRAPPER_NO_CONTRACT;
@@ -2195,7 +2210,7 @@ public:
     // - bit 1 set indicates invoking new exception handling helpers
     // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
     // See code:HasFunction.
-    PTR_NDirectMethodDesc   m_Datum;
+    PTR_PInvokeMethodDesc   m_Datum;
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
     // out to unmanaged code.
@@ -2212,7 +2227,7 @@ public:
     // This is used only for EBP. Hence, a stackwalk will miss the other
     // callee-saved registers for the method with the InlinedCallFrame.
     // To prevent GC-holes, we do not keep any GC references in callee-saved
-    // registers across an NDirect call.
+    // registers across an PInvoke call.
     TADDR                m_pCalleeSavedFP;
 
     // This field is used to cache the current thread object where this frame is

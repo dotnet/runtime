@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,8 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
-using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
-
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -146,6 +143,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         public readonly TargetPointer _appDomain;
         private readonly ILoader _loader;
         private readonly IRuntimeTypeSystem _rts;
+        private readonly ICodeVersions _cv;
         public IEnumerator<MethodDescHandle> methodEnumerator = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
         public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
 
@@ -165,12 +163,13 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
             _loader = _target.Contracts.Loader;
             _rts = _target.Contracts.RuntimeTypeSystem;
+            _cv = _target.Contracts.CodeVersions;
         }
 
         public int Start()
         {
             MethodDescHandle mainMD = _rts.GetMethodDescHandle(_mainMethodDesc);
-            if (!HasClassOrMethodInstantiation(mainMD) && !HasNativeCodeAnyVersion(mainMD))
+            if (!HasClassOrMethodInstantiation(mainMD) && !_cv.HasNativeCodeAnyVersion(_mainMethodDesc))
             {
                 return HResults.S_FALSE;
             }
@@ -203,7 +202,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         private IEnumerable<Contracts.ModuleHandle> IterateModules()
         {
             ILoader loader = _target.Contracts.Loader;
-            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModules(
+            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                 _appDomain,
                 AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
 
@@ -229,7 +228,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             {
                 // case 1
                 // no method or class instantiation, then it's not generic.
-                if (HasNativeCodeAnyVersion(mainMD))
+                if (_cv.HasNativeCodeAnyVersion(_mainMethodDesc))
                 {
                     yield return mainMD;
                 }
@@ -256,7 +255,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                         if (mainModule != _rts.GetModule(methodTypeHandle)) continue;
                         if (mainMDToken != _rts.GetMethodToken(methodDesc)) continue;
 
-                        if (HasNativeCodeAnyVersion(methodDesc))
+                        if (_cv.HasNativeCodeAnyVersion(methodDesc.Address))
                         {
                             yield return methodDesc;
                         }
@@ -294,7 +293,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                             if (methodDescAddr == TargetPointer.Null) continue;
                             MethodDescHandle methodDesc = _rts.GetMethodDescHandle(methodDescAddr);
 
-                            if (HasNativeCodeAnyVersion(methodDesc))
+                            if (_cv.HasNativeCodeAnyVersion(methodDescAddr))
                             {
                                 yield return methodDesc;
                             }
@@ -305,26 +304,6 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                 yield break;
             }
 
-        }
-
-        private bool HasNativeCodeAnyVersion(MethodDescHandle mdHandle)
-        {
-            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            ICodeVersions cv = _target.Contracts.CodeVersions;
-
-            TargetCodePointer pcode = rts.GetNativeCode(mdHandle);
-
-            if (pcode == TargetCodePointer.Null)
-            {
-                // TODO(cdac): Fix this to check for any native code version
-                NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(mdHandle.Address);
-                if (nativeCodeVersion.Valid)
-                {
-                    pcode = cv.GetNativeCode(nativeCodeVersion);
-                }
-            }
-
-            return pcode != TargetCodePointer.Null;
         }
 
         private bool HasClassOrMethodInstantiation(MethodDescHandle md)
@@ -357,25 +336,38 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         *handle = 0;
         hr = HResults.S_FALSE;
 
-        int hrLocal = default;
         ulong handleLocal = default;
+#if DEBUG
+        int hrLocal = default;
         if (_legacyProcess is not null)
         {
             hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, &handleLocal);
-            if (hrLocal < 0)
-                return hrLocal;
         }
+#endif
 
-        IExecutionManager eman = _target.Contracts.ExecutionManager;
-        if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh && eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
+        try
         {
-            EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
+            // ClrDataAccess::IsPossibleCodeAddress
+            // Does a trivial check on the readability of the address
+            bool isTriviallyReadable = _target.TryRead(address, out byte _);
+            if (!isTriviallyReadable)
+                throw new ArgumentException();
 
-            emi.LegacyHandle = handleLocal;
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh &&
+                eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
+            {
+                EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
+                emi.LegacyHandle = handleLocal;
 
-            GCHandle gcHandle = GCHandle.Alloc(emi);
-            *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
-            hr = emi.Start();
+                GCHandle gcHandle = GCHandle.Alloc(emi);
+                *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+                hr = emi.Start();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 
 #if DEBUG
@@ -396,15 +388,16 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
 
         IXCLRDataMethodInstance? legacyMethod = null;
+
+#if DEBUG
         int hrLocal = default;
         if (_legacyProcess is not null)
         {
             ulong legacyHandle = emi.LegacyHandle;
             hrLocal = _legacyProcess.EnumMethodInstanceByAddress(&legacyHandle, out legacyMethod);
             emi.LegacyHandle = legacyHandle;
-            if (hrLocal < 0)
-                return hrLocal;
         }
+#endif
 
         try
         {
@@ -423,11 +416,12 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             hr = ex.HResult;
         }
 
-
-        if (legacyMethod is not null)
+#if DEBUG
+        if (_legacyProcess is not null)
         {
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
         }
+#endif
 
         return hr;
     }
@@ -440,12 +434,14 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
         gcHandle.Free();
 
+#if DEBUG
         if (_legacyProcess != null && emi.LegacyHandle != TargetPointer.Null)
         {
             int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
             if (hrLocal < 0)
                 return hrLocal;
         }
+#endif
 
         return hr;
     }
@@ -520,10 +516,77 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         => _legacyProcess is not null ? _legacyProcess.SetCodeNotifications(numTokens, mods, singleMod, tokens, flags, singleFlags) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetOtherNotificationFlags(uint* flags)
-        => _legacyProcess is not null ? _legacyProcess.GetOtherNotificationFlags(flags) : HResults.E_NOTIMPL;
-
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *flags = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.DacNotificationFlags));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            uint flagsLocal;
+            int hrLocal = _legacyProcess.GetOtherNotificationFlags(&flagsLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(*flags == flagsLocal);
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataProcess.SetOtherNotificationFlags(uint flags)
-        => _legacyProcess is not null ? _legacyProcess.SetOtherNotificationFlags(flags) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if ((flags & ~((uint)CLRDataOtherNotifyFlag.CLRDATA_NOTIFY_ON_MODULE_LOAD |
+                           (uint)CLRDataOtherNotifyFlag.CLRDATA_NOTIFY_ON_MODULE_UNLOAD |
+                           (uint)CLRDataOtherNotifyFlag.CLRDATA_NOTIFY_ON_EXCEPTION |
+                           (uint)CLRDataOtherNotifyFlag.CLRDATA_NOTIFY_ON_EXCEPTION_CATCH_ENTER)) != 0)
+            {
+                hr = HResults.E_INVALIDARG;
+            }
+            else
+            {
+                TargetPointer dacNotificationFlags = _target.ReadGlobalPointer(Constants.Globals.DacNotificationFlags);
+                _target.Write<uint>(dacNotificationFlags, flags);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            int hrLocal = default;
+            uint flagsLocal = default;
+            // have to read the flags like this and not with GetOtherNotificationFlags
+            // because the legacy DAC cache will not be updated when we set the flags in cDAC
+            // so we need to verify without using the legacy DAC
+            hrLocal = HResults.S_OK;
+            try
+            {
+                flagsLocal = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.DacNotificationFlags));
+            }
+            catch (System.Exception ex)
+            {
+                hrLocal = ex.HResult;
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(flags == flagsLocal);
+            }
+            // update the DAC cache
+            _legacyProcess.SetOtherNotificationFlags(flags);
+        }
+#endif
+        return hr;
+    }
 
     int IXCLRDataProcess.StartEnumMethodDefinitionsByAddress(ClrDataAddress address, ulong* handle)
         => _legacyProcess is not null ? _legacyProcess.StartEnumMethodDefinitionsByAddress(address, handle) : HResults.E_NOTIMPL;

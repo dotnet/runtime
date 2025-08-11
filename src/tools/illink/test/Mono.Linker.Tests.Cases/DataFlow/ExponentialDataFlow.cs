@@ -123,26 +123,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public static void Test<T>()
             {
                 Type[] types = new Type[20] {
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int),
-                    typeof (int)
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int)
                 };
                 if (Condition) types[0] = typeof(T);
                 if (Condition) types[1] = typeof(T);
