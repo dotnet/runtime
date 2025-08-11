@@ -67,7 +67,7 @@ namespace System.Media.Test
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Ctor_NullOrEmptyString_ThrowsArgumentException(string soundLocation)
+        public void Ctor_NullOrEmptyString_ThrowsArgumentException(string? soundLocation)
         {
             AssertExtensions.Throws<ArgumentException>("path", null, () => new SoundPlayer(soundLocation));
         }
@@ -372,7 +372,7 @@ namespace System.Media.Test
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void SoundLocation_SetNullOrEmpty_ThrowsArgumentException(string soundLocation)
+        public void SoundLocation_SetNullOrEmpty_ThrowsArgumentException(string? soundLocation)
         {
             var player = new SoundPlayer() { SoundLocation = soundLocation };
             Assert.Equal("", player.SoundLocation);
@@ -423,7 +423,7 @@ namespace System.Media.Test
         [Theory]
         [InlineData(null)]
         [InlineData("tag")]
-        public void Tag_Set_GetReturnsExpected(object value)
+        public void Tag_Set_GetReturnsExpected(object? value)
         {
             var player = new SoundPlayer { Tag = value };
             Assert.Equal(value, player.Tag);

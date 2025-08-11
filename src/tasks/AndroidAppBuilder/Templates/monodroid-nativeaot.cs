@@ -20,10 +20,13 @@ internal static unsafe partial class MonoDroidExports
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) }, EntryPoint = "Java_net_dot_MonoRunner_setEnv")]
     public static void SetEnv(JNIEnv* env, JObject thiz, JString j_key, JString j_value)
     {
-        string key = env->GetStringUTFChars(j_key);
-        string value = env->GetStringUTFChars(j_value);
-        Console.WriteLine($"SetEnv: {key} = {value}");
-        Environment.SetEnvironmentVariable(key, value);
+        string? key = env->GetStringUTFChars(j_key);
+        string? value = env->GetStringUTFChars(j_value);
+        Console.WriteLine($"SetEnv: {key ?? "null"} = {value ?? "null"}");
+        if (key != null && value != null)
+        {
+            Environment.SetEnvironmentVariable(key, value);
+        }
     }
 
     // int Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_entryPointLibName, long current_local_time);
@@ -77,14 +80,18 @@ internal static unsafe partial class MonoDroidExports
 internal unsafe struct JNIEnv
 {
     JNINativeInterface* NativeInterface;
-    public string GetStringUTFChars(JString str)
+    public string? GetStringUTFChars(JString str)
     {
         fixed (JNIEnv* thisptr = &this)
         {
             byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, out byte isCopy);
+            if (chars is null)
+                return null;
+
             string result = Marshal.PtrToStringUTF8((nint)chars);
             if (isCopy != 0)
                 NativeInterface->ReleaseStringUTFChars(thisptr, str, chars);
+
             return result;
         }
     }
@@ -94,7 +101,10 @@ internal unsafe struct JNIEnv
         fixed (JNIEnv* thisptr = &this)
         {
             JavaVM* vm;
-            NativeInterface->GetJavaVM(thisptr, &vm);
+            int result = NativeInterface->GetJavaVM(thisptr, &vm);
+            if (result != 0)
+                return null;
+
             return vm;
         }
     }

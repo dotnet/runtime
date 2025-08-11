@@ -28,6 +28,7 @@ public enum DataType
     Exception,
     ExceptionInfo,
     RuntimeThreadLocals,
+    IdDispenser,
     Module,
     ModuleLookupMap,
     AppDomain,
@@ -102,6 +103,8 @@ public enum DataType
     GCCoverageInfo,
     ArrayListBase,
     ArrayListBlock,
+    EETypeHashTable,
+    InstMethodHashTable,
 
     TransitionBlock,
     DebuggerEval,

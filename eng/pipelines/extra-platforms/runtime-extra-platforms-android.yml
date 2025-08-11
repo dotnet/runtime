@@ -117,7 +117,7 @@ jobs:
 
 #
 # Android arm64 devices and x64 emulators
-# Build the whole product using CoreCLR and run functional tests
+# Build the whole product using NativeAOT and run functional tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -137,22 +137,12 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: NativeAOT
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:UseNativeAOTRuntime=true /p:RuntimeFlavor=coreclr /p:TestNativeAOT=true
       timeoutInMinutes: 120
-      condition: >-
-        or(
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            condition: >-
-              or(
-              eq(variables['librariesContainsChange'], true),
-              eq(variables['coreclrContainsChange'], true),
-              eq(variables['isRollingBuild'], true))

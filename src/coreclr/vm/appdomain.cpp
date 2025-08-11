@@ -889,7 +889,7 @@ void SystemDomain::Init()
     {
         // We are about to start allocating objects, so we must be in cooperative mode.
         // However, many of the entrypoints to the system (DllGetClassObject and all
-        // N/Direct exports) get called multiple times.  Sometimes they initialize the EE,
+        // PInvoke exports) get called multiple times.  Sometimes they initialize the EE,
         // but generally they remain in preemptive mode.  So we really want to push/pop
         // the state here:
         GCX_COOP();
