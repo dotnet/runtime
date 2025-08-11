@@ -176,7 +176,11 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
 
             fixed (uint* localIlOffsetsPtr = localIlOffsets)
             {
-                hrLocal = _legacyImpl.GetILOffsetsByAddress(address, offsetsLen, validateOffsetsNeeded ? &localOffsetsNeeded : null, validateIlOffsets ? localIlOffsetsPtr : null);
+                hrLocal = _legacyImpl.GetILOffsetsByAddress(
+                    address,
+                    offsetsLen,
+                    validateOffsetsNeeded ? &localOffsetsNeeded : null,
+                    validateIlOffsets ? localIlOffsetsPtr : null);
             }
 
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
