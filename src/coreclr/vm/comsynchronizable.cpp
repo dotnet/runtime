@@ -904,6 +904,6 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
 {
     FCALL_CONTRACT;
 
-    FC_BOOL_RET(IsFinalizerThread());
+    FC_RETURN_BOOL(IsFinalizerThread());
 }
 FCIMPLEND
