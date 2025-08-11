@@ -1289,6 +1289,16 @@
         <target state="translated">Określony typ nie jest obsługiwany przez źródłowy COM</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageParameterLibraryImport">
+        <source>The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageReturnLibraryImport">
+        <source>The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">Określony parametr musi być kierowany z niezarządzanego do zarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>

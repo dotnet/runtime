@@ -149,6 +149,28 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.TypeNotSupportedWithMarshallingInfoMessageReturnLibraryImport"/>
+        public static readonly DiagnosticDescriptor TypeNotSupportedWithMarshallingInfoReturn =
+            DiagnosticDescriptorHelper.Create(
+                GeneratorDiagnostics.Ids.TypeNotSupported,
+                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedWithMarshallingInfoMessageReturnLibraryImport)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescriptionLibraryImport)));
+
+        /// <inheritdoc cref="SR.TypeNotSupportedWithMarshallingInfoMessageParameterLibraryImport"/>
+        public static readonly DiagnosticDescriptor TypeNotSupportedWithMarshallingInfoParameter =
+            DiagnosticDescriptorHelper.Create(
+                GeneratorDiagnostics.Ids.TypeNotSupported,
+                GetResourceString(nameof(SR.TypeNotSupportedTitle)),
+                GetResourceString(nameof(SR.TypeNotSupportedWithMarshallingInfoMessageParameterLibraryImport)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescriptionLibraryImport)));
+
         /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor ConfigurationNotSupported =
             DiagnosticDescriptorHelper.Create(

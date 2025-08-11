@@ -604,6 +604,12 @@
   <data name="MarshalAsConfigurationNotSupportedMessageReturnCom" xml:space="preserve">
     <value>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</value>
   </data>
+  <data name="TypeNotSupportedWithMarshallingInfoMessageReturnLibraryImport" xml:space="preserve">
+    <value>The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</value>
+  </data>
+  <data name="TypeNotSupportedWithMarshallingInfoMessageParameterLibraryImport" xml:space="preserve">
+    <value>The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</value>
+  </data>
   <data name="MarshallerTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
     <value>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
   </data>

@@ -1289,6 +1289,16 @@
         <target state="translated">源生成的 COM 不支持指定的类型</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageParameterLibraryImport">
+        <source>The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageReturnLibraryImport">
+        <source>The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">需要将指定的参数从非托管封送到托管，但封送程序类型“{0}”不支持它。</target>

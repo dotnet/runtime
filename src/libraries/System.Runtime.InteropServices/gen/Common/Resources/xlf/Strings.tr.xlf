@@ -1289,6 +1289,16 @@
         <target state="translated">Belirtilen tür, kaynak tarafından oluşturulan COM tarafından desteklenmiyor</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageParameterLibraryImport">
+        <source>The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageReturnLibraryImport">
+        <source>The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">Belirtilen parametrenin yönetilmeyenden yönetilene doğru hazırlanması gerekiyor, ancak '{0}' hazırlayıcı türü bunu desteklemiyor.</target>

@@ -1289,6 +1289,16 @@
         <target state="translated">지정된 형식은 원본 생성 COM에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageParameterLibraryImport">
+        <source>The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageReturnLibraryImport">
+        <source>The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">지정된 매개 변수를 비관리에서 관리로 마샬링해야 하지만 마샬러 유형 '{0}'이(가) 지원하지 않습니다.</target>

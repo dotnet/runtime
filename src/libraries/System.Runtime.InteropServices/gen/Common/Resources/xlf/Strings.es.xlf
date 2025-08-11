@@ -1289,6 +1289,16 @@
         <target state="translated">El tipo especificado no es compatible con COM generado por el origen</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageParameterLibraryImport">
+        <source>The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The type '{0}' of parameter '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedWithMarshallingInfoMessageReturnLibraryImport">
+        <source>The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</source>
+        <target state="new">The return type '{0}' of method '{1}' is not supported by source-generated P/Invokes. If this type is required, use a regular 'DllImport' instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
         <target state="translated">El parámetro especificado debe serializarse de no administrado a administrado, pero el tipo serializador “{0}” no lo admite.</target>

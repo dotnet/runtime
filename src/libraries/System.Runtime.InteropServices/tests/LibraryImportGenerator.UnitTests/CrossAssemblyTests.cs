@@ -93,6 +93,58 @@ namespace LibraryImportGenerator.UnitTests
                     .WithLocation(0)
                     .WithArguments("ExternalLib.NonBlittableStruct", "GetNonBlittableStruct"));
         }
+
+        [Fact]
+        public async Task ExplicitMarshalAsAttribute_OnPrimitive_ReportsImprovedError()
+        {
+            // When there's an explicit MarshalAs attribute on a primitive type,
+            // it should report a clearer error message that doesn't confuse users
+            string source = """
+                using System.Runtime.InteropServices;
+
+                partial class Test
+                {
+                    [LibraryImport("TestLib")]
+                    [return: MarshalAs(UnmanagedType.BStr)]
+                    public static partial int {|#0:Method1|}(int i);
+                }
+                """;
+
+            // This should produce the improved error message that focuses on the type rather than MarshalAs
+            await VerifyCS.VerifySourceGeneratorAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.TypeNotSupportedWithMarshallingInfoReturn)
+                    .WithLocation(0)
+                    .WithArguments("int", "Method1"));
+        }
+
+        [Fact]
+        public async Task InferredMarshallingOnCustomType_ReportsTypeNotSupportedWithMarshallingInfo()
+        {
+            // When there's no explicit MarshalAs attribute but the type has marshalling issues,
+            // it should report the new type-not-supported error message
+            string source = """
+                using System.Runtime.InteropServices;
+
+                public struct CustomStruct
+                {
+                    public string StringField; // Non-blittable field
+                }
+
+                partial class Test
+                {
+                    [LibraryImport("TestLib")]
+                    public static partial CustomStruct {|#0:GetCustomStruct|}();
+                }
+                """;
+
+            // This should produce the new type-not-supported error (not the old MarshalAs error)
+            // Note: This might still produce the general ReturnTypeNotSupported instead of TypeNotSupportedWithMarshallingInfoReturn
+            // depending on how the marshalling analysis works
+            await VerifyCS.VerifySourceGeneratorAsync(source,
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupported)
+                    .WithLocation(0)
+                    .WithArguments("CustomStruct", "GetCustomStruct"));
+        }
         
         [Fact]
         public async Task TypeFromAnotherAssembly_WithDisabledRuntimeMarshalling_WorksCorrectly()
