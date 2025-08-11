@@ -254,7 +254,7 @@ namespace ILCompiler.PEWriter
 
             _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream);
 
-            UpdateSectionRVAs(outputStream);
+            int sizeOfImage = UpdateSectionRVAs(outputStream);
 
             if (_customPESectionAlignment != 0)
                 SetPEHeaderSectionAlignment(outputStream, _customPESectionAlignment);
@@ -265,6 +265,10 @@ namespace ILCompiler.PEWriter
                 SetPEHeaderTimeStamp(outputStream, timeDateStamp.Value);
 
             _written = true;
+
+            Console.WriteLine($"R2RPEBuilder wrote {outputStream.Length} byte(s)");
+            if (outputStream.Length != sizeOfImage)
+                throw new BadImageFormatException("R2R image was truncated during writing");
         }
 
         /// <summary>
@@ -345,7 +349,8 @@ namespace ILCompiler.PEWriter
         /// we're performing the same transformation on Windows where it is a no-op.
         /// </summary>
         /// <param name="outputStream"></param>
-        private void UpdateSectionRVAs(Stream outputStream)
+        /// <returns>Computed SizeOfImage value</returns>
+        private int UpdateSectionRVAs(Stream outputStream)
         {
             int peHeaderSize =
                 OffsetOfChecksum +
@@ -416,6 +421,7 @@ namespace ILCompiler.PEWriter
             byte[] sizeOfImageBytes = BitConverter.GetBytes(sizeOfImage);
             Debug.Assert(sizeOfImageBytes.Length == sizeof(int));
             outputStream.Write(sizeOfImageBytes, 0, sizeOfImageBytes.Length);
+            return sizeOfImage;
         }
 
         /// <summary>
