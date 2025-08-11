@@ -371,6 +371,14 @@ namespace System.Formats.Tar
                 return null;
             }
             int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+
+            // Verify checksum by calculating it from the buffer
+            int calculatedChecksum = CalculateHeaderChecksum(buffer);
+            if (calculatedChecksum != checksum)
+            {
+                throw new InvalidDataException(SR.TarInvalidChecksum);
+            }
+
             // Zero checksum means the whole header is empty
             if (checksum == 0)
             {
@@ -423,6 +431,30 @@ namespace System.Formats.Tar
             }
 
             return header;
+        }
+
+        // Calculates the checksum for a TAR header by summing all bytes,
+        // but treating the checksum field as if it contained spaces (ASCII 32)
+        private static int CalculateHeaderChecksum(ReadOnlySpan<byte> buffer)
+        {
+            int calculatedChecksum = 0;
+
+            // Process bytes before the checksum field
+            for (int i = 0; i < FieldLocations.Checksum; i++)
+            {
+                calculatedChecksum += buffer[i];
+            }
+
+            // For the checksum field, treat all bytes as spaces (ASCII 32)
+            calculatedChecksum += (byte)' ' * FieldLengths.Checksum;
+
+            // Process bytes after the checksum field
+            for (int i = FieldLocations.Checksum + FieldLengths.Checksum; i < TarHelpers.RecordSize; i++)
+            {
+                calculatedChecksum += buffer[i];
+            }
+
+            return calculatedChecksum;
         }
 
         // Reads fields only found in ustar format or above and converts them to their expected data type.
