@@ -91,7 +91,7 @@ public static class TestHelper
         s_splitNewLineDecodedTestData.SelectMany<string, string>(
         (data) =>
         {
-            const int MaxPathSegmentName = 255;
+            const int MaxPathSegmentName = 128;
             Encoding fileSystemEncoding = PlatformDetection.IsWindows ? Encoding.Unicode : Encoding.UTF8;
 
             if (fileSystemEncoding.GetByteCount(data) <= MaxPathSegmentName)
