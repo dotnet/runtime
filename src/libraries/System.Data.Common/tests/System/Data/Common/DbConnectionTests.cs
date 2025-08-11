@@ -108,21 +108,21 @@ namespace System.Data.Common.Tests
         }
 
         [Fact]
-        public void GetSchemaAsync_with_cancelled_token()
+        public async Task GetSchemaAsync_with_cancelled_token()
         {
             var conn = new MockDbConnection();
-            Assert.ThrowsAsync<TaskCanceledException>(async () => await conn.GetSchemaAsync(new CancellationToken(true)));
-            Assert.ThrowsAsync<TaskCanceledException>(async () => await conn.GetSchemaAsync("MetaDataCollections", new CancellationToken(true)));
-            Assert.ThrowsAsync<TaskCanceledException>(async () => await conn.GetSchemaAsync("MetaDataCollections", new string[0], new CancellationToken(true)));
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await conn.GetSchemaAsync(new CancellationToken(true)));
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await conn.GetSchemaAsync("MetaDataCollections", new CancellationToken(true)));
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await conn.GetSchemaAsync("MetaDataCollections", new string[0], new CancellationToken(true)));
         }
 
         [Fact]
-        public void GetSchemaAsync_with_exception()
+        public async Task GetSchemaAsync_with_exception()
         {
             var conn = new MockDbConnection();
-            Assert.ThrowsAsync<NotSupportedException>(async () => await conn.GetSchemaAsync());
-            Assert.ThrowsAsync<NotSupportedException>(async () => await conn.GetSchemaAsync("MetaDataCollections"));
-            Assert.ThrowsAsync<NotSupportedException>(async () => await conn.GetSchemaAsync("MetaDataCollections", new string[0]));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await conn.GetSchemaAsync());
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await conn.GetSchemaAsync("MetaDataCollections"));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await conn.GetSchemaAsync("MetaDataCollections", new string[0]));
         }
 
         [Fact]

@@ -276,7 +276,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData((PbeEncryptionAlgorithm)(-1), nameof(HashAlgorithmName.SHA1))]
         public static void ExportPkcs12_PbeParameters_ArgValidation(
             PbeEncryptionAlgorithm encryptionAlgorithm,
-            string hashAlgorithm)
+            string? hashAlgorithm)
         {
             using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
             {
@@ -419,8 +419,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(info.Algorithm, mldsa.Algorithm);
                     AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
 
-                    byte[] actualSecretKey = mldsa.ExportMLDsaSecretKey();
-                    AssertExtensions.SequenceEqual(info.SecretKey, actualSecretKey);
+                    byte[] actualPrivateKey = mldsa.ExportMLDsaPrivateKey();
+                    AssertExtensions.SequenceEqual(info.PrivateKey, actualPrivateKey);
                 }
             }
         }
