@@ -9,7 +9,7 @@ namespace GB18030.Tests;
 public class EncodingTests
 {
     [Theory]
-    [MemberData(nameof(TestHelper.EncodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.EncodedMemberData), MemberType = typeof(TestHelper))]
     public void Roundtrips(byte[] testData)
     {
         Assert.True(testData.AsSpan().SequenceEqual(

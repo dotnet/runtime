@@ -31,12 +31,12 @@ public class RegexTests
         (RegexNamedBlock.IsCJKUnifiedIdeographsExtensionA, TestHelper.CjkExtensionANewCodePoints.Select(c => ((char)c).ToString()).ToArray())
     };
 
-    public static IEnumerable<object[]> UnicodeCategories_TestData() =>
+    public static IEnumerable<object[]> UnicodeCategories_MemberData() =>
         RegexHelpers.AvailableEngines.SelectMany(engine =>
         TestHelper.Cultures.Select(culture => new object[] { engine, culture }));
 
     [Theory]
-    [MemberData(nameof(UnicodeCategories_TestData))]
+    [MemberData(nameof(UnicodeCategories_MemberData))]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://devdiv.visualstudio.com/DevDiv/_workitems/edit/2522617")]
     public async Task UnicodeCategory_InclusionAsync(RegexEngine engine, CultureInfo culture)
     {
@@ -58,7 +58,7 @@ public class RegexTests
     }
 
     [Theory]
-    [MemberData(nameof(UnicodeCategories_TestData))]
+    [MemberData(nameof(UnicodeCategories_MemberData))]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://devdiv.visualstudio.com/DevDiv/_workitems/edit/2522617")]
     public async Task UnicodeCategory_ExclusionAsync(RegexEngine engine, CultureInfo culture)
     {
@@ -79,13 +79,13 @@ public class RegexTests
             Assert.DoesNotMatch(r, element);
     }
 
-    public static IEnumerable<object[]> NamedBlock_TestData() =>
+    public static IEnumerable<object[]> NamedBlock_MemberData() =>
         s_namedBlocks.SelectMany(namedBlock =>
         RegexHelpers.AvailableEngines.SelectMany(engine =>
         TestHelper.Cultures.Select(culture => new object[] { namedBlock.Item2, namedBlock.Item1, engine, culture })));
 
     [Theory]
-    [MemberData(nameof(NamedBlock_TestData))]
+    [MemberData(nameof(NamedBlock_MemberData))]
     public async Task NamedBlock_InclusionAsync(string[]characters, RegexNamedBlock namedBlock, RegexEngine engine, CultureInfo culture)
     {
         Regex r = await RegexHelpers.GetRegexAsync(engine, $@"\p{{{namedBlock}}}", RegexOptions.None, culture);
@@ -98,7 +98,7 @@ public class RegexTests
     }
 
     [Theory]
-    [MemberData(nameof(NamedBlock_TestData))]
+    [MemberData(nameof(NamedBlock_MemberData))]
     public async Task NamedBlock_ExclusionAsync(string[] characters, RegexNamedBlock namedBlock, RegexEngine engine, CultureInfo culture)
     {
         Regex r = await RegexHelpers.GetRegexAsync(engine, $@"\P{{{namedBlock}}}", RegexOptions.None, culture);

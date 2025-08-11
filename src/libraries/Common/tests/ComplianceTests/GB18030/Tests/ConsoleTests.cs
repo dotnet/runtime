@@ -12,7 +12,7 @@ public class ConsoleTests
     protected static readonly int WaitInMS = 30 * 1000 * PlatformDetection.SlowRuntimeTimeoutModifier;
 
     [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
     public void StandardOutput(string decodedText)
     {
         var remoteOptions = new RemoteInvokeOptions();
@@ -33,7 +33,7 @@ public class ConsoleTests
     }
 
     [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
     public void StandardInput(string decodedText)
     {
         var remoteOptions = new RemoteInvokeOptions();
@@ -67,7 +67,7 @@ public class ConsoleTests
     }
 
     [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
     public void StandardError(string decodedText)
     {
         var remoteOptions = new RemoteInvokeOptions();

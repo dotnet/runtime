@@ -16,7 +16,7 @@ public class StringTests
     private const string Dummy = "\uFFFF";
 
     [Theory]
-    [MemberData(nameof(TestHelper.EncodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.EncodedMemberData), MemberType = typeof(TestHelper))]
     public unsafe void Ctor(byte[] encoded)
     {
         fixed (sbyte* p = (sbyte[])(object)encoded)
@@ -26,13 +26,13 @@ public class StringTests
         }
     }
 
-    public static IEnumerable<object[]> Compare_TestData() =>
-        TestHelper.s_decodedTestData.SelectMany(testData =>
+    public static IEnumerable<object[]> Compare_MemberData() =>
+        TestHelper.DecodedTestData.SelectMany(testData =>
         TestHelper.Cultures.SelectMany(culture =>
         TestHelper.CompareOptions.Select(option => new object[] { testData, culture, option })));
 
     [Theory]
-    [MemberData(nameof(Compare_TestData))]
+    [MemberData(nameof(Compare_MemberData))]
     public void Compare(string decoded, CultureInfo culture, CompareOptions option)
     {
 #pragma warning disable 0618 // suppress obsolete warning for String.Copy
@@ -41,13 +41,13 @@ public class StringTests
         Assert.True(string.Compare(decoded, copy, culture, option) == 0);
     }
 
-    public static IEnumerable<object[]> Contains_TestData() =>
-        TestHelper.s_decodedTestData.SelectMany(testData =>
+    public static IEnumerable<object[]> Contains_MemberData() =>
+        TestHelper.DecodedTestData.SelectMany(testData =>
         TestHelper.NonOrdinalStringComparisons.Select(comparison => new object[] { testData, comparison  }));
 
     [Theory]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-    [MemberData(nameof(Contains_TestData))]
+    [MemberData(nameof(Contains_MemberData))]
     public void Contains(string decoded, StringComparison comparison)
     {
         string current = string.Empty;
@@ -65,12 +65,12 @@ public class StringTests
         }
     }
 
-    public static IEnumerable<object[]> StringComparison_TestData() =>
-        TestHelper.s_decodedTestData.SelectMany(decoded =>
+    public static IEnumerable<object[]> StringComparison_MemberData() =>
+        TestHelper.DecodedTestData.SelectMany(decoded =>
         TestHelper.NonOrdinalStringComparisons.Select(comparison => new object[] { decoded, comparison }));
 
     [Theory]
-    [MemberData(nameof(StringComparison_TestData))]
+    [MemberData(nameof(StringComparison_MemberData))]
     public void String_Equals(string decoded, StringComparison comparison)
     {
 #pragma warning disable 0618 // suppress obsolete warning for String.Copy
@@ -89,12 +89,12 @@ public class StringTests
         }
     }
 
-    public static IEnumerable<object[]> EndsStartsWith_TestData() =>
-        TestHelper.s_decodedTestData.SelectMany(testData =>
+    public static IEnumerable<object[]> EndsStartsWith_MemberData() =>
+        TestHelper.DecodedTestData.SelectMany(testData =>
         TestHelper.Cultures.Select(culture => new object[] { testData, culture }));
 
     [Theory]
-    [MemberData(nameof(EndsStartsWith_TestData))]
+    [MemberData(nameof(EndsStartsWith_MemberData))]
     public void EndsWith(string decoded, CultureInfo culture)
     {
         string suffix = string.Empty;
@@ -106,7 +106,7 @@ public class StringTests
     }
 
     [Theory]
-    [MemberData(nameof(EndsStartsWith_TestData))]
+    [MemberData(nameof(EndsStartsWith_MemberData))]
     public void StartsWith(string decoded, CultureInfo culture)
     {
         string prefix = string.Empty;
@@ -118,7 +118,7 @@ public class StringTests
     }
 
     [Theory]
-    [MemberData(nameof(StringComparison_TestData))]
+    [MemberData(nameof(StringComparison_MemberData))]
     public void IndexOf_MultipleElements(string decoded, StringComparison comparison)
     {
         Assert.NotEqual(StringComparison.Ordinal, comparison);
@@ -137,7 +137,7 @@ public class StringTests
     }
 
     [Theory]
-    [MemberData(nameof(StringComparison_TestData))]
+    [MemberData(nameof(StringComparison_MemberData))]
     public void IndexOf_SingleElement(string decoded, StringComparison comparison)
     {
         Assert.NotEqual(StringComparison.Ordinal, comparison);
@@ -174,7 +174,7 @@ public class StringTests
     }
 
     [Theory]
-    [MemberData(nameof(StringComparison_TestData))]
+    [MemberData(nameof(StringComparison_MemberData))]
     public void LastIndexOf_MultipleElements(string decoded, StringComparison comparison)
     {
         Assert.NotEqual(StringComparison.Ordinal, comparison);
@@ -197,7 +197,7 @@ public class StringTests
     }
 
     [Theory]
-    [MemberData(nameof(StringComparison_TestData))]
+    [MemberData(nameof(StringComparison_MemberData))]
     public void LastIndexOf_SingleElement(string decoded, StringComparison comparison)
     {
         Assert.NotEqual(StringComparison.Ordinal, comparison);
@@ -234,7 +234,7 @@ public class StringTests
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
     public void Replace(string decoded)
     {
         Assert.False(decoded.Contains(Dummy));
@@ -253,13 +253,13 @@ public class StringTests
         }
     }
 
-    public static IEnumerable<object[]> Replace_NetCore_TestData() =>
-        TestHelper.s_decodedTestData.SelectMany(testData =>
+    public static IEnumerable<object[]> Replace_NetCore_MemberData() =>
+        TestHelper.DecodedTestData.SelectMany(testData =>
         TestHelper.Cultures.Select(culture => new object[] { testData, culture }));
 
 #if NETCOREAPP
     [Theory]
-    [MemberData(nameof(Replace_NetCore_TestData))]
+    [MemberData(nameof(Replace_NetCore_MemberData))]
     public void Replace_CultureInfo(string decoded, CultureInfo culture)
     {
         Assert.False(decoded.Contains(Dummy));
@@ -278,7 +278,7 @@ public class StringTests
 #endif
 
     [Theory]
-    [MemberData(nameof(TestHelper.DecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
     public void Split(string decoded)
     {
         string[] textElements = TestHelper.GetTextElements(decoded).ToArray();

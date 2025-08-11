@@ -81,11 +81,13 @@ public static class TestHelper
     }
 
     private static readonly IEnumerable<byte[]> s_encodedTestData = GetTestData();
-    internal static readonly IEnumerable<string> s_decodedTestData = s_encodedTestData.Select(data => GB18030Encoding.GetString(data));
-    private static readonly IEnumerable<string> s_splitNewLineDecodedTestData = s_decodedTestData.SelectMany(
+
+    internal static IEnumerable<string> DecodedTestData { get; } = s_encodedTestData.Select(data => GB18030Encoding.GetString(data));
+
+    private static readonly IEnumerable<string> s_splitNewLineDecodedTestData = DecodedTestData.SelectMany(
         data => data.Split([Environment.NewLine], StringSplitOptions.RemoveEmptyEntries));
 
-    internal static readonly IEnumerable<string> s_nonExceedingPathNameMaxDecodedTestData =
+    internal static IEnumerable<string> NonExceedingPathNameMaxDecodedTestData { get; } =
         s_splitNewLineDecodedTestData.SelectMany<string, string>(
         (data) =>
         {
@@ -110,10 +112,10 @@ public static class TestHelper
             return result;
         });
 
-    public static IEnumerable<object[]> EncodedTestData { get; } = s_encodedTestData.Select(data => new object[] { data });
-    public static IEnumerable<object[]> DecodedTestData { get; } = s_decodedTestData.Select(data => new object[] { data });
-    public static IEnumerable<object[]> NonExceedingPathNameMaxDecodedTestData { get; } = s_nonExceedingPathNameMaxDecodedTestData.Select(data => new object[] { data });
-    public static IEnumerable<object[]> GB18030CharUnicodeInfoTestData { get; } = s_gb18030CharUnicodeInfo.Select(data => new object[] { data });
+    public static IEnumerable<object[]> EncodedMemberData { get; } = s_encodedTestData.Select(data => new object[] { data });
+    public static IEnumerable<object[]> DecodedMemberData { get; } = DecodedTestData.Select(data => new object[] { data });
+    public static IEnumerable<object[]> NonExceedingPathNameMaxDecodedMemberData { get; } = NonExceedingPathNameMaxDecodedTestData.Select(data => new object[] { data });
+    public static IEnumerable<object[]> GB18030CharUnicodeInfoMemberData { get; } = s_gb18030CharUnicodeInfo.Select(data => new object[] { data });
 
     private static IEnumerable<byte[]> GetTestData()
     {

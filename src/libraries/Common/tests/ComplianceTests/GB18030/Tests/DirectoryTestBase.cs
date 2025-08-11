@@ -23,7 +23,7 @@ public abstract class DirectoryTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void Create(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -34,12 +34,12 @@ public abstract class DirectoryTestBase : IDisposable
         Assert.Equal(gb18030Line, dirInfo.Name);
     }
 
-    public static IEnumerable<object[]> Delete_TestData() =>
-        TestHelper.s_nonExceedingPathNameMaxDecodedTestData.SelectMany(testData =>
+    public static IEnumerable<object[]> Delete_MemberData() =>
+        TestHelper.NonExceedingPathNameMaxDecodedTestData.SelectMany(testData =>
         new int[] { 0, 2, 8 }.Select(recurseLevel => new object[] { testData, recurseLevel }));
 
     [Theory]
-    [MemberData(nameof(Delete_TestData))]
+    [MemberData(nameof(Delete_MemberData))]
     public void Delete(string gb18030Line, int recurseLevel)
     {
         string firstPath = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -55,7 +55,7 @@ public abstract class DirectoryTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void Move(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);

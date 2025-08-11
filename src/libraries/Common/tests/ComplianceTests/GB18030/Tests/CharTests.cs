@@ -14,7 +14,7 @@ namespace GB18030.Tests;
 public class CharTests
 {
     [Theory]
-    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
     public void Convert(CharUnicodeInfoTestCase testCase)
     {
         Assert.Equal(testCase.CodePoint, char.ConvertToUtf32(char.ConvertFromUtf32(testCase.CodePoint), 0));
@@ -28,7 +28,7 @@ public class CharTests
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
     public void Parse(CharUnicodeInfoTestCase testCase)
     {
         string utf32String = testCase.Utf32CodeValue;
@@ -47,7 +47,7 @@ public class CharTests
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
     public void IsSurrogate(CharUnicodeInfoTestCase testCase)
     {
         string utf32String = testCase.Utf32CodeValue;
@@ -73,7 +73,7 @@ public class CharTests
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
     public void IsLetter(CharUnicodeInfoTestCase testCase)
     {
         string utf32String = testCase.Utf32CodeValue;
@@ -89,7 +89,7 @@ public class CharTests
 
 
     [Theory]
-    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
     public void IsNonLetter_False(CharUnicodeInfoTestCase testCase)
     {
         string utf32String = testCase.Utf32CodeValue;

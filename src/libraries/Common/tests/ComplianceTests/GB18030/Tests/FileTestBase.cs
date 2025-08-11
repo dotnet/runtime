@@ -27,7 +27,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void Create(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -39,7 +39,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void Delete(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -52,7 +52,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void Move(string gb18030Line)
     {
         string gb18030Path = Path.Combine(TempDirectory.FullName, gb18030Line);
@@ -69,7 +69,7 @@ public abstract class FileTestBase : IDisposable
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void Copy(string gb18030Line)
     {
         ReadOnlySpan<byte> sampleContent = "File_Copy"u8;

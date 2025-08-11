@@ -15,7 +15,7 @@ public class DirectoryTests : DirectoryTestBase
     protected override void MoveDirectory(string source, string destination) => Directory.Move(source, destination);
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void EnumerateFileSystemEntries(string gb18030Line)
     {
         string rootDir = TempDirectory.FullName;

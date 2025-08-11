@@ -15,7 +15,7 @@ public class DirectoryInfoTests : DirectoryTestBase
     protected override void MoveDirectory(string source, string destination) => new DirectoryInfo(source).MoveTo(destination);
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void CreateSubdirectory(string gb18030Line)
     {
         var subDirInfo = TempDirectory.CreateSubdirectory(gb18030Line);
@@ -26,7 +26,7 @@ public class DirectoryInfoTests : DirectoryTestBase
     }
 
     [Theory]
-    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.NonExceedingPathNameMaxDecodedMemberData), MemberType = typeof(TestHelper))]
     public void EnumerateFileSystemInfos(string gb18030Line)
     {
         string rootDir = TempDirectory.FullName;

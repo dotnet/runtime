@@ -10,7 +10,7 @@ namespace GB18030.Tests;
 public class CharUnicodeInfoTests
 {
     [Theory]
-    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoTestData), MemberType = typeof(TestHelper))]
+    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
     public void GetUnicodeCategory(CharUnicodeInfoTestCase testCase)
     {
         if (testCase.Utf32CodeValue.Length == 1)
