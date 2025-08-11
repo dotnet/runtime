@@ -338,23 +338,36 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
         int hrLocal = default;
         ulong handleLocal = default;
+#if DEBUG
         if (_legacyProcess is not null)
         {
             hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, &handleLocal);
-            if (hrLocal < 0)
-                return hrLocal;
         }
+#endif
 
-        IExecutionManager eman = _target.Contracts.ExecutionManager;
-        if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh && eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
+        try
         {
-            EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
+            // ClrDataAccess::IsPossibleCodeAddress
+            // Does a trivial check on the readability of the address
+            bool isTriviallyReadable = _target.TryRead(address, out byte _);
+            if (!isTriviallyReadable)
+                throw new ArgumentException();
 
-            emi.LegacyHandle = handleLocal;
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh &&
+                eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
+            {
+                EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
+                emi.LegacyHandle = handleLocal;
 
-            GCHandle gcHandle = GCHandle.Alloc(emi);
-            *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
-            hr = emi.Start();
+                GCHandle gcHandle = GCHandle.Alloc(emi);
+                *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+                hr = emi.Start();
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 
 #if DEBUG
@@ -376,14 +389,15 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
         IXCLRDataMethodInstance? legacyMethod = null;
         int hrLocal = default;
+
+#if DEBUG
         if (_legacyProcess is not null)
         {
             ulong legacyHandle = emi.LegacyHandle;
             hrLocal = _legacyProcess.EnumMethodInstanceByAddress(&legacyHandle, out legacyMethod);
             emi.LegacyHandle = legacyHandle;
-            if (hrLocal < 0)
-                return hrLocal;
         }
+#endif
 
         try
         {
@@ -402,11 +416,12 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             hr = ex.HResult;
         }
 
-
+#if DEBUG
         if (_legacyProcess is not null)
         {
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
         }
+#endif
 
         return hr;
     }
@@ -419,12 +434,14 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
         gcHandle.Free();
 
+#if DEBUG
         if (_legacyProcess != null && emi.LegacyHandle != TargetPointer.Null)
         {
             int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
             if (hrLocal < 0)
                 return hrLocal;
         }
+#endif
 
         return hr;
     }
