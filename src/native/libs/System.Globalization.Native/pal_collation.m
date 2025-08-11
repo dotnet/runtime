@@ -208,7 +208,7 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
+        if (!IsComparisonOptionSupported(comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
         NSString *sourceString = [NSString stringWithCharacters: lpSource length: (NSUInteger)cwSourceLength];
@@ -415,7 +415,7 @@ int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName, int32_t
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
+        if (!IsComparisonOptionSupported(comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
@@ -453,7 +453,7 @@ int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName, int32_t l
 {
     @autoreleasepool
     {
-        if (!IsComparisonOptionSupported((CompareOptions)comparisonOptions))
+        if (!IsComparisonOptionSupported(comparisonOptions))
             return ERROR_COMPARISON_OPTIONS_NOT_FOUND;
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
         NSLocale *currentLocale = GetCurrentLocale(localeName, lNameLength);
@@ -494,14 +494,13 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
                 sortKey[0] = '\0';
             return 1;
         }
-        if (!IsComparisonOptionSupported((CompareOptions)options))
+        if (!IsComparisonOptionSupported(options))
             return 0;
         NSString *sourceString = [NSString stringWithCharacters: lpStr length: (NSUInteger)cwStrLength];
         if (options & IgnoreKanaType)
         {
             sourceString = ConvertToKatakana(sourceString);
         }
-
         NSString *sourceStringCleaned = RemoveWeightlessCharacters(sourceString).precomposedStringWithCanonicalMapping;
         // If the string is empty after removing weightless characters, return 1
         if(sourceStringCleaned.length == 0)
