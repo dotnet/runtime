@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -601,7 +602,7 @@ namespace System.IO.Packaging
         /// to reduce the parsing and number of allocations for Strings and Uris
         /// we cache the results after parsing.
         /// </summary>
- #pragma warning disable CA1067 // Override Equals because it implements IEquatable<T>; not overriding to avoid possible regressions in code that's working
+#pragma warning disable CA1067 // Override Equals because it implements IEquatable<T>; not overriding to avoid possible regressions in code that's working
         internal sealed class ValidatedPartUri : Uri, IComparable<ValidatedPartUri>, IEquatable<ValidatedPartUri>
 #pragma warning restore CA1067
         {
@@ -841,7 +842,11 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
+                return string.Compare(
+                    NormalizedPartUriString,
+                    otherPartUri.NormalizedPartUriString,
+                    StringComparison.OrdinalIgnoreCase
+                );
             }
 
             //------------------------------------------------------
