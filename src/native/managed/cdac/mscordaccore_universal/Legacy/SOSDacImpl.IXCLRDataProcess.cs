@@ -143,6 +143,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         public readonly TargetPointer _appDomain;
         private readonly ILoader _loader;
         private readonly IRuntimeTypeSystem _rts;
+        private readonly ICodeVersions _cv;
         public IEnumerator<MethodDescHandle> methodEnumerator = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
         public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
 
@@ -162,12 +163,13 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
             _loader = _target.Contracts.Loader;
             _rts = _target.Contracts.RuntimeTypeSystem;
+            _cv = _target.Contracts.CodeVersions;
         }
 
         public int Start()
         {
             MethodDescHandle mainMD = _rts.GetMethodDescHandle(_mainMethodDesc);
-            if (!HasClassOrMethodInstantiation(mainMD) && !HasNativeCodeAnyVersion(mainMD))
+            if (!HasClassOrMethodInstantiation(mainMD) && !_cv.HasNativeCodeAnyVersion(_mainMethodDesc))
             {
                 return HResults.S_FALSE;
             }
@@ -226,7 +228,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
             {
                 // case 1
                 // no method or class instantiation, then it's not generic.
-                if (HasNativeCodeAnyVersion(mainMD))
+                if (_cv.HasNativeCodeAnyVersion(_mainMethodDesc))
                 {
                     yield return mainMD;
                 }
@@ -253,7 +255,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                         if (mainModule != _rts.GetModule(methodTypeHandle)) continue;
                         if (mainMDToken != _rts.GetMethodToken(methodDesc)) continue;
 
-                        if (HasNativeCodeAnyVersion(methodDesc))
+                        if (_cv.HasNativeCodeAnyVersion(methodDesc.Address))
                         {
                             yield return methodDesc;
                         }
@@ -291,7 +293,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                             if (methodDescAddr == TargetPointer.Null) continue;
                             MethodDescHandle methodDesc = _rts.GetMethodDescHandle(methodDescAddr);
 
-                            if (HasNativeCodeAnyVersion(methodDesc))
+                            if (_cv.HasNativeCodeAnyVersion(methodDescAddr))
                             {
                                 yield return methodDesc;
                             }
@@ -302,26 +304,6 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                 yield break;
             }
 
-        }
-
-        private bool HasNativeCodeAnyVersion(MethodDescHandle mdHandle)
-        {
-            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            ICodeVersions cv = _target.Contracts.CodeVersions;
-
-            TargetCodePointer pcode = rts.GetNativeCode(mdHandle);
-
-            if (pcode == TargetCodePointer.Null)
-            {
-                // TODO(cdac): Fix this to check for any native code version
-                NativeCodeVersionHandle nativeCodeVersion = cv.GetActiveNativeCodeVersion(mdHandle.Address);
-                if (nativeCodeVersion.Valid)
-                {
-                    pcode = cv.GetNativeCode(nativeCodeVersion);
-                }
-            }
-
-            return pcode != TargetCodePointer.Null;
         }
 
         private bool HasClassOrMethodInstantiation(MethodDescHandle md)
