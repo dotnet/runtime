@@ -188,6 +188,7 @@ namespace
         _X("valid"),
         _X("invalid_json"),
         _X("invalid_data"),
+        _X("__invalid_data_no_fallback"),
     };
     static_assert((sizeof(GlobalJsonStates) / sizeof(*GlobalJsonStates)) == static_cast<size_t>(sdk_resolver::global_file_info::state::__last), "Invalid state count");
 }

@@ -234,7 +234,7 @@ sdk_resolver sdk_resolver::from_nearest_global_file(const pal::string_t& cwd, bo
     else
     {
         global_file_info global_file = resolver.parse_global_file(global_file_path);
-        if (global_file.state != global_file_info::state::valid)
+        if (global_file.state != global_file_info::state::valid && global_file.state != global_file_info::state::__invalid_data_no_fallback)
         {
             // Fall back to a default SDK resolver
             resolver = sdk_resolver{ allow_prerelease };
@@ -402,6 +402,18 @@ sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string
             ret.error_message = utils::format_string(_X("The roll-forward policy '%s' requires a 'sdk/version' value"), roll_forward_value->value.GetString());
             return ret;
         }
+    }
+
+    // SDK feature bands start at 1, so setting version with a feature band < 1 and not rolling forward on feature band will always
+    // fail when trying to resolve the SDK. We want to provide an error message, but we should not fall back to the default resolver.
+    if (!requested_version.is_empty() && requested_version.get_patch() < 100
+        && (roll_forward == sdk_roll_forward_policy::disable
+            || roll_forward == sdk_roll_forward_policy::patch
+            || roll_forward == sdk_roll_forward_policy::latest_patch))
+    {
+        ret.error_message = utils::format_string(_X("Version '%s' feature band does not exist and roll-forward policy '%s' does not roll forward on feature band"), requested_version.as_str().c_str(), to_policy_name(roll_forward));
+        ret.state = global_file_info::state::__invalid_data_no_fallback;
+        return ret;
     }
 
     const auto& allow_prerelease_value = sdk->value.FindMember(_X("allowPrerelease"));

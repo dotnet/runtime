@@ -203,7 +203,42 @@ namespace HostActivation.Tests
                     .Should().Pass()
                     .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
                     .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value")
+                    .And.HaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
                     .And.NotHaveStdErr();
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("patch")]
+        [InlineData("latestPatch")]
+        [InlineData("feature", false)]
+        [InlineData("minor", false)]
+        [InlineData("major", false)]
+        public void Info_GlobalJson_NonExistentFeatureBand(string rollForward, bool isInvalid = true)
+        {
+            string version = "9.0.0";
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_NonExistentFeatureBand)))
+            {
+                string globalJsonPath = GlobalJson.CreateWithVersionSettings(workingDir.Location, version, rollForward);
+                var result = TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute();
+                result.Should().Pass()
+                    .And.NotHaveStdErr();
+
+                if (isInvalid)
+                {
+                    result.Should().HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' feature band does not exist and roll-forward policy '{rollForward ?? "patch"}' does not roll forward on feature band")
+                    .And.NotHaveStdOutContaining($"Invalid global.json is ignored for SDK resolution");
+                }
+                else
+                {
+                    result.Should().HaveStdOutContaining(globalJsonPath)
+                        .And.NotHaveStdOutContaining($"Invalid [{globalJsonPath}]");
+                }
             }
         }
 

@@ -42,6 +42,9 @@ public:
             valid,
             invalid_json,
             invalid_data,
+            // Invalid data that doesn't fall back to default resolution. If we are able to remove the fallback
+            // and just fail on invalid data, this should be removed and invalid_data used instead.
+            __invalid_data_no_fallback,
             __last
         };
 
