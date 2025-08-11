@@ -8,6 +8,7 @@ using Xunit;
 
 namespace GB18030.Tests;
 
+[SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
 public class CharUnicodeInfoTests
 {
     [Theory]

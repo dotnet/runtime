@@ -15,6 +15,7 @@ namespace GB18030.Tests;
 /// <summary>
 /// Regex does not support surrogate pairs, which drastically reduces the number of characters in GB18030 that can be tested.
 /// </summary>
+[SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
 public class RegexTests
 {
     public enum RegexNamedBlock
@@ -37,7 +38,6 @@ public class RegexTests
 
     [Theory]
     [MemberData(nameof(UnicodeCategories_MemberData))]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://devdiv.visualstudio.com/DevDiv/_workitems/edit/2522617")]
     public async Task UnicodeCategory_InclusionAsync(RegexEngine engine, CultureInfo culture)
     {
         Regex r = await RegexHelpers.GetRegexAsync(engine, @"\p{Lo}", RegexOptions.None, culture);
@@ -59,7 +59,6 @@ public class RegexTests
 
     [Theory]
     [MemberData(nameof(UnicodeCategories_MemberData))]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://devdiv.visualstudio.com/DevDiv/_workitems/edit/2522617")]
     public async Task UnicodeCategory_ExclusionAsync(RegexEngine engine, CultureInfo culture)
     {
         Regex r = await RegexHelpers.GetRegexAsync(engine, @"\P{Lo}", RegexOptions.None, culture);

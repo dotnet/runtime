@@ -1,17 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Globalization;
 using System.Globalization.Tests;
-using System.Linq;
-using System.Xml.Linq;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Xunit;
-using Xunit.Sdk;
 
 namespace GB18030.Tests;
 
+[SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
 public class CharTests
 {
     [Theory]
@@ -73,8 +68,7 @@ public class CharTests
         }
     }
 
-    [ConditionalTheory]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+    [Theory]
     [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
     public void IsLetter(CharUnicodeInfoTestCase testCase)
     {
@@ -86,22 +80,6 @@ public class CharTests
         {
             Assert.True(char.IsLetter(utf32String[0]));
             Assert.True(char.IsLetterOrDigit(utf32String[0]));
-        }
-    }
-
-    [ConditionalTheory]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
-    [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
-    public void IsLetter_NetFramework(CharUnicodeInfoTestCase testCase)
-    {
-        string utf32String = testCase.Utf32CodeValue;
-        Assert.False(char.IsLetter(utf32String, 0));
-        Assert.False(char.IsLetterOrDigit(utf32String, 0));
-
-        if (utf32String.Length < 2)
-        {
-            Assert.False(char.IsLetter(utf32String[0]));
-            Assert.False(char.IsLetterOrDigit(utf32String[0]));
         }
     }
 

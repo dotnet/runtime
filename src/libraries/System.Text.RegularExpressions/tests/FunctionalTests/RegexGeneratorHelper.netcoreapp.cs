@@ -18,7 +18,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
-using Xunit;    
+using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
