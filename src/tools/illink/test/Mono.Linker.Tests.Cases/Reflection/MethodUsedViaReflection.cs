@@ -491,10 +491,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
         [Kept]
         class GetMethod_Name_GenericParameterCount_BindingAttr_Types
         {
+            [Kept]
             private static int OnlyCalledViaReflection()
             {
                 return 42;
             }
+            [Kept]
             private int OnlyCalledViaReflection(int foo)
             {
                 return 43;

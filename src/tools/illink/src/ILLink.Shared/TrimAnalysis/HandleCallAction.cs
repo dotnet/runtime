@@ -594,23 +594,7 @@ namespace ILLink.Shared.TrimAnalysis
                     }
 
                     BindingFlags? bindingFlags;
-                    int? genericParameterCount = null;
-
-                    // Check for overloads with genericParameterCount parameter
-                    if (calledMethod.HasParameterOfType((ParameterIndex)2, "System.Int32") &&
-                        calledMethod.HasParameterOfType((ParameterIndex)3, "System.Reflection.BindingFlags"))
-                    {
-                        // GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, ...)
-                        genericParameterCount = GetGenericParameterCountFromValue(argumentValues[1]);
-                        bindingFlags = GetBindingFlagsFromValue(argumentValues[2]);
-                    }
-                    else if (calledMethod.HasParameterOfType((ParameterIndex)2, "System.Int32"))
-                    {
-                        // GetMethod(string name, int genericParameterCount, Type[] types, ...)
-                        genericParameterCount = GetGenericParameterCountFromValue(argumentValues[1]);
-                        bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-                    }
-                    else if (calledMethod.HasParameterOfType((ParameterIndex)2, "System.Reflection.BindingFlags"))
+                    if (calledMethod.HasParameterOfType((ParameterIndex)2, "System.Reflection.BindingFlags"))
                         bindingFlags = GetBindingFlagsFromValue(argumentValues[1]);
                     else if (calledMethod.HasParameterOfType((ParameterIndex)3, "System.Reflection.BindingFlags"))
                         bindingFlags = GetBindingFlagsFromValue(argumentValues[2]);
@@ -628,7 +612,7 @@ namespace ILLink.Shared.TrimAnalysis
                                 if (stringParam is KnownStringValue stringValue && !BindingFlagsAreUnsupported(bindingFlags))
                                 {
                                     AddReturnValue(MultiValueLattice.Top); ; // Initialize return value (so that it's not autofilled if there are no matching methods)
-                                    foreach (var methodValue in ProcessGetMethodByName(systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags, genericParameterCount))
+                                    foreach (var methodValue in ProcessGetMethodByName(systemTypeValue.RepresentedType, stringValue.Contents, bindingFlags))
                                         AddReturnValue(methodValue);
                                 }
                                 else if (stringParam is NullValue)
@@ -1587,27 +1571,7 @@ namespace ILLink.Shared.TrimAnalysis
                 yield return NullValue.Instance;
         }
 
-        private IEnumerable<MultiValue> ProcessGetMethodByName(TypeProxy type, string methodName, BindingFlags? bindingFlags, int? genericParameterCount)
-        {
-            bool foundAny = false;
-            foreach (var method in GetMethodsOnTypeHierarchy(type, methodName, bindingFlags))
-            {
-                // Filter by generic parameter count if specified
-                if (genericParameterCount.HasValue && method.RepresentedMethod.GetGenericParameters().Length != genericParameterCount.Value)
-                    continue;
 
-                MarkMethod(method.RepresentedMethod);
-                yield return method;
-                foundAny = true;
-            }
-
-            // If there were no methods found the API will return null at runtime, so we should
-            // track the null as a return value as well.
-            // This also prevents warnings in such case, since if we don't set the return value it will be
-            // "unknown" and consumers may warn.
-            if (!foundAny)
-                yield return NullValue.Instance;
-        }
 
         private bool AnalyzeGenericInstantiationTypeArray(in MultiValue arrayParam, ImmutableArray<GenericParameterValue> genericParameters)
         {
@@ -1767,8 +1731,6 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         internal static BindingFlags? GetBindingFlagsFromValue(in MultiValue parameter) => (BindingFlags?)parameter.AsConstInt();
-
-        internal static int? GetGenericParameterCountFromValue(in MultiValue parameter) => parameter.AsConstInt();
 
         internal static bool BindingFlagsAreUnsupported(BindingFlags? bindingFlags)
         {
