@@ -273,7 +273,7 @@
 
 		<!-- domain.c: mono_defaults.object_class -->
 		<type fullname="System.Object">
-			<!-- class.c: initialize_object_slots -->
+			<!-- class.c: initialize_object_slots  -->
 			<method name="Finalize" />
 			<method name="GetHashCode" />
 		</type>
