@@ -78,6 +78,7 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 //
 static BasicBlock* SkipFallthroughBlocks(Compiler* comp, BasicBlock* block)
 {
+    BasicBlock* origBlock = block;
     if (!block->KindIs(BBJ_ALWAYS) || (block->firstStmt() != nullptr))
     {
         // Fast path
@@ -88,18 +89,17 @@ static BasicBlock* SkipFallthroughBlocks(Compiler* comp, BasicBlock* block)
 
     BitVecTraits traits(comp->fgBBNumMax + 1, comp);
     BitVec       visited = BitVecOps::MakeEmpty(&traits);
-    BitVecOps::AddElemD(&traits, visited, block->bbID);
-    BasicBlock* origBlock = block;
-    if (block->KindIs(BBJ_ALWAYS) && (block->firstStmt() == nullptr) &&
-        BasicBlock::sameEHRegion(block, block->GetTarget()))
+    BitVecOps::AddElemD(&traits, visited, block->bbNum);
+    while (block->KindIs(BBJ_ALWAYS) && (block->firstStmt() == nullptr) &&
+           BasicBlock::sameEHRegion(block, block->GetTarget()))
     {
         block = block->GetTarget();
-        if (BitVecOps::IsMember(&traits, visited, block->bbID))
+        if (BitVecOps::IsMember(&traits, visited, block->bbNum))
         {
             // A cycle detected, bail out.
             return origBlock;
         }
-        BitVecOps::AddElemD(&traits, visited, block->bbID);
+        BitVecOps::AddElemD(&traits, visited, block->bbNum);
     }
     return block;
 }
