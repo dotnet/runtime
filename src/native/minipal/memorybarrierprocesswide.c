@@ -195,7 +195,7 @@ void minipal_memory_barrier_process_wide(void)
     // Deallocate the thread list now we're done with it.
     machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
     CHECK_MACH("vm_deallocate()", machret);
-#else
+#else // !HOST_APPLE && !HOST_WASM
 #if HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
@@ -203,7 +203,7 @@ void minipal_memory_barrier_process_wide(void)
         assert(status == 0 && "Failed to flush using membarrier");
     }
     else
-#else
+#endif // !HAVE_SYS_MEMBARRIER_H
     if (g_helperPage != 0)
     {
         int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
@@ -226,7 +226,6 @@ void minipal_memory_barrier_process_wide(void)
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#endif // !HAVE_SYS_MEMBARRIER_H
 #endif // !HOST_APPLE && !HOST_WASM
 }
 #else // !HOST_WINDOWS
