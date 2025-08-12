@@ -34,6 +34,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
 
+        public bool IsEmpty => _methods.Count == 0;
+
         public void AddImport(Import import)
         {
             lock (_methods)
@@ -61,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (_methods.Count == 0)
             {
-                // Size header (R2RDump needs this)
+                // Always generate a size header
                 builder.Builder.EmitInt(0);
                 return builder.Builder.ToObjectData();
             }

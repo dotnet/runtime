@@ -135,7 +135,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.EmitUInt(0);
             }
 
-            if (_emitGCRefMap)
+            if (_emitGCRefMap && !_gcRefMap.IsEmpty)
             {
                 // This indirectly generates the AuxiliaryDataRva by emitting a placeholder 0 which will be replaced later
                 dataBuilder.EmitReloc(_gcRefMap, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
