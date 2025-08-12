@@ -113,13 +113,17 @@ std::string GetProcessCommandLine()
 #ifdef TARGET_WINDOWS
     return ::GetCommandLineA();
 #else
-    std::string   cmdLine("");
-    std::ifstream proc("/proc/self/cmdline");
-    if (proc)
+    char cmdLine[256];
+
+    FILE* fp = fopen("/proc/self/cmdline", "r");
+    if (fp != NULL)
     {
-        std::getline(proc, cmdLine);
+        fgets(cmdLine, sizeof(cmdLine), fp);
+        fclose(fp);
+        return cmdLine;
     }
-    return cmdLine;
+
+    return "";
 #endif
 }
 
