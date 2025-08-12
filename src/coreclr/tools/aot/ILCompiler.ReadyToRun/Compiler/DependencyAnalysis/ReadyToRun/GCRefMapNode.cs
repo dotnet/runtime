@@ -50,13 +50,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            if (relocsOnly)
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
+
             _methods.MergeSort(CompilerComparer.Instance);
             GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly);
 
             builder.Builder.RequireInitialAlignment(4);
             builder.Builder.AddSymbol(this);
 
-            if (_methods.Count == 0 || relocsOnly)
+            if (_methods.Count == 0)
             {
                 // Size header (R2RDump needs this)
                 builder.Builder.EmitInt(0);
