@@ -358,45 +358,42 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
     // List of LoaderAllocators being deleted
     LoaderAllocator * pFirstDestroyedLoaderAllocator = NULL;
 
-#if 0
-    // Debug logic for debugging the loader allocator gc.
-    {
-        /* Iterate through every loader allocator, and print its current state */
-        AppDomain::AssemblyIterator iData;
-        iData = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
-            kIncludeExecution | kIncludeLoaded | kIncludeCollected));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-        while (iData.Next_Unlocked(pAssembly.This()))
-        {
-            if (pAssembly != NULL)
-            {
-                LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
-                if (pLoaderAllocator->IsCollectible())
-                {
-                    minipal_log_print_info("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
-                    LoaderAllocatorSet::Iterator iter = pLoaderAllocator->m_LoaderAllocatorReferences.Begin();
-                    while (iter != pLoaderAllocator->m_LoaderAllocatorReferences.End())
-                    {
-                        LoaderAllocator * pAllocator = *iter;
-                        minipal_log_print_info("LARefTo: %p\n", pAllocator);
-                        iter++;
-                    }
-                }
-            }
-        }
-    }
-#endif //0
-
     AppDomain::AssemblyIterator i;
     {
         // Iterate through every loader allocator, marking as we go
         CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+#if 0
+        // Debug logic for debugging the loader allocator gc.
+        /* Iterate through every loader allocator, and print its current state */
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+        while (i.Next_Unlocked(pAssembly.This()))
+        {
+            if (pAssembly != NULL)
+            {
+                LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
+                if (pLoaderAllocator->IsCollectible())
+                {
+                    minipal_log_print_info("LA %d(%p) ReferencesTo %d\n", pLoaderAllocator->m_nLoaderAllocator, pLoaderAllocator, pLoaderAllocator->m_cReferences.Load());
+                    LoaderAllocatorSet::Iterator iter = pLoaderAllocator->m_LoaderAllocatorReferences.Begin();
+                    while (iter != pLoaderAllocator->m_LoaderAllocatorReferences.End())
+                    {
+                        LoaderAllocator * pAllocator = *iter;
+                        minipal_log_print_info("LARefTo: %d(%p)\n", pAllocator->m_nLoaderAllocator, pAllocator);
+                        iter++;
+                    }
+                }
+            }
+        }
+#endif //0
+
+        i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
+            kIncludeExecution | kIncludeLoaded | kIncludeCollected));
 
         while (i.Next_Unlocked(pAssembly.This()))
         {
@@ -406,7 +403,12 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 if (pLoaderAllocator->IsCollectible())
                 {
                     if (pLoaderAllocator->IsAlive())
+                    {
+                        // This mark is a deep mark, it will mark all LoaderAllocators that this one references too (recursively),
+                        // even ones that are not alive. Note that the caller of the current function has decremented reference count
+                        // of the loader allocator we are going to release and also all of its dependencies.
                         pLoaderAllocator->Mark();
+                    }
                 }
             }
         }
@@ -427,7 +429,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                     {
                         pLoaderAllocator->ClearMark();
                     }
-                    else if (!pLoaderAllocator->IsAlive())
+                    if (!pLoaderAllocator->IsAlive())
                     {
                         // Check that we don't have already this LoaderAllocator in the list to destroy
                         // (in case multiple assemblies are loaded in the same LoaderAllocator)
@@ -514,7 +516,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
     AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
     // Collect all LoaderAllocators that don't have anymore DomainAssemblies alive
-    // Note: that it may not collect our pOriginalLoaderAllocator in case this
+    // Note: that it will not collect our pOriginalLoaderAllocator in case this
     // LoaderAllocator hasn't loaded any DomainAssembly. We handle this case in the next loop.
     // Note: The removed LoaderAllocators are not reachable outside of this function anymore, because we
     // removed them from the assembly list
@@ -550,7 +552,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
     }
 
-    // If the original LoaderAllocator was not processed, it is most likely a LoaderAllocator without any loaded DomainAssembly
+    // If the original LoaderAllocator was not processed, it is a LoaderAllocator without any loaded DomainAssembly
     // But we still want to collect it so we add it to the list of LoaderAllocator to destroy
     if (!isOriginalLoaderAllocatorFound && !pOriginalLoaderAllocator->IsAlive())
     {
