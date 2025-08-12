@@ -502,9 +502,10 @@
     <Compile Include="Compiler\DependencyAnalysis\StructMarshallingStubMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InterfaceGVMMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\TypeGVMEntriesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GVMDependenciesNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GVMMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionFieldMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NativeLayoutVertexNode.cs" />

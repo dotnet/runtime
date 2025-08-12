@@ -72,8 +72,8 @@ namespace ILCompiler
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
         private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
-        private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
-            = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
+        private readonly SortedSet<GVMMetadataNode> _gvmMetadatas = new SortedSet<GVMMetadataNode>(CompilerComparer.Instance);
+        private readonly SortedSet<InterfaceGVMMetadataNode> _interfaceGvmMetadatas = new SortedSet<InterfaceGVMMetadataNode>(CompilerComparer.Instance);
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private readonly SortedSet<DefType> _typesWithStructMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
@@ -286,10 +286,14 @@ namespace ILCompiler
                 _typesWithThreadStaticsGenerated.Add(threadStaticsNode.Type);
             }
 
-            var gvmEntryNode = obj as TypeGVMEntriesNode;
-            if (gvmEntryNode != null)
+            if (obj is GVMMetadataNode gvmMetadataNode)
             {
-                _typeGVMEntries.Add(gvmEntryNode);
+                _gvmMetadatas.Add(gvmMetadataNode);
+            }
+
+            if (obj is InterfaceGVMMetadataNode interfaceGvmMetadataNode)
+            {
+                _interfaceGvmMetadatas.Add(interfaceGvmMetadataNode);
             }
 
             var dictionaryNode = obj as GenericDictionaryNode;
@@ -1024,9 +1028,14 @@ namespace ILCompiler
         internal bool HasThreadStaticBase(MetadataType type) => _typesWithThreadStaticsGenerated.Contains(type);
         internal bool HasConstructedEEType(TypeDesc type) => _typesWithConstructedEETypesGenerated.Contains(type);
 
-        internal IEnumerable<TypeGVMEntriesNode> GetTypeGVMEntries()
+        internal IEnumerable<GVMMetadataNode> GetGVMMetadatas()
         {
-            return _typeGVMEntries;
+            return _gvmMetadatas;
+        }
+
+        internal IEnumerable<InterfaceGVMMetadataNode> GetInterfaceGVMMetadatas()
+        {
+            return _interfaceGvmMetadatas;
         }
 
         internal IReadOnlyCollection<GenericDictionaryNode> GetCompiledGenericDictionaries()
