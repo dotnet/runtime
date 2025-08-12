@@ -2286,22 +2286,22 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op,
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);	
 	if(frame->imethod && frame->imethod->method && frame->imethod->method->name)
 	{
-		MH_LOG("calling do_icall for %s : %s", frame->imethod->method->name, mono_method_full_name (frame->imethod->method, TRUE));
+		MH_LOGV(MH_LVL_DEBUG, "calling do_icall for %s : %s", frame->imethod->method->name, mono_method_full_name (frame->imethod->method, TRUE));
 	}
 	else
 	{
-		MH_LOG("** Not getting method name because:");
+		MH_LOGV(MH_LVL_DEBUG, "** Not getting method name because:");
 		if (!frame->imethod)
 			{
-			MH_LOG("** called do_icall_wrapper for null imethod");
+			MH_LOGV(MH_LVL_DEBUG, "** called do_icall_wrapper for null imethod");
 			}
 		else if (!frame->imethod->method)
 			{
-			MH_LOG("** called do_icall_wrapper for imethod %p with no method", frame->imethod);
+			MH_LOGV(MH_LVL_DEBUG, "** called do_icall_wrapper for imethod %p with no method", frame->imethod);
 			}
 		else if (!frame->imethod->method->name)
 			{
-			MH_LOG("** called do_icall_wrapper for imethod->method %p with no name", frame->imethod->method);
+			MH_LOGV(MH_LVL_DEBUG, "** called do_icall_wrapper for imethod->method %p with no name", frame->imethod->method);
 			}
 	}
 	fflush(stdout);	

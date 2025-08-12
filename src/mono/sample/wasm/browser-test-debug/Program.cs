@@ -31,6 +31,15 @@ namespace Sample
                 return obj?.ToString() ?? "null";
             }
 
+            public static void NotEqual<T>(T expected, T actual)
+            {
+                if (object.Equals(expected, actual))
+                {
+                    string expectedStr = FormatIfArray(expected);
+                    string actualStr = FormatIfArray(actual);
+                    throw new Exception($"AssertHelper.NotEqual failed. Expected: {expectedStr}. Actual: {actualStr}.");                    
+                }
+            }
             public static void Equal<T>(T expected, T actual)
             {
                 if (expected is Array expectedArray && actual is Array actualArray)
@@ -108,13 +117,74 @@ namespace Sample
                 }
         }
 
+        public static unsafe void JsImportArraySegmentOfInt32()
+        {
+            var expectedBytes = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
+            ArraySegment<int> expected = new ArraySegment<int>(expectedBytes, 1, 6);
+            ArraySegment<int> actual = JavaScriptTestHelper.echo1_ArraySegmentOfInt32(expected, false);
+            Assert.Equal(expected.Count, actual.Count);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.Array, actual.Array);
+            actual = JavaScriptTestHelper.echo1_ArraySegmentOfInt32(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+        
+        public static unsafe void JsImportArraySegmentOfDouble()
+        {
+            var expectedBytes = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
+            ArraySegment<double> expected = new ArraySegment<double>(expectedBytes, 1, 10);
+            ArraySegment<double> actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, false);
+            Assert.Equal(expected.Count, actual.Count);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.Array, actual.Array);
+            actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        public static unsafe void JsImportSpanOfDouble()
+        {
+            var expectedBytes = stackalloc double[] { 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
+            Span<double> expected = new Span<double>(expectedBytes, 10);
+            Assert.True(Unsafe.AsPointer(ref expected.GetPinnableReference()) == expectedBytes);
+            Span<double> actual = JavaScriptTestHelper.echo1_SpanOfDouble(expected, false);
+            Assert.Equal(expected.Length, actual.Length);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.GetPinnableReference(), actual.GetPinnableReference());
+            Assert.True(actual.SequenceCompareTo(expected) == 0);
+            Assert.Equal(expected.ToArray(), actual.ToArray());
+            actual = JavaScriptTestHelper.echo1_SpanOfDouble(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+        public static unsafe void JsImportObjectArray(object[]? expected)
+        {
+            if (expected?.Length == 1 && expected[0] is string s && s == "JSData")
+            {
+                expected = new object[] { new object[] { JavaScriptTestHelper.createData("test"), JavaScriptTestHelper.createException("test") } };
+            }
+            var actual = JavaScriptTestHelper.echo1_ObjectArray(expected);
+            Assert.Equal(expected, actual);
+
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
         [JSExport]
         public static async Task DoTestMethod()
         {
             await JavaScriptTestHelper.InitializeAsync();
             int[] testData = new int[] { 1, 2, 3, int.MaxValue, int.MinValue };
-
-            JsImportIntArray(testData);
+            object[] objectTestData = { new object[] { string.Intern("hello"), string.Empty } };
+            JsImportObjectArray(objectTestData);
+            //JsImportArraySegmentOfInt32();
+            //JsImportArraySegmentOfDouble();
+            //JsImportSpanOfDouble();
+            //JsImportIntArray(testData);
             //JsExportVoidPtr(-9223372036854775808); //IntPtr.MinValue
             //JsExportVoidPtr(IntPtr.MinValue); 
             //await JsExportTaskOfInt(-2147483648);

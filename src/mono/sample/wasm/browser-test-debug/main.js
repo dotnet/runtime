@@ -27,7 +27,9 @@ try {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
-                config.environmentVariables["MONO_LOG_LEVEL"] = "debug"; 
+                config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
+                // 1 or lower = None, 2 = info, 3  = debug, 4 = verbose, 5 = trace
+                config.environmentVariables["MH_LOG_VERBOSITY"] = "2"; 
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
