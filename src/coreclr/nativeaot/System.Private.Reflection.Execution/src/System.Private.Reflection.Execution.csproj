@@ -71,8 +71,5 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Collections\HashHelpers.cs">
       <Link>System\Collections\HashHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\Empty.cs">
-      <Link>System\Collections\Generic\Empty.cs</Link>
-    </Compile>
   </ItemGroup>
 </Project>
