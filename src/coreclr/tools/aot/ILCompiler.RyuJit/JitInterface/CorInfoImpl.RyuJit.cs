@@ -2026,9 +2026,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-        { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
-
 #pragma warning disable CA1822 // Mark members as static
         private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
 #pragma warning restore CA1822 // Mark members as static

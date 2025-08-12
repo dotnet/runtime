@@ -47,6 +47,7 @@ ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
 TargetPointer IdToThread(uint id);
+TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, int indexOffset, int indexType);
 ```
 
 ## Version 1
@@ -61,6 +62,8 @@ The contract depends on the following globals
 | `FinalizerThread` | TargetPointer | A pointer to the finalizer thread
 | `GCThread` | TargetPointer | A pointer to the GC thread
 | `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects
+| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array
+| `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array
 
 The contract additionally depends on these data descriptors
 
@@ -71,7 +74,15 @@ The contract additionally depends on these data descriptors
 | `GCAllocContext` | `Limit` | Allocation limit pointer |
 | `IdDispenser` | `HighestId` | Highest possible small thread ID |
 | `IdDispenser` | `IdToThread` | Array mapping small thread IDs to thread pointers |
+| `InflightTLSData` | `Next` | Pointer to next in-flight TLS data entry |
+| `InflightTLSData` | `TlsIndex` | TLS index for the in-flight static field |
+| `InflightTLSData` | `TLSData` | Object handle to the TLS data for the static field |
+| `ObjectHandle` | `Object` | Pointer to the managed object |
 | `RuntimeThreadLocals` | `AllocContext` | GC allocation context for the thread |
+| `TLSIndex` | `IndexOffset` | Offset index for thread local storage |
+| `TLSIndex` | `IndexType` | Type of thread local storage index |
+| `TLSIndex` | `IsAllocated` | Whether TLS storage has been allocated |
+| `TLSIndex` | `TLSIndexRawIndex` | Raw index value containing type and offset |
 | `Thread` | `Id` | Thread identifier |
 | `Thread` | `OSId` | Operating system thread identifier |
 | `Thread` | `State` | Thread state flags |
@@ -82,6 +93,12 @@ The contract additionally depends on these data descriptors
 | `Thread` | `LinkNext` | Pointer to get next thread |
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
+| `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
+| `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
+| `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
+| `ThreadLocalData` | `CollectibleTlsData` | Count of collectible TLS data entries |
+| `ThreadLocalData` | `CollectibleTlsArrayData` | Pointer to collectible TLS array data |
+| `ThreadLocalData` | `InFlightData` | Pointer to in-flight TLS data for fields being initialized |
 | `ThreadStore` | `ThreadCount` | Number of threads |
 | `ThreadStore` | `FirstThreadLink` | Pointer to first thread in the linked list |
 | `ThreadStore` | `UnstartedCount` | Number of unstarted threads |
@@ -89,6 +106,13 @@ The contract additionally depends on these data descriptors
 | `ThreadStore` | `PendingCount` | Number of pending threads |
 | `ThreadStore` | `DeadCount` | Number of dead threads |
 ``` csharp
+enum TLSIndexType
+{
+    NonCollectible = 0,
+    Collectible = 1,
+    DirectOnThreadLocalData = 2,
+};
+
 ThreadStoreData GetThreadStoreData()
 {
     TargetPointer threadStore = target.ReadGlobalPointer("ThreadStore");
@@ -158,5 +182,62 @@ TargetPointer IThread.IdToThread(uint id)
     if (id < HighestId)
         threadPtr = target.ReadPointer(idDispenser + /* IdDispenser::IdToThread offset + (index into IdToThread array * size of array elements (== size of target pointer)) */);
     return threadPtr;
+}
+
+TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr)
+{
+    // Get the thread's TLS base address
+    TargetPointer threadLocalDataPtr = target.ReadPointer(threadPointer + /* Thread::ThreadLocalDataPtr offset */);
+    if (threadLocalDataPtr == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    Data.TLSIndex tlsIndex = new Data.TLSIndex(tlsIndexPtr);
+    if (!tlsIndex.IsAllocated)
+        return TargetPointer.Null;
+
+    TargetPointer threadLocalStaticBase = default;
+    int indexType = tlsIndex.IndexType;
+    int indexOffset = tlsIndex.IndexOffset;
+    switch ((TLSIndexType)indexType)
+    {
+        case TLSIndexType.NonCollectible:
+            int nonCollectibleCount = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::NonCollectibleTlsDataCount offset */);
+            // bounds check
+            if (nonCollectibleCount > indexOffset)
+            {
+                TargetPointer nonCollectibleArray = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::NonCollectibleTlsArrayData offset */);
+                int arrayIndex = indexOffset - target.ReadGlobal<byte>("NumberOfTlsOffsetsNotUsedInNoncollectibleArray");
+                TargetPointer arrayStartAddress = nonCollectibleArray + target.ReadGlobalPointer("PtrArrayOffsetToDataArray");
+                threadLocalStaticBase = target.ReadPointer(arrayStartAddress + (ulong)(arrayIndex * target.PointerSize));
+            }
+            break;
+        case TLSIndexType.Collectible:
+            int collectibleCount = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::CollectibleTlsDataCount offset */);
+            if (collectibleCount > indexOffset)
+            {
+                TargetPointer collectibleArray = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::CollectibleTlsArrayData offset */);
+                threadLocalStaticBase = target.ReadPointer(collectibleArray + (ulong)(indexOffset * target.PointerSize));
+            }
+            break;
+        case TLSIndexType.DirectOnThreadLocalData:
+            threadLocalStaticBase = threadLocalDataPtr;
+            break;
+    }
+    if (threadLocalStaticBase == TargetPointer.Null)
+    {
+        TargetPointer inFlightData = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::inFlightData offset */);
+        while (inFlightData != TargetPointer.Null)
+        {
+            TargetPointer tlsIndexInFlightPtr = target.ReadPointer(inFlightData + /* InflightTLSData::TlsIndex offset */);
+            Data.TLSIndex tlsIndexInFlight = new Data.TLSIndex(tlsIndexInFlightPtr);
+            if (tlsIndexInFlight.TLSIndexRawIndex == tlsIndex.TLSIndexRawIndex)
+            {
+                threadLocalStaticBase = target.ReadPointer(tlsIndexInFlightPtr + /* InflightTLSData::TLSData offset */);
+                break;
+            }
+            inFlightData = target.ReadPointer(inFlightData + /* InflightTLSData::Next offset */);
+        }
+    }
+    return threadLocalStaticBase;
 }
 ```
