@@ -295,7 +295,7 @@ namespace System.Data.OleDb
             _parentConnection = null!;
         }
 
-        [RequiresDynamicCode("OleDbConnection requires dynamic code")]
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
         private void ProcessResults(OleDbHResult hr)
         {
             Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection);

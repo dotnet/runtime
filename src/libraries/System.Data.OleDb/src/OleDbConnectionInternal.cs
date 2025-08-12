@@ -14,7 +14,7 @@ using SysTx = System.Transactions;
 namespace System.Data.OleDb
 {
 #if NET
-    [RequiresDynamicCode("OleDbConnection requires dynamic code")]
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
 #endif
     internal sealed class OleDbConnectionInternal : DbConnectionInternal, IDisposable
     {

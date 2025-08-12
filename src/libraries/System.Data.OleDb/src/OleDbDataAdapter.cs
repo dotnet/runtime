@@ -11,7 +11,7 @@ namespace System.Data.OleDb
 {
     [Designer("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [ToolboxItem("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-    [RequiresDynamicCode("OleDbConnection requires dynamic code")]
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed class OleDbDataAdapter : DbDataAdapter, IDbDataAdapter, ICloneable
     {
         private static readonly object EventRowUpdated = new object();

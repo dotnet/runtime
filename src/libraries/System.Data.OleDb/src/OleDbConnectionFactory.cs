@@ -46,8 +46,6 @@ namespace System.Data.OleDb
             return result;
         }
 
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL3050:RequiresDynamicCode",
-            Justification = "OLE DB provider creates metadata factory with known schema.")]
         protected override DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
         {
             Debug.Assert(internalConnection != null, "internalConnection may not be null.");

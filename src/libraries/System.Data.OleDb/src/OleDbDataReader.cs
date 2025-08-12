@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
-    [RequiresDynamicCode("OleDbConnection requires dynamic code")]
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed class OleDbDataReader : DbDataReader
     {
         private readonly CommandBehavior _commandBehavior;
@@ -1220,7 +1220,7 @@ namespace System.Data.OleDb
             _isRead = false;
         }
 
-        [RequiresDynamicCode("OleDbConnection requires dynamic code")]
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
         internal static OleDbException? NextResults(UnsafeNativeMethods.IMultipleResults? imultipleResults, OleDbConnection? connection, OleDbCommand command, out IntPtr recordsAffected)
         {
             recordsAffected = ADP.RecordsUnaffected;

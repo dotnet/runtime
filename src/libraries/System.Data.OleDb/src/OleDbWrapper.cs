@@ -12,7 +12,7 @@ namespace System.Data.OleDb
 {
     // SafeHandle wrapper around 'DataLinks' object which pools the native OLE DB providers.
     // expect 1 per app-domain
-    [RequiresDynamicCode("OleDbConnection requires dynamic code")]
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     internal sealed class OleDbServicesWrapper : WrappedIUnknown
     {
         // we expect to store IDataInitialize instance pointer in base.handle
