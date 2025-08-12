@@ -148,16 +148,62 @@ void minipal_memory_barrier_process_wide(void)
 {
     assert(s_initializedMemoryBarrierSuccessfullyInitialized);
 
-#ifndef TARGET_WASM
-#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
+#ifdef HOST_WASM
+    // browser/wasm is currently single threaded
+#elif defined(HOST_APPLE)
+    mach_msg_type_number_t cThreads;
+    thread_act_t *pThreads;
+    kern_return_t machret = task_threads(mach_task_self(), &pThreads, &cThreads);
+    CHECK_MACH("task_threads()", machret);
+
+    uintptr_t sp;
+    uintptr_t registerValues[128];
+
+    // Iterate through each of the threads in the list.
+    for (mach_msg_type_number_t i = 0; i < cThreads; i++)
+    {
+        if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
+        {
+            // Request the threads pointer values to force the thread to emit a memory barrier
+            size_t registers = 128;
+            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+        }
+        else
+        {
+            // fallback implementation for older OS versions
+#if defined(HOST_AMD64)
+            x86_thread_state64_t threadState;
+            mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
+            machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#elif defined(HOST_ARM64)
+            arm_thread_state64_t threadState;
+            mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
+            machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#else
+            #error Unexpected architecture
+#endif
+        }
+
+        if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
+        {
+            CHECK_MACH("thread_get_register_pointer_values()", machret);
+        }
+
+        machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
+        CHECK_MACH("mach_port_deallocate()", machret);
+    }
+    // Deallocate the thread list now we're done with it.
+    machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
+    CHECK_MACH("vm_deallocate()", machret);
+#else
+#if HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
         int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0);
         assert(status == 0 && "Failed to flush using membarrier");
     }
     else
-#endif
-#ifndef TARGET_APPLE
+#else
     if (g_helperPage != 0)
     {
         int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
@@ -180,55 +226,8 @@ void minipal_memory_barrier_process_wide(void)
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#else
-    {
-        mach_msg_type_number_t cThreads;
-        thread_act_t *pThreads;
-        kern_return_t machret = task_threads(mach_task_self(), &pThreads, &cThreads);
-        CHECK_MACH("task_threads()", machret);
-
-        uintptr_t sp;
-        uintptr_t registerValues[128];
-
-        // Iterate through each of the threads in the list.
-        for (mach_msg_type_number_t i = 0; i < cThreads; i++)
-        {
-            if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
-            {
-                // Request the threads pointer values to force the thread to emit a memory barrier
-                size_t registers = 128;
-                machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
-            }
-            else
-            {
-                // fallback implementation for older OS versions
-#if defined(HOST_AMD64)
-                x86_thread_state64_t threadState;
-                mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
-                machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
-#elif defined(HOST_ARM64)
-                arm_thread_state64_t threadState;
-                mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
-                machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
-#else
-                #error Unexpected architecture
-#endif
-            }
-
-            if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
-            {
-                CHECK_MACH("thread_get_register_pointer_values()", machret);
-            }
-
-            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
-            CHECK_MACH("mach_port_deallocate()", machret);
-        }
-        // Deallocate the thread list now we're done with it.
-        machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
-        CHECK_MACH("vm_deallocate()", machret);
-    }
-#endif // TARGET_APPLE
-#endif // !TARGET_WASM
+#endif // !HAVE_SYS_MEMBARRIER_H
+#endif // !HOST_APPLE && !HOST_WASM
 }
 #else // !HOST_WINDOWS
 
