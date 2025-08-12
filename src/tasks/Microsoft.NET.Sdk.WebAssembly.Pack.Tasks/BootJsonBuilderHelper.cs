@@ -87,7 +87,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 output = $"export const config = /*json-start*/{output}/*json-end*/;";
             }
 
-            ArtifactWriter.PersistFileIfChanged(Encoding.UTF8.GetBytes(output), outputPath);
+            ArtifactWriter.PersistFileIfChanged(Log, Encoding.UTF8.GetBytes(output), outputPath);
         }
 
         private string ReplaceWithAssert(Regex regex, string content, string replacement, string errorMessage)
