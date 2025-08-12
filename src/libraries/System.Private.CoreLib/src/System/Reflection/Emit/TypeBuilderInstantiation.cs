@@ -176,7 +176,7 @@ namespace System.Reflection.Emit
         public override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers, nameof(TypeBuilder.GetField))); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers,  nameof(TypeBuilder.GetField))); }
+        public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException(SR.Format(SR.NotSupported_TypeBuilderInstantiation_ResolvingMembers, nameof(TypeBuilder.GetField))); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
