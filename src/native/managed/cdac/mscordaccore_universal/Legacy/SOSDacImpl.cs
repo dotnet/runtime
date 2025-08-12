@@ -1042,7 +1042,56 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetMethodDescFromToken(ClrDataAddress moduleAddr, uint token, ClrDataAddress* methodDesc)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodDescFromToken(moduleAddr, token, methodDesc) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        if (moduleAddr == 0 || methodDesc == null)
+            hr = HResults.E_INVALIDARG;
+        else
+        {
+            try
+            {
+                Contracts.ILoader loader = _target.Contracts.Loader;
+                TargetPointer module = moduleAddr.ToTargetPointer(_target);
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
+                Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+                switch ((CorTokenType)token & CorTokenType.typeMask)
+                {
+                    case CorTokenType.mdtFieldDef:
+                        *methodDesc = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, token, out var _).ToClrDataAddress(_target);
+                        break;
+                    case CorTokenType.mdtMethodDef:
+                        *methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, token, out var _).ToClrDataAddress(_target);
+                        break;
+                    case CorTokenType.mdtTypeDef:
+                        *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, token, out var _).ToClrDataAddress(_target);
+                        break;
+                    case CorTokenType.mdtTypeRef:
+                        *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, token, out var _).ToClrDataAddress(_target);
+                        break;
+                    default:
+                        hr = HResults.E_INVALIDARG;
+                        break;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress methodDescLocal;
+            int hrLocal = _legacyImpl.GetMethodDescFromToken(moduleAddr, token, &methodDescLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*methodDesc == methodDescLocal, $"cDAC: {*methodDesc:x}, DAC: {methodDescLocal:x}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetMethodDescName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
     {
         if (addr == 0)
