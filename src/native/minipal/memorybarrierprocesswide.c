@@ -74,7 +74,7 @@ static bool s_flushUsingMemBarrier = false;
 
 #if !defined(HOST_APPLE) && !defined(HOST_WASM)
 // Helper memory page used by the fallback path
-static uint8_t* g_helperPage = 0;
+static uint8_t* g_helperPage = NULL;
 
 // Mutex to make the fallback path thread safe
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
@@ -105,7 +105,7 @@ bool minipal_initialize_memory_barrier_process_wide(void)
 #endif // HAVE_SYS_MEMBARRIER_H
     {
         // Fallback implementation
-        assert(g_helperPage == 0);
+        assert(g_helperPage == NULL);
 
         int pageSize = sysconf( _SC_PAGE_SIZE );
 
@@ -204,8 +204,9 @@ void minipal_memory_barrier_process_wide(void)
     }
     else
 #endif // !HAVE_SYS_MEMBARRIER_H
-    if (g_helperPage != 0)
     {
+        assert(g_helperPage != NULL);
+
         int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
         (void)status; // unused in release config
         assert(status == 0 && "Failed to lock the flushProcessWriteBuffersMutex lock");
