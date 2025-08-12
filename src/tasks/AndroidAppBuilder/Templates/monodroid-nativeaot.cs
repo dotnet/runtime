@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
-using System.Runtime;
 using System;
+using System.IO;
+using System.Linq;
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using JObject = nint;
 using JString = nint;
@@ -55,11 +57,14 @@ internal static unsafe partial class MonoDroidExports
             args[i] = env->GetStringUTFChars((JString)j_arg);
         }
 
-        Console.WriteLine("args: " + string.Join(' ', args));
-
 #if SINGLE_FILE_TEST_RUNNER
+        string excludesFile = Path.Combine(Environment.GetEnvironmentVariable("HOME"), "xunit-excludes.txt");
+        if (File.Exists(excludesFile))
+        {
+            args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
+        }
         // SingleFile unit tests
-        return SingleFileTestRunner.Main(["-notrait", "category=IgnoreForCI", "-notrait", "category=OuterLoop", "-notrait", "category=failing", "-notrait", "category=nonlinuxtests"]);
+        return SingleFileTestRunner.Main(args);
 #else
         // Functional tests
         return Program.Main(args);
@@ -117,7 +122,7 @@ internal unsafe struct JNIEnv
         }
     }
 
-    public JObject GetObjectArrayElement(JObjectArray array, int index)
+    public JObject GetObjectArrayElement(JObjectArray array, JSize index)
     {
         fixed (JNIEnv* thisptr = &this)
         {
