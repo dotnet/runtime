@@ -41,12 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             if (!_method.IsAbstract)
-            {
                 yield return new DependencyListEntry(factory.GenericVirtualMethodImpl(_method), "Implementation of the generic virtual method");
-
-                if (!_method.OwningType.IsInterface)
-                    yield return new DependencyListEntry(factory.GVMMetadata(_method.GetTypicalMethodDefinition(), _method.GetTypicalMethodDefinition()), "Implementation of the generic virtual method");
-            }
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
@@ -129,12 +124,11 @@ namespace ILCompiler.DependencyAnalysis
                             MethodDesc slotDecl = interfaceMethod.Signature.IsStatic ?
                                 potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod)
                                 : potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethod);
-                            DefaultInterfaceMethodResolution defaultResolution = DefaultInterfaceMethodResolution.None;
                             if (slotDecl == null)
                             {
                                 // The method might be implemented through a default interface method
-                                defaultResolution = potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, out slotDecl);
-                                if (defaultResolution != DefaultInterfaceMethodResolution.DefaultImplementation)
+                                var result = potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, out slotDecl);
+                                if (result != DefaultInterfaceMethodResolution.DefaultImplementation)
                                 {
                                     slotDecl = null;
                                 }
@@ -152,8 +146,6 @@ namespace ILCompiler.DependencyAnalysis
                                     dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GenericVirtualMethodImpl(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
                                 else
                                     dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
-
-                                dynamicDependencies.Add(new CombinedDependencyListEntry(factory.InterfaceGVMMetadata(interfaceMethod, slotDecl.GetTypicalMethodDefinition(), potentialOverrideDefinition, defaultResolution), null, "Metadata"));
 
                                 TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
                                 factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
@@ -207,9 +199,6 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         dynamicDependencies.Add(new CombinedDependencyListEntry(
                             factory.GenericVirtualMethodImpl(instantiatedTargetMethod), null, "DerivedMethodInstantiation"));
-
-                        dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMMetadata(
-                            methodToResolve.GetTypicalMethodDefinition(), instantiatedTargetMethod.GetTypicalMethodDefinition()), null, "Metadata"));
 
                         factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
                     }

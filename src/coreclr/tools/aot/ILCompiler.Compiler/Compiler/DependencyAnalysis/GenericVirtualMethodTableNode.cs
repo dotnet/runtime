@@ -80,9 +80,13 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            foreach (var typeGVMEntryInfo in factory.MetadataManager.GetGVMMetadatas())
+            // Build the GVM table entries from the list of interesting GVMTableEntryNodes
+            foreach (var interestingEntry in factory.MetadataManager.GetTypeGVMEntries())
             {
-                AddGenericVirtualMethodImplementation(typeGVMEntryInfo.CallingMethod, typeGVMEntryInfo.ImplementationMethod);
+                foreach (var typeGVMEntryInfo in interestingEntry.ScanForGenericVirtualMethodEntries())
+                {
+                    AddGenericVirtualMethodImplementation(typeGVMEntryInfo.CallingMethod, typeGVMEntryInfo.ImplementationMethod);
+                }
             }
 
             // Ensure the native layout blob has been saved

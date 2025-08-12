@@ -339,14 +339,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new ExactMethodInstantiationsEntryNode(method);
             });
 
-            _gvmMetadatas = new NodeCache<GVMMetadataKey, GVMMetadataNode>(key =>
+            _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
-                return new GVMMetadataNode(key.CallingMethod, key.ImplementationMethod);
-            });
-
-            _interfaceGvmMetadatas = new NodeCache<InterfaceGVMMetadataKey, InterfaceGVMMetadataNode>(key =>
-            {
-                return new InterfaceGVMMetadataNode(key.CallingMethod, key.ImplementationMethod, key.ImplementationType, key.DefaultResolution);
+                return new TypeGVMEntriesNode(type);
             });
 
             _addressTakenMethods = new NodeCache<MethodDesc, AddressTakenMethodNode>(method =>
@@ -1170,16 +1165,10 @@ namespace ILCompiler.DependencyAnalysis
             return _exactMethodEntries.GetOrAdd(method);
         }
 
-        private NodeCache<GVMMetadataKey, GVMMetadataNode> _gvmMetadatas;
-        internal GVMMetadataNode GVMMetadata(MethodDesc callingMethod, MethodDesc implementationMethod)
+        private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
+        internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
-            return _gvmMetadatas.GetOrAdd(new GVMMetadataKey(callingMethod, implementationMethod));
-        }
-
-        private NodeCache<InterfaceGVMMetadataKey, InterfaceGVMMetadataNode> _interfaceGvmMetadatas;
-        internal InterfaceGVMMetadataNode InterfaceGVMMetadata(MethodDesc callingMethod, MethodDesc implementationMethod, TypeDesc implementationType, DefaultInterfaceMethodResolution defaultResolution)
-        {
-            return _interfaceGvmMetadatas.GetOrAdd(new InterfaceGVMMetadataKey(callingMethod, implementationMethod, implementationType, defaultResolution));
+            return _gvmTableEntries.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, AddressTakenMethodNode> _addressTakenMethods;
@@ -1749,34 +1738,6 @@ namespace ILCompiler.DependencyAnalysis
             public bool Equals(MethodILKey other) => other.MethodIL.OwningMethod == this.MethodIL.OwningMethod;
             public override int GetHashCode() => MethodIL.OwningMethod.GetHashCode();
 
-        }
-
-        private struct GVMMetadataKey : IEquatable<GVMMetadataKey>
-        {
-            public readonly MethodDesc CallingMethod;
-            public readonly MethodDesc ImplementationMethod;
-
-            public GVMMetadataKey(MethodDesc callingMethod, MethodDesc implementationMethod)
-                => (CallingMethod, ImplementationMethod) = (callingMethod, implementationMethod);
-
-            public override bool Equals(object obj) => obj is GVMMetadataKey other && Equals(other);
-            public bool Equals(GVMMetadataKey other) => CallingMethod == other.CallingMethod && ImplementationMethod == other.ImplementationMethod;
-            public override int GetHashCode() => HashCode.Combine(CallingMethod, ImplementationMethod);
-        }
-
-        private struct InterfaceGVMMetadataKey : IEquatable<InterfaceGVMMetadataKey>
-        {
-            public readonly MethodDesc CallingMethod;
-            public readonly MethodDesc ImplementationMethod;
-            public readonly TypeDesc ImplementationType;
-            public readonly DefaultInterfaceMethodResolution DefaultResolution;
-
-            public InterfaceGVMMetadataKey(MethodDesc callingMethod, MethodDesc implementationMethod, TypeDesc implementationType, DefaultInterfaceMethodResolution resolution)
-                => (CallingMethod, ImplementationMethod, ImplementationType, DefaultResolution) = (callingMethod, implementationMethod, implementationType, resolution);
-
-            public override bool Equals(object obj) => obj is InterfaceGVMMetadataKey other && Equals(other);
-            public bool Equals(InterfaceGVMMetadataKey other) => CallingMethod == other.CallingMethod && ImplementationType == other.ImplementationType;
-            public override int GetHashCode() => HashCode.Combine(CallingMethod, ImplementationType);
         }
     }
 }
