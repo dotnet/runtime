@@ -673,36 +673,46 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = info.Pfx_Seed;
             string pfxPassword = info.EncryptionPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
-            using (MLDsa mldsa = cert.GetMLDsaPrivateKey())
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
             {
-                Assert.NotNull(mldsa);
-                Assert.Equal(info.Algorithm, mldsa.Algorithm);
                 Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
 
-                byte[] seed = mldsa.ExportMLDsaPrivateSeed();
-                AssertExtensions.SequenceEqual(info.PrivateSeed, seed);
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
             }
         }
 
         [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118609", TestPlatforms.Windows)]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
             byte[] pfxBytes = info.Pfx_Expanded;
             string pfxPassword = info.EncryptionPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
-            using (MLDsa mldsa = cert.GetMLDsaPrivateKey())
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
             {
-                Assert.NotNull(mldsa);
-                Assert.Equal(info.Algorithm, mldsa.Algorithm);
                 Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
 
-                Assert.Throws<CryptographicException>(() => mldsa.ExportMLDsaPrivateSeed());
-                byte[] privateKey = mldsa.ExportMLDsaPrivateKey();
-                AssertExtensions.SequenceEqual(info.PrivateKey, privateKey);
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
             }
         }
 
@@ -713,18 +723,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = info.Pfx_Both;
             string pfxPassword = info.EncryptionPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
-            using (MLDsa mldsa = cert.GetMLDsaPrivateKey())
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
             {
-                Assert.NotNull(mldsa);
-                Assert.Equal(info.Algorithm, mldsa.Algorithm);
                 Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
 
-                byte[] seed = mldsa.ExportMLDsaPrivateSeed();
-                AssertExtensions.SequenceEqual(info.PrivateSeed.AsSpan(), seed.AsSpan());
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
 
-                byte[] sk = mldsa.ExportMLDsaPrivateKey();
-                AssertExtensions.SequenceEqual(info.PrivateKey, sk);
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
             }
         }
 
@@ -769,14 +782,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx;
             string pfxPassword = "PLACEHOLDER";
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
-            using (SlhDsa slhDsa = cert.GetSlhDsaPrivateKey())
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (SlhDsa pubKey = cert.GetSlhDsaPublicKey())
+            using (SlhDsa privKey = cert.GetSlhDsaPrivateKey())
             {
-                Assert.NotNull(slhDsa);
-                Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
-                // Note this display string is reversed from the one in the IETF example but equivalent.
                 Assert.Equal("O=Bogus SLH-DSA-SHA2-128s CA, L=Paris, C=FR", cert.Subject);
-                AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaPrivateKey());
+
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, pubKey.ExportSlhDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
             }
         }
 

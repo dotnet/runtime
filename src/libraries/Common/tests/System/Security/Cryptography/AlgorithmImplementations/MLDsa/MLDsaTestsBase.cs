@@ -90,7 +90,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageNoContext(MLDsaAlgorithm algorithm)
         {
@@ -100,7 +99,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageWithContext(MLDsaAlgorithm algorithm)
         {
@@ -225,7 +223,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118609", TestPlatforms.Windows)]
         public void ImportPrivateKey_CannotReconstructSeed()
         {
             byte[] privateKey;
@@ -293,7 +290,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118609", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.AllPureMLDsaNistTestCases), MemberType = typeof(MLDsaTestsData))]
         public void NistImportPrivateKeyVerifyExportsAndSignature(MLDsaNistTestCase testCase)
         {
@@ -331,7 +327,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118609", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void ImportPrivateKey_Export(MLDsaKeyInfo info)
         {

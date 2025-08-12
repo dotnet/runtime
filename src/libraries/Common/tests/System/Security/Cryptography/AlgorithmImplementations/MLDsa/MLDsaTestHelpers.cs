@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Tests
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
-        // TODO: Windows currently does not support PKCS#8 export when imported as private key.
+        // TODO (https://github.com/dotnet/runtime/issues/118609): Windows currently does not support PKCS#8 export when imported as private key.
         internal static bool SupportsExportingPrivateKeyPkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
         internal static bool ExternalMuIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
