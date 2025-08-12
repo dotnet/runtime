@@ -5646,7 +5646,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             //
 
             pCode = pStubMD->PrepareInitialCode();
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
             // Interpreter-TODO: Figure out how to create the call stub for the IL stub only when it is
             // needed, like we do for the regular methods.
             InterpByteCodeStart *pInterpreterCode = pStubMD->GetInterpreterCode();
@@ -5654,7 +5654,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             {
                 CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
             }
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && FEATURE_JIT
 
             _ASSERTE(pCode == pStubMD->GetNativeCode());
         }
