@@ -17,15 +17,15 @@
 // -We'll never be unloaded - we leak memory and have no facility to unload libraries
 // -printf output to console is okay
 
-HMODULE               g_hRealJit = 0;    // We leak this currently (could do the proper shutdown in process_detach)
-std::filesystem::path g_realJitPath{""}; // Destructable objects will be cleaned up and won't leak
-std::filesystem::path g_logPath{""};
-std::filesystem::path g_HomeDirectory{""};
-std::filesystem::path g_DefaultRealJitPath{""};
-std::filesystem::path g_dataFileName{""};
-MethodContext*        g_globalContext    = nullptr;
-bool                  g_initialized      = false;
-char*                 g_collectionFilter = nullptr;
+HMODULE        g_hRealJit = 0;    // We leak this currently (could do the proper shutdown in process_detach)
+std::string    g_realJitPath{""}; // Destructable objects will be cleaned up and won't leak
+std::string    g_logPath{""};
+std::string    g_HomeDirectory{""};
+std::string    g_DefaultRealJitPath{""};
+std::string    g_dataFileName{""};
+MethodContext* g_globalContext    = nullptr;
+bool           g_initialized      = false;
+char*          g_collectionFilter = nullptr;
 
 // RAII holder for logger
 // Global deconstructors are unreliable. We only use it for superpmi shim.
@@ -58,7 +58,7 @@ void SetDefaultPaths()
 
     if (g_DefaultRealJitPath.empty())
     {
-        g_DefaultRealJitPath = g_HomeDirectory / DEFAULT_REAL_JIT_NAME_A;
+        g_DefaultRealJitPath = g_HomeDirectory + DIRECTORY_SEPARATOR_CHAR_A + DEFAULT_REAL_JIT_NAME_A;
     }
 }
 
@@ -66,7 +66,7 @@ void SetLibName()
 {
     if (g_realJitPath.empty())
     {
-        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath.string().c_str());
+        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath.c_str());
     }
 }
 
@@ -74,7 +74,7 @@ void SetLogPath()
 {
     if (g_logPath.empty())
     {
-        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory.string().c_str());
+        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory.c_str());
     }
 }
 
@@ -215,11 +215,11 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
 #endif
 
     // create our datafile
-    pJitInstance->hFile = CreateFileW((const WCHAR*)g_dataFileName.u16string().c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
+    pJitInstance->hFile = CreateFileA(g_dataFileName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
                                       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (pJitInstance->hFile == INVALID_HANDLE_VALUE)
     {
-        LogError("Couldn't open file '%s': error %d", g_dataFileName.string().c_str(), GetLastError());
+        LogError("Couldn't open file '%s': error %d", g_dataFileName.c_str(), GetLastError());
     }
 
     return pJitInstance;

@@ -31,11 +31,11 @@ const char* GetEnvWithDefault(const char* envVarName, const char* defaultValue =
 
 std::string GetProcessCommandLine();
 
-bool LoadRealJitLib(HMODULE& realJit, const std::filesystem::path& realJitPath);
+bool LoadRealJitLib(HMODULE& realJit, const std::string& realJitPath);
 
-std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
-                                        const std::string&           fileName,
-                                        const std::string&           extension);
+std::string GetResultFileName(const std::string& folderPath,
+                              const std::string& fileName,
+                              const std::string& extension);
 
 // SuperPMI stores handles as unsigned 64-bit integers, no matter the platform the collection happens on
 // (32 or 64 bit). Handles are defined as pointers. We need to be careful when converting from a handle

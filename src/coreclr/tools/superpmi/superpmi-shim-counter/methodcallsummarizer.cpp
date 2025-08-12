@@ -7,7 +7,7 @@
 #include "spmiutil.h"
 #include <fstream>
 
-MethodCallSummarizer::MethodCallSummarizer(const std::filesystem::path& logPath)
+MethodCallSummarizer::MethodCallSummarizer(const std::string& logPath)
 {
     dataFileName = GetResultFileName(logPath, GetProcessCommandLine(), ".csv");
 }

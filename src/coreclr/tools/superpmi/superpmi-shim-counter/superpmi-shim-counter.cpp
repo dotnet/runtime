@@ -15,11 +15,11 @@
 #include "jithost.h"
 #include <memory>
 
-HMODULE               g_hRealJit = 0;    // We leak this currently (could do the proper shutdown in process_detach)
-std::filesystem::path g_realJitPath{""}; // Destructable objects will be cleaned up and won't leak
-std::filesystem::path g_logPath{""};
-std::filesystem::path g_HomeDirectory{""};
-std::filesystem::path g_DefaultRealJitPath{""};
+HMODULE     g_hRealJit = 0;    // We leak this currently (could do the proper shutdown in process_detach)
+std::string g_realJitPath{""}; // Destructable objects will be cleaned up and won't leak
+std::string g_logPath{""};
+std::string g_HomeDirectory{""};
+std::string g_DefaultRealJitPath{""};
 
 std::unique_ptr<MethodCallSummarizer> g_globalContext = nullptr;
 
@@ -54,7 +54,7 @@ void SetDefaultPaths()
 
     if (g_DefaultRealJitPath.empty())
     {
-        g_DefaultRealJitPath = g_HomeDirectory / DEFAULT_REAL_JIT_NAME_A;
+        g_DefaultRealJitPath = g_HomeDirectory + DIRECTORY_SEPARATOR_CHAR_A + DEFAULT_REAL_JIT_NAME_A;
     }
 }
 
@@ -62,7 +62,7 @@ void SetLibName()
 {
     if (g_realJitPath.empty())
     {
-        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath.string().c_str());
+        g_realJitPath = GetEnvWithDefault("SuperPMIShimPath", g_DefaultRealJitPath.c_str());
     }
 }
 
@@ -70,7 +70,7 @@ void SetLogPath()
 {
     if (g_logPath.empty())
     {
-        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory.string().c_str());
+        g_logPath = GetEnvWithDefault("SuperPMIShimLogPath", g_HomeDirectory.c_str());
     }
 }
 

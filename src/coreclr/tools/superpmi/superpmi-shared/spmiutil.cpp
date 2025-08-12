@@ -123,7 +123,7 @@ std::string GetProcessCommandLine()
 #endif
 }
 
-bool LoadRealJitLib(HMODULE& jitLib, const std::filesystem::path& jitLibPath)
+bool LoadRealJitLib(HMODULE& jitLib, const std::string& jitLibPath)
 {
     // Load Library
     if (jitLib == NULL)
@@ -134,14 +134,14 @@ bool LoadRealJitLib(HMODULE& jitLib, const std::filesystem::path& jitLibPath)
             return false;
         }
 #ifdef TARGET_WINDOWS
-        jitLib = ::LoadLibraryExW(jitLibPath.c_str(), NULL, 0);
+        jitLib = ::LoadLibraryExA(jitLibPath.c_str(), NULL, 0);
 #else
         jitLib = ::dlopen(jitLibPath.c_str(), RTLD_LAZY);
         // The simulated DllMain of JIT doesn't do any meaningful initialization. Skip it.
 #endif
         if (jitLib == NULL)
         {
-            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (%d)", jitLibPath.string().c_str(), errno);
+            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (%d)", jitLibPath.c_str(), errno);
             return false;
         }
     }
@@ -183,9 +183,9 @@ void ReplaceIllegalCharacters(std::string& fileName)
     }
 }
 
-std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
-                                        const std::string&           fileName,
-                                        const std::string&           extension)
+std::string GetResultFileName(const std::string& folderPath,
+                              const std::string& fileName,
+                              const std::string& extension)
 {
     // Append a random string to improve uniqueness.
     //
@@ -196,10 +196,10 @@ std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
     std::string suffix = ss.str() + extension;
 
     // Limit the total file name length to MAX_PATH - 50
-    int usableLength = MAX_PATH - 50 - (int)folderPath.native().size() - (int)suffix.size();
+    int usableLength = MAX_PATH - 50 - (int)folderPath.size() - (int)suffix.size();
     if (usableLength < 0)
     {
-        LogError("GetResultFileName - folder path '%ws' length + minimal file name exceeds limit %d", folderPath.u16string().c_str(), MAX_PATH - 50);
+        LogError("GetResultFileName - folder path '%s' length + minimal file name exceeds limit %d", folderPath.c_str(), MAX_PATH - 50);
         return "";
     }
 
@@ -210,7 +210,7 @@ std::filesystem::path GetResultFileName(const std::filesystem::path& folderPath,
     }
 
     ReplaceIllegalCharacters(copy);
-    return folderPath / (copy + suffix);
+    return folderPath + DIRECTORY_SEPARATOR_CHAR_A + copy + suffix;
 }
 
 #ifdef TARGET_AMD64
