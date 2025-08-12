@@ -30,7 +30,7 @@ namespace GC_NAMESPACE {
 // Since the Volatile<T> class overrides the & operator, it is not possible to take the address of a Volatile<T> directly.
 // After c++17 this would be possible with std::addressof which is implemented using compiler support.
 #ifdef USING_VOLATILE_CLASS
-#define ADDRESS_OF_VOLATILE(var) &((var).RawValue())
+#define ADDRESS_OF_VOLATILE(var) ((var).GetPointer())
 #else // !USING_VOLATILE_CLASS
 #define ADDRESS_OF_VOLATILE(var) &(var)
 #endif // !USING_VOLATILE_CLASS

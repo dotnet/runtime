@@ -422,14 +422,14 @@ public:
     // accessed without using Load and Store, but it is necessary for passing Volatile<T> to APIs like
     // InterlockedIncrement.
     //
-    inline volatile T* GetPointer() { return (volatile T*)&m_val; }
+    inline constexpr volatile T* GetPointer() const { return (volatile T*)&m_val; }
 
 
     //
     // Gets the raw value of the variable.  This is dangerous, as it permits the variable to be
     // accessed without using Load and Store
     //
-    inline constexpr T& RawValue() const { return m_val; }
+    inline T& RawValue() { return m_val; }
 
     //
     // Allow casts from Volatile<T> to T.  Note that this allows implicit casts, so you can
