@@ -83,7 +83,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             index = AdjustRuntimeFunctionIndexForHotCold(r2rInfo, index);
             index = AdjustRuntimeFunctionToMethodStart(r2rInfo, imageBase, index, out _);
 
-            Data.ImageDataDirectory debugInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DebugInfo);
+            Data.ImageDataDirectory debugInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DebugInfoSection);
 
             ILCompiler.Reflection.ReadyToRun.NativeReader imageReader = new(
                 new TargetStream(Target, imageBase, debugInfoData.VirtualAddress + debugInfoData.Size),

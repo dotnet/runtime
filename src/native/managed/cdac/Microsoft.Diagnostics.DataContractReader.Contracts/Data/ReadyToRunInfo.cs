@@ -30,7 +30,7 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
             : TargetPointer.Null;
 
         DelayLoadMethodCallThunks = target.ReadPointer(address + (ulong)type.Fields[nameof(DelayLoadMethodCallThunks)].Offset);
-        DebugInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(DebugInfo)].Offset);
+        DebugInfoSection = target.ReadPointer(address + (ulong)type.Fields[nameof(DebugInfoSection)].Offset);
 
         // Map is from the composite info pointer (set to itself for non-multi-assembly composite images)
         EntryPointToMethodDescMap = CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
@@ -47,6 +47,6 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
     public TargetPointer HotColdMap { get; }
 
     public TargetPointer DelayLoadMethodCallThunks { get; }
-    public TargetPointer DebugInfo { get; }
+    public TargetPointer DebugInfoSection { get; }
     public TargetPointer EntryPointToMethodDescMap { get; }
 }
