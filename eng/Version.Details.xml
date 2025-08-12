@@ -1,5 +1,5 @@
 <Dependencies>
-  <Source Uri="https://github.com/dotnet/dotnet" Mapping="runtime" Sha="30bc8f92be07c2c8c3a6addb946877260e042f63" BarId="278224" />
+  <Source Uri="https://github.com/dotnet/dotnet" Mapping="runtime" Sha="ca3dd2c2d95a49bfe07a7457101ba67513cf142d" BarId="278938" />
   <ProductDependencies>
     <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-preview.6.25302.1">
       <Uri>https://github.com/dotnet/icu</Uri>
