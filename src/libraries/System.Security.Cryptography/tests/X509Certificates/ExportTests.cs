@@ -12,6 +12,7 @@ using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.Pkcs;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -275,7 +276,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData((PbeEncryptionAlgorithm)(-1), nameof(HashAlgorithmName.SHA1))]
         public static void ExportPkcs12_PbeParameters_ArgValidation(
             PbeEncryptionAlgorithm encryptionAlgorithm,
-            string hashAlgorithm)
+            string? hashAlgorithm)
         {
             using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
             {
@@ -340,7 +341,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void ExportPkcs12_MLKem_Roundtrip(MLKemAlgorithm algorithm)
         {
@@ -391,7 +392,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public static void ExportPkcs12_MLDsa_Generated_Roundtrip(MLDsaKeyInfo info)
         {
@@ -417,9 +419,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(info.Algorithm, mldsa.Algorithm);
                     AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
 
-                    byte[] actualSecretKey = new byte[info.SecretKey.Length];
-                    Assert.Equal(actualSecretKey.Length, mldsa.ExportMLDsaSecretKey(actualSecretKey));
-                    AssertExtensions.SequenceEqual(info.SecretKey, actualSecretKey);
+                    byte[] actualPrivateKey = mldsa.ExportMLDsaPrivateKey();
+                    AssertExtensions.SequenceEqual(info.PrivateKey, actualPrivateKey);
                 }
             }
         }
@@ -449,7 +450,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     Assert.NotNull(slhDsa);
                     Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaPrivateKey());
                 }
             }
         }
@@ -478,7 +479,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     Assert.NotNull(slhDsa);
                     Assert.Equal(info.Algorithm, slhDsa.Algorithm);
-                    AssertExtensions.SequenceEqual(info.SecretKey, slhDsa.ExportSlhDsaSecretKey());
+                    AssertExtensions.SequenceEqual(info.PrivateKey, slhDsa.ExportSlhDsaPrivateKey());
                     AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
                 }
             }

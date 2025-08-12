@@ -125,7 +125,6 @@ DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM, const METHODTOKEN& 
 BOOL IsException(MethodTable *pMT);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, Exception *pException);
-BOOL IsAsyncThreadException(OBJECTREF *pThrowable);
 BOOL IsUncatchable(OBJECTREF *pThrowable);
 VOID FixupOnRethrow(Thread *pCurThread, EXCEPTION_POINTERS *pExceptionPointers);
 BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord);
@@ -416,7 +415,6 @@ public:
                                       const char *szFile,
                                       int         linenum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_NOTHROW;
 
         m_fCond = fCond;
@@ -440,8 +438,6 @@ public:
 
     DEBUG_NOINLINE ~COMPlusCannotThrowExceptionHelper()
     {
-        SCAN_SCOPE_END;
-
         if (m_fCond)
         {
             *m_pClrDebugState = m_oldClrDebugState;

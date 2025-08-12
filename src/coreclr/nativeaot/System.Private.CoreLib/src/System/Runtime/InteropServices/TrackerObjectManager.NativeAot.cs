@@ -12,9 +12,6 @@ namespace System.Runtime.InteropServices
 {
     internal static partial class TrackerObjectManager
     {
-        [FixedAddressValueType]
-        internal static readonly unsafe IntPtr s_findReferencesTargetCallback = (IntPtr)Unsafe.AsPointer(in FindReferenceTargetsCallback.Vftbl);
-
         internal static volatile IntPtr s_trackerManager;
         internal static volatile bool s_hasTrackingStarted;
         internal static volatile bool s_isGlobalPeggingOn = true;
@@ -163,9 +160,8 @@ namespace System.Runtime.InteropServices
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
-                    FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper.ProxyHandle;
-                    int hr = IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, (IntPtr)Unsafe.AsPointer(in s_findReferencesTargetCallback));
-                    FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
+                    FindReferenceTargetsCallback.Instance callback = new(nativeObjectWrapper.ProxyHandle);
+                    int hr = IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, (IntPtr)(void*)&callback);
                     if (hr < 0)
                     {
                         walkFailed = true;
@@ -202,7 +198,20 @@ namespace System.Runtime.InteropServices
     // Callback implementation of IFindReferenceTargetsCallback
     internal static unsafe class FindReferenceTargetsCallback
     {
-        internal static GCHandle s_currentRootObjectHandle;
+        // Define an on-stack compatible COM instance to avoid allocating
+        // a temporary instance.
+        [StructLayout(LayoutKind.Sequential)]
+        internal ref struct Instance
+        {
+            private readonly IntPtr _vtable; // First field is IUnknown based vtable.
+            public GCHandle RootObject;
+
+            public Instance(GCHandle handle)
+            {
+                _vtable = (IntPtr)Unsafe.AsPointer(in FindReferenceTargetsCallback.Vftbl);
+                RootObject = handle;
+            }
+        }
 
 #pragma warning disable CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -230,7 +239,7 @@ namespace System.Runtime.InteropServices
                 return HResults.E_POINTER;
             }
 
-            object sourceObject = s_currentRootObjectHandle.Target!;
+            object sourceObject = ((FindReferenceTargetsCallback.Instance*)pThis)->RootObject.Target!;
 
             if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
             {

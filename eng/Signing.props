@@ -22,11 +22,8 @@
     <EnableBlobArtifacts>true</EnableBlobArtifacts>
     <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
 
-    <!-- Set the TargetRid property to our OutputRID, which is the right RID to use for selecting packages from our repo. -->
-    <TargetRid>$(OutputRID)</TargetRid>
-
     <!-- The final stage of the runtime official build should publish everything. -->
-    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildOrchestrator)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildFromVMR)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>
@@ -44,7 +41,9 @@
 
     <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled.
          Avoid doing this on Linux, which has the same executable names -->
-    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;corerun;createdump;singlefilehost;crossgen2;ilasm;ilc;ildasm;llc;mono-aot-cross;opt;Mono" CertificateName="MacDeveloperHarden" />
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;createdump;singlefilehost;crossgen2" CertificateName="MacDeveloperHarden" />
+    <!-- Sign these Mac binaries without hardening enabled, making them compatible with hardening needs more work -->
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="corerun;ilc;ilasm;ildasm;mono-aot-cross;Mono;llc;opt" CertificateName="MacDeveloper" />
     <!-- Additionally, we need to notarize any .pkg files -->
     <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
     <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />
@@ -105,29 +104,29 @@
   <Choose>
     <When Condition="'$(MonoAOTEnableLLVM)' == 'true'">
       <ItemGroup>
-        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(OutputRID).*.nupkg" />
+        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(TargetRid).*.nupkg" />
         <Artifact Include="@(PackageArtifacts)"
                   IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
                   Kind="Package" />
       </ItemGroup>
     </When>
     <When Condition="'$(EnableDefaultRidSpecificArtifacts)' == 'true'">
-      <ItemGroup Condition="'$(OutputRID)' == 'ios-arm64'">
+      <ItemGroup Condition="'$(TargetRid)' == 'ios-arm64'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.iOS.Sample.Mono.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.LibraryBuilder.Sdk.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoAOTCompiler.Task.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoTargets.Sdk.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(OutputRID)' == 'android-arm64'">
+      <ItemGroup Condition="'$(TargetRid)' == 'android-arm64'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.Android.Sample.Mono.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(OutputRID)' == 'wasi-wasm'">
+      <ItemGroup Condition="'$(TargetRid)' == 'wasi-wasm'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(OutputRID)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
+      <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.wasm.Sample.Mono.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;

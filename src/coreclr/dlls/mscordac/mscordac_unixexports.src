@@ -73,9 +73,7 @@ nativeStringResourceTable_mscorrc
 #CreateThread
 #CloseHandle
 #DebugBreak
-#DeleteCriticalSection
 #DuplicateHandle
-#EnterCriticalSection
 #FlushFileBuffers
 #FlushInstructionCache
 #FormatMessageW
@@ -88,8 +86,6 @@ nativeStringResourceTable_mscorrc
 #GetEnvironmentStringsW
 #GetEnvironmentVariableA
 #GetEnvironmentVariableW
-#GetFileAttributesExW
-#GetFileAttributesW
 #GetFileSize
 #GetFullPathNameW
 #GetLastError
@@ -101,8 +97,6 @@ nativeStringResourceTable_mscorrc
 #GetSystemTimeAsFileTime
 #GetTempPathA
 #GetTempPathW
-#InitializeCriticalSection
-#LeaveCriticalSection
 #LoadLibraryExA
 #LoadLibraryExW
 #MapViewOfFile

@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
@@ -75,7 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 TestAssemblyWithBothVersions, "2.1.1.1", "3.2.2.2", Constants.MicrosoftNETCoreApp);
         }
 
-        protected abstract void RunTest(Action<RuntimeConfig> runtimeConfigCustomizer, string testAssemblyName, string appAsmVersion, string appFileVersion, string frameWorkWins);
+        protected abstract void RunTest(Action<RuntimeConfig> runtimeConfigCustomizer, string testAssemblyName, string appAsmVersion, string appFileVersion, string frameWorkWins, [CallerMemberName] string caller = "");
 
         public class SharedTestState : ComponentSharedTestStateBase
         {
@@ -135,7 +136,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
         }
 
-        protected override void RunTest(Action<RuntimeConfig> runtimeConfigCustomizer, string testAssemblyName, string appAsmVersion, string appFileVersion, string frameworkWins)
+        protected override void RunTest(Action<RuntimeConfig> runtimeConfigCustomizer, string testAssemblyName, string appAsmVersion, string appFileVersion, string frameworkWins, [CallerMemberName] string caller = "")
         {
             var app = SharedState.CreateTestFrameworkReferenceApp(b => b
                 .WithPackage(TestVersionsPackage, "1.0.0", lib => lib
@@ -159,7 +160,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             SharedState.DotNetWithNetCoreApp.Exec(app.AppDll)
                 .EnableTracingAndCaptureOutputs()
-                .Execute()
+                .Execute(caller)
                 .Should().Pass()
                 .And.HaveResolvedAssembly(expectedTestAssemblyPath)
                 .And.HaveUsedFrameworkProbe(SharedState.HighWarePath, level: 1)
@@ -176,7 +177,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
         }
 
-        protected override void RunTest(Action<RuntimeConfig> runtimeConfigCustomizer, string testAssemblyName, string appAsmVersion, string appFileVersion, string frameworkWins)
+        protected override void RunTest(Action<RuntimeConfig> runtimeConfigCustomizer, string testAssemblyName, string appAsmVersion, string appFileVersion, string frameworkWins, [CallerMemberName] string caller = "")
         {
             var component = SharedState.CreateComponentWithNoDependencies(b => b
                 .WithPackage(TestVersionsPackage, "1.0.0", lib => lib
@@ -193,7 +194,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             // For component dependency resolution, frameworks are not considered, so the assembly from the component always wins
             string expectedTestAssemblyPath = Path.Combine(component.Location, testAssemblyName + ".dll");
 
-            SharedState.RunComponentResolutionTest(component)
+            SharedState.RunComponentResolutionTest(component, caller: caller)
                 .Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
                 .And.HaveResolvedComponentDependencyAssembly($"{component.AppDll};{expectedTestAssemblyPath}")

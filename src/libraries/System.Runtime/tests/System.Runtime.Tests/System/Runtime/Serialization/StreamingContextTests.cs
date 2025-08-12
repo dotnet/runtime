@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization.Tests
         [InlineData(StreamingContextStates.All, null)]
         [InlineData((StreamingContextStates)0, "")]
         [InlineData((StreamingContextStates)(-1), "context")]
-        public void Ctor_StreamingContextStates_Object(StreamingContextStates state, object additional)
+        public void Ctor_StreamingContextStates_Object(StreamingContextStates state, object? additional)
         {
             var context = new StreamingContext(state, additional);
             Assert.Equal(state, context.State);

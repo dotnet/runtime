@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
@@ -317,7 +316,7 @@ MII
             AssertExtensions.SequenceEqual(cert.SerialNumberBytes.Span, reLoaded.SerialNumberBytes.Span);
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         public static void CreateFromPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
@@ -369,17 +368,17 @@ MII
                 ),
             ];
 
-            foreach((string CertificatePem, string PrivateKeyPem, string Thumbprint) in cases)
+            foreach((string certificatePem, string privateKeyPem, string thumbprint) in cases)
             {
-                using (X509Certificate2 cert = X509Certificate2.CreateFromPem(CertificatePem, PrivateKeyPem))
+                using (X509Certificate2 cert = X509Certificate2.CreateFromPem(certificatePem, privateKeyPem))
                 {
-                    Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
-                    AssertKeysMatch(PrivateKeyPem, cert.GetMLKemPrivateKey);
+                    Assert.Equal(thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
+                    AssertKeysMatch(privateKeyPem, cert.GetMLKemPrivateKey);
                 }
             }
         }
 
-        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
         public static void CreateFromEncryptedPem_MLKem_Pkcs8_Success()
         {
             (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =
@@ -431,15 +430,15 @@ MII
                 ),
             ];
 
-            foreach((string CertificatePem, string PrivateKeyPem, string Thumbprint) in cases)
+            foreach((string certificatePem, string privateKeyPem, string thumbprint) in cases)
             {
                 using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
-                    CertificatePem,
-                    PrivateKeyPem,
+                    certificatePem,
+                    privateKeyPem,
                     MLKemTestData.EncryptedPrivateKeyPassword))
                 {
-                    Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
-                    AssertKeysMatch(PrivateKeyPem, cert.GetMLKemPrivateKey, MLKemTestData.EncryptedPrivateKeyPassword);
+                    Assert.Equal(thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
+                    AssertKeysMatch(privateKeyPem, cert.GetMLKemPrivateKey, MLKemTestData.EncryptedPrivateKeyPassword);
                 }
             }
         }
@@ -496,12 +495,12 @@ MII
                 ),
             ];
 
-            foreach ((string CertificatePem, string PrivateKeyPem, string Thumbprint) in cases)
+            foreach ((string certificatePem, string privateKeyPem, string thumbprint) in cases)
             {
-                using (X509Certificate2 cert = X509Certificate2.CreateFromPem(CertificatePem, PrivateKeyPem))
+                using (X509Certificate2 cert = X509Certificate2.CreateFromPem(certificatePem, privateKeyPem))
                 {
-                    Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
-                    AssertKeysMatch(PrivateKeyPem, cert.GetMLDsaPrivateKey);
+                    Assert.Equal(thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
+                    AssertKeysMatch(privateKeyPem, cert.GetMLDsaPrivateKey);
                 }
             }
         }
@@ -558,15 +557,15 @@ MII
                 ),
             ];
 
-            foreach ((string CertificatePem, string PrivateKeyPem, string Thumbprint) in cases)
+            foreach ((string certificatePem, string privateKeyPem, string thumbprint) in cases)
             {
                 using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
-                    CertificatePem,
-                    PrivateKeyPem,
+                    certificatePem,
+                    privateKeyPem,
                     "PLACEHOLDER"))
                 {
-                    Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
-                    AssertKeysMatch(PrivateKeyPem, cert.GetMLDsaPrivateKey, "PLACEHOLDER");
+                    Assert.Equal(thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
+                    AssertKeysMatch(privateKeyPem, cert.GetMLDsaPrivateKey, "PLACEHOLDER");
                 }
             }
         }
@@ -917,8 +916,7 @@ MII
                         AssertExtensions.SequenceEqual(sharedSecret1, sharedSecret2);
                         break;
                     case (MLDsa mldsa, MLDsa mldsaPem):
-                        byte[] mldsaSignature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
-                        Assert.Equal(mldsaSignature.Length, mldsa.SignData(data, mldsaSignature));
+                        byte[] mldsaSignature = mldsa.SignData(data);
                         Assert.True(mldsaPem.VerifyData(data, mldsaSignature));
                         break;
                     case (SlhDsa slhDsa, SlhDsa slhDsaPem):

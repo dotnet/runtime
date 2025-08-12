@@ -151,10 +151,33 @@ namespace HostActivation.Tests
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(app.Location)
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), TestContext.BuildRID)
                 .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void DevicePath()
+        {
+            string appExe = $@"\\?\{sharedTestState.App.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+
+            appExe = $@"\\.\{sharedTestState.App.AppExe}";
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         public class SharedTestState : IDisposable

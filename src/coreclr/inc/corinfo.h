@@ -340,11 +340,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
     CORINFO_HELP_ULNG2FLT,              // Convert a unsigned int64 to a float
     CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
-    CORINFO_HELP_DBL2INT,
     CORINFO_HELP_DBL2INT_OVF,
     CORINFO_HELP_DBL2LNG,
     CORINFO_HELP_DBL2LNG_OVF,
-    CORINFO_HELP_DBL2UINT,
     CORINFO_HELP_DBL2UINT_OVF,
     CORINFO_HELP_DBL2ULNG,
     CORINFO_HELP_DBL2ULNG_OVF,
@@ -365,7 +363,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEW_MDARR_RARE,// rare multi-dim array helper (Rank == 1)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
-    CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
+    CORINFO_HELP_NEWARR_1_PTR,      // optimized 1-D arrays with pointer sized elements
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
@@ -793,7 +791,7 @@ enum CorInfoFlag
 enum CorInfoMethodRuntimeFlags
 {
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
-    CORINFO_FLG_INTERPRETER         = 0x00000002, // The method was compiled by the interpreter
+    // unused                       = 0x00000002, // The method was compiled by the interpreter
     // unused                       = 0x00000004,
     CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
     CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
@@ -1206,7 +1204,8 @@ enum CorInfoAccessAllowedHelperArgType
     CORINFO_HELPER_ARG_TYPE_Field   = 1,
     CORINFO_HELPER_ARG_TYPE_Method  = 2,
     CORINFO_HELPER_ARG_TYPE_Class   = 3,
-    CORINFO_HELPER_ARG_TYPE_Const   = 4,
+    CORINFO_HELPER_ARG_TYPE_Module  = 4,
+    CORINFO_HELPER_ARG_TYPE_Const   = 5,
 };
 struct CORINFO_HELPER_ARG
 {
@@ -1358,7 +1357,7 @@ enum CORINFO_CALLINFO_FLAGS
     CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
     CORINFO_CALLINFO_CALLVIRT       = 0x0002,   // Is it a virtual call?
     // UNUSED                       = 0x0004,
-    // UNUSED                       = 0x0008,
+    CORINFO_CALLINFO_DISALLOW_STUB  = 0x0008,   // Do not use a stub for this call, even if it is a virtual call.
     CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
     CORINFO_CALLINFO_LDFTN          = 0x0020,   // Resolving target of LDFTN
     // UNUSED                       = 0x0040,
@@ -1713,6 +1712,15 @@ enum CorInfoContinuationFlags
     // OSR method saved in the beginning of 'Data', or -1 if the continuation
     // belongs to a tier 0 method.
     CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+    // If this bit is set the continuation should continue on the thread
+    // pool.
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 8,
+    // If this bit is set the continuation has a SynchronizationContext
+    // that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 16,
+    // If this bit is set the continuation has a TaskScheduler
+    // that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 32,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1734,6 +1742,13 @@ struct CORINFO_ASYNC_INFO
     // Whether or not the continuation needs to be allocated through the
     // helper that also takes a method handle
     bool continuationsNeedMethodHandle;
+    // Method handle for AsyncHelpers.CaptureExecutionContext
+    CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.RestoreExecutionContext
+    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
+    CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureContextsMethHnd;
+    CORINFO_METHOD_HANDLE restoreContextsMethHnd;
 };
 
 // Flags passed from JIT to runtime.
@@ -3101,10 +3116,11 @@ public:
             void                  **ppIndirection = NULL
             ) = 0;
 
-    // return the native entry point to an EE helper (see CorInfoHelpFunc)
-    virtual void* getHelperFtn (
+    // return the native entry point and/or managed method of an EE helper (see CorInfoHelpFunc)
+    virtual void getHelperFtn (
             CorInfoHelpFunc         ftnNum,
-            void                  **ppIndirection = NULL
+            CORINFO_CONST_LOOKUP *  pNativeEntrypoint,
+            CORINFO_METHOD_HANDLE * pMethodHandle = NULL /* OUT */
             ) = 0;
 
     // return a callable address of the function (native code). This function
@@ -3125,16 +3141,15 @@ public:
             CORINFO_CONST_LOOKUP *  pResult
             ) = 0;
 
-    // get the synchronization handle that is passed to monXstatic function
-    virtual void* getMethodSync(
-            CORINFO_METHOD_HANDLE   ftn,
-            void**                  ppIndirection = NULL
-            ) = 0;
-
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
     // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
     virtual CorInfoHelpFunc getLazyStringLiteralHelper(
             CORINFO_MODULE_HANDLE   handle
+            ) = 0;
+
+    virtual CORINFO_MODULE_HANDLE embedModuleHandle(
+            CORINFO_MODULE_HANDLE   handle,
+            void                  **ppIndirection = NULL
             ) = 0;
 
     virtual CORINFO_CLASS_HANDLE embedClassHandle(
@@ -3144,6 +3159,11 @@ public:
 
     virtual CORINFO_METHOD_HANDLE embedMethodHandle(
             CORINFO_METHOD_HANDLE   handle,
+            void                  **ppIndirection = NULL
+            ) = 0;
+
+    virtual CORINFO_FIELD_HANDLE embedFieldHandle(
+            CORINFO_FIELD_HANDLE    handle,
             void                  **ppIndirection = NULL
             ) = 0;
 
@@ -3180,18 +3200,15 @@ public:
             CORINFO_CONST_LOOKUP *  pLookup
             ) = 0;
 
-    // Generate a cookie based on the signature that would needs to be passed
-    // to CORINFO_HELP_PINVOKE_CALLI
+    // Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
     virtual void* GetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig,
             void**              ppIndirection = NULL
             ) = 0;
 
-    // returns true if a VM cookie can be generated for it (might be false due to cross-module
-    // inlining, in which case the inlining should be aborted)
-    virtual bool canGetCookieForPInvokeCalliSig(
-            CORINFO_SIG_INFO*   szMetaSig
-            ) = 0;
+    // Generate a cookie based on the signature to pass to INTOP_CALLI in the interpreter.
+    virtual void* GetCookieForInterpreterCalliSig(
+            CORINFO_SIG_INFO*   szMetaSig) = 0;
 
     // Gets a handle that is checked to see if the current method is
     // included in "JustMyCode"
@@ -3274,13 +3291,8 @@ public:
     // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
     virtual CORINFO_VARARGS_HANDLE getVarArgsHandle(
             CORINFO_SIG_INFO       *pSig,
+            CORINFO_METHOD_HANDLE   methHnd,
             void                  **ppIndirection = NULL
-            ) = 0;
-
-    // returns true if a VM cookie can be generated for it (might be false due to cross-module
-    // inlining, in which case the inlining should be aborted)
-    virtual bool canGetVarArgsHandle(
-            CORINFO_SIG_INFO       *pSig
             ) = 0;
 
     // Allocate a string literal on the heap and return a handle to it

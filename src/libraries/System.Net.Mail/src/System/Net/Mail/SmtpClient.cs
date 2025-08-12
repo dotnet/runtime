@@ -556,9 +556,9 @@ namespace System.Net.Mail
 
                     if (!forceWrapExceptions ||
                         // for compatibility reasons, don't wrap these exceptions during sync executions
-                        (typeof(TIOAdapter) == typeof(SyncReadWriteAdapter) &&
-                            (e is SecurityException || e is AuthenticationException)) ||
-                        e is SmtpException)
+                        (typeof(TIOAdapter) == typeof(SyncReadWriteAdapter) && (e is SecurityException or AuthenticationException)) ||
+                        e is SmtpException ||
+                        e is OperationCanceledException)
                     {
                         return e;
                     }
@@ -574,7 +574,7 @@ namespace System.Net.Mail
                 // SendCompleted event should ever be invoked only for asynchronous send completions.
                 if (invokeSendCompleted && !synchronous)
                 {
-                    AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(exception, canceled, userToken);
+                    AsyncCompletedEventArgs eventArgs = new(canceled ? null : exception, canceled, userToken);
                     OnSendCompleted(eventArgs);
                 }
             }

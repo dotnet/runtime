@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
 using System.Security.Cryptography.X509Certificates;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -20,12 +21,14 @@ namespace System.Security.Cryptography.Pkcs
             PrepareRegistrationRsa(s_lookup);
             PrepareRegistrationDsa(s_lookup);
             PrepareRegistrationECDsa(s_lookup);
+            PrepareRegistrationMLDsa(s_lookup);
             PrepareRegistrationSlhDsa(s_lookup);
         }
 
         static partial void PrepareRegistrationRsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationDsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationECDsa(Dictionary<string, CmsSignature> lookup);
+        static partial void PrepareRegistrationMLDsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationSlhDsa(Dictionary<string, CmsSignature> lookup);
 
         internal abstract RSASignaturePadding? SignaturePadding { get; }
@@ -140,6 +143,27 @@ namespace System.Security.Cryptography.Pkcs
             signatureValue = signature;
             signatureParameters = parameters;
             return signed;
+        }
+
+        private static IDisposable? GetSigningKey<T>(
+            object? privateKey,
+            X509Certificate2 certificate,
+            bool silent,
+            Func<X509Certificate2, T?> getCertPublicKey,
+            out T? signingKey)
+            where T : class, IDisposable
+        {
+            signingKey = privateKey as T;
+            IDisposable? signingKeyResources = null;
+
+            if (signingKey is null)
+            {
+                // If there's no private key, fall back to the public key for a "no private key" exception.
+                signingKeyResources = signingKey =
+                    PkcsPal.Instance.GetPrivateKeyForSigning<T>(certificate, silent) ?? getCertPublicKey(certificate);
+            }
+
+            return signingKeyResources;
         }
 
         private static bool DsaDerToIeee(

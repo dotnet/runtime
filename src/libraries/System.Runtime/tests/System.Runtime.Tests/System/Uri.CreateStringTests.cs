@@ -11,7 +11,6 @@ namespace System.Tests
     public class UriCreateStringTests
     {
         private static readonly bool s_isWindowsSystem = PlatformDetection.IsWindows;
-        public static readonly string s_longString = new string('a', 65520 + 1);
 
         public static IEnumerable<object[]> OriginalString_AbsoluteUri_ToString_TestData()
         {
@@ -482,7 +481,7 @@ namespace System.Tests
             });
         }
 
-        public static IEnumerable<object[]> Path_Query_Fragment_TestData()
+        public static IEnumerable<object[]> Path_Query_Fragment_TestData_Core()
         {
             // Http
             yield return new object[] { "http://host", "/", "", "" };
@@ -802,6 +801,46 @@ namespace System.Tests
             yield return new object[] { "file://C:/abc/def/../ghi", "C:/abc/ghi", "", "" };
         }
 
+        public static IEnumerable<object[]> Path_Query_Fragment_TestData()
+        {
+            foreach (object[] data in Path_Query_Fragment_TestData_Core())
+            {
+                string uriString = (string)data[0];
+                string path = (string)data[1];
+                string query = (string)data[2];
+                string fragment = (string)data[3];
+
+                yield return new object[] { uriString, path, query, fragment };
+                yield return new object[] { new string(' ', 100_000) + uriString, path, query, fragment };
+
+                string longString = new string('^', 100_000);
+                string escaped = Uri.EscapeDataString(longString);
+
+                int fragmentOffset = uriString.IndexOf('#');
+
+                if (fragmentOffset >= 0)
+                {
+                    ReadOnlySpan<char> beforeFragment = uriString.AsSpan(0, fragmentOffset);
+                    ReadOnlySpan<char> sourceFragment = uriString.AsSpan(fragmentOffset + 1);
+                    yield return new object[] { $"{beforeFragment}#{longString}{sourceFragment}", path, query, $"#{escaped}{fragment.AsSpan(1)}" };
+                }
+
+                if (!string.IsNullOrEmpty(query) && uriString.IndexOf('?') is int queryOffset && queryOffset >= 0 && (fragmentOffset < 0 || fragmentOffset > queryOffset))
+                {
+                    ReadOnlySpan<char> beforeQuery = uriString.AsSpan(0, queryOffset);
+                    ReadOnlySpan<char> sourceQuery = uriString.AsSpan(queryOffset + 1);
+                    yield return new object[] { $"{beforeQuery}?{longString}{sourceQuery}", path, $"?{escaped}{query.AsSpan(1)}", fragment };
+                }
+
+                if (uriString.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !uriString.Contains('@'))
+                {
+                    ReadOnlySpan<char> remainder = uriString.AsSpan("http://".Length);
+
+                    yield return new object[] { $"http://{longString}@{remainder}", path, query, fragment };
+                }
+            }
+        }
+
         [Theory]
         [MemberData(nameof(Path_Query_Fragment_TestData))]
         public void Path_Query_Fragment(string uriString, string path, string query, string fragment)
@@ -1028,8 +1067,6 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Create_String_Invalid_TestData()
         {
-            yield return new object[] { s_longString, UriKind.Absolute }; // UriString is longer than 66520 characters
-
             // Invalid scheme
             yield return new object[] { "", UriKind.Absolute };
             yield return new object[] { "  \t \r \n  \x0009 \x000A \x000D ", UriKind.Absolute };
@@ -1050,6 +1087,7 @@ namespace System.Tests
             yield return new object[] { "http~://domain.com", UriKind.Absolute };
             yield return new object[] { "http#://domain.com", UriKind.Absolute };
             yield return new object[] { new string('a', 1025) + "://domain.com", UriKind.Absolute }; // Scheme is longer than 1024 characters
+            yield return new object[] { new string('a', 100_000), UriKind.Absolute };
 
             // Invalid userinfo
             yield return new object[] { @"http://use\rinfo@host", UriKind.Absolute };

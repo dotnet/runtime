@@ -38,9 +38,14 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.EEClass.MethodTable), DataType.pointer),
+            new(nameof(Data.EEClass.MethodDescChunk), DataType.pointer),
             new(nameof(Data.EEClass.CorTypeAttr), DataType.uint32),
             new(nameof(Data.EEClass.NumMethods), DataType.uint16),
             new(nameof(Data.EEClass.InternalCorElementType), DataType.uint8),
+            new(nameof(Data.EEClass.NumInstanceFields), DataType.uint16),
+            new(nameof(Data.EEClass.NumStaticFields), DataType.uint16),
+            new(nameof(Data.EEClass.NumThreadStaticFields), DataType.uint16),
+            new(nameof(Data.EEClass.FieldDescList), DataType.pointer),
             new(nameof(Data.EEClass.NumNonVirtualSlots), DataType.uint16),
         ]
     };
@@ -138,6 +143,8 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.FileName), DataType.pointer),
             new(nameof(Data.Module.ReadyToRunInfo), DataType.pointer),
             new(nameof(Data.Module.GrowableSymbolStream), DataType.pointer),
+            new(nameof(Data.Module.AvailableTypeParams), DataType.pointer),
+            new(nameof(Data.Module.InstMethodHashTable), DataType.pointer),
             new(nameof(Data.Module.FieldDefToDescMap), DataType.pointer),
             new(nameof(Data.Module.ManifestModuleReferencesMap), DataType.pointer),
             new(nameof(Data.Module.MemberRefToDescMap), DataType.pointer),

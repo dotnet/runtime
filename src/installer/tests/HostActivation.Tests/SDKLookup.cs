@@ -4,21 +4,22 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.TestUtils;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace HostActivation.Tests
 {
     public class SDKLookup : IClassFixture<SDKLookup.SharedTestState>
     {
         private SharedTestState SharedState { get; }
 
-        readonly DotNetCli ExecutableDotNet;
-        readonly DotNetBuilder ExecutableDotNetBuilder;
-        string ExecutableSelectedMessage { get; }
+        private readonly DotNetCli ExecutableDotNet;
+        private readonly DotNetBuilder ExecutableDotNetBuilder;
 
         public SDKLookup(SharedTestState sharedState)
         {
@@ -29,9 +30,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             ExecutableDotNet = ExecutableDotNetBuilder
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
-
-            // Trace messages used to identify from which folder the SDK was picked
-            ExecutableSelectedMessage = $"Using .NET SDK dll=[{Path.Combine(ExecutableDotNet.BinPath, "sdk")}";
 
             // Note: no need to delete the directory, it will be removed once the entire class is done
             //       since everything is under the BaseArtifact from the shared state
@@ -601,6 +599,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             RunTest()
                 .Should().Fail()
                 .And.HaveStdErrContaining(sdk.ErrorMessage);
+        }
+
+        [Fact]
+        public void SdkResolutionError()
+        {
+            // Set specified SDK version to one that will not exist
+            string requestedVersion = "9999.0.1";
+            string globalJsonPath = GlobalJson.CreateWithVersion(SharedState.CurrentWorkingDir, requestedVersion);
+
+            // When we fail to resolve SDK version, we print out all available SDKs
+            // Versions should be in ascending order.
+            string[] versions = ["5.0.2", "6.1.1", "9999.1.0"];
+            AddAvailableSdkVersions(versions);
+
+            string sdkPath = Path.Combine(ExecutableDotNet.BinPath, "sdk");
+            string expectedOutput = string.Join(string.Empty, versions.Select(v => $"{v} [{sdkPath}]{Environment.NewLine}"));
+
+            RunTest()
+                .Should().Fail()
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.HaveStdOutContaining(expectedOutput);
         }
 
         public static IEnumerable<object[]> InvalidGlobalJsonData
@@ -1181,15 +1200,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private string ExpectedResolvedSdkOutput(string expectedVersion, string rootPath = null)
             => $"Using .NET SDK dll=[{Path.Combine(rootPath == null ? ExecutableDotNet.BinPath : rootPath, "sdk", expectedVersion, "dotnet.dll")}]";
 
-        private CommandResult RunTest() => RunTest("help");
-
-        private CommandResult RunTest(string command)
+        private CommandResult RunTest(string command = "help", [CallerMemberName] string caller = "")
         {
             return ExecutableDotNet.Exec(command)
                 .WorkingDirectory(SharedState.CurrentWorkingDir)
                 .EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
-                .Execute();
+                .Execute(caller);
         }
 
         public sealed class SharedTestState : IDisposable

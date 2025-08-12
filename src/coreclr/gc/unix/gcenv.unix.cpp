@@ -222,7 +222,7 @@ bool GCToOSInterface::Initialize()
     //
     // support for FlusProcessWriteBuffers
     //
-
+#ifndef TARGET_WASM
     assert(s_flushUsingMemBarrier == 0);
 
     if (CanFlushUsingMembarrier())
@@ -262,6 +262,7 @@ bool GCToOSInterface::Initialize()
         }
     }
 #endif // !TARGET_APPLE
+#endif // !TARGET_WASM
 
     InitializeCGroup();
 
@@ -412,6 +413,7 @@ bool GCToOSInterface::CanGetCurrentProcessorNumber()
 // Flush write buffers of processors that are executing threads of the current process
 void GCToOSInterface::FlushProcessWriteBuffers()
 {
+#ifndef TARGET_WASM
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
@@ -490,6 +492,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         CHECK_MACH("vm_deallocate()", machret);
     }
 #endif // TARGET_APPLE
+#endif // !TARGET_WASM
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -576,7 +579,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -624,9 +627,13 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
+#ifndef TARGET_WASM
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
+#else
+    bool success = true;
+#endif // !TARGET_WASM
 
-#ifdef MADV_DODUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.
@@ -904,7 +911,7 @@ static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* ca
             }
         }
     }
-#endif 
+#endif
 }
 
 static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t* cacheSize)
@@ -952,7 +959,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
     }
 
-    if (cacheSize == 0) 
+    if (cacheSize == 0)
     {
         GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
         if (cacheSize == 0)
@@ -1542,44 +1549,4 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
 bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index)
 {
     return ParseIndexOrRange(config_string, start_index, end_index);
-}
-
-// Initialize the critical section
-bool CLRCriticalSection::Initialize()
-{
-    pthread_mutexattr_t mutexAttributes;
-    int st = pthread_mutexattr_init(&mutexAttributes);
-    if (st != 0)
-    {
-        return false;
-    }
-
-    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    if (st == 0)
-    {
-        st = pthread_mutex_init(&m_cs.mutex, &mutexAttributes);
-    }
-
-    pthread_mutexattr_destroy(&mutexAttributes);
-
-    return (st == 0);
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    int st = pthread_mutex_destroy(&m_cs.mutex);
-    assert(st == 0);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    pthread_mutex_lock(&m_cs.mutex);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    pthread_mutex_unlock(&m_cs.mutex);
 }

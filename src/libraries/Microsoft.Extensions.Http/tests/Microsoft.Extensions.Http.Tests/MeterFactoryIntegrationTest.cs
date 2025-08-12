@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Http
 {
-#if NET8_0_OR_GREATER
+#if NET
     public class MeterFactoryIntegrationTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
