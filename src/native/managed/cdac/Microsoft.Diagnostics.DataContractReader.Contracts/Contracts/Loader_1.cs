@@ -389,7 +389,7 @@ internal readonly struct Loader_1 : ILoader
         // have to read lookupMap an extra time upfront because only the first map
         // has valid supportedFlagsMask
         TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
-        uint index = 1;
+        uint index = 1; // zero is invalid
         do
         {
             lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);

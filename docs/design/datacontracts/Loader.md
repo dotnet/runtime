@@ -481,7 +481,7 @@ IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table)
     // have to read lookupMap an extra time upfront because only the first map
     // has valid supportedFlagsMask
     TargetNUInt supportedFlagsMask = target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
-    uint index = 1;
+    uint index = 1; // zero is invalid
     do
     {
         uint count = target.Read<uint>(table + /*ModuleLookupMap::Count*/);
