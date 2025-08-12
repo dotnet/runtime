@@ -1861,7 +1861,7 @@ namespace System.Text.Json.Tests
         [InlineData("\"hello\"    ", "hello")]
         [InlineData("    null     ", (string)null)]
         [InlineData("\"\\u0033\\u0031\"", "31")]
-        public static void ReadString(string json, string expectedValue)
+        public static void ReadString(string json, string? expectedValue)
         {
             using (JsonDocument doc = JsonDocument.Parse(json))
             {
@@ -3463,7 +3463,7 @@ namespace System.Text.Json.Tests
         [InlineData("""{ "foo" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }, "test": true, "foo2" : {"nested:" : {"nested": 1, "bla": [1, 2, {"bla": 3}] } }}""", 3)]
         public static void TestGetPropertyCount(string json, int expectedCount)
         {
-            JsonElement element = JsonSerializer.Deserialize<JsonElement>(json);
+            JsonElement element = JsonElement.Parse(json);
             Assert.Equal(expectedCount, element.GetPropertyCount());
         }
 

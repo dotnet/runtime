@@ -84,6 +84,9 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 #define SIZEOF__CONTEXT               0x1a0
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
+#define OFFSETOF__CONTEXT__R4         0x14
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__R4 == offsetof(T_CONTEXT, R4));
+
 #define SIZEOF__CalleeSavedRegisters 0x24
 ASMCONSTANTS_C_ASSERT(SIZEOF__CalleeSavedRegisters == sizeof(CalleeSavedRegisters))
 
@@ -95,26 +98,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__FloatArgumentRegisters == sizeof(FloatArgumentRegi
 
 #define ASM_ENREGISTERED_RETURNTYPE_MAXSIZE 0x20
 ASMCONSTANTS_C_ASSERT(ASM_ENREGISTERED_RETURNTYPE_MAXSIZE == ENREGISTERED_RETURNTYPE_MAXSIZE)
-
-#ifdef FEATURE_COMINTEROP
-
-#define Stub__m_pCode DBG_FRE(0x10, 0x0c)
-ASMCONSTANTS_C_ASSERT(Stub__m_pCode == sizeof(Stub))
-
-#define SIZEOF__ComMethodFrame 0x24
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame))
-
-#define UnmanagedToManagedFrame__m_pvDatum 0x08
-ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum))
-
-// In ComCallPreStub and GenericCLRToCOMCallStub, we setup R12 to contain address of ComCallMethodDesc after doing the following:
-//
-// mov r12, pc
-//
-// This constant defines where ComCallMethodDesc is post execution of the above instruction.
-#define ComCallMethodDesc_Offset_FromR12 0x8
-
-#endif // FEATURE_COMINTEROP
 
 #define               Thread__m_fPreemptiveGCDisabled   0x04
 ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPreemptiveGCDisabled));
@@ -140,8 +123,8 @@ ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)
 #define ASM__VTABLE_SLOTS_PER_CHUNK_LOG2 3
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK_LOG2 == VTABLE_SLOTS_PER_CHUNK_LOG2)
 
-#define VASigCookie__pNDirectILStub 0x4
-ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
+#define VASigCookie__pPInvokeILStub 0x4
+ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
 
 #define CONTEXT_Pc 0x040
 ASMCONSTANTS_C_ASSERT(CONTEXT_Pc == offsetof(T_CONTEXT,Pc))

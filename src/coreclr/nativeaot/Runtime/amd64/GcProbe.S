@@ -148,7 +148,6 @@ LEAF_END RhpGcPoll, _TEXT
 
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME rdi
-        END_PROLOGUE
         call        C_FUNC(RhpGcPoll2)
         POP_COOP_PINVOKE_FRAME
         ret

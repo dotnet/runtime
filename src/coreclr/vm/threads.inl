@@ -31,7 +31,7 @@ __declspec(selectany)
 #else
 EXTERN_C
 #endif
-thread_local ThreadLocalInfo t_CurrentThreadInfo;
+PLATFORM_THREAD_LOCAL ThreadLocalInfo t_CurrentThreadInfo;
 
 inline Thread* GetThreadNULLOk()
 {
@@ -45,7 +45,7 @@ inline Thread* GetThread()
     return pThread;
 }
 
-EXTERN_C inline AppDomain* STDCALL GetAppDomain()
+inline AppDomain* GetAppDomain()
 {
     return AppDomain::GetCurrentDomain();
 }

@@ -235,7 +235,7 @@ static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanCo
     if (argBuffer == NULL || argBuffer->GCDesc == NULL)
         return;
 
-    if (argBuffer->State == TAILCALLARGBUFFER_ABANDONED)
+    if (argBuffer->State == TAILCALLARGBUFFER_INACTIVE)
         return;
 
     bool instArgOnly = argBuffer->State == TAILCALLARGBUFFER_INSTARG_ONLY;
@@ -400,6 +400,20 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 
     return false;
+}
+
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_JAVAMARSHAL
+    Interop::TriggerClientBridgeProcessing(args);
+#endif // FEATURE_JAVAMARSHAL
 }
 
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
@@ -1477,7 +1491,7 @@ namespace
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (!args.Thread)
         {
@@ -1616,7 +1630,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
         // we're not obligated to provide a name - if it's not valid,
         // just report nullptr as the name.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     LIMITED_METHOD_CONTRACT;
     if (is_suspendable)
@@ -1765,7 +1779,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
                     GenerateDump (outputPath, 2, GenerateDumpFlagsNone, nullptr, 0);
                 }
                 EX_CATCH {}
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
             }
             gcGenAnalysisState = GcGenAnalysisState::Done;
             EnableFinalization(true);

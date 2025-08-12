@@ -201,7 +201,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameResolver.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\RuntimeTypeMetadataUpdateHandler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\BypassReadyToRunAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\GenericsHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InitHelpers.cs" />
@@ -224,6 +223,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Java\JavaMarshal.CoreCLR.cs" Condition="'$(FeatureJavaMarshal)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
@@ -312,12 +312,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <CompilerVisibleProperty Include="InformationalVersion" />
   </ItemGroup>
-
-  <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
-
-  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile" />
-
-  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 
   <!-- Setup eventing file generation -->
   <ItemGroup Condition="'$(FeaturePerfTracing)' == 'true'">

@@ -19,7 +19,7 @@ namespace System.Xml.Xsl.Runtime
     /// A sequence of Xml values that dynamically expands and allows random access to items.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public class XmlQuerySequence<T> : IList<T>, IReadOnlyList<T>, System.Collections.IList
+    public class XmlQuerySequence<T> : IList<T>, System.Collections.IList
     {
         public static readonly XmlQuerySequence<T> Empty = new XmlQuerySequence<T>();
 
@@ -489,7 +489,7 @@ namespace System.Xml.Xsl.Runtime
     /// A sequence of Xml nodes that dynamically expands and allows random access to items.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public sealed class XmlQueryNodeSequence : XmlQuerySequence<XPathNavigator>, IList<XPathItem>, IReadOnlyList<XPathItem>
+    public sealed class XmlQueryNodeSequence : XmlQuerySequence<XPathNavigator>, IList<XPathItem>
     {
         public static new readonly XmlQueryNodeSequence Empty = new XmlQueryNodeSequence();
 
@@ -729,19 +729,6 @@ namespace System.Xml.Xsl.Runtime
                 return base[index];
             }
             set { throw new NotSupportedException(); }
-        }
-
-        /// <summary>
-        /// Return item at the specified index.
-        /// </summary>
-        XPathItem IReadOnlyList<XPathItem>.this[int index]
-        {
-            get
-            {
-                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
-
-                return base[index];
-            }
         }
 
         /// <summary>

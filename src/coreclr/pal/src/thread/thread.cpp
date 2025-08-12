@@ -42,6 +42,10 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include <fcntl.h>
 #endif
 
+#if defined(TARGET_BROWSER)
+#include <emscripten/stack.h>
+#endif
+
 #include <signal.h>
 #include <pthread.h>
 #if HAVE_PTHREAD_NP_H
@@ -1330,10 +1334,9 @@ CorUnix::GetThreadTimesInternal(
     CPalThread *pThread;
     CPalThread *pTargetThread;
     IPalObject *pobjThread = NULL;
+    clockid_t cid;
 #ifdef __sun
     int fd;
-#else // __sun
-    clockid_t cid;
 #endif // __sun
 
     pThread = InternalGetCurrentThread();
@@ -2281,6 +2284,10 @@ Return :
 BOOL
 CPalThread::EnsureSignalAlternateStack()
 {
+#ifdef TARGET_WASM
+    // WebAssembly does not support alternate signal stacks.
+    return TRUE;
+#else // !TARGET_WASM
     int st = 0;
 
     if (g_registered_signal_handlers)
@@ -2334,6 +2341,7 @@ CPalThread::EnsureSignalAlternateStack()
     }
 
     return (st == 0);
+#endif // !TARGET_WASM
 }
 
 /*++
@@ -2351,6 +2359,7 @@ Return :
 void
 CPalThread::FreeSignalAlternateStack()
 {
+#ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
     m_alternateStack = nullptr;
 
@@ -2374,6 +2383,7 @@ CPalThread::FreeSignalAlternateStack()
             }
         }
     }
+#endif // !TARGET_WASM
 }
 
 #endif // !HAVE_MACH_EXCEPTIONS
@@ -2444,6 +2454,7 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
+#ifndef TARGET_BROWSER
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2460,7 +2471,10 @@ CPalThread::GetStackBase()
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 
     stackBase = (void*)((size_t)stackAddr + stackSize);
-#endif
+#else // TARGET_BROWSER
+    stackBase = (void*)emscripten_stack_get_base();
+#endif // TARGET_BROWSER
+#endif // !TARGET_APPLE
 
     return stackBase;
 }
@@ -2484,6 +2498,7 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
+#ifndef TARGET_BROWSER
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2498,7 +2513,10 @@ CPalThread::GetStackLimit()
 
     status = pthread_attr_destroy(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
-#endif
+#else // TARGET_BROWSER
+    stackLimit = (void*)emscripten_stack_get_end();
+#endif // TARGET_BROWSER
+#endif // !TARGET_APPLE
 
     return stackLimit;
 }

@@ -12,7 +12,17 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project ToolsVersion="14.0">
 
   <PropertyGroup>
-    <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>
+    <_UseBlazorDevServer>$(RunArguments.Contains('blazor-devserver.dll').ToString().ToLower())</_UseBlazorDevServer>    
+
+    <_TargetingNET80OrLater>false</_TargetingNET80OrLater>
+    <_TargetingNET90OrLater>false</_TargetingNET90OrLater>
+    <_TargetingNET100OrLater>false</_TargetingNET100OrLater>
+    <_TargetingNET80OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</_TargetingNET80OrLater>
+    <_TargetingNET90OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</_TargetingNET90OrLater>
+    <_TargetingNET100OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</_TargetingNET100OrLater>
+
+    <WebAssemblyHotReloadCapabilities>Baseline;AddMethodToExistingType;AddStaticFieldToExistingType;NewTypeDefinition;ChangeCustomAttributes</WebAssemblyHotReloadCapabilities>
+    <WebAssemblyHotReloadCapabilities Condition="'$(_TargetingNET80OrLater)' == 'true'">Baseline;AddMethodToExistingType;AddStaticFieldToExistingType;NewTypeDefinition;ChangeCustomAttributes;AddInstanceFieldToExistingType;GenericAddMethodToExistingType;GenericUpdateMethod;UpdateParameters;GenericAddFieldToExistingType</WebAssemblyHotReloadCapabilities>
   </PropertyGroup>
   <PropertyGroup Condition="'$(_WebAssemblyUserRunParameters)' == '' and '$(_UseBlazorDevServer)' == 'false'">
     <RunCommand Condition="'$(DOTNET_HOST_PATH)' != '' and Exists($(DOTNET_HOST_PATH))">$(DOTNET_HOST_PATH)</RunCommand>
@@ -169,12 +179,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">
     <PropertyGroup>
-      <_TargetingNET80OrLater>false</_TargetingNET80OrLater>
-      <_TargetingNET90OrLater>false</_TargetingNET90OrLater>
-      <_TargetingNET80OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</_TargetingNET80OrLater>
-      <_TargetingNET90OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</_TargetingNET90OrLater>
-      <_TargetingNET100OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</_TargetingNET100OrLater>
-
       <_BlazorCacheBootResources>$(BlazorCacheBootResources)</_BlazorCacheBootResources>
       <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == '' and '$(_TargetingNET100OrLater)' != 'true'">true</_BlazorCacheBootResources>
       <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == ''">false</_BlazorCacheBootResources>
@@ -215,11 +219,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintBootConfig Condition="'$(_WasmFingerprintBootConfig)' == ''">false</_WasmFingerprintBootConfig>
       <_WasmPreloadAssets>$(WasmPreloadAssets)</_WasmPreloadAssets>
       <_WasmPreloadAssets Condition="'$(_WasmPreloadAssets)' == ''">true</_WasmPreloadAssets>
+      
+      <_WasmBundlerFriendlyBootConfig>$(WasmBundlerFriendlyBootConfig)</_WasmBundlerFriendlyBootConfig>
+      <_WasmBundlerFriendlyBootConfig Condition="'$(_WasmBundlerFriendlyBootConfig)' == ''">false</_WasmBundlerFriendlyBootConfig>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
     </PropertyGroup>
-    <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect. Follow a migration path at TODO: PLACEHOLDER FOR LINK" Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
+    <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect." Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
 
   <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
@@ -412,7 +419,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="false"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
-      FingerprintAssets="$(_WasmFingerprintAssets)" />
+      FingerprintAssets="$(_WasmFingerprintAssets)"
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -820,7 +828,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="true"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
-      FingerprintAssets="$(_WasmFingerprintAssets)" />
+      FingerprintAssets="$(_WasmFingerprintAssets)"
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />

@@ -36,9 +36,6 @@ class Frame;
 // between the EE and the Debugger.
 //
 //
-typedef BOOL (*HashMapEnumCallback)(HashMap* h,
-                                    void* pData,
-                                    ULONG value);
 
 typedef enum AttachAppDomainEventsEnum
 {
@@ -266,8 +263,6 @@ public:
 #ifndef DACCESS_COMPILE
 
     virtual COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD) = 0;
-
-    virtual ULONG MethodDescGetRVA(MethodDesc *pFD) = 0;
 
     virtual void MarkDebuggerAttached(void) = 0;
 

@@ -17,6 +17,7 @@
 #include <memory>
 #include <algorithm>
 #include <cassert>
+#include <functional>
 
 #if defined(_WIN32)
 
@@ -305,6 +306,7 @@ namespace pal
     bool get_module_path(dll_t mod, string_t* recv);
     bool get_current_module(dll_t* mod);
     bool getenv(const char_t* name, string_t* recv);
+    void enumerate_environment_variables(const std::function<void(const char_t*, const char_t*)> callback);
     bool get_default_servicing_directory(string_t* recv);
 
     enum class architecture
@@ -342,6 +344,7 @@ namespace pal
 
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
+    bool is_path_fully_qualified(const string_t& path);
 
     // Returns a platform-specific, user-private directory
     // that can be used for extracting out components of a single-file app.

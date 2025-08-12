@@ -262,13 +262,16 @@ CONFIG_METHODSET(JitUnwindDump, "JitUnwindDump") // Dump the unwind codes for th
 // JitDumpFg - dump flowgraph
 //
 
-CONFIG_METHODSET(JitDumpFg, "JitDumpFg")        // Dumps Xml/Dot Flowgraph for specified method
-CONFIG_STRING(JitDumpFgDir, "JitDumpFgDir")     // Directory for Xml/Dot flowgraph dump(s)
-CONFIG_STRING(JitDumpFgFile, "JitDumpFgFile")   // Filename for Xml/Dot flowgraph dump(s) (default: "default")
-CONFIG_STRING(JitDumpFgPhase, "JitDumpFgPhase") // Phase-based Xml/Dot flowgraph support. Set to the short name of a
-                                                // phase to see the flowgraph after that phase. Leave unset to dump
-                                                // after COLD-BLK (determine first cold block) or set to * for all
-                                                // phases
+CONFIG_METHODSET(JitDumpFg, "JitDumpFg")            // Dumps Xml/Dot Flowgraph for specified method
+CONFIG_INTEGER(JitDumpFgHash, "JitDumpFgHash", 0)   // Dumps Xml/Dot Flowgraph for specified method
+CONFIG_INTEGER(JitDumpFgTier0, "JitDumpFgTier0", 1) // Dumps Xml/Dot Flowgraph for tier-0 compilations of specified
+                                                    // methods
+CONFIG_STRING(JitDumpFgDir, "JitDumpFgDir")         // Directory for Xml/Dot flowgraph dump(s)
+CONFIG_STRING(JitDumpFgFile, "JitDumpFgFile")       // Filename for Xml/Dot flowgraph dump(s) (default: "default")
+CONFIG_STRING(JitDumpFgPhase, "JitDumpFgPhase")     // Phase-based Xml/Dot flowgraph support. Set to the short name of a
+                                                    // phase to see the flowgraph after that phase. Leave unset to dump
+                                                    // after COLD-BLK (determine first cold block) or set to * for all
+                                                    // phases
 CONFIG_STRING(JitDumpFgPrePhase, "JitDumpFgPrePhase") // Same as JitDumpFgPhase, but specifies to dump pre-phase, not
                                                       // post-phase.
 CONFIG_INTEGER(JitDumpFgDot, "JitDumpFgDot", 1)       // 0 == dump XML format; non-zero == dump DOT format
@@ -307,11 +310,6 @@ CONFIG_STRING(JitStressModeNamesNot, "JitStressModeNamesNot")
 CONFIG_STRING(JitStressRange, "JitStressRange")        // Internal Jit stress mode
 CONFIG_METHODSET(JitEmitUnitTests, "JitEmitUnitTests") // Generate emitter unit tests in the specified functions
 CONFIG_STRING(JitEmitUnitTestsSections, "JitEmitUnitTestsSections") // Generate this set of unit tests
-
-///
-/// JIT Hardware Intrinsics
-///
-CONFIG_INTEGER(EnableIncompleteISAClass, "EnableIncompleteISAClass", 0) // Enable testing not-yet-implemented
 
 //
 // JitDisasm
@@ -411,6 +409,7 @@ RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                
 RELEASE_CONFIG_INTEGER(EnableAVX512VP2INTERSECT,    "EnableAVX512VP2INTERSECT",  1) // Allows AVX512VP2INTERSECT and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVXIFMA,               "EnableAVXIFMA",             1) // Allows AVXIFMA and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVXVNNI,               "EnableAVXVNNI",             1) // Allows AVXVNNI and dependent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVXVNNIINT,            "EnableAVXVNNIINT",          1) // Allows VEX AVXVNNIINT+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableGFNI,                  "EnableGFNI",                1) // Allows GFNI and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSHA,                   "EnableSHA",                 1) // Allows SHA and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableVAES,                  "EnableVAES",                1) // Allows VAES, VPCLMULQDQ, and dependent hardware intrinsics to be disabled
@@ -436,6 +435,8 @@ RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",  
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
+RELEASE_CONFIG_INTEGER(EnableApxPPX,                "EnableApxPPX",              0) // Allows APX PPX feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              0)  // Allows APX ZU feature to be disabled
 
 // clang-format on
 
@@ -584,7 +585,7 @@ OPT_CONFIG_INTEGER(JitDoIfConversion, "JitDoIfConversion", 1)                   
 OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions", 1) // Perform optimization of mask
                                                                                     // conversions
 
-RELEASE_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
+OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods

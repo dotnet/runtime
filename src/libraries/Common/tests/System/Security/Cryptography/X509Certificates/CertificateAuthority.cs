@@ -488,7 +488,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
             if (CorruptRevocationSignature)
             {
-                signature[5] ^= 0xFF;
+                signature[^2] ^= 0xFF;
             }
 
             // CertificateList
@@ -643,7 +643,7 @@ SingleResponse ::= SEQUENCE {
 
                     if (CorruptRevocationSignature)
                     {
-                        signature[5] ^= 0xFF;
+                        signature[^2] ^= 0xFF;
                     }
 
                     writer.WriteBitString(signature);
@@ -1040,8 +1040,7 @@ SingleResponse ::= SEQUENCE {
             {
                 List<KeyFactory> factories = [RSA, ECDsa];
 
-                // TODO: MLDsa certificate support on Windows is not available yet. Remove this once it is.
-                if (Cryptography.MLDsa.IsSupported && !PlatformDetection.IsWindows)
+                if (Cryptography.MLDsa.IsSupported)
                 {
                     factories.Add(MLDsa);
                 }

@@ -469,6 +469,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - thaystg
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -492,7 +493,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -986,7 +988,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - tommcdon
+            - steveisok
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1060,6 +1063,7 @@ configuration:
             mentionees:
             - tarekgh
             - tommcdon
+            - steveisok
             - pjanotti
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1675,6 +1679,23 @@ configuration:
     - if:
       - payloadType: Pull_Request
       - filesMatchPattern:
+          pattern: src/coreclr/inc/jiteeversionguid.h
+          matchAny: true
+      - isPullRequest
+      - isOpen
+      - isAction:
+          action: Opened
+      then:
+      - mentionUsers:
+          mentionees:
+          - dotnet/jit-contrib
+          replyTemplate: >-
+            Tagging @dotnet/jit-contrib for JIT-EE GUID update
+          assignMentionees: False
+      description: '@Mention for JIT-EE GUID update'
+    - if:
+      - payloadType: Pull_Request
+      - filesMatchPattern:
           pattern: (?i).*ILLink.*
           matchAny: true
       - not:
@@ -1768,7 +1789,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-
@@ -1807,7 +1827,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-
@@ -1827,7 +1846,6 @@ configuration:
           mentionees:
           - vitek-karas
           - kotlarmilos
-          - ivanpovazan
           - steveisok
           - akoeplinger
           replyTemplate: >-

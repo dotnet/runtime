@@ -12,7 +12,6 @@
 #include <metamodelpub.h>
 #include "formattype.h"
 #include "readytorun.h"
-#include "metadataexports.h"
 
 #define DECLARE_DATA
 #include "dasmenum.hpp"

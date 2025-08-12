@@ -1294,7 +1294,9 @@ namespace System
         public static object? ChangeType(object? value, System.TypeCode typeCode, System.IFormatProvider? provider) { throw null; }
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length) { throw null; }
         public static byte[] FromBase64String(string s) { throw null; }
+        public static byte[] FromHexString(System.ReadOnlySpan<byte> utf8Source) { throw null; }
         public static byte[] FromHexString(System.ReadOnlySpan<char> chars) { throw null; }
+        public static System.Buffers.OperationStatus FromHexString(System.ReadOnlySpan<byte> utf8Source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public static System.Buffers.OperationStatus FromHexString(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
         public static byte[] FromHexString(string s) { throw null; }
         public static System.Buffers.OperationStatus FromHexString(string source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
@@ -1738,7 +1740,9 @@ namespace System
         public static bool TryFromBase64Chars(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
         public static bool TryFromBase64String(string s, System.Span<byte> bytes, out int bytesWritten) { throw null; }
         public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, System.Base64FormattingOptions options = System.Base64FormattingOptions.None) { throw null; }
+        public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
         public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
         public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
     }
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input) where TInput : allows ref struct where TOutput : allows ref struct;
@@ -3574,6 +3578,7 @@ namespace System
         static int System.Numerics.INumberBase<System.Int128>.Radix { get { throw null; } }
         public static System.Int128 Zero { get { throw null; } }
         public static System.Int128 Abs(System.Int128 value) { throw null; }
+        public static System.Int128 BigMul(System.Int128 left, System.Int128 right, out System.Int128 lower) { throw null; }
         public static System.Int128 Clamp(System.Int128 value, System.Int128 min, System.Int128 max) { throw null; }
         public int CompareTo(System.Int128 value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -4189,6 +4194,7 @@ namespace System
         static nint System.Numerics.ISignedNumber<nint>.NegativeOne { get { throw null; } }
         public static nint Abs(nint value) { throw null; }
         public static nint Add(nint pointer, int offset) { throw null; }
+        public static nint BigMul(nint left, nint right, out nint lower) { throw null; }
         public static nint Clamp(nint value, nint min, nint max) { throw null; }
         public int CompareTo(nint value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -4881,8 +4887,8 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, object instance) { throw null; }
-        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, System.Type type) { throw null; }
+        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, object instance) => throw null;
+        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, System.Type type) => throw null;
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class ObsoleteAttribute : System.Attribute
@@ -6823,6 +6829,7 @@ namespace System
         static System.UInt128 System.Numerics.IMultiplicativeIdentity<System.UInt128,System.UInt128>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt128>.Radix { get { throw null; } }
         public static System.UInt128 Zero { get { throw null; } }
+        public static System.UInt128 BigMul(System.UInt128 left, System.UInt128 right, out System.UInt128 lower) { throw null; }
         public static System.UInt128 Clamp(System.UInt128 value, System.UInt128 min, System.UInt128 max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(System.UInt128 value) { throw null; }
@@ -7443,6 +7450,7 @@ namespace System
         static int System.Numerics.INumberBase<nuint>.Radix { get { throw null; } }
         static nuint System.Numerics.INumberBase<nuint>.Zero { get { throw null; } }
         public static nuint Add(nuint pointer, int offset) { throw null; }
+        public static nuint BigMul(nuint left, nuint right, out nuint lower) { throw null; }
         public static nuint Clamp(nuint value, nuint min, nuint max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(nuint value) { throw null; }
@@ -8247,35 +8255,29 @@ namespace System.Collections.Generic
         T Current { get; }
         System.Threading.Tasks.ValueTask<bool> MoveNextAsync();
     }
-    public partial interface ICollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyCollection<T>
+    public partial interface ICollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
-        new int Count { get; }
+        int Count { get; }
         bool IsReadOnly { get; }
         void Add(T item);
         void Clear();
         bool Contains(T item);
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
-        int System.Collections.Generic.IReadOnlyCollection<T>.Count { get { throw null; } }
     }
     public partial interface IComparer<in T> where T : allows ref struct
     {
         int Compare(T? x, T? y);
     }
-    public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>
+    public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable
     {
-        new TValue this[TKey key] { get; set; }
-        new System.Collections.Generic.ICollection<TKey> Keys { get; }
-        new System.Collections.Generic.ICollection<TValue> Values { get; }
+        TValue this[TKey key] { get; set; }
+        System.Collections.Generic.ICollection<TKey> Keys { get; }
+        System.Collections.Generic.ICollection<TValue> Values { get; }
         void Add(TKey key, TValue value);
-        new bool ContainsKey(TKey key);
+        bool ContainsKey(TKey key);
         bool Remove(TKey key);
-        new bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
-        TValue System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.this[TKey key] { get { throw null; } }
-        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys { get { throw null; } }
-        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values { get { throw null; } }
-        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) { throw null; }
-        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
     }
     public partial interface IEnumerable<out T> : System.Collections.IEnumerable where T : allows ref struct
     {
@@ -8290,13 +8292,12 @@ namespace System.Collections.Generic
         bool Equals(T? x, T? y);
         int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
     }
-    public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.IReadOnlyCollection<T>
+    public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
-        new T this[int index] { get; set; }
+        T this[int index] { get; set; }
         int IndexOf(T item);
         void Insert(int index, T item);
         void RemoveAt(int index);
-        T System.Collections.Generic.IReadOnlyList<T>.this[int index] { get { throw null; } }
     }
     public partial interface IReadOnlyCollection<out T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
@@ -8324,27 +8325,19 @@ namespace System.Collections.Generic
         bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
         bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
     }
-    public partial interface ISet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.IReadOnlyCollection<T>
+    public partial interface ISet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
         new bool Add(T item);
         void ExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void IntersectWith(System.Collections.Generic.IEnumerable<T> other);
-        new bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other);
-        new bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other);
-        new bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other);
-        new bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other);
-        new bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
-        new bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
+        bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other);
+        bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other);
+        bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other);
+        bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other);
+        bool Overlaps(System.Collections.Generic.IEnumerable<T> other);
+        bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
         void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void UnionWith(System.Collections.Generic.IEnumerable<T> other);
-        new bool Contains(T item) { throw null; }
-        bool System.Collections.Generic.IReadOnlySet<T>.Contains(T item) { throw null; }
-        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        bool System.Collections.Generic.IReadOnlySet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        bool System.Collections.Generic.IReadOnlySet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        bool System.Collections.Generic.IReadOnlySet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        bool System.Collections.Generic.IReadOnlySet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
     }
     public partial class KeyNotFoundException : System.SystemException
     {
@@ -8567,7 +8560,7 @@ namespace System.ComponentModel
         public DefaultValueAttribute(sbyte value) { }
         public DefaultValueAttribute(float value) { }
         public DefaultValueAttribute(string? value) { }
-        public DefaultValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string? value) { }
+        public DefaultValueAttribute(System.Type type, string? value) { }
         [System.CLSCompliantAttribute(false)]
         public DefaultValueAttribute(ushort value) { }
         [System.CLSCompliantAttribute(false)]
@@ -8643,10 +8636,10 @@ namespace System.Diagnostics
         public static void Close() { }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message) { throw null; }
+        public static void Fail(string? message) => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message, string? detailMessage) { throw null; }
+        public static void Fail(string? message, string? detailMessage) => throw null;
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -8900,7 +8893,8 @@ namespace System.Diagnostics.CodeAnalysis
         public DoesNotReturnIfAttribute(bool parameterValue) { }
         public bool ParameterValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited=false)]
+    [System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes) { }
@@ -8909,6 +8903,7 @@ namespace System.Diagnostics.CodeAnalysis
     [System.FlagsAttribute]
     public enum DynamicallyAccessedMemberTypes
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         All = -1,
         None = 0,
         PublicParameterlessConstructor = 1,
@@ -8949,6 +8944,8 @@ namespace System.Diagnostics.CodeAnalysis
         public DynamicDependencyAttribute(string memberSignature, string typeName, string assemblyName) { }
         public DynamicDependencyAttribute(string memberSignature, System.Type type) { }
         public string? AssemblyName { get { throw null; } }
+        [System.Obsolete("This property is no longer supported.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string? Condition { get { throw null; } set { } }
         public string? MemberSignature { get { throw null; } }
         public System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes MemberTypes { get { throw null; } }
@@ -9036,6 +9033,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class RequiresDynamicCodeAttribute : System.Attribute
     {
         public RequiresDynamicCodeAttribute(string message) { }
+        public bool ExcludeStatics { get; set; }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
@@ -9043,6 +9041,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
     {
         public RequiresUnreferencedCodeAttribute(string message) { }
+        public bool ExcludeStatics { get; set; }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
@@ -13278,6 +13277,11 @@ namespace System.Runtime.CompilerServices
     {
         NoStringInterning = 8,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false)]
+    public sealed class CompilerLoweringPreserveAttribute : System.Attribute
+    {
+        public CompilerLoweringPreserveAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Module)]
     public partial class CompilationRelaxationsAttribute : System.Attribute
     {
@@ -13490,6 +13494,13 @@ namespace System.Runtime.CompilerServices
     public sealed partial class ExtensionAttribute : System.Attribute
     {
         public ExtensionAttribute() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Enum | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Delegate, Inherited = false)]
+    public sealed partial class ExtensionMarkerAttribute : System.Attribute
+    {
+        public ExtensionMarkerAttribute(string name) { }
+        public string Name { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field)]
     public sealed partial class FixedAddressValueTypeAttribute : System.Attribute
@@ -14025,7 +14036,9 @@ namespace System.Runtime.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
         public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsAddressGreaterThanOrEqualTo<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
         public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsAddressLessThanOrEqualTo<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
         public static bool IsNullRef<T>(ref readonly T source) where T : allows ref struct { throw null; }
         public static ref T NullRef<T>() where T : allows ref struct { throw null; }
         public static T ReadUnaligned<T>(scoped ref readonly byte source) where T : allows ref struct { throw null; }
@@ -14154,9 +14167,9 @@ namespace System.Runtime.ExceptionServices
         public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
         public static System.Exception SetRemoteStackTrace(System.Exception source, string stackTrace) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public void Throw() { throw null; }
+        public void Throw() => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Throw(System.Exception source) { throw null; }
+        public static void Throw(System.Exception source) => throw null;
     }
     public static partial class ExceptionHandling
     {

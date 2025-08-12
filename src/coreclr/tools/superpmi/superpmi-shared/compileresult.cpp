@@ -906,6 +906,31 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
             }
         }
 
+        if (targetArch == SPMI_TARGET_ARCHITECTURE_RISCV64)
+        {
+            DWORDLONG fixupLocation = tmp.location;
+            DWORDLONG address       = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+
+            switch (relocType)
+            {
+                case IMAGE_REL_RISCV64_PC:
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        // Similar to x64's IMAGE_REL_BASED_REL32 handling we
+                        // will handle this by also hardcoding the bottom bits
+                        // of the target into the instruction.
+                        PutRiscV64AuipcItype((UINT32*)address, (INT32)tmp.target);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                default:
+                    break;
+            }
+        }
+
         if (IsSpmiTarget64Bit())
         {
             if (!wasRelocHandled && (relocType == IMAGE_REL_BASED_DIR64))
@@ -993,8 +1018,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         {
                             for (unsigned int idx = 0; idx < rc->mc->GetHelperFtn->GetCount(); idx++)
                             {
-                                DLDL value = rc->mc->GetHelperFtn->GetItem(idx);
-                                if (value.B == tmp.target)
+                                Agnostic_GetHelperFtn value = rc->mc->GetHelperFtn->GetItem(idx);
+                                if (value.helperLookup.handle == tmp.target)
                                 {
                                     LogDebug("    REL32 target is result of getHelperFtn(): setting delta=%d (0x%X)",
                                              (int)tmp.target, (int)tmp.target);

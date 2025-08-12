@@ -33,6 +33,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         string extraProperties = @"
                 <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
                 <EnableDiagnostics>true</EnableDiagnostics>
+                <WasmDebugLevel>0</WasmDebugLevel>
                 <WBTDevServer>true</WBTDevServer>
             ";
 

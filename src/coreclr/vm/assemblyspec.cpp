@@ -48,7 +48,7 @@ BOOL UnsafeVerifyLookupAssembly(AssemblySpecBindingCache *pCache, AssemblySpec *
 
         result = ex->IsTransient();
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 
@@ -78,7 +78,7 @@ BOOL UnsafeVerifyLookupFile(AssemblySpecBindingCache *pCache, AssemblySpec *pSpe
 
         result = ex->IsTransient();
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 
@@ -110,7 +110,7 @@ BOOL UnsafeContains(AssemblySpecBindingCache *pCache, AssemblySpec *pSpec)
 
         result = ex->IsTransient();
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 

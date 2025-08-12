@@ -295,23 +295,21 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
     }
 
     // Note that after lowering, we can see indirect uses and definitions of tracked variables.
-    GenTreeLclVarCommon* lclVarTree = nullptr;
     if (tree->OperIsNonPhiLocal())
     {
-        lclVarTree = tree->AsLclVarCommon();
+        UpdateLifeVar(tree, tree->AsLclVarCommon());
     }
     else if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_ADDR))
     {
-        lclVarTree = tree->AsIndir()->Addr()->AsLclVarCommon();
+        UpdateLifeVar(tree, tree->AsIndir()->Addr()->AsLclVarCommon());
     }
     else if (tree->IsCall())
     {
-        lclVarTree = compiler->gtCallGetDefinedRetBufLclAddr(tree->AsCall());
-    }
-
-    if (lclVarTree != nullptr)
-    {
-        UpdateLifeVar(tree, lclVarTree);
+        auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+            UpdateLifeVar(tree, lcl);
+            return GenTree::VisitResult::Continue;
+        };
+        tree->VisitLocalDefNodes(compiler, visitDef);
     }
 }
 

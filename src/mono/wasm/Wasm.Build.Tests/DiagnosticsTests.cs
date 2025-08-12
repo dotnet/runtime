@@ -47,7 +47,7 @@ public class DiagnosticsTests : WasmTemplateTestsBase
     {
         Configuration config = Configuration.Release;
 
-        string extraProperties = "<WasmProfilers>browser:callspec=all,interval=0</WasmProfilers>";
+        string extraProperties = "<WasmProfilers>browser:callspec=all,interval=0</WasmProfilers><WasmDebugLevel>0</WasmDebugLevel>";
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "BrowserProfilerTest", extraProperties: extraProperties);
 
         BuildProject(info, config, new BuildOptions(AssertAppBundle: false, EnableDiagnostics: true), isNativeBuild: true);

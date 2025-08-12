@@ -21,7 +21,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class HttpClientHandlerTest_Http3 : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version30;
@@ -1864,6 +1864,41 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 await AssertProtocolErrorAsync(Http3LoopbackConnection.H3_CLOSED_CRITICAL_STREAM, () => client.SendAsync(request));
+                semaphore.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        [Fact]
+        [OuterLoop("Waits for connection timeout")]
+        public async Task ServerKillsQuicConnection_ClientPropagatesException()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            SemaphoreSlim semaphore = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+                await semaphore.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+                var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => await client.SendAsync(request, HttpCompletionOption.ResponseContentRead));
+                Assert.IsType<QuicException>(ex.InnerException);
                 semaphore.Release();
             });
 

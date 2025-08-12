@@ -147,7 +147,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// </summary>
         private static int GetCountOrOne(IEnumerable collection)
         {
-            IReadOnlyCollection<string>? c = collection as IReadOnlyCollection<string>;
+            ICollection<string>? c = collection as ICollection<string>;
             return c != null ? c.Count : 1;
         }
 

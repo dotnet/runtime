@@ -79,6 +79,15 @@ internal static partial class Interop
         }
 
         /// <summary>
+        ///     Peel off the next "count" bytes in blob and copy them into the destination.
+        /// </summary>
+        internal static void Consume(ReadOnlySpan<byte> blob, ref int offset, int count, Span<byte> destination)
+        {
+            blob.Slice(offset, count).CopyTo(destination);
+            offset += count;
+        }
+
+        /// <summary>
         ///     Magic numbers identifying blob types
         /// </summary>
         internal enum KeyBlobMagicNumber : int
@@ -109,6 +118,10 @@ internal static partial class Interop
             BCRYPT_MLDSA_PUBLIC_MAGIC = 0x4B505344,
             BCRYPT_MLDSA_PRIVATE_MAGIC = 0x4B535344,
             BCRYPT_MLDSA_PRIVATE_SEED_MAGIC = 0x53535344,
+
+            BCRYPT_MLKEM_PUBLIC_MAGIC = 0x504B4C4D, // MLKP
+            BCRYPT_MLKEM_PRIVATE_MAGIC = 0x524B4C4D, // MLKR
+            BCRYPT_MLKEM_PRIVATE_SEED_MAGIC = 0x534B4C4D, // MLKS
 
             BCRYPT_RSAPUBLIC_MAGIC = 0x31415352,
             BCRYPT_RSAPRIVATE_MAGIC = 0x32415352,
@@ -141,6 +154,10 @@ internal static partial class Interop
             internal const string BCRYPT_PQDSA_PUBLIC_BLOB = "PQDSAPUBLICBLOB";
             internal const string BCRYPT_PQDSA_PRIVATE_BLOB = "PQDSAPRIVATEBLOB";
             internal const string BCRYPT_PQDSA_PRIVATE_SEED_BLOB = "PQDSAPRIVATESEEDBLOB";
+
+            internal const string BCRYPT_MLKEM_PRIVATE_SEED_BLOB = "MLKEMPRIVATESEEDBLOB";
+            internal const string BCRYPT_MLKEM_PRIVATE_BLOB = "MLKEMPRIVATEBLOB";
+            internal const string BCRYPT_MLKEM_PUBLIC_BLOB = "MLKEMPUBLICBLOB";
         }
 
         /// <summary>
@@ -253,6 +270,14 @@ internal static partial class Interop
             internal int cbParameterSet;        // Byte size of parameterSet[]
             internal int cbKey;                 // Byte size of key[]
             // The rest of the buffer contains the data
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct BCRYPT_MLKEM_KEY_BLOB
+        {
+            internal KeyBlobMagicNumber dwMagic;
+            internal uint cbParameterSet;
+            internal uint cbKey;
         }
 
         /// <summary>

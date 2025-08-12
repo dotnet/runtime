@@ -459,7 +459,7 @@ namespace System.Collections.Concurrent
         /// <see cref="GetEnumerator"/> was called.  The enumerator is safe to use
         /// concurrently with reads from and writes to the bag.
         /// </remarks>
-        public IEnumerator<T> GetEnumerator() => new Enumerator(ToArray());
+        public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)ToArray()).GetEnumerator();
 
         /// <summary>
         /// Returns an enumerator that iterates through the <see
@@ -1074,61 +1074,5 @@ namespace System.Collections.Concurrent
             Add,
             Take
         };
-
-        /// <summary>Provides an enumerator for the bag.</summary>
-        /// <remarks>
-        /// The original implementation of ConcurrentBag used a <see cref="List{T}"/> as part of
-        /// the GetEnumerator implementation.  That list was then changed to be an array, but array's
-        /// GetEnumerator has different behavior than does list's, in particular for the case where
-        /// Current is used after MoveNext returns false.  To avoid any concerns around compatibility,
-        /// we use a custom enumerator rather than just returning array's. This enumerator provides
-        /// the essential elements of both list's and array's enumerators.
-        /// </remarks>
-        private sealed class Enumerator : IEnumerator<T>
-        {
-            private readonly T[] _array;
-            private T? _current;
-            private int _index;
-
-            public Enumerator(T[] array)
-            {
-                Debug.Assert(array != null);
-                _array = array;
-            }
-
-            public bool MoveNext()
-            {
-                if (_index < _array.Length)
-                {
-                    _current = _array[_index++];
-                    return true;
-                }
-
-                _index = _array.Length + 1;
-                return false;
-            }
-
-            public T Current => _current!;
-
-            object? IEnumerator.Current
-            {
-                get
-                {
-                    if (_index == 0 || _index == _array.Length + 1)
-                    {
-                        throw new InvalidOperationException(SR.ConcurrentBag_Enumerator_EnumerationNotStartedOrAlreadyFinished);
-                    }
-                    return Current;
-                }
-            }
-
-            public void Reset()
-            {
-                _index = 0;
-                _current = default;
-            }
-
-            public void Dispose() { }
-        }
     }
 }

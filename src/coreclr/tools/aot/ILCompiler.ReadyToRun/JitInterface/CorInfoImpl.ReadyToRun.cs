@@ -1148,9 +1148,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.UMod;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT:
-                    id = ReadyToRunHelper.Dbl2Int;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_OVF:
                     id = ReadyToRunHelper.Dbl2IntOvf;
                     break;
@@ -1159,9 +1156,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_OVF:
                     id = ReadyToRunHelper.Dbl2LngOvf;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT:
-                    id = ReadyToRunHelper.Dbl2UInt;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF:
                     id = ReadyToRunHelper.Dbl2UIntOvf;
@@ -2960,11 +2954,6 @@ namespace Internal.JitInterface
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
 
-        private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
-        {
-            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(getMethodSync)}");
-        }
-
         private byte[] _bbCounts;
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset)
@@ -3107,13 +3096,6 @@ namespace Internal.JitInterface
         private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
         {
             throw new NotImplementedException();
-        }
-
-        private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-        {
-            // If we answer "true" here, RyuJIT is going to ask for the cookie and for the CORINFO_HELP_PINVOKE_CALLI
-            // helper. The helper doesn't exist in ReadyToRun, so let's just throw right here.
-            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(canGetCookieForPInvokeCalliSig)}");
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * PointerSize;
