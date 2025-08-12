@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
