@@ -3836,7 +3836,7 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
         pMTFound = module->LookupTypeRef(typeDefOrRef).AsMethodTable();
     }
 
-    if ((pMTFound == NULL) && (typeDefOrRef != GetCl()))
+    if ((pMTFound == NULL) && bmtInternal->pType != NULL && (typeDefOrRef != GetCl()))
     {
         EX_TRY
         {
