@@ -5320,7 +5320,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             // then it can be removed. Those bits are undefined in all our ABIs
             // for structs.
             while (node->OperIs(GT_CAST) && !node->gtOverflow() && varTypeUsesIntReg(node->CastToType()) &&
-                   (genTypeSize(regType) <= genTypeSize(node->CastToType())))
+                   varTypeUsesIntReg(node->CastFromType()) && (genTypeSize(regType) <= genTypeSize(node->CastToType())))
             {
                 GenTree* op = node->AsCast()->CastOp();
                 regEntry->SetNode(op);
