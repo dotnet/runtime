@@ -161,58 +161,58 @@ namespace System.Reflection.Emit
             }
         }
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) { throw new NotSupportedException("This type does not support resolving constructors. Use TypeBuilder.GetConstructor instead."); }
+        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) { throw new NotSupportedException(SR.NotSupported_TypeBuilderInstantiation_GetConstructor); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving constructors. Use TypeBuilder.GetConstructor instead."); }
+        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotSupportedException(SR.NotSupported_TypeBuilderInstantiation_GetConstructor); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException("This type does not support resolving methods by name. Use TypeBuilder.GetMethod instead."); }
+        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException(SR.NotSupported_TypeBuilderInstantiation_GetMethod); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving methods. Use TypeBuilder.GetMethod instead."); }
+        public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { throw new NotSupportedException(SR.NotSupported_TypeBuilderInstantiation_GetMethod); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving fields by name. Use TypeBuilder.GetField instead."); }
+        public override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotSupportedException(SR.NotSupported_TypeBuilderInstantiation_GetField); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving fields. Use TypeBuilder.GetField instead."); }
+        public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException(SR.NotSupported_TypeBuilderInstantiation_GetField); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type GetInterface(string name, bool ignoreCase) { throw new NotSupportedException("This type does not support resolving interfaces by name."); }
+        public override Type GetInterface(string name, bool ignoreCase) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type[] GetInterfaces() { throw new NotSupportedException("This type does not support resolving interfaces."); }
+        public override Type[] GetInterfaces() { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public override EventInfo GetEvent(string name, BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving events by name."); }
+        public override EventInfo GetEvent(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
-        public override EventInfo[] GetEvents() { throw new NotSupportedException("This type does not support resolving events."); }
+        public override EventInfo[] GetEvents() { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException("This type does not support resolving properties by name."); }
+        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving properties."); }
+        public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type[] GetNestedTypes(BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving nested types."); }
+        public override Type[] GetNestedTypes(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type GetNestedType(string name, BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving nested types by name."); }
+        public override Type GetNestedType(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
-        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving members by name."); }
+        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) { throw new NotSupportedException("This type does not support resolving interface maps."); }
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public override EventInfo[] GetEvents(BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving events."); }
+        public override EventInfo[] GetEvents(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
-        public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotSupportedException("This type does not support resolving members."); }
+        public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         protected override TypeAttributes GetAttributeFlagsImpl() { return _genericType.Attributes; }
 

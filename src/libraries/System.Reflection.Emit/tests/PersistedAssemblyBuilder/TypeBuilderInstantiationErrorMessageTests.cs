@@ -109,7 +109,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void TypeBuilderInstantiation_GetInterface_ThrowsWithHelpfulMessage()
+        public void TypeBuilderInstantiation_GetInterface_ThrowsWithDefaultMessage()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             GenericTypeParameterBuilder[] genericParams = type.DefineGenericParameters("T");
@@ -118,11 +118,11 @@ namespace System.Reflection.Emit.Tests
             Type instantiatedType = createdType.MakeGenericType(typeof(string));
             
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => instantiatedType.GetInterface("SomeInterface", false));
-            Assert.Contains("resolving interfaces by name", ex.Message);
+            Assert.Equal("Specified method is not supported.", ex.Message);
         }
 
         [Fact]
-        public void TypeBuilderInstantiation_GetEvent_ThrowsWithHelpfulMessage()
+        public void TypeBuilderInstantiation_GetEvent_ThrowsWithDefaultMessage()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             GenericTypeParameterBuilder[] genericParams = type.DefineGenericParameters("T");
@@ -131,11 +131,11 @@ namespace System.Reflection.Emit.Tests
             Type instantiatedType = createdType.MakeGenericType(typeof(string));
             
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => instantiatedType.GetEvent("SomeEvent"));
-            Assert.Contains("resolving events by name", ex.Message);
+            Assert.Equal("Specified method is not supported.", ex.Message);
         }
 
         [Fact]
-        public void TypeBuilderInstantiation_GetProperty_ThrowsWithHelpfulMessage()
+        public void TypeBuilderInstantiation_GetProperty_ThrowsWithDefaultMessage()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             GenericTypeParameterBuilder[] genericParams = type.DefineGenericParameters("T");
@@ -144,11 +144,11 @@ namespace System.Reflection.Emit.Tests
             Type instantiatedType = createdType.MakeGenericType(typeof(string));
             
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => instantiatedType.GetProperty("SomeProperty"));
-            Assert.Contains("resolving properties by name", ex.Message);
+            Assert.Equal("Specified method is not supported.", ex.Message);
         }
 
         [Fact]
-        public void TypeBuilderInstantiation_GetNestedType_ThrowsWithHelpfulMessage()
+        public void TypeBuilderInstantiation_GetNestedType_ThrowsWithDefaultMessage()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             GenericTypeParameterBuilder[] genericParams = type.DefineGenericParameters("T");
@@ -157,11 +157,11 @@ namespace System.Reflection.Emit.Tests
             Type instantiatedType = createdType.MakeGenericType(typeof(string));
             
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => instantiatedType.GetNestedType("SomeNestedType"));
-            Assert.Contains("resolving nested types by name", ex.Message);
+            Assert.Equal("Specified method is not supported.", ex.Message);
         }
 
         [Fact]
-        public void TypeBuilderInstantiation_GetMember_ThrowsWithHelpfulMessage()
+        public void TypeBuilderInstantiation_GetMember_ThrowsWithDefaultMessage()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             GenericTypeParameterBuilder[] genericParams = type.DefineGenericParameters("T");
@@ -170,7 +170,7 @@ namespace System.Reflection.Emit.Tests
             Type instantiatedType = createdType.MakeGenericType(typeof(string));
             
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => instantiatedType.GetMember("SomeMember"));
-            Assert.Contains("resolving members by name", ex.Message);
+            Assert.Equal("Specified method is not supported.", ex.Message);
         }
     }
 }
