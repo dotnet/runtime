@@ -53,11 +53,11 @@ namespace System.Linq
             bool result = true;
             if (source.GetType() == typeof(TSource[]))
             {
-                span = (TSource[])source;
+                span = Unsafe.As<TSource[]>(source);
             }
             else if (source.GetType() == typeof(List<TSource>))
             {
-                span = CollectionsMarshal.AsSpan((List<TSource>)source);
+                span = CollectionsMarshal.AsSpan(Unsafe.As<List<TSource>>(source));
             }
             else
             {
