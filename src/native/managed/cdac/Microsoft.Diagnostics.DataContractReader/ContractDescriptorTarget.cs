@@ -301,6 +301,22 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return value;
     }
 
+    /// <summary>
+    /// Read a value from the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>True if read succeeds, false otherwise.</returns>
+    public override bool TryRead<T>(ulong address, out T value)
+    {
+        value = default;
+        if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T readValue))
+            return false;
+
+        value = readValue;
+        return true;
+    }
+
     private static bool TryRead<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         value = default;
@@ -636,7 +652,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public Target.TypeInfo GetTypeInfo(string type)
     {
         if (_types.TryGetValue(type, out Target.TypeInfo typeInfo))
-        return typeInfo;
+            return typeInfo;
 
         DataType dataType = GetDataType(type);
         if (dataType is not DataType.Unknown)

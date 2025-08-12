@@ -1935,8 +1935,9 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
 inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object, bool onStack)
 {
+    static_assert_no_msg(VPTR_OFFS == 0);
     assert(onStack || object->TypeIs(TYP_REF));
-    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT | GTF_IND_NONNULL);
     return result;
 }
 
