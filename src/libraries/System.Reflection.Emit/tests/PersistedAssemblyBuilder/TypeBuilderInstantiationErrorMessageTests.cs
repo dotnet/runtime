@@ -11,8 +11,9 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void TypeBuilderInstantiation_ThrowsWithHelpfulMessage()
         {
-            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-            GenericTypeParameterBuilder[] genericParams = type.DefineGenericParameters("T");
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+
+            type.DefineGenericParameters("T");
             
             Type createdType = type.CreateType();
             Type instantiatedType = createdType.MakeGenericType(typeof(string));
