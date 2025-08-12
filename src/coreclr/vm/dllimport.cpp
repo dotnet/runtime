@@ -48,7 +48,9 @@
 #endif // FEATURE_COMINTEROP
 
 #include "eventtrace.h"
+#ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
+#endif // FEATURE_INTERPRETER
 
 namespace
 {
