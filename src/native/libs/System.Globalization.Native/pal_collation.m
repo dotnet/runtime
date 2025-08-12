@@ -181,7 +181,7 @@ static Range MapRangeToOriginalString(NSRange modifiedRange, NSArray<NSNumber*>*
 {
     Range invalidRange = {ERROR_INDEX_NOT_FOUND, 0};
 
-    if (mapping == nil || mapping.count == 0 || modifiedRange.location >= mapping.count)
+    if (mapping == nil || mapping.count == 0 || modifiedRange.location >= mapping.count || modifiedRange.length == 0)
         return invalidRange;
 
     int32_t mappedLocation = [mapping[(NSUInteger)modifiedRange.location] intValue];
