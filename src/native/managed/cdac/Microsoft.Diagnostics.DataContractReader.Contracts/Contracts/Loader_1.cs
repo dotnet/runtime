@@ -318,6 +318,18 @@ internal readonly struct Loader_1 : ILoader
             : string.Empty;
     }
 
+    string ILoader.GetAssemblyName(TargetPointer assemblyPointer)
+    {
+        if (assemblyPointer == TargetPointer.Null)
+            throw new ArgumentNullException(nameof(assemblyPointer));
+
+        Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(assemblyPointer);
+        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(assembly.PEAssembly);
+        return peAssembly.Name != TargetPointer.Null
+            ? _target.ReadUtf16String(peAssembly.Name)
+            : string.Empty;
+    }
+
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

@@ -12,8 +12,10 @@ internal sealed class PEImage : IData<PEImage>
 
         LoadedImageLayout = target.ReadPointer(address + (ulong)type.Fields[nameof(LoadedImageLayout)].Offset);
         ProbeExtensionResult = target.ProcessedData.GetOrAdd<ProbeExtensionResult>(address + (ulong)type.Fields[nameof(ProbeExtensionResult)].Offset);
+        Name = address + (ulong)type.Fields[nameof(Name)].Offset;
     }
 
     public TargetPointer LoadedImageLayout { get; init; }
     public ProbeExtensionResult ProbeExtensionResult { get; init; }
+    public TargetPointer Name { get; init; }
 }

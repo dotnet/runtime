@@ -550,6 +550,7 @@ struct cdac_data<Assembly>
     static constexpr size_t Error = offsetof(Assembly, m_pError);
     static constexpr size_t NotifyFlags = offsetof(Assembly, m_notifyFlags);
     static constexpr size_t Level = offsetof(Assembly, m_level);
+    static constexpr size_t PEAssembly = offsetof(Assembly, m_pPEAssembly);
 };
 
 #ifndef DACCESS_COMPILE
