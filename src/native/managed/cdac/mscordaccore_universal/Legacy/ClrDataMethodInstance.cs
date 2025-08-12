@@ -161,7 +161,6 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
         catch (System.Exception ex)
         {
             hr = ex.HResult;
-            Debug.WriteLine(ex.StackTrace);
         }
 
 #if DEBUG
@@ -184,7 +183,8 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
                     validateIlOffsets ? localIlOffsetsPtr : null);
             }
 
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            // DAC function returns odd failure codes it doesn't make sense to match directly
+            Debug.Assert(hrLocal == hr || (hrLocal < 0 && hr < 0), $"cDAC: {hr:x}, DAC: {hrLocal:x}");
 
             if (hr == HResults.S_OK)
             {
