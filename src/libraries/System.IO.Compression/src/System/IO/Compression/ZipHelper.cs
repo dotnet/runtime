@@ -37,12 +37,7 @@ internal static partial class ZipHelper
     /// </summary>
     internal static int ReadBytes(Stream stream, Span<byte> buffer, int bytesToRead)
     {
-        int bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: false);
-        if (bytesRead < bytesToRead)
-        {
-            throw new IOException(SR.UnexpectedEndOfStream);
-        }
-        return bytesRead;
+        return stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: true);
     }
 
     // will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime

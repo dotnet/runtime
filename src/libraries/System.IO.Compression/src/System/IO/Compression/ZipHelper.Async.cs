@@ -17,13 +17,7 @@ internal static partial class ZipHelper
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        int bytesRead = await stream.ReadAtLeastAsync(buffer, bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead < bytesToRead)
-        {
-            throw new IOException(SR.UnexpectedEndOfStream);
-        }
-        return bytesRead;
+        return await stream.ReadAtLeastAsync(buffer, bytesToRead, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
     }
 
     // Asynchronously assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
