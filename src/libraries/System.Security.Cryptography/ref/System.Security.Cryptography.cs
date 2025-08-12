@@ -653,10 +653,10 @@ namespace System.Security.Cryptography
     {
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public CompositeMLDsaCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.CompositeMLDsaAlgorithm)) { }
+        protected override int ExportCompositeMLDsaPrivateKeyCore(System.Span<byte> destination) { throw null; }
+        protected override int ExportCompositeMLDsaPublicKeyCore(System.Span<byte> destination) { throw null; }
         public System.Security.Cryptography.CngKey GetKey() { throw null; }
         protected override int SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { throw null; }
-        protected override bool TryExportCompositeMLDsaPrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected override bool TryExportCompositeMLDsaPublicKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
     }

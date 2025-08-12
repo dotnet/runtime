@@ -14,14 +14,6 @@ namespace System.Security.Cryptography
     {
         internal const int RandomizerSizeInBytes = 32;
 
-        internal readonly int MinPrivateKeySizeInBytes;
-        internal readonly int MaxPrivateKeySizeInBytes;
-
-        internal readonly int MinPublicKeySizeInBytes;
-        internal readonly int MaxPublicKeySizeInBytes;
-
-        internal readonly int MinSignatureSizeInBytes;
-
         /// <summary>
         ///   Gets the name of the algorithm.
         /// </summary>
@@ -36,7 +28,13 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The maximum signature size in bytes for the composite algorithm.
         /// </value>
-        public int MaxSignatureSizeInBytes => field;
+        public int MaxSignatureSizeInBytes { get; }
+
+        internal int MinPrivateKeySizeInBytes { get; }
+        internal int MaxPrivateKeySizeInBytes { get; }
+        internal int MinPublicKeySizeInBytes { get; }
+        internal int MaxPublicKeySizeInBytes { get; }
+        internal int MinSignatureSizeInBytes { get; }
 
         internal string Oid { get; }
 
@@ -386,7 +384,7 @@ namespace System.Security.Cryptography
 
         private static CompositeMLDsaAlgorithm CreateRsa(
             string name,
-            MLDsaAlgorithm algorithm,
+            MLDsaAlgorithm mldsaAlgorithm,
             int keySizeInBits,
             string oid)
         {
@@ -452,18 +450,18 @@ namespace System.Security.Cryptography
 
             return new CompositeMLDsaAlgorithm(
                 name,
-                algorithm.PrivateSeedSizeInBytes + keySizeInBytes, // Private key contains at least n
-                algorithm.PrivateSeedSizeInBytes + maxRsaPrivateKeySizeInBytes,
-                algorithm.PublicKeySizeInBytes + keySizeInBytes, // Private key contains at least n
-                algorithm.PublicKeySizeInBytes + maxRsaPublicKeySizeInBytes,
-                RandomizerSizeInBytes + algorithm.SignatureSizeInBytes + keySizeInBytes,
-                RandomizerSizeInBytes + algorithm.SignatureSizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes, // Private key contains at least n
+                mldsaAlgorithm.PrivateSeedSizeInBytes + maxRsaPrivateKeySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes, // Private key contains at least n
+                mldsaAlgorithm.PublicKeySizeInBytes + maxRsaPublicKeySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + keySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + keySizeInBytes,
                 oid);
         }
 
         private static CompositeMLDsaAlgorithm CreateECDsa(
             string name,
-            MLDsaAlgorithm algorithm,
+            MLDsaAlgorithm mldsaAlgorithm,
             int keySizeInBits,
             string oid)
         {
@@ -537,18 +535,18 @@ namespace System.Security.Cryptography
 
             return new CompositeMLDsaAlgorithm(
                 name,
-                algorithm.PrivateSeedSizeInBytes + keySizeInBytes, // ECPrivateKey has at least the private key
-                algorithm.PrivateSeedSizeInBytes + maxPrivateKeySizeInBytes,
-                algorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes,
-                algorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes,
-                RandomizerSizeInBytes + algorithm.SignatureSizeInBytes,
-                RandomizerSizeInBytes + algorithm.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(keySizeInBits),
+                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes, // ECPrivateKey has at least the private key
+                mldsaAlgorithm.PrivateSeedSizeInBytes + maxPrivateKeySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 + 3 * 2, // 2 non-zero INTEGERS and overhead for 3 ASN.1 values
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(keySizeInBits),
                 oid);
         }
 
         private static CompositeMLDsaAlgorithm CreateEdDsa(
             string name,
-            MLDsaAlgorithm algorithm,
+            MLDsaAlgorithm mldsaAlgorithm,
             int keySizeInBits,
             string oid)
         {
@@ -557,12 +555,12 @@ namespace System.Security.Cryptography
 
             return new CompositeMLDsaAlgorithm(
                 name,
-                algorithm.PrivateSeedSizeInBytes + keySizeInBytes,
-                algorithm.PrivateSeedSizeInBytes + keySizeInBytes,
-                algorithm.PublicKeySizeInBytes + keySizeInBytes,
-                algorithm.PublicKeySizeInBytes + keySizeInBytes,
-                RandomizerSizeInBytes + algorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
-                RandomizerSizeInBytes + algorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
                 oid);
         }
     }

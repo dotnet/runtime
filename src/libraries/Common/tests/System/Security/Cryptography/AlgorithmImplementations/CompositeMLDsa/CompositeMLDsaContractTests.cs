@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Tests
 
             dsa.ExportCompositeMLDsaPublicKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
                 return lowerBound;
             };
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Tests
             // Buffer meets the lower bound, but returned value is too small
             dsa.ExportCompositeMLDsaPublicKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
 
                 // Writing less than lower bound isn't allowed.
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Tests
             // Buffer meets the lower bound
             dsa.ExportCompositeMLDsaPublicKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
                 return lowerBound;
             };
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Tests
             // Buffer meets the lower bound, but returned value is too small
             dsa.ExportCompositeMLDsaPublicKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
                 // Writing less than lower bound isn't allowed.
                 return lowerBound - 1;
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.Tests
 
             dsa.ExportCompositeMLDsaPublicKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
 
                 // Writing less than lower bound isn't allowed.
@@ -273,7 +273,7 @@ namespace System.Security.Cryptography.Tests
 
             dsa.ExportCompositeMLDsaPrivateKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
                 return lowerBound;
             };
@@ -286,7 +286,7 @@ namespace System.Security.Cryptography.Tests
             // Buffer meets the lower bound, but returned value is too small
             dsa.ExportCompositeMLDsaPrivateKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
 
                 // Writing less than lower bound isn't allowed.
@@ -317,7 +317,7 @@ namespace System.Security.Cryptography.Tests
             // Buffer meets the lower bound
             dsa.ExportCompositeMLDsaPrivateKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
                 return lowerBound;
             };
@@ -330,7 +330,7 @@ namespace System.Security.Cryptography.Tests
             // Buffer meets the lower bound, but returned value is too small
             dsa.ExportCompositeMLDsaPrivateKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
 
                 // Writing less than lower bound isn't allowed.
@@ -353,7 +353,7 @@ namespace System.Security.Cryptography.Tests
 
             dsa.ExportCompositeMLDsaPrivateKeyCoreHook = destination =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 destination.Fill(1);
 
                 // Writing less than lower bound isn't allowed.
@@ -482,7 +482,7 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                     algorithm,
                     rsa => rsa.KeySizeInBits / 8,
-                    ecdsa => 0,
+                    ecdsa => 8,
                     eddsa => 2 * eddsa.KeySizeInBits / 8);
 
             Assert.Throws<ArgumentException>(() => dsa.SignData(ReadOnlySpan<byte>.Empty, new byte[lowerBound - 1]));
@@ -490,7 +490,7 @@ namespace System.Security.Cryptography.Tests
 
             dsa.SignDataCoreHook = (data, context, destination) =>
             {
-                AssertExtensions.LessThanOrEqualTo(lowerBound, destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, lowerBound);
                 return lowerBound;
             };
 
@@ -544,9 +544,9 @@ namespace System.Security.Cryptography.Tests
             int threshold =
                 CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                     algorithm,
-                    _ => algorithm.MaxSignatureSizeInBytes,
-                    _ => 32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes,
-                    _ => algorithm.MaxSignatureSizeInBytes);
+                    rsa => algorithm.MaxSignatureSizeInBytes,
+                    ecdsa => 32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes + 8,
+                    eddsa => algorithm.MaxSignatureSizeInBytes);
 
             AssertExtensions.FalseExpression(dsa.VerifyData(ReadOnlySpan<byte>.Empty, new byte[threshold - 1]));
 
