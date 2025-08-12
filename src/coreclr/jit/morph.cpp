@@ -8424,9 +8424,11 @@ DONE_MORPHING_CHILDREN:
                 else
                 {
                     JITDUMP("false\n");
-                    tree = gtWrapWithSideEffects(gtNewFalse(), op1, GTF_ALL_EFFECT);
+                    tree = gtNewFalse();
+                    tree->SetMorphed(this);
+                    tree = gtWrapWithSideEffects(tree, op1, GTF_ALL_EFFECT);
                 }
-                tree->SetMorphed(this, /*doChildren*/ true);
+                tree->SetMorphed(this);
                 return tree;
             }
             break;
