@@ -4175,7 +4175,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             goto Exit;
         }
 
-        if (IsPossibleCodeAddress(taddr) != S_OK)
+        if ( (status = IsPossibleCodeAddress(taddr)) != S_OK)
         {
             goto Exit;
         }
