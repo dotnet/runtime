@@ -63,7 +63,7 @@ The contract depends on the following globals
 | `GCThread` | TargetPointer | A pointer to the GC thread
 | `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects
 | `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array
-| `PtrArrayOffset` | TargetPointer | Offset from PtrArray class address to start of enclosed data array
+| `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array
 
 The contract additionally depends on these data descriptors
 
@@ -108,9 +108,9 @@ The contract additionally depends on these data descriptors
 ``` csharp
 enum TLSIndexType
 {
-    NonCollectible,
-    Collectible,
-    DirectOnThreadLocalData,
+    NonCollectible = 0,
+    Collectible = 1,
+    DirectOnThreadLocalData = 2,
 };
 
 ThreadStoreData GetThreadStoreData()
@@ -207,7 +207,7 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
             {
                 TargetPointer nonCollectibleArray = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::NonCollectibleTlsArrayData offset */);
                 int arrayIndex = indexOffset - target.ReadGlobal<byte>("NumberOfTlsOffsetsNotUsedInNoncollectibleArray");
-                TargetPointer arrayStartAddress = nonCollectibleArray + target.ReadGlobalPointer("PtrArrayOffset");
+                TargetPointer arrayStartAddress = nonCollectibleArray + target.ReadGlobalPointer("PtrArrayOffsetToDataArray");
                 threadLocalStaticBase = target.ReadPointer(arrayStartAddress + (ulong)(arrayIndex * target.PointerSize));
             }
             break;

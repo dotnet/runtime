@@ -56,7 +56,7 @@ public static class Constants
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
         public const string DefaultADID = nameof(DefaultADID);
-        public const string PtrArrayOffset = nameof(PtrArrayOffset);
+        public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);
         public const string NumberOfTlsOffsetsNotUsedInNoncollectibleArray = nameof(NumberOfTlsOffsetsNotUsedInNoncollectibleArray);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);

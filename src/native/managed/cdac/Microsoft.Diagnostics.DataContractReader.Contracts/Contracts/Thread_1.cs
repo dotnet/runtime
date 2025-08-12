@@ -14,9 +14,9 @@ internal readonly struct Thread_1 : IThread
     [Flags]
     private enum TLSIndexType
     {
-        NonCollectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsArrayData to get the final address
-        Collectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pCollectibleTlsArrayData to get the final address
-        DirectOnThreadLocalData, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
+        NonCollectible = 0, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsArrayData to get the final address
+        Collectible = 1, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pCollectibleTlsArrayData to get the final address
+        DirectOnThreadLocalData = 2, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
     };
 
     internal Thread_1(Target target, TargetPointer threadStore)
@@ -122,7 +122,7 @@ internal readonly struct Thread_1 : IThread
                 {
                     TargetPointer nonCollectibleArray = threadLocalData.NonCollectibleTlsArrayData;
                     int arrayIndex = indexOffset - _target.ReadGlobal<byte>(Constants.Globals.NumberOfTlsOffsetsNotUsedInNoncollectibleArray);
-                    TargetPointer arrayStartAddress = nonCollectibleArray + _target.ReadGlobalPointer(Constants.Globals.PtrArrayOffset);
+                    TargetPointer arrayStartAddress = nonCollectibleArray + _target.ReadGlobalPointer(Constants.Globals.PtrArrayOffsetToDataArray);
                     threadLocalStaticBase = _target.ReadPointer(arrayStartAddress + (ulong)(arrayIndex * _target.PointerSize));
                 }
                 break;
