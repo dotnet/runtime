@@ -145,7 +145,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <!-- No OpenSSL on Apple platforms or Android -->
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true' and '$(_IsApplePlatform)' != 'true' and '$(_targetOS)' != 'android'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Android" Condition="'$(_targetOS)' == 'android'" />
-      <NetCoreAppNativeLibrary Include="System.IO.Ports.Native" Condition="'$(_targetOS)' == 'android'" />
     </ItemGroup>
 
     <ItemGroup>
