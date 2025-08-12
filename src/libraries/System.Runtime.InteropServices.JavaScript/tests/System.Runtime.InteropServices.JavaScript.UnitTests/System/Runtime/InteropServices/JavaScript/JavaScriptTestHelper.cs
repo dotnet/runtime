@@ -1074,10 +1074,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        public static Task DisposeAsync()
+        public static async Task<Task> DisposeAsync()
         {
             _module?.Dispose();
             _module = null;
+            await Task.Yield();
+            GC.Collect();
             return Task.CompletedTask;
         }
     }
