@@ -102,7 +102,7 @@ namespace System.Text.Json
         /// <summary>
         /// Tries to get the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
-        /// <param name="typeInfo">The resolved contract metadata, or <see langword="null" /> if not contract could be resolved.</param>
+        /// <param name="typeInfo">The resolved contract metadata, or <see langword="null" /> if no contract could be resolved.</param>
         /// <returns><see langword="true"/> if a contract for <typeparamref name="T"/> was found, or <see langword="false"/> otherwise.</returns>
         /// <exception cref="ArgumentException"><typeparamref name="T"/> is not valid for serialization.</exception>
         /// <remarks>
@@ -110,8 +110,13 @@ namespace System.Text.Json
         /// </remarks>
         public bool TryGetTypeInfo<T>([NotNullWhen(true)] out JsonTypeInfo<T>? typeInfo)
         {
-            typeInfo = (JsonTypeInfo<T>?)GetTypeInfo(typeof(T));
-            return typeInfo is not null;
+            if (TryGetTypeInfo(typeof(T), out var typeInfoOpt))
+            {
+                typeInfo = (JsonTypeInfo<T>)typeInfoOpt;
+                return true;
+            }
+            typeInfo = null;
+            return false;
         }
 
         /// <summary>
