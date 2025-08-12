@@ -5,7 +5,6 @@
 #include "methodcallsummarizer.h"
 #include "logging.h"
 #include "spmiutil.h"
-#include <fstream>
 
 MethodCallSummarizer::MethodCallSummarizer(const std::string& logPath)
 {
@@ -22,20 +21,21 @@ void MethodCallSummarizer::AddCall(const char* name)
 
 void MethodCallSummarizer::SaveTextFile()
 {
-    try
+    FILE* fp = fopen(dataFileName.c_str(), "w");
+    if (fp == NULL)
     {
-        std::ofstream outFile(dataFileName);
-        outFile << "FunctionName,Count" << std::endl;
+        LogError("Couldn't open file '%s': error %d", dataFileName.c_str(), errno);
+        return;
+    }
 
-        for (auto& elem : namesAndCounts)
-        {
-            outFile << elem.first << "," << elem.second << std::endl;
-        }
-    }
-    catch (std::exception& ex)
+    fprintf(fp, "FunctionName,Count\n");
+
+    for (auto& elem : namesAndCounts)
     {
-        LogError("Couldn't write file '%s': %s", dataFileName.c_str(), ex.what());
+        fprintf(fp, "%s,%d\n", elem.first.c_str(), elem.second);
     }
+
+    fclose(fp);
 }
 
 MethodCallSummarizer::~MethodCallSummarizer()
