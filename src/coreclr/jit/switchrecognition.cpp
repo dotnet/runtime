@@ -70,24 +70,36 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
 // SkipFallthroughBlocks : Skip all fallthrough blocks (empty BBJ_ALWAYS blocks)
 //
 // Arguments:
-//    block - the block to process
+//    compiler - The compiler instance.
+//    block    - the block to process
 //
 // Return Value:
 //    block that is not an empty fallthrough block
 //
-static BasicBlock* SkipFallthroughBlocks(BasicBlock* block)
+static BasicBlock* SkipFallthroughBlocks(Compiler* comp, BasicBlock* block)
 {
-    // FALLTHROUGH
+    if (!block->KindIs(BBJ_ALWAYS) || (block->firstStmt() != nullptr))
+    {
+        // Fast path
+        return block;
+    }
+
+    // We might consider ignoring statements with only NOPs if that is profitable.
+
+    BitVecTraits traits(comp->fgBBNumMax + 1, comp);
+    BitVec       visited = BitVecOps::MakeEmpty(&traits);
+    BitVecOps::AddElemD(&traits, visited, block->bbID);
     BasicBlock* origBlock = block;
-    while (block->KindIs(BBJ_ALWAYS) && (block->firstStmt() == nullptr) &&
-           BasicBlock::sameEHRegion(block, block->GetTarget()))
+    if (block->KindIs(BBJ_ALWAYS) && (block->firstStmt() == nullptr) &&
+        BasicBlock::sameEHRegion(block, block->GetTarget()))
     {
         block = block->GetTarget();
-        if (block == origBlock)
+        if (BitVecOps::IsMember(&traits, visited, block->bbID))
         {
             // A cycle detected, bail out.
             return origBlock;
         }
+        BitVecOps::AddElemD(&traits, visited, block->bbID);
     }
     return block;
 }
@@ -97,6 +109,7 @@ static BasicBlock* SkipFallthroughBlocks(BasicBlock* block)
 //    constant test? e.g. JTRUE(EQ/NE(X, CNS)).
 //
 // Arguments:
+//    compiler         - The compiler instance.
 //    block            - The block to check
 //    allowSideEffects - is variableNode allowed to have side-effects (COMMA)?
 //    trueTarget       - [out] The successor visited if X == CNS
@@ -108,7 +121,8 @@ static BasicBlock* SkipFallthroughBlocks(BasicBlock* block)
 // Return Value:
 //    True if the block represents a constant test, false otherwise
 //
-bool IsConstantTestCondBlock(const BasicBlock* block,
+bool IsConstantTestCondBlock(Compiler*         comp,
+                             const BasicBlock* block,
                              bool              allowSideEffects,
                              BasicBlock**      trueTarget,
                              BasicBlock**      falseTarget,
@@ -149,9 +163,11 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                     return false;
                 }
 
-                *isReversed  = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *trueTarget  = SkipFallthroughBlocks(*isReversed ? block->GetFalseTarget() : block->GetTrueTarget());
-                *falseTarget = SkipFallthroughBlocks(*isReversed ? block->GetTrueTarget() : block->GetFalseTarget());
+                *isReversed = rootNode->gtGetOp1()->OperIs(GT_NE);
+                *trueTarget =
+                    SkipFallthroughBlocks(comp, *isReversed ? block->GetFalseTarget() : block->GetTrueTarget());
+                *falseTarget =
+                    SkipFallthroughBlocks(comp, *isReversed ? block->GetTrueTarget() : block->GetFalseTarget());
 
                 if (block->FalseTargetIs(block) || block->TrueTargetIs(block))
                 {
@@ -210,7 +226,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
     // and then try to accumulate as many constant test blocks as possible. Once we hit
     // a block that doesn't match the pattern, we start processing the accumulated blocks.
     bool isReversed = false;
-    if (IsConstantTestCondBlock(firstBlock, true, &trueTarget, &falseTarget, &isReversed, &variableNode, &cns))
+    if (IsConstantTestCondBlock(this, firstBlock, true, &trueTarget, &falseTarget, &isReversed, &variableNode, &cns))
     {
         if (isReversed)
         {
@@ -260,7 +276,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
             }
 
             // Inspect secondary blocks
-            if (IsConstantTestCondBlock(currBb, false, &currTrueTarget, &currFalseTarget, &isReversed,
+            if (IsConstantTestCondBlock(this, currBb, false, &currTrueTarget, &currFalseTarget, &isReversed,
                                         &currVariableNode, &currCns))
             {
                 if (currTrueTarget != trueTarget)
@@ -425,10 +441,10 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock,
     BasicBlock* blockIfTrue  = nullptr;
     BasicBlock* blockIfFalse = nullptr;
     bool        isReversed   = false;
-    const bool  isTest       = IsConstantTestCondBlock(lastBlock, false, &blockIfTrue, &blockIfFalse, &isReversed);
+    const bool  isTest = IsConstantTestCondBlock(this, lastBlock, false, &blockIfTrue, &blockIfFalse, &isReversed);
     assert(isTest);
 
-    assert(SkipFallthroughBlocks(firstBlock->GetTrueTarget()) == SkipFallthroughBlocks(blockIfTrue));
+    assert(SkipFallthroughBlocks(this, firstBlock->GetTrueTarget()) == SkipFallthroughBlocks(this, blockIfTrue));
     FlowEdge* const trueEdge  = firstBlock->GetTrueEdge();
     FlowEdge* const falseEdge = firstBlock->GetFalseEdge();
 
