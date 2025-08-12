@@ -406,19 +406,19 @@ void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
 
                 version_t assembly_version, file_version;
 
-                const pal::string_t& assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
+                pal::string_t assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
                 if (!assembly_version_str.empty())
                 {
                     version_t::parse(assembly_version_str, &assembly_version);
                 }
 
-                const pal::string_t& file_version_str = get_optional_property(file.value, _X("fileVersion"));
+                pal::string_t file_version_str = get_optional_property(file.value, _X("fileVersion"));
                 if (!file_version_str.empty())
                 {
                     version_t::parse(file_version_str, &file_version);
                 }
 
-                const pal::string_t& local_path = get_optional_path(file.value, _X("localPath"));
+                pal::string_t local_path = get_optional_path(file.value, _X("localPath"));
 
                 pal::string_t file_name{file.name.GetString()};
                 deps_asset_t asset(get_filename_without_ext(file_name), file_name, assembly_version, file_version, local_path);
@@ -468,19 +468,19 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
             {
                 version_t assembly_version, file_version;
 
-                const pal::string_t& assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
+                pal::string_t assembly_version_str = get_optional_property(file.value, _X("assemblyVersion"));
                 if (assembly_version_str.length() > 0)
                 {
                     version_t::parse(assembly_version_str, &assembly_version);
                 }
 
-                const pal::string_t& file_version_str = get_optional_property(file.value, _X("fileVersion"));
+                pal::string_t file_version_str = get_optional_property(file.value, _X("fileVersion"));
                 if (file_version_str.length() > 0)
                 {
                     version_t::parse(file_version_str, &file_version);
                 }
 
-                const pal::string_t& local_path = get_optional_path(file.value, _X("localPath"));
+                pal::string_t local_path = get_optional_path(file.value, _X("localPath"));
 
                 pal::string_t file_name{file.name.GetString()};
                 deps_asset_t asset(get_filename_without_ext(file_name), file_name, assembly_version, file_version, local_path);
