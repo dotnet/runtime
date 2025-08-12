@@ -469,7 +469,7 @@ LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 // Wrapper around MethodDesc::PrepareInitialCode to handle possible managed exceptions thrown by it.
 void PrepareInitialCode(MethodDesc *pMD)
 {
-    STANDARD_VM_CONTRACT;
+    STATIC_STANDARD_VM_CONTRACT;
 
     struct Param
     {
