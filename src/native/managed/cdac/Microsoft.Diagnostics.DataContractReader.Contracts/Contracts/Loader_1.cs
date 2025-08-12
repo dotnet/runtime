@@ -352,26 +352,17 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToILCodeVersioningStateMap);
     }
 
-    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    private TargetPointer GetModuleLookupMapAtIndex(ref TargetPointer table, ref uint index, ref TargetNUInt flags, TargetNUInt supportedFlagsMask)
     {
-        uint rid = EcmaMetadataUtils.GetRowId(token);
-        ArgumentOutOfRangeException.ThrowIfZero(rid);
-        flags = new TargetNUInt(0);
-        if (table == TargetPointer.Null)
-            return TargetPointer.Null;
-        uint index = rid;
-        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
-        // have to read lookupMap an extra time upfront because only the first map
-        // has valid supportedFlagsMask
-        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
         do
         {
-            lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+            Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
             if (index < lookupMap.Count)
             {
                 TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
                 TargetPointer rawValue = _target.ReadPointer(entryAddress);
                 flags = new TargetNUInt(rawValue & supportedFlagsMask.Value);
+                index++;
                 return rawValue & ~(supportedFlagsMask.Value);
             }
             else
@@ -383,29 +374,38 @@ internal readonly struct Loader_1 : ILoader
         return TargetPointer.Null;
     }
 
+    TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
+    {
+        if (table == TargetPointer.Null)
+        {
+            flags = new TargetNUInt(0);
+            return TargetPointer.Null;
+        }
+
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+
+        uint rid = EcmaMetadataUtils.GetRowId(token);
+        ArgumentOutOfRangeException.ThrowIfZero(rid);
+        flags = new TargetNUInt(0);
+        uint index = rid;
+        return GetModuleLookupMapAtIndex(ref table, ref index, ref flags, supportedFlagsMask);
+    }
+
     IEnumerable<(TargetPointer, uint)> ILoader.IterateModuleLookupMap(TargetPointer table)
     {
+        if (table == TargetPointer.Null)
+            yield break;
         Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
-        // have to read lookupMap an extra time upfront because only the first map
-        // has valid supportedFlagsMask
         TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        TargetNUInt flags = new TargetNUInt(0);
         uint index = 1; // zero is invalid
         do
         {
-            lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
-            if (index < lookupMap.Count)
+            TargetPointer nxt = GetModuleLookupMapAtIndex(ref table, ref index, ref flags, supportedFlagsMask);
+            if (nxt != TargetPointer.Null)
             {
-                TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
-                TargetPointer rawValue = _target.ReadPointer(entryAddress);
-                ulong maskedValue = rawValue & ~(supportedFlagsMask.Value);
-                if (maskedValue != 0)
-                    yield return (new TargetPointer(maskedValue), index);
-                index++;
-            }
-            else
-            {
-                table = lookupMap.Next;
-                index -= lookupMap.Count;
+                yield return (new TargetPointer(nxt), index-1);
             }
         } while (table != TargetPointer.Null);
     }
