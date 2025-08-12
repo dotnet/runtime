@@ -52,21 +52,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
+            if (_methods.Count == 0 || relocsOnly)
+            {
+                return new ObjectData(
+                    data: Array.Empty<byte>(),
+                    relocs: Array.Empty<Relocation>(),
+                    alignment: 1,
+                    definedSymbols: new ISymbolDefinitionNode[] { this });
+            }
 
             _methods.MergeSort(CompilerComparer.Instance);
             GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly);
-
             builder.Builder.RequireInitialAlignment(4);
             builder.Builder.AddSymbol(this);
-
-            if (_methods.Count == 0)
-            {
-                // Always generate a size header
-                builder.Builder.EmitInt(0);
-                return builder.Builder.ToObjectData();
-            }
 
             // First, emit the initial ref map offset and reserve the offset map entries
             int offsetCount = _methods.Count / GCREFMAP_LOOKUP_STRIDE;
