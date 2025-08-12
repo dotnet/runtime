@@ -86,7 +86,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.ImageDataDirectory debugInfoData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DebugInfo);
 
             ILCompiler.Reflection.ReadyToRun.NativeReader imageReader = new(
-                new TargetStream(Target, imageBase, debugInfoData.Size),
+                new TargetStream(Target, imageBase, debugInfoData.VirtualAddress + debugInfoData.Size),
                 Target.IsLittleEndian
             );
             ILCompiler.Reflection.ReadyToRun.NativeArray debugInfoArray = new(imageReader, debugInfoData.VirtualAddress);

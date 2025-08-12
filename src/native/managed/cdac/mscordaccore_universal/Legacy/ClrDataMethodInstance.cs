@@ -134,7 +134,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
         try
         {
             TargetCodePointer pCode = address.ToTargetCodePointer(_target);
-            List<IOffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(pCode, out uint codeOffset).ToList();
+            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(pCode, out uint codeOffset).ToList();
 
             uint hits = 0;
             for (int i = 0; i < map.Count; i++)
@@ -161,6 +161,7 @@ internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInst
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+            Debug.WriteLine(ex.StackTrace);
         }
 
 #if DEBUG

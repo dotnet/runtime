@@ -11,48 +11,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal sealed class DebugInfo_1(Target target) : IDebugInfo
 {
+    private const uint DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS = 0xFFFFFFFF;
     private const uint IL_OFFSET_BIAS = unchecked((uint)-3);
-
-    internal enum SourceTypes_1 : uint
-    {
-        SourceTypeInvalid = 0x00, // To indicate that nothing else applies
-        SequencePoint = 0x01, // The debugger asked for it.
-        StackEmpty = 0x02, // The stack is empty here
-        CallSite = 0x04, // This is a call site.
-        NativeEndOffsetUnknown = 0x08, // Indicates a epilog endpoint
-        CallInstruction = 0x10  // The actual instruction of a call.
-    }
-
-    internal readonly struct OffsetMapping_1 : IOffsetMapping
-    {
-        public uint NativeOffset { get; init; }
-        public uint ILOffset { get; init; }
-        internal SourceTypes_1 InternalSourceType { get; init; }
-        public readonly SourceTypes SourceType
-        {
-            get
-            {
-                switch (InternalSourceType)
-                {
-                    case SourceTypes_1.SourceTypeInvalid:
-                        return SourceTypes.SourceTypeInvalid;
-                    case SourceTypes_1.SequencePoint:
-                        return SourceTypes.SequencePoint;
-                    case SourceTypes_1.StackEmpty:
-                        return SourceTypes.StackEmpty;
-                    case SourceTypes_1.CallSite:
-                        return SourceTypes.CallSite;
-                    case SourceTypes_1.NativeEndOffsetUnknown:
-                        return SourceTypes.NativeEndOffsetUnknown;
-                    case SourceTypes_1.CallInstruction:
-                        return SourceTypes.CallInstruction;
-                    default:
-                        Debug.Fail($"Unknown source type: {InternalSourceType}");
-                        return SourceTypes.SourceTypeInvalid;
-                }
-            }
-        }
-    }
 
     [Flags]
     internal enum ExtraDebugInfoFlags_1 : byte
@@ -66,7 +26,7 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
-    IEnumerable<IOffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset)
+    IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset)
     {
         // Get the method's DebugInfo
         if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
@@ -79,7 +39,7 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         return RestoreBoundaries(debugInfo, hasFlagByte);
     }
 
-    private IEnumerable<IOffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bool hasFlagByte)
+    private IEnumerable<OffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bool hasFlagByte)
     {
         if (hasFlagByte)
         {
@@ -108,30 +68,99 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
             Debug.Assert(flagByte == 0);
         }
 
-        NativeReader nibbleNativeReader = new(new TargetStream(_target, debugInfo, 12 /*maximum size of 2 32bit ints compressed*/), _target.IsLittleEndian);
+        NativeReader nibbleNativeReader = new(new TargetStream(_target, debugInfo, 24 /*maximum size of 4 32bit ints compressed*/), _target.IsLittleEndian);
         NibbleReader nibbleReader = new(nibbleNativeReader, 0);
 
         uint cbBounds = nibbleReader.ReadUInt();
+        // uint cbUninstrumentedBounds = 0;
+        if (cbBounds == DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS)
+        {
+            // This means we have instrumented bounds.
+            cbBounds = nibbleReader.ReadUInt();
+            // cbUninstrumentedBounds = nibbleReader.ReadUInt();
+        }
         uint _ /*cbVars*/ = nibbleReader.ReadUInt();
 
         TargetPointer addrBounds = debugInfo + (uint)nibbleReader.GetNextByteOffset();
+        // TargetPointer addrVars = addrBounds + cbBounds + cbUninstrumentedBounds;
 
         if (cbBounds > 0)
         {
             NativeReader boundsNativeReader = new(new TargetStream(_target, addrBounds, cbBounds), _target.IsLittleEndian);
-            NibbleReader boundsReader = new(boundsNativeReader, 0);
-
-            uint countEntries = boundsReader.ReadUInt();
-            Debug.Assert(countEntries > 0, "Expected at least one entry in bounds.");
-
-            return DoBounds(boundsReader, countEntries);
+            return DoBounds_2(boundsNativeReader);
         }
 
-        return Enumerable.Empty<IOffsetMapping>();
+        return Enumerable.Empty<OffsetMapping>();
     }
 
-    private static IEnumerable<IOffsetMapping> DoBounds(NibbleReader reader, uint count)
+    // Algorithm for R2R major version 16 and above
+    private static IEnumerable<OffsetMapping> DoBounds_2(NativeReader nativeReader)
     {
+        NibbleReader reader = new(nativeReader, 0);
+
+        uint boundsEntryCount = reader.ReadUInt();
+        Debug.Assert(boundsEntryCount > 0, "Expected at least one entry in bounds.");
+
+        uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
+        uint bitsForILOffsets = reader.ReadUInt() + 1; // Number of bits needed for IL offsets
+
+        uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+        ulong bitsMeaningfulMask = (1UL << ((int)bitsPerEntry)) - 1;
+        int offsetOfActualBoundsData = reader.GetNextByteOffset();
+
+        uint bitsCollected = 0;
+        ulong bitTemp = 0;
+        uint curBoundsProcessed = 0;
+
+        uint previousNativeOffset = 0;
+
+        while (curBoundsProcessed < boundsEntryCount)
+        {
+            bitTemp |= ((uint)nativeReader[offsetOfActualBoundsData++]) << (int)bitsCollected;
+            bitsCollected += 8;
+            while (bitsCollected >= bitsPerEntry)
+            {
+                ulong mappingDataEncoded = bitsMeaningfulMask & bitTemp;
+                bitTemp >>= (int)bitsPerEntry;
+                bitsCollected -= bitsPerEntry;
+
+                SourceTypes sourceType = (mappingDataEncoded & 0x3) switch
+                {
+                    0 => SourceTypes.SourceTypeInvalid,
+                    1 => SourceTypes.CallInstruction,
+                    2 => SourceTypes.StackEmpty,
+                    3 => SourceTypes.StackEmpty | SourceTypes.CallInstruction,
+                    _ => throw new InvalidOperationException($"Unknown source type encoding: {mappingDataEncoded & 0x3}")
+                };
+
+                mappingDataEncoded >>= 2;
+                uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
+                previousNativeOffset += nativeOffsetDelta;
+                uint nativeOffset = previousNativeOffset;
+
+                mappingDataEncoded >>= (int)bitsForNativeDelta;
+                uint ilOffset = (uint)mappingDataEncoded + IL_OFFSET_BIAS;
+
+                yield return new OffsetMapping()
+                {
+                    NativeOffset = nativeOffset,
+                    ILOffset = ilOffset,
+                    SourceType = sourceType
+                };
+                curBoundsProcessed++;
+            }
+        }
+
+    }
+
+    // Algorithm for R2R major version 15 and below
+    private static IEnumerable<OffsetMapping> DoBounds_1(NativeReader nativeReader)
+    {
+        NibbleReader reader = new(nativeReader, 0);
+
+        uint count = reader.ReadUInt();
+        Debug.Assert(count > 0, "Expected at least one entry in bounds.");
+
         uint nativeOffset = 0;
         for (uint i = 0; i < count; i++)
         {
@@ -140,14 +169,22 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
 
             // il offsets are encoded with a bias of ICorDebugInfo::MAX_MAPPING_VALUE
             uint ilOffset = unchecked(reader.ReadUInt() + IL_OFFSET_BIAS);
+            uint sourceType = reader.ReadUInt();
 
-            SourceTypes_1 sourceType = (SourceTypes_1)reader.ReadUInt();
-
-            yield return new OffsetMapping_1
+            yield return new OffsetMapping()
             {
                 NativeOffset = nativeOffset,
                 ILOffset = ilOffset,
-                InternalSourceType = sourceType
+                SourceType = sourceType switch
+                {
+                    0x00 => SourceTypes.SourceTypeInvalid,
+                    0x01 => SourceTypes.SequencePoint,
+                    0x02 => SourceTypes.StackEmpty,
+                    0x04 => SourceTypes.CallSite,
+                    0x08 => SourceTypes.NativeEndOffsetUnknown,
+                    0x10 => SourceTypes.CallInstruction,
+                    _ => throw new InvalidOperationException($"Unknown source type: {sourceType}")
+                }
             };
         }
     }

@@ -6,27 +6,46 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+[Flags]
 public enum SourceTypes : uint
 {
-    SourceTypeInvalid = 0x00, // To indicate that nothing else applies
-    SequencePoint = 0x01, // The debugger asked for it.
-    StackEmpty = 0x02, // The stack is empty here
-    CallSite = 0x04, // This is a call site.
-    NativeEndOffsetUnknown = 0x08, // Indicates a epilog endpoint
-    CallInstruction = 0x10  // The actual instruction of a call.
+    /// <summary>
+    /// Indicates that no other options apply
+    /// </summary>
+    SourceTypeInvalid = 0x00,
+    /// <summary>
+    /// The debugger asked for it
+    /// </summary>
+    SequencePoint = 0x01,
+    /// <summary>
+    /// The stack is empty here
+    /// </summary>
+    StackEmpty = 0x02,
+    /// <summary>
+    /// This is a call site
+    /// </summary>
+    CallSite = 0x04,
+    /// <summary>
+    /// Indicate an epilog endpoint
+    /// </summary>
+    NativeEndOffsetUnknown = 0x08,
+    /// <summary>
+    /// The actual instruction of a call
+    /// </summary>
+    CallInstruction = 0x10
 }
 
-public interface IOffsetMapping
+public readonly struct OffsetMapping
 {
-    public uint NativeOffset { get; }
-    public uint ILOffset { get; }
-    public SourceTypes SourceType { get; }
+    public uint NativeOffset { get; init; }
+    public uint ILOffset { get; init; }
+    public SourceTypes SourceType { get; init; }
 }
 
 public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
-    IEnumerable<IOffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset) => throw new NotImplementedException();
+    IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset) => throw new NotImplementedException();
 }
 
 public readonly struct DebugInfo : IDebugInfo
