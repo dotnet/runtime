@@ -509,6 +509,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
             {
                 return 45;
             }
+            [Kept]
+            public static int OnlyCalledViaReflection(string foo, string bar)
+            {
+                return 46;
+            }
 
             [Kept]
             public static void TestNameWithIntAndBindingFlagsAndTypes()
