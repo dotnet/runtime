@@ -49,6 +49,7 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
         }
         else
 #endif
+
             if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
         {
             fgPeelSwitch(block);
