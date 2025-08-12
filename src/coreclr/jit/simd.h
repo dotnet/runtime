@@ -1164,6 +1164,12 @@ void EvaluateBinaryMask(
             break;
         }
 
+        case 16:
+        {
+            bitMask = 0x0001000100010001;
+            break;
+        }
+
         default:
         {
             unreached();

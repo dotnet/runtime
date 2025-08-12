@@ -591,7 +591,7 @@ void emitter::emitIns_Mov(
         {
             assert(isGeneralRegisterOrR0(srcReg));
             assert(isGeneralRegisterOrR0(dstReg));
-            emitIns_R_R_I(INS_addiw, attr, dstReg, srcReg, 0);
+            emitIns_R_R(INS_sext_w, attr, dstReg, srcReg);
         }
         else if (INS_fsgnj_s == ins || INS_fsgnj_d == ins)
         {
@@ -607,7 +607,7 @@ void emitter::emitIns_Mov(
         {
             assert(isGeneralRegisterOrR0(srcReg));
             assert(isGeneralRegisterOrR0(dstReg));
-            emitIns_R_R_I(INS_addi, attr, dstReg, srcReg, 0);
+            emitIns_R_R(INS_mov, attr, dstReg, srcReg);
         }
     }
 }
@@ -619,7 +619,7 @@ void emitter::emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, boo
         assert(attr == EA_4BYTE || attr == EA_PTRSIZE);
         if (isGeneralRegisterOrR0(dstReg) && isGeneralRegisterOrR0(srcReg))
         {
-            emitIns_R_R_I(attr == EA_4BYTE ? INS_addiw : INS_addi, attr, dstReg, srcReg, 0);
+            emitIns_R_R(attr == EA_4BYTE ? INS_sext_w : INS_mov, attr, dstReg, srcReg);
         }
         else if (isGeneralRegisterOrR0(dstReg) && genIsValidFloatReg(srcReg))
         {
