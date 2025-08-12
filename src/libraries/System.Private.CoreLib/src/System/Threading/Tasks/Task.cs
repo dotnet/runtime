@@ -6739,7 +6739,7 @@ namespace System.Threading.Tasks
                 // since if argument was strongly-typed as an array, it would have bound to the array-based overload.
                 if (tasks.GetType() == typeof(List<TTask>))
                 {
-                    return WhenAnyCore((ReadOnlySpan<TTask>)CollectionsMarshal.AsSpan(Unsafe.As<List<TTask>>(tasks)));
+                    return WhenAnyCore((ReadOnlySpan<TTask>)CollectionsMarshal.AsSpan((List<TTask>)tasks));
                 }
                 if (tasks is TTask[] tasksAsArray)
                 {
