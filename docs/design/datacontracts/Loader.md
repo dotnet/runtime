@@ -74,6 +74,7 @@ TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
+IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
@@ -472,6 +473,33 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
         }
     } while (table != TargetPointer.Null);
     return TargetPointer.Null;
+}
+
+IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table)
+{
+    Data.ModuleLookupMap lookupMap = new Data.ModuleLookupMap(table);
+    // have to read lookupMap an extra time upfront because only the first map
+    // has valid supportedFlagsMask
+    TargetNUInt supportedFlagsMask = target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
+    uint index = 1;
+    do
+    {
+        uint count = target.Read<uint>(table + /*ModuleLookupMap::Count*/);
+        if (index < count)
+        {
+            TargetPointer entryAddress = target.ReadPointer(table + /*ModuleLookupMap::TableData*/) + (ulong)(index * target.PointerSize);
+            TargetPointer rawValue = target.ReadPointer(entryAddress);
+            ulong maskedValue = rawValue & ~(supportedFlagsMask.Value);
+            if (maskedValue != 0)
+                yield return (new TargetPointer(maskedValue), index);
+            index++;
+        }
+        else
+        {
+            table = target.ReadPointer(table + /*ModuleLookupMap::Next*/);
+            index -= count;
+        }
+    } while (table != TargetPointer.Null);
 }
 
 bool IsCollectible(ModuleHandle handle)

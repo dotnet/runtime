@@ -123,6 +123,12 @@ internal struct DacpModuleData
     public ulong dwModuleIndex; // Always 0 - .NET no longer has this
 }
 
+internal enum ModuleMapType
+{
+    TYPEDEFTOMETHODTABLE = 0x0,
+    TYPEREFTOMETHODTABLE = 0x1
+}
+
 internal struct DacpMethodTableData
 {
     public int bIsFree; // everything else is NULL if this is true.

@@ -383,6 +383,33 @@ internal readonly struct Loader_1 : ILoader
         return TargetPointer.Null;
     }
 
+    IEnumerable<(TargetPointer, uint)> ILoader.IterateModuleLookupMap(TargetPointer table)
+    {
+        Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+        // have to read lookupMap an extra time upfront because only the first map
+        // has valid supportedFlagsMask
+        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        uint index = 1;
+        do
+        {
+            lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
+            if (index < lookupMap.Count)
+            {
+                TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
+                TargetPointer rawValue = _target.ReadPointer(entryAddress);
+                ulong maskedValue = rawValue & ~(supportedFlagsMask.Value);
+                if (maskedValue != 0)
+                    yield return (new TargetPointer(maskedValue), index);
+                index++;
+            }
+            else
+            {
+                table = lookupMap.Next;
+                index -= lookupMap.Count;
+            }
+        } while (table != TargetPointer.Null);
+    }
+
     bool ILoader.IsCollectible(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

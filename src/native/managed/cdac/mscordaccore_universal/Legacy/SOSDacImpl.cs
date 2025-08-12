@@ -2143,7 +2143,56 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, pCallback) : HResults.E_NOTIMPL;
     int ISOSDacInterface.TraverseModuleMap(int mmt, ClrDataAddress moduleAddr, void* pCallback, void* token)
-        => _legacyImpl is not null ? _legacyImpl.TraverseModuleMap(mmt, moduleAddr, pCallback, token) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        if (moduleAddr == 0)
+            hr = HResults.E_INVALIDARG;
+        else
+        {
+            try
+            {
+                Contracts.ILoader loader = _target.Contracts.Loader;
+                TargetPointer moduleAddrPtr = moduleAddr.ToTargetPointer(_target);
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(moduleAddrPtr);
+                Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+                IEnumerable<(TargetPointer, uint)>? elements = null;
+                switch ((ModuleMapType)mmt)
+                {
+                    case ModuleMapType.TYPEDEFTOMETHODTABLE:
+                        elements = loader.IterateModuleLookupMap(lookupTables.TypeDefToMethodTable);
+                        break;
+                    case ModuleMapType.TYPEREFTOMETHODTABLE:
+                        elements = loader.IterateModuleLookupMap(lookupTables.TypeRefToMethodTable);
+                        break;
+                    default:
+                        hr = HResults.E_INVALIDARG;
+                        break;
+                }
+                if (elements != null && hr == HResults.S_OK)
+                {
+                    foreach ((TargetPointer element, uint index) in elements)
+                    {
+                        // Call the callback with each element
+                        var callback = (delegate* unmanaged[Stdcall]<uint, ClrDataAddress, void*, void>)pCallback;
+                        callback(index, element.ToClrDataAddress(_target), token);
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+#if DEBUG
+            if (_legacyImpl is not null)
+            {
+                // side effects here so dumpmodule -mt will print twice in debug, ensure that they match
+                int hrLocal = _legacyImpl.TraverseModuleMap(mmt, moduleAddr, pCallback, token);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, void* pCallback, void* token)
         => _legacyImpl is not null ? _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, pCallback, token) : HResults.E_NOTIMPL;
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
