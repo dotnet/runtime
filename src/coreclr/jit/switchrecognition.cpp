@@ -35,9 +35,6 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             continue;
         }
 
-// Limit to XARCH, ARM is already doing a great job with such comparisons using
-// a series of ccmp instruction (see ifConvert phase).
-#ifdef TARGET_XARCH
         // block->KindIs(BBJ_COND) check is for better throughput.
         if (block->KindIs(BBJ_COND) && optSwitchDetectAndConvert(block))
         {
@@ -47,10 +44,7 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             // Converted switches won't have dominant cases, so we can skip the switch peeling check.
             assert(!block->GetSwitchTargets()->HasDominantCase());
         }
-        else
-#endif
-
-            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
+        else if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
         {
             fgPeelSwitch(block);
             modified = true;
