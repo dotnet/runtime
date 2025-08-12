@@ -69,18 +69,18 @@ static bool CanFlushUsingMembarrier(void)
 //
 // Tracks if the OS supports membarrier syscall
 //
-static int s_flushUsingMemBarrier = 0;
+static bool s_flushUsingMemBarrier = false;
 #endif // HAVE_SYS_MEMBARRIER_H
 
 #if !defined(HOST_APPLE) && !defined(HOST_WASM)
-// Helper memory page used by the FlushProcessWriteBuffers
+// Helper memory page used by the fallback path
 static uint8_t* g_helperPage = 0;
 
-// Mutex to make the FlushProcessWriteBuffersMutex thread safe
+// Mutex to make the fallback path thread safe
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
 static size_t s_pageSize = 0;
-#endif // !TARGET_APPLE
+#endif // !TARGET_APPLE && !HOST_WASM
 
 static bool s_initializedMemoryBarrierSuccessfullyInitialized = false;
 
@@ -117,7 +117,7 @@ bool minipal_initialize_memory_barrier_process_wide(void)
             return false;
         }
 
-        // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
+        // Verify that the s_helperPage is really aligned to the s_pageSize
         assert((((size_t)g_helperPage) & (s_pageSize - 1)) == 0);
 
         // Locking the page ensures that it stays in memory during the two mprotect
@@ -139,12 +139,15 @@ bool minipal_initialize_memory_barrier_process_wide(void)
     }
 #endif // !HOST_WASM && !HOST_APPLE
 
-    return s_initializedMemoryBarrierSuccessfullyInitialized = true;
+    s_initializedMemoryBarrierSuccessfullyInitialized = true;
+    return true;
 }
 
 // Flush write buffers of processors that are executing threads of the current process
 void minipal_memory_barrier_process_wide(void)
 {
+    assert(s_initializedMemoryBarrierSuccessfullyInitialized);
+
 #ifndef TARGET_WASM
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
