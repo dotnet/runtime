@@ -3014,8 +3014,8 @@
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
   </data>
-  <data name="NotSupported_TypeBuilderInstantiation_GetMember" xml:space="preserve">
-    <value>This type does not support resolving {0}. Use {1} instead.</value>
+  <data name="NotSupported_TypeBuilderInstantiation_ResolvingMembers" xml:space="preserve">
+    <value>This type does not support resolving members. Use TypeBuilder.{0} instead.</value>
   </data>
   <data name="NotSupported_DBNullSerial" xml:space="preserve">
     <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
