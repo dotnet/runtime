@@ -257,7 +257,7 @@ namespace System.Net.WebSockets.Compression
         {
             try
             {
-                return CreateZLibStreamForInflate(_windowBits);
+                return ZLibStreamHandle.CreateForInflate(_windowBits);
             }
             catch (Exception ex)
             {

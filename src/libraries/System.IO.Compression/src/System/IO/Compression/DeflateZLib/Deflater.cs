@@ -33,7 +33,7 @@ namespace System.IO.Compression
 
             try
             {
-                _zlibStream = ZLibNative.CreateZLibStreamForDeflate(compressionLevel, windowBits, memLevel, strategy);
+                _zlibStream = ZLibNative.ZLibStreamHandle.CreateForDeflate(compressionLevel, windowBits, memLevel, strategy);
             }
             catch (ZLibNative.ZLibNativeException ex)
             {

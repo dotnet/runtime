@@ -208,7 +208,7 @@ namespace System.Net.WebSockets.Compression
         {
             try
             {
-                return CreateZLibStreamForDeflate(level: CompressionLevel.DefaultCompression,
+                return ZLibStreamHandle.CreateForDeflate(level: CompressionLevel.DefaultCompression,
                     windowBits: _windowBits,
                     memLevel: Deflate_DefaultMemLevel,
                     strategy: CompressionStrategy.DefaultStrategy);

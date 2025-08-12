@@ -41,7 +41,7 @@ namespace System.IO.Compression
 
             try
             {
-                _zlibStream = ZLibNative.CreateZLibStreamForInflate(windowBits);
+                _zlibStream = ZLibNative.ZLibStreamHandle.CreateForInflate(windowBits);
             }
             catch (ZLibNative.ZLibNativeException ex)
             {
