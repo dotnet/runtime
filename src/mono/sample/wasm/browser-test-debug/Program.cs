@@ -96,6 +96,17 @@ namespace Sample
                     throw new Exception($"AssertHelper.Equal failed. Expected: {FormatIfArray(expected)}, Actual: {FormatIfArray(actual)}.");
                 }
             }
+            public static void Same(object? expected, object? actual)
+            {
+                if (!ReferenceEquals(expected, actual))
+                {
+                    string expectedStr = FormatIfArray(expected);
+                    string actualStr = FormatIfArray(actual);
+                    throw new Exception(
+                        $"AssertHelper.Same failed. Expected and actual are not the same reference.\nExpected: {expectedStr}\nActual: {actualStr}"
+                    );
+                }
+            }
             public static void True(bool condition)
             {
                 if (!condition)
@@ -105,6 +116,14 @@ namespace Sample
             {
                 if (condition)
                     throw new Exception("AssertHelper.False failed. Condition was true.");
+            }
+            public static void StartsWith(string expectedStart, string? actual)
+            {
+                if (actual == null)
+                    throw new Exception($"AssertHelper.StartsWith failed. Actual string was null. Expected start: \"{expectedStart}\".");
+
+                if (!actual.StartsWith(expectedStart, StringComparison.Ordinal))
+                    throw new Exception($"AssertHelper.StartsWith failed. Expected string starting with: \"{expectedStart}\". Actual: \"{actual}\".");
             }
         }
         public static async Task<int> Main(string[] args)
@@ -209,13 +228,53 @@ namespace Sample
                 }
         }
 
+        public static unsafe void JsImportVoidPtr(IntPtr xvalue)
+        {
+            void* value = (void*)xvalue;
+
+            JavaScriptTestHelper.store1_VoidPtr(value);
+            void* res = JavaScriptTestHelper.retrieve1_VoidPtr();
+            Assert.True(value == res);
+            res = JavaScriptTestHelper.echo1_VoidPtr(value);
+            Assert.True(value == res);
+
+            var actualJsType = JavaScriptTestHelper.getType1();
+            string expectedType = IntPtr.Size == 4 ? "number" : "bigint";
+            Assert.Equal(expectedType, actualJsType);
+        }
+
+        public static async Task JsImportTaskTypes()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                object a = new object();
+                Exception e = new Exception();
+                JSObject j = JSHost.GlobalThis;
+                Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
+                Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
+                Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
+                Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
+                GC.Collect();
+                await Task.Delay(10);
+            }
+        }
+        public static void JsImportInstanceMember()
+        {
+            var actual = JavaScriptTestHelper.MemberEcho("t-e-s-t");
+            Assert.StartsWith("t-e-s-t-w-i-t-h-i-n-s-t-a-n-c-e", actual);
+        }
         [JSExport]
         public static async Task DoTestMethod()
         {
             await JavaScriptTestHelper.InitializeAsync();
-            int[] testData = new int[] { 1, 2, 3, int.MaxValue, int.MinValue };
-            object[] objectTestData = { new object[] { string.Intern("hello"), string.Empty } };
-            JsImportObjectArray(objectTestData);
+            //int[] testData = new int[] { 1, 2, 3, int.MaxValue, int.MinValue };
+            //object[] objectTestData = { new object[] { string.Intern("hello"), string.Empty } };
+            JsImportInstanceMember();
+            JsImportInstanceMember();
+            await JsImportTaskTypes();
+            //JsImportVoidPtr((IntPtr)42);
+
+            //JsImportObjectArray(objectTestData);
             //JsImportArraySegmentOfInt32();
             //JsImportArraySegmentOfDouble();
             //JsImportSpanOfDouble();
