@@ -480,8 +480,8 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     if (sArgPlacerDst.HasAsyncContinuation())
     {
         // The async continuation is implicit in both signatures.
-        sArgPlacerSrc.GetAsyncContinuatioLoc(&sArgSrc);
-        sArgPlacerDst.GetAsyncContinuatioLoc(&sArgDst);
+        sArgPlacerSrc.GetAsyncContinuationLoc(&sArgSrc);
+        sArgPlacerDst.GetAsyncContinuationLoc(&sArgDst);
 
         if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
             return FALSE;
