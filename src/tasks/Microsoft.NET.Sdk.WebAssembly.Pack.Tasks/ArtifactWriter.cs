@@ -13,13 +13,13 @@ namespace Microsoft.NET.Sdk.WebAssembly;
 
 public static class ArtifactWriter
 {
-    public static bool PersistFileIfChanged<T>(this Task task, T manifest, string artifactPath, JsonTypeInfo<T> serializer)
+    public static bool PersistFileIfChanged<T>(TaskLoggingHelper log, T manifest, string artifactPath, JsonTypeInfo<T> serializer)
     {
         var data = JsonSerializer.SerializeToUtf8Bytes(manifest, serializer);
-        return PersistFileIfChanged(task, data, artifactPath);
+        return PersistFileIfChanged(log, data, artifactPath);
     }
 
-    public static bool PersistFileIfChanged(this Task task, byte[] data, string artifactPath)
+    public static bool PersistFileIfChanged(TaskLoggingHelper log, byte[] data, string artifactPath)
     {
         var newHash = ComputeHash(data);
         var fileExists = File.Exists(artifactPath);
@@ -27,19 +27,19 @@ public static class ArtifactWriter
 
         if (!fileExists)
         {
-            task.Log.LogMessage(MessageImportance.Low, $"Creating artifact because artifact file '{artifactPath}' does not exist.");
+            log.LogMessage(MessageImportance.Low, $"Creating artifact because artifact file '{artifactPath}' does not exist.");
             File.WriteAllBytes(artifactPath, data);
             return true;
         }
         else if (!string.Equals(newHash, existingManifestHash, StringComparison.Ordinal))
         {
-            task.Log.LogMessage(MessageImportance.Low, $"Updating artifact because artifact version '{newHash}' is different from existing artifact hash '{existingManifestHash}'.");
+            log.LogMessage(MessageImportance.Low, $"Updating artifact because artifact version '{newHash}' is different from existing artifact hash '{existingManifestHash}'.");
             File.WriteAllBytes(artifactPath, data);
             return true;
         }
         else
         {
-            task.Log.LogMessage(MessageImportance.Low, $"Skipping artifact updated because artifact version '{existingManifestHash}' has not changed.");
+            log.LogMessage(MessageImportance.Low, $"Skipping artifact updated because artifact version '{existingManifestHash}' has not changed.");
             return false;
         }
     }
