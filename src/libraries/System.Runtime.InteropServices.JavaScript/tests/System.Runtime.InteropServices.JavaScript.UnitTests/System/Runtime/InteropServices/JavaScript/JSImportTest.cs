@@ -665,13 +665,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalIntPtrCases))]
         public void JsImportIntPtr(IntPtr value)
         {
+            string expectedType = IntPtr.Size == 4 ? "number" : "bigint";
             JsImportTest(value,
                 JavaScriptTestHelper.store1_IntPtr,
                 JavaScriptTestHelper.retrieve1_IntPtr,
                 JavaScriptTestHelper.echo1_IntPtr,
                 JavaScriptTestHelper.throw1_IntPtr,
                 JavaScriptTestHelper.identity1_IntPtr,
-                "number");
+                expectedType);
         }
 
         #endregion IntPtr
@@ -691,7 +692,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(value == res);
 
             var actualJsType = JavaScriptTestHelper.getType1();
-            Assert.Equal("number", actualJsType);
+            string expectedType = IntPtr.Size == 4 ? "number" : "bigint";
+            Assert.Equal(expectedType, actualJsType);
         }
 
         #endregion VoidPtr
