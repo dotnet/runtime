@@ -2415,21 +2415,24 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         if (methodTable == 0)
             hr = HResults.E_INVALIDARG;
-        if (initializationStatus == null)
+        else if (initializationStatus == null)
             hr = HResults.E_POINTER;
-        try
+        else
         {
-            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
-            *initializationStatus = (MethodTableInitializationFlags)0;
-            if (rtsContract.IsClassInited(methodTableHandle))
-                *initializationStatus = MethodTableInitializationFlags.MethodTableInitialized;
-            if (rtsContract.IsInitError(methodTableHandle))
-                *initializationStatus |= MethodTableInitializationFlags.MethodTableInitializationFailed;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
+            try
+            {
+                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+                Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+                *initializationStatus = (MethodTableInitializationFlags)0;
+                if (rtsContract.IsClassInited(methodTableHandle))
+                    *initializationStatus = MethodTableInitializationFlags.MethodTableInitialized;
+                if (rtsContract.IsInitError(methodTableHandle))
+                    *initializationStatus |= MethodTableInitializationFlags.MethodTableInitializationFailed;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
         }
 #if DEBUG
         if (_legacyImpl14 is not null)

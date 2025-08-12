@@ -770,6 +770,12 @@ And the following enumeration definitions
         TemporaryEntryPointAssigned = 0x04,
     }
 
+    internal enum MethodTableAuxiliaryFlags : uint
+    {
+        Initialized = 0x0001,
+        IsInitError = 0x0100,
+    }
+
 ```
 
 Internal to the contract in order to answer queries about method descriptors,
