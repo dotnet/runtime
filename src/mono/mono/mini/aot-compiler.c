@@ -4976,7 +4976,7 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 		csig->params [2] = m_class_get_byval_arg (mono_defaults.boolean_class);
 		add_method (acfg, get_runtime_invoke_sig (csig));
 
-		/* runtime-invoke used by finalizers */
+		/* runtime-invoke used by finalizers  */
 		add_method (acfg, get_runtime_invoke (acfg, get_method_nofail (mono_defaults.object_class, "Finalize", 0, 0), TRUE));
 
 		/* This is used by mono_runtime_capture_context () */
