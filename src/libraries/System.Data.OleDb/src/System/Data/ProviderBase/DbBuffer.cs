@@ -357,7 +357,7 @@ namespace System.Data.ProviderBase
         {
             Debug.Assert(null != structure, "null structure");
             offset += BaseOffset;
-            ValidateCheck(offset, Marshal.SizeOf(structure));
+            ValidateCheck(offset, Marshal.SizeOf<T>());
             Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
 
             bool mustRelease = false;
