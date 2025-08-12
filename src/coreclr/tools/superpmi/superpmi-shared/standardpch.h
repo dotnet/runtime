@@ -15,9 +15,6 @@
 #define DEBUG_BREAK DebugBreak()
 #endif
 
-// filesystem fails parsing if included after PAL header
-#include <filesystem>
-
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif // WIN32_LEAN_AND_MEAN
@@ -71,7 +68,6 @@
 #include <string>
 #include <algorithm>
 #include <vector>
-#include <fstream>
 
 
 #ifdef USE_MSVCDIS
