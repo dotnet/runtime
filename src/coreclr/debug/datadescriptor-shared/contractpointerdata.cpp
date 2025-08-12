@@ -13,7 +13,6 @@ constexpr const void* POINTER_DATA_NAME_INTERNAL[] = {
 
 extern "C"
 {
-    // without an extern declaration, clang does not emit this global into the object file
-    extern const void* const* POINTER_DATA_NAME = &POINTER_DATA_NAME_INTERNAL[0];
+    const void* const* POINTER_DATA_NAME = &POINTER_DATA_NAME_INTERNAL[0];
 };
 
