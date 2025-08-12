@@ -15,8 +15,7 @@ namespace System.Reflection.Emit.Tests
 
             type.DefineGenericParameters("T");
             
-            Type createdType = type.CreateType();
-            Type instantiatedType = createdType.MakeGenericType(typeof(string));
+            Type instantiatedType = type.MakeGenericType(typeof(string));
             
             AssertThrowsWithHelpfulMessage(() => instantiatedType.GetConstructor(Type.EmptyTypes), nameof(TypeBuilder.GetConstructor));
             AssertThrowsWithHelpfulMessage(() => instantiatedType.GetConstructors(), nameof(TypeBuilder.GetConstructor));
