@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ClassB.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="AssemblyA.csproj" />
+    <ProjectReference Include="AssemblyC.csproj" />
+  </ItemGroup>
+</Project>
