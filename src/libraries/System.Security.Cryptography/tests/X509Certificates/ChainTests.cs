@@ -1178,10 +1178,11 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
                 Assert.False(chain.Build(cert));
 
-                if (PlatformDetection.IsAndroid)
+                if (PlatformDetection.IsAndroid || PlatformDetection.IsApplePlatform26OrLater)
                 {
                     // Android always validates trust as part of building a path,
                     // so violations comes back as PartialChain with no elements
+                    // Apple 26 no longer block these SKIs since the roots are no longer trusted at all and are expired.
                     Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
                     Assert.Equal(0, chain.ChainElements.Count);
                 }
