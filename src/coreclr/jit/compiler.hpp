@@ -1935,8 +1935,9 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
 inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object, bool onStack)
 {
+    static_assert_no_msg(VPTR_OFFS == 0);
     assert(onStack || object->TypeIs(TYP_REF));
-    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT | GTF_IND_NONNULL);
     return result;
 }
 
@@ -5573,14 +5574,7 @@ bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned lim
                                                                     : BasicBlockVisit::Continue;
     });
 
-    if (result == BasicBlockVisit::Abort)
-    {
-        JITDUMP("Loop " FMT_LP ": exceeds complexity limit %u\n", loop->GetIndex(), limit);
-        return true;
-    }
-
-    JITDUMP("Loop " FMT_LP ": complexity %u does not exceed limit %u\n", loop->GetIndex(), loopComplexity, limit);
-    return false;
+    return (result == BasicBlockVisit::Abort);
 }
 
 /*****************************************************************************/

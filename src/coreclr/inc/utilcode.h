@@ -3349,6 +3349,16 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
 void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
 
 //*****************************************************************************
+//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+INT64 GetRiscV64AuipcItype(UINT32 * pCode);
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
+
+//*****************************************************************************
 // Returns whether the offset fits into bl instruction
 //*****************************************************************************
 inline bool FitsInThumb2BlRel24(INT32 imm24)

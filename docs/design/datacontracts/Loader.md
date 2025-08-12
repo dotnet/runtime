@@ -56,17 +56,22 @@ ModuleHandle GetModuleHandleFromModulePtr(TargetPointer module);
 ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
+string GetAppDomainFriendlyName();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
+IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
+IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
+
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
+TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 bool IsCollectible(ModuleHandle handle);
@@ -90,6 +95,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
+| `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
+| `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
 | `Module` | `FieldDefToDescMap` | Mapping table |
 | `Module` | `ManifestModuleReferencesMap` | Mapping table |
 | `Module` | `MemberRefToDescMap` | Mapping table |
@@ -106,6 +113,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
 | `Assembly` | `Level` | File load level of the assembly |
 | `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
+| `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
+| `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
 | `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
 | `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
 | `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |
@@ -116,6 +125,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
 | `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
+| `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
+| `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
@@ -125,7 +136,15 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
 | `ArrayListBlock` | `Size` | Size of data section in block |
 | `ArrayListBlock` | `ArrayStart` | Start of data section in block |
-| `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
+| `EETypeHashTable` | `Buckets` | Pointer to hash table buckets |
+| `EETypeHashTable` | `Count` | Count of elements in the hash table |
+| `EETypeHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
+| `EETypeHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
+| `InstMethodHashTable` | `Buckets` | Pointer to hash table buckets |
+| `InstMethodHashTable` | `Count` | Count of elements in the hash table |
+| `InstMethodHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
+| `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
+
 
 
 ### Global variables used:
@@ -270,6 +289,15 @@ TargetPointer GetRootAssembly()
     return appDomain.RootAssembly;
 }
 
+string ILoader.GetAppDomainFriendlyName()
+{
+    TargetPointer appDomainPointer = target.ReadGlobalPointer(Constants.Globals.AppDomain);
+    TargetPointer appDomain = target.ReadPointer(appDomainPointer)
+    TargetPointer pathStart = appDomain + /* AppDomain::FriendlyName offset */;
+    char[] name = // Read<char> from target starting at pathStart until null terminator
+    return new string(name);
+}
+
 TargetPointer ILoader.GetModule(ModuleHandle handle)
 {
     return handle.Address;
@@ -316,6 +344,30 @@ bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint 
     buffer = target.ReadPointer(growableSymbolStream + /* CGrowableSymbolStream::Buffer offset */);
     size = target.Read<uint>(growableSymbolStream + /* CGrowableSymbolStream::Size offset */);
     return true;
+}
+
+IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle)
+{
+    TargetPointer availableTypeParams = target.ReadPointer(handle.Address + /* Module::AvailableTypeParams offset */);
+
+    if (availableTypeParams == TargetPointer.Null) return [];
+
+    // EETypeHashTable is read as a DacEnumerableHash table.
+    // For more information on how this is read, see section below.
+    EETypeHashTable typeHashTable = // read EETypeHashTable at availableTypeParams
+    return typeHashTable.Entries.Select(entry => entry.TypeHandle);
+}
+
+IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle)
+{
+    TargetPointer instMethodHashTable = target.ReadPointer(handle.Address + /* Module::InstMethodHashTable offset */);
+
+    if (instMethodHashTable == TargetPointer.Null) return [];
+
+    // InstMethodHashTable is read as a DacEnumerableHash table.
+    // For more information on how this is read, see section below.
+    InstMethodHashTable methodHashTable = // read InstMethodHashTable at instMethodHashTable
+    return methodHashTable.Entries.Select(entry => entry.MethodDesc);
 }
 
 bool IsProbeExtensionResultValid(ModuleHandle handle)
@@ -373,6 +425,14 @@ TargetPointer GetILBase(ModuleHandle handle)
     return target.ReadPointer(handle.Address + /* Module::Base offset */);
 }
 
+TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
+{
+    PEAssembly peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+    AssemblyBinder binder = target.ReadPointer(peAssembly + /* PEAssembly::AssemblyBinder offset */);
+    ObjectHandle objectHandle = new ObjectHandle(binder);
+    return objectHandle.Object;
+}
+
 ModuleLookupTables GetLookupTables(ModuleHandle handle)
 {
     return new ModuleLookupTables(
@@ -395,20 +455,20 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
     uint index = rid;
     // have to read lookupMap an extra time upfront because only the first map
     // has valid supportedFlagsMask
-    TargetNUInt supportedFlagsMask = _target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
+    TargetNUInt supportedFlagsMask = target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
     do
     {
-        if (index < _target.Read<uint>(table + /*ModuleLookupMap::Count*/))
+        if (index < target.Read<uint>(table + /*ModuleLookupMap::Count*/))
         {
-            TargetPointer entryAddress = _target.ReadPointer(lookupMap + /*ModuleLookupMap::TableData*/) + (ulong)(index * _target.PointerSize);
-            TargetPointer rawValue = _target.ReadPointer(entryAddress);
+            TargetPointer entryAddress = target.ReadPointer(lookupMap + /*ModuleLookupMap::TableData*/) + (ulong)(index * target.PointerSize);
+            TargetPointer rawValue = target.ReadPointer(entryAddress);
             flags = rawValue & supportedFlagsMask;
             return rawValue & ~(supportedFlagsMask.Value);
         }
         else
         {
-            table = _target.ReadPointer(lookupMap + /*ModuleLookupMap::Next*/);
-            index -= _target.Read<uint>(lookupMap + /*ModuleLookupMap::Count*/);
+            table = target.ReadPointer(lookupMap + /*ModuleLookupMap::Next*/);
+            index -= target.Read<uint>(lookupMap + /*ModuleLookupMap::Count*/);
         }
     } while (table != TargetPointer.Null);
     return TargetPointer.Null;
@@ -450,4 +510,74 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
 }
 
+```
+
+### DacEnumerableHash (EETypeHashTable and InstMethodHashTable)
+
+Both `EETypeHashTable` and `InstMethodHashTable` are based on the templated `DacEnumerableHash`. Because the base class is templated on the derived type, offsets may be different in derived types.
+
+The base implementation of `DacEnumerableHash` uses four datadescriptors:
+| Datadescriptor | Purpose |
+| --- | --- |
+| `Buckets` | Pointer to the bucket array |
+| `Count` | Number of elements in the hash table |
+| `VolatileEntryValue` | The data held by an entry, defined by the derived class |
+| `VolatileEntryNextEntry` | The next pointer on an hash table entry |
+
+The hash table is laid out as an array of `VolatileEntry` pointers's (buckets), each possibly forming a chain for values that hash into that bucket. The first three buckets are special and reserved for metadata. Instead of containing a `VolatileEntry`, these pointers are read as values with the following meanings.
+
+| Reserved Bucket offset | Purpose |
+| --- | --- |
+| `0` | Length of the Bucket array, this value does not include the first 3 slots which are special |
+| `1` | Pointer to the next bucket array, not currently used in the cDAC |
+| `2` | End sentinel for the current bucket array, not currently used in the cDAC |
+
+The current cDAC implementation does not use the 'hash' part of the table at all. Instead it iterates all elements in the table. Following the existing iteration logic in the runtime (and DAC), resizing the table while iterating is not supported. Given this constraint, the pointer to the next bucket array (resized data table) and the current end sentinel are not required to iterate all entries.
+
+To read all entries in the hash table:
+1. Read the length bucket to find the number of chains `n`.
+2. Initialize a list of elements `entries = []`.
+3. For each chain, (buckets with offsets `3..n + 3`):
+    1. Read the pointer in the bucket as `volatileEntryPtr`.
+    2. If `volatileEntryPtr & 0x1 == 0x1`, this is an end sentinel and we stop reading this chain.
+    3. Otherwise, add `volatileEntryPtr + /* VolatileEntryValue offset */` to entries. This points to the derived class defined data type.
+    4. Set `volatileEntryPtr` to the value of the pointer located at `volatileEntryPtr + /* VolatileEntryNextEntry offset */` and go to step 3.2.
+4. Return `entries` to be further parsed by derived classes.
+
+While both EETypeHashTable and InstMethodHashTable store pointer sized data types, they both use the LSBs as special flags.
+
+#### EETypeHashTable
+EETypeHashTable uses the LSB to indicate if the TypeHandle is a hot entry. The cDAC implementation separates each value `value` in the table into two parts. The actual TypeHandle pointer and the associated flags.
+
+```csharp
+class EETypeHashTable
+{
+    private const ulong FLAG_MASK = 0x1ul;
+
+    public IReadOnlyList<Entry> Entires { get; }
+
+    public readonly struct Entry(TargetPointer value)
+    {
+        public TargetPointer TypeHandle { get; } = value & ~FLAG_MASK;
+        public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
+}
+```
+
+#### InstMethodHashTable
+InstMethodHashTable uses the 2 LSBs as flags for the MethodDesc. The cDAC implementation separates each value `value` in the table into two parts. The actual MethodDesc pointer and the associated flags.
+
+```csharp
+class InstMethodHashTable
+{
+    private const ulong FLAG_MASK = 0x3ul;
+
+    public IReadOnlyList<Entry> Entires { get; }
+
+    public readonly struct Entry(TargetPointer value)
+    {
+        public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
+        public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
+}
 ```

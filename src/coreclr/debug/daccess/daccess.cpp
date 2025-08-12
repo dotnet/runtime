@@ -4175,7 +4175,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             goto Exit;
         }
 
-        if (IsPossibleCodeAddress(taddr) != S_OK)
+        if ( (status = IsPossibleCodeAddress(taddr)) != S_OK)
         {
             goto Exit;
         }
@@ -7033,7 +7033,7 @@ CLRDataCreateInstance(REFIID iid,
                 HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
                 _ASSERTE(SUCCEEDED(qiRes));
                 CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pMutableTarget, thisImpl);
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.

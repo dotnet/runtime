@@ -936,8 +936,6 @@ namespace Internal.TypeSystem
 
         public static DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, MetadataType currentType, out MethodDesc impl)
         {
-            Debug.Assert(interfaceMethod.Signature.IsStatic);
-
             MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
             bool foundInterface = IsInterfaceImplementedOnType(currentType, interfaceType);
 

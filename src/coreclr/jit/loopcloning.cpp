@@ -177,12 +177,13 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         case IndirOfLocal:
         {
             GenTree* addr = comp->gtNewLclvNode(lclNum, TYP_REF);
-            if (indirOffs != 0)
+            if (indirOffs == 0)
             {
-                addr = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
-                                           comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
+                return comp->gtNewMethodTableLookup(addr);
             }
 
+            addr                 = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
+                                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
@@ -3108,6 +3109,7 @@ PhaseStatus Compiler::optCloneLoops()
             // then the method returns false.
             else if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit, countNode))
             {
+                JITDUMP(FMT_LP " exceeds cloning size limit %d\n", loop->GetIndex(), sizeLimit);
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
         }
