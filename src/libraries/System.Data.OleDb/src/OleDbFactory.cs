@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.OleDb
 {
-    [RequiresDynamicCode("OleDbConnection requires dynamic code.")]
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed class OleDbFactory : DbProviderFactory
     {
         public static readonly OleDbFactory Instance = new OleDbFactory();

@@ -14,7 +14,7 @@ namespace System.Data.OleDb
         }
 
 #if NET
-        [RequiresDynamicCode("OleDbConnection requires dynamic code.")]
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
 #endif
         public DataTable GetElements()
         {

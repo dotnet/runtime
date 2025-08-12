@@ -11,7 +11,7 @@ using System.Text;
 
 namespace System.Data.OleDb
 {
-    [RequiresDynamicCode("OleDbConnection requires dynamic code.")]
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     internal sealed class OleDbMetaDataFactory : DbMetaDataFactory
     { // V1.2.3300
 

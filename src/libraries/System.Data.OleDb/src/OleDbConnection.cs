@@ -22,7 +22,7 @@ namespace System.Data.OleDb
     [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed partial class OleDbConnection : DbConnection, ICloneable, IDbConnection
     {
-        internal const string TrimWarning = "OleDbConnection requires dynamic code.";
+        internal const string TrimWarning = OleDbConnection.TrimWarning;
 
         private static readonly object EventInfoMessage = new object();
 
