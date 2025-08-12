@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.InteropServices.JavaScript.Tests;
+using System.Threading.Tasks;
 
 namespace Sample
 {
@@ -23,7 +25,24 @@ namespace Sample
                     for (int i = 0; i < arr.Length; i++)
                     {
                         if (i > 0) items.Append(", ");
-                        items.Append(arr.GetValue(i)?.ToString());
+                        var value = arr.GetValue(i);
+                        // Recursively format nested arrays
+                        items.Append(FormatIfArray(value));
+                    }
+                    items.Append(']');
+                    return items.ToString();
+                }
+                // For collections (e.g., List<object>)
+                if (obj is IEnumerable enumerable && !(obj is string))
+                {
+                    var items = new System.Text.StringBuilder();
+                    items.Append('[');
+                    bool first = true;
+                    foreach (var value in enumerable)
+                    {
+                        if (!first) items.Append(", ");
+                        items.Append(FormatIfArray(value));
+                        first = false;
                     }
                     items.Append(']');
                     return items.ToString();
@@ -42,28 +61,39 @@ namespace Sample
             }
             public static void Equal<T>(T expected, T actual)
             {
+                // Handle nulls
+                if (ReferenceEquals(expected, actual))
+                    return;
+                if (expected is null || actual is null)
+                    throw new Exception($"AssertHelper.Equal failed. Expected: {FormatIfArray(expected)}, Actual: {FormatIfArray(actual)}.");
+
+                // Recursively compare arrays
                 if (expected is Array expectedArray && actual is Array actualArray)
                 {
                     if (expectedArray.Length != actualArray.Length)
-                    {
-                        throw new Exception($"AssertHelper.Equal failed. Array lengths differ. Expected: {expectedArray.Length}, Actual: {actualArray.Length}. Expected: {FormatIfArray(expectedArray)}, Actual: {FormatIfArray(actualArray)}.");
-                    }
+                        throw new Exception($"AssertHelper.Equal failed. Array lengths differ. Expected: {FormatIfArray(expectedArray)}, Actual: {FormatIfArray(actualArray)}.");
+
                     for (int i = 0; i < expectedArray.Length; i++)
                     {
                         var e = expectedArray.GetValue(i);
                         var a = actualArray.GetValue(i);
-                        if (!object.Equals(e, a))
+                        try
                         {
-                            throw new Exception($"AssertHelper.Equal failed at index {i}. Expected: {FormatIfArray(expectedArray)}, Actual: {FormatIfArray(actualArray)}.");
+                            // Recursively call Equal for nested arrays/objects
+                            Equal(e, a);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"AssertHelper.Equal failed at index {i}. Expected: {FormatIfArray(expectedArray)}, Actual: {FormatIfArray(actualArray)}. Inner: {ex.Message}");
                         }
                     }
                     return;
                 }
+
+                // Fallback to default equality
                 if (!object.Equals(expected, actual))
                 {
-                    string expectedStr = FormatIfArray(expected);
-                    string actualStr = FormatIfArray(actual);
-                    throw new Exception($"AssertHelper.Equal failed. Expected: {expectedStr}. Actual: {actualStr}.");
+                    throw new Exception($"AssertHelper.Equal failed. Expected: {FormatIfArray(expected)}, Actual: {FormatIfArray(actual)}.");
                 }
             }
             public static void True(bool condition)
@@ -165,8 +195,13 @@ namespace Sample
                 expected = new object[] { new object[] { JavaScriptTestHelper.createData("test"), JavaScriptTestHelper.createException("test") } };
             }
             var actual = JavaScriptTestHelper.echo1_ObjectArray(expected);
+            Console.WriteLine($"Checking two arrays for equality: expected={0}, actual={1}", 
+                expected == null ? "null" : string.Join(", ", expected), 
+                actual == null ? "null" : string.Join(", ", actual));
+
             Assert.Equal(expected, actual);
 
+            Console.WriteLine("Checking element-wise equality of arrays.");
             if (expected != null) for (int i = 0; i < expected.Length; i++)
                 {
                     var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
