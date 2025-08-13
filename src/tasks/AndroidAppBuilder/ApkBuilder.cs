@@ -395,7 +395,7 @@ public partial class ApkBuilder
             string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
             if (IsCoreCLR)
             {
-                monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent, mainLibraryFileName);
+                monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
             }
             File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
 
@@ -667,7 +667,7 @@ public partial class ApkBuilder
     [GeneratedRegex(@"\.(\d)")]
     private static partial Regex DotNumberRegex();
 
-    private string RenderMonodroidCoreClrTemplate(string monodroidContent, string mainLibraryFileName)
+    private string RenderMonodroidCoreClrTemplate(string monodroidContent)
     {
         // At the moment, we only set the AppContext properties, so it's all done here for simplicity.
         // If we need to add more rendering logic, we can refactor this method later.
@@ -686,7 +686,7 @@ public partial class ApkBuilder
         appContextValues.AppendLine();
 
         // Parse runtime config properties and add them to the AppContext keys and values.
-        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties(mainLibraryFileName);
+        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties();
         int hardwiredAppContextProperties = 3; // For the hardwired AppContext keys and values above.
         int i = 0;
         foreach ((string key, string value) in configProperties)
@@ -703,25 +703,32 @@ public partial class ApkBuilder
         return updatedContent;
     }
 
-    private Dictionary<string, string> ParseRuntimeConfigProperties(string mainLibraryFileName)
+    private Dictionary<string, string> ParseRuntimeConfigProperties()
     {
         var configProperties = new Dictionary<string, string>();
-
-        // Extract assembly name from mainLibraryFileName (e.g., "AndroidSampleApp.dll" -> "AndroidSampleApp")
-        string assemblyName = Path.GetFileNameWithoutExtension(mainLibraryFileName);
-        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), $"{assemblyName}.runtimeconfig.json");
+        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), "runtimeconfig.bin");
 
         try
         {
-            string jsonContent = File.ReadAllText(runtimeConfigPath);
-            using JsonDocument doc = JsonDocument.Parse(jsonContent);
-            JsonElement root = doc.RootElement;
-            if (root.TryGetProperty("runtimeOptions", out JsonElement runtimeOptions) && runtimeOptions.TryGetProperty("configProperties", out JsonElement propertiesJson))
+            if (File.Exists(runtimeConfigPath))
             {
-                foreach (JsonProperty property in propertiesJson.EnumerateObject())
+                using var stream = new FileStream(runtimeConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var reader = new BinaryReader(stream);
+
+                // Read the compressed integer count
+                int count = ReadCompressedInteger(reader);
+
+                // Read each key-value pair
+                for (int i = 0; i < count; i++)
                 {
-                    configProperties[property.Name] = property.Value.ToString();
+                    string key = ReadSerializedString(reader);
+                    string value = ReadSerializedString(reader);
+                    configProperties[key] = value;
                 }
+            }
+            else
+            {
+                logger.LogMessage(MessageImportance.Normal, $"Runtime config file not found at {runtimeConfigPath}");
             }
         }
         catch (Exception ex)
@@ -730,5 +737,39 @@ public partial class ApkBuilder
         }
 
         return configProperties;
+    }
+
+    private static int ReadCompressedInteger(BinaryReader reader)
+    {
+        // This mirrors the format used by BlobBuilder.WriteCompressedInteger
+        byte firstByte = reader.ReadByte();
+
+        if ((firstByte & 0x80) == 0)
+        {
+            // Single byte format
+            return firstByte;
+        }
+        else if ((firstByte & 0xC0) == 0x80)
+        {
+            // Two byte format
+            byte secondByte = reader.ReadByte();
+            return ((firstByte & 0x3F) << 8) | secondByte;
+        }
+        else
+        {
+            // Four byte format
+            byte secondByte = reader.ReadByte();
+            byte thirdByte = reader.ReadByte();
+            byte fourthByte = reader.ReadByte();
+            return ((firstByte & 0x1F) << 24) | (secondByte << 16) | (thirdByte << 8) | fourthByte;
+        }
+    }
+
+    private static string ReadSerializedString(BinaryReader reader)
+    {
+        // This mirrors the format used by BlobBuilder.WriteSerializedString
+        int length = ReadCompressedInteger(reader);
+        byte[] bytes = reader.ReadBytes(length);
+        return System.Text.Encoding.UTF8.GetString(bytes);
     }
 }
