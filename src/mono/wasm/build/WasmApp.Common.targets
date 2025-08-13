@@ -374,7 +374,6 @@
       <_WasmPropRequiresFullNativeRebuild Include="EmccExtraCFlags=$(EmccExtraCFlags)" />
       <_WasmPropRequiresFullNativeRebuild Include="EmccEnableAssertions=$(EmccEnableAssertions)" />
       <_WasmPropRequiresFullNativeRebuild Include="EmccEnvironment=$(EmccEnvironment)" />
-      <_WasmPropRequiresFullNativeRebuild Include="EmccEnvironment=$(EmccEnvironment)" />
       <_WasmPropRequiresFullNativeRebuild Include="WasmInitialHeapSize=$(WasmInitialHeapSize)" />
       <_WasmPropRequiresFullNativeRebuild Include="EmccMaximumHeapSize=$(EmccMaximumHeapSize)" />
       <_WasmPropRequiresFullNativeRebuild Include="EmccStackSize=$(EmccStackSize)" />
