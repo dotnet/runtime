@@ -388,14 +388,14 @@ void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
     pBuffer[0]  = 0x49;
     pBuffer[1]  = 0xBA;
 
-    *((UINT64 UNALIGNED *)&pBuffer[2])  = (UINT64)pv;
+    SET_UNALIGNED_64(&pBuffer[2], pv);
 
     // mov rax, pTarget                 48 b8 xx xx xx xx xx xx xx xx
 
     pBuffer[10] = 0x48;
     pBuffer[11] = 0xB8;
 
-    *((UINT64 UNALIGNED *)&pBuffer[12]) = (UINT64)pTarget;
+    SET_UNALIGNED_64(&pBuffer[12], pTarget);
 
     // jmp rax                          ff e0
 
@@ -427,7 +427,7 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
     // nop                              90
     // call [$ - 10]                    ff 15 f0 ff ff ff
 
-    *((UINT64 UNALIGNED *)&pBufferRW[COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET]) = (UINT64)target;
+    SET_UNALIGNED_64(&pBufferRW[COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET], target);
 
     pBufferRW[-2]  = 0x90;
     pBufferRW[-1]  = 0x90;
@@ -459,7 +459,7 @@ void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     pBufferRW[0]  = 0x48;
     pBufferRW[1]  = 0xB8;
 
-    *((UINT64 UNALIGNED *)&pBufferRW[2]) = (UINT64)target;
+    SET_UNALIGNED_64(&pBufferRW[2], target);
 
     pBufferRW[10] = 0xFF;
     pBufferRW[11] = 0xE0;
