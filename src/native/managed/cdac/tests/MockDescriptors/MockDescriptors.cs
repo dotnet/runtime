@@ -193,6 +193,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.LastThrownObject), DataType.pointer),
             new(nameof(Data.Thread.LinkNext), DataType.pointer),
             new(nameof(Data.Thread.ExceptionTracker), DataType.pointer),
+            new(nameof(Data.Thread.ThreadLocalDataPtr), DataType.pointer),
         ]
     };
 

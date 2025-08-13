@@ -110,8 +110,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         done
 
         echo -o:"$__OutputFile" >> "$__ResponseFile"
-        ## Enable once #114504 is fixed
-        ## echo -O >> "$__ResponseFile"
+        echo -O >> "$__ResponseFile"
         echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
         echo --targetos:$(TargetOS) >> "$__ResponseFile"
         echo --verify-type-and-field-layout >> "$__ResponseFile"
