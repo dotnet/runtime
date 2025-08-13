@@ -212,7 +212,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
 extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure);
 
-extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
+extern "C" void QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
 extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
 #ifdef FEATURE_BASICFREEZE

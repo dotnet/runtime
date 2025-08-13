@@ -853,30 +853,17 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_
     END_QCALL;
 }
 
-extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj)
+extern "C" void QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj)
 {
     QCALL_CONTRACT;
-
-    PCODE funcPtr = 0;
 
     BEGIN_QCALL;
 
     GCX_COOP();
 
     OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
-
-    if (target != NULL)
-    {
-        pObj.Set(target);
-
-        MethodTable* pMT = target->GetMethodTable();
-
-        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
-    }
-
+    pObj.Set(target);
     END_QCALL;
-
-    return (void*)funcPtr;
 }
 
 /*==========================WaitForPendingFinalizers============================

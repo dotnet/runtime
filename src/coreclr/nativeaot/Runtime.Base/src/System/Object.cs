@@ -34,6 +34,9 @@ namespace System
         {
         }
 
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
+        internal static extern void CallFinalize(object o);
+
         internal MethodTable* MethodTable
         {
             get
