@@ -116,7 +116,7 @@ namespace System.Collections.Generic
             // back-compat with subclasses that may have overridden the enumerator behavior.
             if (enumerable.GetType() == typeof(Dictionary<TKey, TValue>))
             {
-                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)enumerable;
+                Dictionary<TKey, TValue> source = Unsafe.As<Dictionary<TKey, TValue>>(enumerable);
 
                 if (source.Count == 0)
                 {
@@ -161,7 +161,7 @@ namespace System.Collections.Generic
             }
             else if (enumerable.GetType() == typeof(List<KeyValuePair<TKey, TValue>>))
             {
-                span = CollectionsMarshal.AsSpan((List<KeyValuePair<TKey, TValue>>)enumerable);
+                span = CollectionsMarshal.AsSpan(Unsafe.As<List<KeyValuePair<TKey, TValue>>>(enumerable));
             }
             else
             {
