@@ -139,15 +139,20 @@ bool LoadRealJitLib(HMODULE& jitLib, const std::string& jitLibPath)
         }
 #ifdef TARGET_WINDOWS
         jitLib = ::LoadLibraryExA(jitLibPath.c_str(), NULL, 0);
+        if (jitLib == NULL)
+        {
+            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (%d)", jitLibPath.c_str(), ::GetLastError());
+            return false;
+        }
 #else
         jitLib = ::dlopen(jitLibPath.c_str(), RTLD_LAZY);
         // The simulated DllMain of JIT doesn't do any meaningful initialization. Skip it.
-#endif
         if (jitLib == NULL)
         {
-            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (%d)", jitLibPath.c_str(), errno);
+            LogError("LoadRealJitLib - dlopen failed to load '%s' (%s)", jitLibPath.c_str(), ::dlerror());
             return false;
         }
+#endif
     }
     return true;
 }
