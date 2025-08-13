@@ -3,8 +3,12 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using SourceGenerators.Tests;
 using Xunit;
 
@@ -249,6 +253,52 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             Assert.Equal(3, type.GenericTypeParameters.Length);
             Assert.NotNull(type.GenericTypeParameters[0].GetCustomAttribute<TestClasses.FooAttribute>());
             Assert.NotNull(type.GenericTypeParameters[1].GetCustomAttribute<TestClasses.BarAttribute>());
+        }
+
+        [Fact]
+        public async Task TestFormattableStringInvariantCodeGeneration()
+        {
+            // This test verifies that the fix for CS0234 error works correctly.
+            // It tests a scenario with multiple parameters that would potentially trigger the FormattableString.Invariant code path
+            // and ensures no compilation errors occur due to incorrect namespace references.
+            string testSourceCode = @"
+using Microsoft.Extensions.Logging;
+
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal static partial class TestFormattableStringInvariant
+    {
+        [LoggerMessage(EventId = 10, Level = LogLevel.Information, Message = ""Processing user {userId} with status {status} at {timestamp}"")]
+        public static partial void LogUserProcessing(ILogger logger, int userId, string status, System.DateTime timestamp);
+    }
+}";
+
+            var (diagnostics, results) = await RoslynTestUtils.RunGenerator(
+                new LoggerMessageGenerator(),
+                new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
+                new[] { testSourceCode }).ConfigureAwait(false);
+
+            // Verify no CS0234 errors (the type or namespace name 'FormattableString' does not exist in the namespace 'System.Diagnostics.CodeAnalysis')
+            Assert.Empty(diagnostics.Where(d => d.Id == "CS0234"));
+            
+            // Should have no diagnostics at all
+            Assert.Empty(diagnostics);
+            Assert.Single(results);
+
+            string generatedCode = results[0].SourceText.ToString();
+
+            // Verify the generated code doesn't contain the incorrect namespace reference
+            Assert.DoesNotContain("System.Diagnostics.CodeAnalysis.FormattableString", generatedCode);
+            
+            // If FormattableString.Invariant is used, it should be in the correct namespace
+            if (generatedCode.Contains("FormattableString.Invariant"))
+            {
+                Assert.Contains("global::System.FormattableString.Invariant", generatedCode);
+            }
+            
+            // Verify that the code was generated successfully
+            Assert.True(generatedCode.Length > 0);
+            Assert.Contains("LogUserProcessing", generatedCode);
         }
 
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
