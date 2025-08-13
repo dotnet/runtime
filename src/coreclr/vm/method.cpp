@@ -2223,11 +2223,11 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         }
         if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
         {
-            StubPrecode stubPrecode = (StubPrecode*)PCODEToPINSTR(entryPoint);
+            StubPrecode *stubPrecode = (StubPrecode*)PCODEToPINSTR(entryPoint);
 #ifdef FEATURE_INTERPRETER
-            if (stubPrecode->GetType() == PRECODE_INTERPRETER))
+            if (stubPrecode->GetType() == PRECODE_INTERPRETER)
             {
-                entryPoint = dac_cast<PTR_InterpreterPrecode>(pStubPrecode)->GetData()->ByteCodeAddr;
+                entryPoint = dac_cast<PTR_InterpreterPrecode>(stubPrecode)->GetData()->ByteCodeAddr;
                 pRS = ExecutionManager::FindCodeRange(entryPoint, scanFlag);
             }
             else
