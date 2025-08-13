@@ -12,6 +12,7 @@ namespace System.Linq
         {
             private readonly IList<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
+            private IEnumerator<TSource>? _enumerator;
 
             public SizeOptIListWhereIterator(IList<TSource> source, Func<TSource, bool> predicate)
             {
@@ -26,21 +27,27 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                int index = _state - 1;
-                IList<TSource> source = _source;
-
-                while ((uint)index < (uint)source.Count)
+                switch (_state)
                 {
-                    TSource item = source[index];
-                    index = _state++;
-                    if (_predicate(item))
-                    {
-                        _current = item;
-                        return true;
-                    }
+                    case 1:
+                        _enumerator = _source.GetEnumerator();
+                        _state = 2;
+                        goto case 2;
+                    case 2:
+                        while (_enumerator!.MoveNext())
+                        {
+                            TSource item = _enumerator.Current;
+                            if (_predicate(item))
+                            {
+                                _current = item;
+                                return true;
+                            }
+                        }
+
+                        Dispose();
+                        break;
                 }
 
-                Dispose();
                 return false;
             }
 
@@ -49,32 +56,40 @@ namespace System.Linq
 
             public override TSource[] ToArray()
             {
-                var array = new TSource[_source.Count];
-                int count = 0;
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
 
                 foreach (TSource item in _source)
                 {
                     if (_predicate(item))
                     {
-                        array[count++] = item;
+                        builder.Add(item);
                     }
                 }
 
-                Array.Resize(ref array, count);
-                return array;
+                TSource[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             public override List<TSource> ToList()
             {
-                var list = new List<TSource>(_source.Count);
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
+
                 foreach (TSource item in _source)
                 {
                     if (_predicate(item))
                     {
-                        list.Add(item);
+                        builder.Add(item);
                     }
                 }
-                return list;
+
+                List<TSource> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override int GetCount(bool onlyIfCheap)
