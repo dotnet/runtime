@@ -93,6 +93,25 @@ namespace System
             return members ?? Array.Empty<MemberInfo>();
         }
 
+        private static bool IsFullNameRoundtripCompatible(RuntimeType runtimeType)
+        {
+            // We exclude the types that contain generic parameters because their names cannot be round-tripped.
+            // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be round-tripped.
+            // Theoretically generic types instantiated with generic type definitions can be round-tripped, e.g. List`1<Dictionary`2>.
+            // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
+            // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
+            Type rootElementType = runtimeType.GetRootElementType();
+            if (!rootElementType.IsGenericTypeDefinition && rootElementType.ContainsGenericParameters)
+                return false;
+
+            // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
+            // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
+            if (rootElementType.IsFunctionPointer)
+                return false;
+
+            return true;
+        }
+
         public override Type? GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
         public override string? GetEnumName(object value)
