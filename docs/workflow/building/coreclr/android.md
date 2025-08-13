@@ -16,7 +16,7 @@ This is the internal documentation which outlines experimental support of CoreCL
 - [Building and running a sample app](#building-and-running-a-sample-app)
   - [Building HelloAndroid sample](#building-helloandroid-sample)
   - [Running HelloAndroid sample on an emulator](#running-helloandroid-sample-on-an-emulator)
-    - [WSL2](#wsl2-1)
+    - [WSL2](#wsl2)
 - [Building and running tests on an emulator](#building-and-running-tests-on-an-emulator)
 - [Debugging the runtime and the sample app](#debugging-the-runtime-and-the-sample-app)
   - [Steps](#steps)
