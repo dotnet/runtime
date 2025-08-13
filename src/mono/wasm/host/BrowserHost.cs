@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost.DevServer;
 using Microsoft.WebAssembly.Diagnostics;
@@ -80,7 +81,7 @@ internal sealed class BrowserHost
                             ? aspnetUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
                             : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
 
-        (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args,
+        (ServerURLs serverURLs, IHost host) = await StartWebServerAsync(_args,
                                                                            urls,
                                                                            token);
 
@@ -100,7 +101,7 @@ internal sealed class BrowserHost
         await host.WaitForShutdownAsync(token);
     }
 
-    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
+    private async Task<(ServerURLs, IHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
     {
         Func<WebSocket, Task>? onConsoleConnected = null;
         if (args.ForwardConsoleOutput ?? false)
