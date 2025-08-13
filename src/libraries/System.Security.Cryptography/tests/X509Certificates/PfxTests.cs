@@ -637,7 +637,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // didn't actually load.
             if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
             {
-                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, PfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, PfxPassword, keyStorageFlags))
                 {
                     Assert.Throws<CryptographicException>(
                         () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, PfxPassword));
@@ -652,7 +652,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             else
             {
                 Assert.Throws<CryptographicException>(
-                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, PfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable));
+                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, PfxPassword, keyStorageFlags));
 
                 Assert.Throws<CryptographicException>(
                     () => new X509Certificate2(pfxBytes, PfxPassword, keyStorageFlags));
@@ -753,7 +753,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // didn't actually load.
             if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
             {
-                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
                 {
                     Assert.Throws<CryptographicException>(
                         () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
@@ -768,7 +768,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             else
             {
                 Assert.Throws<CryptographicException>(
-                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable));
+                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
 
                 Assert.Throws<CryptographicException>(
                     () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
@@ -812,7 +812,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // didn't actually load.
             if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
             {
-                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+                using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
                 {
                     Assert.Throws<CryptographicException>(
                         () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
@@ -827,7 +827,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             else
             {
                 Assert.Throws<CryptographicException>(
-                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable));
+                    () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
 
                 Assert.Throws<CryptographicException>(
                     () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
