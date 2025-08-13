@@ -784,19 +784,19 @@ namespace System
 
         public static string Join(string? separator, IEnumerable<string?> values)
         {
-            if (values is List<string?> valuesList)
+            if (values is null)
             {
-                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan(valuesList));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            if (values.GetType() == typeof(List<string?>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
+            {
+                return JoinCore(separator.AsSpan(), CollectionsMarshal.AsSpan((List<string?>)values));
             }
 
             if (values is string?[] valuesArray)
             {
                 return JoinCore(separator.AsSpan(), new ReadOnlySpan<string?>(valuesArray));
-            }
-
-            if (values == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
             using (IEnumerator<string?> en = values.GetEnumerator())
