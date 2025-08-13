@@ -17,17 +17,17 @@ public enum SourceTypes : uint
 ```
 
 ```csharp
-public interface IOffsetMapping
+public readonly struct OffsetMapping
 {
-    public uint NativeOffset { get; }
-    public uint ILOffset { get; }
-    public SourceTypes SourceType { get; }
+    public uint NativeOffset { get; init; }
+    public uint ILOffset { get; init; }
+    public SourceTypes SourceType { get; init; }
 }
 ```
 
 ```csharp
 // Given a code pointer, return the associated native/IL offset mapping
-IEnumerable<IOffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset);
+IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset);
 ```
 
 ## Version 1
@@ -58,7 +58,7 @@ Constants:
 
 ### DebugInfo Stream Encoding
 
-The DebugInfo stream is encoded using varible length 32-bit values with the following scheme:
+The DebugInfo stream is encoded using variable length 32-bit values with the following scheme:
 
 A value can be stored using one or more nibbles (a nibble is a 4-bit value). 3 bits of a nibble are used to store 3 bits of the value, and the top bit indicates if  the following nibble contains rest of the value. If the top bit is not set, then this nibble is the last part of the value. The higher bits of the value are written out first, and the lowest 3 bits are written out last.
 
@@ -82,23 +82,12 @@ Examples:
 | 512 | 0x200 | 89 08 |
 | 513 | 0x201 | 89 18 |
 
-Based on the encoding specification, we use an decoder with the following interface:
-
-```csharp
-class DebugStreamReader(TargetPointer startOfBuffer, uint sizeOfBuffer)
-{
-    // Returns the offset of the next byte relative to the startOfBuffer
-    public uint GetNextByteIndex();
-
-    // Reads the next encoded value and moves to the following nibble
-    public uint ReadEncodedU32();
-}
-```
+Based on the encoding specification, we use a decoder defined original for r2r dump `NibbleReader.cs`
 
 ### Implementation
 
 ``` csharp
-IEnumerable<IOffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset)
+IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset)
 {
     // Get the method's DebugInfo
     if (/*ExecutionManager*/.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
