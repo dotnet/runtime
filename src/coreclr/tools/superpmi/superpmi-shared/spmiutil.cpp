@@ -118,9 +118,13 @@ std::string GetProcessCommandLine()
     FILE* fp = fopen("/proc/self/cmdline", "r");
     if (fp != NULL)
     {
-        fgets(cmdLine, sizeof(cmdLine), fp);
+        std::string result;
+        while (fgets(cmdLine, sizeof(cmdLine), fp) != NULL)
+        {
+            result += cmdLine;
+        }
         fclose(fp);
-        return cmdLine;
+        return result;
     }
 
     return "";
