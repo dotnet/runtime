@@ -2196,23 +2196,23 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 hr = ex.HResult;
             }
+        }
 #if DEBUG
-            if (_legacyImpl is not null)
-            {
-                Dictionary<ClrDataAddress, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target), tuple => tuple.Index);
-                expectedElements.Add(default, 0);
-                void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
+        if (_legacyImpl is not null)
+        {
+            Dictionary<ClrDataAddress, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target), tuple => tuple.Index);
+            expectedElements.Add(default, 0);
+            void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
 
-                TraverseModuleMapCallback callbackDebug = new TraverseModuleMapCallback(TraverseModuleMapCallbackImpl);
-                GCHandle gch = GCHandle.Alloc(callbackDebug);
-                var callbackDebugPtr = (delegate* unmanaged[Stdcall]<uint, ClrDataAddress, void*, void>)Marshal.GetFunctionPointerForDelegate(callbackDebug);
+            TraverseModuleMapCallback callbackDebug = new TraverseModuleMapCallback(TraverseModuleMapCallbackImpl);
+            GCHandle gch = GCHandle.Alloc(callbackDebug);
+            var callbackDebugPtr = (delegate* unmanaged[Stdcall]<uint, ClrDataAddress, void*, void>)Marshal.GetFunctionPointerForDelegate(callbackDebug);
 
-                int hrLocal = _legacyImpl.TraverseModuleMap(mmt, moduleAddr, callbackDebugPtr, tokenDebug);
-                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-                Debug.Assert(expectedElements[default] == elements.Count(), $"cDAC: {elements.Count()} elements, DAC: {expectedElements[default]} elements");
-                GCHandle.FromIntPtr((nint)tokenDebug).Free();
-                gch.Free();
-            }
+            int hrLocal = _legacyImpl.TraverseModuleMap(mmt, moduleAddr, callbackDebugPtr, tokenDebug);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(expectedElements[default] == elements.Count(), $"cDAC: {elements.Count()} elements, DAC: {expectedElements[default]} elements");
+            GCHandle.FromIntPtr((nint)tokenDebug).Free();
+            gch.Free();
         }
 #endif
         return hr;
