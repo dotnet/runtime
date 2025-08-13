@@ -23,9 +23,9 @@ Android SDK and NDK can be automatically installed via the following script:
 set -e
 
 NDK_VER=r27c
-ANDROID_CLI_TOOLS_VER=9123335_latest
-SDK_API_LEVEL=33
-SDK_BUILD_TOOLS=33.0.1
+ANDROID_CLI_TOOLS_VER=13114758_latest
+SDK_API_LEVEL=36
+SDK_BUILD_TOOLS=36.0.0
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     HOST_OS=darwin
