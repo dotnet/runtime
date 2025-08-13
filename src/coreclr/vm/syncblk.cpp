@@ -1783,7 +1783,7 @@ BOOL SyncBlock::TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (m_Lock != NULL)
+    if (m_Lock != (OBJECTHANDLE)NULL)
     {
         GCX_COOP();
         // Extract info from the lock object
