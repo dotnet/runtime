@@ -250,6 +250,10 @@ namespace System.Threading.Tests
         public void Ctor_InvalidNames_Unix()
         {
             AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
+            AssertExtensions.Throws<IOException>("name", null, () => new Mutex("Foo/Bar", options: default));
+            AssertExtensions.Throws<IOException>("name", null, () => new Mutex("Foo\\Bar", options: default));
+            AssertExtensions.Throws<IOException>("name", null, () => new Mutex("Global\\Foo/Bar", options: default));
+            AssertExtensions.Throws<IOException>("name", null, () => new Mutex("Global\\Foo\\Bar", options: default));
         }
 
         [Theory]
@@ -588,6 +592,7 @@ namespace System.Threading.Tests
                                 var newArgs = (object[])args.Clone();
                                 newArgs[4] = true; // isNotAbandonedWaitObjectSignaled
                                 yield return newArgs;
+                            }
                             }
 
                             if (waitCount == 1 || PlatformDetection.IsWindows)
@@ -971,9 +976,75 @@ namespace System.Threading.Tests
             }
         }
 
+        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void NamedMutex_OtherEvent_NotCompatible()
+        {
+            using Mutex m = new Mutex(Guid.NewGuid().ToString("N"), options: default);
+            using ManualResetEvent mre = new(false);
+
+            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAny(new WaitHandle[] { m, mre }, 0));
+        }
+
+        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void NamedMutex_InvalidSharedMemoryHeaderVersion()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string path = $"/tmp/.dotnet/shm/global/{name}";
+            using (FileStream fs = File.Create(path))
+            using (BinaryWriter bw = new(fs))
+            {
+                bw.Write((byte)1); // Write the shared memory type (mutex)
+                bw.Write((byte)2); // Write an invalid version number
+                // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
+                fs.SetLength(Interop.Sys.GetPageSize());
+            }
+
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));
+        }
+
+        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void NamedMutex_InvalidSharedMemoryHeaderKind()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string path = $"/tmp/.dotnet/shm/global/{name}";
+            using (FileStream fs = File.Create(path))
+            using (BinaryWriter bw = new(fs))
+            {
+                fs.SetLength(Interop.Sys.GetPageSize());
+                fs.Position = 0;
+                bw.Write((byte)2); // Write the shared memory type (invalid)
+                bw.Write((byte)1); // Write a version number
+                // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
+                fs.SetLength(Interop.Sys.GetPageSize());
+            }
+
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));
+        }
+
+        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void NamedMutex_TooSmallSharedMemoryFile()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string path = $"/tmp/.dotnet/shm/global/{name}";
+            using (FileStream fs = File.Create(path))
+            using (BinaryWriter bw = new(fs))
+            {
+                bw.Write((byte)1); // Write the shared memory type (mutex)
+                bw.Write((byte)1); // Write an valid version number
+                // Make the file large enough for a valid named mutex file but not divisible by page size.
+                fs.SetLength(Interop.Sys.GetPageSize() - 1);
+            }
+
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));
+        }
+
         public static TheoryData<string> GetValidNames()
         {
-            var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
+            var names = new TheoryData<string>() { Guid.NewGuid().ToString("N") };
 
             // Windows native named mutexes and in-proc named mutexes support very long (1000+ char) names.
             // Non-Windows cross-process named mutexes are emulated using file system. It imposes limit
