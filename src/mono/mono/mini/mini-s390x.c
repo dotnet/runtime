@@ -19,6 +19,17 @@
 
 #define MAX_ARCH_DELEGATE_PARAMS 10
 
+#define NEW_SIMD_INS(cfg,ins,dest,op,d,s1,s2) do {      \
+                MONO_INST_NEW ((cfg), (dest), (op)); \
+                (dest)->cil_code = (ins)->cil_code; \
+                (dest)->dreg = d; \
+                (dest)->sreg1 = s1; \
+                (dest)->sreg2 = s2; \
+                (dest)->type = STACK_VTYPE; \
+                (dest)->klass = ins->klass; \
+                mono_bblock_insert_before_ins (bb, ins, (dest)); \
+        } while (0)
+
 #define EMIT_COND_BRANCH(ins,cond) 						\
 {										\
 if (ins->inst_true_bb->native_offset) { 					\
@@ -1595,7 +1606,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			continue;
 
 		/*--------------------------------------------------*/
-		/* inst->backend.is_pinvoke indicates native sized  */
+		/* inst->backend.is_pinvoke indicates native-sized  */
 		/* value types this is used by the pinvoke wrappers */
 		/* when they call functions returning structure     */
 		/*--------------------------------------------------*/
@@ -2177,6 +2188,441 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /*========================= End of Function ========================*/
 
+static int
+simd_type_to_sub_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_S390_VSB;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_S390_VSH;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_S390_VSF;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return OP_S390_VSG;
+	case MONO_TYPE_R4:
+		return OP_S390_VFSSB;
+	case MONO_TYPE_R8:
+		return OP_S390_VFSDB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+    }
+}
+
+static int
+simd_type_to_add_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_S390_VAB;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_S390_VAH;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_S390_VAF;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return OP_S390_VAG;
+	case MONO_TYPE_R4:
+		return OP_S390_VFASB;
+	case MONO_TYPE_R8:
+		return OP_S390_VFADB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_mul_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_S390_VMLB;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_S390_VMLHW;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_S390_VMLF;
+	case MONO_TYPE_R4:
+		return OP_S390_VFMSB;
+	case MONO_TYPE_R8:
+		return OP_S390_VFMDB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_max_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+		return OP_S390_VMXB;
+	case MONO_TYPE_U1:
+		return OP_S390_VMXLB;
+	case MONO_TYPE_I2:
+		return OP_S390_VMXH;
+	case MONO_TYPE_U2:
+		return OP_S390_VMXLH;
+	case MONO_TYPE_I4:
+		return OP_S390_VMXF;
+	case MONO_TYPE_U4:
+		return OP_S390_VMXLF;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_I:
+		return OP_S390_VMXG;
+	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
+		return OP_S390_VMXLG;
+	case MONO_TYPE_R4:
+		return OP_S390_VFMAXSB;
+	case MONO_TYPE_R8:
+		return OP_S390_VFMAXDB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_min_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+		return OP_S390_VMNB;
+	case MONO_TYPE_U1:
+		return OP_S390_VMNLB;
+	case MONO_TYPE_I2:
+		return OP_S390_VMNH;
+	case MONO_TYPE_U2:
+		return OP_S390_VMNLH;
+	case MONO_TYPE_I4:
+		return OP_S390_VMNF;
+	case MONO_TYPE_U4:
+		return OP_S390_VMNLF;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_I:
+		return OP_S390_VMNG;
+	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
+		return OP_S390_VMNLG;
+	case MONO_TYPE_R4:
+		return OP_S390_VFMINSB;
+	case MONO_TYPE_R8:
+		return OP_S390_VFMINDB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_comp_any_all_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_S390_VCEQBS;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_S390_VCEQHS;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_S390_VCEQFS;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_S390_VCEQGS;
+	case MONO_TYPE_R4:
+		return OP_S390_VFCESBS;
+	case MONO_TYPE_R8:
+		return OP_S390_VFCEDBS;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_comp_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_S390_VCEQB;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_S390_VCEQH;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_S390_VCEQF;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_S390_VCEQG;
+	case MONO_TYPE_R4:
+		return OP_S390_VFCESB;
+	case MONO_TYPE_R8:
+		return OP_S390_VFCEDB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_gt_any_all_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+		return OP_S390_VCHBS;
+	case MONO_TYPE_U1:
+		return OP_S390_VCHLBS;
+	case MONO_TYPE_I2:
+		return OP_S390_VCHHS;
+	case MONO_TYPE_U2:
+		return OP_S390_VCHLHS;
+	case MONO_TYPE_I4:
+		return OP_S390_VCHFS;
+	case MONO_TYPE_U4:
+		return OP_S390_VCHLFS;
+	case MONO_TYPE_I:
+	case MONO_TYPE_I8:
+		return OP_S390_VCHGS;
+	case MONO_TYPE_U:
+	case MONO_TYPE_U8:
+		return OP_S390_VCHLGS;
+	case MONO_TYPE_R4:
+		return OP_S390_VFCHSBS;
+	case MONO_TYPE_R8:
+		return OP_S390_VFCHDBS;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_gt_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+		return OP_S390_VCHB;
+	case MONO_TYPE_U1:
+		return OP_S390_VCHLB;
+	case MONO_TYPE_I2:
+		return OP_S390_VCHH;
+	case MONO_TYPE_U2:
+		return OP_S390_VCHLH;
+	case MONO_TYPE_I4:
+		return OP_S390_VCHF;
+	case MONO_TYPE_U4:
+		return OP_S390_VCHLF;
+	case MONO_TYPE_I:
+	case MONO_TYPE_I8:
+		return OP_S390_VCHG;
+	case MONO_TYPE_U:
+	case MONO_TYPE_U8:
+		return OP_S390_VCHLG;
+	case MONO_TYPE_R4:
+		return OP_S390_VFCHSB;
+	case MONO_TYPE_R8:
+		return OP_S390_VFCHDB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_ge_fp_any_all_op (int t)
+{
+	switch(t) {
+	case MONO_TYPE_R4:
+		return OP_S390_VFCHESBS;
+	case MONO_TYPE_R8:
+		return OP_S390_VFCHEDBS;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_ge_fp_op (int t)
+{
+	switch(t) {
+	case MONO_TYPE_R4:
+		return OP_S390_VFCHESB;
+	case MONO_TYPE_R8:
+		return OP_S390_VFCHEDB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+
+static int
+simd_type_to_extract_int_op (int t, int q)
+{
+	switch (t){
+	case SIMD_EXTR_ARE_ALL_SET:{
+		switch (q){
+		case CMP_LT:
+		case CMP_GT:
+		case CMP_GT_UN:
+		case CMP_LT_UN:
+		case CMP_EQ:
+			return OP_CEQ;
+		case CMP_GE:
+		case CMP_LE:
+		case CMP_GE_UN:
+		case CMP_LE_UN:
+			return OP_ICGT_UN;
+		default:
+			g_assert_not_reached();
+			return -1;
+		}
+	}
+	case SIMD_EXTR_IS_ANY_SET:{
+		switch (q){
+		case CMP_GT:
+		case CMP_LT:
+		case CMP_GT_UN:
+		case CMP_LT_UN:
+		case CMP_EQ:
+			return OP_ICLE;
+		case CMP_GE:
+		case CMP_LE:
+		case CMP_GE_UN:
+		case CMP_LE_UN:
+			return OP_ICNEQ;
+		default:
+			g_assert_not_reached();
+			return -1;
+		}
+	}
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_extract_fp_op (int t, int q)
+{
+	switch (t){
+	case SIMD_EXTR_ARE_ALL_SET:{
+		switch (q){
+		case CMP_LT:
+		case CMP_GT:
+		case CMP_GT_UN:
+		case CMP_LT_UN:
+		case CMP_EQ:
+		case CMP_GE:
+		case CMP_LE:
+		case CMP_GE_UN:
+		case CMP_LE_UN:
+			return OP_ICEQ;
+		default:
+			g_assert_not_reached();
+			return -1;
+		}
+	}
+	case SIMD_EXTR_IS_ANY_SET:{
+		switch (q){
+		case CMP_GT:
+		case CMP_LT:
+		case CMP_GT_UN:
+		case CMP_LT_UN:
+		case CMP_EQ:
+		case CMP_GE:
+		case CMP_LE:
+		case CMP_GE_UN:
+		case CMP_LE_UN:
+			return OP_ICLE;
+		default:
+			g_assert_not_reached();
+			return -1;
+		}
+	}
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_abs_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_S390_VLPB;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_S390_VLPH;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_S390_VLPF;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_S390_VLPG;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static int
+simd_type_to_negate_op (int t)
+{
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_S390_VLCB;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_S390_VLCH;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_S390_VLCF;
+	case MONO_TYPE_R4:
+		return OP_S390_VFLCSB;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_S390_VLCG;
+	case MONO_TYPE_R8:
+		return OP_S390_VFLCDB;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
+static bool
+type_is_float (int t){
+	return (t == MONO_TYPE_R4 || t == MONO_TYPE_R8);
+}
+
 /**
  *
  * @brief Architecture-specific lowering pass processing
@@ -2190,7 +2636,8 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *next;
+	MonoInst *ins, *next, *temp_ins;
+	int temp;
 
 	MONO_BB_FOR_EACH_INS_SAFE (bb, next, ins) {
 		switch (ins->opcode) {
@@ -2211,6 +2658,204 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (!s390_is_imm16 (ins->inst_imm))
 				/* This is created by the memcpy code which ignores is_inst_imm */
 				mono_decompose_op_imm (cfg, bb, ins);
+			break;
+		case OP_XBINOP:{
+			switch(ins->inst_c0){
+			case OP_IADD:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_add_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_ISUB:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_sub_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_IMUL:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_mul_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_IMAX_UN:
+			case OP_IMAX:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_max_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_IMIN_UN:
+			case OP_IMIN:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_min_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_FADD:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_add_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_FSUB:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_sub_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_FMUL:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_mul_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_FDIV:
+				ins->opcode = ins->inst_c1 == MONO_TYPE_R4 ? OP_S390_VFDSB : OP_S390_VFDDB;
+				break;
+			case OP_FMIN:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_min_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case OP_FMAX:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_max_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XBINOP_FORCEINT:{
+			switch (ins->inst_c0) {
+			case XBINOP_FORCEINT_AND:
+				ins->opcode = OP_S390_VN;
+				break;
+			case XBINOP_FORCEINT_OR:
+				ins->opcode = OP_S390_VO;
+				break;
+			case XBINOP_FORCEINT_XOR:
+				ins->opcode = OP_S390_VX;
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XCAST:{
+			ins->opcode = OP_XMOVE;
+			break;
+		}
+		case OP_XCOMPARE_FP:{
+			switch (ins->inst_c0){
+			case CMP_EQ:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_comp_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case CMP_LT_UN:
+			case CMP_LT:
+				temp = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = temp;
+			case CMP_GT_UN:
+			case CMP_GT:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_gt_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case CMP_LE_UN:
+			case CMP_LE:
+				temp = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = temp;
+			case CMP_GE_UN:
+			case CMP_GE:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_ge_fp_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XCOMPARE:{
+			switch (ins->inst_c0){
+			case CMP_EQ:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_comp_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case CMP_LT:
+			case CMP_LT_UN:
+				temp = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = temp;
+			case CMP_GT:
+			case CMP_GT_UN:
+				ins->opcode = GINT_TO_OPCODE (simd_type_to_gt_op (GTMREG_TO_INT (ins->inst_c1)));
+				break;
+			case CMP_GE:
+			case CMP_GE_UN:
+				temp = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = temp;
+			case CMP_LE:
+			case CMP_LE_UN:{
+				NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_gt_op (GTMREG_TO_INT (ins->inst_c1))), ins->dreg, ins->sreg1, ins->sreg2);
+				NEW_SIMD_INS (cfg, ins, temp_ins, OP_S390_VNO, ins->dreg, ins->dreg, ins->dreg);
+				NULLIFY_INS (ins);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_S390_XCOMPARE_XEXTRACT:{
+			guint32 temp_reg = alloc_ireg(cfg);
+			if (!type_is_float(GTMREG_TO_INT(ins->inst_c1))){
+				switch (ins->inst_c0 >> 4){
+				case CMP_EQ:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_comp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+					break;
+				case CMP_LT:
+				case CMP_LT_UN:
+				case CMP_GE:
+				case CMP_GE_UN:
+					temp = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = temp;
+				case CMP_GT:
+				case CMP_GT_UN:
+				case CMP_LE:
+				case CMP_LE_UN:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_gt_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+			}
+			else {
+				switch (ins->inst_c0 >> 4){
+				case CMP_EQ:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_comp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+				        break;
+				case CMP_LT_UN:
+				case CMP_LT:
+					temp = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = temp;
+				case CMP_GT_UN:
+				case CMP_GT:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_gt_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+					break;
+				case CMP_LE_UN:
+				case CMP_LE:
+					temp = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = temp;
+				case CMP_GE_UN:
+				case CMP_GE:
+					NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_ge_fp_any_all_op (GTMREG_TO_INT (ins->inst_c1))), temp_reg, ins->sreg1, ins->sreg2);
+				        break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+			}
+			if(!type_is_float(GTMREG_TO_INT(ins->inst_c1))){
+				NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_extract_int_op (GTMREG_TO_INT (ins->inst_c0 & 0x0f), GTMREG_TO_INT (ins->inst_c0 >> 4))), ins->dreg, -1, -1);
+				NULLIFY_INS(ins);
+			}
+			else {
+				NEW_SIMD_INS (cfg, ins, temp_ins, GINT_TO_OPCODE (simd_type_to_extract_fp_op (GTMREG_TO_INT (ins->inst_c0 & 0x0f), GTMREG_TO_INT (ins->inst_c0 >> 4))), ins->dreg, -1, -1);
+				NULLIFY_INS(ins);
+			}
+		}
+			break;
+		case OP_VECTOR_IABS:
+			ins->opcode = GINT_TO_OPCODE (simd_type_to_abs_op (GTMREG_TO_INT (ins->inst_c1)));
+			break;
+		case OP_NEGATION:
+			ins->opcode = GINT_TO_OPCODE (simd_type_to_negate_op (GTMREG_TO_INT (ins->inst_c1)));
+			break;
+		case OP_ONES_COMPLEMENT:
+			ins->opcode = OP_S390_VNO;
+			ins->sreg2  = ins->sreg1;
 			break;
 		default:
 			break;
@@ -4834,605 +5479,520 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			bb->spill_slot_defs = g_slist_prepend_mempool (cfg->mempool, bb->spill_slot_defs, ins);
 			break;
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-		case OP_ADDPS:
-			s390x_addps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_DIVPS:
-			s390x_divps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_MULPS:
-			s390x_mulps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_SUBPS:
-			s390x_subps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_MAXPS:
-			s390x_maxps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_MINPS:
-			s390x_minps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_COMPPS:
-			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 7);
-			s390x_cmpps_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
-			break;
-		case OP_ANDPS:
-			s390x_andps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_ANDNPS:
-			s390x_andnps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_ORPS:
-			s390x_orps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_XORPS:
-			s390x_xorps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_SQRTPS:
-			s390x_sqrtps (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_RSQRTPS:
-			s390x_rsqrtps (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_RCPPS:
-			s390x_rcpps (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_ADDSUBPS:
-			s390x_addsubps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_HADDPS:
-			s390x_haddps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_HSUBPS:
-			s390x_hsubps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_DUPPS_HIGH:
-			s390x_movshdup (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_DUPPS_LOW:
-			s390x_movsldup (code, ins->dreg, ins->sreg1);
-			break;
-
-		case OP_PSHUFLEW_HIGH:
-			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
-			s390x_pshufhw_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			break;
-		case OP_PSHUFLEW_LOW:
-			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
-			s390x_pshuflw_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			break;
-		case OP_PSHUFLED:
-			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
-			s390x_pshufd_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			break;
-		case OP_SHUFPS:
-			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
-			s390x_shufps_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
-			break;
-		case OP_SHUFPD:
-			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0x3);
-			s390x_shufpd_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
-			break;
-
-		case OP_ADDPD:
-			s390x_addpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_DIVPD:
-			s390x_divpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_MULPD:
-			s390x_mulpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_SUBPD:
-			s390x_subpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_MAXPD:
-			s390x_maxpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_MINPD:
-			s390x_minpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_COMPPD:
-			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 7);
-			s390x_cmppd_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
-			break;
-		case OP_ANDPD:
-			s390x_andpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_ANDNPD:
-			s390x_andnpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_ORPD:
-			s390x_orpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_XORPD:
-			s390x_xorpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_SQRTPD:
-			s390x_sqrtpd (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_ADDSUBPD:
-			s390x_addsubpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_HADDPD:
-			s390x_haddpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_HSUBPD:
-			s390x_hsubpd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_DUPPD:
-			s390x_movddup (code, ins->dreg, ins->sreg1);
-			break;
-
-		case OP_EXTRACT_MASK:
-			s390x_pmovmskb (code, ins->dreg, ins->sreg1);
-			break;
-
-		case OP_PAND:
-			s390x_pand (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_POR:
-			s390x_por (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PXOR:
-			s390x_pxor (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PADDB:
-			s390x_paddb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PADDW:
-			s390x_paddw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PADDD:
-			s390x_paddd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PADDQ:
-			s390x_paddq (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PSUBB:
-			s390x_psubb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PSUBW:
-			s390x_psubw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PSUBD:
-			s390x_psubd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PSUBQ:
-			s390x_psubq (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PMAXB_UN:
-			s390x_pmaxub (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMAXW_UN:
-			s390x_pmaxuw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMAXD_UN:
-			s390x_pmaxud (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PMAXB:
-			s390x_pmaxsb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMAXW:
-			s390x_pmaxsw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMAXD:
-			s390x_pmaxsd (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PAVGB_UN:
-			s390x_pavgb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PAVGW_UN:
-			s390x_pavgw (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PMINB_UN:
-			s390x_pminub (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMINW_UN:
-			s390x_pminuw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMIND_UN:
-			s390x_pminud (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PMINB:
-			s390x_pminsb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMINW:
-			s390x_pminsw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMIND:
-			s390x_pminsd (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PCMPEQB:
-			s390x_pcmpeqb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PCMPEQW:
-			s390x_pcmpeqw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PCMPEQD:
-			s390x_pcmpeqd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PCMPEQQ:
-			s390x_pcmpeqq (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PCMPGTB:
-			s390x_pcmpgtb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PCMPGTW:
-			s390x_pcmpgtw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PCMPGTD:
-			s390x_pcmpgtd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PCMPGTQ:
-			s390x_pcmpgtq (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PSUM_ABS_DIFF:
-			s390x_psadbw (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_UNPACK_LOWB:
-			s390x_punpcklbw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_LOWW:
-			s390x_punpcklwd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_LOWD:
-			s390x_punpckldq (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_LOWQ:
-			s390x_punpcklqdq (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_LOWPS:
-			s390x_unpcklps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_LOWPD:
-			s390x_unpcklpd (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_UNPACK_HIGHB:
-			s390x_punpckhbw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_HIGHW:
-			s390x_punpckhwd (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_HIGHD:
-			s390x_punpckhdq (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_HIGHQ:
-			s390x_punpckhqdq (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_HIGHPS:
-			s390x_unpckhps (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_UNPACK_HIGHPD:
-			s390x_unpckhpd (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PACKW:
-			s390x_packsswb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PACKD:
-			s390x_packssdw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PACKW_UN:
-			s390x_packuswb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PACKD_UN:
-			s390x_packusdw (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PADDB_SAT_UN:
-			s390x_paddusb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PSUBB_SAT_UN:
-			s390x_psubusb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PADDW_SAT_UN:
-			s390x_paddusw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PSUBW_SAT_UN:
-			s390x_psubusw (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PADDB_SAT:
-			s390x_paddsb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PSUBB_SAT:
-			s390x_psubsb (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PADDW_SAT:
-			s390x_paddsw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PSUBW_SAT:
-			s390x_psubsw (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PMULW:
-			s390x_pmullw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMULD:
-			s390x_pmulld (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMULQ:
-			s390x_pmuludq (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMULW_HIGH_UN:
-			s390x_pmulhuw (code, ins->sreg1, ins->sreg2);
-			break;
-		case OP_PMULW_HIGH:
-			s390x_pmulhw (code, ins->sreg1, ins->sreg2);
-			break;
-
-		case OP_PSHRW:
-			s390x_psrlw_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSHRW_REG:
-			s390x_psrlw (code, ins->dreg, ins->sreg2);
-			break;
-
-		case OP_PSARW:
-			s390x_psraw_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSARW_REG:
-			s390x_psraw (code, ins->dreg, ins->sreg2);
-			break;
-
-		case OP_PSHLW:
-			s390x_psllw_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSHLW_REG:
-			s390x_psllw (code, ins->dreg, ins->sreg2);
-			break;
-
-		case OP_PSHRD:
-			s390x_psrld_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSHRD_REG:
-			s390x_psrld (code, ins->dreg, ins->sreg2);
-			break;
-
-		case OP_PSARD:
-			s390x_psrad_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSARD_REG:
-			s390x_psrad (code, ins->dreg, ins->sreg2);
-			break;
-
-		case OP_PSHLD:
-			s390x_pslld_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSHLD_REG:
-			s390x_pslld (code, ins->dreg, ins->sreg2);
-			break;
-
-		case OP_PSHRQ:
-			s390x_psrlq_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSHRQ_REG:
-			s390x_psrlq (code, ins->dreg, ins->sreg2);
-			break;
-
-		/*TODO: This is appart of the sse spec but not added
-		case OP_PSARQ:
-			s390x_psraq_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSARQ_REG:
-			s390x_psraq (code, ins->dreg, ins->sreg2);
-			break;
-		*/
-
-		case OP_PSHLQ:
-			s390x_psllq_reg_imm (code, ins->dreg, ins->inst_imm);
-			break;
-		case OP_PSHLQ_REG:
-			s390x_psllq (code, ins->dreg, ins->sreg2);
-			break;
-		case OP_CVTDQ2PD:
-			s390x_cvtdq2pd (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_CVTDQ2PS:
-			s390x_cvtdq2ps (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_CVTPD2DQ:
-			s390x_cvtpd2dq (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_CVTPD2PS:
-			s390x_cvtpd2ps (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_CVTPS2DQ:
-			s390x_cvtps2dq (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_CVTPS2PD:
-			s390x_cvtps2pd (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_CVTTPD2DQ:
-			s390x_cvttpd2dq (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_CVTTPS2DQ:
-			s390x_cvttps2dq (code, ins->dreg, ins->sreg1);
-			break;
-
-		case OP_ICONV_TO_X:
-			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
-			break;
-		case OP_EXTRACT_I4:
-			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
-			break;
-		case OP_EXTRACT_I8:
-			if (ins->inst_c0) {
-				amd64_movhlps (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
-				amd64_movd_reg_xreg_size (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG, 8);
-			} else {
-				amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
-			}
-			break;
-		case OP_EXTRACT_I1:
-		case OP_EXTRACT_U1:
-			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
-			if (ins->inst_c0)
-				amd64_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == OP_EXTRACT_I1, FALSE);
-			break;
-		case OP_EXTRACT_I2:
-		case OP_EXTRACT_U2:
-			/*amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
-			if (ins->inst_c0)
-				amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, 16, 4);*/
-			s390x_pextrw_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->inst_c1 == OP_EXTRACT_I2, TRUE, 4);
-			break;
-		case OP_EXTRACT_R8:
-			if (ins->inst_c0)
-				amd64_movhlps (code, ins->dreg, ins->sreg1);
-			else
-				s390x_movsd (code, ins->dreg, ins->sreg1);
-			break;
-		case OP_INSERT_I2:
-			s390x_pinsrw_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
-			break;
-		case OP_EXTRACTX_U2:
-			s390x_pextrw_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			break;
-		case OP_INSERTX_U1_SLOW:
-			/*sreg1 is the extracted ireg (scratch)
-			/sreg2 is the to be inserted ireg (scratch)
-			/dreg is the xreg to receive the value*/
-
-			/*clear the bits from the extracted word*/
-			amd64_alu_reg_imm (code, X86_AND, ins->sreg1, ins->inst_c0 & 1 ? 0x00FF : 0xFF00);
-			/*shift the value to insert if needed*/
-			if (ins->inst_c0 & 1)
-				amd64_shift_reg_imm_size (code, X86_SHL, ins->sreg2, 8, 4);
-			/*join them together*/
-			amd64_alu (code, X86_OR, ins->sreg1, ins->sreg2);
-			s390x_pinsrw_imm (code, ins->dreg, ins->sreg1, ins->inst_c0 / 2);
-			break;
-		case OP_INSERTX_I4_SLOW:
-			s390x_pinsrw_imm (code, ins->dreg, ins->sreg2, ins->inst_c0 * 2);
-			amd64_shift_reg_imm (code, X86_SHR, ins->sreg2, 16);
-			s390x_pinsrw_imm (code, ins->dreg, ins->sreg2, ins->inst_c0 * 2 + 1);
-			break;
-		case OP_INSERTX_I8_SLOW:
-			amd64_movd_xreg_reg_size(code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg2, 8);
-			if (ins->inst_c0)
-				amd64_movlhps (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
-			else
-				s390x_movsd (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
-			break;
-
-		case OP_INSERTX_R4_SLOW:
-			switch (ins->inst_c0) {
-			case 0:
-				s390x_movss (code, ins->dreg, ins->sreg2);
-				break;
-			case 1:
-				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
-				s390x_movss (code, ins->dreg, ins->sreg2);
-				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
-				break;
-			case 2:
-				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
-				s390x_movss (code, ins->dreg, ins->sreg2);
-				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
-				break;
-			case 3:
-				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
-				s390x_movss (code, ins->dreg, ins->sreg2);
-				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
-				break;
-			}
-			break;
-		case OP_INSERTX_R8_SLOW:
-			if (ins->inst_c0)
-				amd64_movlhps (code, ins->dreg, ins->sreg2);
-			else
-				s390x_movsd (code, ins->dreg, ins->sreg2);
-			break;
-		case OP_STOREX_MEMBASE_REG:
-		case OP_STOREX_MEMBASE:
-			s390x_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
-			break;
-		case OP_LOADX_MEMBASE:
-			s390x_movups_reg_membase (code, ins->dreg, ins->sreg1, ins->inst_offset);
-			break;
+		case OP_XCONST:
+			S390_SET (code, s390_r13, ins->inst_p0);
+			s390_vl(code, ins->dreg, 0, s390_r13, 0);
+			break;
+		/* TO-DO: provide an alignment hint for the vector loads and stores*/
 		case OP_LOADX_ALIGNED_MEMBASE:
-			s390x_movaps_reg_membase (code, ins->dreg, ins->sreg1, ins->inst_offset);
+		case OP_LOADX_MEMBASE:
+			S390_LONG_VEC(code, vl, vl, ins->dreg, ins->inst_offset, 0, ins->inst_basereg);
 			break;
 		case OP_STOREX_ALIGNED_MEMBASE_REG:
-			s390x_movaps_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
+		case OP_STOREX_MEMBASE:
+			S390_LONG_VEC(code, vst, vst, ins->sreg1, ins->inst_offset,0, ins->inst_destbasereg);
 			break;
-		case OP_STOREX_NTA_MEMBASE_REG:
-			s390x_movntps_reg_membase (code, ins->dreg, ins->sreg1, ins->inst_offset);
+		case OP_S390_VN:
+			s390_vn (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-		case OP_PREFETCH_MEMBASE:
-			s390x_prefetch_reg_membase (code, ins->backend.arg_info, ins->sreg1, ins->inst_offset);
+		case OP_S390_VNN:
+			s390_vnn (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-
-		case OP_XMOVE:
-			/*FIXME the peephole pass should have killed this*/
+		case OP_VECTOR_ANDN:
+			s390_vnc (code, ins->dreg, ins->sreg2, ins->sreg1);
+			break;
+		case OP_S390_VO:
+			s390_vo (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VNO:
+			s390_vno (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VX:
+			s390_vx (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VAB:
+			s390_vab (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VAH:
+			s390_vah (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VAF:
+			s390_vaf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VAG:
+			s390_vag (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFASB:
+			s390_vfasb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFADB:
+			s390_vfadb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VSB:
+			s390_vsb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VSH:
+			s390_vsh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VSF:
+			s390_vsf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VSG:
+			s390_vsg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFSSB:
+			s390_vfssb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFSDB:
+			s390_vfsdb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMLB:
+			s390_vmlb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMLHW:
+			s390_vmlhw (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMLF:
+			s390_vmlf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFMSB:
+			s390_vfmsb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFMDB:
+			s390_vfmdb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFDSB:
+			s390_vfdsb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFDDB:
+			s390_vfddb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VSUMB:
+			s390_vsumb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VSUMH:
+			s390_vsumh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VSUMQF:
+			s390_vsumqf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VSUMQG:
+			s390_vsumqg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMXB:
+			s390_vmxb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMXH:
+			s390_vmxh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMXF:
+			s390_vmxf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMXG:
+			s390_vmxg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFMAXSB:
+			/* The max function used here is Java Math.Max() */
+			s390_vfmaxsb (code, ins->dreg, ins->sreg1, ins->sreg2, 1);
+			break;
+		case OP_S390_VFMAXDB:
+			s390_vfmaxdb (code, ins->dreg, ins->sreg1, ins->sreg2, 1);
+			break;
+		case OP_S390_VMXLB:
+			s390_vmxlb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMXLH:
+			s390_vmxlh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMXLF:
+			s390_vmxlf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMXLG:
+			s390_vmxlg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMNB:
+			s390_vmnb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMNH:
+			s390_vmnh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMNF:
+			s390_vmnf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMNG:
+			s390_vmng (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFMINSB:
+			/* The min function used here is Java Math.Min() */
+			s390_vfminsb (code, ins->dreg, ins->sreg1, ins->sreg2, 1);
+			break;
+		case OP_S390_VFMINDB:
+			s390_vfmindb (code, ins->dreg, ins->sreg1, ins->sreg2, 1);
+			break;
+		case OP_S390_VMNLB:
+			s390_vmnlb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMNLH:
+			s390_vmnlh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMNLF:
+			s390_vmnlf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VMNLG:
+			s390_vmnlg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VREPIB:
+			s390_vrepib (code, ins->dreg, ins->inst_c1);
+			break;
+		case OP_S390_VREPIH:
+			s390_vrepih (code, ins->dreg, ins->inst_c1);
+			break;
+		case OP_S390_VREPIF:
+			s390_vrepif (code, ins->dreg, ins->inst_c1);
+			break;
+		case OP_S390_VREPIG:
+			s390_vrepig (code, ins->dreg, ins->inst_c1);
+			break;
+		case OP_S390_VCEQBS:
+			s390_vceqbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCEQB:
+			s390_vceqb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCEQHS:
+			s390_vceqhs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCEQH:
+			s390_vceqh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCEQFS:
+			s390_vceqfs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCEQF:
+			s390_vceqf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCEQGS:
+			s390_vceqgs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCEQG:
+			s390_vceqg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCESBS:
+			s390_vfcesbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCESB:
+			s390_vfcesb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCEDBS:
+			s390_vfcedbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCEDB:
+			s390_vfcedb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCHSBS:
+			s390_vfchsbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCHSB:
+			s390_vfchsb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCHDBS:
+			s390_vfchdbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCHDB:
+			s390_vfchdb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCHESBS:
+			s390_vfchesbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCHESB:
+			s390_vfchesb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCHEDBS:
+			s390_vfchedbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VFCHEDB:
+			s390_vfchedb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VGMB:
+			s390_vgmb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VGMH:
+			s390_vgmh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VGMF:
+			s390_vgmf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VGMG:
+			s390_vgmg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VECB:
+			s390_vecb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VECH:
+			s390_vech (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VECF:
+			s390_vecf (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VECG:
+			s390_vecg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VECLB:
+			s390_veclb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VECLH:
+			s390_veclh (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VECLF:
+			s390_veclf (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VECLG:
+			s390_veclg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VCHBS:
+			s390_vchbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHHS:
+			s390_vchhs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHFS:
+			s390_vchfs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHGS:
+			s390_vchgs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHB:
+			s390_vchb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHH:
+			s390_vchh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHF:
+			s390_vchf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHG:
+			s390_vchg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHLBS:
+			s390_vchlbs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHLHS:
+			s390_vchlhs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHLFS:
+			s390_vchlfs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHLGS:
+			s390_vchlgs (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHLB:
+			s390_vchlb (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHLH:
+			s390_vchlh (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHLF:
+			s390_vchlf (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VCHLG:
+			s390_vchlg (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VLPB:
+			s390_vlpb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VLPH:
+			s390_vlph (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VLPF:
+			s390_vlpf (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VLPG:
+			s390_vlpg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VFLPDB:
+			s390_vfpsodb (code, ins->dreg, ins->sreg1, 2);
+			break;
+		case OP_S390_VFLPSB:
+			s390_vfpsosb (code, ins->dreg, ins->sreg1, 2);
+			break;
+		case OP_S390_VFLCDB:
+			s390_vfpsodb (code, ins->dreg, ins->sreg1, 0);
+			break;
+		case OP_S390_VFLCSB:
+			s390_vfpsosb (code, ins->dreg, ins->sreg1, 0);
+			break;
+		case OP_INSERT_I1:
 			if (ins->dreg != ins->sreg1)
-				s390x_movaps (code, ins->dreg, ins->sreg1);
+				s390_vlr (code, ins->dreg, ins->sreg1);
+			s390_vlvgb (code, ins->dreg, ins->sreg2, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
-		case OP_XZERO:
-			s390x_pxor (code, ins->dreg, ins->dreg);
+		case OP_INSERT_I2:
+			if (ins->dreg != ins->sreg1)
+				s390_vlr (code, ins->dreg, ins->sreg1);
+			s390_vlvgh (code, ins->dreg, ins->sreg2, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
-		case OP_ICONV_TO_R4_RAW:
-			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
+		case OP_INSERT_I4:
+			if (ins->dreg != ins->sreg1)
+				s390_vlr (code, ins->dreg, ins->sreg1);
+			s390_vlvgf (code, ins->dreg, ins->sreg2, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
-
-		case OP_FCONV_TO_R8_X:
-			s390x_movsd (code, ins->dreg, ins->sreg1);
+		case OP_INSERT_I8:
+			if (ins->dreg != ins->sreg1)
+				s390_vlr (code, ins->dreg, ins->sreg1);
+			s390_vlvgg (code, ins->dreg, ins->sreg2, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
-
-		case OP_XCONV_R8_TO_I4:
-			s390x_cvttsd2si_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
-			switch (ins->backend.source_opcode) {
-			case OP_FCONV_TO_I1:
-				amd64_widen_reg (code, ins->dreg, ins->dreg, TRUE, FALSE);
-				break;
-			case OP_FCONV_TO_U1:
-				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
-				break;
-			case OP_FCONV_TO_I2:
-				amd64_widen_reg (code, ins->dreg, ins->dreg, TRUE, TRUE);
-				break;
-			case OP_FCONV_TO_U2:
-				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, TRUE);
-				break;
-			}
+		case OP_INSERT_R4:
+			s390_vlgvf (code, s390_r13, ins->sreg2, 0, 0);
+			s390_vlvgf (code, ins->dreg, s390_r13, 0, GTMREG_TO_UINT32 (ins->inst_c0));
 			break;
-
+		case OP_INSERT_R8:
+			s390_vlgvg (code, s390_r13, ins->sreg2, 0, 0);
+			s390_vlvgg (code, ins->dreg, s390_r13, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			break;
+		case OP_EXTRACT_I1:
+			s390_vlgvb (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			break;
+		case OP_EXTRACT_I2:
+			s390_vlgvh (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			break;
+		case OP_EXTRACT_I4:
+			s390_vlgvf (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			break;
+		case OP_EXTRACT_I8:
+			s390_vlgvg (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			break;
+		case OP_EXTRACT_R4:
+			s390_vlgvf (code, s390_r13, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vlvgf (code, ins->dreg, s390_r13, 0, 0);
+			break;
+		case OP_EXTRACT_R8:
+			s390_vlgvg (code, s390_r13, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_ldgr (code, ins->dreg, s390_r13);
+			break;
+		case OP_XEXTRACT_I1:
+			s390_vlgvb (code, ins->dreg, ins->sreg1, ins->sreg2, 0);
+			break;
+		case OP_XEXTRACT_I2:
+			s390_vlgvh (code, ins->dreg, ins->sreg1, ins->sreg2, 0);
+			break;
+		case OP_XEXTRACT_I4:
+			s390_vlgvf (code, ins->dreg, ins->sreg1, ins->sreg2, 0);
+			break;
+		case OP_XEXTRACT_I8:
+			s390_vlgvg (code, ins->dreg, ins->sreg1, ins->sreg2, 0);
+			break;
+		case OP_XEXTRACT_R4:
+			s390_vlgvf (code, s390_r13, ins->sreg1, ins->sreg2, 0);
+			s390_ldgr (code, ins->dreg, s390_r13);
+			break;
+		case OP_XEXTRACT_R8:
+			s390_vlgvg (code, s390_r13, ins->sreg1, ins->sreg2, 0);
+			s390_ldgr (code, ins->dreg, s390_r13);
+			break;
+		case OP_EXPAND_I1:
+			s390_vlvgb (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepb (code, ins->dreg, ins->dreg, 0);
+			break;
 		case OP_EXPAND_I2:
-			s390x_pinsrw_imm (code, ins->dreg, ins->sreg1, 0);
-			s390x_pinsrw_imm (code, ins->dreg, ins->sreg1, 1);
-			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0);
+			s390_vlvgh (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vreph (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_I4:
-			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
-			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0);
+			s390_vlvgf (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepf (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_I8:
-			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 8);
-			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0x44);
+			s390_vlvgg (code, ins->dreg, ins->sreg1, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepg (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R4:
-			s390x_movsd (code, ins->dreg, ins->sreg1);
-			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0);
+			s390_vlgvf (code, s390_r13, ins->sreg1, 0, 0);
+			s390_vlvgf (code, ins->dreg, s390_r13, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepf (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R8:
-			s390x_movsd (code, ins->dreg, ins->sreg1);
-			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0x44);
+			s390_lgdr (code, s390_r13, ins->sreg1);
+			s390_vlvgg (code, ins->dreg, s390_r13, 0, GTMREG_TO_UINT32 (ins->inst_c0));
+			s390_vrepg (code, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_S390_VPKH:
+			s390_vpkh ( code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VPKF:
+			s390_vpkf ( code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VPKG:
+			s390_vpkg ( code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_S390_VLCB:
+			s390_vlcb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VLCH:
+			s390_vlch (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VLCF:
+			s390_vlcf (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VLCG:
+			s390_vlcg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLB:
+			s390_vuplb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLHW:
+			s390_vuplhw (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLF:
+			s390_vuplf (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLLB:
+			s390_vupllb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLLH:
+			s390_vupllh (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLLF:
+			s390_vupllf (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPHB:
+			s390_vuphb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPHH:
+			s390_vuphh (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPHF:
+			s390_vuphf (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLHB:
+			s390_vuplhb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLHH:
+			s390_vuplhh (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VUPLHF:
+			s390_vuplhf (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VFISB:
+			s390_vfisb (code, ins->dreg, ins->sreg1, 0, ins->inst_c0);
+			break;
+		case OP_S390_VFIDB:
+			s390_vfidb (code, ins->dreg, ins->sreg1, 0, ins->inst_c0);
+			break;
+		case OP_S390_VFSQSB:
+			s390_vfsqsb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_S390_VFSQDB:
+			s390_vfsqdb (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_XONES:
+			s390_vgbm (code, ins->dreg, 0xffff);
+			break;
+		case OP_XMOVE:
+			if (ins->dreg != ins->sreg1)
+				s390_vlr(code, ins->dreg, ins->sreg1);
+			break;
+		case OP_XZERO:
+			s390_vgbm (code, ins->dreg, 0);
 			break;
 #endif
 		default:

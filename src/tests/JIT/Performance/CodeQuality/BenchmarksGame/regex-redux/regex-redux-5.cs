@@ -8,7 +8,7 @@
 
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
- 
+
    Regex-Redux by Josh Goldfoot
    order variants by execution time by Anthony Lloyd
 */

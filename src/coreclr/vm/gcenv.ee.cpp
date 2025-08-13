@@ -235,7 +235,7 @@ static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanCo
     if (argBuffer == NULL || argBuffer->GCDesc == NULL)
         return;
 
-    if (argBuffer->State == TAILCALLARGBUFFER_ABANDONED)
+    if (argBuffer->State == TAILCALLARGBUFFER_INACTIVE)
         return;
 
     bool instArgOnly = argBuffer->State == TAILCALLARGBUFFER_INSTARG_ONLY;
@@ -400,6 +400,20 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 
     return false;
+}
+
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_JAVAMARSHAL
+    Interop::TriggerClientBridgeProcessing(args);
+#endif // FEATURE_JAVAMARSHAL
 }
 
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)

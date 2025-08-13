@@ -48,6 +48,7 @@
     <Compile Include="CoseSign1MessageTests.Verify.Stream.cs" />
     <Compile Include="CoseSign1MessageTests.Verify.cs" />
     <Compile Include="CoseSignerTests.cs" />
+    <Compile Include="TestKeyRing.cs" />
     <Compile Include="CoseTestHelpers.cs" />
     <Compile Include="CoseKeyTests.SignVerify.cs" />
   </ItemGroup>
