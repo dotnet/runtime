@@ -395,7 +395,7 @@ public partial class ApkBuilder
             string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
             if (IsCoreCLR)
             {
-                monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
+                monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent, mainLibraryFileName);
             }
             File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
 
@@ -667,7 +667,7 @@ public partial class ApkBuilder
     [GeneratedRegex(@"\.(\d)")]
     private static partial Regex DotNumberRegex();
 
-    private string RenderMonodroidCoreClrTemplate(string monodroidContent)
+    private string RenderMonodroidCoreClrTemplate(string monodroidContent, string mainLibraryFileName)
     {
         // At the moment, we only set the AppContext properties, so it's all done here for simplicity.
         // If we need to add more rendering logic, we can refactor this method later.
@@ -686,7 +686,7 @@ public partial class ApkBuilder
         appContextValues.AppendLine();
 
         // Parse runtime config properties and add them to the AppContext keys and values.
-        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties();
+        Dictionary<string, string> configProperties = ParseRuntimeConfigProperties(mainLibraryFileName);
         int hardwiredAppContextProperties = 3; // For the hardwired AppContext keys and values above.
         int i = 0;
         foreach ((string key, string value) in configProperties)
@@ -703,10 +703,13 @@ public partial class ApkBuilder
         return updatedContent;
     }
 
-    private Dictionary<string, string> ParseRuntimeConfigProperties()
+    private Dictionary<string, string> ParseRuntimeConfigProperties(string mainLibraryFileName)
     {
         var configProperties = new Dictionary<string, string>();
-        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), $"{ProjectName}.runtimeconfig.json");
+
+        // Extract assembly name from mainLibraryFileName (e.g., "AndroidSampleApp.dll" -> "AndroidSampleApp")
+        string assemblyName = Path.GetFileNameWithoutExtension(mainLibraryFileName);
+        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), $"{assemblyName}.runtimeconfig.json");
 
         try
         {
