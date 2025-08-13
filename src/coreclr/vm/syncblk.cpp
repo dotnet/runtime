@@ -1628,7 +1628,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
                         {
                             // recursionLevel can't be non-zero if thread id is 0
                             _ASSERTE(lockThreadId != 0);
-                            syncBlock->InitializeThinLock(recursionLevel + 1, lockThreadId);
+                            syncBlock->InitializeThinLock(recursionLevel, lockThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -1733,6 +1733,7 @@ OBJECTHANDLE SyncBlock::GetLock()
     // We need to create a new lock
     OBJECTHANDLEHolder lockHandle = NULL;
     OBJECTREF lockObj = NULL;
+    DWORD thinLock = m_thinLock;
     GCPROTECT_BEGIN(lockObj);
 
     lockObj = AllocateObject(CoreLibBinder::GetClass(CLASS__LOCK));
@@ -1744,11 +1745,12 @@ OBJECTHANDLE SyncBlock::GetLock()
         lockHandle = GetAppDomain()->CreateHandle(lockObj);
     }
 
-    if (m_thinLock != 0)
+    if (thinLock != 0)
     {
         // We have thin-lock info that needs to be transferred to the lock object.
-        DWORD lockThreadId = m_thinLock & SBLK_MASK_LOCK_THREADID;
-        DWORD recursionLevel = (m_thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
+        DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
+        DWORD recursionLevel = (thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
+        _ASSERTE(lockThreadId != 0);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__INITIALIZE_TO_LOCKED_WITH_NO_WAITERS);
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(lockObj);

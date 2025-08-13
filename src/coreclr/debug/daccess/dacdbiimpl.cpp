@@ -5986,7 +5986,7 @@ MonitorLockInfo DacDbiInterfaceImpl::GetThreadOwningMonitorLock(VMPTR_Object vmO
         if(pThread->GetThreadId() == threadId)
         {
             info.lockOwner.SetDacTargetPtr(PTR_HOST_TO_TADDR(pThread));
-            info.acquisitionCount = recursionCount;
+            info.acquisitionCount = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
             return info;
         }
         pThread = ThreadStore::GetThreadList(pThread);

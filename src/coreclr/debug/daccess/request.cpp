@@ -3802,7 +3802,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                 BOOL monitorHeld = pBlock->TryGetLockInfo(&holdingThread, &recursionCount);
 
                 pSyncBlockData->MonitorHeld = monitorHeld == TRUE ? 1 : 0;
-                pSyncBlockData->Recursion = recursionCount;
+                pSyncBlockData->Recursion = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
                 pSyncBlockData->HoldingThread = PTR_HOST_TO_TADDR(g_pThinLockThreadIdDispenser->IdToThread(holdingThread));
                 pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 

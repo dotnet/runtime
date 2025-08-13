@@ -282,8 +282,12 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(obj);
 
             int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
-            // transform uninitialized ID into -1, so it will not match any possible lock owner
-            currentThreadID |= (currentThreadID - 1) >> 31;
+            if (currentThreadID == 0)
+            {
+                Lock.ThreadId id = new Lock.ThreadId((uint)currentThreadID);
+                id.InitializeForCurrentThread();
+                currentThreadID = (int)id.Id;
+            }
 
             Lock fatLock;
             fixed (byte* pObjectData = &obj.GetRawData())
