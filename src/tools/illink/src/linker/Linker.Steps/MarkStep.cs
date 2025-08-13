@@ -3881,7 +3881,7 @@ namespace Mono.Linker.Steps
 
             PostMarkMethodBody(methodIL.Body);
 
-            Debug.Assert(requiresReflectionMethodBodyScanner == CheckRequiresReflectionMethodBodyScanner(methodIL), "Inconsistent result for requiresReflectionMethodBodyScanner for method " + methodIL.Method.GetDisplayName());
+            Debug.Assert(requiresReflectionMethodBodyScanner == CheckRequiresReflectionMethodBodyScanner(methodIL), $"Inconsistent result for {nameof(requiresReflectionMethodBodyScanner)} for method {methodIL.Method.GetDisplayName()}");
             return requiresReflectionMethodBodyScanner;
         }
 
