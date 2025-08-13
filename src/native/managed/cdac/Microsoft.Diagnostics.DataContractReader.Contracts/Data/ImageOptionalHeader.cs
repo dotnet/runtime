@@ -11,7 +11,7 @@ internal sealed class ImageOptionalHeader : IData<ImageOptionalHeader>
     private const int SectionAlignmentOffset = 32;
     public ImageOptionalHeader(Target target, TargetPointer address)
     {
-        SectionAlignment = target.Read<uint>(address + SectionAlignmentOffset, true);
+        SectionAlignment = target.ReadLittleEndian<uint>(address + SectionAlignmentOffset);
     }
     public uint SectionAlignment { get; init; }
 }

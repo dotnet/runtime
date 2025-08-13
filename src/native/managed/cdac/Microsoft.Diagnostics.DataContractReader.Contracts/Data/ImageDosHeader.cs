@@ -11,7 +11,7 @@ internal sealed class ImageDosHeader : IData<ImageDosHeader>
 
     public ImageDosHeader(Target target, TargetPointer address)
     {
-        Lfanew = target.Read<int>(address + LfanewOffset, true);
+        Lfanew = target.ReadLittleEndian<int>(address + LfanewOffset);
     }
     public int Lfanew { get; init; }
 }

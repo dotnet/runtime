@@ -12,8 +12,8 @@ internal sealed class ImageFileHeader : IData<ImageFileHeader>
     private const int SizeOfOptionalHeaderOffset = 16;
     public ImageFileHeader(Target target, TargetPointer address)
     {
-        NumberOfSections = target.Read<ushort>(address + NumberOfSectionsOffset, true);
-        SizeOfOptionalHeader = target.Read<ushort>(address + SizeOfOptionalHeaderOffset, true);
+        NumberOfSections = target.ReadLittleEndian<ushort>(address + NumberOfSectionsOffset);
+        SizeOfOptionalHeader = target.ReadLittleEndian<ushort>(address + SizeOfOptionalHeaderOffset);
     }
     public ushort NumberOfSections { get; init; }
     public ushort SizeOfOptionalHeader { get; init; }

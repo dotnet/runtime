@@ -368,7 +368,6 @@ TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
         TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
 
         TargetPointer optionalHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */;
-        uint sectionAlignment = target.Read<uint>(optionalHeaderPtr + /* ImageOptionalHeader::SectionAlignmentOffset */);
 
         // Get number of sections from file header
         TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
@@ -386,7 +385,6 @@ TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
         {
             TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
             uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
-            uint virtualSize = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualSizeOffset */);
             uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
 
             if (rva >= VirtualAddress && rva < VirtualAddress + SizeOfRawData)

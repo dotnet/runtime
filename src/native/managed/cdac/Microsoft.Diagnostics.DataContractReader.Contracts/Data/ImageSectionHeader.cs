@@ -15,10 +15,10 @@ internal sealed class ImageSectionHeader : IData<ImageSectionHeader>
     public const uint Size = 40;
     public ImageSectionHeader(Target target, TargetPointer address)
     {
-        VirtualSize = target.Read<uint>(address + VirtualSizeOffset, true);
-        VirtualAddress = target.Read<uint>(address + VirtualAddressOffset, true);
-        SizeOfRawData = target.Read<uint>(address + SizeOfRawDataOffset, true);
-        PointerToRawData = target.Read<uint>(address + PointerToRawDataOffset, true);
+        VirtualSize = target.ReadLittleEndian<uint>(address + VirtualSizeOffset);
+        VirtualAddress = target.ReadLittleEndian<uint>(address + VirtualAddressOffset);
+        SizeOfRawData = target.ReadLittleEndian<uint>(address + SizeOfRawDataOffset);
+        PointerToRawData = target.ReadLittleEndian<uint>(address + PointerToRawDataOffset);
     }
 
     public uint VirtualSize { get; init; }
