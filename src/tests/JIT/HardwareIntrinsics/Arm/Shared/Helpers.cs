@@ -4955,36 +4955,24 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint UnsignedReciprocalEstimate(uint op1)
         {
-            uint result;
+            if ((op1 & 0x8000_0000u) == 0)
+                return 0xFFFF_FFFFu;
 
-            if ((op1 & (1 << 31)) == 0)
-            {
-                result = ~0U;
-            }
-            else
-            {
-                uint estimate = ReciprocalEstimate(ExtractBits(op1, 31, 23));
-                result = ExtractBits(estimate, 8, 0) << 31;
-            }
+            uint idx = (op1 >> 23) & 0x1FFu;
 
-            return result;
+            uint estimate = ReciprocalEstimate(idx) & 0x1FFu;
+
+            return estimate << 23;
         }
 
         public static uint UnsignedReciprocalSqrtEstimate(uint op1)
         {
-            uint result;
+            if ((op1 & 0xC0000000u) == 0)
+                return 0xFFFFFFFFu;
 
-            if ((op1 & (3 << 30)) == 0)
-            {
-                result = ~0U;
-            }
-            else
-            {
-                uint estimate = ReciprocalSqrtEstimate(ExtractBits(op1, 31, 23));
-                result = ExtractBits(estimate, 8, 0) << 31;
-            }
+            uint estimate = ReciprocalSqrtEstimate(ExtractBits(op1, 31, 23)) & 0x1FFu;
 
-            return result;
+            return estimate << 23;
         }
 
         public static T Add<T>(T a, T b) where T : INumber<T> => a + b;
