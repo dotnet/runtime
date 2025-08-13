@@ -3,12 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
-using System.Text;
-using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -394,7 +390,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -411,7 +407,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeyExpandedKeyPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -431,7 +427,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeyBothPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -451,7 +447,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeySeedPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -468,7 +464,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeyExpandedKeyPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -488,7 +484,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeyBothPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -508,7 +504,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeySeedPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -525,7 +521,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeyExpandedKeyPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -545,7 +541,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeyBothPfx;
             string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
 
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
             using (MLKem kem = cert.GetMLKemPrivateKey())
             {
                 Assert.NotNull(kem);
@@ -670,8 +666,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             from ietfVector in ietfVectorWrapped
             select new object[] { storageFlag, ietfVector };
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
@@ -679,19 +674,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string pfxPassword = info.EncryptionPassword;
 
             using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLDsa mldsa = cert.GetMLDsaPrivateKey())
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
             {
-                Assert.NotNull(mldsa);
-                Assert.Equal(info.Algorithm, mldsa.Algorithm);
                 Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
 
-                byte[] seed = mldsa.ExportMLDsaPrivateSeed();
-                AssertExtensions.SequenceEqual(info.PrivateSeed, seed);
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
             }
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
@@ -699,20 +699,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string pfxPassword = info.EncryptionPassword;
 
             using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLDsa mldsa = cert.GetMLDsaPrivateKey())
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
             {
-                Assert.NotNull(mldsa);
-                Assert.Equal(info.Algorithm, mldsa.Algorithm);
                 Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
 
-                Assert.Throws<CryptographicException>(() => mldsa.ExportMLDsaPrivateSeed());
-                byte[] privateKey = mldsa.ExportMLDsaPrivateKey();
-                AssertExtensions.SequenceEqual(info.PrivateKey, privateKey);
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
             }
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsDraft10Pkcs8))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116463", TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
         public static void ReadMLDsa512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
         {
@@ -720,17 +724,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string pfxPassword = info.EncryptionPassword;
 
             using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (MLDsa mldsa = cert.GetMLDsaPrivateKey())
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
             {
-                Assert.NotNull(mldsa);
-                Assert.Equal(info.Algorithm, mldsa.Algorithm);
                 Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
 
-                byte[] seed = mldsa.ExportMLDsaPrivateSeed();
-                AssertExtensions.SequenceEqual(info.PrivateSeed.AsSpan(), seed.AsSpan());
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
 
-                byte[] sk = mldsa.ExportMLDsaPrivateKey();
-                AssertExtensions.SequenceEqual(info.PrivateKey, sk);
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
             }
         }
 
@@ -776,13 +783,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string pfxPassword = "PLACEHOLDER";
 
             using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
-            using (SlhDsa slhDsa = cert.GetSlhDsaPrivateKey())
+            using (SlhDsa pubKey = cert.GetSlhDsaPublicKey())
+            using (SlhDsa privKey = cert.GetSlhDsaPrivateKey())
             {
-                Assert.NotNull(slhDsa);
-                Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
-                // Note this display string is reversed from the one in the IETF example but equivalent.
                 Assert.Equal("O=Bogus SLH-DSA-SHA2-128s CA, L=Paris, C=FR", cert.Subject);
-                AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, slhDsa.ExportSlhDsaPrivateKey());
+
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, pubKey.ExportSlhDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
             }
         }
 

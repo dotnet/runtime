@@ -701,6 +701,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 JITDUMP("  Continuation continues on thread pool\n");
             }
         }
+        else if (opcode == CEE_CALLI)
+        {
+            // Used for unboxing/instantiating stubs
+            JITDUMP("Call is an async calli\n");
+        }
         else
         {
             JITDUMP("Call is an async non-task await\n");
@@ -917,7 +922,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
             }
 
-            if (call->AsCall()->IsAsync())
+            // Add async continuation arg. For calli these are used for IL
+            // stubs and the VM inserts the arg itself.
+            if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
@@ -931,7 +938,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
         else
         {
-            if (call->AsCall()->IsAsync())
+            // Add async continuation arg. For calli these are used for IL
+            // stubs and the VM inserts the arg itself.
+            if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));

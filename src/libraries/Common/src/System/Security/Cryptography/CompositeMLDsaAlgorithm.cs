@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -31,29 +28,43 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The maximum signature size in bytes for the composite algorithm.
         /// </value>
-        public int MaxSignatureSizeInBytes => SignatureSize.MaximumSizeInBytes!.Value;
+        public int MaxSignatureSizeInBytes { get; }
 
-        internal SizeRange SignatureSize { get; }
-        internal SizeRange PrivateKeySize { get; }
-        internal SizeRange PublicKeySize { get; }
+        internal int MinPrivateKeySizeInBytes { get; }
+        internal int MaxPrivateKeySizeInBytes { get; }
+        internal int MinPublicKeySizeInBytes { get; }
+        internal int MaxPublicKeySizeInBytes { get; }
+        internal int MinSignatureSizeInBytes { get; }
 
         internal string Oid { get; }
 
         private CompositeMLDsaAlgorithm(
             string name,
-            SizeRange signatureSize,
-            SizeRange privateKeySize,
-            SizeRange publicKeySize,
+            int minPrivateKeySizeInBytes,
+            int maxPrivateKeySizeInBytes,
+            int minPublicKeySizeInBytes,
+            int maxPublicKeySizeInBytes,
+            int minSignatureSize,
+            int maxSignatureSize,
             string oid)
         {
-            Debug.Assert(signatureSize.MaximumSizeInBytes is not null);
+            Debug.Assert(minPrivateKeySizeInBytes <= maxPrivateKeySizeInBytes);
+            Debug.Assert(minPublicKeySizeInBytes <= maxPublicKeySizeInBytes);
+            Debug.Assert(minSignatureSize <= maxSignatureSize);
 
             Name = name;
+            MinPrivateKeySizeInBytes = minPrivateKeySizeInBytes;
+            MaxPrivateKeySizeInBytes = maxPrivateKeySizeInBytes;
+            MinPublicKeySizeInBytes = minPublicKeySizeInBytes;
+            MaxPublicKeySizeInBytes = maxPublicKeySizeInBytes;
+            MinSignatureSizeInBytes = minSignatureSize;
+            MaxSignatureSizeInBytes = maxSignatureSize;
             Oid = oid;
-            SignatureSize = signatureSize;
-            PrivateKeySize = privateKeySize;
-            PublicKeySize = publicKeySize;
         }
+
+        internal bool IsValidPrivateKeySize(int size) => MinPrivateKeySizeInBytes <= size && size <= MaxPrivateKeySizeInBytes;
+        internal bool IsValidPublicKeySize(int size) => MinPublicKeySizeInBytes <= size && size <= MaxPublicKeySizeInBytes;
+        internal bool IsValidSignatureSize(int size) => MinSignatureSizeInBytes <= size && size <= MaxSignatureSizeInBytes;
 
         /// <summary>
         ///   Gets a Composite ML-DSA algorithm identifier for the ML-DSA-44 and 2048-bit RSASSA-PSS with SHA256 algorithm.
@@ -373,138 +384,184 @@ namespace System.Security.Cryptography
 
         private static CompositeMLDsaAlgorithm CreateRsa(
             string name,
-            MLDsaAlgorithm algorithm,
+            MLDsaAlgorithm mldsaAlgorithm,
             int keySizeInBits,
             string oid)
         {
             Debug.Assert(keySizeInBits % 8 == 0);
             int keySizeInBytes = keySizeInBits / 8;
 
-            SizeRange signatureSize = SizeRange.CreateExact(RandomizerSizeInBytes + algorithm.SignatureSizeInBytes + keySizeInBytes);
+            const int MaxUniversalTagLength = 1;
 
-            SizeRange privateKeySize = SizeRange.CreateUnbounded(
-                // n must be modulus length, but other parameters can vary. This is a weak lower bound.
-                minimumSize: algorithm.PrivateSeedSizeInBytes + keySizeInBytes,
-                // n and d are about modulus length, p, q, dP, dQ, qInv are about half modulus length.
-                // Estimate that version and e are usually small (65537 = 3 bytes) and 64 bytes for ASN.1 overhead.
-                initialExportBufferSize: algorithm.PrivateSeedSizeInBytes + keySizeInBytes * 2 + (keySizeInBytes / 2) * 5 + 64);
+            // long form prefix and 4 bytes for length. CLR arrays and spans only support length up to int.MaxValue.
+            // Padding with leading zero bytes is allowed, but we still limit the length to 4 bytes since the only
+            // plausible scenario would be encoding a 4-byte numeric data type without trimming.
+            // Note this bound also covers indefinite length encodings which require only 1 + 2 bytes of overhead.
+            const int MaxLengthLength = 1 + 4;
 
-            SizeRange publicKeySize = SizeRange.CreateUnbounded(
-                // n must be modulus length, but other parameters can vary. This is a weak lower bound.
-                minimumSize: algorithm.PublicKeySizeInBytes + keySizeInBytes,
-                // Estimated that e is usually small (65537 = 3 bytes) and 16 bytes for ASN.1 overhead.
-                initialExportBufferSize: algorithm.PublicKeySizeInBytes + keySizeInBytes + 16);
+            const int MaxPrefixLength = MaxUniversalTagLength + MaxLengthLength;
 
-            return new CompositeMLDsaAlgorithm(name, signatureSize, privateKeySize, publicKeySize, oid);
+            const int PossibleLeadingZeroByte = 1; // ASN.1 INTEGER can have a leading zero byte.
+            int maxKeyEncodingLength = keySizeInBytes + PossibleLeadingZeroByte;
+            int maxHalfKeyEncodingLength = (keySizeInBytes + 1) / 2 + PossibleLeadingZeroByte;
+            int maxExponentEncodingLength = 256 / 8 + PossibleLeadingZeroByte; // FIPS 186-5, 5.4 (e): The exponent e shall be an odd, positive integer such that 2^16 < e < 2^256
+
+            // RFC 8017, A.1.1
+            // RSAPublicKey::= SEQUENCE {
+            //     modulus INTEGER,  --n
+            //     publicExponent INTEGER   --e
+            // }
+
+            int maxRsaPublicKeySizeInBytes =
+                MaxPrefixLength +
+                (
+                    MaxPrefixLength + maxKeyEncodingLength +
+                    MaxPrefixLength + maxExponentEncodingLength
+                );
+
+            // RFC 8017, A.1.2
+            // RSAPrivateKey::= SEQUENCE {
+            //     version Version,
+            //     modulus           INTEGER,  --n
+            //     publicExponent INTEGER,  --e
+            //     privateExponent INTEGER,  --d
+            //     prime1 INTEGER,  --p
+            //     prime2 INTEGER,  --q
+            //     exponent1 INTEGER,  --d mod(p - 1)
+            //     exponent2 INTEGER,  --d mod(q - 1)
+            //     coefficient INTEGER,  --(inverse of q) mod p
+            //     otherPrimeInfos OtherPrimeInfos OPTIONAL
+            // }
+
+            int maxRsaPrivateKeySizeInBytes =
+                MaxPrefixLength +
+                (
+                    MaxPrefixLength + 1 + // Version should always be 0 or 1
+                    MaxPrefixLength + maxKeyEncodingLength +
+                    MaxPrefixLength + maxExponentEncodingLength +
+                    MaxPrefixLength + maxKeyEncodingLength +
+                    MaxPrefixLength + maxHalfKeyEncodingLength +
+                    MaxPrefixLength + maxHalfKeyEncodingLength +
+                    MaxPrefixLength + maxHalfKeyEncodingLength +
+                    MaxPrefixLength + maxHalfKeyEncodingLength +
+                    MaxPrefixLength + maxHalfKeyEncodingLength
+                    // OtherPrimeInfos omitted since multi-prime is not supported
+                );
+
+            return new CompositeMLDsaAlgorithm(
+                name,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes, // Private key contains at least n
+                mldsaAlgorithm.PrivateSeedSizeInBytes + maxRsaPrivateKeySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes, // Private key contains at least n
+                mldsaAlgorithm.PublicKeySizeInBytes + maxRsaPublicKeySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + keySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + keySizeInBytes,
+                oid);
         }
 
         private static CompositeMLDsaAlgorithm CreateECDsa(
             string name,
-            MLDsaAlgorithm algorithm,
+            MLDsaAlgorithm mldsaAlgorithm,
             int keySizeInBits,
             string oid)
         {
+            // The key size calculation depends on the size of the curve algorithm's OID, and only includes the curves
+            // supported at the time of writing this code. If more curves are added, ensure the OID length is accounted for in the calculation.
+            Debug.Assert(oid is
+                Oids.MLDsa44WithECDsaP256PreHashSha256 or
+                Oids.MLDsa65WithECDsaP256PreHashSha512 or
+                Oids.MLDsa65WithECDsaP384PreHashSha512 or
+                Oids.MLDsa87WithECDsaP384PreHashSha512 or
+                Oids.MLDsa87WithECDsaP521PreHashSha512 or
+                Oids.MLDsa65WithECDsaBrainpoolP256r1PreHashSha512 or
+                Oids.MLDsa87WithECDsaBrainpoolP384r1PreHashSha512);
+
             int keySizeInBytes = (keySizeInBits + 7) / 8;
 
-            SizeRange signatureSize = SizeRange.CreateBounded(
-                RandomizerSizeInBytes + algorithm.SignatureSizeInBytes,
-                RandomizerSizeInBytes + algorithm.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(keySizeInBits));
+            const int MaxUniversalTagLength = 1;
 
-            SizeRange privateKeySize = SizeRange.CreateUnbounded(
-                minimumSize: algorithm.PrivateSeedSizeInBytes + 1 + keySizeInBytes,
-                // Add optional uncompressed public key and estimate 32 bytes for version, optional ECParameters and ASN.1 overhead.
-                initialExportBufferSize: algorithm.PrivateSeedSizeInBytes + 1 + keySizeInBytes + 1 + 2 * keySizeInBytes + 32);
+            // long form prefix and 4 bytes for length. CLR arrays and spans only support length up to int.MaxValue.
+            // Padding with leading zero bytes is allowed, but we still limit the length to 4 bytes since the only
+            // plausible scenario would be encoding a 4-byte numeric data type without trimming.
+            // Note this bound also covers indefinite length encodings which require only 1 + 2 bytes of overhead.
+            const int MaxLengthLength = 1 + 4;
 
-            SizeRange publicKeySize = SizeRange.CreateExact(algorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes);
+            const int MaxPrefixLength = MaxUniversalTagLength + MaxLengthLength;
 
-            return new CompositeMLDsaAlgorithm(name, signatureSize, privateKeySize, publicKeySize, oid);
+            // RFC 5915, Section 3
+            // ECPrivateKey ::= SEQUENCE {
+            //   version        INTEGER { ecPrivkeyVer1(1) } (ecPrivkeyVer1),
+            //   privateKey     OCTET STRING,
+            //   parameters [0] ECParameters {{ NamedCurve }} OPTIONAL,
+            //   publicKey  [1] BIT STRING OPTIONAL
+            // }
+
+            int maxPrivateKeySizeInBytes =
+                MaxPrefixLength +
+                (
+                    // version
+                    MaxPrefixLength + 1 + // Version should always be 1
+
+                    // privateKey
+                    MaxPrefixLength + keySizeInBytes +
+
+                    // parameters
+                    1 + MaxLengthLength + // Explicit tag
+                    (
+                        // RFC5480, Section 2.1.1
+                        // ECParameters ::= CHOICE {
+                        //   namedCurve         OBJECT IDENTIFIER
+                        //   -- implicitCurve   NULL
+                        //   -- specifiedCurve  SpecifiedECDomain
+                        // }
+                        // -- implicitCurve and specifiedCurve MUST NOT be used in PKIX.
+                        //
+                        // So this is a CHOICE with with the only option being a namedCurve OBJECT IDENTIFIER.
+                        //
+                        // Curve           | OID                   | DER Encoding with prefix         | Length without prefix
+                        // ----------------|-----------------------|----------------------------------|----------------------
+                        // secp256r1       | 1.2.840.10045.3.1.7   | 06 08 2A 86 48 CE 3D 03 01 07    | 8
+                        // secp384r1       | 1.3.132.0.34          | 06 05 2B 81 04 00 22             | 5
+                        // secp521r1       | 1.3.132.0.35          | 06 05 2B 81 04 00 23             | 5
+                        // brainpoolP256r1 | 1.3.36.3.3.2.8.1.1.7  | 06 09 2B 24 03 03 02 08 01 01 07 | 9
+                        // brainpoolP384r1 | 1.3.36.3.3.2.8.1.1.11 | 06 09 2B 24 03 03 02 08 01 01 0B | 9
+                        MaxPrefixLength + 9 // This doesn't need to be exact, but it does need to consider all supported curves.
+                    ) +
+
+                    // publicKey
+                    1 + MaxLengthLength + // Explicit tag
+                        1 + 2 * keySizeInBytes
+                );
+
+            return new CompositeMLDsaAlgorithm(
+                name,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes, // ECPrivateKey has at least the private key
+                mldsaAlgorithm.PrivateSeedSizeInBytes + maxPrivateKeySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + 1 + 2 * keySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 + 3 * 2, // 2 non-zero INTEGERS and overhead for 3 ASN.1 values
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(keySizeInBits),
+                oid);
         }
 
         private static CompositeMLDsaAlgorithm CreateEdDsa(
             string name,
-            MLDsaAlgorithm algorithm,
+            MLDsaAlgorithm mldsaAlgorithm,
             int keySizeInBits,
             string oid)
         {
             Debug.Assert(keySizeInBits % 8 == 0);
             int keySizeInBytes = keySizeInBits / 8;
 
-            SizeRange signatureSize = SizeRange.CreateExact(RandomizerSizeInBytes + algorithm.SignatureSizeInBytes + 2 * keySizeInBytes);
-            SizeRange privateKeySize = SizeRange.CreateExact(algorithm.PrivateSeedSizeInBytes + keySizeInBytes);
-            SizeRange publicKeySize = SizeRange.CreateExact(algorithm.PublicKeySizeInBytes + keySizeInBytes);
-
-            return new CompositeMLDsaAlgorithm(name, signatureSize, privateKeySize, publicKeySize, oid);
-        }
-
-        internal abstract class SizeRange
-        {
-            internal abstract bool IsExact { get; }
-            internal abstract int MinimumSizeInBytes { get; }
-            internal abstract int? MaximumSizeInBytes { get; }
-            internal abstract int InitialExportBufferSizeInBytes { get; }
-
-            internal static SizeRange CreateExact(int size)
-            {
-                Debug.Assert(size >= 0);
-
-                return new ExactSize(size);
-            }
-
-            internal static SizeRange CreateBounded(int minimumSize, int maximumSize)
-            {
-                Debug.Assert(minimumSize >= 0);
-                Debug.Assert(maximumSize >= minimumSize);
-
-                return minimumSize == maximumSize ? new ExactSize(minimumSize) : new VariableSize(minimumSize, maximumSize, maximumSize);
-            }
-
-            internal static SizeRange CreateUnbounded(int minimumSize, int initialExportBufferSize)
-            {
-                Debug.Assert(minimumSize >= 0);
-                Debug.Assert(initialExportBufferSize >= minimumSize);
-
-                return new VariableSize(minimumSize, null, initialExportBufferSize);
-            }
-
-            internal bool IsValidSize(int size)
-            {
-                return size >= MinimumSizeInBytes && size <= MaximumSizeInBytes.GetValueOrDefault(int.MaxValue);
-            }
-
-            internal bool IsAlwaysLargerThan(int size)
-            {
-                return size < MinimumSizeInBytes;
-            }
-
-            private sealed class ExactSize : SizeRange
-            {
-                private readonly int _size;
-
-                internal ExactSize(int size)
-                {
-                    _size = size;
-                }
-
-                internal override bool IsExact => true;
-                internal override int MinimumSizeInBytes => _size;
-                internal override int? MaximumSizeInBytes => _size;
-                internal override int InitialExportBufferSizeInBytes => _size;
-            }
-
-            private sealed class VariableSize : SizeRange
-            {
-                internal VariableSize(int minimumSize, int? maximumSize, int initialExportBufferSize)
-                {
-                    MinimumSizeInBytes = minimumSize;
-                    MaximumSizeInBytes = maximumSize;
-                    InitialExportBufferSizeInBytes = initialExportBufferSize;
-                }
-
-                internal override bool IsExact => false;
-                internal override int MinimumSizeInBytes { get; }
-                internal override int? MaximumSizeInBytes { get; }
-                internal override int InitialExportBufferSizeInBytes { get; }
-            }
+            return new CompositeMLDsaAlgorithm(
+                name,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes,
+                mldsaAlgorithm.PublicKeySizeInBytes + keySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
+                RandomizerSizeInBytes + mldsaAlgorithm.SignatureSizeInBytes + 2 * keySizeInBytes,
+                oid);
         }
     }
 }

@@ -90,7 +90,6 @@
         Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
-        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
 
@@ -100,7 +99,6 @@
         Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
-        <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
 
