@@ -113,16 +113,21 @@ std::string GetProcessCommandLine()
 #ifdef TARGET_WINDOWS
     return ::GetCommandLineA();
 #else
-    char cmdLine[256];
-
     FILE* fp = fopen("/proc/self/cmdline", "r");
     if (fp != NULL)
     {
         std::string result;
-        while (fgets(cmdLine, sizeof(cmdLine), fp) != NULL)
+        char*       cmdLine = nullptr;
+        size_t      size    = 0;
+
+        while (getline(&cmdLine, &size, fp) != -1)
         {
             result += cmdLine;
+            free(cmdLine);
+            cmdLine = nullptr;
+            size    = 0;
         }
+
         fclose(fp);
         return result;
     }
