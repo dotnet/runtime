@@ -170,6 +170,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
+        // Method parameter types are not interesting until something creates an instance of them
+        // so there's no need to validate generic arguments. See comment at the top of the file for more details.
         class MethodParametersAndReturn
         {
             class TypeWithPublicMethods<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
