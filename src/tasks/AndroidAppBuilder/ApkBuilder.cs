@@ -705,6 +705,10 @@ public partial class ApkBuilder
 
     private Dictionary<string, string> ParseRuntimeConfigProperties()
     {
+        // This method reads the binary runtimeconfig.bin file created by RuntimeConfigParserTask.ConvertDictionaryToBlob.
+        // The binary format is: compressed integer count, followed by count pairs of length-prefixed UTF8 strings (key, value).
+        // See src/tasks/MonoTargetsTasks/RuntimeConfigParser/RuntimeConfigParser.cs for the corresponding write logic.
+
         var configProperties = new Dictionary<string, string>();
         string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), "runtimeconfig.bin");
 
