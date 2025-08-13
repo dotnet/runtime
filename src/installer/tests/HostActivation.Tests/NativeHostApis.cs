@@ -310,6 +310,34 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void Hostfxr_resolve_sdk2_GlobalJson_InvalidDataNoFallback()
+        {
+            // With global.json with invalid version value - feature band < 1
+            // No match, report invalid data for global.json
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Hostfxr_resolve_sdk2_GlobalJson_InvalidData)))
+            {
+                string invalidVersion = "1.2.0";
+                string globalJson = GlobalJson.CreateWithVersion(workingDir.Location, invalidVersion);
+                string expectedData = string.Join(';', new[]
+                {
+                    ("global_json_path", globalJson),
+                    ("requested_version", invalidVersion),
+                    ("global_json_state", "__invalid_data_no_fallback"),
+                });
+
+                string api = ApiNames.hostfxr_resolve_sdk2;
+                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.ReturnStatusCode(api, Constants.ErrorCode.SdkResolveFailure)
+                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+            }
+        }
+
+        [Fact]
         public void Hostfxr_corehost_set_error_writer_test()
         {
             TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_hostfxr_set_error_writer")

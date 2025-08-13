@@ -471,14 +471,12 @@ sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string
         error_message = error_message_value->value.GetString();
     }
 
-    // SDK feature bands start at 1, so setting version with a feature band < 1 and not rolling forward on feature band will always
-    // fail when trying to resolve the SDK. We want to provide an error message, but we should not fall back to the default resolver.
-    if (!requested_version.is_empty() && get_feature_band(requested_version) < 1
-        && (roll_forward == sdk_roll_forward_policy::disable
-            || roll_forward == sdk_roll_forward_policy::patch
-            || roll_forward == sdk_roll_forward_policy::latest_patch))
+    // SDK feature bands start at 1, so a version with a feature band < 1 is not a valid version.
+    // We want to provide an error message, but we should still use the settings in the global.json
+    // and not fall back to the default resolver.
+    if (!requested_version.is_empty() && get_feature_band(requested_version) < 1)
     {
-        ret.error_message = utils::format_string(_X("Version '%s' feature band does not exist and roll-forward policy '%s' does not roll forward on feature band"), requested_version.as_str().c_str(), to_policy_name(roll_forward));
+        ret.error_message = utils::format_string(_X("Version '%s' is not valid for the 'sdk/version' value. SDK feature bands start at 1 - for example, %d.%d.100"), requested_version.as_str().c_str(), requested_version.get_major(), requested_version.get_minor());
         ret.state = global_file_info::state::__invalid_data_no_fallback;
         return ret;
     }

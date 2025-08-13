@@ -209,36 +209,22 @@ namespace HostActivation.Tests
         }
 
         [Theory]
-        [InlineData(null)]
-        [InlineData("patch")]
-        [InlineData("latestPatch")]
-        [InlineData("feature", false)]
-        [InlineData("minor", false)]
-        [InlineData("major", false)]
-        public void Info_GlobalJson_NonExistentFeatureBand(string rollForward, bool isInvalid = true)
+        [InlineData("9.0.0")]
+        [InlineData("9.1.99")]
+        public void Info_GlobalJson_NonExistentFeatureBand(string version)
         {
-            string version = "9.0.0";
             using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_NonExistentFeatureBand)))
             {
-                string globalJsonPath = GlobalJson.CreateWithVersionSettings(workingDir.Location, version, rollForward);
+                string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
                 var result = TestContext.BuiltDotNet.Exec("--info")
                     .WorkingDirectory(workingDir.Location)
                     .CaptureStdOut().CaptureStdErr()
-                    .Execute();
-                result.Should().Pass()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value. SDK feature bands start at 1 - for example, {Version.Parse(version).ToString(2)}.100")
+                    .And.NotHaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
                     .And.NotHaveStdErr();
-
-                if (isInvalid)
-                {
-                    result.Should().HaveStdOutContaining($"Invalid [{globalJsonPath}]")
-                    .And.HaveStdOutContaining($"Version '{version}' feature band does not exist and roll-forward policy '{rollForward ?? "patch"}' does not roll forward on feature band")
-                    .And.NotHaveStdOutContaining($"Invalid global.json is ignored for SDK resolution");
-                }
-                else
-                {
-                    result.Should().HaveStdOutContaining(globalJsonPath)
-                        .And.NotHaveStdOutContaining($"Invalid [{globalJsonPath}]");
-                }
             }
         }
 
