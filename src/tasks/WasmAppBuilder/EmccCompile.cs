@@ -97,6 +97,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     if (!ShouldCompile(srcFile, objFile, depFiles, out string reason))
                     {
                         Log.LogMessage(MessageImportance.Low, $"Skipping {srcFile} because {reason}.");
+                        // TODO why we are adding it when nothing is changed ?
                         outputItems.Add(CreateOutputItemFor(srcFile, objFile));
                     }
                     else

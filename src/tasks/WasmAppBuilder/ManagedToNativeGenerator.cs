@@ -95,7 +95,7 @@ public class ManagedToNativeGenerator : Task
             if (!string.IsNullOrEmpty(CacheFilePath))
             {
                 using TempFileName tmpCacheFilePath = new();
-                File.WriteAllLines(tmpCacheFilePath, PInvokeModules);
+                File.WriteAllLines(tmpCacheFilePath.Path, PInvokeModules);
                 if (Utils.CopyIfDifferent(tmpCacheFilePath.Path, CacheFilePath, useHash: false))
                 {
                     fileWritesList.Add(CacheFilePath);

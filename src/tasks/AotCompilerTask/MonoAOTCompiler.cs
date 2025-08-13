@@ -534,6 +534,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             Log.LogMessage(MessageImportance.High, "Everything is up-to-date, nothing to precompile");
 
+            // TODO why we are adding it when nothing is changed ?
             _fileWrites.AddRange(argsList.SelectMany(args => args.ProxyFiles).Select(pf => pf.TargetFile));
             foreach (var args in argsList)
                 compiledAssemblies.GetOrAdd(args.AOTAssembly.ItemSpec, args.AOTAssembly);
