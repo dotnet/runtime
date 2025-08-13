@@ -1045,9 +1045,9 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 _ASSERTE(pLookup->testForNull && i > 0);
 
                 // cmp dword ptr[eax + sizeOffset],slotOffset
-                *(UINT16*)p = 0xb881; p += 2;
-                *(UINT32*)p = (UINT32)pLookup->sizeOffset; p += 4;
-                *(UINT32*)p = (UINT32)slotOffset; p += 4;
+                SET_UNALIGNED_16(p, 0xb881); p += 2;
+                SET_UNALIGNED_32(p, (UINT32)pLookup->sizeOffset); p += 4;
+                SET_UNALIGNED_32(p, (UINT32)slotOffset); p += 4;
 
                 // jle 'HELPER CALL'
                 *p++ = 0x7e;
@@ -1058,12 +1058,12 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             // mov eax,dword ptr [ecx|eax + offset]
             if (pLookup->offsets[i] >= 0x80)
             {
-                *(UINT16*)p = (i == 0 ? 0x818b : 0x808b); p += 2;
-                *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                SET_UNALIGNED_16(p, (i == 0 ? 0x818b : 0x808b)); p += 2;
+                SET_UNALIGNED_32(p, (UINT32)pLookup->offsets[i]); p += 4;
             }
             else
             {
-                *(UINT16*)p = (i == 0 ? 0x418b : 0x408b); p += 2;
+                SET_UNALIGNED_16(p, (i == 0 ? 0x418b : 0x408b)); p += 2;
                 *p++ = (BYTE)pLookup->offsets[i];
             }
         }
@@ -1083,10 +1083,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->indirections != 0);
 
             // test eax,eax
-            *(UINT16*)p = 0xc085; p += 2;
+            SET_UNALIGNED_16(p, 0xc085); p += 2;
 
             // je 'HELPER_CALL' (a jump of 1 byte)
-            *(UINT16*)p = 0x0174; p += 2;
+            SET_UNALIGNED_16(p, 0x0174); p += 2;
 
             *p++ = 0xC3;    // ret
 
