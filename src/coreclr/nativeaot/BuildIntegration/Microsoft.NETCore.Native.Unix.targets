@@ -47,10 +47,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">armv7</CrossCompileArch>
 
       <CrossCompileAbi>gnu</CrossCompileAbi>
-      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-'))">android21</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic-')) or $(CrossCompileRid.StartsWith('android-'))">android21</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-musl-')) or $(CrossCompileRid.StartsWith('alpine-'))">musl</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
-      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm'">androideabi21</CrossCompileAbi>
+      <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm' or '$(CrossCompileRid)' == 'android-arm'">androideabi21</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-musl-arm'">musleabihf</CrossCompileAbi>
     </PropertyGroup>
 
@@ -71,8 +71,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
 
       <LinkStandardCPlusPlusLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' == '' and '$(_IsiOSLikePlatform)' == 'true' and '$(InvariantGlobalization)' != 'true'">true</LinkStandardCPlusPlusLibrary>
-      <VxSortSupportName>libRuntime.VxsortEnabled</VxSortSupportName>
-      <VxSortSupportName Condition="'$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true'">libRuntime.VxsortDisabled</VxSortSupportName>
+      <VxSortSupportName>libRuntime.VxsortDisabled</VxSortSupportName>
+      <VxSortSupportName Condition="'$(OptimizationPreference)' == 'Speed' or '$(IlcEnableVxsort)' == 'true'">libRuntime.VxsortEnabled</VxSortSupportName>
       <StandaloneGCSupportName>libstandalonegc-disabled</StandaloneGCSupportName>
       <StandaloneGCSupportName Condition="'$(IlcStandaloneGCSupport)' == 'true'">libstandalonegc-enabled</StandaloneGCSupportName>
     </PropertyGroup>

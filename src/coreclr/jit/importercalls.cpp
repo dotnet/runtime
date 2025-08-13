@@ -652,24 +652,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     else if ((opcode == CEE_CALLI) && ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_DEFAULT) &&
              ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG))
     {
-        if (!info.compCompHnd->canGetCookieForPInvokeCalliSig(sig))
-        {
-            // Normally this only happens with inlining.
-            // However, a generic method (or type) being NGENd into another module
-            // can run into this issue as well.  There's not an easy fall-back for AOT
-            // so instead we fallback to JIT.
-            if (compIsForInlining())
-            {
-                compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_PINVOKE_COOKIE);
-            }
-            else
-            {
-                IMPL_LIMITATION("Can't get PInvoke cookie (cross module generics)");
-            }
-
-            return TYP_UNDEF;
-        }
-
         GenTree* cookie = eeGetPInvokeCookie(sig);
 
         // This cookie is required to be either a simple GT_CNS_INT or
@@ -719,6 +701,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 JITDUMP("  Continuation continues on thread pool\n");
             }
         }
+        else if (opcode == CEE_CALLI)
+        {
+            // Used for unboxing/instantiating stubs
+            JITDUMP("Call is an async calli\n");
+        }
         else
         {
             JITDUMP("Call is an async non-task await\n");
@@ -766,13 +753,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
     {
         void *varCookie, *pVarCookie;
-        if (!info.compCompHnd->canGetVarArgsHandle(sig))
-        {
-            compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_VARARGS_COOKIE);
-            return TYP_UNDEF;
-        }
-
-        varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
+        varCookie = info.compCompHnd->getVarArgsHandle(sig, methHnd, &pVarCookie);
         assert((!varCookie) != (!pVarCookie));
         varArgsCookie = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
     }
@@ -941,7 +922,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
             }
 
-            if (call->AsCall()->IsAsync())
+            // Add async continuation arg. For calli these are used for IL
+            // stubs and the VM inserts the arg itself.
+            if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
@@ -955,7 +938,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
         else
         {
-            if (call->AsCall()->IsAsync())
+            // Add async continuation arg. For calli these are used for IL
+            // stubs and the VM inserts the arg itself.
+            if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
