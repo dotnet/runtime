@@ -86,12 +86,18 @@ Building on Windows is not directly supported yet. However it is possible to use
 
 #### WSL prerequisites
 
-1. Follow the [Linux requirements doc](../../requirements/linux-requirements.md).
+1. Follow [linux-requirements.md](../../requirements/linux-requirements.md).
 2. Install OpenJDK, Android SDK and Android NDK in as described in [Linux prerequisites](#prerequisites). There is a convenient automated script, but it can also be done manually by downloading the archives or using Android Studio.
 - In case of Android Studio:
     - Make sure WSL is updated: from Windows host, `wsl --update`
     - [Enabled systemd](https://devblogs.microsoft.com/commandline/systemd-support-is-now-available-in-wsl/#set-the-systemd-flag-set-in-your-wsl-distro-settings)
     - `sudo snap install android-studio --classic`
+- For Ubuntu, OpenJDK 21 is sufficient:
+
+```
+apt install openjdk-21-jdk
+```
+
 3. Set the following environment variables:
     - `export ANDROID_SDK_ROOT=<full-path-to-android-sdk>`
     - `export ANDROID_NDK_ROOT=<full-path-to-android-ndk>`
@@ -148,7 +154,8 @@ The app can be run on an emulator running on the Windows host.
 2. In Windows, create and start an emulator
 3. In WSL, swap the `adb` from the Android SDK in WSL2 with that from Windows
     - `mv $ANDROID_SDK_ROOT/platform-tools/adb $ANDROID_SDK_ROOT/platform-tools/adb-orig`
-    - `ln -s /mnt/<path-to-adb-on-host> $ANDROID_SDK_ROOT/platform-tools/adb`
+    - `ln -s /mnt/<path-to-sdk-on-host>/platform-tools/adb.exe $ANDROID_SDK_ROOT/platform-tools/adb`
+    - On Windows host, you can find the SDK location in Android Studio's SDK Manager.
 4. In WSL, Make xharness use the `adb` corresponding to the Windows host:
     - `export ADB_EXE_PATH=$ANDROID_SDK_ROOT/platform-tools/adb`
 5. In WSL, run the `make` command as [above](#running-helloandroid-sample-on-an-emulator)
