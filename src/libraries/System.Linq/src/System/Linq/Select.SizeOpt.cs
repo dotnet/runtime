@@ -12,6 +12,8 @@ namespace System.Linq
         private sealed class SizeOptIListSelectIterator<TSource, TResult>(IList<TSource> _source, Func<TSource, TResult> _selector)
             : Iterator<TResult>
         {
+            private IEnumerator<TSource>? _enumerator;
+
             public override int GetCount(bool onlyIfCheap)
             {
                 // In case someone uses Count() to force evaluation of
@@ -50,16 +52,24 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                var source = _source;
-                int index = _state - 1;
-                if ((uint)index < (uint)source.Count)
+                switch (_state)
                 {
-                    _state++;
-                    _current = _selector(source[index]);
-                    return true;
+                    case 1:
+                        _enumerator = _source.GetEnumerator();
+                        _state = 2;
+                        goto case 2;
+                    case 2:
+                        Debug.Assert(_enumerator is not null);
+                        if (_enumerator.MoveNext())
+                        {
+                            _current = _selector(_enumerator.Current);
+                            return true;
+                        }
+
+                        Dispose();
+                        break;
                 }
 
-                Dispose();
                 return false;
             }
 
