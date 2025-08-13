@@ -715,31 +715,24 @@ public partial class ApkBuilder
 
         try
         {
-            if (File.Exists(runtimeConfigPath))
+            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
+            unsafe
             {
-                byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
-                unsafe
+                fixed (byte* ptr = fileBytes)
                 {
-                    fixed (byte* ptr = fileBytes)
+                    var blobReader = new BlobReader(ptr, fileBytes.Length);
+
+                    // Read the compressed integer count
+                    int count = blobReader.ReadCompressedInteger();
+
+                    // Read each key-value pair
+                    for (int i = 0; i < count; i++)
                     {
-                        var blobReader = new BlobReader(ptr, fileBytes.Length);
-
-                        // Read the compressed integer count
-                        int count = blobReader.ReadCompressedInteger();
-
-                        // Read each key-value pair
-                        for (int i = 0; i < count; i++)
-                        {
-                            string key = blobReader.ReadSerializedString() ?? string.Empty;
-                            string value = blobReader.ReadSerializedString() ?? string.Empty;
-                            configProperties[key] = value;
-                        }
+                        string key = blobReader.ReadSerializedString() ?? string.Empty;
+                        string value = blobReader.ReadSerializedString() ?? string.Empty;
+                        configProperties[key] = value;
                     }
                 }
-            }
-            else
-            {
-                logger.LogMessage(MessageImportance.Normal, $"Runtime config file not found at {runtimeConfigPath}");
             }
         }
         catch (Exception ex)
