@@ -411,6 +411,32 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
 
+    private Data.ThreadStaticsInfo GetThreadStaticsInfo(TypeHandle typeHandle)
+    {
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        TargetPointer threadStaticsInfoSize = _target.GetTypeInfo(DataType.ThreadStaticsInfo).Size!.Value;
+        TargetPointer threadStaticsInfoAddr = methodTable.AuxiliaryData - threadStaticsInfoSize;
+        Data.ThreadStaticsInfo threadStaticsInfo = _target.ProcessedData.GetOrAdd<Data.ThreadStaticsInfo>(threadStaticsInfoAddr);
+        return threadStaticsInfo;
+    }
+
+    public TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
+        TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).GCTlsIndex;
+        Contracts.IThread threadContract = _target.Contracts.Thread;
+        return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexPtr);
+    }
+
+    public TargetPointer GetNonGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
+        TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).NonGCTlsIndex;
+        Contracts.IThread threadContract = _target.Contracts.Thread;
+        return threadContract.GetThreadLocalStaticBase(threadPtr, tlsIndexPtr);
+    }
 
     public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle)
     {

@@ -315,7 +315,7 @@ namespace System.Threading
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)
             {
-                startTime = TimeoutHelper.GetTime();
+                startTime = (uint)Environment.TickCount;
             }
             SpinWait spinner = default;
             while (!condition())
@@ -329,7 +329,7 @@ namespace System.Threading
 
                 if (millisecondsTimeout != Timeout.Infinite && spinner.NextSpinWillYield)
                 {
-                    if (millisecondsTimeout <= (TimeoutHelper.GetTime() - startTime))
+                    if (millisecondsTimeout <= (uint)Environment.TickCount - startTime)
                     {
                         return false;
                     }
