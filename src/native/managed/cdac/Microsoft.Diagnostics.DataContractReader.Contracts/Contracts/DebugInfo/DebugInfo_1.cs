@@ -77,9 +77,9 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         {
             // This means we have instrumented bounds.
             cbBounds = nibbleReader.ReadUInt();
-            // cbUninstrumentedBounds = nibbleReader.ReadUInt();
+            uint _1 /*cbUninstrumentedBounds*/ = nibbleReader.ReadUInt();
         }
-        uint _ /*cbVars*/ = nibbleReader.ReadUInt();
+        uint _2 /*cbVars*/ = nibbleReader.ReadUInt();
 
         TargetPointer addrBounds = debugInfo + (uint)nibbleReader.GetNextByteOffset();
         // TargetPointer addrVars = addrBounds + cbBounds + cbUninstrumentedBounds;
@@ -93,7 +93,6 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         return Enumerable.Empty<OffsetMapping>();
     }
 
-    // Algorithm for R2R major version 16 and above
     private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
     {
         NibbleReader reader = new(nativeReader, 0);
