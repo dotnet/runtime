@@ -334,6 +334,109 @@
       <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
     </PropertyGroup>
 
+    <ItemGroup>
+      <_WasmPropRequiresFullNativeRebuild Include="TargetFrameworkVersion=$(TargetFrameworkVersion)" />
+      <_WasmPropRequiresFullNativeRebuild Include="DOTNET_ROOT=$(DOTNET_ROOT)" />
+      <_WasmPropRequiresFullNativeRebuild Include="DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)" />
+      <_WasmPropRequiresFullNativeRebuild Include="RuntimeEmccVersionRaw=$(RuntimeEmccVersionRaw)" />
+      <_WasmPropRequiresFullNativeRebuild Include="_KnownWebAssemblySdkPackVersion=$(_KnownWebAssemblySdkPackVersion)" />
+      <_WasmPropRequiresFullNativeRebuild Include="_MonoWorkloadRuntimePackPackageVersion=$(_MonoWorkloadRuntimePackPackageVersion)" />
+      <_WasmPropRequiresFullNativeRebuild Include="_RuntimePackInWorkloadVersionCurrent=$(_RuntimePackInWorkloadVersionCurrent)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmBuildNative=$(WasmBuildNative)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEnableThreads=$(WasmEnableThreads)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEnableSIMD=$(WasmEnableSIMD)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEnableExceptionHandling=$(WasmEnableExceptionHandling)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmSingleFileBundle=$(WasmSingleFileBundle)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmLinkIcalls=$(WasmLinkIcalls)" />
+      <_WasmPropRequiresFullNativeRebuild Include="RunAOTCompilation=$(RunAOTCompilation)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmDedup=$(WasmDedup)" />
+      <_WasmPropRequiresFullNativeRebuild Include="DebugSymbols=$(DebugSymbols)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmDebugLevel=$(WasmDebugLevel)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmNativeDebugSymbols=$(WasmNativeDebugSymbols)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEmitSymbolMap=$(WasmEmitSymbolMap)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmEmitSourceMap=$(WasmEmitSourceMap)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmNativeStrip=$(WasmNativeStrip)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EnableDiagnostics=$(EnableDiagnostics)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EventSourceSupport=$(EventSourceSupport)" />
+      <_WasmPropRequiresFullNativeRebuild Include="MetricsSupport=$(MetricsSupport)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmPerformanceInstrumentation=$(WasmPerformanceInstrumentation)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmProfilers=$(WasmProfilers)" />
+      <_WasmPropRequiresFullNativeRebuild Include="InvariantGlobalization=$(InvariantGlobalization)" />
+      <_WasmPropRequiresFullNativeRebuild Include="InvariantTimezone=$(InvariantTimezone)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmSkipMissingAssemblies=$(WasmSkipMissingAssemblies)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmStripAOTAssemblies=$(WasmStripAOTAssemblies)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccVerbose=$(EmccVerbose)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccLinkOptimizationFlag=$(EmccLinkOptimizationFlag)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccCompileOptimizationFlag=$(EmccCompileOptimizationFlag)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmBitcodeCompileOptimizationFlag=$(WasmBitcodeCompileOptimizationFlag)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccFlags=$(EmccFlags)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccExtraLDFlags=$(EmccExtraLDFlags)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccExtraCFlags=$(EmccExtraCFlags)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccEnableAssertions=$(EmccEnableAssertions)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccEnvironment=$(EmccEnvironment)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccEnvironment=$(EmccEnvironment)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmInitialHeapSize=$(WasmInitialHeapSize)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccMaximumHeapSize=$(EmccMaximumHeapSize)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EmccStackSize=$(EmccStackSize)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmIncludeFullIcuData=$(WasmIncludeFullIcuData)" />
+      <_WasmPropRequiresFullNativeRebuild Include="WasmAllowUndefinedSymbols=$(WasmAllowUndefinedSymbols)" />
+      <_WasmPropRequiresFullNativeRebuild Include="EnableAggressiveTrimming=$(EnableAggressiveTrimming)" />
+      <_WasmPropRequiresFullNativeRebuild Include="PublishTrimmed=$(PublishTrimmed)" />
+      <_WasmPropRequiresFullNativeRebuild Include="_ExtraTrimmerArgs=$(_ExtraTrimmerArgs)" />
+      <_WasmPropRequiresFullNativeRebuild Include="UsingMicrosoftNETSdkWebAssembly=$(UsingMicrosoftNETSdkWebAssembly)" />
+
+      <!-- items+values -->
+      <_WasmItemRequiresFullNativeRebuild Include="@(RuntimeHostConfigurationOption->'%(Identity)=%(Value)')" />
+    </ItemGroup>
+
+    <!-- FIXME: ideally we would also compute hash of the TrimmerRootDescriptor files -->
+    <Hash ItemsToHash="@(_WasmPropRequiresFullNativeRebuild);
+                       @(_WasmItemRequiresFullNativeRebuild);
+                       @(WasmAssembliesToBundle);
+                       @(GenerateRuntimeConfigurationFilesInputs);
+                       @(WasmNativeAsset);
+                       @(NativeFileReference);
+                       @(LinkerArg);
+                       @(TrimmerRootDescriptor);
+                       @(EmccExportedRuntimeMethod);
+                       @(EmccExportedLibraryFunction);
+                       @(EmccExportedFunction);
+                       @(MonoAotCrossCompiler);
+                       @(_MonoComponent);
+                       ">
+      <Output TaskParameter="HashResult" PropertyName="_WasmNativePropertiesCurrentHash" />
+    </Hash>
+
+    <ItemGroup>
+      <!-- cleanup -->
+      <_WasmPropRequiresFullNativeRebuild Remove="@(_WasmPropRequiresFullNativeRebuild)" />
+      <_WasmItemRequiresFullNativeRebuild Remove="@(_WasmItemRequiresFullNativeRebuild)" />
+    </ItemGroup>
+
+    <ReadLinesFromFile File="$(IntermediateOutputPath)WasmNativePropertiesHash.stamp" Condition="Exists('$(IntermediateOutputPath)WasmNativePropertiesHash.stamp')">
+      <Output TaskParameter="Lines" PropertyName="_WasmNativePropertiesPreviousHash" />
+    </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <_WasmNativePropertiesDiffer Condition="'$(_WasmNativePropertiesPreviousHash)' != '$(_WasmNativePropertiesCurrentHash)'">true</_WasmNativePropertiesDiffer>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(_WasmIntermediateOutputPath)" 
+      Condition="Exists('$(_WasmIntermediateOutputPath)') and ('$(_WasmNativePropertiesDiffer)' == 'true')"
+    />
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" 
+      Condition="!Exists('$(_WasmIntermediateOutputPath)')" />
+
+    <WriteLinesToFile Lines="$(_WasmNativePropertiesCurrentHash)"
+      Condition="'$(_WasmNativePropertiesDiffer)' == 'true'"
+      File="$(IntermediateOutputPath)WasmNativePropertiesHash.stamp" 
+      Overwrite="true" 
+      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateOutputPath)WasmNativePropertiesHash.stamp" Condition="'$(_WasmNativePropertiesDiffer)' == 'true'" />
+    </ItemGroup>
+
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
   </Target>
 
@@ -664,6 +767,7 @@
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
+      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmDedupAssembly)" />
     </ItemGroup>
 
@@ -754,18 +858,19 @@
     <PropertyGroup>
       <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
       <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$([System.IO.Path]::Combine($(MicrosoftNetCoreAppRuntimePackRidLibTfmDir), 'mscorlib.dll'))</_MscorlibPath>
+      <_WasmRuntimeICallTablePathExists Condition="Exists('$(_WasmRuntimeICallTablePath)')">true</_WasmRuntimeICallTablePathExists>
     </PropertyGroup>
 
     <Error Condition="'$(_HasMscorlib)' != 'true' and !Exists($(_MscorlibPath))" Text="Could not find 'mscorlib.dll' in the runtime pack at $(_MscorlibPath)" />
     <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
            Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
 
-    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' Condition="!Exists($(_WasmRuntimeICallTablePath))" />
-    <ItemGroup>
-      <FileWrites Include="$(_WasmRuntimeICallTablePath)" />
-    </ItemGroup>
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')" />
 
-    <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')"  />
+    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' Condition="'$(_WasmRuntimeICallTablePathExists)' != 'true'" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmRuntimeICallTablePath)" Condition="'$(_WasmRuntimeICallTablePathExists)' != 'true'"/>
+    </ItemGroup>
 
     <ManagedToNativeGenerator
       Assemblies="@(_WasmAssembliesInternal);$(_MscorlibPath)"
@@ -789,6 +894,7 @@
   <Target Name="_WasmWriteRspForCompilingBitcode">
     <WriteLinesToFile Lines="@(_BitcodeCompileFlags)" File="$(_WasmCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
+      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmCompileBitcodeRsp)" />
     </ItemGroup>
   </Target>
@@ -831,6 +937,7 @@
   <Target Name="_WasmWriteRspForCompilingNativeSourceFiles">
     <WriteLinesToFile Lines="@(_WasmCFlags)" File="$(_WasmCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
+      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmCompileRsp)" />
     </ItemGroup>
   </Target>
@@ -886,6 +993,7 @@
       <_EmitBundleOutputFile Include="@(_EmitBundleRegistrationFile)" />
 
       <_WasmObjectFilesForBundle Include="@(_EmitBundleOutputFile)" />
+      <!-- TODO add only if changed -->
       <FileWrites Include="@(_EmitBundleOutputFile)" />
     </ItemGroup>
   </Target>
@@ -897,6 +1005,7 @@
   <Target Name="_WasmWriteRspForLinking">
     <WriteLinesToFile Lines="@(_WasmLinkStepArgs)" File="$(_WasmLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
+      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmLinkRsp)" />
     </ItemGroup>
   </Target>

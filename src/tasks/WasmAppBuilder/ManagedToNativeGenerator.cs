@@ -67,6 +67,7 @@ public class ManagedToNativeGenerator : Task
 
     private void ExecuteInternal(LogAdapter log)
     {
+        List<string> fileWritesList = new();
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         if (ShouldRun(managedAssemblies))
@@ -85,21 +86,22 @@ public class ManagedToNativeGenerator : Task
             }
 
             IEnumerable<string> cookies = Enumerable.Concat(
-                pinvoke.Generate(PInvokeModules, PInvokeOutputPath),
-                icall.Generate(IcallOutputPath));
+                pinvoke.Generate(PInvokeModules, PInvokeOutputPath, fileWritesList),
+                icall.Generate(IcallOutputPath, fileWritesList));
 
             var m2n = new InterpToNativeGenerator(log);
-            m2n.Generate(cookies, InterpToNativeOutputPath);
+            m2n.Generate(cookies, InterpToNativeOutputPath, fileWritesList);
 
             if (!string.IsNullOrEmpty(CacheFilePath))
-                File.WriteAllLines(CacheFilePath, PInvokeModules);
+            {
+                using TempFileName tmpCacheFilePath = new();
+                File.WriteAllLines(tmpCacheFilePath, PInvokeModules);
+                if (Utils.CopyIfDifferent(tmpCacheFilePath.Path, CacheFilePath, useHash: false))
+                {
+                    fileWritesList.Add(CacheFilePath);
+                }
+            }
         }
-
-        List<string> fileWritesList = new() { PInvokeOutputPath, InterpToNativeOutputPath };
-        if (IcallOutputPath != null)
-            fileWritesList.Add(IcallOutputPath);
-        if (!string.IsNullOrEmpty(CacheFilePath))
-            fileWritesList.Add(CacheFilePath);
 
         FileWrites = fileWritesList.ToArray();
 

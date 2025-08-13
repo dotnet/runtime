@@ -97,16 +97,19 @@ public class ConvertDllsToWebCil : Task
                 Directory.CreateDirectory(candidatePath);
 
             if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+            {
                 Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                _fileWrites.Add(finalWebcil);
+            }
             else
                 Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
         }
         else
         {
             Log.LogMessage(MessageImportance.Low, $"Skipping {dllFilePath} as it is older than the output file {finalWebcil}");
+            _fileWrites.Add(finalWebcil);
         }
 
-        _fileWrites.Add(finalWebcil);
 
         var webcilItem = new TaskItem(finalWebcil, candidate.CloneCustomMetadata());
         webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), Utils.WebcilInWasmExtension));

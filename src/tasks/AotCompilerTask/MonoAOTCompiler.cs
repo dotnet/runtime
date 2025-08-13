@@ -676,8 +676,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             // FIXME: delete files not in originalAssemblies though
             // FIXME: or .. just delete the whole dir?
             if (Utils.CopyIfDifferent(asmPath, newPath, useHash: true))
+            {
                 Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
-            _fileWrites.Add(newPath);
+                _fileWrites.Add(newPath);
+            }
 
             var newAsm = new TaskItem(newPath);
             asmItem.CopyMetadataTo(newAsm);

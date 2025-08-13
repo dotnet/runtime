@@ -532,6 +532,7 @@
       <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
     </Exec>
     <ItemGroup>
+      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
@@ -612,6 +613,7 @@
     </WriteLinesToFile>
 
     <ItemGroup>
+      <!-- TODO add only if changed -->
       <FileWrites Include="$(WasmRunV8ScriptPath)" />
     </ItemGroup>
 

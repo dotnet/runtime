@@ -146,10 +146,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
                 if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
+                {
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                    _fileWrites.Add(finalWebcil);
+                }
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
-                _fileWrites.Add(finalWebcil);
             }
             else
             {
@@ -253,10 +255,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(cultureDirectory, Path.ChangeExtension(name, Utils.WebcilInWasmExtension));
                 if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
+                {
+                    _fileWrites.Add(finalWebcil);
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                }
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
-                _fileWrites.Add(finalWebcil);
 
                 if (!resources.satelliteResources.TryGetValue(args.culture, out var cultureSatelliteResources))
                     resources.satelliteResources[args.culture] = cultureSatelliteResources = new();
@@ -446,8 +450,10 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         }
 
         string monoConfigPath = Path.Combine(runtimeAssetsPath, ConfigFileName);
-        Utils.CopyIfDifferent(tmpConfigPath.Path, monoConfigPath, useHash: false);
-        _fileWrites.Add(monoConfigPath);
+        if (Utils.CopyIfDifferent(tmpConfigPath.Path, monoConfigPath, useHash: false))
+        {
+            _fileWrites.Add(monoConfigPath);
+        }
 
         foreach (ITaskItem item in ExtraFilesToDeploy!)
         {

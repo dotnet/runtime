@@ -237,9 +237,11 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     if (!Utils.CopyIfDifferent(tmpObjFile, objFile, useHash: true))
                         Log.LogMessage(MessageImportance.Low, $"Did not overwrite {objFile} as the contents are unchanged");
                     else
+                    {
                         Log.LogMessage(MessageImportance.Low, $"Copied {tmpObjFile} to {objFile}");
+                        outputItems.Add(CreateOutputItemFor(srcFile, objFile));
+                    }
 
-                    outputItems.Add(CreateOutputItemFor(srcFile, objFile));
 
                     int count = Interlocked.Increment(ref _numCompiled);
                     Log.LogMessage(MessageImportance.High, $"[{count}/{_totalFiles}] {Path.GetFileName(srcFile)} -> {Path.GetFileName(objFile)} [took {elapsedSecs:F}s]");
