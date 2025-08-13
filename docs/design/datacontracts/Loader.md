@@ -74,7 +74,7 @@ TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
-IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table);
+IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
@@ -475,7 +475,7 @@ TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out Tar
     return TargetPointer.Null;
 }
 
-IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table)
+IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
 {
     Data.ModuleLookupMap lookupMap = new Data.ModuleLookupMap(table);
     // have to read lookupMap an extra time upfront because only the first map

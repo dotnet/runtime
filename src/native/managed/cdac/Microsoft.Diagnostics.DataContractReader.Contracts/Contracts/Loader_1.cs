@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -352,8 +353,12 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToILCodeVersioningStateMap);
     }
 
-    private TargetPointer GetModuleLookupMapAtIndex(ref TargetPointer table, ref uint index, ref TargetNUInt flags, TargetNUInt supportedFlagsMask)
+    private static (bool Done, uint NextIndex) IterateLookupMap(uint index) => (false, index + 1);
+    private static (bool Done, uint NextIndex) SearchLookupMap(uint index) => (true, index);
+    private delegate (bool Done, uint NextIndex) Delegate(uint index);
+    private IEnumerable<(TargetPointer, uint)> IterateModuleLookupMap(TargetPointer table, uint index, Delegate iterator)
     {
+        bool doneIterating;
         do
         {
             Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
@@ -361,9 +366,10 @@ internal readonly struct Loader_1 : ILoader
             {
                 TargetPointer entryAddress = lookupMap.TableData + (ulong)(index * _target.PointerSize);
                 TargetPointer rawValue = _target.ReadPointer(entryAddress);
-                flags = new TargetNUInt(rawValue & supportedFlagsMask.Value);
-                index++;
-                return rawValue & ~(supportedFlagsMask.Value);
+                yield return (rawValue, index);
+                (doneIterating, index) = iterator(index);
+                if (doneIterating)
+                    yield break;
             }
             else
             {
@@ -371,7 +377,6 @@ internal readonly struct Loader_1 : ILoader
                 index -= lookupMap.Count;
             }
         } while (table != TargetPointer.Null);
-        return TargetPointer.Null;
     }
 
     TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags)
@@ -383,31 +388,29 @@ internal readonly struct Loader_1 : ILoader
         }
 
         Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
-        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
 
         uint rid = EcmaMetadataUtils.GetRowId(token);
         ArgumentOutOfRangeException.ThrowIfZero(rid);
-        flags = new TargetNUInt(0);
-        uint index = rid;
-        return GetModuleLookupMapAtIndex(ref table, ref index, ref flags, supportedFlagsMask);
+        (TargetPointer rval, uint _) = IterateModuleLookupMap(table, rid, SearchLookupMap).FirstOrDefault();
+        flags = new TargetNUInt(rval & supportedFlagsMask);
+        return rval & ~supportedFlagsMask;
     }
 
-    IEnumerable<(TargetPointer, uint)> ILoader.IterateModuleLookupMap(TargetPointer table)
+    IEnumerable<(TargetPointer, uint)> ILoader.EnumerateModuleLookupMap(TargetPointer table)
     {
         if (table == TargetPointer.Null)
             yield break;
         Data.ModuleLookupMap lookupMap = _target.ProcessedData.GetOrAdd<Data.ModuleLookupMap>(table);
-        TargetNUInt supportedFlagsMask = lookupMap.SupportedFlagsMask;
+        ulong supportedFlagsMask = lookupMap.SupportedFlagsMask.Value;
         TargetNUInt flags = new TargetNUInt(0);
         uint index = 1; // zero is invalid
-        do
+        foreach ((TargetPointer targetPointer, uint idx) in IterateModuleLookupMap(table, index, IterateLookupMap))
         {
-            TargetPointer nxt = GetModuleLookupMapAtIndex(ref table, ref index, ref flags, supportedFlagsMask);
-            if (nxt != TargetPointer.Null)
-            {
-                yield return (new TargetPointer(nxt), index-1);
-            }
-        } while (table != TargetPointer.Null);
+            TargetPointer rval = targetPointer & ~supportedFlagsMask;
+            if (rval != TargetPointer.Null)
+                yield return (rval, idx);
+        }
     }
 
     bool ILoader.IsCollectible(ModuleHandle handle)
