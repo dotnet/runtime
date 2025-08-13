@@ -561,6 +561,15 @@ enum allocation_state
     a_state_max
 };
 
+#ifdef BACKGROUND_GC
+enum uoh_allocation_action
+{
+    uoh_alloc_normal,
+    uoh_alloc_yield,
+    uoh_alloc_wait
+};
+#endif //BACKGROUND_GC
+
 enum enter_msl_status
 {
     msl_entered,
@@ -2308,18 +2317,16 @@ private:
                             int lock_index,
                             BOOL check_used_p,
                             heap_segment* seg);
-#endif //BACKGROUND_GC
 
-#ifdef BACKGROUND_GC
     PER_HEAP_METHOD void bgc_track_uoh_alloc();
 
     PER_HEAP_METHOD void bgc_untrack_uoh_alloc();
 
-    PER_HEAP_METHOD BOOL bgc_loh_allocate_spin();
-
-    PER_HEAP_METHOD BOOL bgc_poh_allocate_spin();
+    PER_HEAP_METHOD uoh_allocation_action get_bgc_allocate_action (int gen_number);
 
     PER_HEAP_METHOD void bgc_record_uoh_allocation(int gen_number, size_t size);
+
+    PER_HEAP_METHOD void bgc_record_uoh_end_seg_allocation (int gen_number, size_t size);
 #endif //BACKGROUND_GC
 
     PER_HEAP_METHOD void add_saved_spinlock_info (
@@ -3551,11 +3558,6 @@ private:
 #ifdef BACKGROUND_GC
     PER_HEAP_FIELD_SINGLE_GC VOLATILE(bgc_state) current_bgc_state;
 
-    PER_HEAP_FIELD_SINGLE_GC size_t     bgc_begin_loh_size;
-    PER_HEAP_FIELD_SINGLE_GC size_t     bgc_begin_poh_size;
-    PER_HEAP_FIELD_SINGLE_GC size_t     end_loh_size;
-    PER_HEAP_FIELD_SINGLE_GC size_t     end_poh_size;
-
     // We can't process the ephemeral range concurrently so we
     // wait till final mark to process it.
     PER_HEAP_FIELD_SINGLE_GC BOOL      processed_eph_overflow_p;
@@ -3566,6 +3568,9 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC uint8_t* next_sweep_obj;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* current_sweep_pos;
+
+    PER_HEAP_FIELD_SINGLE_GC size_t bgc_begin_uoh_size[uoh_generation_count];
+    PER_HEAP_FIELD_SINGLE_GC size_t end_uoh_size[uoh_generation_count];
 
     PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_no_bgc[uoh_generation_count];
     PER_HEAP_FIELD_SINGLE_GC size_t uoh_a_bgc_marking[uoh_generation_count];
@@ -3777,14 +3782,10 @@ private:
 #endif //MULTIPLE_HEAPS
 
 #ifdef BACKGROUND_GC
-    // This includes what we allocate at the end of segment - allocating
-    // in free list doesn't increase the heap size.
-    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     bgc_loh_size_increased;
-    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     bgc_poh_size_increased;
-
     // Updated by the allocator and reinit-ed in each BGC
-    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     background_soh_alloc_count;
-    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     background_uoh_alloc_count;
+    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t bgc_uoh_current_size[uoh_generation_count];
+
+    PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t background_soh_alloc_count;
 
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int32_t) uoh_alloc_thread_count;
 #endif //BACKGROUND_GC
@@ -5366,11 +5367,6 @@ private:
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool gc_can_use_concurrent;
-
-#ifdef BGC_SERVO_TUNING
-    // This tells us why we chose to do a bgc in tuning.
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY int saved_bgc_tuning_reason;
-#endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY uint8_t* bookkeeping_start;
@@ -5483,6 +5479,11 @@ private:
     // This can only go from false to true concurrently so if it is true,
     // it means the bgc info is ready.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(bool) is_last_recorded_bgc;
+
+#ifdef BGC_SERVO_TUNING
+    // This tells us why we chose to do a bgc in tuning.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY int saved_bgc_tuning_reason;
+#endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
 #ifdef DYNAMIC_HEAP_COUNT
@@ -6233,10 +6234,13 @@ public:
     int             plan_gen_num;
     int             old_card_survived;
     int             pinned_survived;
-    // at the end of each GC, we increase each region in the region free list
-    // by 1. So we can observe if a region stays in the free list over many
-    // GCs. We stop at 99. It's initialized to 0 when a region is added to
-    // the region's free list.
+    // at the end of each GC, we increase the age of each region in the relevant region
+    // free list(s) by 1. So we can observe if a region stays in the free list over many
+    // GCs. We stop at 99. It's initialized to 0 when a region is added to the region's free list.
+    // 
+    // "Relevant" means we only age basic regions during ephemeral GCs and age all regions
+    // during gen2 GCs. The only exception is we do age all regions during an ephemeral GC
+    // done at the beginning of a BGC. 
     #define MAX_AGE_IN_FREE 99
     #define AGE_IN_FREE_TO_DECOMMIT_BASIC 20
     #define AGE_IN_FREE_TO_DECOMMIT_LARGE 5
