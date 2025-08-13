@@ -2407,7 +2407,46 @@ internal sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface14
     int ISOSDacInterface14.GetStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
-        => _legacyImpl14 is not null ? _legacyImpl14.GetStaticBaseAddress(methodTable, nonGCStaticsAddress, GCStaticsAddress) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        if (nonGCStaticsAddress == null && GCStaticsAddress == null)
+            hr = HResults.E_POINTER;
+        else if (methodTable == 0)
+            hr = HResults.E_INVALIDARG;
+        else
+        {
+            try
+            {
+                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+                Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+                if (GCStaticsAddress != null)
+                    *GCStaticsAddress = rtsContract.GetGCStaticsBasePointer(typeHandle).ToClrDataAddress(_target);
+                if (nonGCStaticsAddress != null)
+                    *nonGCStaticsAddress = rtsContract.GetNonGCStaticsBasePointer(typeHandle).ToClrDataAddress(_target);
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+        }
+#if DEBUG
+        if (_legacyImpl14 is not null)
+        {
+            ClrDataAddress nonGCStaticsAddressLocal;
+            ClrDataAddress GCStaticsAddressLocal;
+            int hrLocal = _legacyImpl14.GetStaticBaseAddress(methodTable, &nonGCStaticsAddressLocal, &GCStaticsAddressLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                if (GCStaticsAddress != null)
+                    Debug.Assert(*GCStaticsAddress == GCStaticsAddressLocal);
+                if (nonGCStaticsAddress != null)
+                    Debug.Assert(*nonGCStaticsAddress == nonGCStaticsAddressLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface14.GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
     {
         int hr = HResults.S_OK;
