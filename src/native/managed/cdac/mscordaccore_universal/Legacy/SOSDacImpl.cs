@@ -2458,6 +2458,7 @@ internal sealed unsafe partial class SOSDacImpl
         {
             try
             {
+                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer methodTablePtr = methodTable.ToTargetPointer(_target);
                 TargetPointer threadPtr = thread.ToTargetPointer(_target);
                 Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTablePtr);
