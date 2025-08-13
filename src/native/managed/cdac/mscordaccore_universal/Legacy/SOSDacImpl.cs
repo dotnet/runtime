@@ -59,6 +59,15 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
+    private enum CorTokenType: uint
+    {
+        mdtTypeRef = 0x01000000,
+        mdtTypeDef = 0x02000000,
+        mdtFieldDef = 0x04000000,
+        mdtMethodDef = 0x06000000,
+        typeMask = 0xff000000,
+    }
+
     public SOSDacImpl(Target target, object? legacyObj)
     {
         _target = target;
