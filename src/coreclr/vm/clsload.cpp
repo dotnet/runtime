@@ -2601,22 +2601,6 @@ TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle ty
         case CLASS_LOAD_APPROXPARENTS :
             if (!typeHnd.IsTypeDesc())
             {
-                if (typeHnd.AsMethodTable()->GetClass()->HasRVAStaticFields())
-                {
-                    ApproxFieldDescIterator fdIterator(typeHnd.AsMethodTable(), ApproxFieldDescIterator::STATIC_FIELDS);
-                    FieldDesc* pFD = NULL;
-                    while ((pFD = fdIterator.Next()) != NULL)
-                    {
-                        if (pFD->IsByValue() && pFD->IsRVA())
-                        {
-                            if (pFD->GetApproxFieldTypeHandleThrowing().GetMethodTable()->GetClass()->HasFieldsWhichMustBeInited())
-                            {
-                                ThrowHR(COR_E_BADIMAGEFORMAT);
-                            }
-                        }
-                    }
-                }
-
                 LoadExactParents(typeHnd.AsMethodTable());
             }
             break;
