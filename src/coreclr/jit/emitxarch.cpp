@@ -1472,6 +1472,23 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
         }
     }
 
+    if ((cond.GetCode() == GenCondition::SLT) || (cond.GetCode() == GenCondition::SGE))
+    {
+        if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    if ((cond.GetCode() == GenCondition::SGT) || (cond.GetCode() == GenCondition::SLE))
+    {
+        if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteZeroFlag(lastIns) && DoesWriteSignFlag(lastIns) &&
+            IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
     return false;
 }
 
