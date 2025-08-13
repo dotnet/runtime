@@ -478,7 +478,7 @@ namespace System.Security.Cryptography.Tests
                 // CryptoKit is supported on macOS 10.15+, which is our minimum target. On iOS/tvOS, it was added in 13.0 but we can expect that version in our testing environments.
                 expectedIsSupported = true;
             }
-            else if (PlatformDetection.IsSymCryptOpenSsl)
+            else if (PlatformDetection.IsAzureLinux)
             {
                 // Though Azure Linux uses OpenSSL, they build OpenSSL without ChaCha20-Poly1305.
                 expectedIsSupported = false;
