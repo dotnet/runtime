@@ -3836,6 +3836,9 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
         pMTFound = module->LookupTypeRef(typeDefOrRef).AsMethodTable();
     }
 
+    // The checking here for typeDefOrRef which matches GetCl is only intended to reduce the number
+    // of cases where we throw exceptions. It is not actually a correctness check, so that obviously
+    // self-referential loads don't trigger exceptions.
     if ((pMTFound == NULL) && bmtInternal->pType != NULL && (typeDefOrRef != GetCl()))
     {
         EX_TRY
@@ -3971,7 +3974,7 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
             break;
         }
 
-        // Somethine went wrong looking for the instance field. Fall back to using the loaded type.
+        // Something went wrong looking for the instance field. Fall back to using the loaded type.
         _ASSERTE(!"Could not find instance field on enum, fallback to using loaded type");
         MethodTable *pMTEnum = ClassLoader::LoadTypeDefThrowing(pModuleOfTypeDef, tkTypeDef, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef).AsMethodTable();
 
