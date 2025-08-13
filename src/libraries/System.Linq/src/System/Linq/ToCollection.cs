@@ -148,6 +148,8 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
+            Dictionary<TKey, TSource> dict;
+
             if (source.TryGetNonEnumeratedCount(out int capacity))
             {
                 if (capacity == 0)
@@ -155,35 +157,25 @@ namespace System.Linq
                     return new Dictionary<TKey, TSource>(comparer);
                 }
 
-                if (source is TSource[] array)
+                if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
                 {
-                    return SpanToDictionary(array, keySelector, comparer);
-                }
+                    dict = new Dictionary<TKey, TSource>(span.Length, comparer);
+                    foreach (TSource element in span)
+                    {
+                        dict.Add(keySelector(element), element);
+                    }
 
-                if (source is List<TSource> list)
-                {
-                    ReadOnlySpan<TSource> span = CollectionsMarshal.AsSpan(list);
-                    return SpanToDictionary(span, keySelector, comparer);
+                    return dict;
                 }
             }
 
-            Dictionary<TKey, TSource> d = new Dictionary<TKey, TSource>(capacity, comparer);
+            dict = new Dictionary<TKey, TSource>(capacity, comparer);
             foreach (TSource element in source)
             {
-                d.Add(keySelector(element), element);
+                dict.Add(keySelector(element), element);
             }
 
-            return d;
-        }
-
-        private static Dictionary<TKey, TSource> SpanToDictionary<TSource, TKey>(ReadOnlySpan<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
-        {
-            Dictionary<TKey, TSource> d = new Dictionary<TKey, TSource>(source.Length, comparer);
-            foreach (TSource element in source)
-            {
-                d.Add(keySelector(element), element);
-            }
-            return d;
+            return dict;
         }
 
         public static Dictionary<TKey, TElement> ToDictionary<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector) where TKey : notnull =>
@@ -206,6 +198,8 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
             }
 
+            Dictionary<TKey, TElement> dict;
+
             if (source.TryGetNonEnumeratedCount(out int capacity))
             {
                 if (capacity == 0)
@@ -213,35 +207,24 @@ namespace System.Linq
                     return new Dictionary<TKey, TElement>(comparer);
                 }
 
-                if (source is TSource[] array)
+                if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
                 {
-                    return SpanToDictionary(array, keySelector, elementSelector, comparer);
-                }
-
-                if (source is List<TSource> list)
-                {
-                    ReadOnlySpan<TSource> span = CollectionsMarshal.AsSpan(list);
-                    return SpanToDictionary(span, keySelector, elementSelector, comparer);
+                    dict = new Dictionary<TKey, TElement>(span.Length, comparer);
+                    foreach (TSource element in span)
+                    {
+                        dict.Add(keySelector(element), elementSelector(element));
+                    }
+                    return dict;
                 }
             }
 
-            Dictionary<TKey, TElement> d = new Dictionary<TKey, TElement>(capacity, comparer);
+            dict = new Dictionary<TKey, TElement>(capacity, comparer);
             foreach (TSource element in source)
             {
-                d.Add(keySelector(element), elementSelector(element));
+                dict.Add(keySelector(element), elementSelector(element));
             }
 
-            return d;
-        }
-
-        private static Dictionary<TKey, TElement> SpanToDictionary<TSource, TKey, TElement>(ReadOnlySpan<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
-        {
-            Dictionary<TKey, TElement> d = new Dictionary<TKey, TElement>(source.Length, comparer);
-            foreach (TSource element in source)
-            {
-                d.Add(keySelector(element), elementSelector(element));
-            }
-            return d;
+            return dict;
         }
 
         public static HashSet<TSource> ToHashSet<TSource>(this IEnumerable<TSource> source) => source.ToHashSet(comparer: null);

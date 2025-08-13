@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using static System.Linq.Utilities;
 
 namespace System.Linq
@@ -52,9 +53,9 @@ namespace System.Linq
                     return new ArraySelectIterator<TSource, TResult>(array, selector);
                 }
 
-                if (source is List<TSource> list)
+                if (source.GetType() == typeof(List<TSource>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
                 {
-                    return new ListSelectIterator<TSource, TResult>(list, selector);
+                    return new ListSelectIterator<TSource, TResult>(Unsafe.As<List<TSource>>(source), selector);
                 }
 
                 return new IListSelectIterator<TSource, TResult>(ilist, selector);
