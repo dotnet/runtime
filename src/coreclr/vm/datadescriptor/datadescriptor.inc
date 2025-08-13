@@ -188,7 +188,6 @@ CDAC_TYPE_BEGIN(PEImage)
 CDAC_TYPE_INDETERMINATE(PEImage)
 CDAC_TYPE_FIELD(PEImage, /*pointer*/, LoadedImageLayout, cdac_data<PEImage>::LoadedImageLayout)
 CDAC_TYPE_FIELD(PEImage, /*ProbeExtensionResult*/, ProbeExtensionResult, cdac_data<PEImage>::ProbeExtensionResult)
-CDAC_TYPE_FIELD(PEImage, /*pointer*/, ImageLayout, cdac_data<PEImage>::Name)
 CDAC_TYPE_END(PEImage)
 
 CDAC_TYPE_BEGIN(PEImageLayout)

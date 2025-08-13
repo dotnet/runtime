@@ -328,7 +328,6 @@ struct cdac_data<PEImage>
     // The loaded PEImageLayout is m_pLayouts[IMAGE_LOADED]
     static constexpr size_t LoadedImageLayout = offsetof(PEImage, m_pLayouts) + sizeof(PTR_PEImageLayout);
     static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
-    static constexpr size_t Name = offsetof(PEImage, m_path);
 };
 
 FORCEINLINE void PEImageRelease(PEImage *i)
