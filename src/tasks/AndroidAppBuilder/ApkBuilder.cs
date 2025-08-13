@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -716,18 +717,24 @@ public partial class ApkBuilder
         {
             if (File.Exists(runtimeConfigPath))
             {
-                using var stream = new FileStream(runtimeConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                using var reader = new BinaryReader(stream);
-
-                // Read the compressed integer count
-                int count = ReadCompressedInteger(reader);
-
-                // Read each key-value pair
-                for (int i = 0; i < count; i++)
+                byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
+                unsafe
                 {
-                    string key = ReadSerializedString(reader);
-                    string value = ReadSerializedString(reader);
-                    configProperties[key] = value;
+                    fixed (byte* ptr = fileBytes)
+                    {
+                        var blobReader = new BlobReader(ptr, fileBytes.Length);
+
+                        // Read the compressed integer count
+                        int count = blobReader.ReadCompressedInteger();
+
+                        // Read each key-value pair
+                        for (int i = 0; i < count; i++)
+                        {
+                            string key = blobReader.ReadSerializedString() ?? string.Empty;
+                            string value = blobReader.ReadSerializedString() ?? string.Empty;
+                            configProperties[key] = value;
+                        }
+                    }
                 }
             }
             else
@@ -741,39 +748,5 @@ public partial class ApkBuilder
         }
 
         return configProperties;
-    }
-
-    private static int ReadCompressedInteger(BinaryReader reader)
-    {
-        // This mirrors the format used by BlobBuilder.WriteCompressedInteger
-        byte firstByte = reader.ReadByte();
-
-        if ((firstByte & 0x80) == 0)
-        {
-            // Single byte format
-            return firstByte;
-        }
-        else if ((firstByte & 0xC0) == 0x80)
-        {
-            // Two byte format
-            byte secondByte = reader.ReadByte();
-            return ((firstByte & 0x3F) << 8) | secondByte;
-        }
-        else
-        {
-            // Four byte format
-            byte secondByte = reader.ReadByte();
-            byte thirdByte = reader.ReadByte();
-            byte fourthByte = reader.ReadByte();
-            return ((firstByte & 0x1F) << 24) | (secondByte << 16) | (thirdByte << 8) | fourthByte;
-        }
-    }
-
-    private static string ReadSerializedString(BinaryReader reader)
-    {
-        // This mirrors the format used by BlobBuilder.WriteSerializedString
-        int length = ReadCompressedInteger(reader);
-        byte[] bytes = reader.ReadBytes(length);
-        return System.Text.Encoding.UTF8.GetString(bytes);
     }
 }
