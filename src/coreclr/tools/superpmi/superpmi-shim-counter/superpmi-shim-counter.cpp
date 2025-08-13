@@ -126,7 +126,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* host)
     if (g_globalContext == nullptr)
     {
         SetLogPath();
-        g_globalContext = std::make_unique<MethodCallSummarizer>(g_logPath);
+        g_globalContext = std::unique_ptr<MethodCallSummarizer>(new MethodCallSummarizer(g_logPath));
     }
 
     g_ourJitHost->setMethodCallSummarizer(g_globalContext.get());
@@ -171,7 +171,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
     if (g_globalContext == nullptr)
     {
         SetLogPath();
-        g_globalContext = std::make_unique<MethodCallSummarizer>(g_logPath);
+        g_globalContext = std::unique_ptr<MethodCallSummarizer>(new MethodCallSummarizer(g_logPath));
     }
     pJitInstance->mcs = g_globalContext.get();
     return pJitInstance;
