@@ -1464,7 +1464,9 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
         return id->idOpSize() == opSize;
     }
 
-    if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ))
+    if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ) ||
+        (cond.GetCode() == GenCondition::SLE) || (cond.GetCode() == GenCondition::SLT) ||
+        (cond.GetCode() == GenCondition::SGE) || (cond.GetCode() == GenCondition::SGT))
     {
         if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
         {
