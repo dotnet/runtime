@@ -30,9 +30,6 @@ namespace System
         }
 #pragma warning restore CA1821
 
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
-        internal static extern void CallFinalize(object o);
-
         public virtual bool Equals(object o)
         {
             return false;

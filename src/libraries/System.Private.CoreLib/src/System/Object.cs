@@ -34,9 +34,6 @@ namespace System
         }
 #pragma warning restore CA1821
 
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
-        internal static extern void CallFinalize(object o);
-
         /// <summary>Returns a string that represents the current object.</summary>
         /// <returns>A string that represents the current object.</returns>
         public virtual string? ToString()

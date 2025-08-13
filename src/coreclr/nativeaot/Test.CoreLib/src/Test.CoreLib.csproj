@@ -216,7 +216,6 @@
     <Compile Include="System\Runtime\CompilerServices\CastCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\InlineArrayAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\UnsafeAccessorAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.cs" />

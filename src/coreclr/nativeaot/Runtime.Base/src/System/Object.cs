@@ -11,7 +11,6 @@ namespace System
     // CONTRACT with Runtime
     // The Object type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type MethodTable*
-    // VTable Contract: The first vtable slot should be the finalizer for object => The first virtual method in the object class should be the Finalizer
 
     public unsafe class Object
     {
@@ -26,16 +25,17 @@ namespace System
         }
 
         // Allow an object to free resources before the object is reclaimed by the GC.
-        // CONTRACT with runtime: This method's virtual slot number is hardcoded in the binder. It is an
-        // implementation detail where it winds up at runtime.
-        // **** Do not add any virtual methods in this class ahead of this ****
-
+        //
+        // CONTRACT with runtime: This method does not get an actual virtual slot and thus
+        // cannot be called through normal means.
+        // It is an implementation detail that finalizer thread knows about and knows how to get
+        // to the Finalizer's method body when it needs to invoke it.
+        //
+        // **** Do not call `Finalize` as a normal method! ****
+        //
         ~Object()
         {
         }
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
-        internal static extern void CallFinalize(object o);
 
         internal MethodTable* MethodTable
         {

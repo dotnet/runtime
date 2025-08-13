@@ -63,7 +63,7 @@ namespace System.Runtime
                 try
                 {
                     // Call the finalizer on the current target object.
-                    object.CallFinalize(target);
+                    ((delegate*<object, void>)target.GetMethodTable()->FinalizerCode)(target);
                 }
                 catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {
