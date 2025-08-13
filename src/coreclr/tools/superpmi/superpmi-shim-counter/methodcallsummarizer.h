@@ -12,12 +12,13 @@ class MethodCallSummarizer
 public:
     MethodCallSummarizer(const std::string& name);
     void AddCall(const char* name);
-    void SaveTextFile();
     ~MethodCallSummarizer();
 
 private:
     std::map<std::string, int> namesAndCounts;
     std::string                dataFileName;
+
+    void SaveTextFile();
 };
 
 #endif
