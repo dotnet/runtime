@@ -87,14 +87,14 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         if (cbBounds > 0)
         {
             NativeReader boundsNativeReader = new(new TargetStream(_target, addrBounds, cbBounds), _target.IsLittleEndian);
-            return DoBounds_2(boundsNativeReader);
+            return DoBounds(boundsNativeReader);
         }
 
         return Enumerable.Empty<OffsetMapping>();
     }
 
     // Algorithm for R2R major version 16 and above
-    private static IEnumerable<OffsetMapping> DoBounds_2(NativeReader nativeReader)
+    private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
     {
         NibbleReader reader = new(nativeReader, 0);
 
@@ -151,41 +151,5 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
             }
         }
 
-    }
-
-    // Algorithm for R2R major version 15 and below
-    private static IEnumerable<OffsetMapping> DoBounds_1(NativeReader nativeReader)
-    {
-        NibbleReader reader = new(nativeReader, 0);
-
-        uint count = reader.ReadUInt();
-        Debug.Assert(count > 0, "Expected at least one entry in bounds.");
-
-        uint nativeOffset = 0;
-        for (uint i = 0; i < count; i++)
-        {
-            // native offsets are encoded as a delta from the previous offset
-            nativeOffset += reader.ReadUInt();
-
-            // il offsets are encoded with a bias of ICorDebugInfo::MAX_MAPPING_VALUE
-            uint ilOffset = unchecked(reader.ReadUInt() + IL_OFFSET_BIAS);
-            uint sourceType = reader.ReadUInt();
-
-            yield return new OffsetMapping()
-            {
-                NativeOffset = nativeOffset,
-                ILOffset = ilOffset,
-                SourceType = sourceType switch
-                {
-                    0x00 => SourceTypes.SourceTypeInvalid,
-                    0x01 => SourceTypes.SequencePoint,
-                    0x02 => SourceTypes.StackEmpty,
-                    0x04 => SourceTypes.CallSite,
-                    0x08 => SourceTypes.NativeEndOffsetUnknown,
-                    0x10 => SourceTypes.CallInstruction,
-                    _ => throw new InvalidOperationException($"Unknown source type: {sourceType}")
-                }
-            };
-        }
     }
 }
