@@ -5981,7 +5981,6 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     }
     else
     {
-        // This should get the native code here, then get the NativeCodeVersion, then from that call GetExecutableCode ... which should return either the jitted code or the interpreted code.
         nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
     }
 
