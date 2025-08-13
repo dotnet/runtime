@@ -616,7 +616,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             pMD->DoPrestub(NULL);
             LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction JIT of %p successful\n", pMD));
         }
-        jittedCode = pMD->GetNativeCode();
+        jittedCode = pMD->GetNativeCode_CurrentDefault();
     } EX_CATCH {
 #ifdef _DEBUG
         {

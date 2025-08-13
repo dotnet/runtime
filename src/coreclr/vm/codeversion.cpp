@@ -219,7 +219,7 @@ PCODE NativeCodeVersion::GetNativeCode() const
     }
     else
     {
-        return GetMethodDesc()->GetNativeCode();
+        return GetMethodDesc()->GetNativeCode_CurrentDefault();
     }
 }
 
@@ -299,7 +299,7 @@ void NativeCodeVersion::SetActiveChildFlag(BOOL isActive)
     {
         if (isActive &&
             !CodeVersionManager::InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion() &&
-            GetMethodDesc()->GetNativeCode() == (PCODE)NULL)
+            GetMethodDesc()->GetNativeCode_CurrentDefault() == (PCODE)NULL)
         {
             CodeVersionManager::SetInitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion();
         }
@@ -1695,7 +1695,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         // native code version when the method's default native code version does not have native code, the global flag on
         // CodeVersionManager is set (not a typical case, may be possible with profilers). So, if the flag is not set and the
         // default native code version does not have native code, then it must be the active code version.
-        pCode = pMethodDesc->GetNativeCode();
+        pCode = pMethodDesc->GetNativeCode_CurrentDefault();
         if (pCode == (PCODE)NULL && !CodeVersionManager::InitialNativeCodeVersionMayNotBeTheDefaultNativeCodeVersion())
         {
             activeVersion = NativeCodeVersion(pMethodDesc);

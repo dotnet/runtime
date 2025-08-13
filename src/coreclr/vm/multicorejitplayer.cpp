@@ -967,7 +967,7 @@ void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodD
             }
         }
 
-        if (pMethod->GetNativeCode() == (PCODE)NULL && !GetAppDomain()->GetMulticoreJitManager().GetMulticoreJitCodeStorage().LookupMethodCode(pMethod))
+        if (!pMethod->HasNativeCode() && !GetAppDomain()->GetMulticoreJitManager().GetMulticoreJitCodeStorage().LookupMethodCode(pMethod))
         {
             if (CompileMethodDesc(pModule, pMethod))
             {

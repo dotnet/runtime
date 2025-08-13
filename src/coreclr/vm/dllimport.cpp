@@ -5625,7 +5625,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = pStubMD->GetNativeCode();
+    PCODE pCode = pStubMD->GetNativeCode_CurrentDefault();
 
     if (pCode == (PCODE)NULL)
     {
@@ -5644,7 +5644,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
 
             pCode = pStubMD->PrepareInitialCode();
 
-            _ASSERTE(pCode == pStubMD->GetNativeCode());
+            _ASSERTE(pCode == pStubMD->GetNativeCode_CurrentDefault());
         }
         else
         {

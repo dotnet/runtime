@@ -1021,7 +1021,7 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 // implemented by stubs.  On WIN64, these stubs are IL stubs, which DO have native code.
 //
 // This function returns null if the method has no native code.
-PCODE MethodDesc::GetNativeCode()
+PCODE MethodDesc::GetNativeCode_CurrentDefault()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -1052,7 +1052,7 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    PCODE pDefaultCode = GetNativeCode();
+    PCODE pDefaultCode = GetNativeCode_CurrentDefault();
     if (pDefaultCode != (PCODE)NULL)
     {
         return pDefaultCode;
@@ -2130,7 +2130,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     else
     {
         if (IsPointingToStableNativeCode())
-            return GetNativeCode();
+            return GetNativeCode_CurrentDefault();
     }
 
     if (HasStableEntryPoint())
@@ -2207,7 +2207,8 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     }
     CONTRACTL_END
 
-    RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
+    ExecutionManager::ScanFlag scanFlag = ExecutionManager::GetScanFlags();
+    RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, scanFlag);
     if (pRS == NULL)
     {
         return NULL;
@@ -2222,7 +2223,18 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         }
         if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
         {
-            return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+            StubPrecode stubPrecode = (StubPrecode*)PCODEToPINSTR(entryPoint);
+#ifdef FEATURE_INTERPRETER
+            if (stubPrecode->GetType() == PRECODE_INTERPRETER))
+            {
+                entryPoint = dac_cast<PTR_InterpreterPrecode>(pStubPrecode)->GetData()->ByteCodeAddr;
+                pRS = ExecutionManager::FindCodeRange(entryPoint, scanFlag);
+            }
+            else
+#endif // FEATURE_INTERPRETER
+            {
+                return (MethodDesc*)(stubPrecode)->GetMethodDesc();
+            }
         }
     }
 

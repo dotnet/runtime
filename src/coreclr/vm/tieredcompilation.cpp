@@ -116,7 +116,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
         // 2 - OptimizationTier0Instrumented - instrument all ILOnly code
         if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() ||
-            ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
+            ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode_CurrentDefault()))
         {
             return NativeCodeVersion::OptimizationTier0;
         }

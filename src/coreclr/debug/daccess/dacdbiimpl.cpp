@@ -1127,7 +1127,7 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
     CONTRACTL_END;
 
     IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
-    PCODE functionAddress = pMethodDesc->GetNativeCode();
+    PCODE functionAddress = pMethodDesc->GetNativeCode_CurrentDefault();
 
     // get the start address of the hot region and initialize the jit manager
     pCodeInfo->m_rgCodeRegions[kHot].pAddress = CORDB_ADDRESS(PCODEToPINSTR(functionAddress));
@@ -1141,7 +1141,8 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
         codeInfo.GetMethodRegionInfo(&methodRegionInfo);
 
         // now get the rest of the region information
-        pCodeInfo->m_rgCodeRegions[kHot].cbSize = (ULONG)methodRegionInfo.hotSize;
+        pCodeInfo->m_rgCodeRegions[kHot].Init(PCODEToPINSTR(methodRegionInfo.hotStartAddress),
+                                               (ULONG)methodRegionInfo.hotSize);
         pCodeInfo->m_rgCodeRegions[kCold].Init(PCODEToPINSTR(methodRegionInfo.coldStartAddress),
                                                (ULONG)methodRegionInfo.coldSize);
         _ASSERTE(pCodeInfo->IsValid());

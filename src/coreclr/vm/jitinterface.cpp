@@ -15019,6 +15019,23 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     if (pRS == NULL)
         goto Invalid;
 
+#ifdef FEATURE_INTERPRETER
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            PTR_StubPrecode pStubPrecode = dac_cast<PTR_StubPrecode>(PCODEToPINSTR(codeAddress));
+            if (pStubPrecode->GetType() == PRECODE_INTERPRETER)
+            {
+                codeAddress = dac_cast<PTR_InterpreterPrecode>(pStubPrecode)->GetData()->ByteCodeAddr;
+                pRS = ExecutionManager::FindCodeRange(codeAddress, scanFlag);
+                if (pRS == NULL)
+                    goto Invalid;
+            }
+        }
+    }
+#endif // FEATURE_INTERPRETER
+
     if (!pRS->_pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
         goto Invalid;
 
