@@ -116,9 +116,7 @@ jobs:
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.isExtraPlatformsBuild, true)) }}:
-        - OSX.26.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.isExtraPlatformsBuild, true)) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - OSX.1200.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.1200.Amd64
