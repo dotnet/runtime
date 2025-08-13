@@ -26,7 +26,7 @@ internal sealed class InterpToNativeGenerator
 
     public InterpToNativeGenerator(LogAdapter log) => Log = log;
 
-    public void Generate(IEnumerable<string> cookies, string outputPath, List<string> fileWritesList)
+    public void Generate(IEnumerable<string> cookies, string outputPath)
     {
         using TempFileName tmpFileName = new();
         using (var w = File.CreateText(tmpFileName.Path))
@@ -35,10 +35,7 @@ internal sealed class InterpToNativeGenerator
         }
 
         if (Utils.CopyIfDifferent(tmpFileName.Path, outputPath, useHash: false))
-        {
-            fileWritesList.Add(outputPath);
             Log.LogMessage(MessageImportance.Low, $"Generating managed2native table to '{outputPath}'.");
-        }
         else
             Log.LogMessage(MessageImportance.Low, $"Managed2native table in {outputPath} is unchanged.");
     }

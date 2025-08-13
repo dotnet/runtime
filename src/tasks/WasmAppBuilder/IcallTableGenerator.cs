@@ -44,7 +44,7 @@ internal sealed class IcallTableGenerator
             ProcessType(type);
     }
 
-    public IEnumerable<string> Generate(string? outputPath, List<string> fileWritesList)
+    public IEnumerable<string> Generate(string? outputPath)
     {
         if (outputPath != null)
         {
@@ -53,10 +53,7 @@ internal sealed class IcallTableGenerator
                 EmitTable(w);
 
             if (Utils.CopyIfDifferent(tmpFileName.Path, outputPath, useHash: false))
-            {
-                fileWritesList.Add(outputPath);
                 Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
-            }
             else
                 Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
         }

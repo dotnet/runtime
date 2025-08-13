@@ -434,7 +434,7 @@
       WriteOnlyWhenDifferent="true" />
 
     <ItemGroup>
-      <FileWrites Include="$(IntermediateOutputPath)WasmNativePropertiesHash.stamp" Condition="'$(_WasmNativePropertiesDiffer)' == 'true'" />
+      <FileWrites Include="$(IntermediateOutputPath)WasmNativePropertiesHash.stamp" />
     </ItemGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
@@ -767,7 +767,6 @@
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
-      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmDedupAssembly)" />
     </ItemGroup>
 
@@ -858,7 +857,6 @@
     <PropertyGroup>
       <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
       <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$([System.IO.Path]::Combine($(MicrosoftNetCoreAppRuntimePackRidLibTfmDir), 'mscorlib.dll'))</_MscorlibPath>
-      <_WasmRuntimeICallTablePathExists Condition="Exists('$(_WasmRuntimeICallTablePath)')">true</_WasmRuntimeICallTablePathExists>
     </PropertyGroup>
 
     <Error Condition="'$(_HasMscorlib)' != 'true' and !Exists($(_MscorlibPath))" Text="Could not find 'mscorlib.dll' in the runtime pack at $(_MscorlibPath)" />
@@ -867,9 +865,9 @@
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')" />
 
-    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' Condition="'$(_WasmRuntimeICallTablePathExists)' != 'true'" />
+    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' Condition="!Exists($(_WasmRuntimeICallTablePath))" />
     <ItemGroup>
-      <FileWrites Include="$(_WasmRuntimeICallTablePath)" Condition="'$(_WasmRuntimeICallTablePathExists)' != 'true'"/>
+      <FileWrites Include="$(_WasmRuntimeICallTablePath)" />
     </ItemGroup>
 
     <ManagedToNativeGenerator
@@ -894,7 +892,6 @@
   <Target Name="_WasmWriteRspForCompilingBitcode">
     <WriteLinesToFile Lines="@(_BitcodeCompileFlags)" File="$(_WasmCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmCompileBitcodeRsp)" />
     </ItemGroup>
   </Target>
@@ -937,7 +934,6 @@
   <Target Name="_WasmWriteRspForCompilingNativeSourceFiles">
     <WriteLinesToFile Lines="@(_WasmCFlags)" File="$(_WasmCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmCompileRsp)" />
     </ItemGroup>
   </Target>
@@ -993,7 +989,6 @@
       <_EmitBundleOutputFile Include="@(_EmitBundleRegistrationFile)" />
 
       <_WasmObjectFilesForBundle Include="@(_EmitBundleOutputFile)" />
-      <!-- TODO add only if changed -->
       <FileWrites Include="@(_EmitBundleOutputFile)" />
     </ItemGroup>
   </Target>
@@ -1005,7 +1000,6 @@
   <Target Name="_WasmWriteRspForLinking">
     <WriteLinesToFile Lines="@(_WasmLinkStepArgs)" File="$(_WasmLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
-      <!-- TODO add only if changed -->
       <FileWrites Include="$(_WasmLinkRsp)" />
     </ItemGroup>
   </Target>

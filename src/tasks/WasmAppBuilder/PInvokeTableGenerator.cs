@@ -41,7 +41,7 @@ internal sealed class PInvokeTableGenerator
             _pinvokeCollector.CollectPInvokes(pinvokes, callbacks, signatures, type);
     }
 
-    public IEnumerable<string> Generate(string[] pinvokeModules, string outputPath, List<string> fileWritesList)
+    public IEnumerable<string> Generate(string[] pinvokeModules, string outputPath)
     {
         var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var module in pinvokeModules)
@@ -55,10 +55,7 @@ internal sealed class PInvokeTableGenerator
         }
 
         if (Utils.CopyIfDifferent(tmpFileName.Path, outputPath, useHash: false))
-        {
-            fileWritesList.Add(outputPath);
             Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{outputPath}'.");
-        }
         else
             Log.LogMessage(MessageImportance.Low, $"PInvoke table in {outputPath} is unchanged.");
 

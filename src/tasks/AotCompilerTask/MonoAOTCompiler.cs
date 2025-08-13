@@ -534,7 +534,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             Log.LogMessage(MessageImportance.High, "Everything is up-to-date, nothing to precompile");
 
-            // TODO why we are adding it when nothing is changed ?
             _fileWrites.AddRange(argsList.SelectMany(args => args.ProxyFiles).Select(pf => pf.TargetFile));
             foreach (var args in argsList)
                 compiledAssemblies.GetOrAdd(args.AOTAssembly.ItemSpec, args.AOTAssembly);
@@ -677,10 +676,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             // FIXME: delete files not in originalAssemblies though
             // FIXME: or .. just delete the whole dir?
             if (Utils.CopyIfDifferent(asmPath, newPath, useHash: true))
-            {
                 Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
-                _fileWrites.Add(newPath);
-            }
+            _fileWrites.Add(newPath);
 
             var newAsm = new TaskItem(newPath);
             asmItem.CopyMetadataTo(newAsm);
