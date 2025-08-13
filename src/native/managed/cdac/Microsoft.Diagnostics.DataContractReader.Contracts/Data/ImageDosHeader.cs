@@ -7,11 +7,11 @@ internal sealed class ImageDosHeader : IData<ImageDosHeader>
 {
     static ImageDosHeader IData<ImageDosHeader>.Create(Target target, TargetPointer address)
         => new ImageDosHeader(target, address);
+    private const int LfanewOffset = 60;
 
     public ImageDosHeader(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ImageDosHeader);
-        Lfanew = target.Read<int>(address + (ulong)type.Fields[nameof(Lfanew)].Offset);
+        Lfanew = target.Read<int>(address + LfanewOffset, true);
     }
     public int Lfanew { get; init; }
 }

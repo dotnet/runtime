@@ -293,9 +293,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <typeparam name="T">Type of value to read</typeparam>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
-    public override T Read<T>(ulong address)
+    public override T Read<T>(ulong address, bool? isLittleEndian = null)
     {
-        if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T value))
+        bool useLittleEndian = isLittleEndian ?? _config.IsLittleEndian;
+        if (!TryRead(address, useLittleEndian, _dataTargetDelegates, out T value))
             throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;

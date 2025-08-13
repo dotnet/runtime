@@ -8,13 +8,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class ImageNTHeaders : IData<ImageNTHeaders>
 {
     static ImageNTHeaders IData<ImageNTHeaders>.Create(Target target, TargetPointer address) => new ImageNTHeaders(target, address);
+    public const int FileHeaderOffset = 4;
+    public const int OptionalHeaderOffset = 24;
     public ImageNTHeaders(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ImageNTHeaders);
-        OptionalHeader = target.ProcessedData.GetOrAdd<ImageOptionalHeader>(address + (ulong)type.Fields[nameof(OptionalHeader)].Offset);
-        FileHeader = target.ProcessedData.GetOrAdd<ImageFileHeader>(address + (ulong)type.Fields[nameof(FileHeader)].Offset);
+        FileHeader = target.ProcessedData.GetOrAdd<ImageFileHeader>(address + FileHeaderOffset);
+        OptionalHeader = target.ProcessedData.GetOrAdd<ImageOptionalHeader>(address + OptionalHeaderOffset);
     }
-
-    public ImageOptionalHeader OptionalHeader { get; init; }
     public ImageFileHeader FileHeader { get; init; }
+    public ImageOptionalHeader OptionalHeader { get; init; }
 }

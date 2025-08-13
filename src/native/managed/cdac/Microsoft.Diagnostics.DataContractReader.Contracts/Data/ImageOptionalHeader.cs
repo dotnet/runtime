@@ -8,10 +8,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed class ImageOptionalHeader : IData<ImageOptionalHeader>
 {
     static ImageOptionalHeader IData<ImageOptionalHeader>.Create(Target target, TargetPointer address) => new ImageOptionalHeader(target, address);
+    private const int SectionAlignmentOffset = 32;
     public ImageOptionalHeader(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ImageOptionalHeader);
-        SectionAlignment = target.Read<uint>(address + (ulong)type.Fields[nameof(SectionAlignment)].Offset);
+        SectionAlignment = target.Read<uint>(address + SectionAlignmentOffset, true);
     }
     public uint SectionAlignment { get; init; }
 }

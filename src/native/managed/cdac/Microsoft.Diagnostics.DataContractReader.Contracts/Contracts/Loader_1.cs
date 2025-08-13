@@ -200,13 +200,6 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
-    private static uint AlignUp(uint value, uint alignment)
-    {
-        if (alignment == 0)
-            throw new ArgumentException("Alignment must be greater than zero.", nameof(alignment));
-        return (value + alignment - 1) & ~(alignment - 1);
-    }
-
     private static bool IsMapped(Data.PEImageLayout peImageLayout)
     {
         return (peImageLayout.Flags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
@@ -222,22 +215,17 @@ internal readonly struct Loader_1 : ILoader
     {
         TargetPointer ntHeadersPtr = FindNTHeaders(imageLayout);
         Data.ImageNTHeaders ntHeaders = _target.ProcessedData.GetOrAdd<Data.ImageNTHeaders>(ntHeadersPtr);
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.ImageNTHeaders);
-        int offset = type.Fields[nameof(Data.ImageNTHeaders.OptionalHeader)].Offset;
+        int offset = Data.ImageNTHeaders.OptionalHeaderOffset;
         TargetPointer section = ntHeadersPtr + (uint)offset + ntHeaders.FileHeader.SizeOfOptionalHeader;
-        TargetPointer sectionEnd = section + _target.GetTypeInfo(DataType.ImageSectionHeader).Size!.Value * ntHeaders.FileHeader.NumberOfSections;
-        uint sectionAlignment = ntHeaders.OptionalHeader.SectionAlignment;
+        TargetPointer sectionEnd = section + Data.ImageSectionHeader.Size * ntHeaders.FileHeader.NumberOfSections;
         while (section < sectionEnd)
         {
             Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
-            if (rva < sectionHeader.VirtualAddress + AlignUp(sectionHeader.VirtualSize, sectionAlignment))
+            if (rva >= sectionHeader.VirtualAddress && rva < sectionHeader.VirtualAddress + sectionHeader.SizeOfRawData)
             {
-                if (rva < sectionHeader.VirtualAddress)
-                    return TargetPointer.Null;
-                else
-                    return section;
+                return section;
             }
-            section += _target.GetTypeInfo(DataType.ImageSectionHeader).Size!.Value;
+            section += Data.ImageSectionHeader.Size;
         }
         return TargetPointer.Null;
     }
@@ -246,7 +234,7 @@ internal readonly struct Loader_1 : ILoader
     {
         TargetPointer section = RvaToSection(rva, imageLayout);
         if (section == TargetPointer.Null)
-            return (uint)rva;
+            throw new InvalidOperationException("Failed to read from image.");
 
         Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
         uint offset = (uint)(rva - sectionHeader.VirtualAddress) + sectionHeader.PointerToRawData;

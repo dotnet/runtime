@@ -138,7 +138,7 @@ public abstract class Target
     /// <typeparam name="T">Type of value to read</typeparam>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
-    public abstract T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
+    public abstract T Read<T>(ulong address, bool? isLittleEndian = null) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>;
 
     /// <summary>
     /// Read a value from the target in target endianness

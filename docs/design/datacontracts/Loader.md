@@ -138,15 +138,6 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ArrayListBlock` | `Size` | Size of data section in block |
 | `ArrayListBlock` | `ArrayStart` | Start of data section in block |
 | `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
-| `ImageDosHeader` | `Lfanew` | Offset to NT headers |
-| `ImageNTHeaders` | `OptionalHeader` | Optional header |
-| `ImageNTHeaders` | `FileHeader` | File header |
-| `ImageOptionalHeader` | `SectionAlignment` | Alignment of sections in memory |
-| `ImageFileHeader` | `NumberOfSections` | Number of sections in the PE file |
-| `ImageFileHeader` | `SizeOfOptionalHeader` | Size of optional header on disk |
-| `ImageSectionHeader` | `VirtualAddress` | Virtual address of the section |
-| `ImageSectionHeader` | `VirtualSize` | Virtual size of the section |
-| `ImageSectionHeader` | `PointerToRawData` | Offset to section data |
 | `EETypeHashTable` | `Buckets` | Pointer to hash table buckets |
 | `EETypeHashTable` | `Count` | Count of elements in the hash table |
 | `EETypeHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
@@ -373,19 +364,19 @@ TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     else
     {
         // find NT headers using DOS header
-        uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::Lfanew offset */);
+        uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::LfanewOffset */);
         TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
 
-        TargetPointer optionalHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeader offset */;
-        uint sectionAlignment = target.Read<uint>(optionalHeaderPtr + /* ImageOptionalHeader::SectionAlignment offset */);
+        TargetPointer optionalHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */;
+        uint sectionAlignment = target.Read<uint>(optionalHeaderPtr + /* ImageOptionalHeader::SectionAlignmentOffset */);
 
         // Get number of sections from file header
-        TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeader offset */;
-        uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSections offset */);
+        TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
+        uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSectionsOffset */);
 
         // Calculate first section address (after NT headers and optional header)
-        uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeader offset */);
-        TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeader offset */ + imageFileHeaderSize;
+        uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeaderOffset */);
+        TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */ + imageFileHeaderSize;
 
         // Find the section containing this RVA
         TargetPointer sectionPtr = TargetPointer.Null;
@@ -394,28 +385,24 @@ TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
         for (uint i = 0; i < numberOfSections; i++)
         {
             TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
-            uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddress offset */);
-            uint virtualSize = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualSize offset */);
+            uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+            uint virtualSize = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualSizeOffset */);
+            uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
 
-            uint alignedVirtualSize = (virtualSize + sectionAlignment - 1) & ~(sectionAlignment - 1);
-            if (rva < VirtualAddress + alignedVirtualSize)
+            if (rva >= VirtualAddress && rva < VirtualAddress + SizeOfRawData)
             {
-                if (rva < virtualAddress)
-                    sectionPtr = TargetPointer.Null;
-                else
-                    sectionPtr = currentSectionPtr;
-                break;
+                sectionPtr = currentSectionPtr;
             }
         }
         if (sectionPtr == TargetPointer.Null)
         {
-            offset = (uint)rva;
+            throw new InvalidOperationException("Failed to read from image.");
         }
         else
         {
             // Convert RVA to file offset using section information
-            uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddress offset */);
-            uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawData offset */);
+            uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+            uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawDataOffset */);
             offset = ((rva - sectionVirtualAddress) + sectionPointerToRawData);
         }
     }
