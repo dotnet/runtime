@@ -5090,7 +5090,7 @@ ClrDataAccess::FollowStubStep(
             methodDesc = PTR_MethodDesc(CORDB_ADDRESS_TO_TADDR(inBuffer->u.addr));
             if (methodDesc->HasNativeCode())
             {
-                *outAddr = methodDesc->GetNativeCode_CurrentDefault();
+                *outAddr = methodDesc->GetNativeCode();
                 *outFlags = CLRDATA_FOLLOW_STUB_EXIT;
                 return S_OK;
             }
@@ -5923,7 +5923,7 @@ ClrDataAccess::GetMethodExtents(MethodDesc* methodDesc,
         // for all types of managed code.
         //
 
-        PCODE methodStart = methodDesc->GetNativeCode_CurrentDefault();
+        PCODE methodStart = methodDesc->GetNativeCode();
         if (!methodStart)
         {
             return E_NOINTERFACE;
@@ -5982,7 +5982,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     else
     {
         // This should get the native code here, then get the NativeCodeVersion, then from that call GetExecutableCode ... which should return either the jitted code or the interpreted code.
-        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode_CurrentDefault());
+        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
     }
 
     DebugInfoRequest request;
@@ -6041,7 +6041,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     }
     else
     {
-        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode_CurrentDefault());
+        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
     }
 
     DebugInfoRequest request;

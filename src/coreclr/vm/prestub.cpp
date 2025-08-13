@@ -1090,7 +1090,7 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
 PCODE PrepareCodeConfig::IsJitCancellationRequested()
 {
     LIMITED_METHOD_CONTRACT;
-    return m_pMethodDesc->GetNativeCode_CurrentDefault();
+    return m_pMethodDesc->GetNativeCode();
 }
 
 BOOL PrepareCodeConfig::NeedsMulticoreJitNotification()
@@ -2302,7 +2302,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
 
     /**************************   POSTJIT *************************/
-    _ASSERTE(pCode == (PCODE)NULL || GetNativeCode_CurrentDefault() == (PCODE)NULL || pCode == GetNativeCode_CurrentDefault());
+    _ASSERTE(pCode == (PCODE)NULL || GetNativeCode() == (PCODE)NULL || pCode == GetNativeCode());
 
     // At this point we must have either a pointer to managed code or to a stub. All of the above code
     // should have thrown an exception if it couldn't make a stub.
@@ -2432,7 +2432,7 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
     if (pMD->HasPrecode() && pMD->GetPrecode()->GetType() == PRECODE_FIXUP
         && pMD->IsNativeCodeStableAfterInit())
     {
-        PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD, false /* throwForInvalidFCall */) : pMD->GetNativeCode_CurrentDefault();
+        PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD, false /* throwForInvalidFCall */) : pMD->GetNativeCode();
         if (pDirectTarget != (PCODE)NULL)
             pCode = pDirectTarget;
     }

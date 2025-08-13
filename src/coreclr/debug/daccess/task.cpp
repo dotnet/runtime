@@ -4341,7 +4341,7 @@ ClrDataMethodInstance::GetRepresentativeEntryAddress(
 
     EX_TRY
     {
-        PCODE codeAddr = m_methodDesc->GetNativeCode_CurrentDefault();
+        PCODE codeAddr = m_methodDesc->GetNativeCode();
         if (codeAddr != NULL)
         {
             *addr = TO_CDADDR(codeAddr);

@@ -1021,7 +1021,7 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 // implemented by stubs.  On WIN64, these stubs are IL stubs, which DO have native code.
 //
 // This function returns null if the method has no native code.
-PCODE MethodDesc::GetNativeCode_CurrentDefault()
+PCODE MethodDesc::GetNativeCode()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -1052,7 +1052,7 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    PCODE pDefaultCode = GetNativeCode_CurrentDefault();
+    PCODE pDefaultCode = GetNativeCode();
     if (pDefaultCode != (PCODE)NULL)
     {
         return pDefaultCode;
@@ -2130,7 +2130,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     else
     {
         if (IsPointingToStableNativeCode())
-            return GetNativeCode_CurrentDefault();
+            return GetNativeCode();
     }
 
     if (HasStableEntryPoint())

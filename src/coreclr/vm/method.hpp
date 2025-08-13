@@ -1468,7 +1468,7 @@ public:
         if (!HasPrecode())
             return TRUE;
 
-        return GetPrecode()->IsPointingToNativeCode(GetNativeCode_CurrentDefault());
+        return GetPrecode()->IsPointingToNativeCode(GetNativeCode());
     }
 
     // Be careful about races with profiler when using this method. The profiler can
@@ -1479,7 +1479,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNativeCode_CurrentDefault() != (PCODE)0;
+        return GetNativeCode() != (PCODE)0;
     }
 
     // Perf warning: takes the CodeVersionManagerLock on every call
@@ -1579,7 +1579,7 @@ public:
 
     //*******************************************************************************
     // Returns the address of the native code.
-    PCODE GetNativeCode_CurrentDefault();
+    PCODE GetNativeCode();
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
     // is a non-default code version that is populated with a code body and returns that.

@@ -3210,7 +3210,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         pThread->GetExceptionState()->GetDebuggerState()->GetDebuggerInterceptInfo(&pInterceptMD, NULL, (PBYTE*)&(sfInterceptStackFrame.SP), &ulRelOffset, NULL);
         if (sfInterceptStackFrame.SP == GetSP(pvRegDisplay->pCurrentContext))
         {
-            PCODE pStartAddress = pInterceptMD->GetNativeCode_CurrentDefault();
+            PCODE pStartAddress = pInterceptMD->GetNativeCode();
 
             EECodeInfo codeInfo(pStartAddress);
             _ASSERTE(codeInfo.IsValid());
@@ -3347,7 +3347,7 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     ExInfo::PopExInfos(pThread, (void*)targetSp);
 
-    PCODE pStartAddress = pInterceptMD->GetNativeCode_CurrentDefault();
+    PCODE pStartAddress = pInterceptMD->GetNativeCode();
 
     EECodeInfo codeInfo(pStartAddress);
     _ASSERTE(codeInfo.IsValid());

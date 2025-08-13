@@ -605,7 +605,7 @@ size_t EEDbgInterfaceImpl::GetFunctionSize(MethodDesc *pFD)
     }
     CONTRACTL_END;
 
-    PCODE methodStart = pFD->GetNativeCode_CurrentDefault();
+    PCODE methodStart = pFD->GetNativeCode();
 
     if (methodStart == (PCODE)NULL)
         return 0;
@@ -626,7 +626,7 @@ PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    return pFD->GetNativeCode_CurrentDefault();
+    return pFD->GetNativeCode();
 }
 
 #ifndef DACCESS_COMPILE

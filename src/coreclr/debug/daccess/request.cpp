@@ -229,7 +229,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
 
         if (retval && pMD->HasNativeCode() && !pMD->IsFCall())
         {
-            PCODE jitCodeAddr = pMD->GetNativeCode_CurrentDefault();
+            PCODE jitCodeAddr = pMD->GetNativeCode();
 
             MethodDesc *pMDCheck = ExecutionManager::GetCodeMethodDesc(jitCodeAddr);
             if (pMDCheck)
