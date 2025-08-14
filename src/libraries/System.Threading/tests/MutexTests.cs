@@ -250,10 +250,10 @@ namespace System.Threading.Tests
         public void Ctor_InvalidNames_Unix()
         {
             AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
-            AssertExtensions.Throws<IOException>("name", null, () => new Mutex("Foo/Bar", options: default));
-            AssertExtensions.Throws<IOException>("name", null, () => new Mutex("Foo\\Bar", options: default));
-            AssertExtensions.Throws<IOException>("name", null, () => new Mutex("Global\\Foo/Bar", options: default));
-            AssertExtensions.Throws<IOException>("name", null, () => new Mutex("Global\\Foo\\Bar", options: default));
+            Assert.Throws<IOException>(() => new Mutex("Foo/Bar", options: default));
+            Assert.Throws<IOException>(() => new Mutex("Foo\\Bar", options: default));
+            Assert.Throws<IOException>(() => new Mutex("Global\\Foo/Bar", options: default));
+            Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: default));
         }
 
         [Theory]
