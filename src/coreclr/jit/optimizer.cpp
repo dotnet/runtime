@@ -4116,12 +4116,12 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
         };
 
         ArrayStack<Value>     m_valueStack;
-        bool                  m_beforeSideEffect;
         FlowGraphNaturalLoop* m_loop;
         LoopHoistContext*     m_hoistContext;
         BasicBlock*           m_currentBlock;
         BitVecTraits*         m_traits;
         BitVec                m_defExec;
+        BitVec                m_sideEffectBlocks;
 
         bool IsNodeHoistable(GenTree* node)
         {
@@ -4251,12 +4251,12 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                      BitVec                defExec)
             : GenTreeVisitor(compiler)
             , m_valueStack(compiler->getAllocator(CMK_LoopHoist))
-            , m_beforeSideEffect(true)
             , m_loop(loop)
             , m_hoistContext(hoistContext)
             , m_currentBlock(nullptr)
             , m_traits(traits)
             , m_defExec(defExec)
+            , m_sideEffectBlocks(BitVecOps::MakeEmpty(traits))
         {
         }
 
@@ -4356,6 +4356,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             bool treeIsInvariant          = true;
             bool treeHasHoistableChildren = false;
             int  childCount;
+            bool beforeSideEffect = !BitVecOps::IsMember(m_traits, m_sideEffectBlocks, m_currentBlock->bbPostorderNum);
 
 #ifdef DEBUG
             const char* failReason = "unknown";
@@ -4458,7 +4459,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
 
                 if (treeIsHoistable)
                 {
-                    if (!m_beforeSideEffect)
+                    if (!beforeSideEffect)
                     {
                         // For now, we give up on an expression that might raise an exception if it is after the
                         // first possible global side effect.
@@ -4484,11 +4485,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 }
             }
 
-            // Next check if we need to set 'm_beforeSideEffect' to false.
+            // Next check if we need to set 'beforeSideEffect' to false.
             //
             // If we have already set it to false then we can skip these checks
             //
-            if (m_beforeSideEffect)
+            if (beforeSideEffect)
             {
                 // Is the value of the whole tree loop invariant?
                 if (!treeIsInvariant)
@@ -4496,12 +4497,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     // We have a tree that is not loop invariant and we thus cannot hoist
                     assert(treeIsHoistable == false);
 
-                    // Check if we should clear m_beforeSideEffect.
-                    // If 'tree' can throw an exception then we need to set m_beforeSideEffect to false.
+                    // If 'tree' can throw an exception then we need to set beforeSideEffect to false.
                     // Note that calls are handled below
                     if (tree->OperMayThrow(m_compiler) && !tree->IsCall())
                     {
-                        m_beforeSideEffect = false;
+                        beforeSideEffect = false;
                     }
                 }
 
@@ -4517,19 +4517,19 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     GenTreeCall* call = tree->AsCall();
                     if (!call->IsHelperCall())
                     {
-                        m_beforeSideEffect = false;
+                        beforeSideEffect = false;
                     }
                     else
                     {
                         CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
                         if (s_helperCallProperties.MutatesHeap(helpFunc))
                         {
-                            m_beforeSideEffect = false;
+                            beforeSideEffect = false;
                         }
                         else if (s_helperCallProperties.MayRunCctor(helpFunc) &&
                                  (call->gtFlags & GTF_CALL_HOISTABLE) == 0)
                         {
-                            m_beforeSideEffect = false;
+                            beforeSideEffect = false;
                         }
 
                         // Additional check for helper calls that throw exceptions
@@ -4541,7 +4541,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                             // Does this helper call throw?
                             if (!s_helperCallProperties.NoThrow(helpFunc))
                             {
-                                m_beforeSideEffect = false;
+                                beforeSideEffect = false;
                             }
                         }
                     }
@@ -4562,9 +4562,20 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     if (isGloballyVisibleStore)
                     {
                         INDEBUG(failReason = "store to globally visible memory");
-                        treeIsHoistable    = false;
-                        m_beforeSideEffect = false;
+                        treeIsHoistable  = false;
+                        beforeSideEffect = false;
                     }
+                }
+            }
+
+            // If this block does not execute before the first side effect in the loop,
+            // propagate its side-effecting state to it and its successors.
+            if (!beforeSideEffect)
+            {
+                BitVecOps::AddElemD(m_traits, m_sideEffectBlocks, m_currentBlock->bbPostorderNum);
+                for (BasicBlock* const succ : m_currentBlock->Succs())
+                {
+                    BitVecOps::AddElemD(m_traits, m_sideEffectBlocks, succ->bbPostorderNum);
                 }
             }
 
