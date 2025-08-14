@@ -152,8 +152,6 @@ namespace System.Security.Cryptography
 
         public override byte[] ExportSubjectPublicKeyInfo() => _wrapped.ExportSubjectPublicKeyInfo();
 
-        public override bool Equals(object? obj) => obj is ECDiffieHellmanWrapper wrapper && _wrapped.Equals(wrapper._wrapped);
-
         public override int GetHashCode() => _wrapped.GetHashCode();
 
         public override string ToString() => _wrapped.ToString()!;
