@@ -215,8 +215,6 @@ namespace System.Security.Cryptography
             base.Dispose(disposing);
         }
 
-        public override int GetHashCode() => _wrapped.GetHashCode();
-
         public override string ToString() => _wrapped.ToString()!;
     }
 }
