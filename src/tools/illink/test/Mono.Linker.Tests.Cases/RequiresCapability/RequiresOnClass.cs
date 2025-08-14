@@ -36,6 +36,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             AttributeParametersAndProperties.Test();
             MembersOnClassWithRequires<int>.Test();
             ConstFieldsOnClassWithRequires.Test();
+
+            // Instantiate classes so linker warnings match analyzer warnings
+            new TestUnconditionalSuppressMessage();
+            new DerivedWithoutRequiresOnType();
         }
 
         [RequiresUnreferencedCode("Message for --ClassWithRequires--")]
@@ -128,6 +132,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public static void StaticMethod() { }
         }
 
+        [ExpectedWarning("IL2026", "ClassWithRequires.ClassWithRequires()", "--ClassWithRequires--", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2026", "ClassWithRequires.ClassWithRequires()", "--ClassWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
         class TestUnconditionalSuppressMessage : ClassWithRequires
         {
             public static void StaticMethodInTestSuppressionClass() { }
@@ -339,6 +345,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             public virtual void Method() { }
         }
 
+        [ExpectedWarning("IL2026", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2026", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
         class DerivedWithoutRequiresOnType : BaseWithRequiresOnType
         {
             public override void Method() { }
@@ -694,6 +702,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 public int InstanceField;
             }
 
+            [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
             class DerivedWithoutRequires : WithRequires
             {
                 public static int DerivedStaticField;
@@ -831,6 +841,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 TestDAMOnTypeAccessInRUCScope(new DAMAnnotatedClassAccessedFromRUCScope());
                 TestDAMAccessOnOpenGeneric();
                 TestDAMAccessOnInstantiatedGeneric();
+
+                // Instantiate for linker test consistency
+                new DerivedWithoutRequires();
             }
         }
 
@@ -854,6 +867,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 private event EventHandler DerivedPrivateInstanceEvent;
             }
 
+            [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
             class DerivedWithoutRequires : WithRequires
             {
                 public static event EventHandler DerivedStaticEvent;
@@ -1029,6 +1044,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 DerivedRequiresPublicEvents();
                 DerivedRequiresNonPublicEvents();
                 DerivedRequiresAllEvents();
+
+                // Instantiate for linker test consistency
+                new DerivedWithoutRequires();
             }
         }
 
@@ -1050,6 +1068,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 public int InstanceProperty { get; set; }
             }
 
+            [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
             class DerivedWithoutRequires : WithRequires
             {
                 public static int DerivedStaticProperty { get; set; }
@@ -1217,6 +1237,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 TestDirectReflectionAccess();
                 TestDynamicDependencyAccess();
                 TestDAMOnTypeAccess(new DAMAnnotatedClass());
+
+                // Instantiate for linker test consistency
+                new DerivedWithoutRequires();
             }
         }
 

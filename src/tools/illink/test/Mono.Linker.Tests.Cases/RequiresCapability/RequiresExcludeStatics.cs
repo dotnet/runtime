@@ -145,6 +145,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
         }
 
+        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--")]
         class DerivedWithoutRequires : BaseWithRequires
         {
             [ExpectedWarning("IL2026", "--Requires--")]
