@@ -44,8 +44,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_isMinimal)
             {
-                CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _method);
-
                 foreach (var parameterHandle in _method.MetadataReader.GetMethodDefinition(_method.Handle).GetParameters())
                 {
                     dependencies.Add(factory.MethodParameterMetadata(new ReflectableParameter(_method.Module, parameterHandle)), "Parameter is visible");
@@ -83,6 +81,14 @@ namespace ILCompiler.DependencyAnalysis
 
             return dependencies;
         }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            var dependencies = new List<CombinedDependencyListEntry>();
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _method);
+            return dependencies;
+        }
+
         protected override string GetName(NodeFactory factory)
         {
             return "Method metadata: " + _method.ToString();
@@ -96,9 +102,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => !_isMinimal;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

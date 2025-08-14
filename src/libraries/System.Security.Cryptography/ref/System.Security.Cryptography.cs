@@ -568,7 +568,11 @@ namespace System.Security.Cryptography
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public byte[] ExportCompositeMLDsaPrivateKey() { throw null; }
+        public int ExportCompositeMLDsaPrivateKey(System.Span<byte> destination) { throw null; }
+        protected abstract int ExportCompositeMLDsaPrivateKeyCore(System.Span<byte> destination);
         public byte[] ExportCompositeMLDsaPublicKey() { throw null; }
+        public int ExportCompositeMLDsaPublicKey(System.Span<byte> destination) { throw null; }
+        protected abstract int ExportCompositeMLDsaPublicKeyCore(System.Span<byte> destination);
         public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
@@ -602,9 +606,7 @@ namespace System.Security.Cryptography
         public int SignData(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.ReadOnlySpan<byte> context = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract int SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination);
         public bool TryExportCompositeMLDsaPrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected abstract bool TryExportCompositeMLDsaPrivateKeyCore(System.Span<byte> destination, out int bytesWritten);
         public bool TryExportCompositeMLDsaPublicKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected abstract bool TryExportCompositeMLDsaPublicKeyCore(System.Span<byte> destination, out int bytesWritten);
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryExportEncryptedPkcs8PrivateKey(string password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -651,10 +653,10 @@ namespace System.Security.Cryptography
     {
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public CompositeMLDsaCng(System.Security.Cryptography.CngKey key) : base (default(System.Security.Cryptography.CompositeMLDsaAlgorithm)) { }
+        protected override int ExportCompositeMLDsaPrivateKeyCore(System.Span<byte> destination) { throw null; }
+        protected override int ExportCompositeMLDsaPublicKeyCore(System.Span<byte> destination) { throw null; }
         public System.Security.Cryptography.CngKey GetKey() { throw null; }
         protected override int SignDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { throw null; }
-        protected override bool TryExportCompositeMLDsaPrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        protected override bool TryExportCompositeMLDsaPublicKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryExportPkcs8PrivateKeyCore(System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool VerifyDataCore(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<byte> context, System.ReadOnlySpan<byte> signature) { throw null; }
     }
