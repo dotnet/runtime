@@ -251,9 +251,10 @@ namespace System.Threading.Tests
         {
             AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
             Assert.Throws<IOException>(() => new Mutex("Foo/Bar", options: default));
-            Assert.Throws<IOException>(() => new Mutex("Foo\\Bar", options: default));
-            Assert.Throws<IOException>(() => new Mutex("Global\\Foo/Bar", options: default));
-            Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: default));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: default));
+            Assert.Throws<IOException>(() => new Mutex("Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+            Assert.Throws<IOException>(() => new Mutex("Global\\Foo/Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+            Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
         }
 
         [Theory]
@@ -991,16 +992,37 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             string path = $"/tmp/.dotnet/shm/global/{name}";
-            using (FileStream fs = File.Create(path))
+            using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
             using (BinaryWriter bw = new(fs))
             {
                 bw.Write((byte)1); // Write the shared memory type (mutex)
                 bw.Write((byte)2); // Write an invalid version number
                 // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
                 fs.SetLength(Environment.SystemPageSize);
-            }
 
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));
+                // Try opening a mutex when we still have the file locked.
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+            }
+        }
+
+        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void NamedMutex_SharedMemoryFileAlreadyOpen()
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string path = $"/tmp/.dotnet/shm/global/{name}";
+            // Take an exclusive file lock of the global shared memory file.
+            using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096))
+            using (BinaryWriter bw = new(fs))
+            {
+                bw.Write((byte)1); // Write the shared memory type (mutex)
+                bw.Write((byte)1); // Write  valid version number
+                // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
+                fs.SetLength(Environment.SystemPageSize);
+
+                // Try opening a mutex when we still have the file locked.
+                Assert.Throws<IOException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+            }
         }
 
         [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
@@ -1009,16 +1031,16 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             string path = $"/tmp/.dotnet/shm/global/{name}";
-            using (FileStream fs = File.Create(path))
+            using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
             using (BinaryWriter bw = new(fs))
             {
                 bw.Write((byte)2); // Write the shared memory type (invalid)
                 bw.Write((byte)1); // Write a version number
                 // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
                 fs.SetLength(Environment.SystemPageSize);
+                // Try opening a mutex when we still have the file locked.
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
             }
-
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));
         }
 
         [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
@@ -1027,16 +1049,16 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             string path = $"/tmp/.dotnet/shm/global/{name}";
-            using (FileStream fs = File.Create(path))
+            using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
             using (BinaryWriter bw = new(fs))
             {
                 bw.Write((byte)1); // Write the shared memory type (mutex)
                 bw.Write((byte)1); // Write a valid version number
                 // Make the file large enough for a valid named mutex file but not divisible by page size.
                 fs.SetLength(Environment.SystemPageSize - 1);
+                // Try opening a mutex when we still have the file locked.
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
             }
-
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));
         }
 
         public static TheoryData<string> GetValidNames()
