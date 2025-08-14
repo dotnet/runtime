@@ -246,7 +246,7 @@ namespace System.Threading
             }
         }
 
-        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
+        internal bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             ApartmentState retState;
 
@@ -289,7 +289,12 @@ namespace System.Threading
             {
                 if (throwOnError)
                 {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState switch
+                    {
+                        ApartmentState.MTA => "MTA",
+                        ApartmentState.STA => "STA",
+                        _ => "Unknown"
+                    });
                     throw new InvalidOperationException(msg);
                 }
 

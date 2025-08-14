@@ -626,7 +626,7 @@ namespace System.Globalization
             invariant._iFirstWeekOfYear = 0;                      // first week of year
 
             // all available calendar type(s).  The first one is the default calendar
-            invariant._waCalendars = [CalendarId.GREGORIAN];
+            invariant._waCalendars = (CalendarId[])(object)new ushort[] { (ushort)CalendarId.GREGORIAN };
 
             if (!GlobalizationMode.InvariantNoLoad)
             {
