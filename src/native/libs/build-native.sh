@@ -21,10 +21,6 @@ handle_arguments() {
             __ShiftArgs=1
             ;;
 
-        usepthreads|-usepthreads)
-            __usePThreads=1
-            ;;
-
         staticliblink|-staticliblink)
             __StaticLibLink=1
             ;;
@@ -48,7 +44,6 @@ __StaticLibLink=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
 __icuDir=""
-__usePThreads=0
 
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
@@ -158,7 +153,6 @@ fi
 if [[ -n "$__icuDir" ]]; then
     __CMakeArgs="-DCMAKE_ICU_DIR=\"$__icuDir\" $__CMakeArgs"
 fi
-__CMakeArgs="-DCMAKE_USE_PTHREADS=$__usePThreads $__CMakeArgs"
 
 # Set the remaining variables based upon the determined build configuration
 __outConfig="${__outConfig:-"$__TargetOS-$__TargetArch-$__BuildType"}"
