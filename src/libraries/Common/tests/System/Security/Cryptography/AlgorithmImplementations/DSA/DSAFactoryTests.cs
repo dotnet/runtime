@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void ECDsaCreate_Equals_DifferentInstance_FalseForSameKeyMaterial()
+        public static void DsaCreate_Equals_DifferentInstance_FalseForSameKeyMaterial()
         {
             using DSA dsa1 = DSAFactory.Create();
             using DSA dsa2 = DSAFactory.Create();
