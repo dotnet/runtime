@@ -175,7 +175,7 @@ namespace System.Security.Cryptography
         public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
             _wrapped.VerifyHash(hash, signature);
 
-        public override bool Equals(object? obj) => _wrapped.Equals(obj);
+        public override bool Equals(object? obj) => obj is ECDsaWrapper wrapper && _wrapped.Equals(wrapper._wrapped);
 
         public override int GetHashCode() => _wrapped.GetHashCode();
 
