@@ -413,6 +413,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\KeyGeneration.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\RSAFactory.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\RSAFactoryTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAFactoryTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyExchangeFormatter.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyExchangeFormatter.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyFileTests.cs"
