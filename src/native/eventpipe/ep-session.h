@@ -90,6 +90,7 @@ EP_DEFINE_GETTER(EventPipeSession *, session, uint64_t, rundown_keyword)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_time)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_timestamp)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeFile *, file)
+EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionType, session_type)
 EP_DEFINE_GETTER(EventPipeSession *, session, bool, enable_stackwalk)
 
 EventPipeSession *
