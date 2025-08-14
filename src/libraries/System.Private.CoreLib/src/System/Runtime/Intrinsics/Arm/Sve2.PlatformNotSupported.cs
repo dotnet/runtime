@@ -1196,6 +1196,26 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        // Down convert and narrow (top)
+
+        /// <summary>
+        /// svfloat32_t svcvtnt_f32[_f64]_m(svfloat32_t even, svbool_t pg, svfloat64_t op)
+        /// svfloat32_t svcvtnt_f32[_f64]_x(svfloat32_t even, svbool_t pg, svfloat64_t op)
+        ///   FCVTNT Ztied.S, Pg/M, Zop.D
+        ///   FCVTNT Ztied.S, Pg/M, Zop.D
+        /// </summary>
+        public static Vector<float> ConvertToSingleOdd(Vector<float> even, Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        // Down convert, rounding to odd (top)
+
+        /// <summary>
+        /// svfloat32_t svcvtxnt_f32[_f64]_m(svfloat32_t even, svbool_t pg, svfloat64_t op)
+        /// svfloat32_t svcvtxnt_f32[_f64]_x(svfloat32_t even, svbool_t pg, svfloat64_t op)
+        ///   FCVTXNT Ztied.S, Pg/M, Zop.D
+        ///   FCVTXNT Ztied.S, Pg/M, Zop.D
+        /// </summary>
+        public static Vector<float> ConvertToSingleOddRoundToOdd(Vector<float> even, Vector<double> value) { throw new PlatformNotSupportedException(); }
+
         // Complex dot product
 
         /// <summary>
