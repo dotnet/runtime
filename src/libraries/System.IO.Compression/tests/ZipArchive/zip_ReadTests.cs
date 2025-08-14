@@ -10,6 +10,40 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
+    // Test utility class that wraps a stream and makes it non-seekable
+    internal class NonSeekableStream : Stream
+    {
+        private readonly Stream _baseStream;
+
+        public NonSeekableStream(Stream baseStream)
+        {
+            _baseStream = baseStream;
+        }
+
+        public override bool CanRead => _baseStream.CanRead;
+        public override bool CanSeek => false; // Force non-seekable
+        public override bool CanWrite => _baseStream.CanWrite;
+        public override long Length => _baseStream.Length;
+        public override long Position 
+        { 
+            get => _baseStream.Position; 
+            set => throw new NotSupportedException("Seeking is not supported"); 
+        }
+
+        public override void Flush() => _baseStream.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => _baseStream.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException("Seeking is not supported");
+        public override void SetLength(long value) => throw new NotSupportedException("SetLength is not supported");
+        public override void Write(byte[] buffer, int offset, int count) => _baseStream.Write(buffer, offset, count);
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                _baseStream.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
     public class zip_ReadTests : ZipFileTestBase
     {
         public static IEnumerable<object[]> Get_ReadNormal_Data()
@@ -267,8 +301,14 @@ namespace System.IO.Compression.Tests
             Stream s = await OpenEntryStream(async, e);
             Assert.Throws<NotSupportedException>(() => s.Flush()); //"Should not be able to flush on read stream"
             Assert.Throws<NotSupportedException>(() => s.WriteByte(25)); //"should not be able to write to read stream"
-            Assert.Throws<NotSupportedException>(() => s.Position = 4); //"should not be able to seek on read stream"
-            Assert.Throws<NotSupportedException>(() => s.Seek(0, SeekOrigin.Begin)); //"should not be able to seek on read stream"
+            
+            // Seeking behavior depends on whether the entry is compressed and the underlying stream is seekable
+            if (!s.CanSeek)
+            {
+                Assert.Throws<NotSupportedException>(() => s.Position = 4); //"should not be able to seek on non-seekable read stream"
+                Assert.Throws<NotSupportedException>(() => s.Seek(0, SeekOrigin.Begin)); //"should not be able to seek on non-seekable read stream"
+            }
+            
             Assert.Throws<NotSupportedException>(() => s.SetLength(0)); //"should not be able to resize read stream"
 
             await DisposeZipArchive(async, archive);
@@ -538,14 +578,94 @@ namespace System.IO.Compression.Tests
 
                 Assert.True(s.CanRead, "Can read to read archive");
                 Assert.False(s.CanWrite, "Can't write to read archive");
-                Assert.False(s.CanSeek, "Can't seek on archive");
-                Assert.Equal(await LengthOfUnseekableStream(s), e.Length); //"Length is not correct on unseekable stream"
+                
+                // SubReadStream should be seekable when the underlying stream (MemoryStream) is seekable
+                // However, if the entry is compressed, it will be wrapped in a DeflateStream which is not seekable
+                // So we only expect seekability for stored (uncompressed) entries
+                if (e.CompressedLength == e.Length)
+                {
+                    // This is likely a stored (uncompressed) entry, should be seekable
+                    Assert.True(s.CanSeek, $"SubReadStream should be seekable for uncompressed entry '{e.FullName}' when underlying stream is seekable");
+                }
+                else
+                {
+                    // This is likely a compressed entry, wrapped in DeflateStream, should not be seekable
+                    Assert.False(s.CanSeek, $"Compressed entry '{e.FullName}' should not be seekable due to DeflateStream wrapper");
+                }
+                
+                Assert.Equal(await LengthOfUnseekableStream(s), e.Length); //"Length is not correct on stream"
 
                 await DisposeStream(async, s);
             }
 
             await DisposeZipArchive(async, archive);
         }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ReadStreamSeekOps(bool async)
+        {
+            // Create a ZIP archive with stored (uncompressed) entries to test SubReadStream seekability
+            using (var ms = new MemoryStream())
+            {
+                // Create a ZIP with stored entries
+                using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                {
+                    var entry = archive.CreateEntry("test.txt", CompressionLevel.NoCompression);
+                    using (var stream = entry.Open())
+                    {
+                        var testData = "This is test data for seeking operations."u8.ToArray();
+                        stream.Write(testData, 0, testData.Length);
+                    }
+                }
+
+                ms.Position = 0;
+                using (var archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read))
+                {
+                    foreach (ZipArchiveEntry e in archive.Entries)
+                    {
+                        if (e.Length == 0) continue; // Skip empty entries for this test
+
+                        Stream s = await OpenEntryStream(async, e);
+
+                        // For stored entries, SubReadStream should be seekable when underlying stream is seekable
+                        Assert.True(s.CanSeek, $"SubReadStream should be seekable for stored entry '{e.FullName}' when underlying stream is seekable");
+
+                        // Test seeking to beginning
+                        long pos = s.Seek(0, SeekOrigin.Begin);
+                        Assert.Equal(0, pos);
+                        Assert.Equal(0, s.Position);
+
+                        // Test seeking to end
+                        pos = s.Seek(0, SeekOrigin.End);
+                        Assert.Equal(e.Length, pos);
+                        Assert.Equal(e.Length, s.Position);
+
+                        // Test seeking from current position
+                        s.Position = 0;
+                        if (e.Length > 1)
+                        {
+                            pos = s.Seek(1, SeekOrigin.Current);
+                            Assert.Equal(1, pos);
+                            Assert.Equal(1, s.Position);
+                        }
+
+                        // Test setting position directly
+                        s.Position = 0;
+                        Assert.Equal(0, s.Position);
+
+                        // Test that seeking beyond bounds throws
+                        Assert.Throws<ArgumentOutOfRangeException>(() => s.Position = -1);
+                        Assert.Throws<ArgumentOutOfRangeException>(() => s.Position = e.Length + 1);
+                        Assert.Throws<IOException>(() => s.Seek(-1, SeekOrigin.Begin));
+
+                        await DisposeStream(async, s);
+                    }
+                }
+            }
+        }
+
+
 
         private static byte[] ReverseCentralDirectoryEntries(byte[] zipFile)
         {
