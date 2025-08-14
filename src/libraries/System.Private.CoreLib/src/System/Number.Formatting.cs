@@ -298,7 +298,7 @@ namespace System
                                         "90919293949596979899"u8).ToArray();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref byte GetTwoDigitsBytesRef(bool useChars) => 
+        private static ref byte GetTwoDigitsBytesRef(bool useChars) =>
             ref MemoryMarshal.GetArrayDataReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
 #else
         private static ReadOnlySpan<byte> TwoDigitsCharsAsBytes =>
