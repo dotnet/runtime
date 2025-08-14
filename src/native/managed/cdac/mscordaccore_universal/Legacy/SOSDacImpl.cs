@@ -490,7 +490,7 @@ internal sealed unsafe partial class SOSDacImpl
         {
             hr = HResults.E_INVALIDARG;
         }
-        else if (target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix)
+        else if (_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix)
             hr = HResults.E_FAIL;
         else
         {
