@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 File Name: {StartInfo.FileName}
                 Arguments: {StartInfo.Arguments}
                 Environment:
-                {string.Join(Environment.NewLine, StartInfo.Environment.Where(i => i.Key.StartsWith("DOTNET_")).Select(i => $"  {i.Key} = {i.Value}"))}
+                {string.Join(Environment.NewLine, StartInfo.Environment.Where(i => i.Key.StartsWith("DOTNET_", OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)).Select(i => $"  {i.Key} = {i.Value}"))}
                 Exit Code: 0x{ExitCode:x}
                 StdOut:
                 {StdOut}
