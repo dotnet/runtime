@@ -176,18 +176,7 @@ namespace System.Threading
         private static partial void Initialize(ObjectHandleOnStack thread);
 
         /// <summary>Clean up the thread when it goes away.</summary>
-        ~Thread()
-        {
-            // During the actual thread shutdown,
-            // it may not be practical for us to run enough managed code to clean up
-            // any managed code that needs to know when a thread exits.
-            // Instead, run that clean up here when the thread object is finalized
-            // (which is definitely after the thread has exited)
-            OnThreadExiting();
-
-            // Do any additional finalization that's required on the unmanaged side.
-            InternalFinalize();
-        }
+        ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
