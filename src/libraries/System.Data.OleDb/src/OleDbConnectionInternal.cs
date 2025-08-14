@@ -64,7 +64,6 @@ namespace System.Data.OleDb
         // un-enlisted during Deactivate.
         private bool _unEnlistDuringDeactivate;
 
-        [RequiresDynamicCode("Processing OleDbConnection requires dynamic code")]
         internal OleDbConnectionInternal(OleDbConnectionString constr, OleDbConnection? connection) : base()
         {
             Debug.Assert((null != constr) && !constr.IsEmpty, "empty connectionstring");
@@ -224,9 +223,6 @@ namespace System.Data.OleDb
         }
 
         // optional interface, unsafe cast
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal UnsafeNativeMethods.ICommandText? ICommandText()
         {
             Debug.Assert(null != _datasrcwrp, "IDBCreateCommand: null datasource");
@@ -383,9 +379,6 @@ namespace System.Data.OleDb
             return dbprops[0].dwStatus;
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal unsafe DataTable? BuildInfoLiterals()
         {
             using (IDBInfoWrapper wrapper = IDBInfo())
@@ -456,9 +449,6 @@ namespace System.Data.OleDb
             }
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal DataTable? BuildInfoKeywords()
         {
             DataTable? table = new DataTable(ODB.DbInfoKeywords);
@@ -474,9 +464,6 @@ namespace System.Data.OleDb
             return table;
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal bool AddInfoKeywordsToTable(DataTable table, DataColumn keyword)
         {
             using (IDBInfoWrapper wrapper = IDBInfo())
@@ -512,9 +499,6 @@ namespace System.Data.OleDb
             }
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal DataTable BuildSchemaGuids()
         {
             DataTable table = new DataTable(ODB.SchemaGuids);
@@ -543,9 +527,6 @@ namespace System.Data.OleDb
             return table;
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal string? GetLiteralInfo(int literal)
         {
             using (IDBInfoWrapper wrapper = IDBInfo())
@@ -583,9 +564,6 @@ namespace System.Data.OleDb
             }
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal SchemaSupport[]? GetSchemaRowsetInformation()
         {
             OleDbConnectionString constr = ConnectionString;
@@ -637,9 +615,6 @@ namespace System.Data.OleDb
             }
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal DataTable? GetSchemaRowset(Guid schema, object?[]? restrictions)
         {
             if (null == restrictions)
@@ -695,9 +670,6 @@ namespace System.Data.OleDb
             return (reader != null);
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         private void ProcessResults(OleDbHResult hr)
         {
             OleDbConnection? connection = Connection; // get value from weakref only once
@@ -706,9 +678,6 @@ namespace System.Data.OleDb
             { throw e; }
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal bool SupportSchemaRowset(Guid schema)
         {
             SchemaSupport[]? schemaSupport = GetSchemaRowsetInformation();
@@ -799,9 +768,6 @@ namespace System.Data.OleDb
             OleDbConnectionInternal.idataInitialize = null;
         }
 
-#if NET
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
-#endif
         internal OleDbTransaction? ValidateTransaction(OleDbTransaction? transaction, string method)
         {
             if (null != this.weakTransaction)

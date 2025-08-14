@@ -22,7 +22,7 @@ namespace System.Data.OleDb
     [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed partial class OleDbConnection : DbConnection, ICloneable, IDbConnection
     {
-        internal const string TrimWarning = OleDbConnection.TrimWarning;
+        internal const string TrimWarning = "OleDbConnection is not AOT-compatible.";
 
         private static readonly object EventInfoMessage = new object();
 
@@ -639,7 +639,6 @@ namespace System.Data.OleDb
         }
 
         // @devnote: should be multithread safe
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
         public static void ReleaseObjectPool()
         {
             OleDbConnectionString.ReleaseObjectPool();

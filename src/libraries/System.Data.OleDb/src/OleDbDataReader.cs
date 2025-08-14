@@ -1220,7 +1220,6 @@ namespace System.Data.OleDb
             _isRead = false;
         }
 
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
         internal static OleDbException? NextResults(UnsafeNativeMethods.IMultipleResults? imultipleResults, OleDbConnection? connection, OleDbCommand command, out IntPtr recordsAffected)
         {
             recordsAffected = ADP.RecordsUnaffected;

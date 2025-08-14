@@ -411,7 +411,6 @@ namespace System.Data.OleDb
             return true;
         }
 
-        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
         private Dictionary<string, OleDbPropertyInfo> GetProviderInfo(string provider)
         {
             Dictionary<string, OleDbPropertyInfo>? providerInfo = _propertyInfo;

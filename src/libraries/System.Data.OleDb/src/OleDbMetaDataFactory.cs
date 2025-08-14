@@ -32,7 +32,6 @@ namespace System.Data.OleDb
 
         private readonly SchemaRowsetName[] _schemaMapping;
 
-        [RequiresDynamicCode("Members from serialized types may use dynamic code generation.")]
         internal OleDbMetaDataFactory(Stream XMLStream,
                                     string serverVersion,
                                     string serverVersionNormalized,
