@@ -462,7 +462,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
     } else {
         const element_size = array_element_size(element_type);
         mono_assert(element_size != -1, () => `Element type ${element_type} not supported`);
-        const length = value.length;
+        const length = value.length ?? 1;
         const buffer_length = element_size * length;
         const buffer_ptr = malloc(buffer_length) as any;
         if (element_type == MarshalerType.String) {
