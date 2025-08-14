@@ -19,6 +19,9 @@ namespace System.IO
         private const string SharedMemoryGlobalDirectoryName = "global";
 
         private const string SharedMemorySessionDirectoryName = "session";
+
+        // Arbitrary max name limit to ensure consistency between max lengths for Windows and Unix platforms.
+        private const int MaxSharedMemoryNameLength = 255;
         private static int SessionId { get; } = Interop.Sys.GetSid(Environment.ProcessId);
 
         public SharedMemoryId(string name, bool isUserScope)
@@ -39,7 +42,7 @@ namespace System.IO
 
             Name = name;
 
-            if (name.ContainsAny(['\\', '/']))
+            if (name.Length > MaxSharedMemoryNameLength)
             {
                 throw new ArgumentException(SR.Format(SR.IO_SharedMemory_InvalidName, name), nameof(name));
             }
@@ -114,6 +117,17 @@ namespace System.IO
     internal interface ISharedMemoryProcessData
     {
         void Close(bool releaseSharedData);
+    }
+
+    internal sealed class InvalidSharedMemoryHeaderException : Exception
+    {
+        public InvalidSharedMemoryHeaderException(string message) : base(message)
+        {
+        }
+
+        public InvalidSharedMemoryHeaderException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
     }
 
     internal sealed unsafe class SharedMemoryProcessDataHeader<TSharedMemoryProcessData>
@@ -232,7 +246,7 @@ namespace System.IO
 
                 if (fileStatus.Size < (long)sharedDataUsedByteCount)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.IO_SharedMemory_InvalidHeader, sharedMemoryFilePath));
+                    throw new InvalidSharedMemoryHeaderException(SR.Format(SR.IO_SharedMemory_InvalidHeader, sharedMemoryFilePath));
                 }
 
                 if (Interop.Sys.FTruncate(fileHandle, (long)sharedDataTotalByteCount) < 0)
@@ -271,7 +285,7 @@ namespace System.IO
                 if (sharedDataHeader->Type != requiredSharedDataHeader.Type ||
                     sharedDataHeader->Version != requiredSharedDataHeader.Version)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.IO_SharedMemory_InvalidHeader, sharedMemoryFilePath));
+                    throw new InvalidSharedMemoryHeaderException(SR.Format(SR.IO_SharedMemory_InvalidHeader, sharedMemoryFilePath));
                 }
             }
 
