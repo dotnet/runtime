@@ -72,9 +72,6 @@ if %__CrossTarget% EQU 0 (
     call powershell -NoProfile -ExecutionPolicy ByPass -File "%__repoRoot%\eng\native\version\copy_version_files.ps1"
 )
 
-:: cmake requires forward slashes in paths
-set __cmakeRepoRoot=%__repoRoot:\=/%
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 if NOT %__icuDir% == "" (
