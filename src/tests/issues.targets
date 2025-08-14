@@ -567,6 +567,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/PositiveCases/**">
             <Issue>https://github.com/dotnet/runtime/issues/109315</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/**">
+            <Issue>https://github.com/dotnet/runtime/issues/106675</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 x86 specific excludes -->
