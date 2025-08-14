@@ -67,7 +67,7 @@ if /i "%__Arch%" == "wasm" (
             set "WASI_SDK_PATH=%__repoRoot%\src\mono\wasi\wasi-sdk"
         )
         set __CmakeGenerator=Ninja
-        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1"
+        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1"
     )
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"

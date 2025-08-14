@@ -116,7 +116,7 @@ if [[ "$host_arch" == "wasm" ]]; then
                 exit 1
             fi
         fi
-        cmake_extra_defines_wasm=("-DCLR_CMAKE_TARGET_OS=wasi" "-DCLR_CMAKE_TARGET_ARCH=wasm" "-DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1")
+        cmake_extra_defines_wasm=("-DCLR_CMAKE_TARGET_OS=wasi" "-DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1")
     else
         echo "target_os was not specified"
         exit 1
