@@ -222,7 +222,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SchedSetAffinity)
     DllImportEntry(SystemNative_SchedGetAffinity)
     DllImportEntry(SystemNative_GetProcessPath)
-    DllImportEntry(SystemNative_GetPageSize)
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetUnixRelease)

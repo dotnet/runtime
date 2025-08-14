@@ -2409,9 +2409,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetOSArchitecture.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetOSArchitecture.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPageSize.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetPageSize.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetProcessPath.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetProcessPath.cs</Link>
     </Compile>

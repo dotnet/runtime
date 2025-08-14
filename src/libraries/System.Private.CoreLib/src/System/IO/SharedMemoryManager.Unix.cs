@@ -175,7 +175,7 @@ namespace System.IO
             SharedMemoryId id = new(name, isUserScope);
 
             nuint sharedDataUsedByteCount = (nuint)sizeof(SharedMemorySharedDataHeader) + sharedMemoryDataSize;
-            nuint sharedDataTotalByteCount = AlignUp(sharedDataUsedByteCount, (nuint)Interop.Sys.PageSize);
+            nuint sharedDataTotalByteCount = AlignUp(sharedDataUsedByteCount, (nuint)Environment.SystemPageSize);
 
             SharedMemoryProcessDataHeader<TSharedMemoryProcessData>? processDataHeader = SharedMemoryManager<TSharedMemoryProcessData>.Instance.FindProcessDataHeader(id);
 
