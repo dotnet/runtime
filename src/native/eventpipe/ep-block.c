@@ -512,6 +512,7 @@ bool
 ep_event_block_base_write_event (
 	EventPipeEventBlockBase *event_block_base,
 	EventPipeEventInstance *event_instance,
+	uint32_t metadata_id,
 	uint64_t capture_thread_id,
 	uint32_t sequence_number,
 	uint32_t stack_id,
@@ -539,7 +540,6 @@ ep_event_block_base_write_event (
 
 		ep_write_buffer_uint32_t (&write_pointer, total_size);
 
-		uint32_t metadata_id = ep_event_instance_get_metadata_id (event_instance);
 		EP_ASSERT ((metadata_id & (1 << 31)) == 0);
 
 		metadata_id |= (!is_sorted_event ? 1 << 31 : 0);
@@ -579,8 +579,8 @@ ep_event_block_base_write_event (
 		uint8_t *header_write_pointer = &event_block_base->compressed_header[0];
 		EventPipeEventHeader *last_header = &event_block_base->last_header;
 
-		if (ep_event_instance_get_metadata_id (event_instance) != last_header->metadata_id) {
-			header_write_pointer = event_block_base_write_var_uint32 (header_write_pointer, ep_event_instance_get_metadata_id (event_instance));
+		if (metadata_id != last_header->metadata_id) {
+			header_write_pointer = event_block_base_write_var_uint32 (header_write_pointer, metadata_id);
 			flags |= 1;
 		}
 
@@ -588,7 +588,7 @@ ep_event_block_base_write_event (
 			flags |= (1 << 6);
 		}
 
-		if (last_header->sequence_number + (ep_event_instance_get_metadata_id (event_instance) != 0 ? 1 : 0) != sequence_number ||
+		if (last_header->sequence_number + (metadata_id != 0 ? 1 : 0) != sequence_number ||
 			last_header->capture_thread_id != capture_thread_id || last_header->capture_proc_number != capture_proc_number) {
 			header_write_pointer = event_block_base_write_var_uint32 (header_write_pointer, sequence_number - last_header->sequence_number - 1);
 			header_write_pointer = event_block_base_write_var_uint64 (header_write_pointer, capture_thread_id);
@@ -638,7 +638,7 @@ ep_event_block_base_write_event (
 			ep_raise_error ();
 		}
 
-		last_header->metadata_id = ep_event_instance_get_metadata_id (event_instance);
+		last_header->metadata_id = metadata_id;
 		last_header->sequence_number = sequence_number;
 		last_header->thread_id = ep_event_instance_get_thread_id (event_instance);
 		last_header->capture_thread_id = capture_thread_id;
