@@ -252,7 +252,7 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
             Assert.Throws<IOException>(() => new Mutex("Foo/Bar", options: default));
             AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: default));
-            Assert.Throws<IOException>(() => new Mutex("Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
             Assert.Throws<IOException>(() => new Mutex("Global\\Foo/Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
             Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
         }
@@ -986,12 +986,27 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAny(new WaitHandle[] { m, mre }, 0));
         }
 
+        private const string GlobalSharedMemoryDirectory = $"/tmp/.dotnet/shm/global";
+        private const UnixFileMode AllUsersRwx =
+            UnixFileMode.UserRead
+            | UnixFileMode.UserWrite
+            | UnixFileMode.UserExecute
+            | UnixFileMode.GroupRead
+            | UnixFileMode.GroupWrite
+            | UnixFileMode.GroupExecute
+            | UnixFileMode.OtherRead
+            | UnixFileMode.OtherWrite
+            | UnixFileMode.OtherExecute;
+
         [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [UnsupportedOSPlatform("windows")]
         public void NamedMutex_InvalidSharedMemoryHeaderVersion()
         {
             string name = Guid.NewGuid().ToString("N");
-            string path = $"/tmp/.dotnet/shm/global/{name}";
+            string path = $"{GlobalSharedMemoryDirectory}/{name}";
+
+            Directory.CreateDirectory(GlobalSharedMemoryDirectory, AllUsersRwx);
             using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
             using (BinaryWriter bw = new(fs))
             {
@@ -1007,10 +1022,13 @@ namespace System.Threading.Tests
 
         [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [UnsupportedOSPlatform("windows")]
         public void NamedMutex_SharedMemoryFileAlreadyOpen()
         {
             string name = Guid.NewGuid().ToString("N");
-            string path = $"/tmp/.dotnet/shm/global/{name}";
+            string path = $"{GlobalSharedMemoryDirectory}/{name}";
+
+            Directory.CreateDirectory(GlobalSharedMemoryDirectory, AllUsersRwx);
             // Take an exclusive file lock of the global shared memory file.
             using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 4096))
             using (BinaryWriter bw = new(fs))
@@ -1027,10 +1045,13 @@ namespace System.Threading.Tests
 
         [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [UnsupportedOSPlatform("windows")]
         public void NamedMutex_InvalidSharedMemoryHeaderKind()
         {
             string name = Guid.NewGuid().ToString("N");
-            string path = $"/tmp/.dotnet/shm/global/{name}";
+            string path = $"{GlobalSharedMemoryDirectory}/{name}";
+
+            Directory.CreateDirectory(GlobalSharedMemoryDirectory, AllUsersRwx);
             using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
             using (BinaryWriter bw = new(fs))
             {
@@ -1045,10 +1066,13 @@ namespace System.Threading.Tests
 
         [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [UnsupportedOSPlatform("windows")]
         public void NamedMutex_TooSmallSharedMemoryFile()
         {
             string name = Guid.NewGuid().ToString("N");
-            string path = $"/tmp/.dotnet/shm/global/{name}";
+            string path = $"{GlobalSharedMemoryDirectory}/{name}";
+
+            Directory.CreateDirectory(GlobalSharedMemoryDirectory, AllUsersRwx);
             using (FileStream fs = new(path, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite, 4096))
             using (BinaryWriter bw = new(fs))
             {
