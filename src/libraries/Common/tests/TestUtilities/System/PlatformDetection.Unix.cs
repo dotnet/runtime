@@ -56,7 +56,7 @@ namespace System
         public static bool IsOpenSsl3_4 => IsOpenSslVersionAtLeast(s_openssl3_4Version);
         public static bool IsOpenSsl3_5 => IsOpenSslVersionAtLeast(s_openssl3_5Version);
 
-        private static readonly Lazy<bool> s_IsSymCryptOpenSsl = new(() =>
+        private static readonly Lazy<bool> s_isSymCryptOpenSsl = new(() =>
         {
             return IsAzureLinux &&
                 (
@@ -65,7 +65,7 @@ namespace System
                 );
         });
 
-        public static bool IsSymCryptOpenSsl => s_IsSymCryptOpenSsl.Value;
+        public static bool IsSymCryptOpenSsl => s_isSymCryptOpenSsl.Value;
         public static bool IsNotSymCryptOpenSsl => !IsSymCryptOpenSsl;
 
         /// <summary>
