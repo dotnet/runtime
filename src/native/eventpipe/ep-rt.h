@@ -200,6 +200,11 @@ inline
 bool
 ep_rt_config_value_get_enable_stackwalk (void);
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffer_guard_level (void);
+
 /*
  * EventPipeSampleProfiler.
  */

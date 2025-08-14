@@ -560,6 +560,15 @@ ep_rt_config_value_get_enable_stackwalk (void)
 	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeEnableStackwalk) != 0;
 }
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffer_guard_level (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeBufferGuardLevel);
+}
+
 /*
  * EventPipeSampleProfiler.
  */

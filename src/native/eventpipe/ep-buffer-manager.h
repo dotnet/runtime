@@ -128,6 +128,8 @@ struct _EventPipeBufferManager_Internal {
 	// number of times an event was dropped due to it being too
 	// large to fit in the 64KB size limit
 	volatile int64_t num_oversized_events_dropped;
+	// EventPipeBufferGuardLevel during allocation
+	EventPipeBufferGuardLevel buffer_guard_level;
 
 #ifdef EP_CHECKED_BUILD
 	volatile int64_t num_events_stored;
@@ -146,6 +148,7 @@ struct _EventPipeBufferManager {
 #endif
 
 EP_DEFINE_GETTER_REF(EventPipeBufferManager *, buffer_manager, ep_rt_wait_event_handle_t *, rt_wait_event)
+EP_DEFINE_GETTER(EventPipeBufferManager *, buffer_manager, EventPipeBufferGuardLevel, buffer_guard_level)
 
 EventPipeBufferManager *
 ep_buffer_manager_alloc (

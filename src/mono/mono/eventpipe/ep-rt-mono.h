@@ -637,6 +637,21 @@ ep_rt_config_value_get_enable_stackwalk (void)
 	return value_uint32_t != 0;
 }
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffer_guard_level (void)
+{
+	uint32_t buffer_guard_level = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeBufferGuardLevel");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeBufferGuardLevel");
+	if (value)
+		buffer_guard_level = (uint32_t)atoi (value);
+	g_free (value);
+	return buffer_guard_level;
+}
+
 /*
  * EventPipeSampleProfiler.
  */

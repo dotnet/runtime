@@ -808,6 +808,7 @@ ep_buffer_manager_alloc (
 	size_t max_size_of_all_buffers,
 	size_t sequence_point_allocation_budget)
 {
+	uint32_t buffer_guard_level;
 	EventPipeBufferManager *instance = ep_rt_object_alloc (EventPipeBufferManager);
 	ep_raise_error_if_nok (instance != NULL);
 
@@ -850,6 +851,9 @@ ep_buffer_manager_alloc (
 		instance->sequence_point_alloc_budget = EP_CLAMP ((size_t)1024 * 1024, sequence_point_allocation_budget, (size_t)1024 * 1024 * 1024);
 		instance->remaining_sequence_point_alloc_budget = sequence_point_allocation_budget;
 	}
+
+	buffer_guard_level = EP_MIN (ep_rt_config_value_get_buffer_guard_level (), EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES);
+	instance->buffer_guard_level = (EventPipeBufferGuardLevel)buffer_guard_level;
 
 ep_on_exit:
 	return instance;
