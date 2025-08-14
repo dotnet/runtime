@@ -59,6 +59,10 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
+    private readonly int _genericModeBlockFieldSize;
+    private readonly int _genericModeCharFieldCount;
+    private readonly int _genericModeBlockSize;
+
     public SOSDacImpl(Target target, object? legacyObj)
     {
         _target = target;
@@ -93,6 +97,9 @@ internal sealed unsafe partial class SOSDacImpl
 
             _legacyEnumMemory = legacyObj as ICLRDataEnumMemoryRegions;
         }
+        _genericModeBlockFieldSize = 255;
+        _genericModeCharFieldCount = 11;
+        _genericModeBlockSize = sizeof(bool) + sizeof(char) * _genericModeBlockFieldSize * _genericModeCharFieldCount;
     }
 
     #region ISOSDacInterface
@@ -476,7 +483,73 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, void* interfaces, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetCCWInterfaces(ccw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
-        => _legacyImpl is not null ? _legacyImpl.GetClrWatsonBuckets(thread, pGenericModeBlock) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        TargetPointer bucketPointer;
+        if (thread == 0 || pGenericModeBlock == null)
+        {
+            hr = HResults.E_INVALIDARG;
+        }
+        else if (target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix)
+            hr = HResults.E_FAIL;
+        else
+        {
+            try
+            {
+                TargetPointer threadPtr = thread.ToTargetPointer(_target);
+                Contracts.IThread threadContract = _target.Contracts.Thread;
+                Contracts.IException exceptionContract = _target.Contracts.Exception;
+                TargetPointer throwablePointer = threadContract.GetThrowableObject(threadPtr);
+                if (throwablePointer != TargetPointer.Null)
+                {
+                    // Get the address of the throwable object
+                    bucketPointer = exceptionContract.GetWatsonBucketsFromThrowable(throwablePointer);
+                    if (bucketPointer == TargetPointer.Null)
+                    {
+                        bucketPointer = threadContract.GetUEWatsonBuckets(threadPtr);
+                        if (bucketPointer == TargetPointer.Null)
+                        {
+                            bucketPointer = threadContract.GetCurrentExceptionWatsonBuckets(threadPtr);
+                        }
+                    }
+                }
+                else
+                {
+                    bucketPointer = threadContract.GetUEWatsonBuckets(threadPtr);
+                }
+                if (bucketPointer != TargetPointer.Null)
+                {
+                    var span = new Span<byte>(pGenericModeBlock, _genericModeBlockSize);
+                    _target.ReadBuffer(bucketPointer, span);
+                }
+                else
+                {
+                    hr = HResults.S_FALSE; // No Watson buckets found
+                }
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            byte[] watsonBucketsLocal = new byte[_genericModeBlockSize];
+            int hrLocal;
+            fixed (byte* ptr = watsonBucketsLocal)
+            {
+                hrLocal = _legacyImpl.GetClrWatsonBuckets(thread, ptr);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(new ReadOnlySpan<byte>(watsonBucketsLocal, 0, _genericModeBlockSize).SequenceEqual(new Span<byte>(pGenericModeBlock, _genericModeBlockSize)));
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetCodeHeaderData(ClrDataAddress ip, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetCodeHeaderData(ip, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, void* codeHeaps, uint* pNeeded)

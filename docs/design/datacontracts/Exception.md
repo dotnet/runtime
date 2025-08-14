@@ -18,7 +18,8 @@ record struct ExceptionData(
 
 ``` csharp
 TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo);
-ExceptionData GetExceptionData(TargetPointer exceptionAddr)
+ExceptionData GetExceptionData(TargetPointer exceptionAddr);
+TargetPointer GetWatsonBucketsFromThrowable(TargetPointer exceptionAddr);
 ```
 
 ## Version 1
@@ -52,5 +53,18 @@ ExceptionData GetExceptionData(TargetPointer exceptionAddr)
         target.Read<int>(exceptionAddr + /* Exception::HResult offset */),
         target.Read<int>(exceptionAddr + /* Exception::XCode offset */),
     );
+}
+
+TargetPointer GetWatsonBucketsFromThrowable(TargetPointer exceptionAddr)
+{
+    TargetPointer watsonBuckets = target.ReadPointer(exceptionAddr + /* Exception::WatsonBuckets offset */);
+    if (watsonBuckets != TargetPointer.Null)
+    {
+        // The Watson buckets object is a managed object; its data starts after the object header.
+        TargetPointer methodTable = target.ReadPointer(watsonBuckets);
+        int baseSize = target.Read<int>(methodTable + /* MethodTable::BaseSize offset */);
+        return watsonBuckets + baseSize - target.ReadGlobal<ulong>("ObjectHeaderSize");
+    }
+    return TargetPointer.Null;
 }
 ```
