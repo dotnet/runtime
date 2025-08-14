@@ -3105,12 +3105,15 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
 
         GCPROTECT_BEGIN(obj);
 
-        OBJECTHANDLE lockHandle = obj->GetSyncBlock()->GetLockNoCreate();
 
-        OBJECTREF lockObj = ObjectFromHandle(lockHandle);
+        DWORD threadId, recursionLevel;
+        if (!obj->GetSyncBlock()->TryGetLockInfo(&threadId, &recursionLevel))
+        {
+            _ASSERTE(!"Object should be locked by this thread, is not locked at all.");
+            return;
+        }
 
-        DWORD owningThreadId = CoreLibBinder::GetField(FIELD__LOCK__OWNING_THREAD_ID)->GetValue32(lockObj);
-        _ASSERTE(owningThreadId == m_crawl.pThread->GetThreadId());
+        _ASSERTE(threadId == m_crawl.pThread->GetThreadId());
 
         GCPROTECT_END();
 

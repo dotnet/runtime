@@ -399,7 +399,7 @@ class SyncBlock
     // We have this because we can't allocate a lock when we allocate the sync block
     // as we're in a no-GC region. Instead, we'll capture the information and immediately upgrade
     // to the full lock next time someone tries to read the lock information.
-    DWORD        m_thinLock;
+    Volatile<DWORD>  m_thinLock;
 
     // This is a backpointer from the syncblock to the synctable entry.  This allows
     // us to recover the object that holds the syncblock.
@@ -474,12 +474,6 @@ class SyncBlock
    {
        LIMITED_METHOD_CONTRACT;
        return (m_dwSyncIndex & SyncBlockPrecious) != 0;
-   }
-
-   OBJECTHANDLE GetLockNoCreate()
-   {
-        WRAPPER_NO_CONTRACT;
-        return m_Lock;
    }
 
    // Get the lock information for this sync block.
@@ -977,13 +971,6 @@ struct cdac_data<ObjHeader>
 };
 
 typedef DPTR(class ObjHeader) PTR_ObjHeader;
-
-
-#define ENTER_SPIN_LOCK(pOh)        \
-    pOh->EnterSpinLock();
-
-#define LEAVE_SPIN_LOCK(pOh)        \
-    pOh->ReleaseSpinLock();
 
 #ifdef TARGET_X86
 #include <poppack.h>

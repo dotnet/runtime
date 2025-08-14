@@ -1299,113 +1299,128 @@ void DumpSyncBlockCache()
 }
 #endif
 
+namespace
+{
+#ifdef MP_LOCKS
+    DEBUG_NOINLINE
+    void EnterSpinLock(Volatile<DWORD>& spinLock)
+    {
+        // NOTE: This function cannot have a dynamic contract.  If it does, the contract's
+        // destructor will reset the CLR debug state to what it was before entering the
+        // function, which will undo the BeginNoTriggerGC() call below.
+        STATIC_CONTRACT_GC_NOTRIGGER;
+
+    #ifdef _DEBUG
+        int i = 0;
+    #endif
+
+        DWORD dwSwitchCount = 0;
+
+        while (TRUE)
+        {
+    #ifdef _DEBUG
+    #ifdef HOST_64BIT
+            // Give 64bit more time because there isn't a remoting fast path now, and we've hit this assert
+            // needlessly in CLRSTRESS.
+            if (i++ > 30000)
+    #else
+            if (i++ > 10000)
+    #endif // HOST_64BIT
+                _ASSERTE(!"EnterSpinLock timed out");
+    #endif
+            // get the value so that it doesn't get changed under us.
+            LONG curValue = spinLock.LoadWithoutBarrier();
+
+            // check if lock taken
+            if (! (curValue & BIT_SBLK_SPIN_LOCK))
+            {
+                // try to take the lock
+                LONG newValue = curValue | BIT_SBLK_SPIN_LOCK;
+                LONG result = InterlockedCompareExchange((LONG*)&spinLock, newValue, curValue);
+                if (result == curValue)
+                    break;
+            }
+            if  (g_SystemInfo.dwNumberOfProcessors > 1)
+            {
+                for (int spinCount = 0; spinCount < BIT_SBLK_SPIN_COUNT; spinCount++)
+                {
+                    if  (! (m_SyncBlockValue & BIT_SBLK_SPIN_LOCK))
+                        break;
+                    YieldProcessorNormalized(); // indicate to the processor that we are spinning
+                }
+                if  (m_SyncBlockValue & BIT_SBLK_SPIN_LOCK)
+                    __SwitchToThread(0, ++dwSwitchCount);
+            }
+            else
+                __SwitchToThread(0, ++dwSwitchCount);
+        }
+
+        INCONTRACT(Thread* pThread = GetThreadNULLOk());
+        INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
+    }
+#else
+    DEBUG_NOINLINE
+    void EnterSpinLock(Volatile<DWORD>& spinLock)
+    {
+        STATIC_CONTRACT_GC_NOTRIGGER;
+
+    #ifdef _DEBUG
+        int i = 0;
+    #endif
+
+        DWORD dwSwitchCount = 0;
+
+        while (TRUE)
+        {
+    #ifdef _DEBUG
+            if (i++ > 10000)
+                _ASSERTE(!"EnterSpinLock timed out");
+    #endif
+            // get the value so that it doesn't get changed under us.
+            LONG curValue = spinLock.LoadWithoutBarrier();
+
+            // check if lock taken
+            if (! (curValue & BIT_SBLK_SPIN_LOCK))
+            {
+                // try to take the lock
+                LONG newValue = curValue | BIT_SBLK_SPIN_LOCK;
+                LONG result = InterlockedCompareExchange((LONG*)&spinLock, newValue, curValue);
+                if (result == curValue)
+                    break;
+            }
+            __SwitchToThread(0, ++dwSwitchCount);
+        }
+
+        INCONTRACT(Thread* pThread = GetThreadNULLOk());
+        INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
+    }
+#endif
+
+    void ReleaseSpinLock(Volatile<DWORD>& spinLock)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        INCONTRACT(Thread* pThread = GetThreadNULLOk());
+        INCONTRACT(if (pThread != NULL) pThread->EndNoTriggerGC());
+
+        InterlockedAnd((LONG*)&spinLock, ~BIT_SBLK_SPIN_LOCK);
+    }
+}
+
 // ***************************************************************************
 //
 //              ObjHeader class implementation
 //
 // ***************************************************************************
 
-#ifdef MP_LOCKS
 DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 {
-    // NOTE: This function cannot have a dynamic contract.  If it does, the contract's
-    // destructor will reset the CLR debug state to what it was before entering the
-    // function, which will undo the BeginNoTriggerGC() call below.
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-#ifdef _DEBUG
-    int i = 0;
-#endif
-
-    DWORD dwSwitchCount = 0;
-
-    while (TRUE)
-    {
-#ifdef _DEBUG
-#ifdef HOST_64BIT
-        // Give 64bit more time because there isn't a remoting fast path now, and we've hit this assert
-        // needlessly in CLRSTRESS.
-        if (i++ > 30000)
-#else
-        if (i++ > 10000)
-#endif // HOST_64BIT
-            _ASSERTE(!"ObjHeader::EnterLock timed out");
-#endif
-        // get the value so that it doesn't get changed under us.
-        LONG curValue = m_SyncBlockValue.LoadWithoutBarrier();
-
-        // check if lock taken
-        if (! (curValue & BIT_SBLK_SPIN_LOCK))
-        {
-            // try to take the lock
-            LONG newValue = curValue | BIT_SBLK_SPIN_LOCK;
-            LONG result = InterlockedCompareExchange((LONG*)&m_SyncBlockValue, newValue, curValue);
-            if (result == curValue)
-                break;
-        }
-        if  (g_SystemInfo.dwNumberOfProcessors > 1)
-        {
-            for (int spinCount = 0; spinCount < BIT_SBLK_SPIN_COUNT; spinCount++)
-            {
-                if  (! (m_SyncBlockValue & BIT_SBLK_SPIN_LOCK))
-                    break;
-                YieldProcessorNormalized(); // indicate to the processor that we are spinning
-            }
-            if  (m_SyncBlockValue & BIT_SBLK_SPIN_LOCK)
-                __SwitchToThread(0, ++dwSwitchCount);
-        }
-        else
-            __SwitchToThread(0, ++dwSwitchCount);
-    }
-
-    INCONTRACT(Thread* pThread = GetThreadNULLOk());
-    INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
+    return ::EnterSpinLock(m_SyncBlockValue);
 }
-#else
-DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-#ifdef _DEBUG
-    int i = 0;
-#endif
-
-    DWORD dwSwitchCount = 0;
-
-    while (TRUE)
-    {
-#ifdef _DEBUG
-        if (i++ > 10000)
-            _ASSERTE(!"ObjHeader::EnterLock timed out");
-#endif
-        // get the value so that it doesn't get changed under us.
-        LONG curValue = m_SyncBlockValue.LoadWithoutBarrier();
-
-        // check if lock taken
-        if (! (curValue & BIT_SBLK_SPIN_LOCK))
-        {
-            // try to take the lock
-            LONG newValue = curValue | BIT_SBLK_SPIN_LOCK;
-            LONG result = InterlockedCompareExchange((LONG*)&m_SyncBlockValue, newValue, curValue);
-            if (result == curValue)
-                break;
-        }
-        __SwitchToThread(0, ++dwSwitchCount);
-    }
-
-    INCONTRACT(Thread* pThread = GetThreadNULLOk());
-    INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
-}
-#endif //MP_LOCKS
 
 DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
 {
-    LIMITED_METHOD_CONTRACT;
-
-    INCONTRACT(Thread* pThread = GetThreadNULLOk());
-    INCONTRACT(if (pThread != NULL) pThread->EndNoTriggerGC());
-
-    InterlockedAnd((LONG*)&m_SyncBlockValue, ~BIT_SBLK_SPIN_LOCK);
+    return ::ReleaseSpinLock(m_SyncBlockValue);
 }
 
 #endif //!DACCESS_COMPILE
@@ -1436,7 +1451,7 @@ DWORD ObjHeader::GetSyncBlockIndex()
             //Try one more time
             if (GetHeaderSyncBlockIndex() == 0)
             {
-                ENTER_SPIN_LOCK(this);
+                EnterSpinLock();
                 // Now the header will be stable - check whether hashcode, appdomain index or lock information is stored in it.
                 DWORD bits = GetBits();
                 if (((bits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) == (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) ||
@@ -1449,7 +1464,7 @@ DWORD ObjHeader::GetSyncBlockIndex()
                 {
                     SetIndex(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | SyncBlockCache::GetSyncBlockCache()->NewSyncBlockSlot(GetBaseObject()));
                 }
-                LEAVE_SPIN_LOCK(this);
+                ReleaseSpinLock();
             }
             // SyncBlockCache::LockHolder goes out of scope here
         }
@@ -1615,7 +1630,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
             {
                 // after this point, nobody can update the index in the header
-                ENTER_SPIN_LOCK(this);
+                EnterSpinLock();
 
                 {
                     // If the thin lock in the header is in use, transfer the information to the syncblock
@@ -1655,7 +1670,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
                 if (indexHeld)
                     syncBlock->SetPrecious();
 
-                LEAVE_SPIN_LOCK(this);
+                ReleaseSpinLock();
             }
         }
         // SyncBlockCache::LockHolder goes out of scope here
@@ -1709,7 +1724,7 @@ void SyncBlock::InitializeThinLock(DWORD recursionLevel, DWORD threadId)
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(m_Lock == (OBJECTHANDLE)NULL);
-    _ASSERTE(m_thinLock == 0);
+    _ASSERTE(m_thinLock == 0u);
     m_thinLock = (threadId & SBLK_MASK_LOCK_THREADID) | (recursionLevel << SBLK_RECLEVEL_SHIFT);
 }
 
@@ -1730,10 +1745,26 @@ OBJECTHANDLE SyncBlock::GetLock()
 
     SetPrecious();
 
+    EnterSpinLock(m_thinLock);
+
+    struct OnCleanup
+    {
+        Volatile<DWORD>& spinLock;
+        ~OnCleanup()
+        {
+            ReleaseSpinLock(spinLock);
+        }
+    } cleanup{m_thinLock};
+
+    // We're in the spinlock now. If we raced, someone else may have created the lock object.
+    if (m_Lock != (OBJECTHANDLE)NULL)
+    {
+        return m_Lock;
+    }
+
     // We need to create a new lock
     OBJECTHANDLEHolder lockHandle = NULL;
     OBJECTREF lockObj = NULL;
-    DWORD thinLock = m_thinLock;
     GCPROTECT_BEGIN(lockObj);
 
     lockObj = AllocateObject(CoreLibBinder::GetClass(CLASS__LOCK));
@@ -1745,11 +1776,11 @@ OBJECTHANDLE SyncBlock::GetLock()
         lockHandle = GetAppDomain()->CreateHandle(lockObj);
     }
 
-    if (thinLock != 0)
+    if (m_thinLock != 0u)
     {
         // We have thin-lock info that needs to be transferred to the lock object.
-        DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
-        DWORD recursionLevel = (thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
+        DWORD lockThreadId = m_thinLock & SBLK_MASK_LOCK_THREADID;
+        DWORD recursionLevel = (m_thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
         _ASSERTE(lockThreadId != 0);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__INITIALIZE_TO_LOCKED_WITH_NO_WAITERS);
         DECLARE_ARGHOLDER_ARRAY(args, 3);
@@ -1761,19 +1792,13 @@ OBJECTHANDLE SyncBlock::GetLock()
 
     GCPROTECT_END();
 
-    OBJECTHANDLE existingHandle = InterlockedCompareExchangeT(&m_Lock, lockHandle.GetValue(), NULL);
+    m_Lock = lockHandle.GetValue();
 
-    if (existingHandle != NULL)
-    {
-        return existingHandle;
-    }
-
-    // Our lock instance is in the sync block now.
-    // Don't release it.
     lockHandle.SuppressRelease();
+
     // Also, clear the thin lock info.
     // It won't be used any more, but it will look out of date.
-    m_thinLock = 0;
+    m_thinLock &= ~(SBLK_MASK_LOCK_THREADID | SBLK_MASK_LOCK_RECLEVEL);
 
     return lockHandle;
 }
@@ -1798,7 +1823,7 @@ BOOL SyncBlock::TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel)
 
         GCPROTECT_END();
     }
-    else if (m_thinLock != 0)
+    else if (m_thinLock != 0u)
     {
         // Extract info from the thin lock
         DWORD threadId = m_thinLock & SBLK_MASK_LOCK_THREADID;
