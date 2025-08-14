@@ -594,7 +594,10 @@ void deps_json_t::load(bool is_framework_dependent, std::function<void(const jso
 
     json_parser_t json;
     if (!json.parse_file(m_deps_file))
+    {
+        trace::error(_X("Failed to parse file [%s]. %s"), m_deps_file.c_str(), json.get_error_message().c_str());
         return;
+    }
 
     m_valid = true;
     const auto& runtime_target = json.document()[_X("runtimeTarget")];
