@@ -2138,7 +2138,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 
 #if defined(TARGET_S390X)
-		if (!mono_hwcap_s390x_has_ve1 && ((id == SN_Max) || (id == SN_Min) || (id == SN_MaxNative) || (id == SN_MinNative) || (id !=SN_Xor) || (id != SN_BitwiseAnd) || (id != SN_BitwiseOr)) && arg0_type == MONO_TYPE_R4)
+		if (!mono_hwcap_s390x_has_ve1 && arg0_type == MONO_TYPE_R4)
+			return NULL;
+		if (!mono_hwcap_s390x_has_ve1 && ((id == SN_Max) || (id == SN_Min) || (id == SN_MaxNative) || (id == SN_MinNative)) && (arg0_type == MONO_TYPE_R8))
 			return NULL;
 #endif
 
@@ -2146,7 +2148,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (((id == SN_Max) || (id == SN_Min)) && type_enum_is_float(arg0_type))
 			return NULL;
 #endif
-
 
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
@@ -3849,7 +3850,7 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return NULL;
 		arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 #ifdef TARGET_S390X
-		if (!mono_hwcap_s390x_has_ve1 && ((id !=SN_op_ExclusiveOr) || (id != SN_op_BitwiseAnd) || (id != SN_op_BitwiseOr)) && arg0_type == MONO_TYPE_R4)
+		if (!mono_hwcap_s390x_has_ve1 && arg0_type == MONO_TYPE_R4)
 			return NULL;
 #endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
@@ -3965,6 +3966,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 
 #ifdef TARGET_WASM
 	if (len != 4)
+		return NULL;
+#endif
+
+#ifdef TARGET_S390X
+	if (!mono_hwcap_s390x_has_ve1)
 		return NULL;
 #endif
 
@@ -4219,17 +4225,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		if ((id == SN_Max) || (id == SN_Min))
 			return NULL;
 #endif
-#ifdef TARGET_S390X
-		if (!mono_hwcap_s390x_has_ve1 && ((id == SN_Max) || (id == SN_Min) || (id == SN_MaxNative) || (id == SN_MinNative)))
-			return NULL;
-#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	}
 	case SN_Dot: {
-#ifdef TARGET_S390X
-		if (!mono_hwcap_s390x_has_ve1)
-			return NULL;
-#endif
 		return emit_dot (cfg, klass, fsig->params [0], MONO_TYPE_R4, args [0]->dreg, args [1]->dreg);
 	}
 	case SN_Negate:
@@ -4248,10 +4246,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return emit_simd_ins_for_sig (cfg, cmethod->klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS, MONO_TYPE_R4, fsig, args);
 #endif
 		}
-#ifdef TARGET_S390X
-		if (!mono_hwcap_s390x_has_ve1)
-			return NULL;
-#endif
 		// MAX(x,0-x)
 		MonoInst *zero = emit_xzero (cfg, klass);
 		MonoInst *neg = emit_simd_ins (cfg, klass, OP_XBINOP, zero->dreg, args [0]->dreg);
@@ -4265,20 +4259,12 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_op_Equality: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
-#ifdef TARGET_S390X
-		if (!mono_hwcap_s390x_has_ve1)
-			return NULL;
-#endif
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		return emit_xequal (cfg, arg_class, MONO_TYPE_R4, args [0], args [1]);
 	}
 	case SN_op_Inequality: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
-#ifdef TARGET_S390X
-		if (!mono_hwcap_s390x_has_ve1)
-			return NULL;
-#endif
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		return emit_not_xequal (cfg, arg_class, MONO_TYPE_R4, args [0], args [1]);
 	}
@@ -4290,8 +4276,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c0 = (IntrinsicId)INTRINS_SIMD_SQRT_R4;
 		return ins;
 #elif defined(TARGET_S390X)
-		if (!mono_hwcap_s390x_has_ve1)
-			return NULL;
 		ins = emit_simd_ins (cfg, klass, OP_S390_VFSQSB, args [0]->dreg, -1);
 		return ins;
 #else
@@ -4306,10 +4290,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return NULL;
 #ifndef TARGET_ARM64
 		if (id == SN_Clamp)
-			return NULL;
-#endif
-#ifdef TARGET_S390X
-		if (!mono_hwcap_s390x_has_ve1)
 			return NULL;
 #endif
 
