@@ -418,7 +418,10 @@ namespace Generators
             // Some threading events are defined manually in NativeRuntimeEventSource.Threading.cs
             "ThreadPool",
             "Contention",
-            "WaitHandle"
+            "WaitHandle",
+
+            // Exception event defined manually in NativeRuntimeEventSource.Exceptions.cs
+            "ExceptionThrown_V1",
         ];
     }
 }
