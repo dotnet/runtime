@@ -57,6 +57,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.MethodTableAuxiliaryData.LoaderModule), DataType.pointer),
             new(nameof(Data.MethodTableAuxiliaryData.OffsetToNonVirtualSlots), DataType.int16),
+            new(nameof(Data.MethodTableAuxiliaryData.Flags), DataType.uint32),
         ]
     };
 
@@ -193,6 +194,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.LastThrownObject), DataType.pointer),
             new(nameof(Data.Thread.LinkNext), DataType.pointer),
             new(nameof(Data.Thread.ExceptionTracker), DataType.pointer),
+            new(nameof(Data.Thread.ThreadLocalDataPtr), DataType.pointer),
         ]
     };
 
