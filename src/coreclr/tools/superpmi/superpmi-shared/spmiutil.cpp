@@ -123,8 +123,10 @@ std::string GetProcessCommandLine()
         while (getdelim(&cmdLine, &size, '\0', fp) != -1)
         {
             // /proc/self/cmdline uses \0 as delimeter, convert it to space
+            if (!result.empty())
+                result += ' ';
+
             result += cmdLine;
-            result += ' ';
 
             free(cmdLine);
             cmdLine = nullptr;
