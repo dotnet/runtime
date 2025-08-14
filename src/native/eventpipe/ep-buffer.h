@@ -34,6 +34,73 @@
 // It is OK for the data payloads to be unaligned because they are opaque blobs that are copied via memcpy.
 #define EP_BUFFER_ALIGNMENT_SIZE 8
 
+// Diagnostics: reserve space for a per-buffer header guard and a footer region.
+// These regions allow post-mortem detection of memory corruption and simple use-after-free.
+// Header: first 32 bytes (EP_BUFFER_HEADER_GUARD_SIZE) at buffer start.
+// Footer: last 32 bytes (EP_BUFFER_FOOTER_GUARD_SIZE) at buffer end; first 24 bytes structured, remainder padding.
+#define EP_BUFFER_HEADER_GUARD_SIZE 32   /* Bytes reserved at buffer start for guard/metadata */
+#define EP_BUFFER_FOOTER_GUARD_SIZE 32   /* Bytes reserved at buffer end for guard + padding */
+
+// Header (when guards enabled) uses 32 bytes.
+// Layout (little-endian offsets):
+//  0x00: uint32 HeaderMagic (ASCII "EPBFSTRT")
+//  0x08: uint64 creation_timestamp
+//  0x10: void*  writer_thread
+//  0x18: uint32 first_event_sequence_number
+//  0x1C-0x1F: 0x00 padding before first aligned EventPipeEventInstance
+#define EP_BUFFER_HDR_OFFSET_MAGIC     0x00
+#define EP_BUFFER_HDR_OFFSET_TIMESTAMP 0x08
+#define EP_BUFFER_HDR_OFFSET_THREADPTR 0x10
+#define EP_BUFFER_HDR_OFFSET_SEQNO     0x18
+#define EP_BUFFER_HDR_MAGIC            0x5452545346425045ULL /* "EPBFSTRT" little-endian */
+
+// Footer (EP_BUFFER_FOOTER_GUARD_SIZE bytes) layout when EventPipeBufferGuardLevel is enabled:
+//   0x00: uint64 FooterMagic (ASCII "EPBFEND!")
+//   0x08: uint64 ~FooterMagic (bitwise inverse for quick integrity check)
+//   0x10: uint64 Checksum (creation_timestamp ^ writer_thread_pointer ^ first_event_sequence_number ^ EP_BUFFER_CHECKSUM_SALT)
+//   0x18..0x1F: Padding bytes (0xEF) retained as small overrun guard / visual marker
+// The checksum excludes the magic values (they are validated independently) and uses a fixed salt.
+#define EP_BUFFER_FOOTER_OFFSET_MAGIC     0x00
+#define EP_BUFFER_FOOTER_OFFSET_MAGIC_INV 0x08
+#define EP_BUFFER_FOOTER_OFFSET_CHECKSUM  0x10
+#define EP_BUFFER_FOOTER_MAGIC            0x21444E4546425045ULL  /* "EPBFEND!" little-endian */
+#define EP_BUFFER_CHECKSUM_SALT           0x544C415346425045ULL  /* "EPBFSALT" little-endian salt */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BUFFER_GETTER_SETTER)
+struct _EventPipeBufferHeaderGuard {
+#else
+struct _EventPipeBufferHeaderGuard_Internal {
+#endif
+	uint64_t magic;
+	uint64_t creation_timestamp;
+	uint64_t writer_thread;
+	uint32_t first_event_sequence_number;
+	uint8_t padding[4];
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_GETTER_SETTER)
+struct _EventPipeBufferHeaderGuard {
+	uint8_t _internal [sizeof (struct _EventPipeBufferHeaderGuard_Internal)];
+};
+#endif
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BUFFER_GETTER_SETTER)
+struct _EventPipeBufferFooterGuard {
+#else
+struct _EventPipeBufferFooterGuard_Internal {
+#endif
+	uint64_t magic;
+	uint64_t magic_inv;
+	uint64_t checksum;
+	uint8_t padding[8];
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_GETTER_SETTER)
+struct _EventPipeBufferFooterGuard {
+	uint8_t _internal [sizeof (struct _EventPipeBufferFooterGuard_Internal)];
+};
+#endif
+
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BUFFER_GETTER_SETTER)
 struct _EventPipeBuffer {
 #else
@@ -49,7 +116,7 @@ struct _EventPipeBuffer_Internal {
 	uint8_t *buffer;
 	// The current write pointer.
 	uint8_t *current;
-	// The max write pointer (end of the buffer).
+	// The end of the buffer.
 	uint8_t *limit;
 	// Pointer to the current event being read.
 	EventPipeEventInstance *current_read_event;
@@ -63,6 +130,11 @@ struct _EventPipeBuffer_Internal {
 	// The sequence number corresponding to current_read_event
 	// Prior to read iteration it is the sequence number of the first event in the buffer
 	uint32_t event_sequence_number;
+	// Represents the effective start of the writable region, aligned to the next 8-byte boundary.
+	// This is where the first event would be written.
+	uint8_t *first_event_address;
+	// Represents the effective end of the writable region.
+	uint8_t *write_limit;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_GETTER_SETTER)
