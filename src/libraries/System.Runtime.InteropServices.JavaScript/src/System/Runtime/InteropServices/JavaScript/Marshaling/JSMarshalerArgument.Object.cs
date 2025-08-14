@@ -41,6 +41,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 ToManaged(out double v);
                 value = v;
             }
+            else if (slot.Type == MarshalerType.BigInt64)
+            {
+                ToManagedBig(out long v);
+                value = v;
+            }
             else if (slot.Type == MarshalerType.JSObject)
             {
                 ToManaged(out JSObject? val);

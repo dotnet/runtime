@@ -25,7 +25,8 @@ import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerTo
 import { TypedArray } from "./types/emscripten";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
-
+export const MAX_BIGINT64 = 9223372036854775807n;
+export const MIN_BIGINT64 = -9223372036854775808n;
 export function initialize_marshalers_to_cs (): void {
     if (js_to_cs_marshalers.size == 0) {
         js_to_cs_marshalers.set(MarshalerType.Array, marshal_array_to_cs);
@@ -390,8 +391,11 @@ export function marshal_cs_object_to_cs (arg: JSMarshalerArgument, value: any): 
                 set_arg_type(arg, MarshalerType.Double);
                 set_arg_f64(arg, value);
             } else if (js_type === "bigint") {
-                // we do it because not all bigint values could fit into Int64
-                throw new Error("NotImplementedException: bigint");
+                if (value < MIN_BIGINT64 || value > MAX_BIGINT64) {
+                    throw new Error(`bigint value ${value} does not fit in Int64`);
+                }
+                set_arg_type(arg, MarshalerType.BigInt64);
+                set_arg_i64_big(arg, value);
             } else if (js_type === "boolean") {
                 set_arg_type(arg, MarshalerType.Boolean);
                 set_arg_bool(arg, value);

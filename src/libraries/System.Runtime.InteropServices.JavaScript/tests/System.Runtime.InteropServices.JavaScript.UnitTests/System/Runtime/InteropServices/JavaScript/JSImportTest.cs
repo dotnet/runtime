@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void StructSize()
         {
-            Assert.Equal(32, sizeof(JSMarshalerArgument));
+            Assert.Equal(64, sizeof(JSMarshalerArgument));
         }
 
         [Fact]
