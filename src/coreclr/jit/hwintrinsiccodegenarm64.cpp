@@ -2663,61 +2663,37 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     var_types baseType = node->GetSimdBaseType();
 
-                    if (baseType == TYP_SHORT || baseType == TYP_USHORT)
+                    const unsigned rotMask      = 0b11;
+                    const unsigned numRotBits   = genCountBits(rotMask);
+                    const unsigned indexMask    = (baseType == TYP_SHORT || baseType == TYP_USHORT) ? 0b11 : 0b1;
+                    const unsigned numIndexBits = genCountBits(indexMask);
+                    const unsigned immShift = (baseType == TYP_SHORT || baseType == TYP_USHORT) ? 3 : 1;
+
+                    GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, numIndexBits);
+                    GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
+
+                    const unsigned upperBound = (rotMask << numIndexBits) | indexMask;
+                    HWIntrinsicImmOpHelper helper(this, op4Reg, 0, upperBound, node, (targetReg != op1Reg) ? 2 : 1);
+
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
-                        GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, 2);
-                        GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
-
-                        // index and rotation both take values 0 to 3 so must be
-                        // combined to a single value (0 to 15)
-                        HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 15, node, (targetReg != op1Reg) ? 2 : 1);
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                        if (targetReg != op1Reg)
                         {
-                            if (targetReg != op1Reg)
-                            {
-                                assert(targetReg != op2Reg);
-                                assert(targetReg != op3Reg);
-                                GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
-                            }
-
-                            const int     value    = helper.ImmValue();
-                            const ssize_t index    = value & 3;
-                            const ssize_t rotation = (value >> 2) & 3;
-                            GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
-                                                               rotation, opt);
+                            assert(targetReg != op2Reg);
+                            assert(targetReg != op3Reg);
+                            GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
                         }
 
-                        GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, 3);
-                        GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, 2);
+                        const int     value    = helper.ImmValue();
+                        const ssize_t index    = (baseType == TYP_SHORT || baseType == TYP_USHORT) ? value & 3 : value & 1;
+                        const ssize_t rotation = (baseType == TYP_SHORT || baseType == TYP_USHORT) ? (value >> 2) & 3 : value >> 1;
+                        GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
+                                                            rotation, opt);
                     }
-                    else
-                    {
-                        assert(baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_FLOAT);
-                        GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, 1);
-                        GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
 
-                        // index (0 to 1, in op4Reg) and rotation (0 to 3, in op5Reg) must be
-                        // combined to a single value (0 to 7)
-                        HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 7, node, (targetReg != op1Reg) ? 2 : 1);
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            if (targetReg != op1Reg)
-                            {
-                                assert(targetReg != op2Reg);
-                                assert(targetReg != op3Reg);
-                                GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
-                            }
+                    GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, immShift);
+                    GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, numIndexBits);
 
-                            const int     value    = helper.ImmValue();
-                            const ssize_t index    = value & 1;
-                            const ssize_t rotation = value >> 1;
-                            GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
-                                                               rotation, opt);
-                        }
-
-                        GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, 1);
-                        GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, 1);
-                    }
                 }
 
                 break;
@@ -2834,61 +2810,36 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     var_types baseType = node->GetSimdBaseType();
 
-                    if (baseType == TYP_BYTE)
+                    const unsigned rotMask      = 0b11;
+                    const unsigned numRotBits   = genCountBits(rotMask);
+                    const unsigned indexMask    = (baseType == TYP_BYTE) ? 0b11 : 0b1;
+                    const unsigned numIndexBits = genCountBits(indexMask);
+                    const unsigned immShift = (baseType == TYP_BYTE) ? 3 : 1;
+
+                    GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, numIndexBits);
+                    GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
+
+                    const unsigned upperBound = (rotMask << numIndexBits) | indexMask;
+                    HWIntrinsicImmOpHelper helper(this, op4Reg, 0, upperBound, node, (targetReg != op1Reg) ? 2 : 1);
+
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
-                        GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, 2);
-                        GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
-
-                        // index and rotation both take values 0 to 3 so must be
-                        // combined to a single value (0 to 15)
-                        HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 15, node, (targetReg != op1Reg) ? 2 : 1);
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                        if (targetReg != op1Reg)
                         {
-                            if (targetReg != op1Reg)
-                            {
-                                assert(targetReg != op2Reg);
-                                assert(targetReg != op3Reg);
-                                GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
-                            }
-
-                            const int     value    = helper.ImmValue();
-                            const ssize_t index    = value & 3;
-                            const ssize_t rotation = (value >> 2) & 3;
-                            GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
-                                                               rotation, opt);
+                            assert(targetReg != op2Reg);
+                            assert(targetReg != op3Reg);
+                            GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
                         }
 
-                        GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, 3);
-                        GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, 2);
+                        const int     value    = helper.ImmValue();
+                        const ssize_t index    = (baseType == TYP_BYTE) ? value & 3 : value & 1;
+                        const ssize_t rotation = (baseType == TYP_BYTE) ? (value >> 2) & 3 : value >> 1;
+                        GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
+                                                            rotation, opt);
                     }
-                    else
-                    {
-                        assert(baseType == TYP_SHORT);
-                        GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, 1);
-                        GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
 
-                        // index (0 to 1, in op4Reg) and rotation (0 to 3, in op5Reg) must be
-                        // combined to a single value (0 to 7)
-                        HWIntrinsicImmOpHelper helper(this, op4Reg, 0, 7, node, (targetReg != op1Reg) ? 2 : 1);
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            if (targetReg != op1Reg)
-                            {
-                                assert(targetReg != op2Reg);
-                                assert(targetReg != op3Reg);
-                                GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
-                            }
-
-                            const int     value    = helper.ImmValue();
-                            const ssize_t index    = value & 1;
-                            const ssize_t rotation = value >> 1;
-                            GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
-                                                               rotation, opt);
-                        }
-
-                        GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, 1);
-                        GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, 1);
-                    }
+                    GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, immShift);
+                    GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, numIndexBits);
                 }
 
                 break;
