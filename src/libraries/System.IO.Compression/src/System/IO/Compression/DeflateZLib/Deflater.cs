@@ -27,27 +27,9 @@ namespace System.IO.Compression
         // on the stream explicitly.
         private object SyncLock => this;
 
-        internal Deflater(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
+        private Deflater(ZLibNative.ZLibStreamHandle zlibStream)
         {
-            Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
-
-            try
-            {
-                _zlibStream = ZLibNative.ZLibStreamHandle.CreateForDeflate(compressionLevel, windowBits, memLevel, strategy);
-            }
-            catch (ZLibNative.ZLibNativeException ex)
-            {
-                GC.SuppressFinalize(this);
-
-                if (ex.InnerException is not null)
-                {
-                    throw new ZLibException(ex.Message, ex.InnerException);
-                }
-                else
-                {
-                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
-                }
-            }
+            _zlibStream = zlibStream;
         }
 
         ~Deflater()
@@ -70,7 +52,7 @@ namespace System.IO.Compression
                     _zlibStream.Dispose();
                 }
 
-                // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of.)
+                // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of).
                 DeallocateInputBufferHandle(resetStreamHandle: false);
                 _isDisposed = true;
             }
@@ -180,6 +162,7 @@ namespace System.IO.Compression
                     _zlibStream.AvailIn = 0;
                     _zlibStream.NextIn = ZLibNative.ZNullPtr;
                 }
+
                 _inputBufferHandle.Dispose();
             }
         }
@@ -211,6 +194,31 @@ namespace System.IO.Compression
                 default:
                     throw new ZLibException(SR.ZLibErrorUnexpected, "deflate", (int)errC, _zlibStream.GetErrorMessage());
             }
+        }
+
+        public static Deflater CreateDeflater(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
+        {
+            Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
+
+            ZLibNative.ZLibStreamHandle zlibStream;
+
+            try
+            {
+                zlibStream = ZLibNative.ZLibStreamHandle.CreateForDeflate(compressionLevel, windowBits, memLevel, strategy);
+            }
+            catch (ZLibNative.ZLibNativeException ex)
+            {
+                if (ex.InnerException is not null)
+                {
+                    throw new ZLibException(ex.Message, ex.InnerException);
+                }
+                else
+                {
+                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
+                }
+            }
+
+            return new Deflater(zlibStream);
         }
     }
 }

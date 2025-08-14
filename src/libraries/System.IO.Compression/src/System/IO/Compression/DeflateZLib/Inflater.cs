@@ -26,38 +26,14 @@ namespace System.IO.Compression
 
         private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
 
-        /// <summary>
-        /// Initialized the Inflater with the given windowBits size
-        /// </summary>
-        internal Inflater(int windowBits, long uncompressedSize = -1)
+        private Inflater(int windowBits, long uncompressedSize, ZLibNative.ZLibStreamHandle zlibStream)
         {
-            Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
-
             _finished = false;
             _nonEmptyInput = false;
             _isDisposed = false;
             _windowBits = windowBits;
             _uncompressedSize = uncompressedSize;
-
-            try
-            {
-                _zlibStream = ZLibNative.ZLibStreamHandle.CreateForInflate(windowBits);
-            }
-            catch (ZLibNative.ZLibNativeException ex)
-            {
-                GC.SuppressFinalize(this);
-
-                if (ex.InnerException is not null)
-                {
-                    // ZLib library could not be loaded correctly. The inner exception contains the details
-                    throw new ZLibException(ex.Message, ex.InnerException);
-                }
-                else
-                {
-                    // The ZLib library was loaded correctly and returned an unacceptable error code
-                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
-                }
-            }
+            _zlibStream = zlibStream;
         }
 
         public int AvailableOutput => (int)_zlibStream.AvailOut;
@@ -230,7 +206,7 @@ namespace System.IO.Compression
 
                 if (IsInputBufferHandleAllocated)
                 {
-                    // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of.)
+                    // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of).
                     DeallocateInputBufferHandle(resetStreamHandle: false);
                 }
 
@@ -319,6 +295,33 @@ namespace System.IO.Compression
                 }
                 _inputBufferHandle.Dispose();
             }
+        }
+
+        public static Inflater CreateInflater(int windowBits, long uncompressedSize = -1)
+        {
+            Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
+
+            ZLibNative.ZLibStreamHandle zlibStream;
+
+            try
+            {
+                zlibStream = ZLibNative.ZLibStreamHandle.CreateForInflate(windowBits);
+            }
+            catch (ZLibNative.ZLibNativeException ex)
+            {
+                if (ex.InnerException is not null)
+                {
+                    // ZLib library could not be loaded correctly. The inner exception contains the details
+                    throw new ZLibException(ex.Message, ex.InnerException);
+                }
+                else
+                {
+                    // The ZLib library was loaded correctly and returned an unacceptable error code
+                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
+                }
+            }
+
+            return new Inflater(windowBits, uncompressedSize, zlibStream);
         }
 
         private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != default;
