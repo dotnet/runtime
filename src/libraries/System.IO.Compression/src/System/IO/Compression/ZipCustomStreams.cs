@@ -387,6 +387,9 @@ namespace System.IO.Compression
             if (newPositionInSuperStream < _startInSuperStream)
                 throw new IOException("An attempt was made to move the position before the beginning of the stream.");
 
+            if (newPositionInSuperStream > _endInSuperStream)
+                throw new IOException("An attempt was made to move the position beyond the end of the stream.");
+
             _positionInSuperStream = newPositionInSuperStream;
 
             return _positionInSuperStream - _startInSuperStream;

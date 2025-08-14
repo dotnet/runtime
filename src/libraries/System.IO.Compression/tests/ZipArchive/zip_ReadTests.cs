@@ -658,6 +658,88 @@ namespace System.IO.Compression.Tests
                         Assert.Throws<ArgumentOutOfRangeException>(() => s.Position = -1);
                         Assert.Throws<ArgumentOutOfRangeException>(() => s.Position = e.Length + 1);
                         Assert.Throws<IOException>(() => s.Seek(-1, SeekOrigin.Begin));
+                        Assert.Throws<IOException>(() => s.Seek(1, SeekOrigin.End));
+
+                        await DisposeStream(async, s);
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ReadEntryContentTwice(bool async)
+        {
+            // Create a ZIP archive with stored (uncompressed) entries to test reading content twice
+            using (var ms = new MemoryStream())
+            {
+                var testData = "This is test data for reading content twice with seeking operations."u8.ToArray();
+                
+                // Create a ZIP with stored entries
+                using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
+                {
+                    var entry = archive.CreateEntry("test.txt", CompressionLevel.NoCompression);
+                    using (var stream = entry.Open())
+                    {
+                        stream.Write(testData, 0, testData.Length);
+                    }
+                }
+
+                ms.Position = 0;
+                using (var archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read))
+                {
+                    foreach (ZipArchiveEntry e in archive.Entries)
+                    {
+                        if (e.Length == 0) continue; // Skip empty entries for this test
+
+                        Stream s = await OpenEntryStream(async, e);
+
+                        // For stored entries, SubReadStream should be seekable when underlying stream is seekable
+                        Assert.True(s.CanSeek, $"SubReadStream should be seekable for stored entry '{e.FullName}' when underlying stream is seekable");
+
+                        // Test 1: Read content using Seek method
+                        byte[] firstRead = new byte[e.Length];
+                        int bytesRead1 = s.Read(firstRead, 0, (int)e.Length);
+                        Assert.Equal(e.Length, bytesRead1);
+
+                        // Seek back to beginning using Seek method
+                        long pos = s.Seek(0, SeekOrigin.Begin);
+                        Assert.Equal(0, pos);
+                        Assert.Equal(0, s.Position);
+
+                        // Read again using Seek method reset
+                        byte[] secondRead = new byte[e.Length];
+                        int bytesRead2 = s.Read(secondRead, 0, (int)e.Length);
+                        Assert.Equal(e.Length, bytesRead2);
+
+                        // Compare the content - should be identical
+                        Assert.Equal(firstRead, secondRead);
+                        Assert.Equal(testData, firstRead);
+                        Assert.Equal(testData, secondRead);
+
+                        // Test 2: Read content using Position setter
+                        s.Position = 0;
+                        byte[] thirdRead = new byte[e.Length];
+                        int bytesRead3 = s.Read(thirdRead, 0, (int)e.Length);
+                        Assert.Equal(e.Length, bytesRead3);
+
+                        // Reset using Position setter
+                        s.Position = 0;
+                        Assert.Equal(0, s.Position);
+
+                        // Read again using Position setter reset
+                        byte[] fourthRead = new byte[e.Length];
+                        int bytesRead4 = s.Read(fourthRead, 0, (int)e.Length);
+                        Assert.Equal(e.Length, bytesRead4);
+
+                        // Compare the content - should be identical
+                        Assert.Equal(thirdRead, fourthRead);
+                        Assert.Equal(testData, thirdRead);
+                        Assert.Equal(testData, fourthRead);
+
+                        // All reads should be identical
+                        Assert.Equal(firstRead, thirdRead);
+                        Assert.Equal(secondRead, fourthRead);
 
                         await DisposeStream(async, s);
                     }
