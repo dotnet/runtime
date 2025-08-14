@@ -58,6 +58,10 @@ ep_buffer_alloc (
 		footer->magic_inv = ~EP_BUFFER_FOOTER_MAGIC;
 		footer->checksum = (uint64_t)instance->creation_timestamp ^ header->writer_thread ^ header->first_event_sequence_number ^ EP_BUFFER_CHECKSUM_SALT;
 
+		if ((instance->buffer_guard_level >= EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES) &&
+			!ep_rt_vprotect (instance->buffer, instance->limit - instance->buffer, EP_PAGE_PROTECTION_READONLY))
+			ep_rt_fatal_error_with_message ("Failed to add read-only protection to EventPipeBuffer");
+
 		instance->first_event_address = ep_buffer_get_next_aligned_address (instance, instance->buffer + EP_BUFFER_HEADER_GUARD_SIZE);
 		instance->write_limit = footer_base_bytes;
 	} else {
@@ -91,6 +95,8 @@ ep_buffer_free (EventPipeBuffer *buffer)
 	EP_ASSERT (ep_rt_volatile_load_uint32_t (&buffer->state) == (uint32_t)EP_BUFFER_STATE_READ_ONLY);
 
 	ep_rt_vfree (buffer->buffer, buffer->limit - buffer->buffer);
+	buffer->buffer = NULL;
+	buffer->limit = NULL;
 	ep_rt_object_free (buffer);
 }
 
@@ -122,6 +128,10 @@ ep_buffer_write_event (
 	if (buffer->buffer_guard_level != EP_BUFFER_GUARD_LEVEL_NONE)
 		ep_buffer_ensure_guard_consistency (buffer);
 
+	if ((buffer->buffer_guard_level >= EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES) &&
+		!ep_rt_vprotect (buffer->buffer, buffer->limit - buffer->buffer, EP_PAGE_PROTECTION_READWRITE))
+		ep_rt_fatal_error_with_message ("Failed to add read-write protection to EventPipeBuffer");
+
 	// Calculate the location of the data payload.
 	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof (*instance) - sizeof (instance->stack_contents_instance.stack_frames) + ep_stack_contents_get_full_size (stack));
 
@@ -152,6 +162,14 @@ ep_buffer_write_event (
 		ep_event_payload_copy_data (payload, data_dest);
 
 	EP_ASSERT (success);
+
+	if ((buffer->buffer_guard_level >= EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES) &&
+		!ep_rt_vprotect (buffer->buffer, buffer->limit - buffer->buffer, EP_PAGE_PROTECTION_READONLY)) {
+		ep_rt_fatal_error_with_message ("Failed to add read-only protection to EventPipeBuffer");
+
+		// While the buffer was READWRITE, the buffer could have been corrupted
+		ep_buffer_ensure_guard_consistency (buffer);
+	}
 
 	// Advance the current pointer past the event.
 	buffer->current = ep_buffer_get_next_aligned_address (buffer, buffer->current + event_size);
@@ -240,6 +258,10 @@ ep_buffer_convert_to_read_only (EventPipeBuffer *buffer)
 
 	if (buffer->buffer_guard_level != EP_BUFFER_GUARD_LEVEL_NONE)
 		ep_buffer_ensure_guard_consistency (buffer);
+
+	if ((buffer->buffer_guard_level >= EP_BUFFER_GUARD_LEVEL_PROTECT_ON_READONLY) &&
+		!ep_rt_vprotect (buffer->buffer, buffer->limit - buffer->buffer, EP_PAGE_PROTECTION_READONLY))
+		ep_rt_fatal_error_with_message ("Failed to add read-only protection to EventPipeBuffer");
 }
 
 void

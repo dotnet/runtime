@@ -708,6 +708,26 @@ ep_rt_volatile_store_ptr_without_barrier (
 	void *value);
 
 /*
+ * Memory Protection
+ */
+
+static
+inline
+bool
+ep_rt_vprotect (
+	void *addr,
+	size_t length,
+	EventPipePageProtection protection);
+
+/*
+ * Fail fast
+ */
+
+static
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message);
+
+/*
  * Enter/Exit spin lock helper used with error handling macros.
  */
 

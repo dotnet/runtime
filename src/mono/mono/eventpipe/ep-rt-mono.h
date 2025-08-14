@@ -1916,6 +1916,22 @@ ep_rt_volatile_store_ptr_without_barrier (
 	*ptr = value;
 }
 
+
+/*
+ * Memory Protection
+ */
+
+static
+inline
+bool
+ep_rt_vprotect (
+	void *addr,
+	size_t length,
+	EventPipePageProtection protection)
+{
+	return true;
+}
+
 /*
  * Fail fast
  */

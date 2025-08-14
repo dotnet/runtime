@@ -15,6 +15,7 @@
 #include <eventpipe/ep-string.h>
 #include "fstream.h"
 #include "typestring.h"
+#include "clrhost.h"
 #include "clrversion.h"
 #include "hostinformation.h"
 #include <minipal/guid.h>
@@ -1928,6 +1929,30 @@ ep_rt_volatile_store_ptr_without_barrier (
 {
 	STATIC_CONTRACT_NOTHROW;
 	VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
+}
+
+/*
+ * Memory Protection
+ */
+
+static
+inline
+bool
+ep_rt_vprotect (
+	void *addr,
+	size_t length,
+	EventPipePageProtection protection)
+{
+	STATIC_CONTRACT_NOTHROW;
+	DWORD oldProtect;
+	bool result = false;
+
+	if (protection == EP_PAGE_PROTECTION_READONLY)
+		result = ClrVirtualProtect (addr, length, PAGE_READONLY, &oldProtect);
+	else if (protection == EP_PAGE_PROTECTION_READWRITE)
+		result = ClrVirtualProtect (addr, length, PAGE_READWRITE, &oldProtect);
+
+	return result;
 }
 
 /*
