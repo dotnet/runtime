@@ -2503,8 +2503,47 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface14.GetMethodTableInitializationFlags(ClrDataAddress methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus)
-        => _legacyImpl14 is not null ? _legacyImpl14.GetMethodTableInitializationFlags(methodTable, initializationStatus) : HResults.E_NOTIMPL;
+
+    int ISOSDacInterface14.GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus)
+    {
+        int hr = HResults.S_OK;
+        if (methodTable == 0)
+            hr = HResults.E_INVALIDARG;
+        else if (initializationStatus == null)
+            hr = HResults.E_POINTER;
+
+        else
+        {
+            try
+            {
+                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+                Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+                *initializationStatus = (MethodTableInitializationFlags)0;
+                if (rtsContract.IsClassInited(methodTableHandle))
+                    *initializationStatus = MethodTableInitializationFlags.MethodTableInitialized;
+                if (rtsContract.IsInitError(methodTableHandle))
+                    *initializationStatus |= MethodTableInitializationFlags.MethodTableInitializationFailed;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+        }
+#if DEBUG
+        if (_legacyImpl14 is not null)
+        {
+            MethodTableInitializationFlags initializationStatusLocal;
+            int hrLocal = _legacyImpl14.GetMethodTableInitializationFlags(methodTable, &initializationStatusLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*initializationStatus == initializationStatusLocal);
+            }
+        }
+#endif
+        return hr;
+    }
+
     #endregion ISOSDacInterface14
 
     #region ISOSDacInterface15
