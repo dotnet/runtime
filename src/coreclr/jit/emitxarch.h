@@ -767,6 +767,7 @@ bool        IsDstSrcSrcAVXInstruction(instruction ins) const;
 bool        IsThreeOperandAVXInstruction(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
+static bool DoesWriteOverflowFlag(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
 static bool DoesWriteParityFlag(instruction ins);
 static bool DoesWriteSignFlag(instruction ins);

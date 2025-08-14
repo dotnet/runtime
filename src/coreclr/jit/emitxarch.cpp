@@ -710,6 +710,22 @@ bool emitter::HasRegularWideImmediateForm(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// DoesWriteOverflowFlag: check if the instruction write the
+//     OF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the OF flag, false otherwise.
+//
+bool emitter::DoesWriteOverflowFlag(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Writes_OF) != 0;
+}
+
+//------------------------------------------------------------------------
 // DoesWriteZeroFlag: check if the instruction write the
 //     ZF flag.
 //
@@ -1464,11 +1480,26 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
         return id->idOpSize() == opSize;
     }
 
-    if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ) ||
-        (cond.GetCode() == GenCondition::SLE) || (cond.GetCode() == GenCondition::SLT) ||
-        (cond.GetCode() == GenCondition::SGE) || (cond.GetCode() == GenCondition::SGT))
+    if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ))
     {
         if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    if ((cond.GetCode() == GenCondition::SLT) || (cond.GetCode() == GenCondition::SGE))
+    {
+        if (DoesWriteSignFlag(lastIns) && DoesWriteOverflowFlag(lastIns) && IsFlagsAlwaysModified(id))
+        {
+            return id->idOpSize() == opSize;
+        }
+    }
+
+    if ((cond.GetCode() == GenCondition::SGT) || (cond.GetCode() == GenCondition::SLE))
+    {
+        if (DoesWriteZeroFlag(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteOverflowFlag(lastIns) &&
+            IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
