@@ -41,7 +41,5 @@
              Link="CommonTest\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
              Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.GetPageSize.cs"
-             Link="Common\Interop\Unix\Interop.GetPageSize.cs" />
   </ItemGroup>
 </Project>
