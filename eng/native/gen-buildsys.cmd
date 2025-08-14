@@ -33,6 +33,7 @@ set __IntermediatesDir=%2
 set __VSVersion=%3
 set __Arch=%4
 set __CmakeGenerator=Visual Studio
+set __ExtraCmakeParams=
 if /i "%__Ninja%" == "1" (
     set __CmakeGenerator=Ninja
 ) else (
