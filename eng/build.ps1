@@ -352,20 +352,6 @@ foreach ($config in $configuration) {
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
-
-    $StartTime = (Get-Date).AddMinutes(-25)
-    Get-WinEvent -FilterHashtable @{LogName="Security"; StartTime=$StartTime; Id=4688} -ErrorAction Ignore | ForEach-Object {
-        [xml]$EventXml = [xml]$_.ToXml()
-        $Event = [ordered]@{
-            TimeCreated = $_.TimeCreated
-        }
-        $EventXml.Event.EventData.Data |
-            Where-Object { $_.Name -in @("NewProcessId", "NewProcessName", "ProcessId", "CommandLine", "ParentProcessName") } |
-            Sort-Object Name |
-            ForEach-Object { $Event[$_.Name] = $_.'#text' }
-        [PSCustomObject]$Event
-    } | Sort-Object TimeCreated | Format-List -Force
-
     if ($lastExitCode -ne 0) {
         $failedBuilds += "Configuration: $config, Architecture: $singleArch"
     }

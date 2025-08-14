@@ -130,7 +130,6 @@ if [%__Ninja%] == [1] (
     set __generatorArgs=
 )
 
-echo PATH before cmake --build: "%PATH%"
 call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
 IF ERRORLEVEL 1 (
     goto :Failure

@@ -128,7 +128,6 @@ if not "%__ConfigureOnly%" == "1" (
     )
 )
 
-echo PATH before cmake configure: "%PATH%"
 echo %CMakeToolPrefix% "%CMakePath% %__ExtraCmakeParams% --no-warn-unused-cli -G %__CmakeGenerator% -B %__IntermediatesDir% -S %__SourceDir%"
 %CMakeToolPrefix% "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 
