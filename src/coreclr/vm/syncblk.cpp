@@ -1354,9 +1354,6 @@ namespace
             else
                 __SwitchToThread(0, ++dwSwitchCount);
         }
-
-        INCONTRACT(Thread* pThread = GetThreadNULLOk());
-        INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
     }
 #else
     DEBUG_NOINLINE
@@ -1390,18 +1387,12 @@ namespace
             }
             __SwitchToThread(0, ++dwSwitchCount);
         }
-
-        INCONTRACT(Thread* pThread = GetThreadNULLOk());
-        INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
     }
 #endif
 
     void ReleaseSpinLock(Volatile<DWORD>& spinLock)
     {
         LIMITED_METHOD_CONTRACT;
-
-        INCONTRACT(Thread* pThread = GetThreadNULLOk());
-        INCONTRACT(if (pThread != NULL) pThread->EndNoTriggerGC());
 
         InterlockedAnd((LONG*)&spinLock, ~BIT_SBLK_SPIN_LOCK);
     }
@@ -1415,12 +1406,17 @@ namespace
 
 DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 {
-    return ::EnterSpinLock(m_SyncBlockValue);
+    ::EnterSpinLock(m_SyncBlockValue);
+
+    INCONTRACT(Thread* pThread = GetThreadNULLOk());
+    INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
 }
 
 DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
 {
-    return ::ReleaseSpinLock(m_SyncBlockValue);
+    INCONTRACT(Thread* pThread = GetThreadNULLOk());
+    INCONTRACT(if (pThread != NULL) pThread->EndNoTriggerGC());
+    ::ReleaseSpinLock(m_SyncBlockValue);
 }
 
 #endif //!DACCESS_COMPILE
@@ -1734,7 +1730,7 @@ OBJECTHANDLE SyncBlock::GetLock()
     {
         GC_TRIGGERS;
         THROWS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -1761,6 +1757,8 @@ OBJECTHANDLE SyncBlock::GetLock()
     {
         return m_Lock;
     }
+
+    GCX_COOP();
 
     // We need to create a new lock
     OBJECTHANDLEHolder lockHandle = NULL;
