@@ -997,7 +997,7 @@ namespace System.Threading.Tests
                 bw.Write((byte)1); // Write the shared memory type (mutex)
                 bw.Write((byte)2); // Write an invalid version number
                 // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
-                fs.SetLength(Interop.Sys.GetPageSize());
+                fs.SetLength(Environment.SystemPageSize);
             }
 
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));
@@ -1012,12 +1012,10 @@ namespace System.Threading.Tests
             using (FileStream fs = File.Create(path))
             using (BinaryWriter bw = new(fs))
             {
-                fs.SetLength(Interop.Sys.GetPageSize());
-                fs.Position = 0;
                 bw.Write((byte)2); // Write the shared memory type (invalid)
                 bw.Write((byte)1); // Write a version number
                 // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
-                fs.SetLength(Interop.Sys.GetPageSize());
+                fs.SetLength(Environment.SystemPageSize);
             }
 
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));
@@ -1033,9 +1031,9 @@ namespace System.Threading.Tests
             using (BinaryWriter bw = new(fs))
             {
                 bw.Write((byte)1); // Write the shared memory type (mutex)
-                bw.Write((byte)1); // Write an valid version number
+                bw.Write((byte)1); // Write a valid version number
                 // Make the file large enough for a valid named mutex file but not divisible by page size.
-                fs.SetLength(Interop.Sys.GetPageSize() - 1);
+                fs.SetLength(Environment.SystemPageSize - 1);
             }
 
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}"));

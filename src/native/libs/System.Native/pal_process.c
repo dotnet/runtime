@@ -899,10 +899,3 @@ char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }
-
-int32_t SystemNative_GetPageSize(void)
-{
-    // The page size is the size of a memory page, which is the smallest unit of memory that can be
-    // allocated or deallocated. It is typically 4096 bytes on most systems.
-    return getpagesize();
-}
