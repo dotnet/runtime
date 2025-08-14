@@ -120,9 +120,12 @@ std::string GetProcessCommandLine()
         char*       cmdLine = nullptr;
         size_t      size    = 0;
 
-        while (getline(&cmdLine, &size, fp) != -1)
+        while (getdelim(&cmdLine, &size, '\0', fp) != -1)
         {
+            // /proc/self/cmdline uses \0 as delimeter, convert it to space
             result += cmdLine;
+            result += ' ';
+
             free(cmdLine);
             cmdLine = nullptr;
             size    = 0;
