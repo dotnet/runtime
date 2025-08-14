@@ -2667,7 +2667,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     const unsigned numRotBits   = genCountBits(rotMask);
                     const unsigned indexMask    = (baseType == TYP_SHORT || baseType == TYP_USHORT) ? 0b11 : 0b1;
                     const unsigned numIndexBits = genCountBits(indexMask);
-                    const unsigned immShift = (baseType == TYP_SHORT || baseType == TYP_USHORT) ? 3 : 1;
 
                     GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, numIndexBits);
                     GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
@@ -2685,13 +2684,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         const int     value    = helper.ImmValue();
-                        const ssize_t index    = (baseType == TYP_SHORT || baseType == TYP_USHORT) ? value & 3 : value & 1;
-                        const ssize_t rotation = (baseType == TYP_SHORT || baseType == TYP_USHORT) ? (value >> 2) & 3 : value >> 1;
+                        const ssize_t index = value & indexMask;
+                        const ssize_t rotation = value >> numIndexBits;
                         GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
                                                             rotation, opt);
                     }
 
-                    GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, immShift);
+                    GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, indexMask);
                     GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, numIndexBits);
 
                 }
@@ -2814,7 +2813,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     const unsigned numRotBits   = genCountBits(rotMask);
                     const unsigned indexMask    = (baseType == TYP_BYTE) ? 0b11 : 0b1;
                     const unsigned numIndexBits = genCountBits(indexMask);
-                    const unsigned immShift = (baseType == TYP_BYTE) ? 3 : 1;
 
                     GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, numIndexBits);
                     GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
@@ -2832,13 +2830,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         const int     value    = helper.ImmValue();
-                        const ssize_t index    = (baseType == TYP_BYTE) ? value & 3 : value & 1;
-                        const ssize_t rotation = (baseType == TYP_BYTE) ? (value >> 2) & 3 : value >> 1;
+                        const ssize_t index    = value & indexMask;
+                        const ssize_t rotation = value >> numIndexBits;
                         GetEmitter()->emitInsSve_R_R_R_I_I(ins, emitSize, targetReg, op2Reg, op3Reg, index,
                                                             rotation, opt);
                     }
 
-                    GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, immShift);
+                    GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, indexMask);
                     GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, numIndexBits);
                 }
 
