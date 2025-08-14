@@ -509,6 +509,26 @@ namespace System.Tests
             Assert.Equal(expectedType, Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true));
         }
 
+        public static IEnumerable<object[]> GetTypeByName_InvalidElementType()
+        {
+            Type expectedException = PlatformDetection.IsMonoRuntime
+                ? typeof(ArgumentException) // https://github.com/dotnet/runtime/issues/45033
+                : typeof(TypeLoadException);
+
+            yield return new object[] { "System.Int32&&", expectedException, true };
+            yield return new object[] { "System.Int32&*", expectedException, true };
+            yield return new object[] { "System.Int32&[]", expectedException, true };
+            yield return new object[] { "System.Int32&[*]", expectedException, true };
+            yield return new object[] { "System.Int32&[,]", expectedException, true };
+
+            // https://github.com/dotnet/runtime/issues/45033
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                yield return new object[] { "System.Void[]", expectedException, true };
+                yield return new object[] { "System.TypedReference[]", expectedException, true };
+            }
+        }
+
         [Theory]
         [InlineData("system.nullable`1[system.int32]", typeof(TypeLoadException), false)]
         [InlineData("System.NonExistingType", typeof(TypeLoadException), false)]
@@ -519,13 +539,7 @@ namespace System.Tests
         [InlineData(".System.Int32", typeof(TypeLoadException), false)]
         [InlineData("..Outside`1", typeof(TypeLoadException), false)]
         [InlineData(".Outside`1+.Inside`1", typeof(TypeLoadException), false)]
-        [InlineData("System.Int32&&", typeof(TypeLoadException), true)]
-        [InlineData("System.Int32&*", typeof(TypeLoadException), true)]
-        [InlineData("System.Int32&[]", typeof(TypeLoadException), true)]
-        [InlineData("System.Int32&[*]", typeof(TypeLoadException), true)]
-        [InlineData("System.Int32&[,]", typeof(TypeLoadException), true)]
-        [InlineData("System.Void[]", typeof(TypeLoadException), true)]
-        [InlineData("System.TypedReference[]", typeof(TypeLoadException), true)]
+        [MemberData(nameof(GetTypeByName_InvalidElementType))]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
