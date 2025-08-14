@@ -23,9 +23,9 @@ Android SDK and NDK can be automatically installed via the following script:
 set -e
 
 NDK_VER=r27c
-SDK_VER=9123335_latest
-SDK_API_LEVEL=33
-SDK_BUILD_TOOLS=33.0.1
+ANDROID_CLI_TOOLS_VER=13114758_latest
+SDK_API_LEVEL=36
+SDK_BUILD_TOOLS=36.0.0
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     HOST_OS=darwin
@@ -45,7 +45,7 @@ unzip ~/andk.zip -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
 # download Android SDK, accept licenses and download additional packages such as
 # platform-tools, platforms and build-tools
 export ANDROID_SDK_ROOT=~/android-sdk
-curl https://dl.google.com/android/repository/commandlinetools-${HOST_OS_SHORT}-${SDK_VER}.zip -L --output ~/asdk.zip
+curl https://dl.google.com/android/repository/commandlinetools-${HOST_OS_SHORT}-${ANDROID_CLI_TOOLS_VER}.zip -L --output ~/asdk.zip
 mkdir ${ANDROID_SDK_ROOT} && unzip ~/asdk.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools && rm -rf ~/asdk.zip
 yes | ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses
 ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} "platform-tools" "platforms;android-${SDK_API_LEVEL}" "build-tools;${SDK_BUILD_TOOLS}"
