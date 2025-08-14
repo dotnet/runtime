@@ -20,6 +20,7 @@
 #include <minipal/guid.h>
 #include <minipal/strings.h>
 #include <minipal/time.h>
+#include <stdio.h>
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -1927,6 +1928,25 @@ ep_rt_volatile_store_ptr_without_barrier (
 {
 	STATIC_CONTRACT_NOTHROW;
 	VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
+}
+
+/*
+ * Fail fast
+ * Uses COR_E_EXECUTIONENGINE to classify as runtime/internal corruption and routes through EEPOLICY
+ * to ensure proper crash dump and diagnostic reporting.
+ */
+static
+EP_ALWAYS_INLINE
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message)
+{
+	if (message != nullptr) {
+		fputs(reinterpret_cast<const char*>(message), stderr);
+		fputc('\n', stderr);
+		fflush(stderr);
+	}
+
+	RaiseFailFastException (NULL, NULL, 0);
 }
 
 #endif /* ENABLE_PERFTRACING */

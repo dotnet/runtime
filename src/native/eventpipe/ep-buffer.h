@@ -225,6 +225,9 @@ ep_buffer_get_volatile_state (const EventPipeBuffer *buffer);
 void
 ep_buffer_convert_to_read_only (EventPipeBuffer *buffer);
 
+void
+ep_buffer_ensure_guard_consistency (const EventPipeBuffer *buffer);
+
 #ifdef EP_CHECKED_BUILD
 bool
 ep_buffer_ensure_consistency (const EventPipeBuffer *buffer);

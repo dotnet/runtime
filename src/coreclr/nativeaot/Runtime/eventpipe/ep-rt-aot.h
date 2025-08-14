@@ -1820,5 +1820,17 @@ ep_rt_volatile_store_ptr_without_barrier (
     ep_rt_aot_volatile_store_ptr_without_barrier(ptr, value);
 }
 
+/*
+ * Fail fast
+ */
+
+static
+inline
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message)
+{
+    /* Not implemented, no-op */
+}
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* EVENTPIPE_RT_AOT_H */

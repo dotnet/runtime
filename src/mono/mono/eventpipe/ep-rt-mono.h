@@ -1917,6 +1917,18 @@ ep_rt_volatile_store_ptr_without_barrier (
 }
 
 /*
+ * Fail fast
+ */
+
+static
+inline
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message)
+{
+    /* Not implemented, no-op */
+}
+
+/*
  * EventPipe Native Events.
  */
 

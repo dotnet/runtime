@@ -118,6 +118,10 @@ ep_buffer_write_event (
 	uint32_t proc_number;
 	uint32_t event_size;
 
+	// Don't write if the guards are not valid, helps narrow time windows for buffer corruption
+	if (buffer->buffer_guard_level != EP_BUFFER_GUARD_LEVEL_NONE)
+		ep_buffer_ensure_guard_consistency (buffer);
+
 	// Calculate the location of the data payload.
 	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof (*instance) - sizeof (instance->stack_contents_instance.stack_frames) + ep_stack_contents_get_full_size (stack));
 
@@ -233,6 +237,54 @@ ep_buffer_convert_to_read_only (EventPipeBuffer *buffer)
 		buffer->current_read_event = (EventPipeEventInstance*)first_aligned_instance;
 	else
 		buffer->current_read_event = NULL;
+
+	if (buffer->buffer_guard_level != EP_BUFFER_GUARD_LEVEL_NONE)
+		ep_buffer_ensure_guard_consistency (buffer);
+}
+
+void
+ep_buffer_ensure_guard_consistency (const EventPipeBuffer *buffer)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer->buffer_guard_level != EP_BUFFER_GUARD_LEVEL_NONE);
+
+	const char *const header_err = "EventPipeBuffer header guard is corrupted";
+	const char *const footer_err = "EventPipeBuffer footer guard is corrupted";
+
+	if (buffer->first_event_address != ep_buffer_get_next_aligned_address (buffer, buffer->buffer + EP_BUFFER_HEADER_GUARD_SIZE))
+		ep_rt_fatal_error_with_message (header_err);
+
+	const EventPipeBufferHeaderGuard *header = (const EventPipeBufferHeaderGuard *)buffer->buffer;
+	if (header->magic != EP_BUFFER_HDR_MAGIC)
+		ep_rt_fatal_error_with_message (header_err);
+
+	// Header trailing padding bytes should still be 0x00
+	for (size_t i = 0; i < sizeof(header->padding); i++) {
+		if (header->padding[i] != 0x00)
+			ep_rt_fatal_error_with_message ("EventPipeBuffer header guard padding is corrupted");
+	}
+
+	uint8_t *footer_base = buffer->write_limit;
+	if (footer_base != buffer->limit - EP_BUFFER_FOOTER_GUARD_SIZE)
+		ep_rt_fatal_error_with_message (footer_err);
+
+	const EventPipeBufferFooterGuard *footer = (const EventPipeBufferFooterGuard *)footer_base;
+	if (footer->magic != EP_BUFFER_FOOTER_MAGIC)
+		ep_rt_fatal_error_with_message (footer_err);
+	if (footer->magic_inv != ~EP_BUFFER_FOOTER_MAGIC)
+		ep_rt_fatal_error_with_message (footer_err);
+
+	// Footer checksum must match header fields
+	uint64_t expected_checksum = header->creation_timestamp ^ header->writer_thread ^ header->first_event_sequence_number ^ EP_BUFFER_CHECKSUM_SALT;
+	if (footer->checksum != expected_checksum)
+		ep_rt_fatal_error_with_message ("EventPipeBuffer header guard and footer checksum do not match, buffer is corrupted");
+
+	// Verify the remaining bytes in the footer guard are the fill value 0xEB.
+	for (size_t i = 0; i < sizeof(footer->padding); i++) {
+		if (footer->padding[i] != 0xEB)
+			ep_rt_fatal_error_with_message ("EventPipeBuffer footer guard padding is corrupted");
+	}
+
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -240,6 +292,9 @@ bool
 ep_buffer_ensure_consistency (const EventPipeBuffer *buffer)
 {
 	EP_ASSERT (buffer != NULL);
+
+	if (buffer->buffer_guard_level != EP_BUFFER_GUARD_LEVEL_NONE)
+		ep_buffer_ensure_guard_consistency (buffer);
 
 	uint8_t *ptr = buffer->first_event_address;
 
