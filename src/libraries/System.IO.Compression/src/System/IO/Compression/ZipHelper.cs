@@ -32,14 +32,6 @@ internal static partial class ZipHelper
         return Encoding.ASCII;
     }
 
-    /// <summary>
-    /// Reads exactly bytesToRead out of stream, unless it is out of bytes
-    /// </summary>
-    internal static int ReadBytes(Stream stream, Span<byte> buffer, int bytesToRead)
-    {
-        return stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: true);
-    }
-
     // will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime
     internal static DateTime DosTimeToDateTime(uint dateTime)
     {
@@ -178,14 +170,14 @@ internal static partial class ZipHelper
         {
             Debug.Assert(overlap <= buffer.Length);
             stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
-            bytesRead = ReadBytes(stream, buffer, buffer.Length);
+            bytesRead = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: true);
             stream.Seek(-buffer.Length, SeekOrigin.Current);
         }
         else
         {
             int bytesToRead = (int)stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
-            bytesRead = ReadBytes(stream, buffer, bytesToRead);
+            bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: true);
             stream.Seek(0, SeekOrigin.Begin);
         }
 
