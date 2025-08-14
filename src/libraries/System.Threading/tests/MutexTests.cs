@@ -593,7 +593,6 @@ namespace System.Threading.Tests
                                 newArgs[4] = true; // isNotAbandonedWaitObjectSignaled
                                 yield return newArgs;
                             }
-                            }
 
                             if (waitCount == 1 || PlatformDetection.IsWindows)
                             {
