@@ -795,7 +795,7 @@ namespace System.Threading
 
         [MethodImpl(MethodImplOptions.InternalCall)]
 #if NATIVEAOT
-        [RuntimeImport(RuntimeLibrary, "RhpCurrentThreadIsFinalizerThread")]
+        [RuntimeImport(RuntimeImports.RuntimeLibrary, "RhpCurrentThreadIsFinalizerThread")]
 #endif
         internal static extern bool CurrentThreadIsFinalizerThread();
     }
