@@ -52,15 +52,7 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                // Track generic virtual methods that will get added to the GVM tables
-                if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
-                {
-                    dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
-                }
-            }
-            else
+            if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
             }

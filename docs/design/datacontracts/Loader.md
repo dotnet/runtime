@@ -284,14 +284,14 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 
 TargetPointer GetRootAssembly()
 {
-    TargetPointer appDomainPointer = target.ReadGlobalPointer(Constants.Globals.AppDomain);
+    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
     AppDomain appDomain = // read AppDomain object starting at appDomainPointer
     return appDomain.RootAssembly;
 }
 
 string ILoader.GetAppDomainFriendlyName()
 {
-    TargetPointer appDomainPointer = target.ReadGlobalPointer(Constants.Globals.AppDomain);
+    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
     TargetPointer appDomain = target.ReadPointer(appDomainPointer)
     TargetPointer pathStart = appDomain + /* AppDomain::FriendlyName offset */;
     char[] name = // Read<char> from target starting at pathStart until null terminator
@@ -490,7 +490,7 @@ bool IsAssemblyLoaded(ModuleHandle handle)
 
 TargetPointer GetGlobalLoaderAllocator()
 {
-    TargetPointer systemDomainPointer = target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
     TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
     return target.ReadPointer(systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */);
 }
