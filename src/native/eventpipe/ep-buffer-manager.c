@@ -472,17 +472,17 @@ buffer_manager_allocate_buffer_for_thread (
 	uint32_t buffer_size = base_buffer_size * size_multiplier;
 	EP_ASSERT(buffer_size > 0);
 
-
-	buffer_size = EP_MAX (request_size, buffer_size);
+	uint32_t guard_overhead = (buffer_manager->buffer_guard_level > EP_BUFFER_GUARD_LEVEL_NONE) ? EP_BUFFER_HEADER_GUARD_SIZE + EP_BUFFER_FOOTER_GUARD_SIZE : 0;
+	buffer_size = EP_MAX (request_size + guard_overhead, buffer_size);
 
 	// Don't allow the buffer size to exceed 1MB.
 	const uint32_t max_buffer_size = 1024 * 1024;
 	buffer_size = EP_MIN (buffer_size, max_buffer_size);
 
 
-	// Make sure that buffer size >= request size so that the buffer size does not
+	// Make sure that buffer size >= request size + guard overhead so that the buffer size does not
 	// determine the max event size.
-	EP_ASSERT (request_size <= buffer_size);
+	EP_ASSERT (request_size + guard_overhead <= buffer_size);
 
 	// Make the buffer size fit into with pagesize-aligned block, since ep_rt_valloc0 expects page-aligned sizes to be passed as arguments
 	buffer_size = (buffer_size + ep_rt_system_get_alloc_granularity () - 1) & ~(uint32_t)(ep_rt_system_get_alloc_granularity () - 1);
@@ -493,7 +493,7 @@ buffer_manager_allocate_buffer_for_thread (
 
 	// The sequence counter is exclusively mutated on this thread so this is a thread-local read.
 	sequence_number = ep_thread_session_state_get_volatile_sequence_number (thread_session_state);
-	new_buffer = ep_buffer_alloc (buffer_size, ep_thread_session_state_get_thread (thread_session_state), sequence_number);
+	new_buffer = ep_buffer_alloc (buffer_size, ep_thread_session_state_get_thread (thread_session_state), sequence_number, buffer_manager->buffer_guard_level);
 	ep_raise_error_if_nok (new_buffer != NULL);
 
 	// Adding a buffer to the buffer list requires us to take the lock.

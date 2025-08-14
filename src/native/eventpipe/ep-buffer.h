@@ -135,6 +135,8 @@ struct _EventPipeBuffer_Internal {
 	uint8_t *first_event_address;
 	// Represents the effective end of the writable region.
 	uint8_t *write_limit;
+	// Level of guard protection applied to the buffer.
+	EventPipeBufferGuardLevel buffer_guard_level;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_GETTER_SETTER)
@@ -157,7 +159,8 @@ EventPipeBuffer *
 ep_buffer_alloc (
 	uint32_t buffer_size,
 	EventPipeThread *writer_thread,
-	uint32_t event_sequence_number);
+	uint32_t event_sequence_number,
+	EventPipeBufferGuardLevel buffer_guard_level);
 
 void
 ep_buffer_free (EventPipeBuffer *buffer);
