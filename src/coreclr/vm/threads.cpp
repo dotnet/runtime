@@ -2573,7 +2573,8 @@ void Thread::CoUninitialize()
 void Thread::CleanupDetachedThreads()
 {
     CONTRACTL {
-        NOTHROW;
+        THROWS;
+        MODE_COOPERATIVE;
         GC_TRIGGERS;
     }
     CONTRACTL_END;
@@ -2593,6 +2594,20 @@ void Thread::CleanupDetachedThreads()
         if (thread->IsDetached())
         {
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - detaching thread 0x%p\n", thread);
+
+            if (!thread->IsGCSpecial())
+            {
+                GCX_COOP();
+                // During the actual thread shutdown,
+                // it may not be practical for us to run enough managed code to clean up
+                // any managed code that needs to know when a thread exits.
+                // Instead, run that clean up here when the thread object is finalized
+                // (which is definitely after the thread has exited)
+                PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
+                DECLARE_ARGHOLDER_ARRAY(args, 1);
+                args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(thread->GetExposedObject());
+                CALL_MANAGED_METHOD_NORET(args);
+            }
 
             // Unmark that the thread is detached while we have the
             // thread store lock. This will ensure that no other
