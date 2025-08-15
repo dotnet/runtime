@@ -42,6 +42,11 @@ namespace System.IO
 
             Name = name;
 
+            if (name.ContainsAny(['\\', '/']))
+            {
+                throw new IOException(SR.IO_InvalidName);
+            }
+
             if (name.Length > MaxSharedMemoryNameLength)
             {
                 throw new ArgumentException(SR.Format(SR.IO_SharedMemory_InvalidName, name), nameof(name));

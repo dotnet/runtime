@@ -2897,6 +2897,9 @@
   <data name="IO_MaxAttemptsReached" xml:space="preserve">
     <value>Unable to complete the operation after the maximum number of attempts.</value>
   </data>
+  <data name="IO_InvalidName" xml:space="preserve">
+    <value>The filename, directory name, or volume label syntax is incorrect.</value>
+  </data>
   <data name="Lazy_CreateValue_NoParameterlessCtorForT" xml:space="preserve">
     <value>The lazily-initialized type does not have a public, parameterless constructor.</value>
   </data>
