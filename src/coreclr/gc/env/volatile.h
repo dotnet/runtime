@@ -364,7 +364,7 @@ public:
     // accessed without using Load and Store, but it is necessary for passing Volatile<T> to APIs like
     // InterlockedIncrement.
     //
-    inline volatile T* GetPointer() { return (volatile T*)&m_val; }
+    inline constexpr volatile T* GetPointer() const { return (volatile T*)&m_val; }
 
 
     //
@@ -504,5 +504,6 @@ public:
 };
 
 #define VOLATILE(T) Volatile<T>
+#define USING_VOLATILE_CLASS
 
 #endif //_VOLATILE_H_

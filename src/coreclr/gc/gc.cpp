@@ -13528,7 +13528,7 @@ void gc_heap::distribute_free_regions()
 
     size_t total_basic_free_regions = total_num_free_regions[basic_free_region] + surplus_regions[basic_free_region].get_num_free_regions();
     total_budget_in_region_units[basic_free_region] = compute_basic_region_budgets(heap_budget_in_region_units[basic_free_region], min_heap_budget_in_region_units[basic_free_region], total_basic_free_regions);
-    
+
     bool aggressive_decommit_large_p = joined_last_gc_before_oom || dt_high_memory_load_p() || near_heap_hard_limit_p();
 
     int region_factor[count_distributed_free_region_kinds] = { 1, LARGE_REGION_FACTOR };
@@ -53570,10 +53570,22 @@ bool GCHeap::IsConcurrentGCEnabled()
 #endif //BACKGROUND_GC
 }
 
+#ifdef GC_DESCRIPTOR
+extern "C"
+{
+    struct ContractDescriptor;
+    extern ContractDescriptor GCContractDescriptorWKS;
+#if FEATURE_SVR_GC
+    extern ContractDescriptor GCContractDescriptorSVR;
+#endif // FEATURE_SVR_GC
+}
+#endif // GC_DESCRIPTOR
+
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
     bool v2 = gcDacVars->minor_version_number >= 2;
     bool v4 = gcDacVars->minor_version_number >= 4;
+    bool v6 = gcDacVars->minor_version_number >= 6;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53710,6 +53722,16 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #else
         gcDacVars->dynamic_adaptation_mode = nullptr;
 #endif //DYNAMIC_HEAP_COUNT
+    }
+    if (v6)
+    {
+#ifdef GC_DESCRIPTOR
+#ifdef MULTIPLE_HEAPS
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptorSVR;
+#else // MULTIPLE_HEAPS
+        gcDacVars->gc_descriptor = (void*)&GCContractDescriptorWKS;
+#endif // MULTIPLE_HEAPS
+#endif // GC_DESCRIPTOR
     }
 }
 
