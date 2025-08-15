@@ -214,7 +214,7 @@ namespace ILLink.Shared.DataFlow
 
         // This just runs a dataflow algorithm until convergence. It doesn't cache any results,
         // allowing each particular kind of analysis to decide what is worth saving.
-        public void Fixpoint(TControlFlowGraph cfg, TTransfer transfer)
+        public bool Fixpoint(TControlFlowGraph cfg, TTransfer transfer)
         {
             TraceStart(cfg);
 
@@ -420,6 +420,8 @@ namespace ILLink.Shared.DataFlow
                     TraceBlockOutput(state.Current, exceptionState?.Value, exceptionFinallyState);
                 }
             }
+
+            return !changed || iterations >= MaxIterations;
 
             void FlowStateThroughExitedFinallys(
                 IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch predecessor,
