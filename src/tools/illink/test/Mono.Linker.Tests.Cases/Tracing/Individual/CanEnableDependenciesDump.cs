@@ -2,11 +2,11 @@
 
 namespace Mono.Linker.Tests.Cases.Tracing.Individual
 {
-	[DumpDependencies]
-	public class CanEnableDependenciesDump
-	{
-		public static void Main ()
-		{
-		}
-	}
+    [DumpDependencies]
+    public class CanEnableDependenciesDump
+    {
+        public static void Main()
+        {
+        }
+    }
 }

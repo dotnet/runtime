@@ -10,7 +10,7 @@ namespace System.Net.Security
 {
     public class SslServerAuthenticationOptions
     {
-        private X509RevocationMode _checkCertificateRevocation = X509RevocationMode.NoCheck;
+        private X509RevocationMode _checkCertificateRevocation = SslAuthenticationOptions.DefaultRevocationMode;
         private SslProtocols _enabledSslProtocols = SslProtocols.None;
         private EncryptionPolicy _encryptionPolicy = EncryptionPolicy.RequireEncryption;
         private bool _allowRenegotiation;

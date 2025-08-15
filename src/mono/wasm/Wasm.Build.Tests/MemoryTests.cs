@@ -20,7 +20,6 @@ public class MemoryTests : WasmTemplateTestsBase
     {
     }
 
-    // ActiveIssue: https://github.com/dotnet/runtime/issues/104618
     [Fact, TestCategory("no-workload")]
     public async Task AllocateLargeHeapThenRepeatedlyInterop_NoWorkload() =>
         await AllocateLargeHeapThenRepeatedlyInterop();

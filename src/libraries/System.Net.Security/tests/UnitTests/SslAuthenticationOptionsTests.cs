@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
         [InlineData("hello")]
         [InlineData(" \t")]
         [InlineData(null)]
-        public void TargetHost_Get_Set_Succeeds(string expected)
+        public void TargetHost_Get_Set_Succeeds(string? expected)
         {
             Assert.Null(_clientOptions.TargetHost);
             _clientOptions.TargetHost = expected;

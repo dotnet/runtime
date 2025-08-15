@@ -384,7 +384,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
     if (childNode->OperIs(GT_NEG))
     {
         // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a EQ or NE.
-        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_CAST))
+        if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ))
         {
             // Cannot contain if the childs op1 is already contained
             return false;
@@ -403,31 +403,6 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             {
                 return false;
             }
-
-            if (childNode->gtGetOp1()->OperIs(GT_CAST))
-            {
-                // Grab the cast as well, we can contain this with cmn (extended-register).
-                GenTreeCast* cast   = childNode->gtGetOp1()->AsCast();
-                GenTree*     castOp = cast->CastOp();
-
-                // Cannot contain the cast from floating point.
-                if (!varTypeIsIntegral(castOp))
-                {
-                    return false;
-                }
-
-                // Cannot contain the cast if it already contains it's CastOp.
-                if (castOp->isContained())
-                {
-                    return false;
-                }
-
-                assert(!cast->gtOverflow());
-                assert(varTypeIsIntegral(cast) && varTypeIsIntegral(cast->CastToType()));
-
-                MakeSrcContained(childNode, cast);
-            }
-
             return true;
         }
 
@@ -1134,6 +1109,77 @@ void Lowering::LowerModPow2(GenTree* node)
     ContainCheckNode(mod);
 }
 
+//------------------------------------------------------------------------
+// LowerCnsMask: Lower GT_CNS_MSK. Ensure the mask matches a known pattern.
+//               If not then lower to a constant vector.
+//
+// Arguments:
+//    mask - the node to lower
+//
+GenTree* Lowering::LowerCnsMask(GenTreeMskCon* mask)
+{
+    // Try every type until a match is found
+
+    if (mask->IsZero())
+    {
+        return mask->gtNext;
+    }
+
+    if (EvaluateSimdMaskToPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal) != SveMaskPatternNone)
+    {
+        return mask->gtNext;
+    }
+
+    if (EvaluateSimdMaskToPattern<simd16_t>(TYP_SHORT, mask->gtSimdMaskVal) != SveMaskPatternNone)
+    {
+        return mask->gtNext;
+    }
+
+    if (EvaluateSimdMaskToPattern<simd16_t>(TYP_INT, mask->gtSimdMaskVal) != SveMaskPatternNone)
+    {
+        return mask->gtNext;
+    }
+
+    if (EvaluateSimdMaskToPattern<simd16_t>(TYP_LONG, mask->gtSimdMaskVal) != SveMaskPatternNone)
+    {
+        return mask->gtNext;
+    }
+
+    // Not a valid pattern, so cannot be created using ptrue/pfalse. Instead the mask will require
+    // loading from memory. There is no way to load to a predicate from memory using a PC relative
+    // address, so instead use a constant vector plus conversion to mask. Using basetype byte will
+    // ensure every entry in the mask is converted.
+
+    LABELEDDISPTREERANGE("lowering cns mask to cns vector (before)", BlockRange(), mask);
+
+    // Create a vector constant
+    GenTreeVecCon* vecCon = comp->gtNewVconNode(TYP_SIMD16);
+    EvaluateSimdCvtMaskToVector<simd16_t>(TYP_BYTE, &vecCon->gtSimdVal, mask->gtSimdMaskVal);
+    BlockRange().InsertBefore(mask, vecCon);
+
+    // Convert the vector constant to a mask
+    GenTree* convertedVec = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, vecCon, CORINFO_TYPE_BYTE, 16);
+    BlockRange().InsertBefore(mask, convertedVec->AsHWIntrinsic()->Op(1));
+    BlockRange().InsertBefore(mask, convertedVec);
+
+    // Update use
+    LIR::Use use;
+    if (BlockRange().TryGetUse(mask, &use))
+    {
+        use.ReplaceWith(convertedVec);
+    }
+    else
+    {
+        convertedVec->SetUnusedValue();
+    }
+
+    BlockRange().Remove(mask);
+
+    LABELEDDISPTREERANGE("lowering cns mask to cns vector (after)", BlockRange(), vecCon);
+
+    return vecCon->gtNext;
+}
+
 const int POST_INDEXED_ADDRESSING_MAX_DISTANCE = 16;
 
 //------------------------------------------------------------------------
@@ -1813,13 +1859,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AdvSimd_FusedMultiplyAddScalar:
             LowerHWIntrinsicFusedMultiplyAddScalar(node);
             break;
+
         case NI_Sve_ConditionalSelect:
             return LowerHWIntrinsicCndSel(node);
+
         case NI_Sve_SetFfr:
         {
             StoreFFRValue(node);
             break;
         }
+
         case NI_Sve_GetFfrByte:
         case NI_Sve_GetFfrInt16:
         case NI_Sve_GetFfrInt32:
@@ -1910,17 +1959,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (node->GetOperandCount() == 3)
                 {
-                    assert(node->GetAuxiliaryType() != TYP_UNKNOWN);
                     node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), node->Op(3), lclVar);
-                }
-                else if (node->GetOperandCount() == 2)
-                {
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
                 else
                 {
-                    assert(node->GetOperandCount() == 1);
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), lclVar);
+                    assert(node->GetOperandCount() == 2);
+                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
             }
 
@@ -1968,7 +2012,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
 
         bool      foundUse = BlockRange().TryGetUse(node, &use);
-        GenTree*  trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+        GenTree*  trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType);
         GenTree*  falseVal = comp->gtNewZeroConNode(simdType);
         var_types nodeType = simdType;
 
@@ -3939,11 +3983,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* op3 = intrin.op3;
 
                 // Handle op1
-                if (op1->IsVectorZero())
+                if (op1->IsMaskZero())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
                     MakeSrcContained(node, op1);
+                    LABELEDDISPTREERANGE("Contained false mask op1 in ConditionalSelect", BlockRange(), op1);
                 }
 
                 // Handle op2
@@ -3951,16 +3996,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     const GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
-                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
+                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatible())
                     {
+                        bool     contain  = false;
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
                         uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+
                         if (maskSize == operSize)
                         {
                             // If the size of baseType of operation matches that of maskType, then contain
                             // the operation
-                            MakeSrcContained(node, op2);
-                            op2->MakeEmbMaskOp();
+                            contain = true;
                         }
                         else
                         {
@@ -3979,9 +4025,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             uint32_t auxSize = genTypeSize(embOp->GetAuxiliaryType());
                             if (maskSize == auxSize)
                             {
-                                MakeSrcContained(node, op2);
-                                op2->MakeEmbMaskOp();
+                                contain = true;
                             }
+                        }
+
+                        if (contain)
+                        {
+                            MakeSrcContained(node, op2);
+                            op2->MakeEmbMaskOp();
+                            LABELEDDISPTREERANGE("Contained op2 in ConditionalSelect", BlockRange(), node);
                         }
                     }
 
@@ -3993,17 +4045,19 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (embOp->Op(2)->IsCnsIntOrI())
                         {
                             MakeSrcContained(op2, embOp->Op(2));
+                            LABELEDDISPTREERANGE("Contained ShiftRight in ConditionalSelect", BlockRange(), op2);
                         }
                     }
                 }
 
                 // Handle op3
-                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
+                if (op3->IsVectorZero() && op1->IsTrueMask(node->GetSimdBaseType()) && op2->IsEmbMaskOp())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
                     // Do this only if op1 was AllTrueMask
                     MakeSrcContained(node, op3);
+                    LABELEDDISPTREERANGE("Contained false mask op3 in ConditionalSelect", BlockRange(), op3);
                 }
 
                 break;
@@ -4012,6 +4066,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
             case NI_Sve_MultiplyAddRotateComplex:
+            case NI_Sve2_DotProductRotateComplex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 if (intrin.op4->IsCnsIntOrI())
@@ -4069,6 +4124,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op4));
                 assert(varTypeIsIntegral(intrin.op5));
@@ -4120,13 +4176,14 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this
             // optimisation when the nestedOp is a reduce operation.
 
-            if (nestedOp1->IsMaskAllBitsSet() && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
+            if (nestedOp1->IsTrueMask(cndSelNode->GetSimdBaseType()) &&
+                !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
                 (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
             {
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
                 GenTree* nestedOp3 = nestedCndSel->Op(3);
 
-                LABELEDDISPTREERANGE("Removed nested conditionalselect (before):", BlockRange(), cndSelNode);
+                LABELEDDISPTREERANGE("Removed nested conditionalselect (before)", BlockRange(), cndSelNode);
 
                 // Transform:
                 //
@@ -4144,7 +4201,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             }
         }
     }
-    else if (op1->IsMaskAllBitsSet())
+    else if (op1->IsTrueMask(cndSelNode->GetSimdBaseType()))
     {
         // Any case where op2 is not an embedded HWIntrinsic
         if (!op2->OperIsHWIntrinsic() ||

@@ -600,6 +600,11 @@ namespace Internal.TypeSystem
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayFieldCount, type);
             }
 
+            if (layoutMetadata.Size != 0)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicitSize, type);
+            }
+
             if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
             {
                 long size = instanceByteSizeAndAlignment.Size.AsInt;

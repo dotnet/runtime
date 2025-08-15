@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Tests
     {
         public sealed class Traits : IHmacTrait
         {
-            public static bool IsSupported => !PlatformDetection.IsAzureLinux && !PlatformDetection.IsBrowser;
+            public static bool IsSupported => !PlatformDetection.IsSymCryptOpenSsl && !PlatformDetection.IsBrowser;
             public static int HashSizeInBytes => HMACMD5.HashSizeInBytes;
         }
 

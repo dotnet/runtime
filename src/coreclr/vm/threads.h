@@ -126,7 +126,7 @@ class     ThreadStore;
 class     MethodDesc;
 struct    PendingSync;
 class     AppDomain;
-class     NDirect;
+class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
@@ -162,7 +162,7 @@ class Module;
 // TailCallArgBuffer states
 #define TAILCALLARGBUFFER_ACTIVE       0
 #define TAILCALLARGBUFFER_INSTARG_ONLY 1
-#define TAILCALLARGBUFFER_ABANDONED    2
+#define TAILCALLARGBUFFER_INACTIVE     2
 
 struct TailCallArgBuffer
 {
@@ -414,7 +414,7 @@ class TailCallTls
 
 public:
     TailCallTls();
-    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    TailCallArgBuffer* AllocArgBuffer(int size);
     void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
     TailCallArgBuffer* GetArgBuffer()
     {
@@ -642,7 +642,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        TSNC_UnhandledException2ndPass  = 0x02000000, // The unhandled exception propagation is in the 2nd pass
+        TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -836,12 +836,6 @@ public:
         m_fHasDeadThreadBeenConsideredForGCTrigger = true;
     }
 #endif // !DACCESS_COMPILE
-
-    // returns if there is some extra work for the finalizer thread.
-    BOOL HaveExtraWorkForFinalizer();
-
-    // do the extra finalizer work.
-    void DoExtraWorkForFinalizer();
 
 #ifndef DACCESS_COMPILE
     DWORD CatchAtSafePoint()
@@ -1395,9 +1389,8 @@ public:
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled()
-                 || CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1408,10 +1401,9 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
-        _ASSERTE(PreemptiveGCDisabled() ||
-                 CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+        _ASSERTE(PreemptiveGCDisabled()
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1570,10 +1562,6 @@ public:
 
         return PTR_ThreadExceptionState(PTR_HOST_MEMBER_TADDR(Thread, this, m_ExceptionState));
     }
-
-private:
-    // ClearContext are to be called only during shutdown
-    void ClearContext();
 
 public:
 
@@ -2485,29 +2473,8 @@ public:
 public:
     static BOOL UniqueStack(void* startLoc = 0);
 
-    BOOL IsAddressInStack (PTR_VOID addr) const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(m_CacheStackBase != NULL);
-        _ASSERTE(m_CacheStackLimit != NULL);
-        _ASSERTE(m_CacheStackLimit < m_CacheStackBase);
-        return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
-    }
-
-    static BOOL IsAddressInCurrentStack (PTR_VOID addr)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        Thread* currentThread = GetThreadNULLOk();
-        if (currentThread == NULL)
-        {
-            return FALSE;
-        }
-
-        PTR_VOID sp = dac_cast<PTR_VOID>(GetCurrentSP());
-        _ASSERTE(currentThread->m_CacheStackBase != NULL);
-        _ASSERTE(sp < currentThread->m_CacheStackBase);
-        return sp < addr && addr <= currentThread->m_CacheStackBase;
-    }
+    BOOL IsAddressInStack (PTR_VOID addr) const;
+    static BOOL IsAddressInCurrentStack (PTR_VOID addr);
 
     // DetermineIfGuardPagePresent returns TRUE if the thread's stack contains a proper guard page. This function
     // makes a physical check of the stack, rather than relying on whether or not the CLR is currently processing a
@@ -3979,6 +3946,7 @@ struct cdac_data<Thread>
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);
+    static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
@@ -4423,7 +4391,17 @@ public:
         _ASSERTE(result == NULL || (dac_cast<size_t>(result) & 0x3) == 0 || ((Thread*)result)->GetThreadId() == id);
         return result;
     }
+
+    friend struct ::cdac_data<IdDispenser>;
 };
+
+template<>
+struct cdac_data<IdDispenser>
+{
+    static constexpr size_t IdToThread = offsetof(IdDispenser, m_idToThread);
+    static constexpr size_t HighestId = offsetof(IdDispenser, m_highestId);
+};
+
 typedef DPTR(IdDispenser) PTR_IdDispenser;
 
 

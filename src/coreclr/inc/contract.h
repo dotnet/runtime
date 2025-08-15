@@ -233,7 +233,6 @@
 #include "specstrings.h"
 #include "clrtypes.h"
 #include "check.h"
-#include "debugreturn.h"
 #include "staticcontract.h"
 
 #ifdef ENABLE_CONTRACTS_DATA
@@ -1477,7 +1476,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 // to return and we need to ensure that we don't allow a return where one should not happen
 //
 #define RETURN                                                                              \
-    while (DEBUG_ASSURE_SAFE_TO_RETURN, TRUE)                                               \
+    while (TRUE)                                                                            \
         RETURN_BODY                                                                         \
 
 #define RETURN_VOID                                                                         \

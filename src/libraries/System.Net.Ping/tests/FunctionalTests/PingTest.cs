@@ -78,7 +78,7 @@ namespace System.Net.NetworkInformation.Tests
                 : Array.Empty<byte>();
 
         public static bool DoesNotUsePingUtility => OperatingSystem.IsWindows() ||
-                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsWatchOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
+                                OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() ||
                                 Capability.CanUseRawSockets(TestSettings.GetLocalIPAddress().AddressFamily);
         public static bool UsesPingUtility => !DoesNotUsePingUtility;
 
@@ -687,24 +687,15 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        [OuterLoop] // Depends on external host and assumption that successful ping takes long enough for cancellation to go through first
-        public async Task CancelSendPingAsync(bool useIPAddress, bool useCancellationToken)
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop("Depends on external host.")]
+        public async Task CancelSendPingAsync_HostName(bool useCancellationToken)
         {
-            if (PlatformDetection.IsOSX && useIPAddress && !useCancellationToken)
-            {
-                throw new SkipTestException("[ActiveIssue(https://github.com/dotnet/runtime/issues/114782)]");
-            }
-
             using CancellationTokenSource source = new();
 
             using Ping ping = new();
-            Task pingTask = useIPAddress
-                ? ping.SendPingAsync((await Dns.GetHostAddressesAsync(Test.Common.Configuration.Ping.PingHost))[0], TimeSpan.FromSeconds(5), cancellationToken: source.Token)
-                : ping.SendPingAsync(Test.Common.Configuration.Ping.PingHost, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
+            Task pingTask = ping.SendPingAsync(Test.Common.Configuration.Ping.PingHost, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
             if (useCancellationToken)
             {
                 source.Cancel();
@@ -715,6 +706,52 @@ namespace System.Net.NetworkInformation.Tests
             }
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pingTask);
             Assert.True(pingTask.IsCanceled);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop("Depends on external host and runs long on Windows.")]
+        public async Task CancelSendPingAsync_IPAddress(bool useCancellationToken)
+        {
+            if (await TestCore(TestSettings.UnreachableAddress)) return;
+            if (await TestCore(TestSettings.UnreachableAddress2)) return;
+            if (await TestCore(TestSettings.UnreachableAddress3)) return;
+
+            Assert.Fail("No OperationCanceledException has been thrown after attempting cancellation with various unreachable hosts.");
+
+            async Task<bool> TestCore(string unreachableIPString)
+            {
+                IPAddress address = IPAddress.Parse(unreachableIPString);
+                using CancellationTokenSource source = new();
+
+                using Ping ping = new();
+                Task<PingReply> pingTask = ping.SendPingAsync(address, TimeSpan.FromSeconds(5), cancellationToken: source.Token);
+                if (useCancellationToken)
+                {
+                    source.Cancel();
+                }
+                else
+                {
+                    ping.SendAsyncCancel();
+                }
+
+                try
+                {
+                    PingReply reply = await pingTask;
+                    if (reply.Status == IPStatus.DestinationNetworkUnreachable)
+                    {
+                        _output.WriteLine($"We got a DestinationNetworkUnreachable reply before cancellation for {address}. Retry on a different address.");
+                        return false;
+                    }
+
+                    Assert.Fail("No OperationCanceledException has been thrown.");
+                }
+                catch (OperationCanceledException) { }
+
+                Assert.True(pingTask.IsCanceled);
+                return true;
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -848,7 +885,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public async Task SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        public async Task SendPing_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string? envVar_LC_MESSAGES, string? envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
             if (localIpAddress == null)
@@ -882,7 +919,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(AddressFamily.InterNetworkV6, "ja_JP.UTF8", null, null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", "ja_JP.UTF8", null)]
         [InlineData(AddressFamily.InterNetworkV6, "en_US.UTF8", null, "ja_JP.UTF8")]
-        public async Task SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string envVar_LC_MESSAGES, string envVar_LC_ALL)
+        public async Task SendPingAsync_LocaleEnvVarsMustBeIgnored(AddressFamily addressFamily, string envVar_LANG, string? envVar_LC_MESSAGES, string? envVar_LC_ALL)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);
 

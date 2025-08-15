@@ -72,12 +72,12 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             if (disposing)
             {
                 _key.Dispose();
             }
+
+            base.Dispose(disposing);
         }
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportPublicKey(_key, destination);
 
-        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportSlhDsaPrivateKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportSecretKey(_key, destination);
     }
 }
