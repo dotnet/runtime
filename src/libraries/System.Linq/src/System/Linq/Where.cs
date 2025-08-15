@@ -27,29 +27,24 @@ namespace System.Linq
             }
 
             // Only use IList when size-optimizing (no array or List specializations).
-            if (IsSizeOptimized)
+            if (IsSizeOptimized && source is IList<TSource> sourceList)
             {
-                if (source is IList<TSource> sourceList)
-                {
-                    return new SizeOptIListWhereIterator<TSource>(sourceList, predicate);
-                }
+                return new SizeOptIListWhereIterator<TSource>(sourceList, predicate);
             }
-            else
+
+            if (source is TSource[] array)
             {
-                if (source is TSource[] array)
+                if (array.Length == 0)
                 {
-                    if (array.Length == 0)
-                    {
-                        return [];
-                    }
-
-                    return new ArrayWhereIterator<TSource>(array, predicate);
+                    return [];
                 }
 
-                if (source is List<TSource> list)
-                {
-                    return new ListWhereIterator<TSource>(list, predicate);
-                }
+                return new ArrayWhereIterator<TSource>(array, predicate);
+            }
+
+            if (source is List<TSource> list)
+            {
+                return new ListWhereIterator<TSource>(list, predicate);
             }
 
             return new IEnumerableWhereIterator<TSource>(source, predicate);
