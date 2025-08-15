@@ -1321,6 +1321,8 @@ namespace System
             return res;
         }
 
+        internal bool IsActualInterface => IsInterface;
+
         // Returns true for actual value types only, ignoring generic parameter constraints.
         internal bool IsActualValueType => RuntimeTypeHandle.IsValueType(this);
 
