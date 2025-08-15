@@ -260,7 +260,9 @@ namespace System.IO.Compression
                 ThrowIfDisposed();
 
                 if (!CanSeek)
+                {
                     throw new NotSupportedException(SR.SeekingNotSupported);
+                }
 
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
 
@@ -373,7 +375,9 @@ namespace System.IO.Compression
             ThrowIfDisposed();
 
             if (!CanSeek)
+            {
                 throw new NotSupportedException(SR.SeekingNotSupported);
+            }
 
             long newPositionInSuperStream = origin switch
             {
@@ -384,7 +388,9 @@ namespace System.IO.Compression
             };
 
             if (newPositionInSuperStream < _startInSuperStream)
+            {
                 throw new IOException(SR.IO_SeekBeforeBegin);
+            }
 
             _positionInSuperStream = newPositionInSuperStream;
 
