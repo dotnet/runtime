@@ -100,7 +100,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Tries to get the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// Tries to get the <see cref="JsonTypeInfo{T}"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
         /// <param name="typeInfo">The resolved contract metadata, or <see langword="null" /> if no contract could be resolved.</param>
         /// <returns><see langword="true"/> if a contract for <typeparamref name="T"/> was found, or <see langword="false"/> otherwise.</returns>
