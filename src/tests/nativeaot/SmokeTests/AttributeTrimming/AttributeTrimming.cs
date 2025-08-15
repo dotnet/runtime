@@ -19,9 +19,11 @@ class Program
         if (MethodBase.GetCurrentMethod().Name != nameof(Main))
             throw new Exception("Name");
 
+#if !DEBUG
         // But we should have optimized out the attributes on it
         if (GetTypeSecretly(nameof(MethodAttribute)) != null)
             throw new Exception("Method");
+#endif
 
         return 100;
     }
