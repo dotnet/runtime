@@ -237,11 +237,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static void MethodWithSpecificType(TypeWithPublicMethods<TestType> one, IWithTwo<TestType, TestType> two) { }
 
-            [ExpectedWarning("IL2091", Tool.NativeAot, "")]
+            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
             static void MethodWithOneMismatch<TUnknown>(TypeWithPublicMethods<TUnknown> one) { }
 
-            [ExpectedWarning("IL2091", nameof(IWithTwo<TestType, TestType>), Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", nameof(TypeWithPublicMethods<TestType>), Tool.NativeAot, "")]
+            [ExpectedWarning("IL2091", nameof(IWithTwo<TestType, TestType>), Tool.NativeAot | Tool.Trimmer, "")]
+            [ExpectedWarning("IL2091", nameof(TypeWithPublicMethods<TestType>), Tool.NativeAot | Tool.Trimmer, "")]
             static void MethodWithTwoMismatches<
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -252,11 +252,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static TypeWithPublicMethods<TPublicMethods> MethodWithMatchingReturn<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>() => null;
 
-            [ExpectedWarning("IL2091", Tool.NativeAot, "")]
+            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
             static TypeWithPublicMethods<TUnknown> MethodWithOneMismatchReturn<TUnknown>() => null;
 
-            [ExpectedWarning("IL2091", Tool.NativeAot, "")]
-            [ExpectedWarning("IL2091", Tool.NativeAot, "")]
+            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+            [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
             static IWithTwo<TPublicFields, TPublicMethods> MethodWithTwoMismatchesInReturn<
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -264,7 +264,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class ConstructorWithOneMatchAndOneMismatch<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TMethods>
             {
-                [ExpectedWarning("IL2091", Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
                 public ConstructorWithOneMatchAndOneMismatch(IWithTwo<TMethods, TMethods> two) { }
             }
 
@@ -367,10 +367,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
             {
-                [ExpectedWarning("IL2091", Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
                 static TypeWithPublicMethods<TUnknown> _field1;
                 static TypeWithPublicMethods<TPublicMethods> _field2;
-                [ExpectedWarning("IL2091", Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
                 static TypeWithPublicMethods<TUnknown> _field3;
             }
 
@@ -378,8 +378,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
             {
-                [ExpectedWarning("IL2091", Tool.NativeAot, "")]
-                [ExpectedWarning("IL2091", Tool.NativeAot, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
+                [ExpectedWarning("IL2091", Tool.NativeAot | Tool.Trimmer, "")]
                 static IWithTwo<TPublicFields, TPublicMethods> _field;
             }
 

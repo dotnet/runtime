@@ -1995,6 +1995,16 @@ namespace Mono.Linker.Steps
             {
                 Annotations.MarkReflectionUsed(methodDefinition);
                 Annotations.MarkIndirectlyCalledMethod(methodDefinition);
+
+                // On a reflectable method, perform generic data flow for the return type and all the parameter types
+                // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
+                var methodOrigin = new MessageOrigin(methodDefinition);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in methodOrigin, this, Context, methodDefinition.ReturnType);
+
+                foreach (var parameter in methodDefinition.GetMetadataParameters())
+                {
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in methodOrigin, this, Context, parameter.ParameterType);
+                }
             }
         }
 
@@ -2015,6 +2025,13 @@ namespace Mono.Linker.Steps
         internal void MarkFieldVisibleToReflection(FieldReference field, in DependencyInfo reason, in MessageOrigin origin)
         {
             MarkField(field, reason, origin);
+            if (Context.Resolve(field) is FieldDefinition fieldDefinition)
+            {
+                // On a reflectable field, perform generic data flow for the field's type
+                // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
+                var fieldOrigin = new MessageOrigin(fieldDefinition);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in fieldOrigin, this, Context, fieldDefinition.FieldType);
+            }
         }
 
         bool MarkFieldsVisibleToReflection(TypeDefinition type, in DependencyInfo reason, MessageOrigin origin, bool markBackingFieldsOnlyIfPropertyMarked = false)
