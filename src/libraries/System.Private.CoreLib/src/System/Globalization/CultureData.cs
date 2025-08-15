@@ -543,34 +543,7 @@ namespace System.Globalization
             return GlobalizationMode.UseNls ? NlsEnumCultures(types) : IcuEnumCultures(types);
         }
 
-        private static CalendarId[] GetInvariantCalendarIdArray() => [CalendarId.GREGORIAN];
-        private static CalendarData[] GetInvariantCalendarDataArray()
-        {
-            var calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-            calendars[0] = CalendarData.Invariant;
-            return calendars;
-        }
-
         private static CultureData CreateCultureWithInvariantData()
-        {
-            CultureData invariant = CreateCultureWithInvariantDataWithoutCalendars();
-
-            // all available calendar type(s).  The first one is the default calendar
-            invariant._waCalendars = GetInvariantCalendarIdArray();
-
-            if (!GlobalizationMode.InvariantNoLoad)
-            {
-                invariant._calendars = GetInvariantCalendarDataArray();
-            }
-
-            return invariant;
-        }
-
-        // Calendar information is expensive size-wise, especially for AOT.
-        // CalendarData.Invariant is special cased in _waCalendars and _calendars
-        // accessors and gets initialized lazily. All other uses should use
-        // CreateCultureWithInvariantData above that populates calendars too.
-        private static CultureData CreateCultureWithInvariantDataWithoutCalendars()
         {
             // Make a new culturedata
             CultureData invariant = new CultureData();
@@ -652,6 +625,12 @@ namespace System.Globalization
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
 
+            // Calendar information is expensive size-wise, especially for AOT.
+            // CalendarData.Invariant is special cased in _waCalendars and _calendars
+            // accessors and gets initialized lazily.
+            // invariant._waCalendars
+            // invariant._calendars
+
             // Text information
             invariant._iReadingLayout = 0;
 
@@ -675,7 +654,7 @@ namespace System.Globalization
         /// Build our invariant information
         /// We need an invariant instance, which we build hard-coded
         /// </summary>
-        internal static CultureData Invariant => field ??= CreateCultureWithInvariantDataWithoutCalendars();
+        internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
 
         // Cache of cultures we've already looked up
         private static volatile Dictionary<string, CultureData>? s_cachedCultures;
@@ -1664,67 +1643,68 @@ namespace System.Globalization
         {
             get
             {
-                if (_waCalendars == null && this == Invariant)
+                if (_waCalendars == null)
                 {
-                    // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
-                    // enum arrays into apps that otherwise wouldn't have them. This helps with size in AOT.
-                    _waCalendars = GetInvariantCalendarIdArray();
-                }
-                else if (_waCalendars == null && !GlobalizationMode.Invariant)
-                {
-                    // We pass in an array of ints, and native side fills it up with count calendars.
-                    // We then have to copy that list to a new array of the right size.
-                    // Default calendar should be first
-                    CalendarId[] calendars = new CalendarId[23];
-                    Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
-
-                    int count = CalendarData.GetCalendarsCore(_sWindowsName, _bUseOverrides, calendars);
-
-                    // See if we had a calendar to add.
-                    if (count == 0)
+                    if (GlobalizationMode.Invariant || IsInvariantCulture)
                     {
-                        // Failed for some reason, just use Gregorian
-                        _waCalendars = GetInvariantCalendarIdArray();
+                        // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
+                        // enum arrays into apps that otherwise wouldn't have them. This helps with size in AOT.
+                        _waCalendars = [CalendarId.GREGORIAN];
                     }
                     else
                     {
-                        // The OS may not return calendar 4 for zh-TW, but we've always allowed it.
-                        // TODO: Is this hack necessary long-term?
-                        if (_sWindowsName == "zh-TW")
-                        {
-                            bool found = false;
+                        // We pass in an array of ints, and native side fills it up with count calendars.
+                        // We then have to copy that list to a new array of the right size.
+                        // Default calendar should be first
+                        CalendarId[] calendars = new CalendarId[23];
+                        Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
 
-                            // Do we need to insert calendar 4?
-                            for (int i = 0; i < count; i++)
+                        int count = CalendarData.GetCalendarsCore(_sWindowsName, _bUseOverrides, calendars);
+
+                        // See if we had a calendar to add.
+                        if (count == 0)
+                        {
+                            // Failed for some reason, just use Gregorian
+                            _waCalendars = Invariant.CalendarIds;
+                        }
+                        else
+                        {
+                            // The OS may not return calendar 4 for zh-TW, but we've always allowed it.
+                            // TODO: Is this hack necessary long-term?
+                            if (_sWindowsName == "zh-TW")
                             {
-                                // Stop if we found calendar four
-                                if (calendars[i] == CalendarId.TAIWAN)
+                                bool found = false;
+
+                                // Do we need to insert calendar 4?
+                                for (int i = 0; i < count; i++)
                                 {
-                                    found = true;
-                                    break;
+                                    // Stop if we found calendar four
+                                    if (calendars[i] == CalendarId.TAIWAN)
+                                    {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+
+                                // If not found then insert it
+                                if (!found)
+                                {
+                                    // Insert it as the 2nd calendar
+                                    count++;
+                                    // Copy them from the 2nd position to the end, -1 for skipping 1st, -1 for one being added.
+                                    Array.Copy(calendars, 1, calendars, 2, 23 - 1 - 1);
+                                    calendars[1] = CalendarId.TAIWAN;
                                 }
                             }
 
-                            // If not found then insert it
-                            if (!found)
-                            {
-                                // Insert it as the 2nd calendar
-                                count++;
-                                // Copy them from the 2nd position to the end, -1 for skipping 1st, -1 for one being added.
-                                Array.Copy(calendars, 1, calendars, 2, 23 - 1 - 1);
-                                calendars[1] = CalendarId.TAIWAN;
-                            }
+                            // It worked, remember the list
+                            CalendarId[] temp = new CalendarId[count];
+                            Array.Copy(calendars, temp, count);
+                            _waCalendars = temp;
                         }
-
-                        // It worked, remember the list
-                        CalendarId[] temp = new CalendarId[count];
-                        Array.Copy(calendars, temp, count);
-
-                        _waCalendars = temp;
                     }
                 }
-
-                return _waCalendars!;
+                return _waCalendars;
             }
         }
 
@@ -1750,13 +1730,6 @@ namespace System.Globalization
             // arrays are 0 based, calendarIds are 1 based
             int calendarIndex = (int)calendarId - 1;
 
-            if (_calendars == null && this == Invariant)
-            {
-                // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
-                // invariant calendar data into apps that don't even need calendar.
-                _calendars = GetInvariantCalendarDataArray();
-            }
-
             // Have to have calendars
             _calendars ??= new CalendarData[CalendarData.MAX_CALENDARS];
 
@@ -1767,8 +1740,17 @@ namespace System.Globalization
             // Make sure that calendar has data
             if (calendarData == null)
             {
-                Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
-                calendarData = new CalendarData(_sWindowsName, calendarId, _bUseOverrides);
+                if (calendarIndex == 0 && IsInvariantCulture)
+                {
+                    // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
+                    // invariant calendar data into apps that don't even need calendar.
+                    calendarData = CalendarData.Invariant;
+                }
+                else
+                {
+                    Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
+                    calendarData = new CalendarData(_sWindowsName, calendarId, _bUseOverrides);
+                }
                 _calendars[calendarIndex] = calendarData;
             }
 
