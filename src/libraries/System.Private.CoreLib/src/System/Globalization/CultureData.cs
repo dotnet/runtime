@@ -543,7 +543,34 @@ namespace System.Globalization
             return GlobalizationMode.UseNls ? NlsEnumCultures(types) : IcuEnumCultures(types);
         }
 
+        private static CalendarId[] GetInvariantCalendarIdArray() => [CalendarId.GREGORIAN];
+        private static CalendarData[] GetInvariantCalendarDataArray()
+        {
+            var calendars = new CalendarData[CalendarData.MAX_CALENDARS];
+            calendars[0] = CalendarData.Invariant;
+            return calendars;
+        }
+
         private static CultureData CreateCultureWithInvariantData()
+        {
+            CultureData invariant = CreateCultureWithInvariantDataWithoutCalendars();
+
+            // all available calendar type(s).  The first one is the default calendar
+            invariant._waCalendars = GetInvariantCalendarIdArray();
+
+            if (!GlobalizationMode.InvariantNoLoad)
+            {
+                invariant._calendars = GetInvariantCalendarDataArray();
+            }
+
+            return invariant;
+        }
+
+        // Calendar information is expensive size-wise, especially for AOT.
+        // CalendarData.Invariant is special cased in _waCalendars and _calendars
+        // accessors and gets initialized lazily. All other uses should use
+        // CreateCultureWithInvariantData above that populates calendars too.
+        private static CultureData CreateCultureWithInvariantDataWithoutCalendars()
         {
             // Make a new culturedata
             CultureData invariant = new CultureData();
@@ -625,16 +652,6 @@ namespace System.Globalization
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
 
-            // all available calendar type(s).  The first one is the default calendar
-            invariant._waCalendars = (CalendarId[])(object)new ushort[] { (ushort)CalendarId.GREGORIAN };
-
-            if (!GlobalizationMode.InvariantNoLoad)
-            {
-                // Store for specific data about each calendar
-                invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-                invariant._calendars[0] = CalendarData.Invariant;
-            }
-
             // Text information
             invariant._iReadingLayout = 0;
 
@@ -658,7 +675,7 @@ namespace System.Globalization
         /// Build our invariant information
         /// We need an invariant instance, which we build hard-coded
         /// </summary>
-        internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
+        internal static CultureData Invariant => field ??= CreateCultureWithInvariantDataWithoutCalendars();
 
         // Cache of cultures we've already looked up
         private static volatile Dictionary<string, CultureData>? s_cachedCultures;
@@ -1647,7 +1664,13 @@ namespace System.Globalization
         {
             get
             {
-                if (_waCalendars == null && !GlobalizationMode.Invariant)
+                if (_waCalendars == null && this == Invariant)
+                {
+                    // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
+                    // enum arrays into apps that otherwise wouldn't have them. This helps with size in AOT.
+                    _waCalendars = GetInvariantCalendarIdArray();
+                }
+                else if (_waCalendars == null && !GlobalizationMode.Invariant)
                 {
                     // We pass in an array of ints, and native side fills it up with count calendars.
                     // We then have to copy that list to a new array of the right size.
@@ -1660,8 +1683,8 @@ namespace System.Globalization
                     // See if we had a calendar to add.
                     if (count == 0)
                     {
-                        // Failed for some reason, just grab Gregorian from Invariant
-                        _waCalendars = Invariant._waCalendars!;
+                        // Failed for some reason, just use Gregorian
+                        _waCalendars = GetInvariantCalendarIdArray();
                     }
                     else
                     {
@@ -1726,6 +1749,13 @@ namespace System.Globalization
 
             // arrays are 0 based, calendarIds are 1 based
             int calendarIndex = (int)calendarId - 1;
+
+            if (_calendars == null && this == Invariant)
+            {
+                // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
+                // invariant calendar data into apps that don't even need calendar.
+                _calendars = GetInvariantCalendarDataArray();
+            }
 
             // Have to have calendars
             _calendars ??= new CalendarData[CalendarData.MAX_CALENDARS];

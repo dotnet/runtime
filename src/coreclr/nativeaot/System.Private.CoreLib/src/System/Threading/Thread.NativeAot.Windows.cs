@@ -246,7 +246,7 @@ namespace System.Threading
             }
         }
 
-        internal bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
+        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             ApartmentState retState;
 
@@ -289,6 +289,8 @@ namespace System.Threading
             {
                 if (throwOnError)
                 {
+                    // NOTE: We do the enum stringification manually to avoid introducing a dependency
+                    // on enum stringification in small apps. We set apartment state in the startup path.
                     string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState switch
                     {
                         ApartmentState.MTA => "MTA",

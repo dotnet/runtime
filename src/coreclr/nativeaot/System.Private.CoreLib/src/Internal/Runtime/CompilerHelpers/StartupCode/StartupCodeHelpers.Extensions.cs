@@ -81,7 +81,7 @@ namespace Internal.Runtime.CompilerHelpers
         [SupportedOSPlatform("windows")]
         private static void InitializeApartmentState(ApartmentState state)
         {
-            Thread.CurrentThread.SetApartmentStateUnchecked(state, throwOnError: true);
+            Thread.CurrentThread.SetApartmentState(state);
         }
 #endif
     }
