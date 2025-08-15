@@ -44256,6 +44256,8 @@ void gc_heap::init_static_data()
     gen0_max_size = Align (gen0_max_size);
     gen0_min_size = min (gen0_min_size, gen0_max_size);
 
+    GCConfig::SetGCGen0MaxBudget (gen0_max_size);
+
     // TODO: gen0_max_size has a 200mb cap; gen1_max_size should also have a cap.
     size_t gen1_max_size = (size_t)
 #ifdef MULTIPLE_HEAPS
