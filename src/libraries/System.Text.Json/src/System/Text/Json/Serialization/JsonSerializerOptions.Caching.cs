@@ -110,7 +110,7 @@ namespace System.Text.Json
         /// </remarks>
         public bool TryGetTypeInfo<T>([NotNullWhen(true)] out JsonTypeInfo<T>? typeInfo)
         {
-            if (TryGetTypeInfo(typeof(T), out var typeInfoOpt))
+            if (TryGetTypeInfo(typeof(T), out JsonTypeInfo? typeInfoOpt))
             {
                 typeInfo = (JsonTypeInfo<T>)typeInfoOpt;
                 return true;
