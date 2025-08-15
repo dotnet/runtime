@@ -145,7 +145,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
         }
 
-        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--")]
+        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Analyzer, "")]
+        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
         class DerivedWithoutRequires : BaseWithRequires
         {
             [ExpectedWarning("IL2026", "--Requires--")]
@@ -158,6 +159,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 StaticMethod();
                 DerivedStaticMethod();
+
+                 // Instantiate for linker test consistency
+                new DerivedWithoutRequires();
             }
         }
 
