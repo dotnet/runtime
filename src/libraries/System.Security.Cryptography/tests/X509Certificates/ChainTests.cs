@@ -1112,6 +1112,7 @@ mLgOGT78BTHjFtn9kAUDhsZXAR9/eKDPM2qqZmsi0KdJIw==");
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void BuildChainForCertificateSignedWithDisallowedKey()
         {
             // The intermediate certificate is from the now defunct CA DigiNotar.
@@ -1183,12 +1184,6 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
                     // so violations comes back as PartialChain with no elements
                     // Apple 26 no longer block these SKIs since the roots are no longer trusted at all and are expired.
                     Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
-                }
-                else if (PlatformDetection.IsLinux)
-                {
-                    // Linux has no concept of a blocked key list, they just remove certificates from a trust store.
-                    X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
-                    AssertExtensions.TrueExpression(actualFlags.HasFlag(X509ChainStatusFlags.PartialChain));
                 }
                 else
                 {
