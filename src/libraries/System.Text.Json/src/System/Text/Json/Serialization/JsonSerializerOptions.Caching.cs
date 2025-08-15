@@ -115,6 +115,7 @@ namespace System.Text.Json
                 typeInfo = (JsonTypeInfo<T>)typeInfoOpt;
                 return true;
             }
+
             typeInfo = null;
             return false;
         }
