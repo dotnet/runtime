@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 #nullable enable
 
@@ -23,13 +24,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
             {
-                builder.AddSimpleConsole(options =>
-                        {
-                            options.TimestampFormat = "[HH:mm:ss] ";
-                        })
-                        .AddFilter("DevToolsProxy", LogLevel.Information)
-                        .AddFilter("FirefoxMonoProxy", LogLevel.Information)
-                        .AddFilter(null, LogLevel.Warning);
+                builder
+                    .AddSimpleConsole(options =>
+                    {
+                        options.ColorBehavior = LoggerColorBehavior.Disabled;
+                        options.IncludeScopes = false;
+                    })
+                    .AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Information)
+                    .AddFilter("DevToolsProxy", LogLevel.Information)
+                    .AddFilter("FirefoxMonoProxy", LogLevel.Information)
+                    .AddFilter(null, LogLevel.Warning);
             });
 
             await DebugProxyHost.RunDebugProxyAsync(options, args, loggerFactory, CancellationToken.None);

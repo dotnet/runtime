@@ -53,7 +53,6 @@ public static class DebugProxyHost
             .ConfigureServices(services =>
             {
                 services.AddSingleton(loggerFactory);
-                services.AddLogging(configure => configure.AddSimpleConsole().AddFilter(null, LogLevel.Information));
                 services.AddSingleton(Options.Create(options));
                 services.AddRouting();
             })
