@@ -2916,14 +2916,14 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         return;
     }
 
-    fgDebugCheckBlockLinks();
-
-    if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
+    if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
     {
         // The basic block checks are too expensive if there are too many blocks,
         // so give up unless we've been told to try hard.
         return;
     }
+
+    fgDebugCheckBlockLinks();
 
     bool reachedFirstFunclet = false;
     if (fgFuncletsCreated)
@@ -3796,11 +3796,10 @@ void Compiler::fgDebugCheckLinkedLocals()
 
 void Compiler::fgDebugCheckLinks(bool morphTrees)
 {
-    // This check is too expensive for large methods.
-    const bool DO_SANITY_DEBUG_CHECKS = fgBBNumMax < 5000;
-
-    if (!DO_SANITY_DEBUG_CHECKS && !compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
+    if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
     {
+        // The basic block checks are too expensive if there are too many blocks,
+        // so give up unless we've been told to try hard.
         return;
     }
 
