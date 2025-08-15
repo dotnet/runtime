@@ -65,7 +65,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Gets the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// Gets the <see cref="JsonTypeInfo{T}"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
         /// <returns>The contract metadata resolved for <typeparamref name="T"/>.</returns>
         /// <remarks>
