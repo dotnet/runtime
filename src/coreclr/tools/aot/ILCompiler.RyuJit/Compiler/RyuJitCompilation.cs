@@ -213,16 +213,18 @@ namespace ILCompiler
 
             if (exception != null)
             {
+                var mdOwningType = method.OwningType as MetadataType;
+                string owningAssembly = mdOwningType?.Module?.Assembly?.GetName()?.Name ?? "<unknown>";
                 if (exception is TypeSystemException.InvalidProgramException
-                    && method.OwningType is MetadataType mdOwningType
+                    && mdOwningType != null
                     && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
                 {
                     Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
                 }
                 if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
-                    Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
+                    Logger.LogMessage($"Method '{method}' in assembly '{owningAssembly}' will always throw because: {exception.Message}");
                 else
-                    Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+                    Logger.LogError($"Method in '{owningAssembly}' will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
 
                 // Try to compile the method again, but with a throwing method body this time.
                 MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
