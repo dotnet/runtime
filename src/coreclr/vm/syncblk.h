@@ -500,7 +500,7 @@ class SyncBlock
     BOOL IsIDisposable()
     {
         WRAPPER_NO_CONTRACT;
-        return !IsPrecious();
+        return !IsPrecious() && m_thinLock == 0;
     }
 
     // Gets the InteropInfo block, creates a new one if none is present.
