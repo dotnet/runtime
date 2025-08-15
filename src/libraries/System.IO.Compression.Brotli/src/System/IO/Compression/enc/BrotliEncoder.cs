@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -32,6 +33,19 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Attaches a Brotli dictionary to the encoder.
+        /// </summary>
+        /// <param name="dictionary">The Brotli dictionary to attach.</param>
+        public void AttachDictionary(BrotliDictionary dictionary)
+        {
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            EnsureInitialized();
+
+            dictionary.AttachToEncoder(_state);
+        }
+
+        /// <summary>
         /// Performs a lazy initialization of the native encoder using the default Quality and Window values:
         /// BROTLI_DEFAULT_WINDOW 22
         /// BROTLI_DEFAULT_QUALITY 11
@@ -44,6 +58,7 @@ namespace System.IO.Compression
                 throw new IOException(SR.BrotliEncoder_Create);
         }
 
+        [MemberNotNull(nameof(_state))]
         internal void EnsureInitialized()
         {
             EnsureNotDisposed();
@@ -51,6 +66,8 @@ namespace System.IO.Compression
             {
                 InitializeEncoder();
             }
+
+            Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
         }
 
         /// <summary>Frees and disposes unmanaged resources.</summary>

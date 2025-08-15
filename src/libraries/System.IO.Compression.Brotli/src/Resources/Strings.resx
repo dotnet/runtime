@@ -178,4 +178,17 @@
   <data name="IOCompressionBrotli_PlatformNotSupported" xml:space="preserve">
     <value>System.IO.Compression.Brotli is not supported on this platform.</value>
   </data>
+  <!-- BrotliDictionary -->
+  <data name="BrotliDictionary_Create" xml:space="preserve">
+    <value>Failed to create Brotli dictionary.</value>
+  </data>
+  <data name="BrotliDictionary_EmptyBuffer" xml:space="preserve">
+    <value>Dictionary buffer cannot be empty.</value>
+  </data>
+  <data name="BrotliEncoder_AttachDictionary" xml:space="preserve">
+    <value>Failed to attach dictionary to Brotli encoder.</value>
+  </data>
+  <data name="BrotliDecoder_AttachDictionary" xml:space="preserve">
+    <value>Failed to attach dictionary to Brotli decoder.</value>
+  </data>
 </root>
