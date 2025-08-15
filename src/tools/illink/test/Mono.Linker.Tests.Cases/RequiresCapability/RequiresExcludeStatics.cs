@@ -147,6 +147,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Analyzer, "")]
         [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+        [ExpectedWarning("IL3050", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Analyzer, "NativeAOT Specific warning")]
+        [ExpectedWarning("IL3050", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
         class DerivedWithoutRequires : BaseWithRequires
         {
             [ExpectedWarning("IL2026", "--Requires--")]
