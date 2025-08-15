@@ -294,10 +294,11 @@ private:
     void      InsertPreStatementWriteBacks();
     GenTree** InsertMidTreeReadBacks(GenTree** use);
 
-    bool ReplaceStructLocal(GenTree* user, GenTreeLclVarCommon* value);
-    bool ReplaceReturnedStructLocal(GenTreeOp* ret, GenTreeLclVarCommon* value);
-    bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVarCommon* callArg);
+    bool ReplaceStructLocal(GenTree* user, GenTree** use, GenTreeLclVarCommon* value);
+    bool ReplaceReturnedStructLocal(GenTreeOp* ret, GenTree** use, GenTreeLclVarCommon* value);
+    bool ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** use, GenTreeLclVarCommon* callArg);
     bool CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl);
+    GenTreeFieldList* CreateFieldListForStructLocal(GenTreeLclVarCommon* value);
     void ReadBackAfterCall(GenTreeCall* call, GenTree* user);
     bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
