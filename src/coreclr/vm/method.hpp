@@ -742,14 +742,14 @@ public:
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
-    inline DWORD IsCLRToCOMCall()
+    inline DWORD IsCLRToCOMCall() const
     {
         WRAPPER_NO_CONTRACT;
         return mcComInterop == GetClassification();
     }
 #else // !FEATURE_COMINTEROP
      // hardcoded to return FALSE to improve code readability
-    inline DWORD IsCLRToCOMCall()
+    inline DWORD IsCLRToCOMCall() const
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -1718,14 +1718,14 @@ public:
     // Running the Prestub preparation step.
 
     // The stub produced by prestub requires method desc to be passed
-    // in dedicated register. Used to implement stubs shared between
-    // MethodDescs (e.g. PInvoke stubs)
-    BOOL RequiresMethodDescCallingConvention(BOOL fEstimateForChunk = FALSE);
+    // in dedicated register.
+    // See HasMDContextArg() for the related stub version.
+    BOOL RequiresMDContextArg() const;
 
     // Returns true if the method has to have stable entrypoint always.
-    BOOL RequiresStableEntryPoint(BOOL fEstimateForChunk = FALSE);
+    BOOL RequiresStableEntryPoint();
 private:
-    BOOL RequiresStableEntryPointCore(BOOL fEstimateForChunk);
+    BOOL RequiresStableEntryPointCore();
 public:
 
     //
@@ -2868,7 +2868,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
         return HasFlags(FlagStatic)
-            && !HasFlags(FlagIsCALLI)
+            && !HasFlags(FlagIsCALLI | FlagIsDelegate)
             && GetILStubType() == StubCLRToNativeInterop;
     }
 
@@ -2906,10 +2906,11 @@ public:
     }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
+    // See RequiresMDContextArg() for the non-stub version.
     bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || (IsPInvokeStub() && !HasFlags(FlagIsDelegate));
+        return IsCLRToCOMStub();
     }
 
     //

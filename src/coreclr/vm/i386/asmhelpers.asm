@@ -46,7 +46,7 @@ endif ; FEATURE_EH_FUNCLETS
 EXTERN __alloca_probe:PROC
 EXTERN _PInvokeImportWorker@4:PROC
 
-EXTERN _VarargPInvokeStubWorker@12:PROC
+EXTERN _VarargPInvokeStubWorker@8:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
 
 EXTERN _PreStubWorker@8:PROC
@@ -930,11 +930,10 @@ GoCallVarargWorker:
     ; save pMD
     push        eax
 
-    push        eax                     ; pMD
     push        dword ptr [esi + 4*7]   ; pVaSigCookie
     push        esi                     ; pTransitionBlock
 
-    call        _VarargPInvokeStubWorker@12
+    call        _VarargPInvokeStubWorker@8
 
     ; restore pMD
     pop     eax

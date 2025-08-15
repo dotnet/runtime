@@ -402,7 +402,7 @@ BOOL StubManager::IsSingleOwner(PCODE stubAddress, StubManager * pOwner)
         if (it.Current()->CheckIsStub_Worker(stubAddress))
         {
             // If you hit this assert, you can tell what 2 stub managers are conflicting by inspecting their vtable.
-            CONSISTENCY_CHECK_MSGF((it.Current() == pOwner), ("Stub at 0x%p is owner by multiple managers (0x%p, 0x%p)",
+            CONSISTENCY_CHECK_MSGF((it.Current() == pOwner), ("Stub at %p is owner by multiple managers (%p, %p)",
                 (void*) stubAddress, pOwner, it.Current()));
             count++;
         }
@@ -647,7 +647,7 @@ void StubManager::AddStubManager(StubManager *mgr)
         g_pFirstManager = mgr;
     }
 
-    LOG((LF_CORDB, LL_EVERYTHING, "StubManager::AddStubManager - 0x%p (vptr %p)\n", mgr, (*(PVOID*)mgr)));
+    LOG((LF_CORDB, LL_EVERYTHING, "StubManager::AddStubManager - %p (vptr %p)\n", mgr, (*(PVOID*)mgr)));
 }
 
 //-----------------------------------------------------------
@@ -793,7 +793,7 @@ void StubManager::DbgBeginLog(TADDR addrCallInstruction, TADDR addrCallTarget)
         EX_END_CATCH
     }
 
-    DbgWriteLog("Beginning Step-in. IP after Call instruction is at 0x%p, call target is at 0x%p\n",
+    DbgWriteLog("Beginning Step-in. IP after Call instruction is at %p, call target is at %p\n",
         addrCallInstruction, addrCallTarget);
 #endif
 }
@@ -1722,10 +1722,10 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     PCODE stubIP = GetIP(pContext);
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
-    DynamicMethodDesc *pStubMD = NonVirtualEntry2MethodDesc(stubIP)->AsDynamicMethodDesc();
+    DynamicMethodDesc* pStubMD = NonVirtualEntry2MethodDesc(stubIP)->AsDynamicMethodDesc();
     TADDR arg = StubManagerHelpers::GetHiddenArg(pContext);
-    Object * pThis = StubManagerHelpers::GetThisPtr(pContext);
-    LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Enter: StubMD 0x%p, HiddenArg 0x%p, ThisPtr 0x%p\n",
+    Object* pThis = StubManagerHelpers::GetThisPtr(pContext);
+    LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Enter: StubMD %p, HiddenArg %p, ThisPtr %p\n",
         pStubMD, arg, pThis));
 
     // See code:ILStubCache.CreateNewMethodDesc for the code that sets flags on stub MDs
@@ -1742,13 +1742,13 @@ BOOL ILStubManager::TraceManager(Thread *thread,
             // This is reverse P/Invoke stub, the argument is UMEntryThunkData
             UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
             target = pEntryThunk->GetManagedTarget();
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case 0x%p\n", target));
+            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case %p\n", target));
         }
         else
         {
             // This is COM-to-CLR stub, the argument is the target
             target = (PCODE)arg;
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case 0x%p\n", target));
+            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
         }
         trace->InitForManaged(target);
     }
@@ -1758,7 +1758,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         DelegateObject *pDel = (DelegateObject *)pThis;
         target = pDel->GetMethodPtrAux();
 
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward delegate P/Invoke case 0x%p\n", target));
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward delegate P/Invoke case %p\n", target));
         trace->InitForUnmanaged(target);
     }
     else if (pStubMD->HasFlags(DynamicMethodDesc::FlagIsCALLI))
@@ -1771,7 +1771,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         target = target >> 1; // call target is encoded as (addr << 1) | 1
 #endif // TARGET_AMD64
 
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case 0x%p\n", target));
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case %p\n", target));
         trace->InitForUnmanaged(target);
     }
     else if (pStubMD->IsStepThroughStub())
@@ -1783,7 +1783,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
             return FALSE;
         }
 
-        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Step through to target - 0x%p\n", pTargetMD));
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Step through to target - %p\n", pTargetMD));
         target = GetStubTarget(pTargetMD);
         if (target == (PCODE)NULL)
             return FALSE;
@@ -1794,30 +1794,19 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     {
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Hidden argument is MethodDesc\n"));
 
-        // This is either direct forward P/Invoke or a CLR-to-COM call, the argument is MD
         MethodDesc *pMD = (MethodDesc *)arg;
-        if (pMD->IsPInvoke())
-        {
-            PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
-            _ASSERTE_IMPL(!pNMD->PInvokeTargetIsImportThunk());
-            target = (PCODE)pNMD->GetPInvokeTarget();
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case 0x%p\n", target));
-            trace->InitForUnmanaged(target);
-        }
-#ifdef FEATURE_COMINTEROP
-        else
-        {
-            LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
-            _ASSERTE(pMD->IsCLRToCOMCall());
-            CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
-            _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
 
-            if (pThis != NULL)
-            {
-                target = GetCOMTarget(pThis, pCMD->m_pCLRToCOMCallInfo);
-                LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case 0x%p\n", target));
-                trace->InitForUnmanaged(target);
-            }
+#ifdef FEATURE_COMINTEROP
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
+        _ASSERTE(pMD->IsCLRToCOMCall());
+        CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
+        _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
+
+        if (pThis != NULL)
+        {
+            target = GetCOMTarget(pThis, pCMD->m_pCLRToCOMCallInfo);
+            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case %p\n", target));
+            trace->InitForUnmanaged(target);
         }
 #endif // FEATURE_COMINTEROP
     }
@@ -1953,15 +1942,20 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
     TADDR arg = StubManagerHelpers::GetHiddenArg(pContext);
 
     // IL stub may not exist at this point so we init directly for the target (TODO?)
-
-    if (IsVarargPInvokeStub(GetIP(pContext)))
+    PCODE stubIP = GetIP(pContext);
+    if (IsVarargPInvokeStub(stubIP))
     {
 #if defined(TARGET_ARM64) && defined(__APPLE__)
         //On ARM64 Mac, we cannot put a breakpoint inside of VarargPInvokeStub
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
         return FALSE;
 #else
-        PInvokeMethodDesc *pNMD = (PInvokeMethodDesc *)arg;
+        TADDR firstArg = StubManagerHelpers::GetFirstArg(pContext);
+        _ASSERTE(firstArg != (TADDR)NULL);
+
+        VASigCookie* vaSigCookie = (VASigCookie*)firstArg;
+        PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(vaSigCookie->pMethodDesc);
+        _ASSERTE(pNMD != NULL);
         _ASSERTE(pNMD->IsPInvoke());
         PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
@@ -1969,7 +1963,7 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         trace->InitForUnmanaged(target);
 #endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }
-    else if (GetIP(pContext) == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
+    else if (stubIP == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
     {
 #if defined(TARGET_ARM64) && defined(__APPLE__)
         //On ARM64 Mac, we cannot put a breakpoint inside of GenericPInvokeCalliHelper
@@ -2008,7 +2002,7 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
                 LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pUnk;
 
                 PCODE target = (PCODE)lpVtbl[6]; // DISPATCH_INVOKE_SLOT;
-                LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: CLR-to-COM late-bound case 0x%p\n", target));
+                LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: CLR-to-COM late-bound case %p\n", target));
                 trace->InitForUnmanaged(target);
 
                 GCPROTECT_END();
