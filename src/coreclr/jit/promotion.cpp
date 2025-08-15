@@ -2401,7 +2401,7 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** us
         return false;
     }
 
-    *use = fieldList;
+    *use          = fieldList;
     m_madeChanges = true;
     return true;
 }
