@@ -12,6 +12,7 @@
     <NoWarn>$(NoWarn);CS3016</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
     <PackageDescription>Provides a collection of classes for OLEDB.
 
 Commonly Used Types:
