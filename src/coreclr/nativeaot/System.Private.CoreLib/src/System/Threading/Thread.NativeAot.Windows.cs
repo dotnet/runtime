@@ -289,7 +289,14 @@ namespace System.Threading
             {
                 if (throwOnError)
                 {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
+                    // NOTE: We do the enum stringification manually to avoid introducing a dependency
+                    // on enum stringification in small apps. We set apartment state in the startup path.
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState switch
+                    {
+                        ApartmentState.MTA => "MTA",
+                        ApartmentState.STA => "STA",
+                        _ => "Unknown"
+                    });
                     throw new InvalidOperationException(msg);
                 }
 
