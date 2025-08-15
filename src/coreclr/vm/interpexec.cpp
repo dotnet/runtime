@@ -458,6 +458,44 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     return result;
 }
 
+// Filter to ignore SEH exceptions representing C++ exceptions.
+LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+{
+    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
+        ? EXCEPTION_CONTINUE_SEARCH
+        : EXCEPTION_EXECUTE_HANDLER;
+}
+
+// Wrapper around MethodDesc::PrepareInitialCode to handle possible managed exceptions thrown by it.
+void PrepareInitialCode(MethodDesc *pMD)
+{
+    STATIC_STANDARD_VM_CONTRACT;
+
+    struct Param
+    {
+        MethodDesc *pMethodDesc;
+    }
+    param = { pMD };
+
+    PAL_TRY(Param *, pParam, &param)
+    {
+        pParam->pMethodDesc->PrepareInitialCode(CallerGCMode::Coop);
+    }
+    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    {
+        // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
+        // from the PrepareInitialCode call chain.
+        // We need to process only managed ones here, the C++ ones are handled by the
+        // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
+        // The managed ones are represented by SEH exception, which cannot be handled there
+        // because it is not possible to handle both SEH and C++ exceptions in the same frame.
+        GCX_COOP_NO_DTOR();
+        OBJECTREF ohThrowable = GET_THREAD()->LastThrownObject();
+        DispatchManagedException(ohThrowable);
+    }
+    PAL_ENDTRY
+}
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -1886,6 +1924,9 @@ MAIN_LOOP:
                     CallStubHeader *pCallStub = (CallStubHeader*)pMethod->pDataItems[calliCookie];
                     ip += 5;
 
+                    // Save current execution state for when we return from called method
+                    pFrame->ip = ip;
+
                     InvokeCalliStub(LOCAL_VAR(calliFunctionPointerVar, PCODE), pCallStub, stack + callArgsOffset, stack + returnOffset);
                     break;
                 }
@@ -1906,6 +1947,9 @@ MAIN_LOOP:
                     PCODE callTarget = (flags & (int32_t)PInvokeCallFlags::Indirect)
                         ? *(PCODE *)pMethod->pDataItems[targetAddrSlot]
                         : (PCODE)pMethod->pDataItems[targetAddrSlot];
+
+                    // Save current execution state for when we return from called method
+                    pFrame->ip = ip;
 
                     InlinedCallFrame inlinedCallFrame;
                     inlinedCallFrame.m_pCallerReturnAddress = (TADDR)ip;
@@ -1942,6 +1986,9 @@ MAIN_LOOP:
                     OBJECTREF targetMethodObj = delegateObj->GetTarget();
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
 
+                    // Save current execution state for when we return from called method
+                    pFrame->ip = ip;
+
                     // TODO! Once we are investigating performance here, we may want to optimize this so that
                     // delegate calls to interpeted methods don't have to go through the native invoke here, but for
                     // now this should work well.
@@ -1959,6 +2006,9 @@ MAIN_LOOP:
 CALL_INTERP_SLOT:
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
 CALL_INTERP_METHOD:
+                    // Save current execution state for when we return from called method
+                    pFrame->ip = ip;
+
                     InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
                     if (targetIp == NULL)
                     {
@@ -1975,7 +2025,7 @@ CALL_INTERP_METHOD:
                             // Attempt to setup the interpreter code for the target method.
                             if ((targetMethod->IsIL() || targetMethod->IsNoMetadata()) && !targetMethod->IsUnboxingStub())
                             {
-                                targetMethod->PrepareInitialCode(CallerGCMode::Coop);
+                                PrepareInitialCode(targetMethod);
                             }
                             targetIp = targetMethod->GetInterpreterCode();
                         }
@@ -1986,9 +2036,6 @@ CALL_INTERP_METHOD:
                             break;
                         }
                     }
-
-                    // Save current execution state for when we return from called method
-                    pFrame->ip = ip;
 
                     // Allocate child frame.
                     {
@@ -2587,7 +2634,14 @@ do                                                                      \
         // Unwind the interpreter stack upto the resume frame
         while (pFrame != pResumeFrame)
         {
-            assert(pFrame != NULL);
+            if (pFrame == NULL)
+            {
+                // In scenarios when the interpreted code ends up calling other interpreted code through the precode, there are two separate
+                // sequences of interpreted frames without any AOTed/JITted frames in between. In such case, the topmost native frame
+                // the ResumeAfterCatchException is thrown from may not be the one that corresponds to the target interpreted frame.
+                // Thus, we need to rethrow it to let it propagate further.
+                throw;
+            }
             pThreadContext->frameDataAllocator.PopInfo(pFrame);
             pFrame->ip = 0;
             pFrame = pFrame->pParent;
