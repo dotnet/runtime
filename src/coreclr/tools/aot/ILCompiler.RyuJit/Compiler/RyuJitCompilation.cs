@@ -222,7 +222,7 @@ namespace ILCompiler
                     Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
                 }
                 if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
-                    Logger.LogMessage($"Method '{method}' in assembly '{owningAssembly}' will always throw because: {exception.Message}");
+                    Logger.LogMessage($"Method '{method}' in assembly will always throw because: {exception.Message}");
                 else
                     Logger.LogError($"Method in '{owningAssembly}' will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
 
