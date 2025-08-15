@@ -30,6 +30,8 @@ public virtual ILCodeVersionHandle GetILCodeVersion(NativeCodeVersionHandle code
 // Return all of the IL code versions for a given method descriptor
 public virtual IEnumerable<ILCodeVersionHandle> GetILCodeVersions(TargetPointer methodDesc);
 
+// Return all of the Native code versions for a given ILCodeVersion
+public virtual IEnumerable<NativeCodeVersionHandle> GetNativeCodeVersions(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle);
 // Return a handle to the version of the native code that includes the given instruction pointer
 public virtual NativeCodeVersionHandle GetNativeCodeVersionForIP(TargetCodePointer ip);
 // Return a handle to the active version of the native code for a given method descriptor and IL code version. The IL code version and method descriptor must represent the same method
@@ -193,18 +195,18 @@ NativeCodeVersionHandle GetSpecificNativeCodeVersion(MethodDescHandle md, Target
         return first;
     }
 
-    return FindFirstCodeVersion(rts, md, (codeVersion) =>
+    return FindNativeCodeVersionNodes(rts, md, (codeVersion) =>
     {
         return codeVersion.MethodDesc == md.Address && codeVersion.NativeCode == startAddress;
-    });
+    }).FirstOrDefault(NativeCodeVersionHandle.Invalid);
 }
 
-NativeCodeVersionHandle FindFirstCodeVersion(IRuntimeTypeSystem rts, MethodDescHandle md, Func<Data.NativeCodeVersionNode, bool> predicate)
+IEnumerable<NativeCodeVersionHandle> FindNativeCodeVersionNodes(IRuntimeTypeSystem rts, MethodDescHandle md, Func<Data.NativeCodeVersionNode, bool> predicate)
 {
     // ImplicitCodeVersion stage of NativeCodeVersionIterator::Next()
     TargetPointer versioningStateAddr = rts.GetMethodDescVersioningState(md);
     if (versioningStateAddr == TargetPointer.Null)
-        return NativeCodeVersionHandle.Invalid;
+        yield break;
 
     Data.MethodDescVersioningState versioningState = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(versioningStateAddr);
 
@@ -215,13 +217,44 @@ NativeCodeVersionHandle FindFirstCodeVersion(IRuntimeTypeSystem rts, MethodDescH
         Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
         if (predicate(current))
         {
-            return NativeCodeVersionHandle.OfExplicit(currentAddress);
+            yield return NativeCodeVersionHandle.OfExplicit(currentAddress);
         }
         currentAddress = current.Next;
     }
-    return NativeCodeVersionHandle.Invalid;
+    yield break;
 }
 ```
+
+### Finding all of the native code versions of an ILCodeVersion for a method descriptor
+
+```csharp
+IEnumerable<NativeCodeVersionHandle> ICodeVersions.GetNativeCodeVersions(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle)
+{
+    if (!ilCodeVersionHandle.IsValid)
+        yield break;
+
+    if (!ilCodeVersionHandle.IsExplicit)
+    {
+        // if the ILCodeVersion is synthetic, then yield the synthetic NativeCodeVersion
+        NativeCodeVersionHandle provisionalHandle = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
+        yield return provisionalHandle;
+    }
+
+    // Iterate through versioning state nodes and return the active one, matching any IL code version
+    Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+    MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
+    TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
+    IEnumerable<NativeCodeVersionHandle> nativeCodeVersions = FindNativeCodeVersionNodes(
+        rts,
+        md,
+        (codeVersion) => ilVersionId == codeVersion.ILVersionId);
+    foreach (NativeCodeVersionHandle nativeCodeVersion in nativeCodeVersions)
+    {
+        yield return nativeCodeVersion;
+    }
+}
+```
+
 
 ### Finding the active native code version of an ILCodeVersion for a method descriptor
 ```csharp

@@ -170,7 +170,7 @@ namespace System.Reflection
             if (type.IsClass)
                 return CustomAttributeEncoding.Object;
 
-            if (type.IsInterface)
+            if (type.IsActualInterface)
                 return CustomAttributeEncoding.Object;
 
             if (type.IsActualValueType)
@@ -2263,7 +2263,7 @@ namespace System.Reflection
 
         internal static StructLayoutAttribute? GetStructLayoutCustomAttribute(RuntimeType type)
         {
-            if (type.IsInterface || type.HasElementType || type.IsGenericParameter)
+            if (type.IsActualInterface || type.HasElementType || type.IsGenericParameter)
                 return null;
 
             LayoutKind layoutKind = LayoutKind.Auto;

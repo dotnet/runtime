@@ -54,15 +54,15 @@ namespace Mono.Linker.Dataflow
             this.InterproceduralStateLattice = new InterproceduralStateLattice(default, default, context);
         }
 
-        protected virtual void WarnAboutInvalidILInMethod(MethodBody method, int ilOffset)
+        protected virtual void WarnAboutInvalidILInMethod(MethodIL methodIL, int ilOffset)
         {
         }
 
-        private void CheckForInvalidStack(Stack<StackSlot> stack, int depthRequired, MethodBody method, int ilOffset)
+        private void CheckForInvalidStack(Stack<StackSlot> stack, int depthRequired, MethodIL methodIL, int ilOffset)
         {
             if (stack.Count < depthRequired)
             {
-                WarnAboutInvalidILInMethod(method, ilOffset);
+                WarnAboutInvalidILInMethod(methodIL, ilOffset);
                 while (stack.Count < depthRequired)
                     stack.Push(new StackSlot()); // Push dummy values to avoid crashes.
                                                  // Analysis of this method will be incorrect.
@@ -74,19 +74,19 @@ namespace Mono.Linker.Dataflow
             stack.Push(new StackSlot());
         }
 
-        private void PushUnknownAndWarnAboutInvalidIL(Stack<StackSlot> stack, MethodBody methodBody, int offset)
+        private void PushUnknownAndWarnAboutInvalidIL(Stack<StackSlot> stack, MethodIL methodIL, int offset)
         {
-            WarnAboutInvalidILInMethod(methodBody, offset);
+            WarnAboutInvalidILInMethod(methodIL, offset);
             PushUnknown(stack);
         }
 
-        private StackSlot PopUnknown(Stack<StackSlot> stack, int count, MethodBody method, int ilOffset)
+        private StackSlot PopUnknown(Stack<StackSlot> stack, int count, MethodIL methodIL, int ilOffset)
         {
             if (count < 1)
                 throw new InvalidOperationException();
 
             StackSlot topOfStack = default;
-            CheckForInvalidStack(stack, count, method, ilOffset);
+            CheckForInvalidStack(stack, count, methodIL, ilOffset);
 
             for (int i = 0; i < count; ++i)
             {
@@ -190,7 +190,7 @@ namespace Mono.Linker.Dataflow
         }
 
         [Conditional("DEBUG")]
-        static void ValidateNoReferenceToReference(LocalVariableStore locals, MethodDefinition method, int ilOffset)
+        static void ValidateNoReferenceToReference(LocalVariableStore locals, MethodIL method, int ilOffset)
         {
             foreach (var keyValuePair in locals)
             {
@@ -202,9 +202,9 @@ namespace Mono.Linker.Dataflow
                     {
                         string displayName = $"local variable V_{localReference.LocalDefinition.Index}";
                         throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(
-                            $"""In method {method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName()} which is a reference. Dataflow tracking has failed.""",
+                            $"""In method {method.Method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName()} which is a reference. Dataflow tracking has failed.""",
                             (int)DiagnosticId.LinkerUnexpectedError,
-                            origin: new MessageOrigin(method, ilOffset)));
+                            origin: new MessageOrigin(method.Method, ilOffset)));
                     }
                 }
             }
@@ -357,7 +357,7 @@ namespace Mono.Linker.Dataflow
                     case Code.Shr:
                     case Code.Shr_Un:
                     case Code.Ceq:
-                        PopUnknown(currentStack, 2, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 2, methodIL, operation.Offset);
                         PushUnknown(currentStack);
                         break;
 
@@ -445,8 +445,8 @@ namespace Mono.Linker.Dataflow
                     case Code.Ldloc_S:
                     case Code.Ldloca:
                     case Code.Ldloca_S:
-                        ScanLdloc(operation, currentStack, methodIL, locals);
-                        ValidateNoReferenceToReference(locals, methodBody.Method, operation.Offset);
+                        ScanLdloc(methodIL, operation, currentStack, locals);
+                        ValidateNoReferenceToReference(locals, methodIL, operation.Offset);
                         break;
 
                     case Code.Ldstr:
@@ -516,7 +516,7 @@ namespace Mono.Linker.Dataflow
                     case Code.Box:
                     case Code.Neg:
                     case Code.Not:
-                        PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 1, methodIL, operation.Offset);
                         PushUnknown(currentStack);
                         break;
 
@@ -531,12 +531,12 @@ namespace Mono.Linker.Dataflow
                     case Code.Ldsfld:
                     case Code.Ldflda:
                     case Code.Ldsflda:
-                        ScanLdfld(operation, currentStack, methodBody, ref interproceduralState);
+                        ScanLdfld(methodIL, operation, currentStack, ref interproceduralState);
                         break;
 
                     case Code.Newarr:
                     {
-                        StackSlot count = PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                        StackSlot count = PopUnknown(currentStack, 1, methodIL, operation.Offset);
                         currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, (TypeReference)operation.Operand)));
                     }
                     break;
@@ -550,7 +550,7 @@ namespace Mono.Linker.Dataflow
                     case Code.Stelem_R8:
                     case Code.Stelem_Any:
                     case Code.Stelem_Ref:
-                        ScanStelem(operation, currentStack, methodBody, curBasicBlock);
+                        ScanStelem(operation, currentStack, methodIL, curBasicBlock);
                         break;
 
                     case Code.Ldelem_I:
@@ -566,21 +566,21 @@ namespace Mono.Linker.Dataflow
                     case Code.Ldelem_Any:
                     case Code.Ldelem_Ref:
                     case Code.Ldelema:
-                        ScanLdelem(operation, currentStack, methodBody, curBasicBlock);
+                        ScanLdelem(operation, currentStack, methodIL, curBasicBlock);
                         break;
 
                     case Code.Cpblk:
                     case Code.Initblk:
-                        PopUnknown(currentStack, 3, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 3, methodIL, operation.Offset);
                         break;
 
                     case Code.Stfld:
                     case Code.Stsfld:
-                        ScanStfld(operation, currentStack, thisMethod, methodBody, locals, ref interproceduralState);
+                        ScanStfld(methodIL, operation, currentStack, locals, ref interproceduralState);
                         break;
 
                     case Code.Cpobj:
-                        PopUnknown(currentStack, 2, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 2, methodIL, operation.Offset);
                         break;
 
                     case Code.Stind_I:
@@ -592,18 +592,18 @@ namespace Mono.Linker.Dataflow
                     case Code.Stind_R8:
                     case Code.Stind_Ref:
                     case Code.Stobj:
-                        ScanIndirectStore(operation, currentStack, methodBody, locals, curBasicBlock, ref interproceduralState);
-                        ValidateNoReferenceToReference(locals, methodBody.Method, operation.Offset);
+                        ScanIndirectStore(methodIL, operation, currentStack, locals, curBasicBlock, ref interproceduralState);
+                        ValidateNoReferenceToReference(locals, methodIL, operation.Offset);
                         break;
 
                     case Code.Initobj:
                     case Code.Pop:
-                        PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 1, methodIL, operation.Offset);
                         break;
 
                     case Code.Starg:
                     case Code.Starg_S:
-                        ScanStarg(operation, currentStack, thisMethod, methodBody);
+                        ScanStarg(methodIL, operation, currentStack);
                         break;
 
                     case Code.Stloc:
@@ -612,8 +612,8 @@ namespace Mono.Linker.Dataflow
                     case Code.Stloc_1:
                     case Code.Stloc_2:
                     case Code.Stloc_3:
-                        ScanStloc(operation, currentStack, methodIL, locals, curBasicBlock);
-                        ValidateNoReferenceToReference(locals, methodBody.Method, operation.Offset);
+                        ScanStloc(methodIL, operation, currentStack, locals, curBasicBlock);
+                        ValidateNoReferenceToReference(locals, methodIL, operation.Offset);
                         break;
 
                     case Code.Constrained:
@@ -628,7 +628,7 @@ namespace Mono.Linker.Dataflow
                     case Code.Brfalse_S:
                     case Code.Brtrue:
                     case Code.Brtrue_S:
-                        PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 1, methodIL, operation.Offset);
                         NewKnownStack(knownStacks, ((Instruction)operation.Operand).Offset, currentStack);
                         break;
 
@@ -637,15 +637,15 @@ namespace Mono.Linker.Dataflow
                         var signature = (CallSite)operation.Operand;
                         if (signature.HasThis && !signature.ExplicitThis)
                         {
-                            PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                            PopUnknown(currentStack, 1, methodIL, operation.Offset);
                         }
 
                         // Pop arguments
                         if (signature.Parameters.Count > 0)
-                            PopUnknown(currentStack, signature.Parameters.Count, methodBody, operation.Offset);
+                            PopUnknown(currentStack, signature.Parameters.Count, methodIL, operation.Offset);
 
                         // Pop function pointer
-                        PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 1, methodIL, operation.Offset);
 
                         if (!signature.ReturnsVoid())
                             PushUnknown(currentStack);
@@ -656,8 +656,8 @@ namespace Mono.Linker.Dataflow
                     case Code.Callvirt:
                     case Code.Newobj:
                         TrackNestedFunctionReference((MethodReference)operation.Operand, ref interproceduralState);
-                        HandleCall(methodBody, operation, currentStack, locals, ref interproceduralState, curBasicBlock);
-                        ValidateNoReferenceToReference(locals, methodBody.Method, operation.Offset);
+                        HandleCall(methodIL, operation, currentStack, locals, ref interproceduralState, curBasicBlock);
+                        ValidateNoReferenceToReference(locals, methodIL, operation.Offset);
                         break;
 
                     case Code.Jmp:
@@ -690,17 +690,17 @@ namespace Mono.Linker.Dataflow
 
                         if (currentStack.Count != (hasReturnValue ? 1 : 0))
                         {
-                            WarnAboutInvalidILInMethod(methodBody, operation.Offset);
+                            WarnAboutInvalidILInMethod(methodIL, operation.Offset);
                         }
                         if (hasReturnValue)
                         {
-                            StackSlot retStackSlot = PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                            StackSlot retStackSlot = PopUnknown(currentStack, 1, methodIL, operation.Offset);
                             // If the return value is a reference, treat it as the value itself for now
                             // We can handle ref return values better later
                             MultiValue retValue = DereferenceValue(retStackSlot.Value, locals, ref interproceduralState);
-                            var methodReturnValue = GetReturnValue(methodBody.Method);
-                            HandleReturnValue(thisMethod, methodReturnValue, operation, retValue);
-                            ValidateNoReferenceToReference(locals, methodBody.Method, operation.Offset);
+                            var methodReturnValue = GetReturnValue(methodIL);
+                            HandleReturnValue(methodIL, methodReturnValue, operation, retValue);
+                            ValidateNoReferenceToReference(locals, methodIL, operation.Offset);
                         }
                         ClearStack(ref currentStack);
                         break;
@@ -708,7 +708,7 @@ namespace Mono.Linker.Dataflow
 
                     case Code.Switch:
                     {
-                        PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 1, methodIL, operation.Offset);
                         Instruction[] targets = (Instruction[])operation.Operand;
                         foreach (Instruction target in targets)
                         {
@@ -737,7 +737,7 @@ namespace Mono.Linker.Dataflow
                     case Code.Blt_S:
                     case Code.Blt_Un:
                     case Code.Blt_Un_S:
-                        PopUnknown(currentStack, 2, methodBody, operation.Offset);
+                        PopUnknown(currentStack, 2, methodIL, operation.Offset);
                         NewKnownStack(knownStacks, ((Instruction)operation.Operand).Offset, currentStack);
                         break;
                 }
@@ -765,7 +765,7 @@ namespace Mono.Linker.Dataflow
 
         protected abstract SingleValue GetMethodParameterValue(ParameterProxy parameter);
 
-        protected abstract MethodReturnValue GetReturnValue(MethodDefinition method);
+        protected abstract MethodReturnValue GetReturnValue(MethodIL method);
 
         private void ScanLdarg(Instruction operation, Stack<StackSlot> currentStack, MethodDefinition thisMethod)
         {
@@ -787,31 +787,30 @@ namespace Mono.Linker.Dataflow
         }
 
         private void ScanStarg(
+            MethodIL methodIL,
             Instruction operation,
-            Stack<StackSlot> currentStack,
-            MethodDefinition thisMethod,
-            MethodBody methodBody)
+            Stack<StackSlot> currentStack)
         {
-            var valueToStore = PopUnknown(currentStack, 1, methodBody, operation.Offset);
-            ParameterIndex paramNum = ParameterHelpers.GetParameterIndex(thisMethod, operation);
-            ParameterProxy param = new(thisMethod, paramNum);
+            var valueToStore = PopUnknown(currentStack, 1, methodIL, operation.Offset);
+            ParameterIndex paramNum = ParameterHelpers.GetParameterIndex(methodIL.Method, operation);
+            ParameterProxy param = new(methodIL.Method, paramNum);
             var targetValue = GetMethodParameterValue(param);
             if (targetValue is MethodParameterValue targetParameterValue)
-                HandleStoreParameter(thisMethod, targetParameterValue, operation, valueToStore.Value, null);
+                HandleStoreParameter(methodIL, targetParameterValue, operation, valueToStore.Value, null);
 
             // If the targetValue is MethodThisValue do nothing - it should never happen really, and if it does, there's nothing we can track there
         }
 
         private void ScanLdloc(
+            MethodIL methodIL,
             Instruction operation,
             Stack<StackSlot> currentStack,
-            MethodIL methodIL,
             LocalVariableStore locals)
         {
             VariableDefinition localDef = GetLocalDef(operation, methodIL.Variables);
             if (localDef == null)
             {
-                PushUnknownAndWarnAboutInvalidIL(currentStack, methodIL.Body, operation.Offset);
+                PushUnknownAndWarnAboutInvalidIL(currentStack, methodIL, operation.Offset);
                 return;
             }
 
@@ -874,17 +873,17 @@ namespace Mono.Linker.Dataflow
         }
 
         private void ScanStloc(
+            MethodIL methodIL,
             Instruction operation,
             Stack<StackSlot> currentStack,
-            MethodIL methodIL,
             LocalVariableStore locals,
             int curBasicBlock)
         {
-            StackSlot valueToStore = PopUnknown(currentStack, 1, methodIL.Body, operation.Offset);
+            StackSlot valueToStore = PopUnknown(currentStack, 1, methodIL, operation.Offset);
             VariableDefinition localDef = GetLocalDef(operation, methodIL.Variables);
             if (localDef == null)
             {
-                WarnAboutInvalidILInMethod(methodIL.Body, operation.Offset);
+                WarnAboutInvalidILInMethod(methodIL, operation.Offset);
                 return;
             }
 
@@ -892,17 +891,17 @@ namespace Mono.Linker.Dataflow
         }
 
         private void ScanIndirectStore(
+            MethodIL methodIL,
             Instruction operation,
             Stack<StackSlot> currentStack,
-            MethodBody methodBody,
             LocalVariableStore locals,
             int curBasicBlock,
             ref InterproceduralState ipState)
         {
-            StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, operation.Offset);
-            StackSlot destination = PopUnknown(currentStack, 1, methodBody, operation.Offset);
+            StackSlot valueToStore = PopUnknown(currentStack, 1, methodIL, operation.Offset);
+            StackSlot destination = PopUnknown(currentStack, 1, methodIL, operation.Offset);
 
-            StoreInReference(destination.Value, valueToStore.Value, methodBody.Method, operation, locals, curBasicBlock, ref ipState, null);
+            StoreInReference(destination.Value, valueToStore.Value, methodIL, operation, locals, curBasicBlock, ref ipState, null);
         }
 
         /// <summary>
@@ -914,7 +913,7 @@ namespace Mono.Linker.Dataflow
         /// <param name="operation">The instruction causing the store</param>
         /// <param name="parameterIndex">For assignment due to a call to a method with out params, the index of the out parameter.</param>
         /// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
-        protected void StoreInReference(MultiValue target, MultiValue source, MethodDefinition method, Instruction operation, LocalVariableStore locals, int curBasicBlock, ref InterproceduralState ipState, int? parameterIndex)
+        protected void StoreInReference(MultiValue target, MultiValue source, MethodIL methodIL, Instruction operation, LocalVariableStore locals, int curBasicBlock, ref InterproceduralState ipState, int? parameterIndex)
         {
             foreach (var value in target.AsEnumerable())
             {
@@ -925,25 +924,25 @@ namespace Mono.Linker.Dataflow
                         break;
                     case FieldReferenceValue fieldReference
                 when GetFieldValue(fieldReference.Field).AsSingleValue() is FieldValue fieldValue:
-                        HandleStoreField(method, fieldValue, operation, source, parameterIndex);
+                        HandleStoreField(methodIL, fieldValue, operation, source, parameterIndex);
                         break;
                     case ParameterReferenceValue parameterReference
                 when GetMethodParameterValue(parameterReference.Parameter) is MethodParameterValue parameterValue:
-                        HandleStoreParameter(method, parameterValue, operation, source, parameterIndex);
+                        HandleStoreParameter(methodIL, parameterValue, operation, source, parameterIndex);
                         break;
                     case MethodReturnValue methodReturnValue:
                         // Ref returns don't have special ReferenceValue values, so assume if the target here is a MethodReturnValue then it must be a ref return value
-                        HandleReturnValue(method, methodReturnValue, operation, source);
+                        HandleReturnValue(methodIL, methodReturnValue, operation, source);
                         break;
                     case FieldValue fieldValue:
-                        HandleStoreField(method, fieldValue, operation, DereferenceValue(source, locals, ref ipState), parameterIndex);
+                        HandleStoreField(methodIL, fieldValue, operation, DereferenceValue(source, locals, ref ipState), parameterIndex);
                         break;
                     case IValueWithStaticType valueWithStaticType:
                         if (valueWithStaticType.StaticType is not null && _context.Annotations.FlowAnnotations.IsTypeInterestingForDataflow(valueWithStaticType.StaticType.Value.Type))
                             throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(
                                 $"Unhandled StoreReference call. Unhandled attempt to store a value in {value} of type {value.GetType()}.",
                                 (int)DiagnosticId.LinkerUnexpectedError,
-                                origin: new MessageOrigin(method, operation.Offset)));
+                                origin: new MessageOrigin(methodIL.Method, operation.Offset)));
                         // This should only happen for pointer derefs, which can't point to interesting types
                         break;
                     default:
@@ -958,14 +957,14 @@ namespace Mono.Linker.Dataflow
         protected abstract MultiValue GetFieldValue(FieldReference field);
 
         private void ScanLdfld(
+            MethodIL methodIL,
             Instruction operation,
             Stack<StackSlot> currentStack,
-            MethodBody methodBody,
             ref InterproceduralState interproceduralState)
         {
             Code code = operation.OpCode.Code;
             if (code == Code.Ldfld || code == Code.Ldflda)
-                PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                PopUnknown(currentStack, 1, methodIL, operation.Offset);
 
             bool isByRef = code == Code.Ldflda || code == Code.Ldsflda;
 
@@ -992,29 +991,28 @@ namespace Mono.Linker.Dataflow
             currentStack.Push(new StackSlot(value));
         }
 
-        protected virtual void HandleStoreField(MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore, int? parameterIndex)
+        protected virtual void HandleStoreField(MethodIL methodIL, FieldValue field, Instruction operation, MultiValue valueToStore, int? parameterIndex)
         {
         }
 
-        protected virtual void HandleStoreParameter(MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore, int? parameterIndex)
+        protected virtual void HandleStoreParameter(MethodIL methodIL, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore, int? parameterIndex)
         {
         }
 
-        protected virtual void HandleReturnValue(MethodDefinition method, MethodReturnValue thisParameter, Instruction operation, MultiValue valueToReturn)
+        protected virtual void HandleReturnValue(MethodIL method, MethodReturnValue thisParameter, Instruction operation, MultiValue valueToReturn)
         {
         }
 
         private void ScanStfld(
+            MethodIL methodIL,
             Instruction operation,
             Stack<StackSlot> currentStack,
-            MethodDefinition thisMethod,
-            MethodBody methodBody,
             LocalVariableStore locals,
             ref InterproceduralState interproceduralState)
         {
-            StackSlot valueToStoreSlot = PopUnknown(currentStack, 1, methodBody, operation.Offset);
+            StackSlot valueToStoreSlot = PopUnknown(currentStack, 1, methodIL, operation.Offset);
             if (operation.OpCode.Code == Code.Stfld)
-                PopUnknown(currentStack, 1, methodBody, operation.Offset);
+                PopUnknown(currentStack, 1, methodIL, operation.Offset);
 
             FieldDefinition? field = _context.TryResolve((FieldReference)operation.Operand);
             if (field != null)
@@ -1035,7 +1033,7 @@ namespace Mono.Linker.Dataflow
                     // Incomplete handling of ref fields -- if we're storing a reference to a value, pretend it's just the value
                     MultiValue valueToStore = DereferenceValue(valueToStoreSlot.Value, locals, ref interproceduralState);
 
-                    HandleStoreField(thisMethod, fieldValue, operation, valueToStore, null);
+                    HandleStoreField(methodIL, fieldValue, operation, valueToStore, null);
                 }
             }
         }
@@ -1054,7 +1052,7 @@ namespace Mono.Linker.Dataflow
         private ValueNodeList PopCallArguments(
             Stack<StackSlot> currentStack,
             MethodReference methodCalled,
-            MethodBody containingMethodBody,
+            MethodIL containingMethodIL,
             bool isNewObj, int ilOffset)
         {
             int countToPop = 0;
@@ -1065,7 +1063,7 @@ namespace Mono.Linker.Dataflow
             ValueNodeList methodParams = new ValueNodeList(countToPop);
             for (int iParam = 0; iParam < countToPop; ++iParam)
             {
-                StackSlot slot = PopUnknown(currentStack, 1, containingMethodBody, ilOffset);
+                StackSlot slot = PopUnknown(currentStack, 1, containingMethodIL, ilOffset);
                 methodParams.Add(slot.Value);
             }
 
@@ -1120,7 +1118,7 @@ namespace Mono.Linker.Dataflow
         /// Assigns a MethodParameterValue to the location of each parameter passed by reference. (i.e. assigns the value to x when passing `ref x` as a parameter)
         /// </summary>
         protected void AssignRefAndOutParameters(
-            MethodBody callingMethodBody,
+            MethodIL callingMethodIL,
             MethodReference calledMethod,
             ValueNodeList methodArguments,
             Instruction operation,
@@ -1136,7 +1134,7 @@ namespace Mono.Linker.Dataflow
                     if (parameter.GetReferenceKind() is not (ReferenceKind.Ref or ReferenceKind.Out))
                         continue;
                     var newByRefValue = _context.Annotations.FlowAnnotations.GetMethodParameterValue(parameter);
-                    StoreInReference(methodArguments[(int)parameter.Index], newByRefValue, callingMethodBody.Method, operation, locals, curBasicBlock, ref ipState, parameter.Index.Index);
+                    StoreInReference(methodArguments[(int)parameter.Index], newByRefValue, callingMethodIL, operation, locals, curBasicBlock, ref ipState, parameter.Index.Index);
                 }
             }
             else
@@ -1149,13 +1147,13 @@ namespace Mono.Linker.Dataflow
                     var (argument, refKind) = argumentRefKinds[index];
                     if (refKind is not (ReferenceKind.Ref or ReferenceKind.Out))
                         continue;
-                    StoreInReference(argument, UnknownValue.Instance, callingMethodBody.Method, operation, locals, curBasicBlock, ref ipState, index);
+                    StoreInReference(argument, UnknownValue.Instance, callingMethodIL, operation, locals, curBasicBlock, ref ipState, index);
                 }
             }
         }
 
         private void HandleCall(
-            MethodBody callingMethodBody,
+            MethodIL callingMethodIL,
             Instruction operation,
             Stack<StackSlot> currentStack,
             LocalVariableStore locals,
@@ -1166,12 +1164,12 @@ namespace Mono.Linker.Dataflow
 
             bool isNewObj = operation.OpCode.Code == Code.Newobj;
 
-            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj, operation.Offset);
+            ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodIL, isNewObj, operation.Offset);
             var dereferencedMethodParams = new List<MultiValue>();
             foreach (var argument in methodArguments)
                 dereferencedMethodParams.Add(DereferenceValue(argument, locals, ref interproceduralState));
             MultiValue methodReturnValue = HandleCall(
-                callingMethodBody,
+                callingMethodIL,
                 calledMethod,
                 operation,
                 new ValueNodeList(dereferencedMethodParams));
@@ -1179,7 +1177,7 @@ namespace Mono.Linker.Dataflow
             if (isNewObj || !calledMethod.ReturnsVoid())
                 currentStack.Push(new StackSlot(methodReturnValue));
 
-            AssignRefAndOutParameters(callingMethodBody, calledMethod, methodArguments, operation, locals, curBasicBlock, ref interproceduralState);
+            AssignRefAndOutParameters(callingMethodIL, calledMethod, methodArguments, operation, locals, curBasicBlock, ref interproceduralState);
 
             foreach (var param in methodArguments)
             {
@@ -1200,7 +1198,7 @@ namespace Mono.Linker.Dataflow
         public TypeDefinition? ResolveToTypeDefinition(TypeReference typeReference) => typeReference.ResolveToTypeDefinition(_context);
 
         public abstract MultiValue HandleCall(
-            MethodBody callingMethodBody,
+            MethodIL callingMethodIL,
             MethodReference calledMethod,
             Instruction operation,
             ValueNodeList methodParams);
@@ -1222,12 +1220,12 @@ namespace Mono.Linker.Dataflow
         private void ScanStelem(
             Instruction operation,
             Stack<StackSlot> currentStack,
-            MethodBody methodBody,
+            MethodIL methodIL,
             int curBasicBlock)
         {
-            StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, operation.Offset);
-            StackSlot indexToStoreAt = PopUnknown(currentStack, 1, methodBody, operation.Offset);
-            StackSlot arrayToStoreIn = PopUnknown(currentStack, 1, methodBody, operation.Offset);
+            StackSlot valueToStore = PopUnknown(currentStack, 1, methodIL, operation.Offset);
+            StackSlot indexToStoreAt = PopUnknown(currentStack, 1, methodIL, operation.Offset);
+            StackSlot arrayToStoreIn = PopUnknown(currentStack, 1, methodIL, operation.Offset);
             int? indexToStoreAtInt = indexToStoreAt.Value.AsConstInt();
             foreach (var array in arrayToStoreIn.Value.AsEnumerable())
             {
@@ -1253,11 +1251,11 @@ namespace Mono.Linker.Dataflow
         private void ScanLdelem(
             Instruction operation,
             Stack<StackSlot> currentStack,
-            MethodBody methodBody,
+            MethodIL methodIL,
             int curBasicBlock)
         {
-            StackSlot indexToLoadFrom = PopUnknown(currentStack, 1, methodBody, operation.Offset);
-            StackSlot arrayToLoadFrom = PopUnknown(currentStack, 1, methodBody, operation.Offset);
+            StackSlot indexToLoadFrom = PopUnknown(currentStack, 1, methodIL, operation.Offset);
+            StackSlot arrayToLoadFrom = PopUnknown(currentStack, 1, methodIL, operation.Offset);
 
             bool isByRef = operation.OpCode.Code == Code.Ldelema;
 

@@ -128,6 +128,7 @@ public:
     INT_CONFIG   (BGCFLEnableTBH,            "BGCFLEnableTBH",            NULL,                                0,                  "Enables TBH")                                                                            \
     INT_CONFIG   (BGCFLEnableFF,             "BGCFLEnableFF",             NULL,                                0,                  "Enables FF")                                                                             \
     INT_CONFIG   (BGCG2RatioStep,            "BGCG2RatioStep",            NULL,                                5,                  "Ratio correction factor for ML loop")                                                    \
+    INT_CONFIG   (UOHWaitBGCSizeIncPercent,  "UOHWaitBGCSizeIncPercent",  "System.GC.UOHWaitBGCSizeIncPercent",-1,                 "UOH allocation during a BGC waits till end of BGC after UOH increases by this percent")  \
     INT_CONFIG   (GCHeapHardLimitSOH,        "GCHeapHardLimitSOH",        "System.GC.HeapHardLimitSOH",        0,                  "Specifies a hard limit for the GC heap SOH")                                             \
     INT_CONFIG   (GCHeapHardLimitLOH,        "GCHeapHardLimitLOH",        "System.GC.HeapHardLimitLOH",        0,                  "Specifies a hard limit for the GC heap LOH")                                             \
     INT_CONFIG   (GCHeapHardLimitPOH,        "GCHeapHardLimitPOH",        "System.GC.HeapHardLimitPOH",        0,                  "Specifies a hard limit for the GC heap POH")                                             \
