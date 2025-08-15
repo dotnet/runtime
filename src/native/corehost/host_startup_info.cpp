@@ -89,7 +89,7 @@ const pal::string_t host_startup_info_t::get_app_name() const
     if (host_path->empty() && (!pal::get_own_executable_path(host_path) || !pal::fullpath(host_path)))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path->c_str());
-        return StatusCode::LibHostCurExeFindFailure;
+        return StatusCode::CurrentHostFindFailure;
     }
 
     return 0;

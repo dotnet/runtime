@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             }
 
 #if NET
-            Debug.Assert(expectedOutputSize <= 64); // SHA512 is the largest digest size we know about
+            Debug.Assert((uint)expectedOutputSize <= 64); // SHA512 is the largest digest size we know about
             Span<byte> derived = stackalloc byte[expectedOutputSize];
 #else
             byte[] derived = new byte[expectedOutputSize];

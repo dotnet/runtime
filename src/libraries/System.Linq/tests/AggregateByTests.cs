@@ -11,10 +11,10 @@ namespace System.Linq.Tests
         [Fact]
         public void Empty()
         {
-            Assert.All(IdentityTransforms<int>(), transform =>
+            Assert.All(CreateSources<int>([]), source =>
             {
-                Assert.Equal(Enumerable.Empty<KeyValuePair<int, int>>(), transform(Enumerable.Empty<int>()).AggregateBy(i => i, i => i, (a, i) => a + i));
-                Assert.Equal(Enumerable.Empty<KeyValuePair<int, int>>(), transform(Enumerable.Empty<int>()).AggregateBy(i => i, 0, (a, i) => a + i));
+                Assert.Equal([], source.AggregateBy(i => i, i => i, (a, i) => a + i));
+                Assert.Equal([], source.AggregateBy(i => i, 0, (a, i) => a + i));
             });
         }
 
@@ -68,7 +68,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnGetEnumerator();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -78,7 +78,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnMoveNext();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -88,7 +88,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnCurrentEnumerator();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -102,7 +102,7 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Empty<KeyValuePair<int,int>>());
+                expected: []);
 
             Validate(
                 source: Enumerable.Range(0, 10),
@@ -137,7 +137,7 @@ namespace System.Linq.Tests
                 expected: Enumerable.Repeat(5, 1).Select(x => new KeyValuePair<int, int>(x, 100)));
 
             Validate(
-                source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
+                source: ["Bob", "bob", "tim", "Bob", "Tim"],
                 keySelector: x => x,
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
@@ -151,7 +151,7 @@ namespace System.Linq.Tests
                 ]);
 
             Validate(
-                source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
+                source: ["Bob", "bob", "tim", "Bob", "Tim"],
                 keySelector: x => x,
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
@@ -224,10 +224,10 @@ namespace System.Linq.Tests
                     (group, element) => { group.Add(element); return group; });
 
             IEnumerable<KeyValuePair<bool, List<int>>> oddsEvens = GroupBy(
-                new int[] { 1, 2, 3, 4 },
+                [1, 2, 3, 4],
                 i => i % 2 == 0);
 
-            var e = oddsEvens.GetEnumerator();
+            using var e = oddsEvens.GetEnumerator();
 
             Assert.True(e.MoveNext());
             KeyValuePair<bool, List<int>> oddsItem = e.Current;
@@ -258,10 +258,10 @@ namespace System.Linq.Tests
                     (count, _) => ++count);
 
             IEnumerable<KeyValuePair<bool, long>> oddsEvens = LongCountBy(
-                new int[] { 1, 2, 3, 4 },
+                [1, 2, 3, 4],
                 i => i % 2 == 0);
 
-            var e = oddsEvens.GetEnumerator();
+            using var e = oddsEvens.GetEnumerator();
 
             Assert.True(e.MoveNext());
             KeyValuePair<bool, long> oddsItem = e.Current;

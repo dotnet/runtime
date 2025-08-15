@@ -18,6 +18,7 @@
     <Compile Include="System\Net\WebSockets\Compression\WebSocketInflater.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.KeepAlive.cs" />
+    <Compile Include="System\Net\WebSockets\ManagedWebSocketStates.cs" />
     <Compile Include="System\Net\WebSockets\NetEventSource.WebSockets.cs" />
     <Compile Include="System\Net\WebSockets\ValueWebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocket.cs" />
@@ -31,12 +32,16 @@
     <Compile Include="System\Net\WebSockets\WebSocketMessageFlags.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketState.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketStateHelper.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketStream.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketDefaults.cs"
              Link="Common\System\Net\WebSockets\WebSocketDefaults.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
              Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
     <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.cs"
              Link="Common\System\IO\Compression\ZLibNative.cs" />
+    <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.CompressionLevel.cs"
+          Link="Common\System\IO\Compression\ZLibNative.CompressionLevel.cs" />
     <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.ZStream.cs"
              Link="Common\System\IO\Compression\ZLibNative.ZStream.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.zlib.cs"
@@ -56,24 +61,24 @@
   </ItemGroup>
 
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' ">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\src\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
 </Project>

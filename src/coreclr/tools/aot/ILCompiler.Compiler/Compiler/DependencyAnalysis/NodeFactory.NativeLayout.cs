@@ -37,11 +37,6 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutMethodSignatureVertexNode(_factory, signature);
                 });
 
-                _methodNameAndSignatures = new NodeCache<MethodDesc, NativeLayoutMethodNameAndSignatureVertexNode>(method =>
-                {
-                    return new NativeLayoutMethodNameAndSignatureVertexNode(_factory, method);
-                });
-
                 _placedSignatures = new NodeCache<NativeLayoutVertexNode, NativeLayoutPlacedSignatureVertexNode>(vertexNode =>
                 {
                     return new NativeLayoutPlacedSignatureVertexNode(vertexNode);
@@ -57,19 +52,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutPlacedVertexSequenceOfUIntVertexNode(uints);
                 }, new UIntSequenceComparer());
 
-                _methodLdTokenSignatures = new NodeCache<MethodDesc, NativeLayoutMethodLdTokenVertexNode>(method =>
+                _methodEntries = new NodeCache<MethodDesc, NativeLayoutMethodEntryVertexNode>(method =>
                 {
-                    return new NativeLayoutMethodLdTokenVertexNode(_factory, method);
-                });
-
-                _fieldLdTokenSignatures = new NodeCache<FieldDesc, NativeLayoutFieldLdTokenVertexNode>(field =>
-                {
-                    return new NativeLayoutFieldLdTokenVertexNode(_factory, field);
-                });
-
-                _nativeLayoutSignatureNodes = new NodeCache<NativeLayoutSignatureKey, NativeLayoutSignatureNode>(key =>
-                {
-                    return new NativeLayoutSignatureNode(key.SignatureVertex, key.Identity, key.IdentityPrefix);
+                    return new NativeLayoutMethodEntryVertexNode(_factory, method, default);
                 });
 
                 _templateMethodEntries = new NodeCache<MethodDesc, NativeLayoutTemplateMethodSignatureVertexNode>(method =>
@@ -144,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 _methodLdToken_GenericDictionarySlots = new NodeCache<MethodDesc, NativeLayoutMethodLdTokenGenericDictionarySlotNode>(method =>
                 {
-                    return new NativeLayoutMethodLdTokenGenericDictionarySlotNode(method);
+                    return new NativeLayoutMethodLdTokenGenericDictionarySlotNode(_factory, method);
                 });
 
                 _dictionarySignatures = new NodeCache<TypeSystemEntity, NativeLayoutDictionarySignatureNode>(owningMethodOrType =>
@@ -215,33 +200,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Produce a set of dependencies that is necessary such that if this type
-            // needs to be used referenced from a NativeLayout template and any Universal Shared
-            // instantiation is all that is needed, that the template
-            // will be properly constructable.  (This is done by ensuring that all
-            // canonical types in the deconstruction of the type are ConstructedEEType instead
-            // of just necessary, and that the USG variant of the template is created
-            // (Which is what the actual templates signatures will ensure)
-            public IEnumerable<IDependencyNode> UniversalTemplateConstructableTypes(TypeDesc type)
-            {
-                while (type.IsParameterizedType)
-                {
-                    type = ((ParameterizedType)type).ParameterType;
-                }
-
-                if (type.IsSignatureVariable)
-                    yield break;
-
-                TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Universal);
-                yield return _factory.MaximallyConstructableType(canonicalType);
-
-                foreach (TypeDesc instantiationType in type.Instantiation)
-                {
-                    foreach (var dependency in UniversalTemplateConstructableTypes(instantiationType))
-                        yield return dependency;
-                }
-            }
-
             private NodeCache<TypeDesc, NativeLayoutTypeSignatureVertexNode> _typeSignatures;
             internal NativeLayoutTypeSignatureVertexNode TypeSignatureVertex(TypeDesc type)
             {
@@ -258,12 +216,6 @@ namespace ILCompiler.DependencyAnalysis
             internal NativeLayoutMethodSignatureVertexNode MethodSignatureVertex(MethodSignature signature)
             {
                 return _methodSignatures.GetOrAdd(signature);
-            }
-
-            private NodeCache<MethodDesc, NativeLayoutMethodNameAndSignatureVertexNode> _methodNameAndSignatures;
-            internal NativeLayoutMethodNameAndSignatureVertexNode MethodNameAndSignatureVertex(MethodDesc method)
-            {
-                return _methodNameAndSignatures.GetOrAdd(method);
             }
 
             private NodeCache<NativeLayoutVertexNode, NativeLayoutPlacedSignatureVertexNode> _placedSignatures;
@@ -355,63 +307,10 @@ namespace ILCompiler.DependencyAnalysis
                 return _placedUIntVertexSequence.GetOrAdd(uints);
             }
 
-            private NodeCache<MethodDesc, NativeLayoutMethodLdTokenVertexNode> _methodLdTokenSignatures;
-            internal NativeLayoutMethodLdTokenVertexNode MethodLdTokenVertex(MethodDesc method)
+            private NodeCache<MethodDesc, NativeLayoutMethodEntryVertexNode> _methodEntries;
+            internal NativeLayoutMethodEntryVertexNode MethodEntry(MethodDesc method)
             {
-                return _methodLdTokenSignatures.GetOrAdd(method);
-            }
-
-            private NodeCache<FieldDesc, NativeLayoutFieldLdTokenVertexNode> _fieldLdTokenSignatures;
-            internal NativeLayoutFieldLdTokenVertexNode FieldLdTokenVertex(FieldDesc field)
-            {
-                return _fieldLdTokenSignatures.GetOrAdd(field);
-            }
-
-            private struct NativeLayoutSignatureKey : IEquatable<NativeLayoutSignatureKey>
-            {
-                public NativeLayoutSignatureKey(NativeLayoutSavedVertexNode signatureVertex, Utf8String identityPrefix, TypeSystemEntity identity)
-                {
-                    SignatureVertex = signatureVertex;
-                    IdentityPrefix = identityPrefix;
-                    Identity = identity;
-                }
-
-                public NativeLayoutSavedVertexNode SignatureVertex { get; }
-                public Utf8String IdentityPrefix { get; }
-                public TypeSystemEntity Identity { get; }
-
-                public override bool Equals(object obj)
-                {
-                    if (!(obj is NativeLayoutSignatureKey))
-                        return false;
-
-                    return Equals((NativeLayoutSignatureKey)obj);
-                }
-
-                public override int GetHashCode()
-                {
-                    return SignatureVertex.GetHashCode();
-                }
-
-                public bool Equals(NativeLayoutSignatureKey other)
-                {
-                    if (SignatureVertex != other.SignatureVertex)
-                        return false;
-
-                    if (!IdentityPrefix.Equals(other.IdentityPrefix))
-                        return false;
-
-                    if (Identity != other.Identity)
-                        return false;
-
-                    return true;
-                }
-            }
-
-            private NodeCache<NativeLayoutSignatureKey, NativeLayoutSignatureNode> _nativeLayoutSignatureNodes;
-            public NativeLayoutSignatureNode NativeLayoutSignature(NativeLayoutSavedVertexNode signature, Utf8String identityPrefix, TypeSystemEntity identity)
-            {
-                return _nativeLayoutSignatureNodes.GetOrAdd(new NativeLayoutSignatureKey(signature, identityPrefix, identity));
+                return _methodEntries.GetOrAdd(method);
             }
 
             private NodeCache<MethodDesc, NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries;

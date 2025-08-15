@@ -44,6 +44,7 @@ namespace System.Diagnostics.Tests
                 Architecture.S390x => 236,
                 Architecture.Ppc64le => 207,
                 Architecture.RiscV64 => 178,
+                Architecture.LoongArch64 => 178,
                 _ => 178,
             };
 

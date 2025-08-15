@@ -52,7 +52,6 @@ class EEStringData;
 class MethodDescChunk;
 class SigTypeContext;
 class Assembly;
-class BaseDomain;
 class AppDomain;
 class SystemDomain;
 class Module;
@@ -91,7 +90,7 @@ struct DynamicMetadata
 {
     uint32_t Size;
     BYTE Data[0];
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<DynamicMetadata>;
 };
 
 template<>
@@ -345,7 +344,7 @@ struct VASigCookie
     // The JIT wants knows that the size of the arguments comes first
     // so please keep this field first
     unsigned        sizeOfArgs;             // size of argument list
-    Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
+    Volatile<PCODE> pPInvokeILStub;         // will be use if target is PInvoke (tag == 0)
     PTR_Module      pModule;
     PTR_Module      pLoaderModule;
     Signature       signature;
@@ -373,12 +372,6 @@ struct VASigCookieBlock
     VASigCookie          m_cookies[kVASigCookieBlockSize];
 };
 
-//
-// A Module is the primary unit of code packaging in the runtime.  It
-// corresponds mostly to an OS executable image, although other kinds
-// of modules exist.
-//
-class UMEntryThunk;
 
 // Hashtable of absolute addresses of IL blobs for dynamics, keyed by token
 
@@ -466,7 +459,7 @@ protected:
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of IsSigInIL in the DAC
     virtual BOOL IsSigInILImpl(PCCOR_SIGNATURE signature) { return FALSE; } // ModuleBase doesn't have a PE image to examine
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of LoadAssembly in the DAC
-    virtual DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) = 0;
+    virtual Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) = 0;
 
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of ThrowTypeLoadException in the DAC
     virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
@@ -552,7 +545,6 @@ public:
     virtual Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
-            BOOL                fDoNotUtilizeExtraChecks = FALSE,
             AssemblyBinder      *pBinderForLoadedAssembly = NULL
             )
     {
@@ -573,14 +565,14 @@ public:
 
     // The vtable needs to match between DAC and non-DAC, but we don't want any use of IsSigInIL in the DAC
     BOOL IsSigInIL(PCCOR_SIGNATURE signature) { return IsSigInILImpl(signature); }
-    DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef)
+    Assembly * LoadAssembly(mdAssemblyRef kAssemblyRef)
     {
         WRAPPER_NO_CONTRACT;
         return LoadAssemblyImpl(kAssemblyRef);
     }
 
     // Resolving
-    OBJECTHANDLE ResolveStringRef(DWORD Token, void** ppPinnedString = nullptr);
+    STRINGREF* ResolveStringRef(DWORD Token, void** ppPinnedString = nullptr);
 private:
     // string helper
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
@@ -610,8 +602,9 @@ class Module : public ModuleBase
     VPTR_VTABLE_CLASS(Module, ModuleBase)
 
 private:
-    PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
-    const WCHAR*            m_path;        // Cached path for easier diagnostics
+    PTR_CUTF8               m_pSimpleName;  // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;         // Cached path for easier diagnostics
+    const WCHAR*            m_fileName;     // Cached file name for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
     PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
@@ -628,6 +621,8 @@ private:
         IS_ETW_NOTIFIED             = 0x00000020,
 
         IS_REFLECTION_EMIT          = 0x00000040,
+        PROF_DISABLE_OPTIMIZATIONS  = 0x00000080,   // indicates if Profiler disabled JIT optimization event mask was set when loaded
+        PROF_DISABLE_INLINING       = 0x00000100,   // indicates if Profiler disabled JIT Inlining event mask was set when loaded
 
         //
         // Note: The values below must match the ones defined in
@@ -916,6 +911,39 @@ protected:
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
+    BOOL IsInliningDisabledByProfiler() const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (m_dwTransientFlags & PROF_DISABLE_INLINING) != 0;
+    }
+
+    BOOL AreJITOptimizationsDisabled() const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+#ifdef DEBUGGING_SUPPORTED
+        // check if debugger has disallowed JIT optimizations
+        auto dwDebuggerBits = GetDebuggerInfoBits();
+        if (!CORDebuggerAllowJITOpts(dwDebuggerBits))
+        {
+            return TRUE;
+        }
+#endif // DEBUGGING_SUPPORTED
+
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+        // check if profiler had disabled JIT optimizations when module was loaded
+        if (m_dwTransientFlags & PROF_DISABLE_OPTIMIZATIONS)
+        {
+            return TRUE;
+        }
+#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+
+        return FALSE;
+    }
+
 #ifdef FEATURE_METADATA_UPDATER
     // Holds a table of EnCEEClassData object for classes in this module that have been modified
     CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
@@ -948,7 +976,6 @@ public:
 
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
-    VOID EnsureAllocated();
 #endif
 
     CHECK CheckActivated();
@@ -1130,7 +1157,6 @@ public:
     Assembly * GetAssemblyIfLoaded(
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
-            BOOL                fDoNotUtilizeExtraChecks = FALSE,
             AssemblyBinder      *pBinderForLoadedAssembly = NULL
             ) final;
 
@@ -1141,7 +1167,7 @@ protected:
                                                   UINT resIDWhy) final;
 #endif
 
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final;
+    Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final;
 public:
     PTR_Module LookupModule(mdToken kFile) final;
     Module *GetModuleIfLoaded(mdFile kFile) final;
@@ -1323,15 +1349,26 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
+#ifndef DACCESS_COMPILE
+public:
+    // light code gen. Keep the list of MethodTables needed for creating dynamic methods
+    DynamicMethodTable* GetDynamicMethodTable();
+#endif
+private:
+    // m_pDynamicMethodTable is used by the light code generation to allow method
+    // generation on the fly. They are lazily created when/if a dynamic method is requested
+    // for this specific module
+    DynamicMethodTable*         m_pDynamicMethodTable;
+
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int level, BOOL attaching);
-    void NotifyDebuggerUnload(AppDomain *pDomain);
+    BOOL NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int level, BOOL attaching);
+    void NotifyDebuggerUnload();
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
 
-    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
+    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void) const
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -1425,17 +1462,17 @@ public:
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
 
-    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledNDirectMethods = TRUE);
+    BOOL FixupNativeEntry(READYTORUN_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixup, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
     //this split exists to support new CLR Dump functionality in DAC.  The
     //template removes any indirections.
-    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods = TRUE);
+    BOOL FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
     template<typename Ptr, typename FixupNativeEntryCallback>
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledNDirectMethods = TRUE);
+                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 
@@ -1481,8 +1518,18 @@ public:
     void   StartUnload();
 
 public:
+#ifndef DACCESS_COMPILE
     void SetDynamicIL(mdToken token, TADDR blobAddress);
+#endif // !DACCESS_COMPILE
     TADDR GetDynamicIL(mdToken token);
+
+protected:
+#ifndef DACCESS_COMPILE
+    void SetDynamicRvaField(mdToken token, TADDR blobAddress);
+#endif // !DACCESS_COMPILE
+
+public:
+    TADDR GetDynamicRvaField(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
 #if !defined(DACCESS_COMPILE)
@@ -1491,14 +1538,6 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    // LoaderHeap for storing IJW thunks
-    PTR_LoaderHeap           m_pThunkHeap;
-
-    // Self-initializing accessor for IJW thunk heap
-    LoaderHeap              *GetThunkHeap();
-    // Self-initializing accessor for domain-independent IJW thunk heap
-    LoaderHeap              *GetDllThunkHeap();
-
     const ReadyToRun_MethodIsGenericMap *m_pMethodIsGenericMap = &ReadyToRun_MethodIsGenericMap::EmptyInstance;
     const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
 
@@ -1519,6 +1558,8 @@ public:
     // words, they become compliant
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeWrapExceptions();
+    void                    UpdateCachedIsRuntimeWrapExceptions();
+    BOOL                    IsRuntimeWrapExceptionsDuringEH();
 
     //-----------------------------------------------------------------------------------------
     // If true, the built-in runtime-generated marshalling subsystem will be used for
@@ -1531,6 +1572,16 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
     }
+
+protected:
+    // For reflection emit modules we set this flag when we emit the attribute, and always consider
+    // the current setting of the flag to be set.
+    void SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_dwPersistedFlags |= COMPUTED_WRAP_EXCEPTIONS;
+    }
+public:
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
 
@@ -1627,19 +1678,22 @@ public:
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Module>;
 };
 
 template<>
 struct cdac_data<Module>
 {
     static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
+    static constexpr size_t PEAssembly = offsetof(Module, m_pPEAssembly);
     static constexpr size_t Base = offsetof(Module, m_baseAddress);
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
-    static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
     static constexpr size_t Path = offsetof(Module, m_path);
+    static constexpr size_t FileName = offsetof(Module, m_fileName);
+    static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
+    static constexpr size_t GrowableSymbolStream = offsetof(Module, m_pIStreamSym);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);

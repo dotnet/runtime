@@ -226,6 +226,16 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 static
 inline
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value)
+{
+    STATIC_CONTRACT_NOTHROW;
+    extern int64_t ep_rt_aot_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value);
+    return ep_rt_aot_atomic_compare_exchange_int64_t (target, expected, value);
+}
+
+static
+inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
@@ -346,6 +356,8 @@ void
 ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
     STATIC_CONTRACT_NOTHROW;
+    extern void ep_rt_aot_provider_config_init (EventPipeProviderConfiguration *provider_config);
+    ep_rt_aot_provider_config_init(provider_config);
 }
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -515,6 +527,33 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (
 static
 inline
 void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_session_enabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
     // Following mono's path of no-op
@@ -662,17 +701,6 @@ ep_rt_process_shutdown (void)
 
 static
 inline
-void
-ep_rt_create_activity_id (
-    uint8_t *activity_id,
-    uint32_t activity_id_len)
-{
-    extern void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_len);
-    ep_rt_aot_create_activity_id(activity_id, activity_id_len);
-}
-
-static
-inline
 bool
 ep_rt_is_running (void)
 {
@@ -691,7 +719,9 @@ ep_rt_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // NativeAOT does not currently support rundown
+    extern void
+    ep_rt_aot_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
+    ep_rt_aot_execute_rundown (execution_checkpoints);
 }
 
 /*
@@ -756,11 +786,22 @@ ep_rt_thread_create (
 }
 
 static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+    EP_UNREACHABLE ("Not implemented in NativeAOT");
+}
+
+static
 inline
 void
 ep_rt_set_server_name(void)
 {
-    // This is optional, decorates the thread name with EventPipe specific information
+    extern void
+    ep_rt_aot_set_server_name (void);
+    ep_rt_aot_set_server_name ();
 }
 
 
@@ -803,7 +844,7 @@ uint32_t
 ep_rt_processors_get_count (void)
 {
     STATIC_CONTRACT_NOTHROW;
-#ifdef _INC_WINDOWS
+#ifdef HOST_WINDOWS
     SYSTEM_INFO sys_info = {};
     GetSystemInfo (&sys_info);
     return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
@@ -855,7 +896,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifdef _INC_WINDOWS
+#ifdef HOST_WINDOWS
     SYSTEMTIME value;
     GetSystemTime (&value);
 
@@ -870,7 +911,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
         value.wMinute,
         value.wSecond,
         value.wMilliseconds);
-#elif TARGET_UNIX
+#else
     time_t tt;
     struct tm *ut_ptr;
     struct timeval time_val;
@@ -1418,8 +1459,8 @@ void
 ep_rt_thread_setup (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    // Likely not needed and do nothing until testing shows to be required
+    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+    ep_rt_aot_setup_thread ();
 }
 
 static

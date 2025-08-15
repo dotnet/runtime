@@ -5,10 +5,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Test_AddrOfPinnedObject
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] array = new int[25];
 

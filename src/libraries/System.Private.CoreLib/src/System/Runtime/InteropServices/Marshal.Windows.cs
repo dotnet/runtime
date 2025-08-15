@@ -144,7 +144,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, nint cb)
         {
             if (pv == IntPtr.Zero)
             {
@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices
             return bstr;
         }
 
-        internal static unsafe IntPtr AllocBSTRByteLen(uint length)
+        internal static IntPtr AllocBSTRByteLen(uint length)
         {
             IntPtr bstr = Interop.OleAut32.SysAllocStringByteLen(null, length);
             if (bstr == IntPtr.Zero)

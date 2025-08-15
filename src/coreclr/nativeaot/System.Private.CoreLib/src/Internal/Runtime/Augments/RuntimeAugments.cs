@@ -26,6 +26,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.Reflection.Core.Execution;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
 
@@ -70,6 +71,20 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhNewObject(typeHandle.ToMethodTable());
         }
 
+        internal static void EnsureMethodTableSafeToAllocate(MethodTable* mt)
+        {
+            // We might be dealing with a "necessary" MethodTable (in the ILCompiler terms).
+            // This MethodTable is okay for casting, but must not be allocated on the GC heap.
+            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots > 0);
+            if (mt->NumVtableSlots == 0)
+            {
+                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(Type.GetTypeFromMethodTable(mt));
+            }
+            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
+            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(mt) != 0);
+        }
+
         //
         // Perform the equivalent of a "newarr" The resulting array is zero-initialized.
         //
@@ -77,7 +92,12 @@ namespace Internal.Runtime.Augments
         {
             // Don't make the easy mistake of passing in the element MethodTable rather than the "array of element" MethodTable.
             Debug.Assert(typeHandleForArrayType.ToMethodTable()->IsSzArray);
-            return RuntimeImports.RhNewArray(typeHandleForArrayType.ToMethodTable(), count);
+
+            MethodTable* mt = typeHandleForArrayType.ToMethodTable();
+
+            EnsureMethodTableSafeToAllocate(mt);
+
+            return RuntimeImports.RhNewArray(mt, count);
         }
 
         //
@@ -109,7 +129,7 @@ namespace Internal.Runtime.Augments
                 // We just checked above that all lower bounds are zero. In that case, we should actually allocate
                 // a new SzArray instead.
                 Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(typeHandleForArrayType.ToMethodTable()->RelatedParameterType))!;
-                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToMethodTable(), lengths[0]);
+                return NewArray(elementType.MakeArrayType().TypeHandle, lengths[0]);
             }
 
             // Create a local copy of the lengths that cannot be modified by the caller
@@ -118,6 +138,32 @@ namespace Internal.Runtime.Augments
                 pImmutableLengths[i] = lengths[i];
 
             return Array.NewMultiDimArray(typeHandleForArrayType.ToMethodTable(), pImmutableLengths, lengths.Length);
+        }
+
+        public static unsafe void SetArrayValue(Array array, int[] indices, object value)
+        {
+            MethodTable* elementMT = array.ElementMethodTable;
+
+            if (elementMT->IsPointer || elementMT->IsFunctionPointer)
+            {
+                Debug.Assert(value.GetMethodTable()->ValueTypeSize == IntPtr.Size);
+                elementMT = value.GetMethodTable();
+            }
+
+            if (elementMT->IsValueType)
+            {
+                Debug.Assert(value.GetMethodTable()->IsValueType && elementMT->ValueTypeSize == value.GetMethodTable()->ValueTypeSize);
+                nint flattenedIndex = array.GetFlattenedIndex(indices);
+                ref byte element = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(array), (nuint)flattenedIndex * array.ElementSize);
+                RuntimeImports.RhUnbox(value, ref element, elementMT);
+            }
+            else
+            {
+                RuntimeImports.RhCheckArrayStore(array, value);
+                nint flattenedIndex = array.GetFlattenedIndex(indices);
+                ref object element = ref Unsafe.Add(ref Unsafe.As<byte, object>(ref MemoryMarshal.GetArrayDataReference(array)), flattenedIndex);
+                element = value;
+            }
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
@@ -190,7 +236,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return RuntimeImports.RhBox(fieldType.ToMethodTable(), ref *(byte*)address);
+            return RuntimeExports.RhBox(fieldType.ToMethodTable(), ref *(byte*)address);
         }
 
         public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
@@ -210,7 +256,7 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadValueTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            return RuntimeImports.RhBox(fieldType.ToMethodTable(), ref address);
+            return RuntimeExports.RhBox(fieldType.ToMethodTable(), ref address);
         }
 
         public static unsafe object LoadPointerTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
@@ -218,7 +264,7 @@ namespace Internal.Runtime.Augments
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
 
             if (fieldType.ToMethodTable()->IsFunctionPointer)
-                return RuntimeImports.RhBox(MethodTable.Of<IntPtr>(), ref address);
+                return RuntimeExports.RhBox(MethodTable.Of<IntPtr>(), ref address);
 
             return ReflectionPointer.Box((void*)Unsafe.As<byte, IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
         }
@@ -259,7 +305,7 @@ namespace Internal.Runtime.Augments
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
             Debug.Assert(fieldTypeHandle.ToMethodTable()->IsValueType);
 
-            return RuntimeImports.RhBox(fieldTypeHandle.ToMethodTable(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            return RuntimeExports.RhBox(fieldTypeHandle.ToMethodTable(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
         }
 
         [CLSCompliant(false)]
@@ -365,7 +411,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe object Box(RuntimeTypeHandle type, IntPtr address)
         {
-            return RuntimeImports.RhBox(type.ToMethodTable(), ref *(byte*)address);
+            return RuntimeExports.RhBox(type.ToMethodTable(), ref *(byte*)address);
         }
 
         //==============================================================================================
@@ -437,7 +483,7 @@ namespace Internal.Runtime.Augments
         }
 
         [Intrinsic]
-        public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
+        public static RuntimeTypeHandle GetCanonType()
         {
             // Compiler needs to expand this. This is not expressible in IL.
             throw new NotSupportedException();
@@ -493,12 +539,17 @@ namespace Internal.Runtime.Augments
         public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
         {
             MethodTable* genericContextPtr = default;
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot), &genericContextPtr);
+            IntPtr result = RuntimeImports.RhResolveStaticDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot), &genericContextPtr);
             if (result != IntPtr.Zero)
                 genericContext = new RuntimeTypeHandle(genericContextPtr);
             else
                 genericContext = default;
             return result;
+        }
+
+        public static unsafe IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
+        {
+            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot));
         }
 
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
@@ -665,18 +716,12 @@ namespace Internal.Runtime.Augments
 
         public static object CreateThunksHeap(IntPtr commonStubAddress)
         {
-            object? newHeap = ThunksHeap.CreateThunksHeap(commonStubAddress);
-            if (newHeap == null)
-                throw new OutOfMemoryException();
-            return newHeap;
+            return ThunksHeap.CreateThunksHeap(commonStubAddress);
         }
 
         public static IntPtr AllocateThunk(object thunksHeap)
         {
-            IntPtr newThunk = ((ThunksHeap)thunksHeap).AllocateThunk();
-            if (newThunk == IntPtr.Zero)
-                throw new OutOfMemoryException();
-            return newThunk;
+            return ((ThunksHeap)thunksHeap).AllocateThunk();
         }
 
         public static void FreeThunk(object thunksHeap, IntPtr thunkAddress)

@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: UTIL.CPP
-//
-
 // ===========================================================================
-
 
 #include "common.h"
 #include "excep.h"
@@ -17,7 +15,6 @@
 
 #ifndef DACCESS_COMPILE
 
-
 thread_local size_t t_ThreadType;
 
 void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
@@ -28,7 +25,7 @@ void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
 
     // The historic location of ThreadType slot kept for compatibility with SOS
     // TODO: Introduce DAC API to make this hack unnecessary
-    gCurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
+    t_CurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
 }
 
 void ClrFlsClearThreadType(TlsThreadTypeFlag flag)
@@ -47,7 +44,7 @@ thread_local size_t t_CantStopCount;
 // Destroying the heap frees all blocks allocated from the heap.
 // Blocks cannot be freed individually.
 //
-// The heap uses COM+ exceptions to report errors.
+// The heap uses CLR exceptions to report errors.
 //
 // The heap does not use any internal synchronization so it is not
 // multithreadsafe.
@@ -123,8 +120,7 @@ LPVOID CQuickHeap::Alloc(UINT sz)
 // Output functions that avoid the crt's.
 //----------------------------------------------------------------------------
 
-static
-void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
+void PrintToStdErrA(const char *pszString)
 {
     CONTRACTL
     {
@@ -134,55 +130,7 @@ void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
     }
     CONTRACTL_END
 
-    if (Handle == INVALID_HANDLE_VALUE || Handle == NULL)
-        return;
-
-    BOOL success;
-    DWORD   dwBytesWritten;
-    const size_t maxWriteFileSize = 32767; // This is somewhat arbitrary limit, but 2**16-1 doesn't work
-
-    while (BytesToWrite > 0) {
-        DWORD dwChunkToWrite = (DWORD) min(BytesToWrite, maxWriteFileSize);
-
-        // Try to write to handle.  If this is not a CUI app, then this is probably
-        // not going to work unless the dev took special pains to set their own console
-        // handle during CreateProcess.  So try it, but don't yell if it doesn't work in
-        // that case.  Also, if we redirect stdout to a pipe then the pipe breaks (ie, we
-        // write to something like the UNIX head command), don't complain.
-        success = WriteFile(Handle, pszString, dwChunkToWrite, &dwBytesWritten, NULL);
-        if (!success)
-        {
-#if defined(_DEBUG)
-            // This can happen if stdout is a closed pipe.  This might not help
-            // much, but we'll have half a chance of seeing this.
-            OutputDebugStringA("CLR: Writing out an unhandled exception to stdout failed!\n");
-            OutputDebugStringA(pszString);
-#endif //_DEBUG
-
-            break;
-        }
-        else {
-            _ASSERTE(dwBytesWritten == dwChunkToWrite);
-        }
-        pszString = pszString + dwChunkToWrite;
-        BytesToWrite -= dwChunkToWrite;
-    }
-
-}
-
-void PrintToStdErrA(const char *pszString) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-
-    size_t len = strlen(pszString);
-    NPrintToHandleA(Handle, pszString, len);
+    minipal_log_write_error(pszString);
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)
@@ -218,6 +166,7 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
     switch(varLoc1.vlType)
     {
     case ICorDebugInfo::VLT_REG:
+    case ICorDebugInfo::VLT_REG_FP:
     case ICorDebugInfo::VLT_REG_BYREF:
         return varLoc1.vlReg.vlrReg == varLoc2.vlReg.vlrReg;
 
@@ -246,6 +195,9 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
 
     case ICorDebugInfo::VLT_FPSTK:
         return varLoc1.vlFPstk.vlfReg == varLoc2.vlFPstk.vlfReg;
+
+    case ICorDebugInfo::VLT_FIXED_VA:
+        return varLoc1.vlFixedVarArg.vlfvOffset == varLoc2.vlFixedVarArg.vlfvOffset;
 
     default:
         _ASSERTE(!"Bad vlType"); return false;
@@ -375,7 +327,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     {
     case ICorDebugInfo::REGNUM_R0: return offsetof(T_CONTEXT, R0);
     case ICorDebugInfo::REGNUM_RA: return offsetof(T_CONTEXT, Ra);
-    case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
+    //case ICorDebugInfo::REGNUM_TP: return offsetof(T_CONTEXT, Tp);
     case ICorDebugInfo::REGNUM_SP: return offsetof(T_CONTEXT, Sp);
     case ICorDebugInfo::REGNUM_A0: return offsetof(T_CONTEXT, A0);
     case ICorDebugInfo::REGNUM_A1: return offsetof(T_CONTEXT, A1);
@@ -478,7 +430,7 @@ SIZE_T DereferenceByRefVar(SIZE_T addr)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #endif // !DACCESS_COMPILE
 
@@ -1556,7 +1508,7 @@ void DACNotifyExceptionHelper(TADDR *args, UINT argCount)
 
     _ASSERTE(argCount <= MAX_CLR_NOTIFICATION_ARGS);
 
-    if (IsDebuggerPresent() && !CORDebuggerAttached())
+    if (minipal_is_native_debugger_present() && !CORDebuggerAttached())
     {
         CrstHolder lh(&g_clrNotificationCrst);
 
@@ -1614,23 +1566,6 @@ void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr, TADDR NativeCodeLoc
 
     TADDR Args[3] = { JIT_NOTIFICATION2, (TADDR) MethodDescPtr, NativeCodeLocation };
     DACNotifyExceptionHelper(Args, 3);
-}
-
-void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-    NotifyGdb::MethodPitched(MethodDescPtr);
-#endif
-    TADDR Args[2] = { JIT_PITCHING_NOTIFICATION, (TADDR) MethodDescPtr };
-    DACNotifyExceptionHelper(Args, 2);
 }
 
 void DACNotify::DoModuleLoadNotification(Module *ModulePtr)
@@ -1743,19 +1678,6 @@ BOOL DACNotify::ParseJITNotification(TADDR Args[], TADDR& MethodDescPtr, TADDR& 
 
     MethodDescPtr = Args[1];
     NativeCodeLocation = Args[2];
-
-    return TRUE;
-}
-
-BOOL DACNotify::ParseJITPitchingNotification(TADDR Args[], TADDR& MethodDescPtr)
-{
-    _ASSERTE(Args[0] == JIT_PITCHING_NOTIFICATION);
-    if (Args[0] != JIT_PITCHING_NOTIFICATION)
-    {
-        return FALSE;
-    }
-
-    MethodDescPtr = Args[1];
 
     return TRUE;
 }
@@ -1891,62 +1813,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
 }
 
 #ifndef DACCESS_COMPILE
-//
-//
-// COMCharacter and Helper functions
-//
-//
-
-#ifndef TARGET_UNIX
-/*============================GetCharacterInfoHelper============================
-**Determines character type info (digit, whitespace, etc) for the given char.
-**Args:   c is the character on which to operate.
-**        CharInfoType is one of CT_CTYPE1, CT_CTYPE2, CT_CTYPE3 and specifies the type
-**        of information being requested.
-**Returns: The bitmask returned by GetStringTypeEx.  The caller needs to know
-**         how to interpret this.
-**Exceptions: ArgumentException if GetStringTypeEx fails.
-==============================================================================*/
-INT32 GetCharacterInfoHelper(WCHAR c, INT32 CharInfoType)
-{
-    WRAPPER_NO_CONTRACT;
-
-    unsigned short result=0;
-    if (!GetStringTypeEx(LOCALE_USER_DEFAULT, CharInfoType, &(c), 1, &result)) {
-        _ASSERTE(!"This should not happen, verify the arguments passed to GetStringTypeEx()");
-    }
-    return(INT32)result;
-}
-#endif // !TARGET_UNIX
-
-/*==============================nativeIsWhiteSpace==============================
-**The locally available version of IsWhiteSpace.  Designed to be called by other
-**native methods.  The work is mostly done by GetCharacterInfoHelper
-**Args:  c -- the character to check.
-**Returns: true if c is whitespace, false otherwise.
-**Exceptions:  Only those thrown by GetCharacterInfoHelper.
-==============================================================================*/
-BOOL COMCharacter::nativeIsWhiteSpace(WCHAR c)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifndef TARGET_UNIX
-    if (c <= (WCHAR) 0x7F) // common case
-    {
-        BOOL result = (c == ' ') || (c == '\r') || (c == '\n') || (c == '\t') || (c == '\f') || (c == (WCHAR) 0x0B);
-
-        ASSERT(result == ((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_SPACE)!=0));
-
-        return result;
-    }
-
-    // GetCharacterInfoHelper costs around 160 instructions
-    return((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_SPACE)!=0);
-#else // !TARGET_UNIX
-    return iswspace(c);
-#endif // !TARGET_UNIX
-}
-
 BOOL RuntimeFileNotFound(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;

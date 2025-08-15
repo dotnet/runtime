@@ -23,10 +23,7 @@ namespace System.Text.Json
 
         public sealed override string ConvertName(string name)
         {
-            if (name is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             return ConvertNameCore(_separator, _lowercase, name.AsSpan());
         }

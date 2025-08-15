@@ -1,47 +1,57 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Tests
 {
     public class ZipFile_Extract : ZipFileTestBase
     {
-        [Theory]
-        [InlineData("normal.zip", "normal")]
-        [InlineData("empty.zip", "empty")]
-        [InlineData("explicitdir1.zip", "explicitdir")]
-        [InlineData("explicitdir2.zip", "explicitdir")]
-        [InlineData("appended.zip", "small")]
-        [InlineData("prepended.zip", "small")]
-        [InlineData("noexplicitdir.zip", "explicitdir")]
-        public void ExtractToDirectoryNormal(string file, string folder)
+        public static IEnumerable<object[]> Get_ExtractToDirectoryNormal_Data()
         {
-            string zipFileName = zfile(file);
-            string folderName = zfolder(folder);
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            foreach (bool async in _bools)
             {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path);
-                DirsEqual(tempFolder.Path, folderName);
+                yield return new object[] { "normal.zip", "normal", async };
+                yield return new object[] { "empty.zip", "empty", async };
+                yield return new object[] { "explicitdir1.zip", "explicitdir", async };
+                yield return new object[] { "explicitdir2.zip", "explicitdir", async };
+                yield return new object[] { "appended.zip", "small", async };
+                yield return new object[] { "prepended.zip", "small", async };
+                yield return new object[] { "noexplicitdir.zip", "explicitdir", async };
             }
         }
 
-        [Fact]
-        public void ExtractToDirectoryNull()
+        [Theory]
+        [MemberData(nameof(Get_ExtractToDirectoryNormal_Data))]
+        public async Task ExtractToDirectoryNormal(string file, string folder, bool async)
         {
-            AssertExtensions.Throws<ArgumentNullException>("sourceArchiveFileName", () => ZipFile.ExtractToDirectory(sourceArchiveFileName: null, GetTestFilePath()));
+            string zipFileName = zfile(file);
+            string folderName = zfolder(folder);
+            using TempDirectory tempFolder = new TempDirectory(GetTestFilePath());
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
+            await DirsEqual(tempFolder.Path, folderName);
         }
 
-        [Fact]
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectoryNull(bool async)
+        {
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("sourceArchiveFileName", () => CallZipFileExtractToDirectory(async, sourceArchiveFileName: null, GetTestFilePath()));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/72951", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        public void ExtractToDirectoryUnicode()
+        public async Task ExtractToDirectoryUnicode(bool async)
         {
             string zipFileName = zfile("unicode.zip");
             string folderName = zfolder("unicode");
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path);
+                await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
                 DirFileNamesEqual(tempFolder.Path, folderName);
             }
         }
@@ -62,149 +72,143 @@ namespace System.IO.Compression.Tests
             Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, destination.FullName));
         }
 
+        [Theory]
+        [InlineData("../Foo")]
+        [InlineData("../Barbell")]
+        public async Task ExtractOutOfRoot_Async(string entryName)
+        {
+            string archivePath = GetTestFilePath();
+            using (FileStream stream = new FileStream(archivePath, FileMode.Create))
+            await using (ZipArchive archive = await ZipArchive.CreateAsync(stream, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry(entryName);
+            }
+
+            DirectoryInfo destination = Directory.CreateDirectory(Path.Combine(GetTestFilePath(), "Bar"));
+            await Assert.ThrowsAsync<IOException>(() => ZipFile.ExtractToDirectoryAsync(archivePath, destination.FullName));
+        }
+
         /// <summary>
         /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
         /// when an attempt is made to extract them.
         /// </summary>
         [Theory]
-        [InlineData("NullCharFileName_FromWindows")]
-        [InlineData("NullCharFileName_FromUnix")]
+        [MemberData(nameof(Get_Unix_ZipWithInvalidFileNames_Data))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
-        public void Unix_ZipWithInvalidFileNames(string zipName)
+        public async Task Unix_ZipWithInvalidFileNames(string zipName, bool async)
         {
             var testDirectory = GetTestFilePath();
-            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", testDirectory);
-
+            await CallZipFileExtractToDirectory(async, compat(zipName) + ".zip", testDirectory);
             Assert.True(File.Exists(Path.Combine(testDirectory, "a_6b6d")));
         }
 
         [Theory]
-        [InlineData("backslashes_FromUnix", "aa\\bb\\cc\\dd")]
-        [InlineData("backslashes_FromWindows", "aa\\bb\\cc\\dd")]
-        [InlineData("WindowsInvalid_FromUnix", "aa<b>d")]
-        [InlineData("WindowsInvalid_FromWindows", "aa<b>d")]
+        [MemberData(nameof(Get_Unix_ZipWithOSSpecificFileNames_Data))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
-        public void Unix_ZipWithOSSpecificFileNames(string zipName, string fileName)
+        public async Task Unix_ZipWithOSSpecificFileNames(string zipName, string fileName, bool async)
         {
             string tempDir = GetTestFilePath();
-            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDir);
+            await CallZipFileExtractToDirectory(async, compat(zipName) + ".zip", tempDir);
             string[] results = Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories);
             Assert.Equal(1, results.Length);
             Assert.Equal(fileName, Path.GetFileName(results[0]));
         }
 
-
-        /// <summary>
-        /// This test checks whether or not ZipFile.ExtractToDirectory() is capable of handling filenames
-		/// which contain invalid path characters in Windows.
-        ///  Archive:  InvalidWindowsFileNameChars.zip
-        ///  Test/
-        ///  Test/normalText.txt
-        ///  Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/
-        ///  Test"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_/TestText1"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
-        ///  TestEmpty/
-        ///  TestText"<>|^A^B^C^D^E^F^G^H^I^J^K^L^M^N^O^P^Q^R^S^T^U^V^W^X^Y^Z^[^\^]^^^_.txt
-        /// </summary>
-        [Fact]
+        [Theory]
+        [MemberData(nameof(Get_Windows_ZipWithInvalidFileNames_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Windows_ZipWithInvalidFileNames()
+        public async Task Windows_ZipWithInvalidFileNames(string zipFileName, string[] expectedFiles, bool async)
         {
-            
-            var testDirectory = GetTestFilePath();
-            ZipFile.ExtractToDirectory(compat("InvalidWindowsFileNameChars.zip"), testDirectory);
-            CheckExists(testDirectory, "TestText______________________________________.txt");
-            CheckExists(testDirectory, "Test______________________________________/TestText1______________________________________.txt");
-            CheckExists(testDirectory, "Test/normalText.txt");
+            string testDirectory = GetTestFilePath();
 
-            ZipFile.ExtractToDirectory(compat("NullCharFileName_FromWindows.zip"), testDirectory);
-            CheckExists(testDirectory, "a_6b6d");
-
-            ZipFile.ExtractToDirectory(compat("NullCharFileName_FromUnix.zip"), testDirectory);
-            CheckExists(testDirectory, "a_6b6d");
-
-            ZipFile.ExtractToDirectory(compat("WindowsInvalid_FromUnix.zip"), testDirectory);
-            CheckExists(testDirectory, "aa_b_d");
-
-            ZipFile.ExtractToDirectory(compat("WindowsInvalid_FromWindows.zip"), testDirectory);
-            CheckExists(testDirectory, "aa_b_d");
-
-            void CheckExists(string testDirectory, string file)
+            await CallZipFileExtractToDirectory(async, compat(zipFileName), testDirectory);
+            foreach (string expectedFile in expectedFiles)
             {
-                string path = Path.Combine(testDirectory, file);
+                string path = Path.Combine(testDirectory, expectedFile);
                 Assert.True(File.Exists(path));
                 File.Delete(path);
             }
         }
 
         [Theory]
-        [InlineData("backslashes_FromUnix", "dd")]
-        [InlineData("backslashes_FromWindows", "dd")]
+        [MemberData(nameof(Get_Windows_ZipWithOSSpecificFileNames_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithOSSpecificFileNames(string zipName, string fileName)
+        public async Task Windows_ZipWithOSSpecificFileNames(string zipName, string fileName, bool async)
         {
             string tempDir = GetTestFilePath();
-            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDir);
+            await CallZipFileExtractToDirectory(async, compat(zipName) + ".zip", tempDir);
             string[] results = Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories);
             Assert.Equal(1, results.Length);
             Assert.Equal(fileName, Path.GetFileName(results[0]));
         }
 
-        [Fact]
-        public void ExtractToDirectoryOverwrite()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectoryOverwrite(bool async)
         {
             string zipFileName = zfile("normal.zip");
             string folderName = zfolder("normal");
 
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: false);
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path /* default false */));
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: false));
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: true);
+            using TempDirectory tempFolder = new TempDirectory(GetTestFilePath());
 
-                DirsEqual(tempFolder.Path, folderName);
-            }
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, overwriteFiles: false);
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path /* default false */));
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, overwriteFiles: false));
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, overwriteFiles: true);
+
+            await DirsEqual(tempFolder.Path, folderName);
         }
 
-        [Fact]
-        public void ExtractToDirectoryOverwriteEncoding()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectoryOverwriteEncoding(bool async)
         {
             string zipFileName = zfile("normal.zip");
             string folderName = zfolder("normal");
 
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false);
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8 /* default false */));
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false));
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: true);
+            using TempDirectory tempFolder = new(GetTestFilePath());
 
-                DirsEqual(tempFolder.Path, folderName);
-            }
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false);
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8 /* default false */));
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false));
+            await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: true);
+
+            await DirsEqual(tempFolder.Path, folderName);
         }
 
-        [Fact]
-        public void FilesOutsideDirectory()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task FilesOutsideDirectory(bool async)
         {
             string archivePath = GetTestFilePath();
-            using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
-            using (StreamWriter writer = new StreamWriter(archive.CreateEntry(Path.Combine("..", "entry1"), CompressionLevel.Optimal).Open()))
+            ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create);
+
+            ZipArchiveEntry entry = archive.CreateEntry(Path.Combine("..", "entry1"), CompressionLevel.Optimal);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            using (StreamWriter writer = new StreamWriter(entryStream))
             {
                 writer.Write("This is a test.");
             }
-            Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTestFilePath()));
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, archivePath, GetTestFilePath()));
         }
 
-        [Fact]
-        public void DirectoryEntryWithData()
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task DirectoryEntryWithData(bool async)
         {
             string archivePath = GetTestFilePath();
-            using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
-            using (StreamWriter writer = new StreamWriter(archive.CreateEntry("testdir" + Path.DirectorySeparatorChar, CompressionLevel.Optimal).Open()))
+            ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create);
+            ZipArchiveEntry entry = archive.CreateEntry("testdir" + Path.DirectorySeparatorChar, CompressionLevel.Optimal);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            using (StreamWriter writer = new StreamWriter(entryStream))
             {
                 writer.Write("This is a test.");
             }
-            Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTestFilePath()));
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+            await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, archivePath, GetTestFilePath()));
         }
     }
 }

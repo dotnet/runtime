@@ -9,7 +9,7 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_APPLE)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
@@ -324,6 +324,12 @@ check_struct_has_member(
     "sys/mount.h"
     HAVE_STATVFS_FSTYPENAME)
 
+check_struct_has_member(
+    "struct statvfs"
+    f_basetype
+    "sys/statvfs.h"
+    HAVE_STATVFS_BASETYPE)
+
 set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
 
 # statfs: Find whether this struct exists
@@ -368,21 +374,6 @@ check_c_source_compiles(
     }
     "
     HAVE_GNU_STRERROR_R)
-
-check_c_source_compiles(
-    "
-    #include <dirent.h>
-    #include <stddef.h>
-    int main(void)
-    {
-        DIR* dir = NULL;
-        struct dirent* entry = NULL;
-        struct dirent* result;
-        readdir_r(dir, entry, &result);
-        return 0;
-    }
-    "
-    HAVE_READDIR_R)
 
 check_c_source_compiles(
     "
@@ -457,6 +448,18 @@ check_symbol_exists(
     epoll_create1
     sys/epoll.h
     HAVE_EPOLL)
+
+check_symbol_exists(
+    gethostname
+    unistd.h
+    HAVE_GETHOSTNAME)
+
+check_symbol_exists(
+    getnameinfo
+    netdb.h
+    HAVE_GETNAMEINFO)
+
+check_struct_has_member("struct sockaddr_un" sun_path "sys/types.h;sys/un.h" HAVE_SOCKADDR_UN_SUN_PATH)
 
 check_symbol_exists(
     accept4
@@ -562,7 +565,10 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
-elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+elseif(CLR_CMAKE_TARGET_WASI)
+    set(HAVE_FORK 0)
+    unset(HAVE_GETNAMEINFO) # WASIp2 libc has empty function with TODO and abort()
+elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()
     check_symbol_exists(

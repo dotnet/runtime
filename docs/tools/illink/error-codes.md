@@ -802,7 +802,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
     public override void TestMethod() {}
   }
   ```
-  A derived member has the attribute but the overriden base member does not have the attribute
+  A derived member has the attribute but the overridden base member does not have the attribute
   ```C#
   public class Base
   {
@@ -1953,7 +1953,7 @@ void TestMethod()
     public override void TestMethod() {}
   }
   ```
-  A derived member has the attribute but the overriden base member does not have the attribute
+  A derived member has the attribute but the overridden base member does not have the attribute
   ```C#
   public class Base
   {

@@ -409,7 +409,8 @@ namespace System.Collections.Generic
                 if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                     comparer == null)
                 {
-                    uint hashCode = (uint)key.GetHashCode();
+                    // TODO: Replace with just key.GetHashCode once https://github.com/dotnet/runtime/issues/117521 is resolved.
+                    uint hashCode = (uint)EqualityComparer<TKey>.Default.GetHashCode(key);
                     int i = GetBucket(hashCode);
                     Entry[]? entries = _entries;
                     uint collisionCount = 0;
@@ -745,6 +746,7 @@ namespace System.Collections.Generic
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TValue value)
             {
@@ -769,6 +771,7 @@ namespace System.Collections.Generic
             /// When this method returns, contains the value associated with the specified key, if the key is found;
             /// otherwise, the default value for the type of the value parameter.
             /// </param>
+            /// <returns><see langword="true"/> if an entry was found; otherwise, <see langword="false"/>.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
             public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
             {

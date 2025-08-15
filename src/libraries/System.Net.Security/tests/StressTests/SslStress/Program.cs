@@ -3,6 +3,7 @@
 
 using System;
 using System.CommandLine;
+using System.CommandLine.Help;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
@@ -113,61 +114,65 @@ namespace SslStress
         private static bool TryParseCli(string[] args, [NotNullWhen(true)] out Configuration? config)
         {
             var cmd = new RootCommand();
-            cmd.AddOption(new Option(new[] { "--help", "-h" }, "Display this help text."));
-            cmd.AddOption(new Option(new[] { "--mode", "-m" }, "Stress suite execution mode. Defaults to 'both'.") { Argument = new Argument<RunMode>("runMode", RunMode.both) });
-            cmd.AddOption(new Option(new[] { "--cancellation-probability", "-p" }, "Cancellation probability 0 <= p <= 1 for a given connection. Defaults to 0.1") { Argument = new Argument<double>("probability", 0.1) });
-            cmd.AddOption(new Option(new[] { "--num-connections", "-n" }, "Max number of connections to open concurrently.") { Argument = new Argument<int>("connections", Environment.ProcessorCount) });
-            cmd.AddOption(new Option(new[] { "--server-endpoint", "-e" }, "Endpoint to bind to if server, endpoint to listen to if client.") { Argument = new Argument<string>("ipEndpoint", "127.0.0.1:5002") });
-            cmd.AddOption(new Option(new[] { "--max-execution-time", "-t" }, "Maximum stress suite execution time, in minutes. Defaults to infinity.") { Argument = new Argument<double?>("minutes", null) });
-            cmd.AddOption(new Option(new[] { "--max-buffer-length", "-b" }, "Maximum buffer length to write on ssl stream. Defaults to 8192.") { Argument = new Argument<int>("bytes", 8192) });
-            cmd.AddOption(new Option(new[] { "--min-connection-lifetime", "-l" }, "Minimum duration for a single connection, in seconds. Defaults to 5 seconds.") { Argument = new Argument<double>("seconds", 5) });
-            cmd.AddOption(new Option(new[] { "--max-connection-lifetime", "-L" }, "Maximum duration for a single connection, in seconds. Defaults to 120 seconds.") { Argument = new Argument<double>("seconds", 120) });
-            cmd.AddOption(new Option(new[] { "--display-interval", "-i" }, "Client stats display interval, in seconds. Defaults to 5 seconds.") { Argument = new Argument<double>("seconds", 5) });
-            cmd.AddOption(new Option(new[] { "--log-server", "-S" }, "Print server logs to stdout."));
-            cmd.AddOption(new Option(new[] { "--seed", "-s" }, "Seed for generating pseudo-random parameters. Also depends on the -n argument.") { Argument = new Argument<int>("seed", (new Random().Next())) });
+            cmd.Options.Add(new Option<RunMode>("--mode", "-m") { Description = "Stress suite execution mode. Defaults to 'both'.", DefaultValueFactory = (_) => RunMode.both });
+            cmd.Options.Add(new Option<double>("--cancellation-probability", "-p") { Description = "Cancellation probability 0 <= p <= 1 for a given connection. Defaults to 0.1", DefaultValueFactory = (_) => 0.1 });
+            cmd.Options.Add(new Option<int>("--num-connections", "-n" ) { Description = "Max number of connections to open concurrently.", DefaultValueFactory = (_) => Environment.ProcessorCount });
+            cmd.Options.Add(new Option<IPEndPoint>("--server-endpoint", "-e" )
+            {
+                Description = "Endpoint to bind to if server, endpoint to listen to if client.",
+                DefaultValueFactory = (_) => IPEndPoint.Parse("127.0.0.1:5002"),
+                CustomParser = result =>
+                {
+                    try
+                    {
+                        return ParseEndpoint(result.Tokens[0].Value);
+                    }
+                    catch
+                    {
+                        result.AddError($"'{result.Tokens[0].Value}' is not a valid endpoint");
+                        return default;
+                    }
+                }
+            });
+            cmd.Options.Add(new Option<double?>("--max-execution-time", "-t" ) { Description = "Maximum stress suite execution time, in minutes. Defaults to infinity." });
+            cmd.Options.Add(new Option<int>("--max-buffer-length", "-b" ) { Description = "Maximum buffer length to write on ssl stream. Defaults to 8192.", DefaultValueFactory = (_) => 8192 });
+            cmd.Options.Add(new Option<int>("--min-connection-lifetime", "-l" ) { Description = "Minimum duration for a single connection, in seconds. Defaults to 5 seconds.", DefaultValueFactory = (_) => 5 });
+            cmd.Options.Add(new Option<double>("--max-connection-lifetime", "-L" ) { Description = "Maximum duration for a single connection, in seconds. Defaults to 120 seconds.", DefaultValueFactory = (_) => 120.0 });
+            cmd.Options.Add(new Option<double>("--display-interval", "-i" ) { Description = "Client stats display interval, in seconds. Defaults to 5 seconds.", DefaultValueFactory = (_) => 5 });
+            cmd.Options.Add(new Option<bool>("--log-server", "-S") { Description = "Print server logs to stdout." });
+            cmd.Options.Add(new Option<int>("--seed", "-s" ) { Description = "Seed for generating pseudo-random parameters. Also depends on the -n argument.", DefaultValueFactory = (_) => new Random().Next() });
 
             ParseResult parseResult = cmd.Parse(args);
-            if (parseResult.Errors.Count > 0 || parseResult.HasOption("-h"))
+            if (parseResult.Errors.Count > 0 || parseResult.Action is HelpAction)
             {
-                foreach (ParseError error in parseResult.Errors)
-                {
-                    Console.WriteLine(error);
-                }
-                WriteHelpText();
+                parseResult.Invoke(); // this is going to print all the errors and help
                 config = null;
                 return false;
             }
 
             config = new Configuration()
             {
-                RunMode = parseResult.ValueForOption<RunMode>("-m"),
-                MaxConnections = parseResult.ValueForOption<int>("-n"),
-                CancellationProbability = Math.Max(0, Math.Min(1, parseResult.ValueForOption<double>("-p"))),
-                ServerEndpoint = ParseEndpoint(parseResult.ValueForOption<string>("-e")),
-                MaxExecutionTime = parseResult.ValueForOption<double?>("-t")?.Pipe(TimeSpan.FromMinutes),
-                MaxBufferLength = parseResult.ValueForOption<int>("-b"),
-                MinConnectionLifetime = TimeSpan.FromSeconds(parseResult.ValueForOption<double>("-l")),
-                MaxConnectionLifetime = TimeSpan.FromSeconds(parseResult.ValueForOption<double>("-L")),
-                DisplayInterval = TimeSpan.FromSeconds(parseResult.ValueForOption<double>("-i")),
-                LogServer = parseResult.HasOption("-S"),
-                RandomSeed = parseResult.ValueForOption<int>("-s"),
+                RunMode = parseResult.GetValue<RunMode>("--mode"),
+                MaxConnections = parseResult.GetValue<int>("--num-connections"),
+                CancellationProbability = Math.Max(0, Math.Min(1, parseResult.GetValue<double>("--cancellation-probability"))),
+                ServerEndpoint = parseResult.GetValue<IPEndPoint>("--server-endpoint"),
+                MaxExecutionTime = parseResult.GetValue<double?>("--max-execution-time")?.Pipe(TimeSpan.FromMinutes),
+                MaxBufferLength = parseResult.GetValue<int>("--max-buffer-length"),
+                MinConnectionLifetime = TimeSpan.FromSeconds(parseResult.GetValue<double>("--min-connection-lifetime")),
+                MaxConnectionLifetime = TimeSpan.FromSeconds(parseResult.GetValue<double>("--max-connection-lifetime")),
+                DisplayInterval = TimeSpan.FromSeconds(parseResult.GetValue<double>("--display-interval")),
+                LogServer = parseResult.GetValue<bool>("--log-server"),
+                RandomSeed = parseResult.GetValue<int>("--seed"),
             };
 
             if (config.MaxConnectionLifetime < config.MinConnectionLifetime)
             {
                 Console.WriteLine("Max connection lifetime should be greater than or equal to min connection lifetime");
-                WriteHelpText();
                 config = null;
                 return false;
             }
 
             return true;
-
-            void WriteHelpText()
-            {
-                Console.WriteLine();
-                new HelpBuilder(new SystemConsole()).Write(cmd);
-            }
 
             static IPEndPoint ParseEndpoint(string value)
             {

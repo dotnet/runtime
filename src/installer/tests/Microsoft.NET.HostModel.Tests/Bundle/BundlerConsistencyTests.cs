@@ -3,13 +3,18 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.AppHost.Tests;
+using Microsoft.NET.HostModel.MachO;
+using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
 using Xunit;
 
 namespace Microsoft.NET.HostModel.Bundle.Tests
@@ -24,8 +29,8 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
-        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true)
-            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
+        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true, OSPlatform? targetOS = null)
+            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign, targetOS: targetOS);
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -109,6 +114,29 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 .Message
                     .Should().Contain("rel/app.repeat")
                     .And.Contain(sharedTestState.App.AppDll);
+        }
+
+        [Fact]
+        public void FilesWithNonAsciiCharsCanBundle()
+        {
+            string appPath = sharedTestState.NonAsciiApp.AppDll;
+            string systemLibPath = sharedTestState.SystemDll;
+
+            // File specification with non-ASCII characters in the relative paths
+            var fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(appPath, "中文/app.dll"),
+                new FileSpec(appPath, "rel/中文.dll"),
+                new FileSpec(systemLibPath, "中文")
+            };
+
+            Bundler bundler = CreateBundlerInstance();
+            var bundlePath = bundler.GenerateBundle(fileSpecs);
+
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文/app.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/中文.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文")).Single().Type.Should().Be(FileType.Assembly);
         }
 
         [Fact]
@@ -305,54 +333,69 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Bundler bundler = CreateBundlerInstance();
             bundler.GenerateBundle(fileSpecs);
 
-            var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : 16;
+            var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : (OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.LoongArch64 ? 16384 : 16);
             bundler.BundleManifest.Files.ForEach(file =>
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
+        }
+
+        [Fact]
+        public void LongFileNames()
+        {
+            var app = sharedTestState.App;
+            List<FileSpec> fileSpecs = new List<FileSpec>
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.Join(
+                    Path.GetDirectoryName(Path.GetRelativePath(app.Location, app.AppDll)),
+                    Path.GetFileNameWithoutExtension(app.AppDll) + new string('a', 260) + Path.GetExtension(app.AppDll))),
+            };
+
+            fileSpecs.AddRange(SingleFileTestApp.GetRuntimeFilesToBundle());
+            Bundler bundler = CreateBundlerInstance();
+            // Debug asserts in the Manifest and Bundler should catch size calculation issues related to long file names
+            var bundledPath = bundler.GenerateBundle(fileSpecs);
+
+            fileSpecs.Add(new FileSpec(app.AppDll, Path.Join(
+                Path.GetDirectoryName(Path.GetRelativePath(app.Location, app.AppDll)),
+                Path.GetFileNameWithoutExtension(app.AppDll) + new string('a', 16385) + Path.GetExtension(app.AppDll))));
+            Assert.Throws<ArgumentException>(() =>
+            {
+                // This should throw an exception due to the long file name exceeding the maximum allowed length
+                bundler.GenerateBundle(fileSpecs);
+            });
         }
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void Codesign(bool shouldCodesign)
+        public void MacOSBundleIsCodeSigned(bool shouldCodesign)
         {
             TestApp app = sharedTestState.App;
             FileSpec[] fileSpecs = new FileSpec[]
             {
-                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(CreateAppHost.PrepareMockMachAppHostFile(app.Location, singleFile: true), BundlerHostName),
                 new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
                 new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
                 new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
             };
 
-            Bundler bundler = CreateBundlerInstance(macosCodesign: shouldCodesign);
+            Bundler bundler = CreateBundlerInstance(targetOS: OSPlatform.OSX, macosCodesign: shouldCodesign);
             string bundledApp = bundler.GenerateBundle(fileSpecs);
 
-            // Check if the file is signed
-            CommandResult result = Command.Create("codesign", $"-v {bundledApp}")
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute(expectedToFail: !shouldCodesign);
-
-            if (shouldCodesign)
-            {
-                result.Should().Pass();
-            }
-            else
-            {
-                result.Should().Fail();
-            }
+            Assert.Equal(shouldCodesign, SigningTests.IsSigned(bundledApp));
         }
 
         public class SharedTestState : IDisposable
         {
             public const string AppName = "HelloWorld";
             public TestApp App { get; }
+            public TestApp NonAsciiApp { get; }
             public string SystemDll { get; }
 
             public SharedTestState()
             {
                 App = TestApp.CreateFromBuiltAssets(AppName);
+                NonAsciiApp = TestApp.CreateFromBuiltAssets("HelloWorld_中文");
 
                 SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
@@ -360,6 +403,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             public void Dispose()
             {
                 App.Dispose();
+                NonAsciiApp.Dispose();
             }
         }
     }

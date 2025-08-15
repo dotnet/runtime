@@ -533,6 +533,13 @@ private:
 
 
 public:
+
+    CrstBase *GetAvailableTypesLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_AvailableTypesLock;
+    }
+
     //#LoaderModule
     // LoaderModule determines in which module an item gets placed.
     // For everything except parameterized types and methods the choice is easy.
@@ -563,11 +570,6 @@ private:
         HashedTypeEntry *     pEntry,
         Module *              pLookInThisModuleOnly,
         Loader::LoadFlag      loadFlag);
-
-    static PTR_Module ComputeLoaderModuleForCompilation(Module *pDefinitionModule,      // the module that declares the generic type or method
-                                                        mdToken token,
-                                                        Instantiation classInst,        // the type arguments to the type (if any)
-                                                        Instantiation methodInst);      // the type arguments to the method (if any)
 
 public:
     void Init(AllocMemTracker *pamTracker);
@@ -718,7 +720,6 @@ public:
                                              BOOL *           pfUsesTypeForwarder = NULL);
 
     static void EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
-    static void TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
 
 public:
     // Look up a class by name
@@ -889,24 +890,7 @@ private:
 
     static void DECLSPEC_NORETURN  ThrowTypeLoadException(const TypeKey *pKey, UINT resIDWhy);
 
-
-    BOOL IsNested(const NameHandle* pName, mdToken *mdEncloser);
-    static BOOL IsNested(ModuleBase *pModude, mdToken typeDefOrRef, mdToken *mdEncloser);
-
 public:
-    // Helpers for FindClassModule()
-    BOOL CompareNestedEntryWithTypeDef(IMDInternalImport *pImport,
-                                       mdTypeDef mdCurrent,
-                                       EEClassHashTable *pClassHash,
-                                       PTR_EEClassHashEntry pEntry);
-    BOOL CompareNestedEntryWithTypeRef(IMDInternalImport *pImport,
-                                       mdTypeRef mdCurrent,
-                                       EEClassHashTable *pClassHash,
-                                       PTR_EEClassHashEntry pEntry);
-    BOOL CompareNestedEntryWithExportedType(IMDInternalImport *pImport,
-                                            mdExportedType mdCurrent,
-                                            EEClassHashTable *pClassHash,
-                                            PTR_EEClassHashEntry pEntry);
 
     //Attempts to find/load/create a type handle but does not throw
     // if used in "find" mode.
@@ -933,7 +917,9 @@ private:
 
     // Notify profiler and debugger that a type load has completed
     // Also update perf counters
-    static void Notify(TypeHandle typeHnd);
+    static void NotifyLoad(TypeHandle typeHnd);
+    // Notify profiler that a MethodTable is being unloaded
+    static void NotifyUnload(MethodTable* pMT, bool unloadStarted);
 
     // Phase CLASS_LOAD_EXACTPARENTS of class loading
     // Load exact parents and interfaces and dependent structures (generics dictionary, vtable fixes)

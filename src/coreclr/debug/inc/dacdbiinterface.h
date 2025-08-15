@@ -374,11 +374,7 @@ public:
     //    the image was pulled from.
     //    eg: "
     //
-    // 5) Ngen path: If the module was ngenned, this is the path on disk into the ngen cache that the image
-    //    was pulled from.
-    //    eg:
-    //
-    // 6) Fully Qualified Assembly Name: this is an abstract name, which the CLR (fusion / loader) will
+    // 5) Fully Qualified Assembly Name: this is an abstract name, which the CLR (fusion / loader) will
     //    resolve (to a filename for file-based modules). Managed apps may need to deal in terms of FQN,
     //    but the debugging services generally avoid them.
     //    eg: "Foo, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL".
@@ -480,30 +476,6 @@ public:
     virtual
     BOOL GetModulePath(VMPTR_Module vmModule,
                        IStringHolder *  pStrFilename) = 0;
-
-
-    //
-    // Get the full path and file name to the ngen image for the module (if any).
-    //
-    // Arguments:
-    //     vmModule - VM pointer to the module.
-    //     pStrFilename - required out parameter where the filename will be stored.
-    //
-    // Return Value:
-    //     TRUE on success, in which case the filename was stored into pStrFilename
-    //     FALSE the module has no filename (eg. for in-memory assemblies), in which
-    //     case an empty string was stored into pStrFilename.
-    //     Throws an exception if there was a problem reading the data with DAC, in which case
-    //     no string was stored into pStrFilename.
-    //
-    // Notes:
-    //     See code:#ModuleNames for an overview on module names.
-    //
-    virtual
-    BOOL GetModuleNGenPath(VMPTR_Module vmModule,
-                           IStringHolder *  pStrFilename) = 0;
-
-
 
     // Get the metadata for the target module
     //
@@ -1240,20 +1212,17 @@ public:
 
 
     //
-    // Return the current appdomain the specified thread is in.
-    //
-    // Arguments:
-    //    vmThread - the specified thread
+    // Return the current appdomain.
     //
     // Return Value:
-    //    the current appdomain of the specified thread
+    //    the current appdomain
     //
     // Notes:
     //    This function throws if the current appdomain is NULL for whatever reason.
     //
 
     virtual
-    VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread) = 0;
+    VMPTR_AppDomain GetCurrentAppDomain() = 0;
 
 
     //
@@ -1287,8 +1256,7 @@ public:
     //       vmMethodDesc    MethodDesc of the function
     //       startAddr       starting address of the function--this serves to
     //                       differentiate various EnC versions of the function
-    //       fCodePitched    indicates whether code for the function has been pitched
-    //       fJitComplete    indicates whether the function has been jitted
+    //       fCodeAvailable
     //    output:
     //       pNativeVarData  space for the native code offset information for locals
     //       pSequencePoints space for the IL/native sequence points
@@ -1303,7 +1271,7 @@ public:
     virtual
     void GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc  vmMethodDesc,
                                                CORDB_ADDRESS     startAddress,
-                                               BOOL              fCodeAvailabe,
+                                               BOOL              fCodeAvailable,
                                                OUT NativeVarData *   pNativeVarData,
                                                OUT SequencePoints *  pSequencePoints) = 0;
 
@@ -1505,7 +1473,7 @@ public:
     //
     // Note:
     //    Because of the complexity involved in checking for the parent frame, we should always
-    //    ask the ExceptionTracker to do it.
+    //    ask the ExInfo to do it.
     //
 
     virtual
@@ -2383,15 +2351,7 @@ public:
     bool GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                        DWORD & dwTimeStamp,
                                        DWORD & dwImageSize,
-                                       bool  & isNGEN,
                                        IStringHolder* pStrFilename) = 0;
-
-    virtual
-    bool GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
-                                      DWORD & dwTimeStamp,
-                                      DWORD & dwSize,
-                                      IStringHolder* pStrFilename) = 0;
-
 
     virtual
     bool IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread) = 0;
@@ -2591,17 +2551,17 @@ public:
     //
     virtual
     HRESULT GetSharedReJitInfoData(VMPTR_SharedReJitInfo sharedReJitInfo, DacSharedReJitInfo* pData) = 0;
-    
+
     // Retrieves a bool indicating whether or not a method's optimizations have been disabled
     // defined in Debugger::IsMethodDeoptimized
-    // 
+    //
     //
     //
     // Arguments:
     //    vmModule                - The module for the method in question
     //    methodTk                - The method token for the method in question
     //    pOptimizationsDisabled  - [out] A bool indicating whether or not the optimizations on a function are disabled
-    //                              
+    //
     //
     // Returns:
     //    S_OK if no error
@@ -2609,7 +2569,7 @@ public:
     //
     virtual
     HRESULT AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled) = 0;
-    
+
     // Retrieves a bit field indicating which defines were in use when clr was built. This only includes
     // defines that are specified in the Debugger::_Target_Defines enumeration, which is a small subset of
     // all defines.
@@ -2769,6 +2729,9 @@ public:
     virtual
     bool MetadataUpdatesApplied() = 0;
 
+    virtual
+    HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly) = 0;
+
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 
@@ -2856,7 +2819,7 @@ public:
         //    - the reference count of the returned object is not adjusted.
         //
         virtual
-        IMDInternalImport * LookupMetaData(VMPTR_PEAssembly addressPEAssembly, bool &isILMetaDataForNGENImage) = 0;
+        IMDInternalImport * LookupMetaData(VMPTR_PEAssembly addressPEAssembly) = 0;
     };
 
 }; // end IDacDbiInterface

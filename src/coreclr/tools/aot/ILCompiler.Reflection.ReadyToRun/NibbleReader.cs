@@ -16,9 +16,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         private const byte NoNextNibble = 0xFF;
 
         /// <summary>
-        /// Byte array representing the PE file.
+        /// NativeReader representing the PE file.
         /// </summary>
-        private byte[] _image;
+        private NativeReader _imageReader;
 
         /// <summary>
         /// Offset within the image.
@@ -30,9 +30,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         private byte _nextNibble;
 
-        public NibbleReader(byte[] image, int offset)
+        public NibbleReader(NativeReader imageReader, int offset)
         {
-            _image = image;
+            _imageReader = imageReader;
             _offset = offset;
             _nextNibble = NoNextNibble;
         }
@@ -47,7 +47,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             else
             {
-                _nextNibble = _image[_offset++];
+                _nextNibble = _imageReader.ReadByte(ref _offset);
                 result = (byte)(_nextNibble & 0x0F);
                 _nextNibble >>= 4;
             }

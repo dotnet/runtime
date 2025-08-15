@@ -9,10 +9,16 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
+using Internal.Runtime;
+using Internal.ReadyToRunConstants;
+
 namespace ILCompiler.Reflection.ReadyToRun
 {
     public class PEExportTable
     {
+        public readonly bool HasExportTable;
+        public readonly int ExportTableHeaderLength;
+
         private readonly Dictionary<string, int> _namedExportRva;
         private readonly Dictionary<int, int> _ordinalRva;
 
@@ -25,12 +31,16 @@ namespace ILCompiler.Reflection.ReadyToRun
             if ((exportTable.Size == 0) || (exportTable.RelativeVirtualAddress == 0))
                 return;
 
+            HasExportTable = true;
+
             PEMemoryBlock peImage = peReader.GetEntireImage();
             BlobReader exportTableHeader = peImage.GetReader(peReader.GetOffset(exportTable.RelativeVirtualAddress), exportTable.Size);
             if (exportTableHeader.Length == 0)
             {
                 return;
             }
+
+            ExportTableHeaderLength = exportTableHeader.Length;
 
             // +0x00: reserved
             exportTableHeader.ReadUInt32();
@@ -86,12 +96,33 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
                     _namedExportRva.Add(nameBuilder.ToString(), addressTable[ordinalTable[entryIndex]]);
                 }
+                else
+                {
+                    Console.Error.WriteLine($"Found a zero RVA when reading name pointers for entry #{entryIndex}/{namePointerCount}");
+                }
             }
         }
 
         public static PEExportTable Parse(PEReader peReader)
         {
             return new PEExportTable(peReader);
+        }
+
+        public void DumpToConsoleError()
+        {
+            Console.Error.WriteLine($"HasExportTable: {HasExportTable}");
+            Console.Error.WriteLine($"ExportTableHeaderLength: {ExportTableHeaderLength}");
+            Console.Error.WriteLine($"_namedExportRva: {_namedExportRva.Count} item(s)");
+            int i = 0;
+            foreach (var kvp in _namedExportRva)
+            {
+                Console.Error.WriteLine($"  '{kvp.Key}': {kvp.Value}");
+                if (i++ > 64)
+                {
+                    Console.Error.WriteLine("  ... stopped dumping named exports because there are too many.");
+                    break;
+                }
+            }
         }
 
         public bool TryGetValue(string exportName, out int rva) => _namedExportRva.TryGetValue(exportName, out rva);
@@ -126,14 +157,35 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// Check whether the file is a ReadyToRun image and returns the RVA of its ReadyToRun header if positive.
+        /// Check whether the file is a composite ReadyToRun image and returns the RVA of its ReadyToRun header if positive.
         /// </summary>
         /// <param name="reader">PEReader representing the executable to check for the presence of ReadyToRun header</param>
         /// <param name="rva">RVA of the ReadyToRun header if available, 0 when not</param>
         /// <returns>true when the PEReader represents a ReadyToRun image, false otherwise</returns>
-        public static bool TryGetReadyToRunHeader(this PEReader reader, out int rva)
+        public static bool TryGetCompositeReadyToRunHeader(this PEReader reader, out int rva)
         {
             return reader.GetExportTable().TryGetValue("RTR_HEADER", out rva);
+        }
+
+        /// <summary>
+        /// Check whether the file is a ReadyToRun image created from platform neutral (AnyCPU) IL image.
+        /// </summary>
+        /// <param name="reader">PEReader representing the executable to check</param>
+        /// <returns>true when the PEReader represents a ReadyToRun image created from AnyCPU IL image, false otherwise</returns>
+        public static bool IsReadyToRunPlatformNeutralSource(this PEReader peReader)
+        {
+            var managedNativeDirectory = peReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
+            if (managedNativeDirectory.Size < 16 /* sizeof(ReadyToRunHeader) */)
+                return false;
+
+            var reader = peReader.GetSectionData(managedNativeDirectory.RelativeVirtualAddress).GetReader();
+            if (reader.ReadUInt32() != ReadyToRunHeaderConstants.Signature)
+                return false;
+
+            reader.ReadUInt16(); // MajorVersion
+            reader.ReadUInt16(); // MinorVersion
+
+            return (reader.ReadUInt32() & (uint)ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource) != 0;
         }
     }
 }

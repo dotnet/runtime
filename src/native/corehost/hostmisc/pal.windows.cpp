@@ -10,7 +10,6 @@
 #include <ShlObj.h>
 #include <ctime>
 
-
 void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
 {
     // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
@@ -21,7 +20,8 @@ void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
     _free_locale(loc);
 }
 
-namespace {
+namespace
+{
     void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
         // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
         // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
@@ -42,12 +42,14 @@ namespace {
     }
 }
 
-void pal::err_print_line(const pal::char_t* message) {
+void pal::err_print_line(const pal::char_t* message)
+{
     // Forward to helper to handle UTF-8 formatting and redirection
     print_line_to_handle(message, ::GetStdHandle(STD_ERROR_HANDLE), stderr);
 }
 
-void pal::out_vprint_line(const pal::char_t* format, va_list vl) {
+void pal::out_vprint_line(const pal::char_t* format, va_list vl)
+{
     va_list vl_copy;
     va_copy(vl_copy, vl);
     // Get the length of the formatted string + 1 for null terminator
@@ -96,35 +98,35 @@ namespace
 
         return s_get_temp_path_func(buffer_len, buffer);
     }
-}
 
-bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
-{
-    pal::string_t path;
-    size_t dwModuleFileName = MAX_PATH / 2;
-
-    do
+    bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
     {
-        path.resize(dwModuleFileName * 2);
-        dwModuleFileName = GetModuleFileNameW(hModule, (LPWSTR)path.data(), static_cast<DWORD>(path.size()));
-    } while (dwModuleFileName == path.size());
+        pal::string_t path;
+        size_t dwModuleFileName = MAX_PATH / 2;
 
-    if (dwModuleFileName == 0)
-        return false;
+        do
+        {
+            path.resize(dwModuleFileName * 2);
+            dwModuleFileName = GetModuleFileNameW(hModule, (LPWSTR)path.data(), static_cast<DWORD>(path.size()));
+        } while (dwModuleFileName == path.size());
 
-    path.resize(dwModuleFileName);
-    recv->assign(path);
-    return true;
-}
+        if (dwModuleFileName == 0)
+            return false;
 
-bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
-{
-    BOOL res = ::GetModuleHandleExW(
-        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-        reinterpret_cast<LPCWSTR>(addr),
-        hModule);
+        path.resize(dwModuleFileName);
+        recv->assign(path);
+        return true;
+    }
 
-    return (res != FALSE);
+    bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
+    {
+        BOOL res = ::GetModuleHandleExW(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(addr),
+            hModule);
+
+        return (res != FALSE);
+    }
 }
 
 pal::string_t pal::get_timestamp()
@@ -263,7 +265,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     {
         if (!pal::fullpath(&path))
         {
-            trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
+            trace::error(_X("Failed to load [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
             return false;
         }
     }
@@ -274,7 +276,13 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     *dll = ::LoadLibraryExW(path.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (*dll == nullptr)
     {
-        trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
+        int error_code = ::GetLastError();
+        trace::error(_X("Failed to load [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(error_code));
+        if (error_code == ERROR_BAD_EXE_FORMAT)
+        {
+            trace::error(_X("  - Ensure the library matches the current process architecture: ") _STRINGIFY(CURRENT_ARCH_NAME));
+        }
+
         return false;
     }
 
@@ -375,6 +383,11 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
+    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+}
+
+bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
+{
     //  ***Used only for testing***
     pal::string_t environmentOverride;
     if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
@@ -384,11 +397,6 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
-}
-
-bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
-{
     bool is_current_arch = arch == get_current_arch();
 
     // Bail out early for unsupported requests for different architectures
@@ -396,20 +404,28 @@ bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::str
         return false;
 
     const pal::char_t* program_files_dir;
-    if (is_current_arch && pal::is_running_in_wow64())
+    if (is_current_arch)
     {
-        // Running x86 on x64, looking for x86 install
-        program_files_dir = _X("ProgramFiles(x86)");
+        program_files_dir = _X("ProgramFiles");
     }
 #if defined(TARGET_AMD64)
-    else if (!is_current_arch && arch == pal::architecture::x86)
+    else if (arch == pal::architecture::x86)
     {
         // Running x64, looking for x86 install
         program_files_dir = _X("ProgramFiles(x86)");
     }
 #endif
+#if defined(TARGET_X86)
+    else if (pal::is_running_in_wow64() && arch == pal::architecture::x64)
+    {
+        // Running x86 on x64, looking for x64 install
+        program_files_dir = _X("ProgramW6432");
+    }
+#endif
     else
     {
+        // Running arm64/x64, looking for x64/arm64.
+        // Other cases should have bailed out based on is_supported_multi_arch_install
         program_files_dir = _X("ProgramFiles");
     }
 
@@ -641,9 +657,31 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 
+namespace
+{
+    bool is_directory_separator(pal::char_t c)
+    {
+        return c == DIR_SEPARATOR || c == L'/';
+    }
+}
+
 bool pal::is_path_rooted(const string_t& path)
 {
-    return path.length() >= 2 && path[1] == L':';
+    return (path.length() >= 1 && is_directory_separator(path[0])) // UNC or device paths
+        || (path.length() >= 2 && path[1] == L':'); // Drive letter paths
+}
+
+bool pal::is_path_fully_qualified(const string_t& path)
+{
+    if (path.length() < 2)
+        return false;
+
+    // Check for UNC and DOS device paths
+    if (is_directory_separator(path[0]))
+        return path[1] == L'?' || is_directory_separator(path[1]);
+
+    // Check for drive absolute path - for example C:\.
+    return path.length() >= 3 && path[1] == L':' && is_directory_separator(path[2]);
 }
 
 // Returns true only if an env variable can be read successfully to be non-empty.
@@ -661,8 +699,8 @@ bool pal::getenv(const char_t* name, string_t* recv)
         }
         return false;
     }
-    auto buf = new char_t[length];
-    if (::GetEnvironmentVariableW(name, buf, length) == 0)
+    std::vector<pal::char_t> buffer(length);
+    if (::GetEnvironmentVariableW(name, &buffer[0], length) == 0)
     {
         auto err = GetLastError();
         if (err != ERROR_ENVVAR_NOT_FOUND)
@@ -672,10 +710,30 @@ bool pal::getenv(const char_t* name, string_t* recv)
         return false;
     }
 
-    recv->assign(buf);
-    delete[] buf;
-
+    recv->assign(buffer.data());
     return true;
+}
+
+void pal::enumerate_environment_variables(const std::function<void(const pal::char_t*, const pal::char_t*)> callback)
+{
+    LPWCH env_strings = ::GetEnvironmentStringsW();
+    if (env_strings == nullptr)
+        return;
+
+    LPWCH current = env_strings;
+    while (*current != L'\0')
+    {
+        LPWCH eq_ptr = ::wcschr(current, L'=');
+        if (eq_ptr != nullptr && eq_ptr != current)
+        {
+            pal::string_t name(current, eq_ptr - current);
+            callback(name.c_str(), eq_ptr + 1);
+        }
+
+        current += pal::strlen(current) + 1; // Move to next string
+    }
+
+    ::FreeEnvironmentStringsW(env_strings);
 }
 
 int pal::xtoi(const char_t* input)
@@ -884,8 +942,12 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
                 }
             }
 
-            // Remove the \\?\ prefix, unless it is necessary or was already there
-            if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
+            // Remove the UNC extended prefix (\\?\UNC\) or extended prefix (\\?\) unless it is necessary or was already there
+            if (LongFile::IsUNCExtended(str) && !LongFile::IsUNCExtended(*path) && str.length() < MAX_PATH)
+            {
+                str.replace(0, LongFile::UNCExtendedPathPrefix.size(), LongFile::UNCPathPrefix);
+            }
+            else if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
                 !LongFile::ShouldNormalize(str.substr(LongFile::ExtendedPrefix.size())))
             {
                 str.erase(0, LongFile::ExtendedPrefix.size());
@@ -976,6 +1038,12 @@ bool pal::file_exists(const string_t& path)
 {
     string_t tmp(path);
     return pal::fullpath(&tmp, true);
+}
+
+bool pal::is_directory(const pal::string_t& path)
+{
+    DWORD attributes = ::GetFileAttributesW(path.c_str());
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

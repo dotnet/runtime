@@ -32,11 +32,10 @@ extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::Assem
     QCALL_CONTRACT;
 
     NATIVE_LIBRARY_HANDLE handle = nullptr;
-    Assembly *pAssembly = callingAssembly->GetAssembly();
 
     BEGIN_QCALL;
 
-    handle = NativeLibrary::LoadLibraryByName(name, pAssembly, hasDllImportSearchPathFlag, dllImportSearchPathFlag, throwOnError);
+    handle = NativeLibrary::LoadLibraryByName(name, callingAssembly, hasDllImportSearchPathFlag, dllImportSearchPathFlag, throwOnError);
 
     END_QCALL;
 

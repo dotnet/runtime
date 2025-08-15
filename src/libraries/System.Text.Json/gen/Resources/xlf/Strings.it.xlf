@@ -144,12 +144,12 @@
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
-        <target state="new">The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</target>
+        <target state="translated">Il tipo '{0}' include un riferimento come la proprietà, il campo o il parametro del costruttore '{1}'. Non verrà generato codice sorgente per la proprietà, il campo o il costruttore.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberTitle">
         <source>Type includes ref like property, field or constructor parameter.</source>
-        <target state="new">Type includes ref like property, field or constructor parameter.</target>
+        <target state="translated">Il tipo include un riferimento come la proprietà, il campo o il parametro del costruttore.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

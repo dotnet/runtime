@@ -9,25 +9,14 @@ namespace System
 {
     public partial class Object
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetTypeSlow")]
-        private static unsafe partial void GetTypeSlow(MethodTable* methodTable, ObjectHandleOnStack ret);
-
         // Returns a Type object which represent this object instance.
         [Intrinsic]
         public unsafe Type GetType()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
-            Type type = pMT->AuxiliaryData->ExposedClassObject ?? GetTypeWorker(pMT);
+            RuntimeType type = RuntimeTypeHandle.GetRuntimeType(pMT);
             GC.KeepAlive(this);
             return type;
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static Type GetTypeWorker(MethodTable* pMT)
-            {
-                Type? type = null;
-                GetTypeSlow(pMT, ObjectHandleOnStack.Create(ref type));
-                return type!;
-            }
         }
 
         // Returns a new object instance that is a memberwise copy of this

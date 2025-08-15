@@ -9,7 +9,7 @@ using System.Reflection.Metadata;
 namespace System.Formats.Nrbf;
 
 /// <summary>
-/// Represents the NRBF header, it must be the first record in NRBF payload.
+/// Represents the NRBF header. It must be the first record in NRBF payload.
 /// </summary>
 /// <remarks>
 /// SerializedStreamHeader records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">[MS-NRBF] 2.6.1</see>.
@@ -24,14 +24,8 @@ internal sealed class SerializedStreamHeaderRecord : SerializationRecord
 
     public override SerializationRecordType RecordType => SerializationRecordType.SerializedStreamHeader;
 
-    public override TypeName TypeName
-    {
-        get
-        {
-            Debug.Fail("TypeName should never be called on SerializedStreamHeaderRecord");
-            return TypeName.Parse(nameof(SerializedStreamHeaderRecord).AsSpan());
-        }
-    }
+    public override TypeName TypeName => TypeName.Parse(nameof(SerializedStreamHeaderRecord).AsSpan());
+
     public override SerializationRecordId Id => SerializationRecordId.NoId;
 
     internal SerializationRecordId RootId { get; }

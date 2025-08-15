@@ -3,13 +3,17 @@
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
-  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" /> 
+  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
 
   <PropertyGroup>
     <AndroidBuildDependsOn>PrepareForAndroidBuild;$(AndroidBuildDependsOn);_CopyTestArchive</AndroidBuildDependsOn>
     <BundleTestAndroidAppDependsOn>AndroidBuild</BundleTestAndroidAppDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
   </PropertyGroup>
 
   <!-- Target that kicks off the whole test build and run flow -->
@@ -22,9 +26,8 @@
 
     <PropertyGroup>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
-    
+
       <AndroidBuildDir>$(PublishDir)</AndroidBuildDir>
-      <AndroidBundleDir>$(BundleDir)</AndroidBundleDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -44,7 +47,7 @@
         <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AndroidAssembliesToBundle>
-      
+
       <_PublishAssemblies Include="$(PublishDir)\**\*.dll" Exclude="$(PublishDir)\**\*.resources.dll" />
       <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
 

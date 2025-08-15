@@ -1263,12 +1263,13 @@ namespace System.Threading.ThreadPools.Tests
                 RemoteExecutor.Invoke(() =>
                 {
                     const int WorkItemCountPerKind = 100;
+                    const int Kinds = 3;
 
                     int completedWorkItemCount = 0;
                     var allWorkItemsCompleted = new AutoResetEvent(false);
                     Action<int> workItem = _ =>
                     {
-                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCountPerKind * 3)
+                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCountPerKind * Kinds)
                         {
                             allWorkItemsCompleted.Set();
                         }
@@ -1301,6 +1302,27 @@ namespace System.Threading.ThreadPools.Tests
                             {
                                 ThreadPool.UnsafeQueueUserWorkItem(workItem, 0, preferLocal: false);
                             }
+                        },
+                        0,
+                        preferLocal: false);
+
+                    ThreadPool.UnsafeQueueUserWorkItem(
+                        _ =>
+                        {
+                            // Enqueue tasks from a thread pool thread into the local queue,
+                            // then block this thread until a queued task completes.
+
+                            startTest.CheckedWait();
+
+                            Task queued = null;
+                            for (int i = 0; i < WorkItemCountPerKind; i++)
+                            {
+                                queued = Task.Run(() => workItem(0));
+                            }
+
+                            queued
+                                .ContinueWith(_ => { }) // prevent wait inlining
+                                .Wait();
                         },
                         0,
                         preferLocal: false);
@@ -1342,6 +1364,7 @@ namespace System.Threading.ThreadPools.Tests
         [ConditionalTheory(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
         [MemberData(nameof(IOCompletionPortCountConfigVarTest_Args))]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/106371")]
         public static void IOCompletionPortCountConfigVarTest(int ioCompletionPortCount)
         {
             // Avoid contaminating the main process' environment
@@ -1437,6 +1460,42 @@ namespace System.Threading.ThreadPools.Tests
                     }
                 }).Dispose();
             }, ioCompletionPortCount.ToString()).Dispose();
+        }
+
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static unsafe void ThreadPoolCompletedWorkItemCountTest()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that we don't count external work items
+            RemoteExecutor.Invoke(() =>
+            {
+                const int WorkItemCount = 4;
+
+                int completedWorkItemCount = 0;
+                using var allWorkItemsCompleted = new AutoResetEvent(false);
+
+                IOCompletionCallback callback =
+                    (errorCode, numBytes, innerNativeOverlapped) =>
+                    {
+                        Overlapped.Free(innerNativeOverlapped);
+                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCount)
+                        {
+                            allWorkItemsCompleted.Set();
+                        }
+                    };
+                for (int i = 0; i < WorkItemCount; i++)
+                {
+                    ThreadPool.UnsafeQueueNativeOverlapped(new Overlapped().Pack(callback, null));
+                }
+
+                allWorkItemsCompleted.CheckedWait();
+
+                // Allow work items to be marked as completed during this time
+                ThreadTestHelpers.WaitForCondition(() => ThreadPool.CompletedWorkItemCount >= WorkItemCount);
+                Thread.Sleep(50);
+                Assert.Equal(WorkItemCount, ThreadPool.CompletedWorkItemCount);
+            }).Dispose();
         }
 
         public static bool IsThreadingAndRemoteExecutorSupported =>

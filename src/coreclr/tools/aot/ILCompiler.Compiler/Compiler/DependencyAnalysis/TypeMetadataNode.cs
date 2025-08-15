@@ -37,8 +37,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
-
             DefType containingType = _type.ContainingType;
             if (containingType != null)
                 dependencies.Add(factory.TypeMetadata((MetadataType)containingType), "Containing type of a reflectable type");
@@ -102,6 +100,13 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            var dependencies = new List<CombinedDependencyListEntry>();
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
+            return dependencies;
+        }
+
         /// <summary>
         /// Decomposes a constructed type into individual <see cref="TypeMetadataNode"/> units that will be needed to
         /// express the constructed type in metadata.
@@ -132,6 +137,18 @@ namespace ILCompiler.DependencyAnalysis
                 default:
                     Debug.Assert(type.IsDefType);
 
+                    // We generally postpone creating MethodTables until absolutely needed.
+                    // IDynamicInterfaceCastableImplementation is special in the sense that just obtaining a System.Type
+                    // (by e.g. browsing custom attribute metadata) gives the user enough to pass this to runtime APIs
+                    // that need a MethodTable. We don't have a legitimate type handle without the MethodTable. Other
+                    // kinds of APIs that expect a MethodTable have enough dataflow annotation to trigger warnings.
+                    // There's no dataflow annotations on the IDynamicInterfaceCastable.GetInterfaceImplementation API.
+                    if (type.IsInterface && ((MetadataType)type).IsDynamicInterfaceCastableImplementation())
+                    {
+                        dependencies ??= new DependencyList();
+                        dependencies.Add(nodeFactory.ReflectedType(type), "Reflected IDynamicInterfaceCastableImplementation");
+                    }
+
                     TypeDesc typeDefinition = type.GetTypeDefinition();
                     if (typeDefinition != type)
                     {
@@ -160,7 +177,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable type: " + _type.ToString();
+            return "Type metadata: " + _type.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)
@@ -171,9 +188,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

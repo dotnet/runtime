@@ -1,2 +1,0 @@
-This file is here so this directory gets checked out even with the -P
-option.

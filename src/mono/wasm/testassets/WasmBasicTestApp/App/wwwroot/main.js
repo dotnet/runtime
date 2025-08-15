@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { dotnet, exit } from './_framework/dotnet.js'
+import { saveProfile } from './profiler.js'
 
 // Read test case from query string
 const params = new URLSearchParams(location.search);
@@ -25,10 +26,30 @@ dotnet
     .withExitCodeLogging()
     .withExitOnUnhandledError();
 
+const logLevel = params.get("MONO_LOG_LEVEL");
+const logMask = params.get("MONO_LOG_MASK");
+if (logLevel !== null && logMask !== null) {
+    dotnet.withDiagnosticTracing(true); // enable JavaScript tracing
+    dotnet.withConfig({
+        environmentVariables: {
+            "MONO_LOG_LEVEL": logLevel,
+            "MONO_LOG_MASK": logMask,
+        }
+    });
+}
+
 // Modify runtime start based on test case
 switch (testCase) {
+    case "SatelliteAssembliesTest":
+        if (params.get("loadAllSatelliteResources") === "true") {
+            dotnet.withConfig({ loadAllSatelliteResources: true });
+        }
+        break;
     case "AppSettingsTest":
-        dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
+        const applicationEnvironment = params.get("applicationEnvironment");
+        if (applicationEnvironment) {
+            dotnet.withApplicationEnvironment(applicationEnvironment);
+        }
         break;
     case "LazyLoadingTest":
         dotnet.withDiagnosticTracing(true);
@@ -121,9 +142,43 @@ switch (testCase) {
         };
         dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
         break;
+    case "AllocateLargeHeapThenInterop":
+        dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        dotnet.withEnvironmentVariable("MONO_LOG_MASK", "gc")
+        dotnet.withModuleConfig({
+            preRun: (Module) => {
+                // wasting 2GB of memory
+                for (let i = 0; i < 210; i++) {
+                    testOutput(`wasting 10m ${Module._malloc(10 * 1024 * 1024)}`);
+                }
+                testOutput(`WASM ${Module.HEAP32.byteLength} bytes.`);
+            }
+        })
+        break;
+    case "LogProfilerTest":
+        dotnet.withConfig({
+            logProfilerOptions: {
+                takeHeapshot: "LogProfilerTest::TakeHeapshot",
+                configuration: "log:alloc,output=output.mlpd"
+            }
+        })
+        break;
+    case "EnvVariablesTest":
+        dotnet.withEnvironmentVariable("foo", "bar");
+        break;
+    case "HttpNoStreamingTest":
+        break;
+    case "BrowserProfilerTest":
+        break;
+    case "OverrideBootConfigName":
+        dotnet.withConfigSrc("boot.json");
+        break;
+    case "MainWithArgs":
+        dotnet.withApplicationArgumentsFromQuery();
+        break;
 }
 
-const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -132,7 +187,7 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 try {
     switch (testCase) {
         case "SatelliteAssembliesTest":
-            await exports.SatelliteAssembliesTest.Run();
+            await exports.SatelliteAssembliesTest.Run(params.get("loadAllSatelliteResources") !== "true");
             exit(0);
             break;
         case "LazyLoadingTest":
@@ -154,9 +209,16 @@ try {
                 }
 
                 await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                exports.LazyLoadingTest.Run();
+                await INTERNAL.loadLazyAssembly(`LazyLibrary${lazyAssemblyExtension}`);
+                const { LazyLibrary } = await getAssemblyExports("LazyLibrary");
+                const resLazy = LazyLibrary.Foo.Bar();
+                exit(resLazy == 42 ? 0 : 1);
             }
-            exports.LazyLoadingTest.Run();
-            exit(0);
+            else {
+                exports.LazyLoadingTest.Run();
+                exit(0);
+            }
             break;
         case "LibraryInitializerTest":
             exit(0);
@@ -169,11 +231,13 @@ try {
             exit(0);
             break;
         case "OutErrOverrideWorks":
+        case "DotnetRun":
+        case "MainWithArgs":
             dotnet.run();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
-            exit(0);
+            exit(42);
             break;
         case "InterpPgoTest":
             setModuleImports('main.js', {
@@ -199,6 +263,83 @@ try {
                 countChars
             });
             exports.MemoryTest.Run();
+            exit(0);
+            break;
+        case "HttpNoStreamingTest":
+            console.log("not ready yet")
+            const myExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            const httpNoStreamingTest = myExportsHttp.HttpTest.HttpNoStreamingTest;
+            console.log("ready");
+            if (config.runtimeConfig.runtimeOptions.configProperties) {
+                const configProperties = config.runtimeConfig.runtimeOptions.configProperties;
+                console.log("configProperties: " + Object.keys(configProperties).length);
+                const wasmEnableStreamingResponse = configProperties["System.Net.Http.WasmEnableStreamingResponse"];
+                if (wasmEnableStreamingResponse === undefined) {
+                    exit(2);
+                }
+                if (wasmEnableStreamingResponse === true) {
+                    exit(3);
+                }
+            }
+
+            const retHttp = await httpNoStreamingTest();
+            document.getElementById("out").innerHTML = retHttp;
+            console.debug(`ret: ${retHttp}`);
+
+            exit(retHttp == 42 ? 0 : 1);
+            break;
+        case "EnvVariablesTest":
+            console.log("not ready yet")
+            const myExportsEnv = await getAssemblyExports(config.mainAssemblyName);
+            const dumpVariables = myExportsEnv.EnvVariablesTest.DumpVariables;
+            console.log("ready");
+
+            const retVars = dumpVariables();
+            document.getElementById("out").innerHTML = retVars;
+            console.debug(`ret: ${retVars}`);
+
+            exit(retVars == 42 ? 0 : 1);
+            break;
+        case "LogProfilerTest":
+            console.log("not ready yet")
+            const myExports = await getAssemblyExports(config.mainAssemblyName);
+            const testMeaning = myExports.LogProfilerTest.TestMeaning;
+            const takeHeapshot = myExports.LogProfilerTest.TakeHeapshot;
+            console.log("ready");
+
+            const ret = testMeaning();
+            document.getElementById("out").innerHTML = ret;
+            console.debug(`ret: ${ret}`);
+
+            takeHeapshot();
+            saveProfile(Module);
+
+            let exit_code = ret == 42 ? 0 : 1;
+            exit(exit_code);
+            break;
+        case "BrowserProfilerTest":
+            console.log("not ready yet")
+            let foundB = false;
+            globalThis.performance.measure = (method, options) => {
+                console.log(`performance.measure: ${method}`);
+                if (method === "TestMeaning") {
+                    foundB = true;
+                }
+            };
+            const myExportsB = await getAssemblyExports(config.mainAssemblyName);
+            const testMeaningB = myExportsB.BrowserProfilerTest.TestMeaning;
+            console.log("ready");
+
+            const retB = testMeaningB();
+            document.getElementById("out").innerHTML = retB;
+            console.debug(`ret: ${retB}`);
+
+            exit(foundB && retB == 42 ? 0 : 1);
+
+            break;
+        case "OverrideBootConfigName":
+            testOutput("ConfigSrc: " + Module.configSrc);
+            exports.OverrideBootConfigNameTest.Run();
             exit(0);
             break;
         default:

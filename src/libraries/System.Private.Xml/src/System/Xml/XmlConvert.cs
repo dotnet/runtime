@@ -86,7 +86,7 @@ namespace System.Xml
                 return name;
             }
 
-            Regex.ValueMatchEnumerator en = DecodeCharRegex().EnumerateMatches(name.AsSpan(underscorePos));
+            Regex.ValueMatchEnumerator en = DecodeCharRegex.EnumerateMatches(name.AsSpan(underscorePos));
             int matchPos = -1;
             if (en.MoveNext())
             {
@@ -185,7 +185,7 @@ namespace System.Xml
             IEnumerator? en = null;
             if (underscorePos >= 0)
             {
-                mc = EncodeCharRegex().Matches(name, underscorePos);
+                mc = EncodeCharRegex.Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
 
@@ -281,10 +281,10 @@ namespace System.Xml
         private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
 
         [GeneratedRegex("_[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
-        private static partial Regex DecodeCharRegex();
+        private static partial Regex DecodeCharRegex { get; }
 
         [GeneratedRegex("(?<=_)[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
-        private static partial Regex EncodeCharRegex();
+        private static partial Regex EncodeCharRegex { get; }
 
         private static int FromHex(char digit)
         {

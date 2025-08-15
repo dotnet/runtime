@@ -173,15 +173,29 @@ enum class hostfxr_resolve_sdk2_result_key_t : int32_t
     resolved_sdk_dir = 0,
     global_json_path = 1,
     requested_version = 2,
+    global_json_state = 3,
 };
 
 typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
     hostfxr_resolve_sdk2_result_key_t key,
     const pal::char_t* value);
 
+namespace
+{
+    const pal::char_t *GlobalJsonStates[] =
+    {
+        _X("not_found"),
+        _X("valid"),
+        _X("invalid_json"),
+        _X("invalid_data"),
+        _X("__invalid_data_no_fallback"),
+    };
+    static_assert((sizeof(GlobalJsonStates) / sizeof(*GlobalJsonStates)) == static_cast<size_t>(sdk_resolver::global_file_info::state::__last), "Invalid state count");
+}
+
 //
 // Determines the directory location of the SDK accounting for
-// global.json and multi-level lookup policy.
+// global.json.
 //
 // Invoked via MSBuild SDK resolver to locate SDK props and targets
 // from an msbuild other than the one bundled by the CLI.
@@ -192,13 +206,12 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //      sub-folders. Pass the directory of a dotnet executable to
 //      mimic how that executable would search in its own directory.
 //      It is also valid to pass nullptr or empty, in which case
-//      multi-level lookup can still search other locations if
-//      it has not been disabled by the user's environment.
+//      only paths from any found global.json will be searched.
 //
 //    working_dir
 //      The directory where the search for global.json (which can
 //      control the resolved SDK version) starts and proceeds
-//      upwards.
+//      upwards. If nullptr or empty, global.json search is disabled.
 //
 //   flags
 //      Bitwise flags that influence resolution.
@@ -228,9 +241,13 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //      value will hold the requested version. This will occur for
 //      both resolution success and failure.
 //
+//      The result will be invoked with global_json_state key and
+//      the value will hold one of: not_found, valid, invalid_json,
+//      invalid_data.
+//
 // Return value:
 //   0 on success, otherwise failure
-//   0x8000809b - SDK could not be resolved (SdkResolverResolveFailure)
+//   0x8000809b - SDK could not be resolved (SdkResolveFailure)
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
@@ -273,11 +290,11 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
             resolved_sdk_dir.c_str());
     }
 
-    if (!resolver.global_file_path().empty())
+    if (resolver.global_file().is_data_used() && !resolver.global_file().path.empty())
     {
         result(
             hostfxr_resolve_sdk2_result_key_t::global_json_path,
-            resolver.global_file_path().c_str());
+            resolver.global_file().path.c_str());
     }
 
     if (!resolver.get_requested_version().is_empty())
@@ -287,9 +304,13 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
             resolver.get_requested_version().as_str().c_str());
     }
 
+    result(
+        hostfxr_resolve_sdk2_result_key_t::global_json_state,
+        GlobalJsonStates[static_cast<int>(resolver.global_file().state)]);
+
     return !resolved_sdk_dir.empty()
         ? StatusCode::Success
-        : StatusCode::SdkResolverResolveFailure;
+        : StatusCode::SdkResolveFailure;
 }
 
 
@@ -550,7 +571,7 @@ namespace
             if (!pal::get_own_executable_path(&startup_info.host_path) || !pal::fullpath(&startup_info.host_path))
             {
                 trace::error(_X("Failed to resolve full path of the current host [%s]"), startup_info.host_path.c_str());
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
             }
         }
 
@@ -558,13 +579,13 @@ namespace
         {
             pal::string_t mod_path;
             if (!pal::get_method_module_path(&mod_path, (void*)&hostfxr_set_error_writer))
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
 
             startup_info.dotnet_root = get_dotnet_root_from_fxr_path(mod_path);
             if (!pal::fullpath(&startup_info.dotnet_root))
             {
                 trace::error(_X("Failed to resolve full path of dotnet root [%s]"), startup_info.dotnet_root.c_str());
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
             }
         }
 
@@ -623,7 +644,12 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_confi
     const runtime_config_t::settings_t override_settings;
     app->parse_runtime_config(runtime_config, _X(""), override_settings);
 
-    const runtime_config_t app_config = app->get_runtime_config();
+    const runtime_config_t& app_config = app->get_runtime_config();
+    if (!app_config.is_valid())
+    {
+        trace::error(_X("Invalid runtimeconfig.json [%s]"), app_config.get_path().c_str());
+        return StatusCode::InvalidConfigFile;
+    }
 
     // Resolve frameworks for framework-dependent apps.
     // Self-contained apps assume the framework is next to the app, so we just treat it as success.
@@ -853,6 +879,8 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_property_value(
     if (name == nullptr || value == nullptr)
         return StatusCode::InvalidArgFailure;
 
+    *value = nullptr;
+
     const host_context_t *context;
     if (host_context_handle == nullptr)
     {
@@ -931,6 +959,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_properties(
         if (context_maybe == nullptr)
         {
             trace::error(_X("Hosting components context has not been initialized. Cannot get runtime properties."));
+            *count = 0;
             return StatusCode::HostInvalidState;
         }
 
@@ -940,7 +969,10 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_properties(
     {
         context = host_context_t::from_handle(host_context_handle);
         if (context == nullptr)
+        {
+            *count = 0;
             return StatusCode::InvalidArgFailure;
+        }
     }
 
     if (context->type == host_context_type::secondary)

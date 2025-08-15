@@ -7,7 +7,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private static IEnumerable<TSource> SkipIterator<TSource>(IEnumerable<TSource> source, int count) =>
+        private static IEnumerable<TSource> SpeedOptimizedSkipIterator<TSource>(IEnumerable<TSource> source, int count) =>
             source is IList<TSource> sourceList ?
                 (IEnumerable<TSource>)new IListSkipTakeIterator<TSource>(sourceList, count, int.MaxValue) :
                 new IEnumerableSkipTakeIterator<TSource>(source, count, -1);

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -79,7 +80,7 @@ namespace System
                     }
                 }
             }
-            else if (err > ParsingError.LastRelativeUriOkErrIndex)
+            else if (err > ParsingError.LastErrorOkayForRelativeUris)
             {
                 //This is a fatal error based solely on scheme name parsing
                 _string = null!; // make it be invalid Uri
@@ -103,7 +104,7 @@ namespace System
                 {
                     if ((err = PrivateParseMinimal()) != ParsingError.None)
                     {
-                        if (uriKind != UriKind.Absolute && err <= ParsingError.LastRelativeUriOkErrIndex)
+                        if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                         {
                             // RFC 3986 Section 5.4.2 - http:(relativeUri) may be considered a valid relative Uri.
                             _syntax = null!; // convert to relative uri
@@ -152,7 +153,7 @@ namespace System
                     {
                         // Can we still take it as a relative Uri?
                         if (uriKind != UriKind.Absolute && err != ParsingError.None
-                            && err <= ParsingError.LastRelativeUriOkErrIndex)
+                            && err <= ParsingError.LastErrorOkayForRelativeUris)
                         {
                             _syntax = null!; // convert it to relative
                             e = null;
@@ -194,7 +195,7 @@ namespace System
             // If we encountered any parsing errors that indicate this may be a relative Uri,
             // and we'll allow relative Uri's, then create one.
             else if (err != ParsingError.None && uriKind != UriKind.Absolute
-                && err <= ParsingError.LastRelativeUriOkErrIndex)
+                && err <= ParsingError.LastErrorOkayForRelativeUris)
             {
                 e = null;
                 _flags &= (Flags.UserEscaped | Flags.HasUnicode); // the only flags that makes sense for a relative uri
@@ -203,10 +204,6 @@ namespace System
                     // Iri'ze and then normalize relative uris
                     _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length,
                                                 (UriComponents)0);
-                    if (_string.Length > ushort.MaxValue)
-                    {
-                        return;
-                    }
                 }
             }
             else
@@ -216,32 +213,49 @@ namespace System
             }
         }
 
-        // Unescapes entire string and checks if it has unicode chars
-        // Also checks for sequences that are 3986 Unreserved characters as these should be un-escaped
+        /// <summary>SearchValues for all ASCII characters other than %</summary>
+        private static readonly SearchValues<char> s_asciiOtherThanPercent = SearchValues.Create(
+            "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F" +
+            "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F" +
+            "\u0020\u0021\u0022\u0023\u0024" +  "\u0026\u0027\u0028\u0029\u002A\u002B\u002C\u002D\u002E\u002F" +
+            "\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037\u0038\u0039\u003A\u003B\u003C\u003D\u003E\u003F" +
+            "\u0040\u0041\u0042\u0043\u0044\u0045\u0046\u0047\u0048\u0049\u004A\u004B\u004C\u004D\u004E\u004F" +
+            "\u0050\u0051\u0052\u0053\u0054\u0055\u0056\u0057\u0058\u0059\u005A\u005B\u005C\u005D\u005E\u005F" +
+            "\u0060\u0061\u0062\u0063\u0064\u0065\u0066\u0067\u0068\u0069\u006A\u006B\u006C\u006D\u006E\u006F" +
+            "\u0070\u0071\u0072\u0073\u0074\u0075\u0076\u0077\u0078\u0079\u007A\u007B\u007C\u007D\u007E\u007F");
+
+        /// <summary>
+        /// Unescapes entire string and checks if it has unicode chars.Also checks for sequences that are 3986 Unreserved characters as these should be un-escaped
+        /// </summary>
         private static bool CheckForUnicodeOrEscapedUnreserved(string data)
         {
-            for (int i = 0; i < data.Length; i++)
+            int i = data.AsSpan().IndexOfAnyExcept(s_asciiOtherThanPercent);
+            if (i >= 0)
             {
-                char c = data[i];
-                if (c == '%')
+                for ( ; i < data.Length; i++)
                 {
-                    if ((uint)(i + 2) < (uint)data.Length)
+                    char c = data[i];
+                    if (c == '%')
                     {
-                        char value = UriHelper.DecodeHexChars(data[i + 1], data[i + 2]);
-
-                        if (!char.IsAscii(value) || UriHelper.Unreserved.Contains(value))
+                        if ((uint)(i + 2) < (uint)data.Length)
                         {
-                            return true;
-                        }
+                            char value = UriHelper.DecodeHexChars(data[i + 1], data[i + 2]);
 
-                        i += 2;
+                            if (!char.IsAscii(value) || UriHelper.Unreserved.Contains(value))
+                            {
+                                return true;
+                            }
+
+                            i += 2;
+                        }
+                    }
+                    else if (c > 0x7F)
+                    {
+                        return true;
                     }
                 }
-                else if (c > 0x7F)
-                {
-                    return true;
-                }
             }
+
             return false;
         }
 
@@ -754,7 +768,7 @@ namespace System
             if (err != ParsingError.None)
             {
                 // If it looks as a relative Uri, custom factory is ignored
-                if (uriKind != UriKind.Absolute && err <= ParsingError.LastRelativeUriOkErrIndex)
+                if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                     return new Uri((flags & Flags.UserEscaped), null, uriString);
 
                 return null;
@@ -873,7 +887,7 @@ namespace System
             return null;
         }
 
-        private unsafe string GetRelativeSerializationString(UriFormat format)
+        private string GetRelativeSerializationString(UriFormat format)
         {
             if (format == UriFormat.UriEscaped)
             {
@@ -1035,30 +1049,42 @@ namespace System
         {
             DebugAssertInCtor();
 
-            // Clone the other URI but develop own UriInfo member
-            _info = null!;
-
             _flags = otherUri._flags;
-            if (InFact(Flags.MinimalUriInfoSet))
+
+            if (InFact(Flags.AllUriInfoSet))
             {
-                _flags &= ~(Flags.MinimalUriInfoSet | Flags.AllUriInfoSet | Flags.IndexMask);
-                // Port / Path offset
-                int portIndex = otherUri._info.Offset.Path;
-                if (InFact(Flags.NotDefaultPort))
+                // We can share it now without mutation concern, for since AllUriInfoSet it is immutable.
+                _info = otherUri._info;
+            }
+            else
+            {
+                Debug.Assert(!InFact(Flags.HasUnicode) || otherUri.IsNotAbsoluteUri);
+                // Clone the other URI but develop own UriInfo member
+                // We cannot just reference otherUri._info as this UriInfo will be mutated later
+                // which could be happening concurrently and in a not thread safe manner.
+                _info = null!;
+
+                if (InFact(Flags.MinimalUriInfoSet))
                 {
-                    // Find the start of the port.  Account for non-canonical ports like :00123
-                    while (otherUri._string[portIndex] != ':' && portIndex > otherUri._info.Offset.Host)
+                    _flags &= ~(Flags.MinimalUriInfoSet | Flags.AllUriInfoSet | Flags.IndexMask);
+                    // Port / Path offset
+                    int portIndex = otherUri._info.Offset.Path;
+                    if (InFact(Flags.NotDefaultPort))
                     {
-                        portIndex--;
+                        // Find the start of the port.  Account for non-canonical ports like :00123
+                        while (otherUri._string[portIndex] != ':' && portIndex > otherUri._info.Offset.Host)
+                        {
+                            portIndex--;
+                        }
+                        if (otherUri._string[portIndex] != ':')
+                        {
+                            // Something wrong with the NotDefaultPort flag.  Reset to path index
+                            Debug.Fail("Uri failed to locate custom port at index: " + portIndex);
+                            portIndex = otherUri._info.Offset.Path;
+                        }
                     }
-                    if (otherUri._string[portIndex] != ':')
-                    {
-                        // Something wrong with the NotDefaultPort flag.  Reset to path index
-                        Debug.Fail("Uri failed to locate custom port at index: " + portIndex);
-                        portIndex = otherUri._info.Offset.Path;
-                    }
+                    _flags |= (Flags)portIndex; // Port or path
                 }
-                _flags |= (Flags)portIndex; // Port or path
             }
 
             _syntax = otherUri._syntax;

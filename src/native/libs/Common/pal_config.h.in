@@ -27,11 +27,11 @@
 #cmakedefine01 HAVE_STAT_FLAGS
 #cmakedefine01 HAVE_LCHFLAGS
 #cmakedefine01 HAVE_GNU_STRERROR_R
-#cmakedefine01 HAVE_READDIR_R
 #cmakedefine01 HAVE_DIRENT_NAME_LEN
 #cmakedefine01 HAVE_MNTINFO
 #cmakedefine01 HAVE_STATFS_FSTYPENAME
 #cmakedefine01 HAVE_STATVFS_FSTYPENAME
+#cmakedefine01 HAVE_STATVFS_BASETYPE
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
 #cmakedefine01 HAVE_STRCPY_S
 #cmakedefine01 HAVE_STRLCPY
@@ -56,6 +56,9 @@
 #cmakedefine01 HAVE_ETHTOOL_H
 #cmakedefine01 HAVE_SYS_POLL_H
 #cmakedefine01 HAVE_EPOLL
+#cmakedefine01 HAVE_GETHOSTNAME
+#cmakedefine01 HAVE_GETNAMEINFO
+#cmakedefine01 HAVE_SOCKADDR_UN_SUN_PATH
 #cmakedefine01 HAVE_ACCEPT4
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_SENDFILE_4

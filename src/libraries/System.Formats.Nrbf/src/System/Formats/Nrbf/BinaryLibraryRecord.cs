@@ -30,14 +30,7 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
 
     public override SerializationRecordType RecordType => SerializationRecordType.BinaryLibrary;
 
-    public override TypeName TypeName
-    {
-        get
-        {
-            Debug.Fail("TypeName should never be called on BinaryLibraryRecord");
-            return TypeName.Parse(nameof(BinaryLibraryRecord).AsSpan());
-        }
-    }
+    public override TypeName TypeName => TypeName.Parse(nameof(BinaryLibraryRecord).AsSpan());
 
     internal string? RawLibraryName { get; }
 
@@ -57,7 +50,7 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
         }
         else if (!options.UndoTruncatedTypeNames)
         {
-            ThrowHelper.ThrowInvalidAssemblyName(rawName);
+            ThrowHelper.ThrowInvalidAssemblyName();
         }
 
         return new BinaryLibraryRecord(id, rawName);

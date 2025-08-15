@@ -95,7 +95,7 @@ namespace System.Reflection.Emit.Tests
             VerifyMethod(type4, method4, name, attributes, callingConvention, returnType, parameterTypes);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [MemberData(nameof(TestData))]
         public void DefineMethodPersistedAssembly(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
         {
@@ -136,10 +136,10 @@ namespace System.Reflection.Emit.Tests
 
             // System.TypeLoadException : Type 'TestType' from assembly 'TestAssembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'
             // contains more methods than the current implementation allows.
-            Assert.Throws<TypeLoadException>(() => type.CreateType()); 
+            Assert.Throws<TypeLoadException>(() => type.CreateType());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineMethod_65536MethodsPersistedAssembly()
         {

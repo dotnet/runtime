@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null, null)]
         [InlineData("", "")]
         [InlineData("publicKey", "countersignature")]
-        public void Ctor_String_String(string publicKey, string countersignature)
+        public void Ctor_String_String(string? publicKey, string? countersignature)
         {
             var attribute = new AssemblySignatureKeyAttribute(publicKey, countersignature);
             Assert.Equal(publicKey, attribute.PublicKey);

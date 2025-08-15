@@ -43,7 +43,7 @@ namespace System.Formats.Asn1
             new Asn1Tag(ConstructedMask, (int)UniversalTagNumber.OctetString);
 
         /// <summary>
-        ///   Represents the universal class tag for a Null value.
+        ///   Represents the universal class tag for a <c>Null</c> value.
         /// </summary>
         public static readonly Asn1Tag Null = new Asn1Tag(0, (int)UniversalTagNumber.Null);
 

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -95,7 +96,7 @@ namespace System.Text.Json.Tests
         [InlineData("hello")]
         [InlineData("")]
         [InlineData(null)]
-        public static void NameEquals_InvalidInstance_Throws(string text)
+        public static void NameEquals_InvalidInstance_Throws(string? text)
         {
             string ErrorMessage = new InvalidOperationException().Message;
             JsonProperty prop = default;
@@ -103,6 +104,14 @@ namespace System.Text.Json.Tests
             AssertExtensions.Throws<InvalidOperationException>(() => prop.NameEquals(text.AsSpan()), ErrorMessage);
             byte[] expectedGetBytes = text == null ? null : Encoding.UTF8.GetBytes(text);
             AssertExtensions.Throws<InvalidOperationException>(() => prop.NameEquals(expectedGetBytes), ErrorMessage);
+        }
+
+        [Fact]
+        public static void JsonMarshal_GetRawUtf8PropertyName_InvalidInstance_Throws()
+        {
+            string ErrorMessage = new InvalidOperationException().Message;
+            JsonProperty prop = default;
+            AssertExtensions.Throws<InvalidOperationException>(() => JsonMarshal.GetRawUtf8PropertyName(prop), ErrorMessage);
         }
 
         [Theory]
@@ -121,6 +130,23 @@ namespace System.Text.Json.Tests
                 Assert.True(property.NameEquals(otherText));
                 Assert.True(property.NameEquals(otherText.AsSpan()));
                 Assert.True(property.NameEquals(expectedGetBytes));
+            }
+        }
+
+        [Theory]
+        [InlineData("conne\\u0063tionId", "conne\\u0063tionId")]
+        [InlineData("connectionId", "connectionId")]
+        [InlineData("123", "123")]
+        [InlineData("My name is \\\"Ahson\\\"", "My name is \\\"Ahson\\\"")]
+        public static void JsonMarshal_GetRawUtf8PropertyName_UseGoodMatches_True(string propertyName, string otherText)
+        {
+            string jsonString = $"{{ \"{propertyName}\" : \"itsValue\" }}";
+            using (JsonDocument doc = JsonDocument.Parse(jsonString))
+            {
+                JsonElement jElement = doc.RootElement;
+                JsonProperty property = jElement.EnumerateObject().First();
+                byte[] expectedGetBytes = Encoding.UTF8.GetBytes(otherText);
+                Assert.True(JsonMarshal.GetRawUtf8PropertyName(property).SequenceEqual(expectedGetBytes));
             }
         }
 

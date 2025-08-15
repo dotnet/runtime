@@ -24,7 +24,6 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/runtime.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-gc.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -63,8 +62,6 @@ typedef struct DomainFinalizationReq {
 static gboolean gc_disabled;
 
 static gboolean finalizing_root_domain;
-
-extern gboolean mono_term_signaled;
 
 gboolean mono_log_finalizers;
 gboolean mono_do_not_finalize;
@@ -694,8 +691,8 @@ mono_gc_finalize_notify (void)
 	if (mono_gc_is_null ())
 		return;
 
-#if defined(HOST_WASI)
-	// TODO: Schedule the background job on WASI. Threads aren't yet supported in this build.
+#if defined(HOST_WASI) && defined(DISABLE_THREADS)
+	mono_runtime_do_background_work ();
 #elif defined(HOST_WASM) && defined(DISABLE_THREADS)
 	mono_main_thread_schedule_background_job (mono_runtime_do_background_work);
 #else
@@ -855,7 +852,6 @@ finalizer_thread (gpointer unused)
 	mono_hazard_pointer_install_free_queue_size_callback (hazard_free_queue_is_too_big);
 
 	while (!finished) {
-
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
@@ -868,12 +864,6 @@ finalizer_thread (gpointer unused)
 			mono_coop_sem_wait (&finalizer_sem, MONO_SEM_FLAGS_ALERTABLE);
 		}
 		wait = TRUE;
-
-		/* Just in case we've received a SIGTERM */
-		if (mono_term_signaled) {
-			mono_runtime_try_shutdown();
-			exit(mono_environment_exitcode_get());
-		}
 
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 

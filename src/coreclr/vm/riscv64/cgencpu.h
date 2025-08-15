@@ -65,7 +65,7 @@ extern PCODE GetPreStubEntryPoint();
 #define JUMP_ALLOCATE_SIZE                      40  // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         40  // # bytes to allocate for a back to back jump instruction
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -104,6 +104,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -206,14 +208,14 @@ inline void SetRA( T_CONTEXT * context, TADDR ip) {
 inline TADDR GetReg(T_CONTEXT * context, int Regnum)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(Regnum >= 0 && Regnum < 32 );
+    _ASSERTE(Regnum >= 0 && Regnum < 32);
      return (TADDR)(&context->R0 + Regnum);
 }
 
 inline void SetReg(T_CONTEXT * context, int Regnum, PCODE RegContent)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(Regnum >= 0 && Regnum <=28 );
+    _ASSERTE(Regnum >= 0 && Regnum < 32);
     *(&context->R0 + Regnum) = RegContent;
 }
 
@@ -235,6 +237,29 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->Fp);
 }
 
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->A0 = DWORD64(value);
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->A0);
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->A1 = DWORD64(value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->A1);
+}
 
 inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 {
@@ -262,7 +287,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
         mem = (TADDR)NULL;
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return mem;
 }
 
@@ -343,30 +368,6 @@ struct IntReg
     WORD Mask() const { return 1 << reg; }
 };
 
-struct FloatReg
-{
-    int reg;
-    FloatReg(int reg):reg(reg)
-    {
-        _ASSERTE(0 <= reg && reg < 32);
-    }
-
-    operator int () { return reg; }
-    operator int () const { return reg; }
-    int operator == (FloatReg other) { return reg == other.reg; }
-    int operator != (FloatReg other) { return reg != other.reg; }
-    WORD Mask() const { return 1 << reg; }
-};
-
-struct CondCode
-{
-    int cond;
-    CondCode(int cond):cond(cond)
-    {
-        _ASSERTE(0 <= cond && cond < 16);
-    }
-};
-
 const IntReg RegSp  = IntReg(2);
 const IntReg RegFp  = IntReg(8);
 const IntReg RegRa  = IntReg(1);
@@ -398,53 +399,19 @@ public:
     void EmitMovConstant(IntReg target, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
-    void EmitMovReg(FloatReg dest, FloatReg source);
 
-    void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
-    void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
+    void EmitAddImm(IntReg Xd, IntReg Xn, int value);
     void EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitLuImm(IntReg Xd, unsigned int value);
 
     void EmitLoad(IntReg dest, IntReg srcAddr, int offset = 0);
-    void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
+
     void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
-    void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
-
-    void EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace = 0);
-    void EmitEpilog();
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 8
-
-// TODO RISCV64
-struct DECLSPEC_ALIGN(16) UMEntryThunkCode
-{
-    DWORD        m_code[4];
-
-    TADDR       m_pTargetCode;
-    TADDR       m_pvSecretParam;
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)this;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 0;
-    }
-};
 
 struct HijackArgs
 {
@@ -472,47 +439,5 @@ struct HijackArgs
         size_t FPReturnValue[2];
     };
 };
-
-// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-    static const int Type = 0x93;
-
-    UINT32  m_rgCode[6];
-    TADDR   m_pTarget;
-    TADDR   m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pTarget;
-    }
-
-#ifndef DACCESS_COMPILE
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
-        return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
-    }
-#endif // !DACCESS_COMPILE
-};
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 
 #endif // __cgencpu_h__

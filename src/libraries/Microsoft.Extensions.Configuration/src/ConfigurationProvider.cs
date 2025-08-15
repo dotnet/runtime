@@ -10,14 +10,14 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Base helper class for implementing an <see cref="IConfigurationProvider"/>
+    /// Defines the core behavior of configuration providers and provides a base for derived classes.
     /// </summary>
     public abstract class ConfigurationProvider : IConfigurationProvider
     {
         private ConfigurationReloadToken _reloadToken = new ConfigurationReloadToken();
 
         /// <summary>
-        /// Initializes a new <see cref="IConfigurationProvider"/>
+        /// Initializes a new <see cref="IConfigurationProvider"/>.
         /// </summary>
         protected ConfigurationProvider()
         {
@@ -25,16 +25,16 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// The configuration key value pairs for this provider.
+        /// Gets or sets the configuration key-value pairs for this provider.
         /// </summary>
         protected IDictionary<string, string?> Data { get; set; }
 
         /// <summary>
-        /// Attempts to find a value with the given key, returns true if one is found, false otherwise.
+        /// Attempts to find a value with the given key.
         /// </summary>
         /// <param name="key">The key to lookup.</param>
-        /// <param name="value">The value found at key if one is found.</param>
-        /// <returns>True if key has a value, false otherwise.</returns>
+        /// <param name="value">When this method returns, contains the value if one is found.</param>
+        /// <returns><see langword="true" /> if <paramref name="key" /> has a value; otherwise <see langword="false" />.</returns>
         public virtual bool TryGet(string key, out string? value)
             => Data.TryGetValue(key, out value);
 
@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Generates a string representing this provider name and relevant details.
         /// </summary>
-        /// <returns> The configuration name. </returns>
+        /// <returns>The configuration name.</returns>
         public override string ToString() => GetType().Name;
     }
 }

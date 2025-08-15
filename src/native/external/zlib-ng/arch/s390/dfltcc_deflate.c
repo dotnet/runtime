@@ -19,23 +19,9 @@
 #include "dfltcc_deflate.h"
 #include "dfltcc_detail.h"
 
-struct dfltcc_deflate_state {
-    struct dfltcc_state common;
-    uint16_t level_mask;               /* Levels on which to use DFLTCC */
-    uint32_t block_size;               /* New block each X bytes */
-    size_t block_threshold;            /* New block after total_in > X */
-    uint32_t dht_threshold;            /* New block only if avail_in >= X */
-};
-
-#define GET_DFLTCC_DEFLATE_STATE(state) ((struct dfltcc_deflate_state *)GET_DFLTCC_STATE(state))
-
-void Z_INTERNAL *PREFIX(dfltcc_alloc_deflate_state)(PREFIX3(streamp) strm) {
-    return dfltcc_alloc_state(strm, sizeof(deflate_state), sizeof(struct dfltcc_deflate_state));
-}
-
 void Z_INTERNAL PREFIX(dfltcc_reset_deflate_state)(PREFIX3(streamp) strm) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_deflate_state *dfltcc_state = GET_DFLTCC_DEFLATE_STATE(state);
+    arch_deflate_state *dfltcc_state = &state->arch;
 
     dfltcc_reset_state(&dfltcc_state->common);
 
@@ -46,14 +32,10 @@ void Z_INTERNAL PREFIX(dfltcc_reset_deflate_state)(PREFIX3(streamp) strm) {
     dfltcc_state->dht_threshold = DFLTCC_DHT_MIN_SAMPLE_SIZE;
 }
 
-void Z_INTERNAL PREFIX(dfltcc_copy_deflate_state)(void *dst, const void *src) {
-    dfltcc_copy_state(dst, src, sizeof(deflate_state), sizeof(struct dfltcc_deflate_state));
-}
-
 static inline int dfltcc_can_deflate_with_params(PREFIX3(streamp) strm, int level, uInt window_bits, int strategy,
                                        int reproducible) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_deflate_state *dfltcc_state = GET_DFLTCC_DEFLATE_STATE(state);
+    arch_deflate_state *dfltcc_state = &state->arch;
 
     /* Unsupported compression settings */
     if ((dfltcc_state->level_mask & (1 << level)) == 0)
@@ -82,7 +64,7 @@ int Z_INTERNAL PREFIX(dfltcc_can_deflate)(PREFIX3(streamp) strm) {
 
 static inline void dfltcc_gdht(PREFIX3(streamp) strm) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_param_v0 *param = &GET_DFLTCC_STATE(state)->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
     size_t avail_in = strm->avail_in;
 
     dfltcc(DFLTCC_GDHT, param, NULL, NULL, &strm->next_in, &avail_in, NULL);
@@ -90,7 +72,7 @@ static inline void dfltcc_gdht(PREFIX3(streamp) strm) {
 
 static inline dfltcc_cc dfltcc_cmpr(PREFIX3(streamp) strm) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_param_v0 *param = &GET_DFLTCC_STATE(state)->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
     size_t avail_in = strm->avail_in;
     size_t avail_out = strm->avail_out;
     dfltcc_cc cc;
@@ -127,7 +109,7 @@ static inline void send_eobs(PREFIX3(streamp) strm, const struct dfltcc_param_v0
 
 int Z_INTERNAL PREFIX(dfltcc_deflate)(PREFIX3(streamp) strm, int flush, block_state *result) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_deflate_state *dfltcc_state = GET_DFLTCC_DEFLATE_STATE(state);
+    arch_deflate_state *dfltcc_state = &state->arch;
     struct dfltcc_param_v0 *param = &dfltcc_state->common.param;
     uInt masked_avail_in;
     dfltcc_cc cc;
@@ -328,7 +310,7 @@ again:
 */
 static int dfltcc_was_deflate_used(PREFIX3(streamp) strm) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_param_v0 *param = &GET_DFLTCC_STATE(state)->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
 
     return strm->total_in > 0 || param->nt == 0 || param->hl > 0;
 }
@@ -353,8 +335,7 @@ int Z_INTERNAL PREFIX(dfltcc_deflate_params)(PREFIX3(streamp) strm, int level, i
 
 int Z_INTERNAL PREFIX(dfltcc_deflate_done)(PREFIX3(streamp) strm, int flush) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
-    struct dfltcc_param_v0 *param = &dfltcc_state->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
 
     /* When deflate(Z_FULL_FLUSH) is called with small avail_out, it might
      * close the block without resetting the compression state. Detect this
@@ -382,8 +363,7 @@ int Z_INTERNAL PREFIX(dfltcc_can_set_reproducible)(PREFIX3(streamp) strm, int re
 int Z_INTERNAL PREFIX(dfltcc_deflate_set_dictionary)(PREFIX3(streamp) strm,
                                                 const unsigned char *dictionary, uInt dict_length) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
-    struct dfltcc_param_v0 *param = &dfltcc_state->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
 
     append_history(param, state->window, dictionary, dict_length);
     state->strstart = 1; /* Add FDICT to zlib header */
@@ -393,8 +373,7 @@ int Z_INTERNAL PREFIX(dfltcc_deflate_set_dictionary)(PREFIX3(streamp) strm,
 
 int Z_INTERNAL PREFIX(dfltcc_deflate_get_dictionary)(PREFIX3(streamp) strm, unsigned char *dictionary, uInt *dict_length) {
     deflate_state *state = (deflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
-    struct dfltcc_param_v0 *param = &dfltcc_state->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
 
     if (dictionary)
         get_history(param, state->window, dictionary);

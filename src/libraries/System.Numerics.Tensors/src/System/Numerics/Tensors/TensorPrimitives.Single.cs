@@ -1,9 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
@@ -140,7 +137,7 @@ namespace System.Numerics.Tensors
         /// If a value is equal to <see cref="float.NaN"/>, the result stored into the corresponding destination location is also NaN.
         /// </para>
         /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <see cref="MathF.PI"/>/180 to convert degrees to radians.
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians(System.Single)"/> or multiply by <see cref="MathF.PI"/>/180 to convert degrees to radians.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -819,7 +816,7 @@ namespace System.Numerics.Tensors
         /// the corresponding destination location is set to that value.
         /// </para>
         /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <see cref="MathF.PI"/>/180 to convert degrees to radians.
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians(System.Single)"/> or multiply by <see cref="MathF.PI"/>/180 to convert degrees to radians.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -859,9 +856,9 @@ namespace System.Numerics.Tensors
 
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
-            float expSum = Aggregate<ExpOperator_Single, AddOperator_Single>(x);
-
-            InvokeSpanScalarIntoSpan<ExpOperator_Single, DivideOperator_Single>(x, expSum, destination);
+            InvokeSpanIntoSpan<ExpOperator_Single>(x, destination);
+            float expSum = Sum(destination);
+            InvokeSpanScalarIntoSpan<DivideOperator_Single>(destination, expSum, destination);
         }
 
         /// <summary>Computes the element-wise difference between single-precision floating-point numbers in the specified tensors.</summary>
@@ -972,7 +969,7 @@ namespace System.Numerics.Tensors
         /// If a value is equal to <see cref="float.NaN"/>, the corresponding destination location is set to NaN.
         /// </para>
         /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <see cref="MathF.PI"/>/180 to convert degrees to radians.
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians(System.Single)"/> or multiply by <see cref="MathF.PI"/>/180 to convert degrees to radians.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different

@@ -13,6 +13,7 @@
 #ifndef __DACIMPL_H__
 #define __DACIMPL_H__
 
+#include <minipal/mutex.h>
 #include "gcinterface.dac.h"
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
@@ -26,7 +27,7 @@
 #include <unordered_map>
 #pragma pop_macro("return")
 #endif //DAC_HASHTABLE
-extern CRITICAL_SECTION g_dacCritSec;
+extern minipal_mutex g_dacMutex;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
 // Note that CLRDATA_ADDRESS is sign-extended (for compat with Windbg and OS conventions).  Converting
@@ -131,16 +132,13 @@ struct DAC_MD_IMPORT
     DAC_MD_IMPORT* next;       // list link field
     TADDR peFile;              // a TADDR for a PEAssembly* or a ReflectionModule*
     IMDInternalImport* impl;   // Associated metadata interface
-    bool isAlternate;          // for NGEN images set to true if the metadata corresponds to the IL image
 
     DAC_MD_IMPORT(TADDR peFile_,
         IMDInternalImport* impl_,
-        bool isAlt_ = false,
         DAC_MD_IMPORT* next_ = NULL)
         : next(next_)
         , peFile(peFile_)
         , impl(impl_)
-        , isAlternate(isAlt_)
     {
         SUPPORTS_DAC_HOST_ONLY;
     }
@@ -179,10 +177,10 @@ public:
     }
 
     FORCEINLINE
-    DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl, bool isAlt)
+    DAC_MD_IMPORT* Add(TADDR peFile, IMDInternalImport* impl)
     {
         SUPPORTS_DAC;
-        DAC_MD_IMPORT* importList = new (nothrow) DAC_MD_IMPORT(peFile, impl, isAlt, m_head);
+        DAC_MD_IMPORT* importList = new (nothrow) DAC_MD_IMPORT(peFile, impl, m_head);
         if (!importList)
         {
             return NULL;
@@ -528,14 +526,12 @@ struct ProcessModIter
                 kIncludeLoaded | kIncludeExecution));
         }
 
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        if (!m_assemIter.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        if (!m_assemIter.Next(pAssembly.This()))
         {
             return NULL;
         }
 
-        // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-        CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
         return pAssembly;
     }
 
@@ -819,7 +815,8 @@ class ClrDataAccess
       public ISOSDacInterface12,
       public ISOSDacInterface13,
       public ISOSDacInterface14,
-      public ISOSDacInterface15
+      public ISOSDacInterface15,
+      public ISOSDacInterface16
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1061,7 +1058,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyList(CLRDATA_ADDRESS appDomain, int count, CLRDATA_ADDRESS values[], int *fetched);
-    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS baseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyData(CLRDATA_ADDRESS domainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *data);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetThreadData(CLRDATA_ADDRESS thread, struct DacpThreadData *data);
     virtual HRESULT STDMETHODCALLTYPE GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread);
@@ -1227,26 +1224,14 @@ public:
     // ISOSDacInterface15
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
 
+    // ISOSDacInterface16
+    virtual HRESULT STDMETHODCALLTYPE GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
+
     //
     // ClrDataAccess.
     //
 
     HRESULT Initialize(void);
-
-    HRESULT GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData);
-    HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
-    HRESULT GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *moduleData);
-    HRESULT GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException);
-    HRESULT GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
-    HRESULT GetMethodTableForEEClassImpl (CLRDATA_ADDRESS eeClassReallyMT, CLRDATA_ADDRESS *value);
-    HRESULT GetMethodTableNameImpl(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded);
-    HRESULT GetObjectDataImpl(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData);
-    HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
-    HRESULT GetObjectStringDataImpl(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded);
-    HRESULT GetPEFileNameImpl(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
-    HRESULT GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData);
-    HRESULT GetMethodDescDataImpl(CLRDATA_ADDRESS methodDesc, CLRDATA_ADDRESS ip, struct DacpMethodDescData *data, ULONG cRevertedRejitVersions, DacpReJitData * rgRevertedRejitData, ULONG * pcNeededRevertedRejitData);
-    HRESULT GetMethodDescNameImpl(CLRDATA_ADDRESS methodDesc, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
@@ -1373,8 +1358,7 @@ public:
     JITNotification* GetHostJitNotificationTable();
     GcNotification*  GetHostGcNotificationTable();
 
-    void* GetMetaDataFromHost(PEAssembly* pPEAssembly,
-                              bool* isAlternate);
+    void* GetMetaDataFromHost(PEAssembly* pPEAssembly);
 
     virtual
     interface IMDInternalImport* GetMDImport(const PEAssembly* pPEAssembly,
@@ -1434,10 +1418,9 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
+    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdac
+    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     CDAC m_cdac;
-    NonVMComHolder<ISOSDacInterface> m_cdacSos;
-    NonVMComHolder<ISOSDacInterface2> m_cdacSos2;
-    NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
@@ -1522,6 +1505,7 @@ private:
     BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
     TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
+    TADDR GetIdentityForManagedObjectWrapper(TADDR mow);
 #endif
 
 protected:
@@ -1530,22 +1514,14 @@ protected:
 #endif
 
 public:
-    // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
-    // from it's search path.
+    // API for picking up the info needed for a debugger to look up an image from its search path.
     static bool GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                               DWORD &dwImageTimestamp,
                                               DWORD &dwImageSize,
                                               DWORD &dwDataSize,
                                               DWORD &dwRvaHint,
-                                              bool  &isNGEN,
                                               _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
-
-    static bool GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
-                                             DWORD &dwTimeStamp,
-                                             DWORD &dwSize,
-                                             _Out_writes_(cchPath) LPWSTR wszPath,
-                                             const DWORD cchPath);
 };
 
 extern ClrDataAccess* g_dacImpl;
@@ -2171,7 +2147,7 @@ private:
     void WalkHandles();
     static inline bool IsAlwaysStrongReference(unsigned int type)
     {
-        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED || type == HNDTYPE_SIZEDREF;
+        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED;
     }
 
 private:
@@ -3446,12 +3422,7 @@ private:
 //
 //----------------------------------------------------------------------------
 
-#ifdef FEATURE_EH_FUNCLETS
-typedef ExceptionTrackerBase ClrDataExStateType;
-#else // FEATURE_EH_FUNCLETS
 typedef ExInfo ClrDataExStateType;
-#endif // FEATURE_EH_FUNCLETS
-
 
 class ClrDataExceptionState : public IXCLRDataExceptionState
 {
@@ -3839,7 +3810,7 @@ public:
 //----------------------------------------------------------------------------
 
 #define DAC_ENTER() \
-    EnterCriticalSection(&g_dacCritSec); \
+    minipal_mutex_enter(&g_dacMutex); \
     ClrDataAccess* __prevDacImpl = g_dacImpl; \
     g_dacImpl = this;
 
@@ -3847,10 +3818,10 @@ public:
 // the process's host instance cache hasn't been flushed
 // since the child was created.
 #define DAC_ENTER_SUB(dac) \
-    EnterCriticalSection(&g_dacCritSec); \
+    minipal_mutex_enter(&g_dacMutex); \
     if (dac->m_instanceAge != m_instanceAge) \
     { \
-        LeaveCriticalSection(&g_dacCritSec); \
+        minipal_mutex_leave(&g_dacMutex); \
         return E_INVALIDARG; \
     } \
     ClrDataAccess* __prevDacImpl = g_dacImpl; \
@@ -3858,7 +3829,7 @@ public:
 
 #define DAC_LEAVE() \
     g_dacImpl = __prevDacImpl; \
-    LeaveCriticalSection(&g_dacCritSec)
+    minipal_mutex_leave(&g_dacMutex)
 
 
 #define SOSHelperEnter() \
@@ -3876,7 +3847,7 @@ public:
             EX_RETHROW; \
         }               \
     }                   \
-    EX_END_CATCH(SwallowAllExceptions) \
+    EX_END_CATCH \
     DAC_LEAVE();
 
 HRESULT DacGetHostVtPtrs(void);

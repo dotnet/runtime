@@ -369,32 +369,35 @@ int32_t CryptoNative_EvpMacOneShot(EVP_MAC* mac,
 
         params[i] = OSSL_PARAM_construct_end();
 
+        int32_t ret = 0;
+
         if (!EVP_MAC_init(ctx, NULL, 0, params))
         {
-            EVP_MAC_CTX_free(ctx);
-            return 0;
+            goto done;
         }
 
         if (!EVP_MAC_update(ctx, data, dataLengthT))
         {
-            EVP_MAC_CTX_free(ctx);
-            return 0;
+            goto done;
         }
 
         size_t written = 0;
 
         if (!EVP_MAC_final(ctx, destination, &written, macLengthT))
         {
-            EVP_MAC_CTX_free(ctx);
-            return 0;
+            goto done;
         }
 
         if (written != macLengthT)
         {
-            return -3;
+            ret = -3;
+            goto done;
         }
 
-        return 1;
+        ret = 1;
+done:
+        EVP_MAC_CTX_free(ctx);
+        return ret;
     }
 #else
     (void)mac;

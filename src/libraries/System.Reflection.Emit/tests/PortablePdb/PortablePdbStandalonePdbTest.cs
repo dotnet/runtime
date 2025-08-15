@@ -61,7 +61,8 @@ namespace System.Reflection.Emit.Tests
             Document doc = reader.GetDocument(docEnumerator.Current);
             Assert.Equal("MySourceFile.cs", reader.GetString(doc.Name));
             Assert.Equal(SymLanguageType.CSharp, reader.GetGuid(doc.Language));
-            Assert.Equal(default, reader.GetGuid(doc.HashAlgorithm));
+            Assert.Equal(new Guid("8829d00f-11b8-4213-878b-770e8597ac16"), reader.GetGuid(doc.HashAlgorithm));
+            Assert.Equal("06CBAB3A501306FDD9176A00A83E5BB92EA4D7863CFD666355743527CF99EDC6", Convert.ToHexString(reader.GetBlobBytes(doc.Hash)));
             Assert.False(docEnumerator.MoveNext());
 
             MethodDebugInformation mdi1 = reader.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(method.MetadataToken));
@@ -147,6 +148,7 @@ namespace System.Reflection.Emit.Tests
             ModuleBuilder mb = ab.DefineDynamicModule("MyModule2");
             TypeBuilder tb = mb.DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
             ISymbolDocumentWriter srcdoc = mb.DefineDocument("MySourceFile.cs", SymLanguageType.CSharp);
+            srcdoc.SetCheckSum(new Guid("8829d00f-11b8-4213-878b-770e8597ac16"), Convert.FromHexString("06CBAB3A501306FDD9176A00A83E5BB92EA4D7863CFD666355743527CF99EDC6"));
             method = tb.DefineMethod("SumMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(int)]);
             ILGenerator il1 = method.GetILGenerator();
             LocalBuilder local = il1.DeclareLocal(typeof(int));

@@ -52,9 +52,9 @@ static void insert_match(deflate_state *s, struct match match) {
         if (UNLIKELY(match.match_length > 0)) {
             if (match.strstart >= match.orgstart) {
                 if (match.strstart + match.match_length - 1 >= match.orgstart) {
-                    functable.insert_string(s, match.strstart, match.match_length);
+                    insert_string(s, match.strstart, match.match_length);
                 } else {
-                    functable.insert_string(s, match.strstart, match.orgstart - match.strstart + 1);
+                    insert_string(s, match.strstart, match.orgstart - match.strstart + 1);
                 }
                 match.strstart += match.match_length;
                 match.match_length = 0;
@@ -72,12 +72,12 @@ static void insert_match(deflate_state *s, struct match match) {
 
         if (LIKELY(match.strstart >= match.orgstart)) {
             if (LIKELY(match.strstart + match.match_length - 1 >= match.orgstart)) {
-                functable.insert_string(s, match.strstart, match.match_length);
+                insert_string(s, match.strstart, match.match_length);
             } else {
-                functable.insert_string(s, match.strstart, match.orgstart - match.strstart + 1);
+                insert_string(s, match.strstart, match.orgstart - match.strstart + 1);
             }
         } else if (match.orgstart < match.strstart + match.match_length) {
-            functable.insert_string(s, match.orgstart, match.strstart + match.match_length - match.orgstart);
+            insert_string(s, match.orgstart, match.strstart + match.match_length - match.orgstart);
         }
         match.strstart += match.match_length;
         match.match_length = 0;
@@ -86,7 +86,7 @@ static void insert_match(deflate_state *s, struct match match) {
         match.match_length = 0;
 
         if (match.strstart >= (STD_MIN_MATCH - 2))
-            functable.quick_insert_string(s, match.strstart + 2 - STD_MIN_MATCH);
+            quick_insert_string(s, match.strstart + 2 - STD_MIN_MATCH);
 
         /* If lookahead < WANT_MIN_MATCH, ins_h is garbage, but it does not
          * matter since it will be recomputed at next deflate call.
@@ -199,7 +199,7 @@ Z_INTERNAL block_state deflate_medium(deflate_state *s, int flush) {
         } else {
             hash_head = 0;
             if (s->lookahead >= WANT_MIN_MATCH) {
-                hash_head = functable.quick_insert_string(s, s->strstart);
+                hash_head = quick_insert_string(s, s->strstart);
             }
 
             current_match.strstart = (uint16_t)s->strstart;
@@ -215,7 +215,7 @@ Z_INTERNAL block_state deflate_medium(deflate_state *s, int flush) {
                  * of window index 0 (in particular we have to avoid a match
                  * of the string with itself at the start of the input file).
                  */
-                current_match.match_length = (uint16_t)functable.longest_match(s, hash_head);
+                current_match.match_length = (uint16_t)FUNCTABLE_CALL(longest_match)(s, hash_head);
                 current_match.match_start = (uint16_t)s->match_start;
                 if (UNLIKELY(current_match.match_length < WANT_MIN_MATCH))
                     current_match.match_length = 1;
@@ -235,7 +235,7 @@ Z_INTERNAL block_state deflate_medium(deflate_state *s, int flush) {
         /* now, look ahead one */
         if (LIKELY(!early_exit && s->lookahead > MIN_LOOKAHEAD && (uint32_t)(current_match.strstart + current_match.match_length) < (s->window_size - MIN_LOOKAHEAD))) {
             s->strstart = current_match.strstart + current_match.match_length;
-            hash_head = functable.quick_insert_string(s, s->strstart);
+            hash_head = quick_insert_string(s, s->strstart);
 
             next_match.strstart = (uint16_t)s->strstart;
             next_match.orgstart = next_match.strstart;
@@ -250,7 +250,7 @@ Z_INTERNAL block_state deflate_medium(deflate_state *s, int flush) {
                  * of window index 0 (in particular we have to avoid a match
                  * of the string with itself at the start of the input file).
                  */
-                next_match.match_length = (uint16_t)functable.longest_match(s, hash_head);
+                next_match.match_length = (uint16_t)FUNCTABLE_CALL(longest_match)(s, hash_head);
                 next_match.match_start = (uint16_t)s->match_start;
                 if (UNLIKELY(next_match.match_start >= next_match.strstart)) {
                     /* this can happen due to some restarts */

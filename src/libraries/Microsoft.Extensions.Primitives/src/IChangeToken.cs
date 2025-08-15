@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Primitives
         bool HasChanged { get; }
 
         /// <summary>
-        /// Indicates if this token will pro-actively raise callbacks. If <c>false</c>, the token consumer must
+        /// Indicates if this token will proactively raise callbacks. If <c>false</c>, the token consumer must
         /// poll <see cref="HasChanged" /> to detect changes.
         /// </summary>
         bool ActiveChangeCallbacks { get; }

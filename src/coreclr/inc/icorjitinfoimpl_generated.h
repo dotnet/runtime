@@ -99,10 +99,18 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(
           CORINFO_METHOD_HANDLE ftn,
           bool* requiresInstMethodTableArg) override;
 
+CORINFO_METHOD_HANDLE getInstantiatedEntry(
+          CORINFO_METHOD_HANDLE ftn,
+          CORINFO_METHOD_HANDLE* methodArg,
+          CORINFO_CLASS_HANDLE* classArg) override;
+
 CORINFO_CLASS_HANDLE getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
 CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
+          CORINFO_CLASS_HANDLE elemType) override;
+
+CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
 void expandRawHandleIntrinsic(
@@ -181,6 +189,10 @@ CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
           CORINFO_CLASS_HANDLE cls,
           unsigned index) override;
 
+CORINFO_CLASS_HANDLE getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
+          unsigned index) override;
+
 size_t printClassName(
           CORINFO_CLASS_HANDLE cls,
           char* buffer,
@@ -193,14 +205,8 @@ bool isValueClass(
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
-CORINFO_MODULE_HANDLE getClassModule(
+const char* getClassAssemblyName(
           CORINFO_CLASS_HANDLE cls) override;
-
-CORINFO_ASSEMBLY_HANDLE getModuleAssembly(
-          CORINFO_MODULE_HANDLE mod) override;
-
-const char* getAssemblyName(
-          CORINFO_ASSEMBLY_HANDLE assem) override;
 
 void* LongLifetimeMalloc(
           size_t sz) override;
@@ -273,9 +279,6 @@ CorInfoHelpFunc getSharedCCtorHelper(
           CORINFO_CLASS_HANDLE clsHnd) override;
 
 CORINFO_CLASS_HANDLE getTypeForBox(
-          CORINFO_CLASS_HANDLE cls) override;
-
-CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
           CORINFO_CLASS_HANDLE cls) override;
 
 CorInfoHelpFunc getBoxHelper(
@@ -395,7 +398,7 @@ CORINFO_CLASS_HANDLE getFieldClass(
 CorInfoType getFieldType(
           CORINFO_FIELD_HANDLE field,
           CORINFO_CLASS_HANDLE* structType,
-          CORINFO_CLASS_HANDLE memberParent) override;
+          CORINFO_CLASS_HANDLE fieldOwnerHint) override;
 
 unsigned getFieldOffset(
           CORINFO_FIELD_HANDLE field) override;
@@ -492,7 +495,8 @@ bool runWithSPMIErrorTrap(
 void getEEInfo(
           CORINFO_EE_INFO* pEEInfoOut) override;
 
-const char16_t* getJitTimeLogFilename() override;
+void getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
 
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
@@ -531,9 +535,10 @@ uint32_t getThreadTLSIndex(
 int32_t* getAddrOfCaptureThreadGlobal(
           void** ppIndirection) override;
 
-void* getHelperFtn(
+void getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection) override;
+          CORINFO_CONST_LOOKUP* pNativeEntrypoint,
+          CORINFO_METHOD_HANDLE* pMethod) override;
 
 void getFunctionEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
@@ -544,10 +549,6 @@ void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
-
-void* getMethodSync(
-          CORINFO_METHOD_HANDLE ftn,
-          void** ppIndirection) override;
 
 CorInfoHelpFunc getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle) override;
@@ -586,7 +587,7 @@ void* GetCookieForPInvokeCalliSig(
           CORINFO_SIG_INFO* szMetaSig,
           void** ppIndirection) override;
 
-bool canGetCookieForPInvokeCalliSig(
+void* GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;
 
 CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(
@@ -624,10 +625,8 @@ CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
 
 CORINFO_VARARGS_HANDLE getVarArgsHandle(
           CORINFO_SIG_INFO* pSig,
+          CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection) override;
-
-bool canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig) override;
 
 InfoAccessType constructStringLiteral(
           CORINFO_MODULE_HANDLE module,
@@ -655,6 +654,8 @@ bool getTailCallHelpers(
           CORINFO_SIG_INFO* sig,
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
+
+CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,

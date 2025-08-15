@@ -12,13 +12,11 @@ namespace System.Reflection.TypeLoading
     {
         protected RoCustomAttributeData() { }
 
-        public sealed override Type AttributeType => _lazyAttributeType ??= ComputeAttributeType()!;
+        public sealed override Type AttributeType => field ??= ComputeAttributeType()!;
         protected abstract Type? ComputeAttributeType();
-        private volatile Type? _lazyAttributeType;
 
-        public sealed override ConstructorInfo Constructor => _lazyConstructorInfo ??= ComputeConstructor();
+        public sealed override ConstructorInfo Constructor => field ??= ComputeConstructor();
         protected abstract ConstructorInfo ComputeConstructor();
-        private volatile ConstructorInfo? _lazyConstructorInfo;
 
         public abstract override IList<CustomAttributeTypedArgument> ConstructorArguments { get; }
         public abstract override IList<CustomAttributeNamedArgument> NamedArguments { get; }

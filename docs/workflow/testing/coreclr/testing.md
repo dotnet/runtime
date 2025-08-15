@@ -24,13 +24,12 @@ This guide will walk you through building and running the CoreCLR tests. These a
 
 ## Requirements
 
-In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find more detailed instructions per platform in their dedicated docs:
+In order to build CoreCLR tests, you will need to have built the runtime and the libraries (that is, _clr_ and _libs_ subsets). You can find detailed instructions on how to do it on their respective README's:
 
-* [Windows](/docs/workflow/building/coreclr/windows-instructions.md)
-* [macOS](/docs/workflow/building/coreclr/macos-instructions.md)
-* [Linux](/docs/workflow/building/coreclr/linux-instructions.md)
+* [CoreCLR](/docs/workflow/building/coreclr/README.md)
+* [Libraries](/docs/workflow/building/libraries/README.md)
 
-For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/README.md).
+For CoreCLR testing purposes, it is more than enough to simply build the _libs_ subset, as far as it concerns the libraries. If you want to know more in-depth about them, they have their own [libraries dedicated docs section](/docs/workflow/building/libraries/).
 
 ## Overview
 
@@ -43,6 +42,8 @@ Building the tests can be as simple as calling the build script without any argu
 ```
 
 Note that for the libraries configuration, we are passing the argument directly to MSBuild instead of the build script, hence the `/p:LibrariesConfiguration` flag. Also, make sure you use the correct syntax depending on our platform. The _cmd_ script takes the arguments by placing, while the _sh_ script requires them to be with a hyphen.
+
+In the case you are working with a different build configuration for the host, you can specify it here via the `/p:HostConfiguration` flag.
 
 **NOTE**: Building the whole test suite is a very lengthy process, so it is highly recommended you build individual tests, and/or test subtrees as you need them, to make your workflow more efficient. This is explained in detail later on in this doc.
 
@@ -136,7 +137,7 @@ On macOS and Linux:
 
 We have multiple different mechanisms of executing tests.
 
-Our test entrypoints are generally what we call "merged test runners", as they provide an executable runner project for multiple different test assemblies. These projects can be identified by the `<Import Project="$(TestSourceDir)MergedTestRunner.targets" />` line in their .csproj file. These projects provide a simple experience for running tests. When executing a merged runner project, it will run each test sequentially and record if it passes or fails in an xunit results file. The merged test runner support runtime test filtering. If specified, the first argument to the test runner is treated as a `dotnet test --filter` argument following the xUnit rules in their documentation. Today, the runner only supports the simple form, a substring of a test's fully-qualified name, in the format `Namespace.ContainingTypeName.TypeName.Method`. If support for further filtering options is desired, please open an issue requesting it.
+Our test entrypoints are generally what we call "merged test runners", as they provide an executable runner project for multiple different test assemblies. These projects can be identified by the `<Import Project="$(TestSourceDir)MergedTestRunner.targets" />` line in their .csproj file. These projects provide a simple experience for running tests. When executing a merged runner project, it will run each test sequentially and record if it passes or fails in an xunit results file. The merged test runner support runtime test filtering. If specified, the first argument to the test runner is treated as a `dotnet test --filter` argument following the xUnit rules in their documentation. Today, the runner only supports the simple form, a substring of a test's fully-qualified name, in the format `Namespace.ContainingTypeName.TypeName.Method`. Additionally, tests can be filtered using the `FullyQualifiedName=Namespace.ContainingTypeName.TypeName.Method` syntax or the `DisplayName=TestDisplayName` syntax. The display name of a test is the name printed out on the console when the test runs. Additionally, a `~` can be used instead of an `=` to specify a substring search. If support for further filtering options is desired, please open an issue requesting it.
 
 Some tests need to be run in their own process as they interact with global process state, they have a custom test entrypoint, or they interact poorly with other tests in the same process. These tests are generally marked with `<RequiresProcessIsolation>true</RequiresProcessIsolation>` in their project files. These tests can be run directly, but they can also be invoked through their corresponding merged test runner. The merged test runner will invoke them as a subprocess in the same manner as if they were run individually.
 
@@ -149,6 +150,35 @@ To filter tests on a merged test runner built as standalone, you can set the `Te
 #### Building all tests with the Standalone Runner
 
 If you wish to use the Standalone runner described in the [previous section](#the-standalone-test-runner-and-build-time-test-filtering), you can set the `BuildAllTestsAsStandalone` environment variable to `true` when invoking the `./src/tests/build.sh` or `./src/tests/build.cmd` scripts (for example, `export BuildAllTestsAsStandalone=true` or `set BuildAllTestsAsStandalone=true`). This will build all tests that are not directly in a merged test runner's project as separate executable tests and build only the tests that are compiled into the runner directly. If a runner has no tests that are built directly into the runner, then it will be excluded.
+
+### I added a test, which project do I run to run it?
+
+Now that we run multiple tests in a single process, determining which project corresponds to the test to run can be a bit tricky. Here's some basic steps to determine which project to run to execute a test:
+
+1. Look at the project file.
+
+If the project file has `<RequiresProcessIsolation>true</RequiresProcessIsolation>` or `<Import Project="$(TestSourceDir)MergedTestRunner.targets" />`, then to run the test, you should build this project and run the `.cmd` or `.sh` script that corresponds to this project file.
+
+2. Look at .csproj files in parent directories.
+
+In a parent directory, you will find a `.csproj` file marked with `<Import Project="$(TestSourceDir)MergedTestRunner.targets" />`. In that project file, you'll see one or more `MergedTestProjectReference` items. If one of the glob patterns in the `Include` attribute matches and the `Exclude` attribute on the same item, then the test is included in this merged test runner. To run the test, you should build this merged runner project and run the `.cmd` or `.sh` script that corresponds to this project file. You can filter the tests in this runner using the instructions in the [Test Executors section](#test-executors).
+
+### When to make a test RequiresProcessIsolation
+
+The following are common reasons to mark a test as requiring process isolation:
+
+- The test manipulates process-wide state, such as setting environment variables or changing the current directory.
+- The test requires the ability to parse command line arguments.
+- The test needs a custom main method.
+- The test requires special information, such as an app manifest, in its executable.
+- The test launches through a native executable.
+- The test sets one of the configuration properties that are checked in the test run scripts, such as those in [test-configuration.md](test-configuration.md#adding-test-guidelines).
+
+When a test is marked as `<RequiresProcessIsolation>true</RequiresProcessIsolation>`, it will be run in its own process and have its own `.cmd` and `.sh` scripts generated as test entrypoints. In CI, it will be executed as out of process by whichever merged test runner it is referenced by.
+
+#### Main methods in RequiresProcessIsolation tests
+
+If a custom main is not provided, the test can use `[Fact]` and `[Theory]` attributes internally. The test will use the "standalone" generator to create the test entrypoint. If you want to provide your own `Main` method for your test, set the `<ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>` property in the test project file.
 
 ### Building C++/CLI Native Test Components Against the Live Ref Assemblies
 

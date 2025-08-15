@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         private static readonly bool _isSystemdService = GetIsSystemdService();
 
         /// <summary>
-        /// Check if the current process is hosted as a systemd Service.
+        /// Checks if the current process is hosted as a systemd Service.
         /// </summary>
         /// <returns>
         /// <see langword="true" /> if the current process is hosted as a systemd Service; otherwise, <see langword="false" />.

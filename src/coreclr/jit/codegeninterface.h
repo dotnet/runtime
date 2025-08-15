@@ -76,15 +76,35 @@ public:
 
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
+    regMaskTP rbmAllInt;
     regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmIntCalleeTrash;
+    regNumber regIntLast;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
+    }
     FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
+    }
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return this->regIntLast;
+    }
+#else
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return REG_INT_LAST;
     }
 #endif // TARGET_AMD64
 
@@ -159,7 +179,15 @@ private:
 public:
     static bool instIsFP(instruction ins);
 #if defined(TARGET_XARCH)
-    static bool instIsEmbeddedBroadcastCompatible(instruction ins);
+    bool        instIsEmbeddedBroadcastCompatible(instruction ins);
+    static bool instIsEmbeddedMaskingCompatible(instruction ins);
+
+    static unsigned instInputSize(instruction ins);
+    static unsigned instKMaskBaseSize(instruction ins);
+
+    static bool instHasPseudoName(instruction ins);
+
+    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
@@ -594,7 +622,7 @@ public:
 
 protected:
     //  Keeps track of how many bytes we've pushed on the processor's stack.
-    unsigned genStackLevel;
+    unsigned genStackLevel = 0;
 
 public:
     //--------------------------------------------
@@ -801,10 +829,49 @@ public:
 
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs) = 0;
 #endif // LATE_DISASM
-
-#if defined(TARGET_XARCH)
-    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
-#endif
 };
+
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+// Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions
+// such as X86's SETcc. A sequence of instructions rather than just a single one is required for
+// certain floating point conditions.
+// For example, X86's UCOMISS sets ZF to indicate equality but it also sets it, together with PF,
+// to indicate an unordered result. So for GenCondition::FEQ we first need to check if PF is 0
+// and then jump if ZF is 1:
+//       JP fallThroughBlock
+//       JE jumpDestBlock
+//   fallThroughBlock:
+//       ...
+//   jumpDestBlock:
+//
+// This is very similar to the way shortcircuit evaluation of bool AND and OR operators works so
+// in order to make the GenConditionDesc mapping tables easier to read, a bool expression-like
+// pattern is used to encode the above:
+//     { EJ_jnp, GT_AND, EJ_je  }
+//     { EJ_jp,  GT_OR,  EJ_jne }
+//
+// For more details check inst_JCC and inst_SETCC functions.
+//
+struct GenConditionDesc
+{
+    emitJumpKind jumpKind1;
+    genTreeOps   oper;
+    emitJumpKind jumpKind2;
+    char         padTo4Bytes;
+
+    static const GenConditionDesc& Get(GenCondition condition)
+    {
+        assert(condition.GetCode() < ArrLen(map));
+        const GenConditionDesc& desc = map[condition.GetCode()];
+        assert(desc.jumpKind1 != EJ_NONE);
+        assert((desc.oper == GT_NONE) || (desc.oper == GT_AND) || (desc.oper == GT_OR));
+        assert((desc.oper == GT_NONE) == (desc.jumpKind2 == EJ_NONE));
+        return desc;
+    }
+
+private:
+    static const GenConditionDesc map[32];
+};
+#endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #endif // _CODEGEN_INTERFACE_H_

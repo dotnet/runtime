@@ -6,12 +6,12 @@
 #include "asmconstants.h"
 
 //
-// eax = UMEntryThunk*
+// eax = UMEntryThunkData*
 //
 NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 #define STK_ALIGN_PADDING 8
     sub     esp, STK_ALIGN_PADDING
-    push    eax  // UMEntryThunk*
+    push    eax  // UMEntryThunkData*
     CHECK_STACK_ALIGNMENT
     call    C_FUNC(TheUMEntryPrestubWorker)
     add     esp, (4 + STK_ALIGN_PADDING)

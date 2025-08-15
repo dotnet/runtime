@@ -8,4 +8,7 @@
   <ItemGroup>
     <Compile Include="nintindexoutofrange.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
 </Project>

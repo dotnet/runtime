@@ -438,7 +438,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.DefaultModeByValueInParameter };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.DefaultModeReturnValue };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.CustomElementMarshalling };
-            yield return new[] { ID(), CodeSnippets.CollectionsOfCollectionsStress };
         }
 
         [Theory]
@@ -449,6 +448,12 @@ namespace LibraryImportGenerator.UnitTests
             TestUtils.Use(id);
 
             await VerifyCS.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task CollectionsOfCollectionsStress()
+        {
+            await VerifyCS.VerifySourceGeneratorAsync(CodeSnippets.CollectionsOfCollectionsStress);
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompileWithPreprocessorSymbols()

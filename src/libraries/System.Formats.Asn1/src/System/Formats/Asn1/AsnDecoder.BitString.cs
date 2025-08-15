@@ -41,15 +41,15 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -122,24 +122,19 @@ namespace System.Formats.Asn1
         ///   value of the Bit String;
         ///   otherwise, <see langword="false"/>.
         /// </returns>
-        /// <remarks>
-        ///   The least significant bits in the last byte which are reported as "unused" by the
-        ///   <paramref name="unusedBitCount"/> value will be copied into <paramref name="destination"/>
-        ///   as unset bits, irrespective of their value in the encoded representation.
-        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -151,6 +146,11 @@ namespace System.Formats.Asn1
         ///
         ///   <paramref name="destination"/> overlaps <paramref name="source"/>.
         /// </exception>
+        /// <remarks>
+        ///   The least significant bits in the last byte that are reported as "unused" by the
+        ///   <paramref name="unusedBitCount"/> value will be copied into <paramref name="destination"/>
+        ///   as unset bits, irrespective of their value in the encoded representation.
+        /// </remarks>
         /// <seealso cref="TryReadPrimitiveBitString"/>
         /// <seealso cref="ReadBitString"/>
         public static bool TryReadBitString(
@@ -244,24 +244,19 @@ namespace System.Formats.Asn1
         /// <returns>
         ///   An array containing the contents of the Bit String value.
         /// </returns>
-        /// <remarks>
-        ///   The least significant bits in the last byte which are reported as "unused" by the
-        ///   <paramref name="unusedBitCount"/> value will be copied into the return value
-        ///   as unset bits, irrespective of their value in the encoded representation.
-        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -269,6 +264,11 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
         ///   the method.
         /// </exception>
+        /// <remarks>
+        ///   The least significant bits in the last byte that are reported as "unused" by the
+        ///   <paramref name="unusedBitCount"/> value will be copied into the return value
+        ///   as unset bits, irrespective of their value in the encoded representation.
+        /// </remarks>
         /// <seealso cref="TryReadPrimitiveBitString"/>
         /// <seealso cref="TryReadBitString"/>
         public static byte[] ReadBitString(
@@ -696,15 +696,15 @@ namespace System.Formats.Asn1
         ///   <see langword="false"/> and does not advance the reader if it had a constructed encoding.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -760,15 +760,15 @@ namespace System.Formats.Asn1
         ///   <see langword="false"/> and the reader does not advance.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -816,15 +816,15 @@ namespace System.Formats.Asn1
         ///   A copy of the value in a newly allocated, precisely sized, array.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is

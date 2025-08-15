@@ -15,11 +15,6 @@ We use the `FeatureWasmManagedThreads` property in the libraries projects to con
 `FEATURE_WASM_MANAGED_THREADS` which is used to affect how the libraries are built for the multi-threaded
 runtime.
 
-We use the `FeatureWasmPerfTracing` property in the libraries projects to
-conditionally define `FEATURE_WASM_PERFTRACING` which is used to affect how the
-libraries are built for a runtime that is single-threaded for users, but
-internally can use multithreading for EventPipe diagnostics.
-
 ### Ref asssemblies ###
 
 For ref assemblies that have APIs that are related to threading, we use
@@ -41,9 +36,6 @@ multi-threading.  The property is a boolean constant that will allow the IL trim
 JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
 
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
-
-**TODO** For `FeatureWasmPerfTracing`, the implementation should check *some
-runtime constant* and throw PNSE if diagnostics are not enabled.
 
 ## Native runtime preprocessor defines ##
 
@@ -75,13 +67,6 @@ The runtime has a number of tasks that are scheduled with `mono_main_thread_sche
 
 The background tasks will run on the main thread.  Calling `mono_main_thread_schedule_background_job` on
 a worker thread will use `async_run_in_main_thread` to queue up work for the main thread.
-
-## Debugger tests ##
-
-To run the debugger tests in the runtime [built with enabled support for multi-threading](#building-the-runtime) we use:
-```
-dotnet test src/mono/wasm/debugger/DebuggerTestSuite -e RuntimeConfiguration=Debug -e Configuration=Debug -e DebuggerHost=chrome -e WasmEnableThreads=true
-```
 
 ## JS interop on dedicated threads ##
 FIXME: better documentation, better public API.

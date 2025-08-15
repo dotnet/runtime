@@ -1,18 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Security.Authentication;
 
 namespace System.Net
 {
     internal static class SslProtocolsValidation
     {
-        public static (int MinIndex, int MaxIndex) ValidateContiguous(this SslProtocols protocols, SslProtocols[] orderedSslProtocols)
+        public static (int MinIndex, int MaxIndex) ValidateContiguous(this SslProtocols protocols, ReadOnlySpan<SslProtocols> orderedSslProtocols)
         {
             // A contiguous range of protocols is required.  Find the min and max of the range,
             // or throw if it's non-contiguous or if no protocols are specified.
 
             // First, mark all of the specified protocols.
+            Debug.Assert(orderedSslProtocols.Length <= 512); // it's currently 4(5), just make sure we're not going to blow the stack in the future
             Span<bool> protocolSet = stackalloc bool[orderedSslProtocols.Length];
             for (int i = 0; i < orderedSslProtocols.Length; i++)
             {

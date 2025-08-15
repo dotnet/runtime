@@ -10,15 +10,13 @@
 #define _TYPE_HASH_H
 
 #include "dacenumerablehash.h"
+#include "cdacdata.h"
 
 //========================================================================================
 // This hash table is used by class loaders to look up constructed types:
 // arrays, pointers and instantiations of user-defined generic types.
 //
-// Each persisted module structure has an EETypeHashTable used for constructed types that
-// were ngen'ed into that module. See ceeload.hpp for more information about ngen modules.
-//
-// Types created at runtime are placed in an EETypeHashTable in BaseDomain.
+// Types created at runtime are placed in an EETypeHashTable in Module.
 //
 // Keys are derivable from the data stored in the table (TypeHandle)
 // - for an instantiated type, the typedef module, typedef token, and instantiation
@@ -139,6 +137,18 @@ private:
     BOOL CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes);
     BOOL GrowHashTable();
     LoaderAllocator* GetLoaderAllocator();
+
+    friend struct ::cdac_data<EETypeHashTable>;
+};
+
+template<>
+struct cdac_data<EETypeHashTable>
+{
+    static constexpr size_t Buckets = offsetof(EETypeHashTable, m_pBuckets);
+    static constexpr size_t Count = offsetof(EETypeHashTable, m_cEntries);
+
+    static constexpr size_t VolatileEntryValue = offsetof(EETypeHashTable::VolatileEntry, m_sValue);
+    static constexpr size_t VolatileEntryNextEntry = offsetof(EETypeHashTable::VolatileEntry, m_pNextEntry);
 };
 
 #endif /* _TYPE_HASH_H */

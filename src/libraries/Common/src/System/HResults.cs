@@ -109,6 +109,7 @@ namespace System
         internal const int COR_E_VERIFICATION = unchecked((int)0x8013150D);
         internal const int COR_E_WAITHANDLECANNOTBEOPENED = unchecked((int)0x8013152C);
         internal const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
+        internal const int DISP_E_PARAMNOTFOUND = unchecked((int)0x80020004);
         internal const int DISP_E_TYPEMISMATCH = unchecked((int)0x80020005);
         internal const int DISP_E_BADVARTYPE = unchecked((int)0x80020008);
         internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
@@ -120,6 +121,7 @@ namespace System
         internal const int E_HANDLE = unchecked((int)0x80070006);
         internal const int E_INVALIDARG = unchecked((int)0x80070057);
         internal const int E_NOTIMPL = unchecked((int)0x80004001);
+        internal const int E_OUTOFMEMORY = unchecked((int)0x8007000E);
         internal const int E_POINTER = unchecked((int)0x80004003);
         internal const int ERROR_MRM_MAP_NOT_FOUND = unchecked((int)0x80073B1F);
         internal const int ERROR_TIMEOUT = unchecked((int)0x800705B4);

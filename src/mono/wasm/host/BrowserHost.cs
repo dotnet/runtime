@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost.DevServer;
 using Microsoft.WebAssembly.Diagnostics;
@@ -68,11 +69,19 @@ internal sealed class BrowserHost
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
+        // Read system environment variables after runArgs.json is saved, so they won't be passed to browser.
+        // But we need them to correctly read ASPNETCORE_URLS
+        foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())
+        {
+            if (de.Key is not null && de.Value is not null)
+                envVars[(string)de.Key] = (string)de.Value;
+        }
+
         string[] urls = (envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls) && aspnetUrls.Length > 0)
                             ? aspnetUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
                             : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
 
-        (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args,
+        (ServerURLs serverURLs, IHost host) = await StartWebServerAsync(_args,
                                                                            urls,
                                                                            token);
 
@@ -92,7 +101,7 @@ internal sealed class BrowserHost
         await host.WaitForShutdownAsync(token);
     }
 
-    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
+    private async Task<(ServerURLs, IHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
     {
         Func<WebSocket, Task>? onConsoleConnected = null;
         if (args.ForwardConsoleOutput ?? false)

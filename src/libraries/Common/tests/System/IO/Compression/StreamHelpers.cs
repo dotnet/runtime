@@ -9,7 +9,7 @@ public static partial class StreamHelpers
 {
     public static async Task<MemoryStream> CreateTempCopyStream(string path)
     {
-        var bytes = File.ReadAllBytes(path);
+        var bytes = await File.ReadAllBytesAsync(path);
 
         var ms = new MemoryStream();
         await ms.WriteAsync(bytes, 0, bytes.Length);

@@ -219,11 +219,14 @@ public:
         , m_UnrollableMemop(0)
         , m_Switch(0)
         , m_DivByCns(0)
+        , m_ArgUnbox(0)
+        , m_ArgUnboxExact(0)
         , m_ReturnsStructByValue(false)
         , m_IsFromValueClass(false)
         , m_NonGenericCallsGeneric(false)
         , m_IsCallsiteInNoReturnRegion(false)
         , m_HasProfileWeights(false)
+        , m_MayReturnSmallArray(false)
     {
         // Empty
     }
@@ -272,11 +275,14 @@ protected:
     unsigned m_UnrollableMemop;
     unsigned m_Switch;
     unsigned m_DivByCns;
+    unsigned m_ArgUnbox;
+    unsigned m_ArgUnboxExact;
     bool     m_ReturnsStructByValue       : 1;
     bool     m_IsFromValueClass           : 1;
     bool     m_NonGenericCallsGeneric     : 1;
     bool     m_IsCallsiteInNoReturnRegion : 1;
     bool     m_HasProfileWeights          : 1;
+    bool     m_MayReturnSmallArray        : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It

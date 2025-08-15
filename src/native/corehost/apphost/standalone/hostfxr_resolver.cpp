@@ -118,6 +118,12 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
     {
         m_status_code = StatusCode::CoreHostLibMissingFailure;
     }
+    else if (!pal::is_path_fully_qualified(m_fxr_path))
+    {
+        // We should always be loading hostfxr from an absolute path
+        trace::error(_X("Path to %s must be fully qualified: [%s]"), LIBFXR_NAME, m_fxr_path.c_str());
+        m_status_code = StatusCode::CoreHostLibMissingFailure;
+    }
     else if (pal::load_library(&m_fxr_path, &m_hostfxr_dll))
     {
         m_status_code = StatusCode::Success;
@@ -125,8 +131,6 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
     else
     {
         trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, m_fxr_path.c_str());
-        trace::error(_X("  - Installing .NET prerequisites might help resolve this problem."));
-        trace::error(_X("     %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
         m_status_code = StatusCode::CoreHostLibLoadFailure;
     }
 }

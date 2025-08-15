@@ -132,10 +132,7 @@ namespace System.Text.Json
         /// </exception>
         public JsonElement GetProperty(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             if (TryGetProperty(propertyName, out JsonElement property))
             {
@@ -255,10 +252,7 @@ namespace System.Text.Json
         /// <seealso cref="EnumerateObject"/>
         public bool TryGetProperty(string propertyName, out JsonElement value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             return TryGetProperty(propertyName.AsSpan(), out value);
         }
@@ -1476,7 +1470,9 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(utf8Text));
+#pragma warning disable CA2265
+                return utf8Text.Slice(0, 0) == default;
+#pragma warning restore CA2265
             }
 
             return TextEqualsHelper(utf8Text, isPropertyName: false, shouldUnescape: true);
@@ -1504,7 +1500,9 @@ namespace System.Text.Json
             if (TokenType == JsonTokenType.Null)
             {
                 // This is different than Length == 0, in that it tests true for null, but false for ""
-                return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(text));
+#pragma warning disable CA2265
+                return text.Slice(0, 0) == default;
+#pragma warning restore CA2265
             }
 
             return TextEqualsHelper(text, isPropertyName: false);
@@ -1546,10 +1544,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             CheckValidInstance();
 
@@ -1713,6 +1708,8 @@ namespace System.Text.Json
                 throw new InvalidOperationException();
             }
         }
+
+        internal readonly int MetadataDbIndex => _idx;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"ValueKind = {ValueKind} : \"{ToString()}\"";

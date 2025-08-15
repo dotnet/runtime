@@ -382,7 +382,7 @@ namespace System.Text.Json.Serialization
                     ResolvePolymorphicConverter(value, jsonTypeInfo, options, ref state) :
                     null;
 
-                if (!isContinuation && options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None &&
+                if (!isContinuation && options.ReferenceHandlingStrategy != JsonKnownReferenceHandler.Unspecified &&
                     TryHandleSerializedObjectReference(writer, value, options, polymorphicConverter, ref state))
                 {
                     // The reference handler wrote reference metadata, serialization complete.
@@ -635,10 +635,7 @@ namespace System.Text.Json.Serialization
 
         internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (isWritingExtensionDataProperty)
             {

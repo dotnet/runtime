@@ -104,8 +104,8 @@ public:
     INT_CONFIG   (GCHeapHardLimit,           "GCHeapHardLimit",           "System.GC.HeapHardLimit",           0,                  "Specifies a hard limit for the GC heap")                                                 \
     INT_CONFIG   (GCHeapHardLimitPercent,    "GCHeapHardLimitPercent",    "System.GC.HeapHardLimitPercent",    0,                  "Specifies the GC heap usage as a percentage of the total memory")                        \
     INT_CONFIG   (GCTotalPhysicalMemory,     "GCTotalPhysicalMemory",     NULL,                                0,                  "Specifies what the GC should consider to be total physical memory")                      \
-    INT_CONFIG   (GCRegionRange,             "GCRegionRange",             NULL,                                0,                  "Specifies the range for the GC heap")                                                    \
-    INT_CONFIG   (GCRegionSize,              "GCRegionSize",              NULL,                                0,                  "Specifies the size for a basic GC region")                                               \
+    INT_CONFIG   (GCRegionRange,             "GCRegionRange",             "System.GC.RegionRange",             0,                  "Specifies the range for the GC heap")                                                    \
+    INT_CONFIG   (GCRegionSize,              "GCRegionSize",              "System.GC.RegionSize",              0,                  "Specifies the size for a basic GC region")                                               \
     INT_CONFIG   (GCEnableSpecialRegions,    "GCEnableSpecialRegions",    NULL,                                0,                  "Specifies to enable special handling some regions like SIP")                             \
     STRING_CONFIG(LogFile,                   "GCLogFile",                 NULL,                                                    "Specifies the name of the GC log file")                                                  \
     STRING_CONFIG(ConfigLogFile,             "GCConfigLogFile",           NULL,                                                    "Specifies the name of the GC config log file")                                           \
@@ -128,6 +128,7 @@ public:
     INT_CONFIG   (BGCFLEnableTBH,            "BGCFLEnableTBH",            NULL,                                0,                  "Enables TBH")                                                                            \
     INT_CONFIG   (BGCFLEnableFF,             "BGCFLEnableFF",             NULL,                                0,                  "Enables FF")                                                                             \
     INT_CONFIG   (BGCG2RatioStep,            "BGCG2RatioStep",            NULL,                                5,                  "Ratio correction factor for ML loop")                                                    \
+    INT_CONFIG   (UOHWaitBGCSizeIncPercent,  "UOHWaitBGCSizeIncPercent",  "System.GC.UOHWaitBGCSizeIncPercent",-1,                 "UOH allocation during a BGC waits till end of BGC after UOH increases by this percent")  \
     INT_CONFIG   (GCHeapHardLimitSOH,        "GCHeapHardLimitSOH",        "System.GC.HeapHardLimitSOH",        0,                  "Specifies a hard limit for the GC heap SOH")                                             \
     INT_CONFIG   (GCHeapHardLimitLOH,        "GCHeapHardLimitLOH",        "System.GC.HeapHardLimitLOH",        0,                  "Specifies a hard limit for the GC heap LOH")                                             \
     INT_CONFIG   (GCHeapHardLimitPOH,        "GCHeapHardLimitPOH",        "System.GC.HeapHardLimitPOH",        0,                  "Specifies a hard limit for the GC heap POH")                                             \
@@ -141,7 +142,10 @@ public:
     STRING_CONFIG(GCPath,                    "GCPath",                    "System.GC.Path",                                        "Specifies the path of the standalone GC implementation.")                                \
     INT_CONFIG   (GCSpinCountUnit,           "GCSpinCountUnit",           NULL,                                0,                  "Specifies the spin count unit used by the GC.")                                          \
     INT_CONFIG   (GCDynamicAdaptationMode,   "GCDynamicAdaptationMode",   "System.GC.DynamicAdaptationMode",   1,                  "Enable the GC to dynamically adapt to application sizes.")                               \
-    INT_CONFIG   (GCDTargetTCP,              "GCDTargetTCP",              "System.GC.DTargetTCP",              0,                  "Specifies the target tcp for DATAS")
+    INT_CONFIG   (GCDTargetTCP,              "GCDTargetTCP",              "System.GC.DTargetTCP",              0,                  "Specifies the target tcp for DATAS")                                                     \
+    INT_CONFIG   (GCDBGCRatio,               "GCDBGCRatio",               NULL,                                0,                  "Specifies the ratio of BGC to NGC2 for HC change")                                       \
+    BOOL_CONFIG  (GCCacheSizeFromSysConf,    "GCCacheSizeFromSysConf",    NULL,                                false,              "Specifies using sysconf to retrieve the last level cache size for Unix.")
+
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.
 class GCConfig

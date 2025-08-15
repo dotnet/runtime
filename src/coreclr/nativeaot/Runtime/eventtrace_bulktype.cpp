@@ -7,7 +7,7 @@
 #include "eventtrace_etw.h"
 #include "rhbinder.h"
 #include "slist.h"
-#include "runtimeinstance.h"
+#include "RuntimeInstance.h"
 #include "shash.h"
 #include "eventtracebase.h"
 #include "eventtracepriv.h"
@@ -216,8 +216,9 @@ static CorElementType ElementTypeToCorElementType(EETypeElementType elementType)
         return CorElementType::ELEMENT_TYPE_I;
     case EETypeElementType::ElementType_UIntPtr:
         return CorElementType::ELEMENT_TYPE_U;
+    default:
+        return CorElementType::ELEMENT_TYPE_END;
     }
-    return CorElementType::ELEMENT_TYPE_END;
 }
 
 // Avoid reporting the same type twice by keeping a hash of logged types.
@@ -243,7 +244,11 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 #endif
     //Avoid logging the same type twice, but using the hash of loggged types.
     if (s_loggedTypesHash == NULL)
-        s_loggedTypesHash = new SHash<LoggedTypesTraits>();
+        s_loggedTypesHash = new (nothrow) SHash<LoggedTypesTraits>();
+
+    if (s_loggedTypesHash == NULL)
+        return -1;
+
     MethodTable* preexistingType = s_loggedTypesHash->Lookup(pEEType);
     if (preexistingType != NULL)
     {
@@ -260,7 +265,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
         FireBulkTypeEvent();
     }
 
-    _ASSERTE(m_nBulkTypeValueCount < _countof(m_rgBulkTypeValues));
+    _ASSERTE(m_nBulkTypeValueCount < (int)_countof(m_rgBulkTypeValues));
 
     BulkTypeValue * pVal = &m_rgBulkTypeValues[m_nBulkTypeValueCount];
 
@@ -279,21 +284,48 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
     // EEType for GC statics are not fully populated and they do not have a valid TypeManager. We will identify them by checking for `ElementType_Unknown`.
-    // We will not be able to get the osModuleHandle for these
     ULONGLONG osModuleHandle = 0;
     if (pEEType->GetElementType() != ElementType_Unknown)
     {
         osModuleHandle = (ULONGLONG) pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
     }
+    else
+    {
+        MethodTable * pBaseEEType = pEEType->GetNonArrayBaseType();
+        _ASSERTE(pBaseEEType->GetNonArrayBaseType() == NULL);
+        osModuleHandle = (ULONGLONG) pBaseEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
+    }
+
     pVal->fixedSizedData.ModuleID = osModuleHandle;
 
     if (pEEType->IsParameterizedType())
     {
-        ASSERT(pEEType->IsArray());
-        // Array
-        pVal->fixedSizedData.Flags |= kEtwTypeFlagsArray;
+        if (pEEType->IsArray())
+        {
+            pVal->fixedSizedData.Flags |= kEtwTypeFlagsArray;
+
+            if (!pEEType->IsSzArray())
+            {
+                // Multidimensional arrays set the rank bits, SzArrays do not set the rank bits
+                uint32_t rank = pEEType->GetArrayRank();
+                if (rank < kEtwTypeFlagsArrayRankMax)
+                {
+                    // Only ranks less than kEtwTypeFlagsArrayRankMax are supported.
+                    // Fortunately kEtwTypeFlagsArrayRankMax should be greater than the
+                    // number of ranks the type loader will support
+                    rank <<= kEtwTypeFlagsArrayRankShift;
+                    ASSERT((rank & kEtwTypeFlagsArrayRankMask) == rank);
+                    pVal->fixedSizedData.Flags |= rank;
+                }
+            }
+        }
+        
         pVal->cTypeParameters = 1;
         pVal->ullSingleTypeParameter = (ULONGLONG) pEEType->GetRelatedParameterType();
+    }
+    else if (pEEType->IsFunctionPointer())
+    {
+        // No extra logging for function pointers
     }
     else
     {
@@ -312,7 +344,8 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
         // So no other type flags are applicable to set
     }
 
-    ULONGLONG rvaType = osModuleHandle == 0 ? 0 : (ULONGLONG(pEEType) - osModuleHandle);
+    MethodTable* pTypeForRva = pEEType->IsDynamicType() ? pEEType->GetDynamicTemplateType() : pEEType;
+    ULONGLONG rvaType = ULONGLONG(pTypeForRva) - osModuleHandle;
     pVal->fixedSizedData.TypeNameID = (DWORD) rvaType;
 
     // Now that we know the full size of this type's data, see if it fits in our
@@ -354,7 +387,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
 //
 // Arguments:
 //      * thAsAddr - MethodTable to log
-//      * typeLogBehavior - Ignored in Redhawk builds
+//      * typeLogBehavior - Ignored in NativeAOT builds
 //
 
 void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
@@ -384,7 +417,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
     }
     else if (cTypeParams > 1)
     {
-        
+
         ASSERT_UNCONDITIONALLY("unexpected value of cTypeParams greater than 1");
     }
 }

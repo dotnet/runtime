@@ -38,21 +38,18 @@ namespace Microsoft.Extensions.DependencyInjection
             new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
 
         /// <summary>
-        /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
+        /// Instantiates a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <param name="provider">The service provider used to resolve dependencies</param>
-        /// <param name="instanceType">The type to activate</param>
+        /// <param name="provider">The service provider used to resolve dependencies.</param>
+        /// <param name="instanceType">The type to activate.</param>
         /// <param name="parameters">Constructor arguments not provided by the <paramref name="provider"/>.</param>
-        /// <returns>An activated object of type instanceType</returns>
+        /// <returns>An activated object of type instanceType.</returns>
         public static object CreateInstance(
             IServiceProvider provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             params object[] parameters)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
 
             if (instanceType.IsAbstract)
             {
@@ -262,16 +259,16 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Create a delegate that will instantiate a type with constructor arguments provided directly
+        /// Creates a delegate that will instantiate a type with constructor arguments provided directly
         /// and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <param name="instanceType">The type to activate</param>
+        /// <param name="instanceType">The type to activate.</param>
         /// <param name="argumentTypes">
-        /// The types of objects, in order, that will be passed to the returned function as its second parameter
+        /// The types of objects, in order, that will be passed to the returned function as its second parameter.
         /// </param>
         /// <returns>
         /// A factory that will instantiate instanceType using an <see cref="IServiceProvider"/>
-        /// and an argument array containing objects matching the types defined in argumentTypes
+        /// and an argument array containing objects matching the types defined in argumentTypes.
         /// </returns>
         public static ObjectFactory CreateFactory(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
@@ -299,16 +296,16 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Create a delegate that will instantiate a type with constructor arguments provided directly
+        /// Creates a delegate that will instantiate a type with constructor arguments provided directly
         /// and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <typeparam name="T">The type to activate</typeparam>
+        /// <typeparam name="T">The type to activate.</typeparam>
         /// <param name="argumentTypes">
-        /// The types of objects, in order, that will be passed to the returned function as its second parameter
+        /// The types of objects, in order, that will be passed to the returned function as its second parameter.
         /// </param>
         /// <returns>
-        /// A factory that will instantiate type T using an <see cref="IServiceProvider"/>
-        /// and an argument array containing objects matching the types defined in argumentTypes
+        /// A factory that will instantiate type <typeparamref name="T" /> using an <see cref="IServiceProvider"/>
+        /// and an argument array containing objects matching the types defined in <paramref name="argumentTypes" />.
         /// </returns>
         public static ObjectFactory<T>
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
@@ -341,12 +338,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
+        /// Instantiates a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <typeparam name="T">The type to activate</typeparam>
-        /// <param name="provider">The service provider used to resolve dependencies</param>
-        /// <param name="parameters">Constructor arguments not provided by the <paramref name="provider"/>.</param>
-        /// <returns>An activated object of type T</returns>
+        /// <typeparam name="T">The type to activate.</typeparam>
+        /// <param name="provider">The service provider used to resolve dependencies.</param>
+        /// <param name="parameters">Constructor arguments not provided by <paramref name="provider"/>.</param>
+        /// <returns>An activated object of type <typeparamref name="T" />.</returns>
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider, params object[] parameters)
         {
             return (T)CreateInstance(provider, typeof(T), parameters);
@@ -355,9 +352,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Retrieve an instance of the given type from the service provider. If one is not found then instantiate it directly.
         /// </summary>
-        /// <typeparam name="T">The type of the service</typeparam>
-        /// <param name="provider">The service provider used to resolve dependencies</param>
-        /// <returns>The resolved service or created instance</returns>
+        /// <typeparam name="T">The type of the service.</typeparam>
+        /// <param name="provider">The service provider used to resolve dependencies.</param>
+        /// <returns>The resolved service or created instance.</returns>
         public static T GetServiceOrCreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider)
         {
             return (T)GetServiceOrCreateInstance(provider, typeof(T));
@@ -366,9 +363,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Retrieve an instance of the given type from the service provider. If one is not found then instantiate it directly.
         /// </summary>
-        /// <param name="provider">The service provider</param>
-        /// <param name="type">The type of the service</param>
-        /// <returns>The resolved service or created instance</returns>
+        /// <param name="provider">The service provider.</param>
+        /// <param name="type">The type of the service.</param>
+        /// <returns>The resolved service or created instance.</returns>
         public static object GetServiceOrCreateInstance(
             IServiceProvider provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
@@ -438,12 +435,6 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
 #if NETSTANDARD2_1_OR_GREATER || NET
-        [DoesNotReturn]
-        private static void ThrowHelperArgumentNullExceptionServiceProvider()
-        {
-            throw new ArgumentNullException("serviceProvider");
-        }
-
         private static ObjectFactory CreateFactoryReflection(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes)
@@ -932,8 +923,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(parameters.Length >= 1 && parameters.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             switch (parameters.Length)
             {
@@ -969,8 +959,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Type declaringType,
             IServiceProvider serviceProvider)
         {
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             object?[] arguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -991,8 +980,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Debug.Assert(parameters.Length >= 1 && parameters.Length <= FixedArgumentThreshold);
             Debug.Assert(FixedArgumentThreshold == 4);
 
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             ref FactoryParameterContext parameter1 = ref parameters[0];
 
@@ -1124,8 +1112,7 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             object?[] constructorArguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -1150,8 +1137,7 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             if (arguments is null)
                 ThrowHelperNullReferenceException(); //AsSpan() will not throw NullReferenceException.
@@ -1175,8 +1161,7 @@ namespace Microsoft.Extensions.DependencyInjection
             IServiceProvider serviceProvider,
             object?[]? arguments)
         {
-            if (serviceProvider is null)
-                ThrowHelperArgumentNullExceptionServiceProvider();
+            ArgumentNullException.ThrowIfNull(serviceProvider);
 
             object?[] constructorArguments = new object?[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
@@ -1221,7 +1206,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static object? GetKeyedService(IServiceProvider provider, Type type, object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             if (provider is IKeyedServiceProvider keyedServiceProvider)
             {

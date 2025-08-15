@@ -19,10 +19,10 @@ namespace System.Text.Json
             private int _curIdx;
             private readonly int _endIdxOrVersion;
 
-            internal ObjectEnumerator(JsonElement target)
+            internal ObjectEnumerator(JsonElement target, int currentIndex = -1)
             {
                 _target = target;
-                _curIdx = -1;
+                _curIdx = currentIndex;
 
                 Debug.Assert(target.TokenType == JsonTokenType.StartObject);
                 _endIdxOrVersion = target._parent.GetEndIndex(_target._idx, includeEndElement: false);

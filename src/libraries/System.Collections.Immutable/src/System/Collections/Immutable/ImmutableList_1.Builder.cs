@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Collections.Immutable
 {
@@ -28,7 +29,7 @@ namespace System.Collections.Immutable
         /// </remarks>
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableListBuilderDebuggerProxy<>))]
-        public sealed class Builder : IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IReadOnlyList<T>
+        public sealed class Builder : IList<T>, IList, IReadOnlyList<T>
         {
             /// <summary>
             /// The binary tree used to store the contents of the list.  Contents are typically not entirely frozen.
@@ -45,11 +46,6 @@ namespace System.Collections.Immutable
             /// A number that increments every time the builder changes its contents.
             /// </summary>
             private int _version;
-
-            /// <summary>
-            /// The object callers may use to synchronize access to this collection.
-            /// </summary>
-            private object? _syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Builder"/> class.
@@ -134,17 +130,6 @@ namespace System.Collections.Immutable
                 set
                 {
                     this.Root = this.Root.ReplaceAt(index, value);
-                }
-            }
-
-            /// <summary>
-            /// Gets the element in the collection at a given index.
-            /// </summary>
-            T IOrderedCollection<T>.this[int index]
-            {
-                get
-                {
-                    return this[index];
                 }
             }
 
@@ -1170,18 +1155,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <returns>An object that can be used to synchronize access to the <see cref="ICollection"/>.</returns>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            object ICollection.SyncRoot
-            {
-                get
-                {
-                    if (_syncRoot == null)
-                    {
-                        System.Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
-                    }
-
-                    return _syncRoot;
-                }
-            }
+            object ICollection.SyncRoot =>
+                 field ?? Interlocked.CompareExchange(ref field, new object(), null) ?? field;
             #endregion
         }
     }
@@ -1197,11 +1172,6 @@ namespace System.Collections.Immutable
         private readonly ImmutableList<T>.Builder _list;
 
         /// <summary>
-        /// The simple view of the collection.
-        /// </summary>
-        private T[]? _cachedContents;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableListBuilderDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="builder">The list to display in the debugger</param>
@@ -1215,6 +1185,6 @@ namespace System.Collections.Immutable
         /// Gets a simple debugger-viewable list.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] Contents => _cachedContents ??= _list.ToArray(_list.Count);
+        public T[] Contents => field ??= _list.ToArray(_list.Count);
     }
 }

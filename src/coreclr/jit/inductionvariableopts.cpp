@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
 // This file contains code to optimize induction variables in loops based on
 // scalar evolution analysis (see scev.h and scev.cpp for more information
 // about the scalar evolution analysis).
 //
-// Currently the following optimizations are done:
+// Currently the following optimizations are implemented:
 //
 // IV widening:
 //   This widens primary induction variables from 32 bits into 64 bits. This is
@@ -37,21 +38,26 @@
 //   single instruction, bypassing the need to do a separate comparison with a
 //   bound.
 //
-// Strength reduction (disabled):
-//   This changes the stride of primary IVs in a loop to avoid more expensive
-//   multiplications inside the loop. Commonly the primary IVs are only used
-//   for indexing memory at some element size, which can end up with these
-//   multiplications.
+// Strength reduction:
+//   Strength reduction identifies cases where all uses of a primary IV compute
+//   a common derived value. Commonly this happens when indexing memory at some
+//   element size, resulting in multiplications. It introduces a new primary IV
+//   that directly computes this derived value, avoiding the need for the
+//   original primary IV and its associated calculations. The optimization
+//   handles GC pointers carefully, ensuring all accesses remain within managed
+//   objects.
 //
-//   Strength reduction frequently relies on reversing the loop to remove the
-//   last non-multiplied use of the primary IV.
+// Unused IV removal:
+//   This removes induction variables that are only used for self-updates with
+//   no external uses. This commonly happens after other IV optimizations have
+//   replaced all meaningful uses of an IV with a different, more efficient IV.
 //
 
 #include "jitpch.h"
 #include "scev.h"
 
-// Data structure that keeps track of local occurrences inside loops.
-class LoopLocalOccurrences
+// Data structure that keeps track of per-loop info, like occurrences and suspension-points inside loops.
+class PerLoopInfo
 {
     struct Occurrence
     {
@@ -63,19 +69,26 @@ class LoopLocalOccurrences
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, Occurrence*> LocalToOccurrenceMap;
 
+    struct LoopInfo
+    {
+        LocalToOccurrenceMap* LocalToOccurrences = nullptr;
+        bool                  HasSuspensionPoint = false;
+    };
+
     FlowGraphNaturalLoops* m_loops;
-    // For every loop, we track all occurrences exclusive to that loop.
-    // Occurrences in descendant loops are not kept in their ancestor's maps.
-    LocalToOccurrenceMap** m_maps;
+    // For every loop, we track all occurrences exclusive to that loop, and
+    // whether or not the loop has a suspension point.
+    // Occurrences/suspensions in descendant loops are not kept in their ancestor's maps.
+    LoopInfo* m_info;
     // Blocks whose IR we have visited to find local occurrences in.
     BitVec m_visitedBlocks;
 
-    LocalToOccurrenceMap* GetOrCreateMap(FlowGraphNaturalLoop* loop);
+    LoopInfo* GetOrCreateInfo(FlowGraphNaturalLoop* loop);
 
     template <typename TFunc>
-    bool VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func);
+    bool VisitLoopNestInfo(FlowGraphNaturalLoop* loop, TFunc& func);
 public:
-    LoopLocalOccurrences(FlowGraphNaturalLoops* loops);
+    PerLoopInfo(FlowGraphNaturalLoops* loops);
 
     template <typename TFunc>
     bool VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func);
@@ -85,38 +98,40 @@ public:
     template <typename TFunc>
     bool VisitStatementsWithOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func);
 
+    bool HasSuspensionPoint(FlowGraphNaturalLoop* loop);
+
     void Invalidate(FlowGraphNaturalLoop* loop);
 };
 
-LoopLocalOccurrences::LoopLocalOccurrences(FlowGraphNaturalLoops* loops)
+PerLoopInfo::PerLoopInfo(FlowGraphNaturalLoops* loops)
     : m_loops(loops)
 {
-    Compiler* comp = loops->GetDfsTree()->GetCompiler();
-    m_maps = loops->NumLoops() == 0 ? nullptr : new (comp, CMK_LoopOpt) LocalToOccurrenceMap* [loops->NumLoops()] {};
+    Compiler* comp        = loops->GetDfsTree()->GetCompiler();
+    m_info                = loops->NumLoops() == 0 ? nullptr : new (comp, CMK_LoopOpt) LoopInfo[loops->NumLoops()];
     BitVecTraits poTraits = loops->GetDfsTree()->PostOrderTraits();
     m_visitedBlocks       = BitVecOps::MakeEmpty(&poTraits);
 }
 
 //------------------------------------------------------------------------------
-// LoopLocalOccurrences:GetOrCreateMap:
-//   Get or create the map of occurrences exclusive to a single loop.
+// PerLoopInfo:GetOrCreateInfo:
+//   Get or create the info exclusive to a single loop.
 //
 // Parameters:
 //   loop - The loop
 //
 // Returns:
-//   Map of occurrences.
+//   Loop information.
 //
 // Remarks:
 //   As a precondition occurrences of all descendant loops must already have
 //   been found.
 //
-LoopLocalOccurrences::LocalToOccurrenceMap* LoopLocalOccurrences::GetOrCreateMap(FlowGraphNaturalLoop* loop)
+PerLoopInfo::LoopInfo* PerLoopInfo::GetOrCreateInfo(FlowGraphNaturalLoop* loop)
 {
-    LocalToOccurrenceMap* map = m_maps[loop->GetIndex()];
-    if (map != nullptr)
+    LoopInfo& info = m_info[loop->GetIndex()];
+    if (info.LocalToOccurrences != nullptr)
     {
-        return map;
+        return &info;
     }
 
     BitVecTraits poTraits = m_loops->GetDfsTree()->PostOrderTraits();
@@ -132,11 +147,10 @@ LoopLocalOccurrences::LocalToOccurrenceMap* LoopLocalOccurrences::GetOrCreateMap
     }
 #endif
 
-    Compiler* comp           = m_loops->GetDfsTree()->GetCompiler();
-    map                      = new (comp, CMK_LoopOpt) LocalToOccurrenceMap(comp->getAllocator(CMK_LoopOpt));
-    m_maps[loop->GetIndex()] = map;
+    Compiler* comp          = m_loops->GetDfsTree()->GetCompiler();
+    info.LocalToOccurrences = new (comp, CMK_LoopOpt) LocalToOccurrenceMap(comp->getAllocator(CMK_LoopOpt));
 
-    loop->VisitLoopBlocksReversePostOrder([=, &poTraits](BasicBlock* block) {
+    loop->VisitLoopBlocksReversePostOrder([=, &poTraits, &info](BasicBlock* block) {
         if (!BitVecOps::TryAddElemD(&poTraits, m_visitedBlocks, block->bbPostorderNum))
         {
             return BasicBlockVisit::Continue;
@@ -146,13 +160,15 @@ LoopLocalOccurrences::LocalToOccurrenceMap* LoopLocalOccurrences::GetOrCreateMap
         {
             for (GenTree* node : stmt->TreeList())
             {
+                info.HasSuspensionPoint |= node->IsCall() && node->AsCall()->IsAsync();
+
                 if (!node->OperIsAnyLocal())
                 {
                     continue;
                 }
 
-                GenTreeLclVarCommon* lcl        = node->AsLclVarCommon();
-                Occurrence**         occurrence = map->LookupPointerOrAdd(lcl->GetLclNum(), nullptr);
+                GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
+                Occurrence** occurrence  = info.LocalToOccurrences->LookupPointerOrAdd(lcl->GetLclNum(), nullptr);
 
                 Occurrence* newOccurrence = new (comp, CMK_LoopOpt) Occurrence;
                 newOccurrence->Block      = block;
@@ -166,15 +182,15 @@ LoopLocalOccurrences::LocalToOccurrenceMap* LoopLocalOccurrences::GetOrCreateMap
         return BasicBlockVisit::Continue;
     });
 
-    return map;
+    return &info;
 }
 
 //------------------------------------------------------------------------------
-// LoopLocalOccurrences:VisitLoopNestMaps:
-//   Visit all occurrence maps of the specified loop nest.
+// PerLoopInfo:VisitLoopNestInfo:
+//   Visit all info of the specified loop nest.
 //
 // Type parameters:
-//   TFunc - bool(LocalToOccurrenceMap*) functor that returns true to continue
+//   TFunc - bool(LoopInfo*) functor that returns true to continue
 //           the visit and false to abort.
 //
 // Parameters:
@@ -185,21 +201,21 @@ LoopLocalOccurrences::LocalToOccurrenceMap* LoopLocalOccurrences::GetOrCreateMap
 //   True if the visit completed; false if "func" returned false for any map.
 //
 template <typename TFunc>
-bool LoopLocalOccurrences::VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func)
+bool PerLoopInfo::VisitLoopNestInfo(FlowGraphNaturalLoop* loop, TFunc& func)
 {
     for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
     {
-        if (!VisitLoopNestMaps(child, func))
+        if (!VisitLoopNestInfo(child, func))
         {
             return false;
         }
     }
 
-    return func(GetOrCreateMap(loop));
+    return func(GetOrCreateInfo(loop));
 }
 
 //------------------------------------------------------------------------------
-// LoopLocalOccurrences:VisitOccurrences:
+// PerLoopInfo:VisitOccurrences:
 //   Visit all occurrences of the specified local inside the loop.
 //
 // Type parameters:
@@ -216,11 +232,11 @@ bool LoopLocalOccurrences::VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& 
 //   returning false.
 //
 template <typename TFunc>
-bool LoopLocalOccurrences::VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func)
+bool PerLoopInfo::VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func)
 {
-    auto visitor = [=, &func](LocalToOccurrenceMap* map) {
+    auto visitor = [=, &func](LoopInfo* info) {
         Occurrence* occurrence;
-        if (!map->Lookup(lclNum, &occurrence))
+        if (!info->LocalToOccurrences->Lookup(lclNum, &occurrence))
         {
             return true;
         }
@@ -240,11 +256,11 @@ bool LoopLocalOccurrences::VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned
         return true;
     };
 
-    return VisitLoopNestMaps(loop, visitor);
+    return VisitLoopNestInfo(loop, visitor);
 }
 
 //------------------------------------------------------------------------------
-// LoopLocalOccurrences:HasAnyOccurrences:
+// PerLoopInfo:HasAnyOccurrences:
 //   Check if this loop has any occurrences of the specified local.
 //
 // Parameters:
@@ -257,7 +273,7 @@ bool LoopLocalOccurrences::VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned
 // Remarks:
 //   Does not take promotion into account.
 //
-bool LoopLocalOccurrences::HasAnyOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum)
+bool PerLoopInfo::HasAnyOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum)
 {
     if (!VisitOccurrences(loop, lclNum, [](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
         return false;
@@ -270,7 +286,7 @@ bool LoopLocalOccurrences::HasAnyOccurrences(FlowGraphNaturalLoop* loop, unsigne
 }
 
 //------------------------------------------------------------------------------
-// LoopLocalOccurrences:VisitStatementsWithOccurrences:
+// PerLoopInfo:VisitStatementsWithOccurrences:
 //   Visit all statements with occurrences of the specified local inside
 //   the loop.
 //
@@ -292,11 +308,11 @@ bool LoopLocalOccurrences::HasAnyOccurrences(FlowGraphNaturalLoop* loop, unsigne
 //   once.
 //
 template <typename TFunc>
-bool LoopLocalOccurrences::VisitStatementsWithOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func)
+bool PerLoopInfo::VisitStatementsWithOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func)
 {
-    auto visitor = [=, &func](LocalToOccurrenceMap* map) {
+    auto visitor = [=, &func](LoopInfo* info) {
         Occurrence* occurrence;
-        if (!map->Lookup(lclNum, &occurrence))
+        if (!info->LocalToOccurrences->Lookup(lclNum, &occurrence))
         {
             return true;
         }
@@ -330,7 +346,43 @@ bool LoopLocalOccurrences::VisitStatementsWithOccurrences(FlowGraphNaturalLoop* 
         return true;
     };
 
-    return VisitLoopNestMaps(loop, visitor);
+    return VisitLoopNestInfo(loop, visitor);
+}
+
+//------------------------------------------------------------------------------
+// PerLoopInfo:HasSuspensionPoint:
+//   Check if a loop has a suspension point.
+//
+// Parameters:
+//   loop   - The loop
+//
+// Returns:
+//   True if so.
+//
+bool PerLoopInfo::HasSuspensionPoint(FlowGraphNaturalLoop* loop)
+{
+    if (!loop->GetDfsTree()->GetCompiler()->compIsAsync())
+    {
+        return false;
+    }
+
+    auto visitor = [](LoopInfo* info) {
+        if (info->HasSuspensionPoint)
+        {
+            // Abort now that we've found a suspension point
+            return false;
+        }
+
+        return true;
+    };
+
+    if (!VisitLoopNestInfo(loop, visitor))
+    {
+        // Aborted, so has a suspension point
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -340,16 +392,18 @@ bool LoopLocalOccurrences::VisitStatementsWithOccurrences(FlowGraphNaturalLoop* 
 // Parameters:
 //   loop - The loop
 //
-void LoopLocalOccurrences::Invalidate(FlowGraphNaturalLoop* loop)
+void PerLoopInfo::Invalidate(FlowGraphNaturalLoop* loop)
 {
     for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
     {
         Invalidate(child);
     }
 
-    if (m_maps[loop->GetIndex()] != nullptr)
+    LoopInfo& info = m_info[loop->GetIndex()];
+    if (info.LocalToOccurrences != nullptr)
     {
-        m_maps[loop->GetIndex()] = nullptr;
+        info.LocalToOccurrences = nullptr;
+        info.HasSuspensionPoint = false;
 
         BitVecTraits poTraits = m_loops->GetDfsTree()->PostOrderTraits();
         loop->VisitLoopBlocks([=, &poTraits](BasicBlock* block) {
@@ -391,8 +445,10 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
 
+    assert(dsc->lvInSsa);
+
     BasicBlockVisit result = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-        if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        if (!optLocalIsLiveIntoBlock(lclNum, exit))
         {
             JITDUMP("  Exit " FMT_BB " does not need a sink; V%02u is not live-in\n", exit->bbNum, lclNum);
             return BasicBlockVisit::Continue;
@@ -422,7 +478,7 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
         block->VisitAllSuccs(this, [=](BasicBlock* succ) {
             if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
             {
-                assert(!VarSetOps::IsMember(this, succ->bbLiveIn, dsc->lvVarIndex) &&
+                assert(!optLocalIsLiveIntoBlock(lclNum, succ) &&
                        "Candidate IV for widening is live into exceptional exit");
             }
 
@@ -444,7 +500,7 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 //   initBlock        - The block in where the new IV would be initialized
 //   initedToConstant - Whether or not the new IV will be initialized to a constant
 //   loop             - The loop
-//   loopLocals       - Data structure tracking local uses inside the loop
+//   loopInfo         - Data structure tracking loop info, like local occurrences
 //
 //
 // Returns:
@@ -460,11 +516,8 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 //     2. We need to store the wide IV back into the narrow one in each of
 //     the exits where the narrow IV is live-in.
 //
-bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
-                                         BasicBlock*           initBlock,
-                                         bool                  initedToConstant,
-                                         FlowGraphNaturalLoop* loop,
-                                         LoopLocalOccurrences* loopLocals)
+bool Compiler::optIsIVWideningProfitable(
+    unsigned lclNum, BasicBlock* initBlock, bool initedToConstant, FlowGraphNaturalLoop* loop, PerLoopInfo* loopInfo)
 {
     for (FlowGraphNaturalLoop* otherLoop : m_loops->InReversePostOrder())
     {
@@ -520,7 +573,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
         return true;
     };
 
-    loopLocals->VisitOccurrences(loop, lclNum, measure);
+    loopInfo->VisitOccurrences(loop, lclNum, measure);
 
     if (!initedToConstant)
     {
@@ -534,8 +587,10 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
 
     // Now account for the cost of sinks.
     LclVarDsc* dsc = lvaGetDesc(lclNum);
+    assert(dsc->lvInSsa);
+
     loop->VisitRegularExitBlocks([&](BasicBlock* exit) {
-        if (VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        if (optLocalIsLiveIntoBlock(lclNum, exit))
         {
             savedSize -= ExtensionSize;
             savedCost -= exit->getBBWeight(this) * ExtensionCost;
@@ -583,8 +638,10 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
 void Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
+    assert(dsc->lvInSsa);
+
     loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-        if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        if (!optLocalIsLiveIntoBlock(lclNum, exit))
         {
             return BasicBlockVisit::Continue;
         }
@@ -757,14 +814,12 @@ void Compiler::optBestEffortReplaceNarrowIVUses(
 // Parameters:
 //   scevContext - Context for scalar evolution
 //   loop        - The loop
-//   loopLocals  - Data structure for locals occurrences
+//   loopInfo    - Data structure for tracking loop info, like locals occurrences
 //
 // Returns:
 //   True if any primary IV was widened.
 //
-bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
-                           FlowGraphNaturalLoop*   loop,
-                           LoopLocalOccurrences*   loopLocals)
+bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, PerLoopInfo* loopInfo)
 {
     JITDUMP("Considering primary IVs of " FMT_LP " for widening\n", loop->GetIndex());
 
@@ -779,7 +834,7 @@ bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
         JITDUMP("\n");
         DISPSTMT(stmt);
 
-        Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
+        Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode()->AsLclVarCommon()->Data());
         if (scev == nullptr)
         {
             JITDUMP("  Could not analyze header PHI\n");
@@ -805,14 +860,14 @@ bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
 
         // For a struct field with occurrences of the parent local we won't
         // be able to do much.
-        if (lclDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, lclDsc->lvParentLcl))
+        if (lclDsc->lvIsStructField && loopInfo->HasAnyOccurrences(loop, lclDsc->lvParentLcl))
         {
             JITDUMP("  V%02u is a struct field whose parent local V%02u has occurrences inside the loop\n", lclNum,
                     lclDsc->lvParentLcl);
             continue;
         }
 
-        if (optWidenPrimaryIV(loop, lclNum, addRec, loopLocals))
+        if (optWidenPrimaryIV(loop, lclNum, addRec, loopInfo))
         {
             numWidened++;
         }
@@ -829,15 +884,12 @@ bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
 //   loop       - The loop
 //   lclNum     - The primary IV
 //   addRec     - The add recurrence for the primary IV
-//   loopLocals - Data structure for locals occurrences
+//   loopInfo   - Data structure for tracking loop info like locals occurrences
 //
-bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
-                                 unsigned              lclNum,
-                                 ScevAddRec*           addRec,
-                                 LoopLocalOccurrences* loopLocals)
+bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, ScevAddRec* addRec, PerLoopInfo* loopInfo)
 {
     LclVarDsc* lclDsc = lvaGetDesc(lclNum);
-    if (lclDsc->TypeGet() != TYP_INT)
+    if (!lclDsc->TypeIs(TYP_INT))
     {
         JITDUMP("  Type is %s, no widening to be done\n", varTypeName(lclDsc->TypeGet()));
         return false;
@@ -876,7 +928,7 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
         initBlock = startSsaDsc->GetBlock();
     }
 
-    if (!optIsIVWideningProfitable(lclNum, initBlock, initToConstant, loop, loopLocals))
+    if (!optIsIVWideningProfitable(lclNum, initBlock, initToConstant, loop, loopInfo))
     {
         return false;
     }
@@ -932,7 +984,7 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
     GenTree* initVal;
     if (initToConstant)
     {
-        initVal = gtNewIconNode((int64_t)(uint32_t)startConstant, TYP_LONG);
+        initVal = gtNewLconNode((int64_t)(uint32_t)startConstant);
     }
     else
     {
@@ -971,10 +1023,10 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
         return true;
     };
 
-    loopLocals->VisitStatementsWithOccurrences(loop, lclNum, replace);
+    loopInfo->VisitStatementsWithOccurrences(loop, lclNum, replace);
 
     optSinkWidenedIV(lclNum, newLclNum, loop);
-    loopLocals->Invalidate(loop);
+    loopInfo->Invalidate(loop);
     return true;
 }
 
@@ -1025,21 +1077,21 @@ void Compiler::optVisitBoundingExitingCondBlocks(FlowGraphNaturalLoop* loop, TFu
 // Parameters:
 //   scevContext - Context for scalar evolution
 //   loop        - Loop to transform
-//   loopLocals  - Data structure that tracks occurrences of locals in the loop
+//   loopInfo  - Data structure that tracks occurrences of locals in the loop
 //
 // Returns:
 //   True if the loop was made downwards counted; otherwise false.
 //
 bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
                                            FlowGraphNaturalLoop*   loop,
-                                           LoopLocalOccurrences*   loopLocals)
+                                           PerLoopInfo*            loopInfo)
 {
     JITDUMP("Checking if we should make " FMT_LP " downwards counted\n", loop->GetIndex());
 
     bool changed = false;
     optVisitBoundingExitingCondBlocks(loop, [=, &scevContext, &changed](BasicBlock* exiting) {
         JITDUMP("  Considering exiting block " FMT_BB "\n", exiting->bbNum);
-        changed |= optMakeExitTestDownwardsCounted(scevContext, loop, exiting, loopLocals);
+        changed |= optMakeExitTestDownwardsCounted(scevContext, loop, exiting, loopInfo);
     });
 
     return changed;
@@ -1054,7 +1106,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 //   scevContext - SCEV context
 //   loop        - The specific loop
 //   exiting     - Exiting block
-//   loopLocals  - Data structure tracking local uses
+//   loopInfo  - Data structure tracking local uses
 //
 // Returns:
 //   True if any modification was made.
@@ -1062,7 +1114,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevContext,
                                                FlowGraphNaturalLoop*   loop,
                                                BasicBlock*             exiting,
-                                               LoopLocalOccurrences*   loopLocals)
+                                               PerLoopInfo*            loopInfo)
 {
     // Note: keep the heuristics here in sync with
     // `StrengthReductionContext::IsUseExpectedToBeRemoved`.
@@ -1093,7 +1145,7 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
 
         unsigned candidateLclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
 
-        if (optPrimaryIVHasNonLoopUses(candidateLclNum, loop, loopLocals))
+        if (optLocalHasNonLoopUses(candidateLclNum, loop, loopInfo))
         {
             continue;
         }
@@ -1116,7 +1168,7 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
             return false;
         };
 
-        if (!loopLocals->VisitStatementsWithOccurrences(loop, candidateLclNum, checkRemovableUse))
+        if (!loopInfo->VisitStatementsWithOccurrences(loop, candidateLclNum, checkRemovableUse))
         {
             // Aborted means we found a non-removable use
             continue;
@@ -1209,7 +1261,7 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     DISPSTMT(jtrueStmt);
     JITDUMP("\n");
 
-    loopLocals->Invalidate(loop);
+    loopInfo->Invalidate(loop);
     return true;
 }
 
@@ -1258,23 +1310,22 @@ bool Compiler::optCanAndShouldChangeExitTest(GenTree* cond, bool dump)
 }
 
 //------------------------------------------------------------------------
-// optPrimaryIVHasNonLoopUses:
-//   Check if a primary IV may have uses of the primary IV that we do not
-//   reason about.
+// optLocalHasNonLoopUses:
+//   Check if a loop may have uses of a local that we do not reason about.
 //
 // Parameters:
-//   lclNum     - The primary IV
+//   lclNum     - The local
 //   loop       - The loop
-//   loopLocals - Data structure tracking local uses
+//   loopInfo - Data structure tracking local uses
 //
 // Returns:
-//   True if the primary IV may have non-loop uses (or if it is a field with
-//   uses of the parent struct).
+//   True if the local may have non-loop uses (or if it is a field with uses of
+//   the parent struct).
 //
-bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals)
+bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, PerLoopInfo* loopInfo)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
-    if (varDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, varDsc->lvParentLcl))
+    if (varDsc->lvIsStructField && loopInfo->HasAnyOccurrences(loop, varDsc->lvParentLcl))
     {
         return true;
     }
@@ -1285,8 +1336,14 @@ bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop*
         return true;
     }
 
+    if (!varDsc->lvTracked && !varDsc->lvInSsa)
+    {
+        // We do not have liveness we can use for this untracked local.
+        return true;
+    }
+
     BasicBlockVisit visitResult = loop->VisitRegularExitBlocks([=](BasicBlock* block) {
-        if (VarSetOps::IsMember(this, block->bbLiveIn, varDsc->lvVarIndex))
+        if (optLocalIsLiveIntoBlock(lclNum, block))
         {
             return BasicBlockVisit::Abort;
         }
@@ -1304,6 +1361,30 @@ bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop*
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// optLocalIsLiveIntoBlock:
+//   Check if a local is live into a block. Required liveness information for the local to be present
+//   (either because of it being tracked, or from being an SSA-inserted local).
+//
+// Parameters:
+//   lclNum - The local
+//   block  - The block
+//
+// Returns:
+//   True if the local is live into that block.
+//
+bool Compiler::optLocalIsLiveIntoBlock(unsigned lclNum, BasicBlock* block)
+{
+    LclVarDsc* dsc = lvaGetDesc(lclNum);
+    if (dsc->lvTracked)
+    {
+        return VarSetOps::IsMember(this, block->bbLiveIn, dsc->lvVarIndex);
+    }
+
+    assert(dsc->lvInSsa);
+    return IsInsertedSsaLiveIn(block, lclNum);
 }
 
 struct CursorInfo
@@ -1327,18 +1408,30 @@ class StrengthReductionContext
     Compiler*               m_comp;
     ScalarEvolutionContext& m_scevContext;
     FlowGraphNaturalLoop*   m_loop;
-    LoopLocalOccurrences&   m_loopLocals;
+    PerLoopInfo&            m_loopInfo;
 
     ArrayStack<Scev*>         m_backEdgeBounds;
     SimplificationAssumptions m_simplAssumptions;
     ArrayStack<CursorInfo>    m_cursors1;
     ArrayStack<CursorInfo>    m_cursors2;
+    ArrayStack<CursorInfo>    m_intermediateIVStores;
 
     void        InitializeSimplificationAssumptions();
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
     bool        IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
+    void        ExpandStoredCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* otherCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV);
+    ScevAddRec* ComputeRephrasableIV(ScevAddRec* iv1,
+                                     bool        allowRephrasingByScalingIV1,
+                                     ScevAddRec* iv2,
+                                     bool        allowRephrasingByScalingIV2);
+    template <typename T>
+    ScevAddRec* ComputeRephrasableIVByScaling(ScevAddRec* iv1,
+                                              bool        allowRephrasingByScalingIV1,
+                                              ScevAddRec* iv2,
+                                              bool        allowRephrasingByScalingIV2);
+    GenTree*    RephraseIV(ScevAddRec* iv, ScevAddRec* sourceIV, GenTree* sourceTree);
     bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
     BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors, Statement** afterStmt);
@@ -1356,14 +1449,15 @@ public:
     StrengthReductionContext(Compiler*               comp,
                              ScalarEvolutionContext& scevContext,
                              FlowGraphNaturalLoop*   loop,
-                             LoopLocalOccurrences&   loopLocals)
+                             PerLoopInfo&            loopInfo)
         : m_comp(comp)
         , m_scevContext(scevContext)
         , m_loop(loop)
-        , m_loopLocals(loopLocals)
+        , m_loopInfo(loopInfo)
         , m_backEdgeBounds(comp->getAllocator(CMK_LoopIVOpts))
         , m_cursors1(comp->getAllocator(CMK_LoopIVOpts))
         , m_cursors2(comp->getAllocator(CMK_LoopIVOpts))
+        , m_intermediateIVStores(comp->getAllocator(CMK_LoopIVOpts))
     {
     }
 
@@ -1417,7 +1511,7 @@ bool StrengthReductionContext::TryStrengthReduce()
         DISPSTMT(stmt);
 
         GenTreeLclVarCommon* primaryIVLcl = stmt->GetRootNode()->AsLclVarCommon();
-        Scev*                candidate    = m_scevContext.Analyze(m_loop->GetHeader(), primaryIVLcl);
+        Scev*                candidate    = m_scevContext.Analyze(m_loop->GetHeader(), primaryIVLcl->Data());
         if (candidate == nullptr)
         {
             JITDUMP("  Could not analyze header PHI\n");
@@ -1436,7 +1530,7 @@ bool StrengthReductionContext::TryStrengthReduce()
             continue;
         }
 
-        if (m_comp->optPrimaryIVHasNonLoopUses(primaryIVLcl->GetLclNum(), m_loop, &m_loopLocals))
+        if (m_comp->optLocalHasNonLoopUses(primaryIVLcl->GetLclNum(), m_loop, &m_loopInfo))
         {
             // We won't be able to remove this primary IV
             JITDUMP("  Has non-loop uses\n");
@@ -1469,15 +1563,30 @@ bool StrengthReductionContext::TryStrengthReduce()
             {
                 break;
             }
+
+            JITDUMP("  Next IV is: ");
+            DBEXEC(VERBOSE, nextIV->Dump(m_comp));
+            JITDUMP("\n");
+
             assert(nextIV != nullptr);
 
-            if (varTypeIsGC(nextIV->Type) && !StaysWithinManagedObject(nextCursors, nextIV))
+            if (varTypeIsGC(nextIV->Type))
             {
-                JITDUMP(
-                    "    Next IV computes a GC pointer that we cannot prove to be inside a managed object. Bailing.\n",
-                    varTypeName(nextIV->Type));
-                break;
+                if (m_loopInfo.HasSuspensionPoint(m_loop))
+                {
+                    JITDUMP("    Next IV computes a GC pointer in a loop with a suspension point. Bailing.\n");
+                    break;
+                }
+
+                if (!StaysWithinManagedObject(nextCursors, nextIV))
+                {
+                    JITDUMP(
+                        "    Next IV computes a GC pointer that we cannot prove to be inside a managed object. Bailing.\n");
+                    break;
+                }
             }
+
+            ExpandStoredCursors(nextCursors, cursors);
 
             derivedLevel++;
             std::swap(cursors, nextCursors);
@@ -1518,7 +1627,7 @@ bool StrengthReductionContext::TryStrengthReduce()
         if (TryReplaceUsesWithNewPrimaryIV(cursors, currentIV))
         {
             strengthReducedAny = true;
-            m_loopLocals.Invalidate(m_loop);
+            m_loopInfo.Invalidate(m_loop);
         }
     }
 
@@ -1589,6 +1698,7 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 {
     m_cursors1.Reset();
     m_cursors2.Reset();
+    m_intermediateIVStores.Reset();
 
     auto visitor = [=](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
         if (IsUseExpectedToBeRemoved(block, stmt, tree))
@@ -1630,11 +1740,13 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
         return true;
     };
 
-    if (!m_loopLocals.VisitOccurrences(m_loop, primaryIVLcl->GetLclNum(), visitor) || (m_cursors1.Height() <= 0))
+    if (!m_loopInfo.VisitOccurrences(m_loop, primaryIVLcl->GetLclNum(), visitor) || (m_cursors1.Height() <= 0))
     {
         JITDUMP("  Could not create cursors for all loop uses of primary IV\n");
         return false;
     }
+
+    ExpandStoredCursors(&m_cursors1, &m_cursors2);
 
     JITDUMP("  Found %d cursors using primary IV V%02u\n", m_cursors1.Height(), primaryIVLcl->GetLclNum());
 
@@ -1755,9 +1867,6 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
                 break;
             }
 
-            // TODO-CQ: If this is now the source to a store, we can
-            // look for uses of the LHS local and add those as cursors
-            // as well.
             Scev* parentIV = m_scevContext.Analyze(nextCursor.Block, nextCursor.Tree);
             if (parentIV == nullptr)
             {
@@ -1799,6 +1908,140 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 }
 
 //------------------------------------------------------------------------
+// ExpandStoredCursors: For every cursor that is the source to a store, expand
+// the sets of cursors to contain the destination local's uses if possible.
+//
+// Parameters:
+//   cursors      - [in, out] List of current cursors to expand.
+//   otherCursors - [in, out] The other list of cursors.
+//
+void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* cursors,
+                                                   ArrayStack<CursorInfo>* otherCursors)
+{
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        while (true)
+        {
+            CursorInfo* cursor = &cursors->BottomRef(i);
+            GenTree*    cur    = cursor->Tree;
+
+            GenTree* parent = cur->gtGetParent(nullptr);
+            if ((parent == nullptr) || (parent->OperIs(GT_COMMA) && (parent->gtGetOp1() == cur)))
+            {
+                break;
+            }
+
+            if (parent->OperIs(GT_STORE_LCL_VAR))
+            {
+                GenTreeLclVarCommon* storedLcl = parent->AsLclVarCommon();
+                if ((storedLcl->Data() == cur) && ((cur->gtFlags & GTF_SIDE_EFFECT) == 0) &&
+                    storedLcl->HasSsaIdentity() &&
+                    !m_comp->optLocalHasNonLoopUses(storedLcl->GetLclNum(), m_loop, &m_loopInfo))
+                {
+                    int         numCreated  = 0;
+                    ScevAddRec* cursorIV    = cursor->IV;
+                    BasicBlock* cursorBlock = cursor->Block;
+                    Statement*  cursorStmt  = cursor->Stmt;
+                    cursor = nullptr; // Cannot use this below since we may add elements to "cursors" here.
+
+                    auto createExtraCursor = [=, &numCreated](BasicBlock* block, Statement* stmt,
+                                                              GenTreeLclVarCommon* use) {
+                        if (use == parent)
+                        {
+                            return true;
+                        }
+
+                        if (!use->OperIs(GT_LCL_VAR) || (use->GetSsaNum() != storedLcl->GetSsaNum()))
+                        {
+                            return false;
+                        }
+
+                        Scev* iv = m_scevContext.Analyze(block, use);
+                        if (iv == nullptr)
+                        {
+                            return false;
+                        }
+
+                        iv = m_scevContext.Simplify(iv, m_simplAssumptions);
+                        assert(iv != nullptr);
+                        if (!Scev::Equals(iv, cursorIV))
+                        {
+                            return false;
+                        }
+
+                        // Note: cannot use "cursor" after this point.
+                        cursors->Emplace(block, stmt, use, cursorIV);
+                        otherCursors->Emplace(block, stmt, use, cursorIV);
+                        numCreated++;
+                        return true;
+                    };
+
+                    if (m_loopInfo.VisitOccurrences(m_loop, storedLcl->GetLclNum(), createExtraCursor))
+                    {
+                        JITDUMP(
+                            "  [%06u] was the data of store [%06u]; expanded to %d new cursors, and will replace with a store of 0\n",
+                            Compiler::dspTreeID(cur), Compiler::dspTreeID(parent), numCreated);
+                        // We created cursors for all uses. Remove the IV that
+                        // was feeding into the store from the list.
+                        m_intermediateIVStores.Emplace(cursorBlock, cursorStmt, parent, nullptr);
+                        std::swap(cursors->BottomRef(i), cursors->TopRef(0));
+                        std::swap(otherCursors->BottomRef(i), otherCursors->TopRef(0));
+                        cursors->Pop();
+                        otherCursors->Pop();
+                        i--;
+                        break;
+                    }
+
+                    cursors->Pop(numCreated);
+                    otherCursors->Pop(numCreated);
+                }
+
+                break;
+            }
+
+            Scev* parentIV = m_scevContext.Analyze(cursor->Block, parent);
+            if (parentIV == nullptr)
+            {
+                break;
+            }
+
+            parentIV = m_scevContext.Simplify(parentIV, m_simplAssumptions);
+            assert(parentIV != nullptr);
+            if (!Scev::Equals(parentIV, cursor->IV))
+            {
+                break;
+            }
+
+            cursor->Tree = parent;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// Gcd: Compute the greatest common divisor of two values.
+//
+// Parameters:
+//   a - First value
+//   b - Second value
+//
+// Returns:
+//   Greatest common divisor.
+//
+template <typename T>
+static T Gcd(T a, T b)
+{
+    while (a != 0)
+    {
+        T newA = b % a;
+        T newB = a;
+        a      = newA;
+        b      = newB;
+    }
+
+    return b;
+}
+
+//------------------------------------------------------------------------
 // CheckAdvancedCursors: Check whether the specified advanced cursors still
 // represent a valid set of cursors to introduce a new primary IV for.
 //
@@ -1811,22 +2054,38 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 //   True if all cursors still represent a common derived IV and would be
 //   replacable by a new primary IV computing it.
 //
-// Remarks:
-//   This function may remove cursors from m_cursors1 and m_cursors2 if it
-//   decides to no longer consider some cursors for strength reduction.
-//
 bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV)
 {
-    *nextIV = nullptr;
+    *nextIV                    = nullptr;
+    bool allowRephrasingNextIV = true;
 
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
 
-        if ((cursor.IV != nullptr) && ((*nextIV == nullptr) || Scev::Equals(cursor.IV, *nextIV)))
+        if (cursor.IV != nullptr)
         {
-            *nextIV = cursor.IV;
-            continue;
+            bool allowRephrasingViaScaling = true;
+#ifdef TARGET_ARM64
+            // On arm64 we break address modes if we have to scale, so disallow that.
+            allowRephrasingViaScaling = !cursor.Tree->IsPartOfAddressMode();
+#endif
+
+            if (*nextIV == nullptr)
+            {
+                *nextIV               = cursor.IV;
+                allowRephrasingNextIV = allowRephrasingViaScaling;
+                continue;
+            }
+
+            ScevAddRec* rephrasableAddRec =
+                ComputeRephrasableIV(cursor.IV, allowRephrasingViaScaling, *nextIV, allowRephrasingNextIV);
+            if (rephrasableAddRec != nullptr)
+            {
+                *nextIV = rephrasableAddRec;
+                allowRephrasingNextIV &= allowRephrasingViaScaling;
+                continue;
+            }
         }
 
         JITDUMP("    [%d] does not match; will not advance\n", i);
@@ -1834,6 +2093,174 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
     }
 
     return *nextIV != nullptr;
+}
+
+//------------------------------------------------------------------------
+// ComputeRephrasableIVWByScaling:
+//   Compute an IV that both "iv1" and "iv2" can be rephrased in terms of via
+//   scaling, assuming their step values do not match.
+//
+// Parameters:
+//   iv1 - First IV
+//   iv2 - Second IV
+//
+// Returns:
+//   The IV, or nullptr if no IV could be computed.
+//
+template <typename T>
+ScevAddRec* StrengthReductionContext::ComputeRephrasableIVByScaling(ScevAddRec* iv1,
+                                                                    bool        allowRephrasingByScalingIV1,
+                                                                    ScevAddRec* iv2,
+                                                                    bool        allowRephrasingByScalingIV2)
+{
+    // To rephrase the IVs we will need to scale them up. This requires the
+    // start value to be 0 since that starting value will be scaled too.
+    int64_t start;
+    if (!iv1->Start->GetConstantValue(m_comp, &start) || ((T)start != 0) ||
+        !iv2->Start->GetConstantValue(m_comp, &start) || ((T)start != 0))
+    {
+        return nullptr;
+    }
+
+    int64_t iv1Step;
+    int64_t iv2Step;
+    if (!iv1->Step->GetConstantValue(m_comp, &iv1Step) || !iv2->Step->GetConstantValue(m_comp, &iv2Step))
+    {
+        return nullptr;
+    }
+
+    T gcd = Gcd((T)iv1Step, (T)iv2Step);
+
+    if ((!allowRephrasingByScalingIV1 && (gcd != (T)iv1Step)) || (!allowRephrasingByScalingIV2 && (gcd != (T)iv2Step)))
+    {
+        return nullptr;
+    }
+
+    // Commonly one step value divides the other.
+    if (gcd == (T)iv1Step)
+    {
+        return iv1;
+    }
+    if (gcd == (T)iv2Step)
+    {
+        return iv2;
+    }
+    if ((gcd == 1) || (gcd == -1))
+    {
+        return nullptr;
+    }
+
+    return m_scevContext.NewAddRec(iv1->Start, m_scevContext.NewConstant(iv1->Type, gcd));
+}
+
+//------------------------------------------------------------------------
+// ComputeRephrasableIV:
+//   Compute an IV that both "iv1" and "iv2" can be rephrased in terms of.
+//
+// Parameters:
+//   iv1                         - First IV
+//   allowRephrasingByScalingIV1 - Whether we should allow rephrasing IV1 by scaling.
+//   iv2                         - Second IV
+//   allowRephrasingByScalingIV2 - Whether we should allow rephrasing IV2 by scaling.
+//
+// Returns:
+//   The IV, or nullptr if no IV could be computed.
+//
+ScevAddRec* StrengthReductionContext::ComputeRephrasableIV(ScevAddRec* iv1,
+                                                           bool        allowRephrasingByScalingIV1,
+                                                           ScevAddRec* iv2,
+                                                           bool        allowRephrasingByScalingIV2)
+{
+    if (!Scev::Equals(iv1->Start, iv2->Start))
+    {
+        return nullptr;
+    }
+
+    if (Scev::Equals(iv1->Step, iv2->Step))
+    {
+        return iv1;
+    }
+
+    // Steps are not equal. However, if they have gcd > 1 it is still expected
+    // to be profitable to rewrite in terms of such a new IV.
+    if (iv1->Type == TYP_INT)
+    {
+        return ComputeRephrasableIVByScaling<int32_t>(iv1, allowRephrasingByScalingIV1, iv2,
+                                                      allowRephrasingByScalingIV2);
+    }
+
+    if (iv1->Type == TYP_LONG)
+    {
+        return ComputeRephrasableIVByScaling<int64_t>(iv1, allowRephrasingByScalingIV1, iv2,
+                                                      allowRephrasingByScalingIV2);
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// RephraseIV:
+//   Given an IV and a source IV with a tree that computes that source IV,
+//   compute a tree that calculates "iv" based on the source IV. Requires the
+//   source IV to have been computed via ComputeRephrasableIV.
+//
+// Parameters:
+//   iv         - IV to rephrase in terms of the source IV
+//   sourceIV   - Source IV
+//   sourceTree - Tree computing the source IV
+//
+// Returns:
+//   A tree computing "iv" via "sourceTree".
+//
+GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* sourceIV, GenTree* sourceTree)
+{
+    assert(Scev::Equals(iv->Start, sourceIV->Start));
+
+    if (Scev::Equals(iv->Step, sourceIV->Step))
+    {
+        return sourceTree;
+    }
+
+    int64_t ivStep       = 0;
+    int64_t sourceIVStep = 0;
+    if (!iv->Step->GetConstantValue(m_comp, &ivStep) || !sourceIV->Step->GetConstantValue(m_comp, &sourceIVStep))
+    {
+        unreached();
+    }
+
+    assert(iv->Type == sourceIV->Type);
+
+    if (iv->Type == TYP_INT)
+    {
+        assert((int32_t)ivStep % (int32_t)sourceIVStep == 0);
+        int32_t scale = (int32_t)ivStep / (int32_t)sourceIVStep;
+        if (isPow2(scale))
+        {
+            return m_comp->gtNewOperNode(GT_LSH, TYP_INT, sourceTree,
+                                         m_comp->gtNewIconNode(BitOperations::Log2((uint32_t)scale)));
+        }
+        else
+        {
+            return m_comp->gtNewOperNode(GT_MUL, TYP_INT, sourceTree, m_comp->gtNewIconNode(scale));
+        }
+    }
+
+    if (iv->Type == TYP_LONG)
+    {
+        assert(ivStep % sourceIVStep == 0);
+        int64_t scale = ivStep / sourceIVStep;
+        if (isPow2(scale))
+        {
+            return m_comp->gtNewOperNode(GT_LSH, TYP_LONG, sourceTree,
+                                         m_comp->gtNewLconNode(BitOperations::Log2((uint64_t)scale)));
+        }
+        else
+        {
+            return m_comp->gtNewOperNode(GT_MUL, TYP_LONG, sourceTree, m_comp->gtNewLconNode(scale));
+        }
+    }
+
+    unreached();
 }
 
 //------------------------------------------------------------------------
@@ -1885,10 +2312,15 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree*    parent = cursor.Tree->gtGetParent(nullptr);
-        if ((parent != nullptr) && parent->OperIs(GT_ARR_ADDR))
+        GenTree*    cur    = cursor.Tree;
+        while ((cur != nullptr) && !cur->OperIs(GT_ARR_ADDR))
         {
-            arrAddr = parent->AsArrAddr();
+            cur = cur->gtGetParent(nullptr);
+        }
+
+        if (cur != nullptr)
+        {
+            arrAddr = cur->AsArrAddr();
             break;
         }
     }
@@ -2054,6 +2486,7 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     {
         CursorInfo& cursor = cursors->BottomRef(i);
         GenTree*    newUse = m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type);
+        newUse             = RephraseIV(cursor.IV, iv, newUse);
 
         JITDUMP("    Replacing use [%06u] with [%06u]. Before:\n", Compiler::dspTreeID(cursor.Tree),
                 Compiler::dspTreeID(newUse));
@@ -2086,6 +2519,25 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         m_comp->gtSetStmtInfo(cursor.Stmt);
         m_comp->fgSetStmtSeq(cursor.Stmt);
         m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
+    }
+
+    if (m_intermediateIVStores.Height() > 0)
+    {
+        JITDUMP("    Deleting stores of intermediate IVs\n");
+        for (int i = 0; i < m_intermediateIVStores.Height(); i++)
+        {
+            CursorInfo&          cursor = m_intermediateIVStores.BottomRef(i);
+            GenTreeLclVarCommon* store  = cursor.Tree->AsLclVarCommon();
+            JITDUMP("      Replacing [%06u] with a zero constant\n", Compiler::dspTreeID(store->Data()));
+            // We cannot remove these stores entirely as that will break
+            // downstream phases looking for SSA defs.. instead just replace
+            // the data with a zero and leave it up to backend liveness to
+            // remove that.
+            store->Data() = m_comp->gtNewZeroConNode(genActualType(store->Data()));
+            m_comp->gtSetStmtInfo(cursor.Stmt);
+            m_comp->fgSetStmtSeq(cursor.Stmt);
+            m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
+        }
     }
 
     return true;
@@ -2181,36 +2633,7 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
                                                                       Statement**             afterStmt)
 {
     BitVecTraits poTraits = m_loop->GetDfsTree()->PostOrderTraits();
-
-#ifdef DEBUG
-    // We will be relying on the fact that the cursors are ordered in a useful
-    // way here: loop locals are visited in post order within each basic block,
-    // meaning that "cursors" has the last uses first for each basic block.
-    // Assert that here.
-
-    BitVec seenBlocks(BitVecOps::MakeEmpty(&poTraits));
-    for (int i = 1; i < cursors->Height(); i++)
-    {
-        CursorInfo& prevCursor = cursors->BottomRef(i - 1);
-        CursorInfo& cursor     = cursors->BottomRef(i);
-
-        if (cursor.Block != prevCursor.Block)
-        {
-            assert(BitVecOps::TryAddElemD(&poTraits, seenBlocks, prevCursor.Block->bbPostorderNum));
-            continue;
-        }
-
-        Statement* curStmt = cursor.Stmt;
-        while ((curStmt != nullptr) && (curStmt != prevCursor.Stmt))
-        {
-            curStmt = curStmt->GetNextStmt();
-        }
-
-        assert(curStmt == prevCursor.Stmt);
-    }
-#endif
-
-    BitVec blocksWithUses(BitVecOps::MakeEmpty(&poTraits));
+    BitVec       blocksWithUses(BitVecOps::MakeEmpty(&poTraits));
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
@@ -2230,6 +2653,7 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
             return nullptr;
         }
 
+        Statement* latestStmt = nullptr;
         for (int i = 0; i < cursors->Height(); i++)
         {
             CursorInfo& cursor = cursors->BottomRef(i);
@@ -2238,14 +2662,24 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
                 continue;
             }
 
-            if (!InsertionPointPostDominatesUses(cursor.Block, cursors))
+            if (latestStmt == nullptr)
             {
-                return nullptr;
+                latestStmt = cursor.Stmt;
             }
-
-            *afterStmt = cursor.Stmt;
-            return cursor.Block;
+            else
+            {
+                latestStmt = m_comp->gtLatestStatement(latestStmt, cursor.Stmt);
+            }
         }
+
+        assert(latestStmt != nullptr);
+        if (!InsertionPointPostDominatesUses(backEdgeDominator, cursors))
+        {
+            return nullptr;
+        }
+
+        *afterStmt = latestStmt;
+        return backEdgeDominator;
     }
 
     return nullptr;
@@ -2298,12 +2732,12 @@ bool StrengthReductionContext::InsertionPointPostDominatesUses(BasicBlock*      
 //
 // Parameters:
 //   loop       - The loop
-//   loopLocals - Locals of the loop
+//   loopInfo - Locals of the loop
 //
 // Returns:
 //   True if any primary IV was removed.
 //
-bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals)
+bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopInfo)
 {
     JITDUMP("  Now looking for unnecessary primary IVs\n");
 
@@ -2317,7 +2751,7 @@ bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrenc
 
         unsigned lclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
         JITDUMP("  V%02u", lclNum);
-        if (optPrimaryIVHasNonLoopUses(lclNum, loop, loopLocals))
+        if (optLocalHasNonLoopUses(lclNum, loop, loopInfo))
         {
             JITDUMP(" has non-loop uses, cannot remove\n");
             continue;
@@ -2327,7 +2761,7 @@ bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrenc
             return optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), lclNum);
         };
 
-        if (!loopLocals->VisitStatementsWithOccurrences(loop, lclNum, visit))
+        if (!loopInfo->VisitStatementsWithOccurrences(loop, lclNum, visit))
         {
             JITDUMP(" has essential uses, cannot remove\n");
             continue;
@@ -2340,9 +2774,9 @@ bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrenc
             return true;
         };
 
-        loopLocals->VisitStatementsWithOccurrences(loop, lclNum, remove);
+        loopInfo->VisitStatementsWithOccurrences(loop, lclNum, remove);
         numRemoved++;
-        loopLocals->Invalidate(loop);
+        loopInfo->Invalidate(loop);
     }
 
     Metrics.UnusedIVsRemoved += numRemoved;
@@ -2414,11 +2848,23 @@ PhaseStatus Compiler::optInductionVariables()
     bool changed = false;
 
     optReachableBitVecTraits = nullptr;
-    m_dfsTree                = fgComputeDfs();
-    m_domTree                = FlowGraphDominatorTree::Build(m_dfsTree);
-    m_loops                  = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-    LoopLocalOccurrences loopLocals(m_loops);
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs();
+    }
+
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
+
+    if (m_loops == nullptr)
+    {
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
+
+    PerLoopInfo loopInfo(m_loops);
 
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Optimizing induction variables:\n");
@@ -2438,14 +2884,14 @@ PhaseStatus Compiler::optInductionVariables()
             continue;
         }
 
-        StrengthReductionContext strengthReductionContext(this, scevContext, loop, loopLocals);
+        StrengthReductionContext strengthReductionContext(this, scevContext, loop, loopInfo);
         if (strengthReductionContext.TryStrengthReduce())
         {
             Metrics.LoopsStrengthReduced++;
             changed = true;
         }
 
-        if (optMakeLoopDownwardsCounted(scevContext, loop, &loopLocals))
+        if (optMakeLoopDownwardsCounted(scevContext, loop, &loopInfo))
         {
             Metrics.LoopsMadeDownwardsCounted++;
             changed = true;
@@ -2455,14 +2901,14 @@ PhaseStatus Compiler::optInductionVariables()
         // addressing modes can include the zero/sign-extension of the index
         // for free.
 #if defined(TARGET_XARCH) && defined(TARGET_64BIT)
-        if (optWidenIVs(scevContext, loop, &loopLocals))
+        if (optWidenIVs(scevContext, loop, &loopInfo))
         {
             Metrics.LoopsIVWidened++;
             changed = true;
         }
 #endif
 
-        if (optRemoveUnusedIVs(loop, &loopLocals))
+        if (optRemoveUnusedIVs(loop, &loopInfo))
         {
             changed = true;
         }

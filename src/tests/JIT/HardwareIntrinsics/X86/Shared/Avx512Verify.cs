@@ -42,6 +42,59 @@ namespace JIT.HardwareIntrinsics.X86
             return !(float.IsNaN(actual) && float.IsNaN(expected));
         }
 
+        public static long Classify(double value, byte control) => Classify<double>(value, control) ? -1 : 0;
+
+        public static int Classify(float value, byte control) => Classify<float>(value, control) ? -1 : 0;
+
+        public static T Compress<T>(T[] merge, T[] mask, T[] value, int i)
+            where T : INumber<T>
+        {
+            int match = -1;
+
+            for (int j = 0; j < merge.Length; j++)
+            {
+                if (mask[j] == T.Zero)
+                {
+                    continue;
+                }
+                match++;
+
+                if (match == i)
+                {
+                    return value[j];
+                }
+            }
+
+            return merge[i];
+        }
+
+        public static T Expand<T>(T[] merge, T[] mask, T[] value, int i)
+            where T : INumber<T>
+        {
+            int match = -1;
+
+            if (mask[i] == T.Zero)
+            {
+                return merge[i];
+            }
+
+            for (int j = 0; j < merge.Length; j++)
+            {
+                if (mask[j] == T.Zero)
+                {
+                    continue;
+                }
+                match++;
+
+                if (j == i)
+                {
+                    return value[match];
+                }
+            }
+
+            return merge[i];
+        }
+
         public static TInteger DetectConflicts<TInteger>(TInteger[] firstOp, int i)
             where TInteger : IBinaryInteger<TInteger>
         {
@@ -80,6 +133,18 @@ namespace JIT.HardwareIntrinsics.X86
         {
             double trailingSignificand = GetTrailingSignificand(x);
             return 1.0 + (trailingSignificand / (1L << 52));
+        }
+
+        public static T MaskLoad<T>(T[] value, T[] mask, T[] merge, int i)
+            where T : INumber<T>
+        {
+            return (mask[i] == T.Zero) ? merge[i] : value[i];
+        }
+
+        public static T MaskStore<T>(T[] merge, T[] mask, T[] value, int i)
+            where T : INumber<T>
+        {
+            return (mask[i] == T.Zero) ? merge[i] : value[i];
         }
 
         public static TFloat Reduce<TFloat>(TFloat x, int m)
@@ -159,6 +224,23 @@ namespace JIT.HardwareIntrinsics.X86
             TFloat relativeError = RelativeError(expected, actual);
 
             return relativeError >= (TFloat.One / TFloat.CreateSaturating(16384)); // 2^-14
+        }
+
+        private static bool Classify<TFloat>(TFloat value, byte control)
+            where TFloat : IFloatingPointIeee754<TFloat>
+        {
+            if ((((control & 0b1000_0001) != 0) && TFloat.IsNaN(value)) ||
+                (((control & 0b0000_0010) != 0) && TFloat.IsZero(value) && TFloat.IsPositive(value)) ||
+                (((control & 0b0000_0100) != 0) && TFloat.IsZero(value) && TFloat.IsNegative(value)) ||
+                (((control & 0b0000_1000) != 0) && TFloat.IsPositiveInfinity(value)) ||
+                (((control & 0b0001_0000) != 0) && TFloat.IsNegativeInfinity(value)) ||
+                (((control & 0b0010_0000) != 0) && TFloat.IsSubnormal(value)) ||
+                (((control & 0b0100_0000) != 0) && TFloat.IsNegative(value) && TFloat.IsFinite(value)))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static TFloat Fixup<TFloat>(TFloat x, TFloat y, int z)

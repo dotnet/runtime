@@ -789,6 +789,14 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             }
         }
     }
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    else if (pEvent->dwDebugEventCode == CREATE_THREAD_DEBUG_EVENT || 
+            pEvent->dwDebugEventCode == EXIT_THREAD_DEBUG_EVENT ||
+            pEvent->dwDebugEventCode == CREATE_PROCESS_DEBUG_EVENT)
+    {
+        m_pProcess->HandleDebugEventForInPlaceStepping(pEvent);
+    }
+#endif
 
     // Do standard event handling, including Handling loader-breakpoint,
     // and callback into CordbProcess for Attach if needed.

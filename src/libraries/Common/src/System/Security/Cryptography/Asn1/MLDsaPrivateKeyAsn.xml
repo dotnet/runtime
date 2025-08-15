@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="MLDsaPrivateKeyAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://github.com/lamps-wg/dilithium-certificates/blob/5b23428b08a53aacdb89d93422b81228433e34d8/draft-ietf-lamps-dilithium-certificates.md
+
+ML-DSA-44-PrivateKey ::= CHOICE {
+  seed [0] OCTET STRING (SIZE (32)),
+  expandedKey OCTET STRING (SIZE (2560)),
+  both SEQUENCE {
+      seed OCTET STRING (SIZE (32)),
+      expandedKey OCTET STRING (SIZE (2560))
+      }
+  }
+
+ML-DSA-65-PrivateKey ::= CHOICE {
+  seed [0] OCTET STRING (SIZE (32)),
+  expandedKey OCTET STRING (SIZE (4032)),
+  both SEQUENCE {
+      seed OCTET STRING (SIZE (32)),
+      expandedKey OCTET STRING (SIZE (4032))
+      }
+  }
+
+ML-DSA-87-PrivateKey ::= CHOICE {
+  seed [0] OCTET STRING (SIZE (32)),
+  expandedKey OCTET STRING (SIZE (4896)),
+  both SEQUENCE {
+      seed OCTET STRING (SIZE (32)),
+      expandedKey OCTET STRING (SIZE (4896))
+      }
+  }
+  -->
+  <asn:OctetString name="Seed" implicitTag="0" />
+  <asn:OctetString name="ExpandedKey" />
+  <asn:AsnType name="Both" typeName="System.Security.Cryptography.Asn1.MLDsaPrivateKeyBothAsn" />
+</asn:Choice>

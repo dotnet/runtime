@@ -280,12 +280,14 @@ namespace System.Text.Json.SourceGeneration
                 bool? propertyNameCaseInsensitive = null;
                 JsonKnownNamingPolicy? propertyNamingPolicy = null;
                 JsonCommentHandling? readCommentHandling = null;
+                JsonKnownReferenceHandler? referenceHandler = null;
                 JsonUnknownTypeHandling? unknownTypeHandling = null;
                 JsonUnmappedMemberHandling? unmappedMemberHandling = null;
                 bool? useStringEnumConverter = null;
                 bool? writeIndented = null;
                 char? indentCharacter = null;
                 int? indentSize = null;
+                bool? allowDuplicateProperties = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -379,6 +381,10 @@ namespace System.Text.Json.SourceGeneration
                             readCommentHandling = (JsonCommentHandling)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.ReferenceHandler):
+                            referenceHandler = (JsonKnownReferenceHandler)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.UnknownTypeHandling):
                             unknownTypeHandling = (JsonUnknownTypeHandling)namedArg.Value.Value!;
                             break;
@@ -405,6 +411,10 @@ namespace System.Text.Json.SourceGeneration
 
                         case nameof(JsonSourceGenerationOptionsAttribute.GenerationMode):
                             generationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.AllowDuplicateProperties):
+                            allowDuplicateProperties = (bool)namedArg.Value.Value!;
                             break;
 
                         default:
@@ -434,12 +444,14 @@ namespace System.Text.Json.SourceGeneration
                     PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
                     PropertyNamingPolicy = propertyNamingPolicy,
                     ReadCommentHandling = readCommentHandling,
+                    ReferenceHandler = referenceHandler,
                     UnknownTypeHandling = unknownTypeHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     UseStringEnumConverter = useStringEnumConverter,
                     WriteIndented = writeIndented,
                     IndentCharacter = indentCharacter,
                     IndentSize = indentSize,
+                    AllowDuplicateProperties = allowDuplicateProperties,
                 };
             }
 
@@ -1508,6 +1520,11 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
+                    if (property.DefaultIgnoreCondition == JsonIgnoreCondition.Always && !property.IsRequired)
+                    {
+                        continue;
+                    }
+
                     if ((property.IsRequired && !constructorSetsRequiredMembers) || property.IsInitOnlySetter)
                     {
                         if (!(memberInitializerNames ??= new()).Add(property.MemberName))
@@ -1534,6 +1551,7 @@ namespace System.Text.Json.SourceGeneration
                                 ParameterType = property.PropertyType,
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,
+                                IsNullable = property.PropertyType.CanBeNull && !property.IsSetterNonNullableAnnotation,
                             };
 
                             (propertyInitializers ??= new()).Add(propertyInitializer);

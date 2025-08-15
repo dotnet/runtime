@@ -698,7 +698,7 @@ simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 	MonoGenericInst *class_inst = mono_class_get_generic_class (klass)->context.class_inst;
 	MonoType *etype = class_inst->type_argv [0];
 	g_assert (etype->type == MONO_TYPE_GENERICINST);
-	MonoClass *eklass = etype->data.generic_class->cached_class;
+	MonoClass *eklass = m_type_data_get_generic_class_unchecked (etype)->cached_class;
 	LLVMTypeRef ltype = simd_class_to_llvm_type (ctx, eklass);
 	return LLVMArrayType (ltype, class_inst->type_argc);
 }
@@ -2962,7 +2962,10 @@ build_alloca_llvm_type_name (EmitContext *ctx, LLVMTypeRef t, int align, const c
 	 * Have to place all alloca's at the end of the entry bb, since otherwise they would
 	 * get executed every time control reaches them.
 	 */
-	LLVMPositionBuilder (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry), ctx->last_alloca);
+	if (ctx->last_alloca)
+		LLVMPositionBuilder (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry), ctx->last_alloca);
+	else
+		LLVMPositionBuilderAtEnd (ctx->alloca_builder, get_bb (ctx, ctx->cfg->bb_entry));
 
 	ctx->last_alloca = mono_llvm_build_alloca (ctx->alloca_builder, t, NULL, align, name);
 	return ctx->last_alloca;
@@ -5617,6 +5620,17 @@ scalar_op_from_vector_op_process_result (ScalarOpFromVectorOpCtx *sctx, LLVMValu
 	return vector_from_scalar (sctx->ctx, sctx->return_type, result);
 }
 
+static gboolean bb_needs_call_handler_target(MonoBasicBlock *bb, EmitContext *ctx)
+{
+		if (ctx->cfg->interp_entry_only || !(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
+			return FALSE;
+
+		if (ctx->cfg->deopt && MONO_REGION_FLAGS (bb->region) == MONO_EXCEPTION_CLAUSE_FILTER)
+			return FALSE;
+
+		return TRUE;
+}
+
 static void
 emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBlockRef cbb)
 {
@@ -5636,8 +5650,13 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 		}
 	}
 
-	LLVMBuilderRef handler_builder = create_builder (ctx);
 	LLVMBasicBlockRef target_bb = ctx->bblocks [bb->block_num].call_handler_target_bb;
+	if (!target_bb) {
+		g_assert(!bb_needs_call_handler_target (bb, ctx));
+		return;
+	}
+
+	LLVMBuilderRef handler_builder = create_builder (ctx);
 	LLVMPositionBuilderAtEnd (handler_builder, target_bb);
 
 	// Make the handler code end with a jump to cbb
@@ -7565,15 +7584,29 @@ MONO_RESTORE_WARNING
 #define ARM64_ATOMIC_FENCE_FIX
 #endif
 
+		case OP_ATOMIC_EXCHANGE_U1:
+		case OP_ATOMIC_EXCHANGE_U2:
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8: {
 			LLVMValueRef args [2];
 			LLVMTypeRef t;
 
-			if (ins->opcode == OP_ATOMIC_EXCHANGE_I4)
+			switch (ins->opcode) {
+			case OP_ATOMIC_EXCHANGE_U1:
+				t = LLVMInt8Type ();
+				break;
+			case OP_ATOMIC_EXCHANGE_U2:
+				t = LLVMInt16Type ();
+				break;
+			case OP_ATOMIC_EXCHANGE_I4:
 				t = LLVMInt32Type ();
-			else
+				break;
+			case OP_ATOMIC_EXCHANGE_I8:
 				t = LLVMInt64Type ();
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			g_assert (ins->inst_offset == 0);
 
@@ -7617,15 +7650,29 @@ MONO_RESTORE_WARNING
 			ARM64_ATOMIC_FENCE_FIX;
 			break;
 		}
+		case OP_ATOMIC_CAS_U1:
+		case OP_ATOMIC_CAS_U2:
 		case OP_ATOMIC_CAS_I4:
 		case OP_ATOMIC_CAS_I8: {
 			LLVMValueRef args [3], val;
 			LLVMTypeRef t;
 
-			if (ins->opcode == OP_ATOMIC_CAS_I4)
+			switch (ins->opcode) {
+			case OP_ATOMIC_CAS_U1:
+				t = LLVMInt8Type ();
+				break;
+			case OP_ATOMIC_CAS_U2:
+				t = LLVMInt16Type ();
+				break;
+			case OP_ATOMIC_CAS_I4:
 				t = LLVMInt32Type ();
-			else
+				break;
+			case OP_ATOMIC_CAS_I8:
 				t = LLVMInt64Type ();
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			args [0] = convert (ctx, lhs, pointer_type (t));
 			/* comparand */
@@ -8386,7 +8433,21 @@ MONO_RESTORE_WARNING
 			LLVMValueRef dest;
 
 			dest = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
-			mono_llvm_build_aligned_store (builder, lhs, dest, FALSE, 1);
+			if (mono_class_value_size (ins->klass, NULL) == 12) {
+				const int mask_values [] = { 0, 1, 2 };
+
+				LLVMValueRef truncatedVec3 = LLVMBuildShuffleVector (
+					builder,
+					lhs,
+					LLVMGetUndef (t),
+					create_const_vector_i32 (mask_values, 3),
+					"truncated_vec3"
+				);
+
+				mono_llvm_build_aligned_store (builder, truncatedVec3, dest, FALSE, 1);
+			} else {
+				mono_llvm_build_aligned_store (builder, lhs, dest, FALSE, 1);
+			}
 			break;
 		}
 		case OP_XBINOP:
@@ -10373,7 +10434,7 @@ MONO_RESTORE_WARNING
 				int stride_len = 32 / cn;
 				int stride_len_2 = stride_len >> 1;
 				int n_strides = 16 / stride_len;
-				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i8_t, 16));
+				LLVMValueRef swizzle_mask = LLVMConstNull (LLVMVectorType (i1_t, 16));
 				for (int i = 0; i < n_strides; i++)
 					for (int j = 0; j < stride_len; j++)
 						swizzle_mask = LLVMBuildInsertElement (builder, swizzle_mask, const_int8(i * stride_len + ((stride_len_2 + j) % stride_len)), const_int32 (i * stride_len + j), "");
@@ -10388,20 +10449,29 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_WASM_SIMD_SWIZZLE: {
+			LLVMValueRef bidx = LLVMBuildBitCast (builder, rhs, LLVMVectorType (i1_t, 16), "");
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			if (nelems == 16) {
-				LLVMValueRef args [] = { lhs, rhs };
-				values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
-				break;
+			if (nelems < 16) {
+				int shift = nelems == 8 ? 1 : (nelems == 4 ? 2 : 3);
+				LLVMValueRef fill = LLVMConstNull (LLVMVectorType (i1_t, 16));
+				LLVMValueRef offset = LLVMConstNull (LLVMVectorType (i1_t, 16));
+				int stride = 16 / nelems;
+				for (int i = 0; i < nelems; ++i) {
+					for (int j = 0; j < stride; ++j) {
+						offset = LLVMBuildInsertElement (builder, offset, const_int8 (j), const_int8 (i * stride + j), "");
+						fill = LLVMBuildInsertElement (builder, fill, const_int8 (i * stride), const_int8 (i * stride + j), "");
+					}
+				}
+				LLVMValueRef shiftv = create_shift_vector (ctx, bidx, const_int32 (shift));
+				bidx  = LLVMBuildShl (builder, bidx, shiftv, "");
+				LLVMValueRef args [] = { bidx, fill };
+				bidx = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				bidx = LLVMBuildAdd (builder, bidx, offset, "");
 			}
-
-			LLVMValueRef indexes [16];
-			for (int i = 0; i < nelems; ++i)
-				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
-			LLVMValueRef shuffle_val = LLVMConstNull (LLVMVectorType (i4_t, nelems));
-			for (int i = 0; i < nelems; ++i)
-				shuffle_val = LLVMBuildInsertElement (builder, shuffle_val, convert (ctx, indexes [i], i4_t), const_int32 (i), "");
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
+			LLVMValueRef lhs_b = LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), "");
+			LLVMValueRef args [] = { lhs_b, bidx };
+			LLVMValueRef result_b = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+			values [ins->dreg] = LLVMBuildBitCast (builder, result_b, LLVMTypeOf (lhs), "");
 			break;
 		}
 		case OP_WASM_EXTRACT_NARROW: {
@@ -11675,7 +11745,7 @@ MONO_RESTORE_WARNING
 			default:
 				g_assert_not_reached ();
 				break;
-			
+
 			}
 
 			lhs = LLVMBuildLoad2 (builder, ret_t, addresses [ins->sreg1]->value, "");
@@ -11883,7 +11953,7 @@ MONO_RESTORE_WARNING
 				default:
 					g_assert_not_reached ();
 					break;
-				
+
 				}
 			}
 
@@ -12325,22 +12395,38 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#ifdef TARGET_WASM
-		case OP_WASM_ONESCOMPLEMENT: {
-			LLVMTypeRef i4v128_t = LLVMVectorType (i4_t, 4);
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+		case OP_ONES_COMPLEMENT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef cast = LLVMBuildBitCast (builder, lhs, i4v128_t, "");
-			LLVMValueRef result = LLVMBuildNot (builder, cast, "wasm_not");
-			values [ins->dreg] = LLVMBuildBitCast (builder, result, ret_t, "");
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "v128_not");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
 			break;
 		}
+#if defined(TARGET_WASM)
+		case OP_WASM_BITSELECT: // Fall through to OP_BSL:
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_BSL: {
+			LLVMValueRef select;
+			LLVMValueRef left;
+			LLVMValueRef right;
+
+			if (ins->opcode == OP_BSL) {
+				// OP_BSL: Vector128.ConditionalSelect
+				// (mask, left, right)
+				select = bitcast_to_integral (ctx, lhs);
+				left = bitcast_to_integral (ctx, rhs);
+				right = bitcast_to_integral (ctx, arg3);
+			} else {
+				// OP_WASM_BITSELECT: PackedSimd.BitwiseSelect
+				// (left, right, mask)
+				select = bitcast_to_integral (ctx, arg3);
+				left = bitcast_to_integral (ctx, lhs);
+				right = bitcast_to_integral (ctx, rhs);
+			}
+
 			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
-			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
-			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
-			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
 			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "bit_select");
 			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
 			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
@@ -12418,16 +12504,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		case OP_ONES_COMPLEMENT: {
-			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
-			result = LLVMBuildNot (builder, result, "");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
-#endif
+
 		case OP_DUMMY_USE:
 			break;
 
@@ -13378,10 +13455,7 @@ emit_method_inner (EmitContext *ctx)
 		int clause_index;
 		char name [128];
 
-		if (ctx->cfg->interp_entry_only || !(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
-			continue;
-
-		if (ctx->cfg->deopt && MONO_REGION_FLAGS (bb->region) == MONO_EXCEPTION_CLAUSE_FILTER)
+		if (!bb_needs_call_handler_target(bb, ctx))
 			continue;
 
 		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);

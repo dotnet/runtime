@@ -36,17 +36,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15183", TestRuntimes.Mono)]
-        [InlineData(StackFrame.OFFSET_UNKNOWN)]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void Ctor_SkipFrames(int skipFrames)
-        {
-            var stackFrame = new StackFrame(skipFrames);
-            VerifyStackFrame(stackFrame, true, skipFrames, typeof(StackFrameTests).GetMethod(nameof(Ctor_SkipFrames)), isCurrentFrame: skipFrames == 0);
-        }
-
-        [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15187", TestRuntimes.Mono)]
         [InlineData(StackFrame.OFFSET_UNKNOWN, true)]
         [InlineData(0, true)]
@@ -87,7 +76,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("", 0)]
         [InlineData("FileName", 1)]
-        public void Ctor_Filename_LineNumber(string fileName, int lineNumber)
+        public void Ctor_Filename_LineNumber(string? fileName, int lineNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber);
             Assert.Equal(fileName, stackFrame.GetFileName());
@@ -102,7 +91,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN, 0)]
         [InlineData("", 0, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("FileName", 1, 2)]
-        public void Ctor_Filename_LineNumber_ColNumber(string fileName, int lineNumber, int columnNumber)
+        public void Ctor_Filename_LineNumber_ColNumber(string? fileName, int lineNumber, int columnNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber, columnNumber);
             Assert.Equal(fileName, stackFrame.GetFileName());
