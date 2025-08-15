@@ -665,11 +665,15 @@ namespace System.IO.Compression.Tests
                         s.Position = 0;
                         Assert.Equal(0, s.Position);
 
-                        // Test that seeking beyond bounds throws
+                        // Test that seeking before beginning throws, but beyond end is allowed
                         Assert.Throws<ArgumentOutOfRangeException>(() => s.Position = -1);
-                        Assert.Throws<ArgumentOutOfRangeException>(() => s.Position = e.Length + 1);
                         Assert.Throws<IOException>(() => s.Seek(-1, SeekOrigin.Begin));
-                        Assert.Throws<IOException>(() => s.Seek(1, SeekOrigin.End));
+                        
+                        // Seeking beyond end should be allowed (no exception)
+                        s.Position = e.Length + 1;
+                        Assert.Equal(e.Length + 1, s.Position);
+                        s.Seek(1, SeekOrigin.End);
+                        Assert.Equal(e.Length + 1, s.Position);
 
                         await DisposeStream(async, s);
                     }
