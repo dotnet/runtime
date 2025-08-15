@@ -4458,7 +4458,7 @@ namespace System.Diagnostics.Tracing
                     {
                         if (cur.m_Listener == listenerToRemove)
                         {
-                            CallDisableEventsIfNecessary(cur!, eventSource);
+                            CallDisableEventsIfNecessary(cur, eventSource);
                         }
 
                         cur = cur.m_Next;

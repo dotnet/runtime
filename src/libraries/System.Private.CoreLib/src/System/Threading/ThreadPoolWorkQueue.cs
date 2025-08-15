@@ -1841,8 +1841,8 @@ namespace System.Threading
             ExecutionContext? context = ExecutionContext.Capture();
 
             object tpcallBack = (context == null || context.IsDefault) ?
-                new QueueUserWorkItemCallbackDefaultContext(callBack!, state) :
-                (object)new QueueUserWorkItemCallback(callBack!, state, context);
+                new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
+                (object)new QueueUserWorkItemCallback(callBack, state, context);
 
             s_workQueue.Enqueue(tpcallBack, forceGlobal: true);
 
@@ -1859,8 +1859,8 @@ namespace System.Threading
             ExecutionContext? context = ExecutionContext.Capture();
 
             object tpcallBack = (context == null || context.IsDefault) ?
-                new QueueUserWorkItemCallbackDefaultContext<TState>(callBack!, state) :
-                (object)new QueueUserWorkItemCallback<TState>(callBack!, state, context);
+                new QueueUserWorkItemCallbackDefaultContext<TState>(callBack, state) :
+                (object)new QueueUserWorkItemCallback<TState>(callBack, state, context);
 
             s_workQueue.Enqueue(tpcallBack, forceGlobal: !preferLocal);
 
@@ -1888,12 +1888,12 @@ namespace System.Threading
                     ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
                 }
 
-                UnsafeQueueUserWorkItemInternal((object)state!, preferLocal);
+                UnsafeQueueUserWorkItemInternal((object)state, preferLocal);
                 return true;
             }
 
             s_workQueue.Enqueue(
-                new QueueUserWorkItemCallbackDefaultContext<TState>(callBack!, state), forceGlobal: !preferLocal);
+                new QueueUserWorkItemCallbackDefaultContext<TState>(callBack, state), forceGlobal: !preferLocal);
 
             return true;
         }
@@ -1905,7 +1905,7 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
             }
 
-            object tpcallBack = new QueueUserWorkItemCallbackDefaultContext(callBack!, state);
+            object tpcallBack = new QueueUserWorkItemCallbackDefaultContext(callBack, state);
 
             s_workQueue.Enqueue(tpcallBack, forceGlobal: true);
 
@@ -1925,7 +1925,7 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.callBack);
             }
 
-            UnsafeQueueUserWorkItemInternal(callBack!, preferLocal);
+            UnsafeQueueUserWorkItemInternal(callBack, preferLocal);
             return true;
         }
 

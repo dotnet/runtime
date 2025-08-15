@@ -439,7 +439,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // Delete the file we've created.
                     Debug.Assert(mode == FileMode.Create || mode == FileMode.CreateNew);
-                    Interop.Sys.Unlink(path!);
+                    Interop.Sys.Unlink(path);
 
                     throw new IOException(SR.Format(errorInfo.Error == Interop.Error.EFBIG
                                                         ? SR.IO_FileTooLarge_Path_AllocationSize

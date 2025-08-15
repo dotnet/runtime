@@ -560,7 +560,7 @@ namespace System
                                 cachedMembers = cachedMembers2;
                             }
 
-                            Debug.Assert(cachedMembers![freeSlotIndex] == null);
+                            Debug.Assert(cachedMembers[freeSlotIndex] == null);
                             Volatile.Write(ref cachedMembers[freeSlotIndex], newMemberInfo); // value may be read outside of lock
                             freeSlotIndex++;
                         }
@@ -1350,7 +1350,7 @@ namespace System
 
                                 for (int j = 0; j < list.Count; j++)
                                 {
-                                    if (propertyInfo.EqualsSig(list[j]!))
+                                    if (propertyInfo.EqualsSig(list[j]))
                                     {
                                         duplicate = true;
                                         break;
