@@ -3651,14 +3651,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 if (op1->OperIsConst() || gtIsTypeof(op1))
                 {
                     // op1 is a known constant, replace with 'true'.
-                    retNode = gtNewIconNode(1);
+                    retNode = gtNewTrue();
                     JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
                     // We can also consider FTN_ADDR here
                 }
                 else if (opts.OptimizationDisabled())
                 {
                     // It doesn't make sense to carry it as GT_INTRINSIC till Morph in Tier0
-                    retNode = gtNewIconNode(0);
+                    retNode = gtNewFalse();
                     JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to false early\n");
                 }
                 else

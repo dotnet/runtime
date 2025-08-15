@@ -90,6 +90,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         LoaderModuleAttachedToChunk = 0x8000,
     }
 
+    internal enum MethodTableAuxiliaryFlags : uint
+    {
+        Initialized = 0x0001,
+        IsInitError = 0x0100,
+    }
+
     internal struct MethodDesc
     {
         private readonly Data.MethodDesc _desc;
@@ -478,6 +484,24 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return default;
 
         return _target.ProcessedData.GetOrAdd<TypeInstantiation>(typeHandle.Address).TypeHandles;
+    }
+
+    public bool IsClassInited(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        MethodTableAuxiliaryData auxiliaryData = _target.ProcessedData.GetOrAdd<MethodTableAuxiliaryData>(methodTable.AuxiliaryData);
+        return (auxiliaryData.Flags & (uint)MethodTableAuxiliaryFlags.Initialized) != 0;
+    }
+
+    public bool IsInitError(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        MethodTable methodTable = _methodTables[typeHandle.Address];
+        MethodTableAuxiliaryData auxiliaryData = _target.ProcessedData.GetOrAdd<MethodTableAuxiliaryData>(methodTable.AuxiliaryData);
+        return (auxiliaryData.Flags & (uint)MethodTableAuxiliaryFlags.IsInitError) != 0;
     }
 
     private sealed class TypeInstantiation : IData<TypeInstantiation>

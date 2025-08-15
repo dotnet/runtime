@@ -70,6 +70,8 @@ partial interface IRuntimeTypeSystem : IContract
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle);
     public TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle);
     public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
+    public bool IsClassInited(TypeHandle typeHandle);
+    public bool IsInitError(TypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
     public virtual bool HasTypeParam(TypeHandle typeHandle);
@@ -354,6 +356,7 @@ The contract additionally depends on these data descriptors
 | `MethodTable` | `NumInterfaces` | Number of interfaces of `MethodTable` |
 | `MethodTable` | `NumVirtuals` | Number of virtual methods in `MethodTable` |
 | `MethodTable` | `PerInstInfo` | Either the array element type, or pointer to generic information for `MethodTable` |
+| `MethodTableAuxiliaryData` | `Flags` | Flags of `MethodTableAuxiliaryData` |
 | `MethodTable` | `AuxiliaryData` | Pointer to the AuxiliaryData of a method table |
 | `DynamicStaticsInfo` | `NonGCStatics` | Pointer to non-GC statics |
 | `DynamicStaticsInfo` | `GCStatics` | Pointer to the GC statics |
@@ -554,6 +557,26 @@ Contracts used:
             instantiation[i] = GetTypeHandle(_target.ReadPointer(dictionaryPointer + _target.PointerSize * i));
 
         return instantiation;
+    }
+
+    public bool IsClassInited(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        TargetPointer auxiliaryDataPtr = target.ReadPointer(typeHandle.Address + /* MethodTable.AuxiliaryData offset */);
+        TargetPointer flagsPtr = target.ReadPointer(auxiliaryDataPtr + /* MethodTableAuxiliaryData::Flags offset */);
+        uint flags = target.Read<uint>(flagsPtr);
+        return (flags & (uint)MethodTableAuxiliaryFlags.Initialized) != 0;
+    }
+
+    public bool IsInitError(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+        TargetPointer auxiliaryDataPtr = target.ReadPointer(typeHandle.Address + /* MethodTable.AuxiliaryData offset */);
+        TargetPointer flagsPtr = target.ReadPointer(auxiliaryDataPtr + /* MethodTableAuxiliaryData::Flags offset */);
+        uint flags = target.Read<uint>(flagsPtr);
+        return (flags & (uint)MethodTableAuxiliaryFlags.IsInitError) != 0;
     }
 
     public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
@@ -825,6 +848,12 @@ And the following enumeration definitions
     internal enum MethodDescEntryPointFlags : byte
     {
         TemporaryEntryPointAssigned = 0x04,
+    }
+
+    internal enum MethodTableAuxiliaryFlags : uint
+    {
+        Initialized = 0x0001,
+        IsInitError = 0x0100,
     }
 
 ```

@@ -579,7 +579,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     Debug.Assert(declaringType != null);
 
-                    if (declaringType.IsInterface)
+                    if (declaringType.IsActualInterface)
                     {
                         #region IsInterface
 
@@ -998,7 +998,7 @@ namespace System
                                     continue;
                             }
 
-                            Debug.Assert(interfaceType.IsInterface);
+                            Debug.Assert(interfaceType.IsActualInterface);
                             list.Add(interfaceType);
                         }
 
@@ -1028,7 +1028,7 @@ namespace System
                         for (int i = 0; i < constraints.Length; i++)
                         {
                             RuntimeType constraint = (RuntimeType)constraints[i];
-                            if (constraint.IsInterface)
+                            if (constraint.IsActualInterface)
                                 al.Add(constraint);
 
                             Type[] temp = constraint.GetInterfaces();
@@ -1113,7 +1113,7 @@ namespace System
                     RuntimeType declaringType = ReflectedType;
                     ListBuilder<RuntimeEventInfo> list = default;
 
-                    if (!declaringType.IsInterface)
+                    if (!declaringType.IsActualInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1206,7 +1206,7 @@ namespace System
 
                     ListBuilder<RuntimePropertyInfo> list = default;
 
-                    if (!declaringType.IsInterface)
+                    if (!declaringType.IsActualInterface)
                     {
                         while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                             declaringType = declaringType.GetBaseType()!;
@@ -1258,8 +1258,8 @@ namespace System
 
                     int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
-                    Debug.Assert((declaringType.IsInterface && isInterface && csPropertyInfos == null) ||
-                                 (!declaringType.IsInterface && !isInterface && usedSlots.Length >= numVirtuals));
+                    Debug.Assert((declaringType.IsActualInterface && isInterface && csPropertyInfos == null) ||
+                                 (!declaringType.IsActualInterface && !isInterface && usedSlots.Length >= numVirtuals));
 
                     for (int i = 0; i < tkProperties.Length; i++)
                     {
@@ -2697,7 +2697,7 @@ namespace System
 
             TypeHandle.VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
             Debug.Assert(interfaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
-            Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
+            Debug.Assert(!IsActualInterface); // VerifyInterfaceIsImplemented enforces this invariant
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
@@ -2739,7 +2739,7 @@ namespace System
 
                 // If we resolved to an interface method, use the interface type as reflected type. Otherwise use `this`.
                 RuntimeType reflectedType = RuntimeMethodHandle.GetDeclaringType(classRtMethodHandle);
-                if (!reflectedType.IsInterface)
+                if (!reflectedType.IsActualInterface)
                     reflectedType = this;
 
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
@@ -3432,7 +3432,7 @@ namespace System
             }
         }
 
-        internal new unsafe bool IsInterface
+        internal unsafe bool IsActualInterface
         {
             get
             {

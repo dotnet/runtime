@@ -269,7 +269,7 @@ namespace System.Reflection.Emit
                     if (owner?.UnderlyingSystemType is RuntimeType rtOwner)
                     {
                         if (rtOwner.HasElementType || rtOwner.ContainsGenericParameters
-                            || rtOwner.IsGenericParameter || rtOwner.IsInterface)
+                            || rtOwner.IsGenericParameter || rtOwner.IsActualInterface)
                             throw new ArgumentException(SR.Argument_InvalidTypeForDynamicMethod);
 
                         _typeOwner = rtOwner;
