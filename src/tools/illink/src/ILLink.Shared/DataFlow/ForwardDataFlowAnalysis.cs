@@ -244,11 +244,15 @@ namespace ILLink.Shared.DataFlow
             };
 
             bool changed = true;
-            while (changed)
+            const int MaxIterations = 10_000;
+            int iterations = 0;
+            while (changed && iterations < MaxIterations)
             {
                 changed = false;
                 foreach (var block in cfg.Blocks)
                 {
+                    if (++iterations >= MaxIterations)
+                        break;
 
                     TraceVisitBlock(block);
 
