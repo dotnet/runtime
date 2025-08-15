@@ -524,7 +524,8 @@ namespace System.Tests
             // https://github.com/dotnet/runtime/issues/45033
             if (!PlatformDetection.IsMonoRuntime)
             {
-                yield return new object[] { "..Outside`1", typeof(TypeLoadException), false };
+                yield return new object[] { "..Outside`1", expectedException, false };
+                yield return new object[] { ".Outside`1+.Inside`1", expectedException, false };
 
                 yield return new object[] { "System.Void[]", expectedException, true };
                 yield return new object[] { "System.TypedReference[]", expectedException, true };
@@ -539,7 +540,6 @@ namespace System.Tests
         [InlineData("Outside`2", typeof(TypeLoadException), false)]
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
         [InlineData(".System.Int32", typeof(TypeLoadException), false)]
-        [InlineData(".Outside`1+.Inside`1", typeof(TypeLoadException), false)]
         [MemberData(nameof(GetTypeByName_InvalidElementType))]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
