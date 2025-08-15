@@ -109,12 +109,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportPrivateKey_LowerBound(CompositeMLDsaAlgorithm algorithm)
         {
-            int bound = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes +
-                CompositeMLDsaTestHelpers.ExecuteComponentFunc(
-                    algorithm,
-                    rsa => rsa.KeySizeInBits / 8,
-                    ecdsa => 1 + ((ecdsa.KeySizeInBits + 7) / 8),
-                    eddsa => eddsa.KeySizeInBits / 8);
+            int bound = CompositeMLDsaTestHelpers.ExpectedPrivateKeySizeLowerBound(algorithm);
 
             AssertImportBadPrivateKey(algorithm, new byte[bound - 1]);
         }
@@ -123,15 +118,9 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportPrivateKey_UpperBound(CompositeMLDsaAlgorithm algorithm)
         {
-            int? bound = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PrivateSeedSizeInBytes +
-                CompositeMLDsaTestHelpers.ExecuteComponentFunc(
-                    algorithm,
-                    rsa => default(int?),
-                    ecdsa => default(int?),
-                    eddsa => eddsa.KeySizeInBits / 8);
+            int bound = CompositeMLDsaTestHelpers.ExpectedPrivateKeySizeUpperBound(algorithm);
 
-            if (bound.HasValue)
-                AssertImportBadPrivateKey(algorithm, new byte[bound.Value + 1]);
+            AssertImportBadPrivateKey(algorithm, new byte[bound + 1]);
         }
 
         [Fact]
@@ -396,12 +385,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportPublicKey_LowerBound(CompositeMLDsaAlgorithm algorithm)
         {
-            int bound = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PublicKeySizeInBytes +
-                CompositeMLDsaTestHelpers.ExecuteComponentFunc(
-                    algorithm,
-                    rsa => rsa.KeySizeInBits / 8,
-                    ecdsa => 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8),
-                    eddsa => eddsa.KeySizeInBits / 8);
+            int bound = CompositeMLDsaTestHelpers.ExpectedPublicKeySizeLowerBound(algorithm);
 
             AssertImportBadPublicKey(algorithm, new byte[bound - 1]);
         }
@@ -410,15 +394,9 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportPublicKey_UpperBound(CompositeMLDsaAlgorithm algorithm)
         {
-            int? bound = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].PublicKeySizeInBytes +
-                CompositeMLDsaTestHelpers.ExecuteComponentFunc(
-                    algorithm,
-                    rsa => default(int?),
-                    ecdsa => 1 + 2 * ((ecdsa.KeySizeInBits + 7) / 8),
-                    eddsa => eddsa.KeySizeInBits / 8);
+            int bound = CompositeMLDsaTestHelpers.ExpectedPublicKeySizeUpperBound(algorithm);
 
-            if (bound.HasValue)
-                AssertImportBadPublicKey(algorithm, new byte[bound.Value + 1]);
+            AssertImportBadPublicKey(algorithm, new byte[bound + 1]);
         }
 
         private static void AssertImportBadPublicKey(CompositeMLDsaAlgorithm algorithm, byte[] key)

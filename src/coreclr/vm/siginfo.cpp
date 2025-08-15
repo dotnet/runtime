@@ -185,7 +185,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeCo
     {
         mdToken tk;
         IfFailThrowBF(GetToken(&tk), BFA_BAD_COMPLUS_SIG, pSigModule);
-        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk);
+        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
         pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
         pSigBuilder->AppendByte(typ == ELEMENT_TYPE_CMOD_REQD); // "is required" byte
         pSigBuilder->AppendPointer(th.AsPtr());
