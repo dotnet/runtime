@@ -3796,10 +3796,8 @@ void Compiler::fgDebugCheckLinkedLocals()
 
 void Compiler::fgDebugCheckLinks(bool morphTrees)
 {
-    // This used to be only on for stress, and there was a comment stating that
-    // it was "quite an expensive operation" but I did not find that to be true.
-    // Set DO_SANITY_DEBUG_CHECKS to false to revert to that behavior.
-    const bool DO_SANITY_DEBUG_CHECKS = true;
+    // This check is too expensive for large methods.
+    const bool DO_SANITY_DEBUG_CHECKS = fgBBNumMax < 5000;
 
     if (!DO_SANITY_DEBUG_CHECKS && !compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
     {

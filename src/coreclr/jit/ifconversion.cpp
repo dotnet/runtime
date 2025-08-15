@@ -668,7 +668,7 @@ bool OptIfConversionDsc::optIfConvert()
         }
 
         // We may be inside an unnatural loop, so do the expensive check.
-        if (m_comp->compHasBackwardJump && m_comp->optReachable(m_finalBlock, m_startBlock, nullptr))
+        if (m_comp->compHasBackwardJump && m_comp->optReachable(m_finalBlock, m_startBlock, nullptr, /*budget*/ 8))
         {
             JITDUMP("Skipping if-conversion inside loop (via FG walk)\n");
             return false;
