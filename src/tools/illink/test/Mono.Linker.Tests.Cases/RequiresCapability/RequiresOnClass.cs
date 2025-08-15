@@ -134,6 +134,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [ExpectedWarning("IL2026", "ClassWithRequires.ClassWithRequires()", "--ClassWithRequires--", Tool.Analyzer, "")]
         [ExpectedWarning("IL2026", "ClassWithRequires.ClassWithRequires()", "--ClassWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+        [ExpectedWarning("IL3050", "ClassWithRequires.ClassWithRequires()", "--ClassWithRequires--", Tool.Analyzer, "NativeAOT Specific warning")]
+        [ExpectedWarning("IL3050", "ClassWithRequires.ClassWithRequires()", "--ClassWithRequires--", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
         class TestUnconditionalSuppressMessage : ClassWithRequires
         {
             public static void StaticMethodInTestSuppressionClass() { }
@@ -347,6 +349,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [ExpectedWarning("IL2026", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.Analyzer, "")]
         [ExpectedWarning("IL2026", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+        [ExpectedWarning("IL3050", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.Analyzer, "NativeAOT Specific warning")]
+        [ExpectedWarning("IL3050", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
         class DerivedWithoutRequiresOnType : BaseWithRequiresOnType
         {
             public override void Method() { }
