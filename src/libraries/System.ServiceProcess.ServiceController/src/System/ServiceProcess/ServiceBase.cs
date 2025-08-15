@@ -697,11 +697,13 @@ namespace System.ServiceProcess
         private SERVICE_TABLE_ENTRY GetEntry()
         {
             _nameFrozen = true;
+#pragma warning disable CA1416 // This call site is reachable on all platforms.
             return new SERVICE_TABLE_ENTRY()
             {
                 callback = Marshal.GetFunctionPointerForDelegate(_mainCallback!),
                 name = Marshal.StringToHGlobalUni(_serviceName)
             };
+#pragma warning restore CA1416
         }
 
         private int ServiceCommandCallbackEx(int command, int eventType, IntPtr eventData, IntPtr eventContext)

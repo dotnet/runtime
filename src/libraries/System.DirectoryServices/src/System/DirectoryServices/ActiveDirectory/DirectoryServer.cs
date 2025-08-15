@@ -642,7 +642,9 @@ namespace System.DirectoryServices.ActiveDirectory
             int result;
             fixed (char* partitionPtr = partition)
             {
+#pragma warning disable CA1416 // This call site is reachable on all platforms.
                 IntPtr syncAllFunctionPointer = Marshal.GetFunctionPointerForDelegate(syncAllCallback);
+#pragma warning restore CA1416
                 result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &pErrors);
                 GC.KeepAlive(syncAllCallback);
             }
