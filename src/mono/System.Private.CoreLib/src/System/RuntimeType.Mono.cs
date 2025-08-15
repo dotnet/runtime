@@ -1683,7 +1683,8 @@ namespace System
 
         [Flags]
         // Types of entries cached in TypeCache
-        private enum TypeCacheEntries {
+        private enum TypeCacheEntries
+        {
             IsGenericTypeDef = 1,
             IsDelegate = 2,
             IsValueType = 4,
