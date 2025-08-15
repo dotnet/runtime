@@ -141,7 +141,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [Kept]
         interface INameProvider<[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
         {
-            [Kept]
+            [Kept(By = Tool.Trimmer)]
             [return: KeptAttributeAttribute(typeof(System.Runtime.CompilerServices.NullableAttribute))]
             string? GetName(T instance);
         }
@@ -165,7 +165,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [Kept]
         interface IDataObjectPrinter
         {
-            [Kept]
+            [Kept(By = Tool.Trimmer)]
             int GetNameLength(DataObject instance);
         }
 
@@ -196,7 +196,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [Kept]
         interface ICustomFactory<[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>
         {
-            [Kept]
+            [Kept(By = Tool.Trimmer)]
             T Create();
         }
 
@@ -233,7 +233,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [Kept]
         interface ICustomFactoryWithConstraintWrapper
         {
-            [Kept]
+            [Kept(By = Tool.Trimmer)]
             FactoryWithConstraintCreated Create();
         }
 
@@ -257,7 +257,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [Kept]
         interface ICustomFactoryWithConstraint<[KeptGenericParamAttributes(GenericParameterAttributes.DefaultConstructorConstraint)] T> where T : new()
         {
-            [Kept]
+            [Kept(By = Tool.Trimmer)]
             T Create();
         }
 
@@ -299,18 +299,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 if (expected != actual)
                     throw new Exception($"{expected} != {actual}");
-            }
-
-            public static void NotNull(object o)
-            {
-                if (o is null)
-                    throw new Exception();
-            }
-
-            public static void Null(object o)
-            {
-                if (o is not null)
-                    throw new Exception();
             }
         }
     }
