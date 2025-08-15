@@ -7665,7 +7665,7 @@ public:
     bool          optReachable(BasicBlock* const fromBlock,
                                BasicBlock* const toBlock,
                                BasicBlock* const excludedBlock,
-                               int               budget = -1);
+                               int*              pBudget = nullptr);
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
     void          optRelopImpliesRelop(RelopImplicationInfo* rii);

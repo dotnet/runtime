@@ -2246,7 +2246,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 //    fromBlock - staring block
 //    toBlock   - ending block
 //    excludedBlock - ignore paths that flow through this block
-//    budget - number of blocks to examine before returning false as 'ran out of budget'. -1 means infinite budget.
+//    pBudget - number of blocks to examine before returning false as 'ran out of budget'
 //
 // Returns:
 //    true if there is a path, false if there is no path
@@ -2261,11 +2261,16 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 bool Compiler::optReachable(BasicBlock* const fromBlock,
                             BasicBlock* const toBlock,
                             BasicBlock* const excludedBlock,
-                            int               budget)
+                            int*              pBudget)
 {
     if (fromBlock == toBlock)
     {
         return true;
+    }
+
+    if ((pBudget != nullptr) && (*pBudget <= 0))
+    {
+        return false;
     }
 
     if (optReachableBitVecTraits == nullptr)
@@ -2294,20 +2299,16 @@ bool Compiler::optReachable(BasicBlock* const fromBlock,
 
         bool            ranOutOfBudget = false;
         BasicBlockVisit result =
-            nextBlock->VisitAllSuccs(this, [this, toBlock, &stack, &ranOutOfBudget, &budget](BasicBlock* succ) {
+            nextBlock->VisitAllSuccs(this, [this, toBlock, &stack, &ranOutOfBudget, pBudget](BasicBlock* succ) {
             if (succ == toBlock)
             {
                 return BasicBlockVisit::Abort;
             }
 
-            if (budget >= 0)
+            if ((pBudget != nullptr) && (--(*pBudget) <= 0))
             {
-                if (budget == 0)
-                {
-                    ranOutOfBudget = true;
-                    return BasicBlockVisit::Abort;
-                }
-                budget--;
+                ranOutOfBudget = true;
+                return BasicBlockVisit::Abort;
             }
 
             if (!BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))

@@ -45,7 +45,8 @@ private:
     IfConvertOperation m_thenOperation; // The single operation in the Then case.
     IfConvertOperation m_elseOperation; // The single operation in the Else case.
 
-    int m_checkLimit = 4; // Max number of chained blocks to allow in both the True and Else cases.
+    int m_checkLimit         = 4; // Max number of chained blocks to allow in both the True and Else cases.
+    int m_reachabilityBudget = 2000;
 
     genTreeOps m_mainOper         = GT_COUNT; // The main oper of the if conversion.
     bool       m_doElseConversion = false;    // Does the If conversion have an else statement.
@@ -553,6 +554,11 @@ void OptIfConversionDsc::IfConvertDump()
 //
 bool OptIfConversionDsc::optIfConvert()
 {
+    if (m_reachabilityBudget <= 0)
+    {
+        return false;
+    }
+
     // Does the block end by branching via a JTRUE after a compare?
     if (!m_startBlock->KindIs(BBJ_COND) || (m_startBlock->NumSucc() != 2))
     {
@@ -668,7 +674,7 @@ bool OptIfConversionDsc::optIfConvert()
         }
 
         // We may be inside an unnatural loop, so do the expensive check.
-        if (m_comp->compHasBackwardJump && m_comp->optReachable(m_finalBlock, m_startBlock, nullptr, /*budget*/ 8))
+        if (m_comp->optReachable(m_finalBlock, m_startBlock, nullptr, &m_reachabilityBudget))
         {
             JITDUMP("Skipping if-conversion inside loop (via FG walk)\n");
             return false;
