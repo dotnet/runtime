@@ -14,8 +14,8 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] Expand(HashAlgorithmName hash, byte[] prk, int outputLength, byte[] info);
         protected abstract byte[] DeriveKey(HashAlgorithmName hash, byte[] ikm, int outputLength, byte[] salt, byte[] info);
 
-        internal static bool MD5Supported => !PlatformDetection.IsBrowser && !PlatformDetection.IsAzureLinux;
-        internal static bool EmptyKeysSupported => !PlatformDetection.IsAzureLinux;
+        internal static bool MD5Supported => !PlatformDetection.IsBrowser && !PlatformDetection.IsSymCryptOpenSsl;
+        internal static bool EmptyKeysSupported => !PlatformDetection.IsSymCryptOpenSsl;
 
         [Theory]
         [MemberData(nameof(GetHkdfTestCases))]

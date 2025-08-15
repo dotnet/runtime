@@ -393,12 +393,15 @@ namespace ILCompiler
                 ArrayBuilder<GenericLookupResult> slotBuilder = default;
                 ArrayBuilder<GenericLookupResult> discardedBuilder = default;
 
-                // Find all constructed type lookups. We'll deduplicate those with necessary type lookups.
+                // Find all constructed and metadata type lookups. We'll use this for deduplication.
                 var constructedTypeLookups = new HashSet<TypeDesc>();
+                var metadataTypeLookups = new HashSet<TypeDesc>();
                 foreach (GenericLookupResult lookupResult in slots)
                 {
                     if (lookupResult is TypeHandleGenericLookupResult thLookup)
                         constructedTypeLookups.Add(thLookup.Type);
+                    else if (lookupResult is MetadataTypeHandleGenericLookupResult mdthLookup)
+                        metadataTypeLookups.Add(mdthLookup.Type);
                 }
 
                 // We go over all slots in the layout, looking for references to method dictionaries
@@ -422,7 +425,12 @@ namespace ILCompiler
                     }
                     else if (lookupResult is NecessaryTypeHandleGenericLookupResult thLookup)
                     {
-                        if (constructedTypeLookups.Contains(thLookup.Type))
+                        if (constructedTypeLookups.Contains(thLookup.Type) || metadataTypeLookups.Contains(thLookup.Type))
+                            continue;
+                    }
+                    else if (lookupResult is MetadataTypeHandleGenericLookupResult mdthLookup)
+                    {
+                        if (constructedTypeLookups.Contains(mdthLookup.Type))
                             continue;
                     }
 
@@ -485,6 +493,7 @@ namespace ILCompiler
         {
             private CompilerTypeSystemContext _context;
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _metadataMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _reflectionVisibleGenericDefinitionMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
@@ -513,6 +522,11 @@ namespace ILCompiler
                     if (node is ReflectionVisibleGenericDefinitionEETypeNode reflectionVisibleMT)
                     {
                         _reflectionVisibleGenericDefinitionMethodTables.Add(reflectionVisibleMT.Type);
+                    }
+
+                    if (node is MetadataEETypeNode metadataMT)
+                    {
+                        _metadataMethodTables.Add(metadataMT.Type);
                     }
 
                     TypeDesc type = (node as ConstructedEETypeNode)?.Type;
@@ -770,6 +784,13 @@ namespace ILCompiler
                 Debug.Assert(type.NormalizeInstantiation() == type);
                 Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
                 return _constructedMethodTables.Contains(type);
+            }
+
+            public override bool CanReferenceMetadataMethodTable(TypeDesc type)
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
+                return _metadataMethodTables.Contains(type);
             }
 
             public override bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)

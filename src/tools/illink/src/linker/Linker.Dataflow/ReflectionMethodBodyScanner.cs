@@ -74,7 +74,7 @@ namespace Mono.Linker.Dataflow
             base.Scan(methodIL, ref interproceduralState);
         }
 
-        protected override void WarnAboutInvalidILInMethod(MethodBody method, int ilOffset)
+        protected override void WarnAboutInvalidILInMethod(MethodIL methodIl, int ilOffset)
         {
             // Serves as a debug helper to make sure valid IL is not considered invalid.
             //
@@ -93,7 +93,7 @@ namespace Mono.Linker.Dataflow
 
         protected override MultiValue GetFieldValue(FieldReference field) => _annotations.GetFieldValue(field);
 
-        protected override MethodReturnValue GetReturnValue(MethodDefinition method) => _annotations.GetMethodReturnValue(method, isNewObj: false);
+        protected override MethodReturnValue GetReturnValue(MethodIL methodIL) => _annotations.GetMethodReturnValue(methodIL.Method, isNewObj: false);
 
         private void HandleStoreValueWithDynamicallyAccessedMembers(ValueWithDynamicallyAccessedMembers targetValue, Instruction operation, MultiValue sourceValue, int? parameterIndex)
         {
@@ -104,24 +104,24 @@ namespace Mono.Linker.Dataflow
             }
         }
 
-        protected override void HandleStoreField(MethodDefinition method, FieldValue field, Instruction operation, MultiValue valueToStore, int? parameterIndex)
+        protected override void HandleStoreField(MethodIL methodIL, FieldValue field, Instruction operation, MultiValue valueToStore, int? parameterIndex)
             => HandleStoreValueWithDynamicallyAccessedMembers(field, operation, valueToStore, parameterIndex);
 
-        protected override void HandleStoreParameter(MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore, int? parameterIndex)
+        protected override void HandleStoreParameter(MethodIL methodIL, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore, int? parameterIndex)
             => HandleStoreValueWithDynamicallyAccessedMembers(parameter, operation, valueToStore, parameterIndex);
 
-        protected override void HandleReturnValue(MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
+        protected override void HandleReturnValue(MethodIL methodIL, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(returnValue, operation, valueToStore, null);
 
-        public override MultiValue HandleCall(MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams)
+        public override MultiValue HandleCall(MethodIL callingMethodIL, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams)
         {
-            var reflectionProcessed = _markStep.ProcessReflectionDependency(callingMethodBody, operation);
+            var reflectionProcessed = _markStep.ProcessReflectionDependency(callingMethodIL.Body, operation);
             if (reflectionProcessed)
             {
                 return UnknownValue.Instance;
             }
 
-            Debug.Assert(callingMethodBody.Method == _origin.Provider);
+            Debug.Assert(callingMethodIL.Method == _origin.Provider);
             var calledMethodDefinition = _context.TryResolve(calledMethod);
             if (calledMethodDefinition == null)
             {

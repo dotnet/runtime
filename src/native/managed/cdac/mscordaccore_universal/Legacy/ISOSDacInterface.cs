@@ -11,6 +11,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // See src/coreclr/inc/sospriv.idl
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+
+internal enum CLRDataOtherNotifyFlag
+{
+    CLRDATA_NOTIFY_ON_MODULE_LOAD = 0x1,
+    CLRDATA_NOTIFY_ON_MODULE_UNLOAD = 0x2,
+    CLRDATA_NOTIFY_ON_EXCEPTION = 0x4,
+    CLRDATA_NOTIFY_ON_EXCEPTION_CATCH_ENTER = 0x8
+}
+
 internal struct DacpThreadStoreData
 {
     public int threadCount;
@@ -177,6 +186,12 @@ internal struct DacpMethodTableFieldData
     public ClrDataAddress FirstField;
     public ushort wContextStaticOffset;
     public ushort wContextStaticsSize;
+};
+
+internal enum MethodTableInitializationFlags
+{
+    MethodTableInitialized = 1,
+    MethodTableInitializationFailed = 2
 };
 
 internal struct DacpReJitData
@@ -638,7 +653,7 @@ internal unsafe partial interface ISOSDacInterface14
     [PreserveSig]
     int GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
     [PreserveSig]
-    int GetMethodTableInitializationFlags(ClrDataAddress methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus);
+    int GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus);
 }
 
 [GeneratedComInterface]

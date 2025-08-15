@@ -1317,15 +1317,15 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_INLINE_ARRAY;
     }
-    DWORD HasNonPublicFields()
+    DWORD HasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_HASNONPUBLICFIELDS);
+        return (m_VMFlags & VMFLAG_HASRVASTATICFIELDS);
     }
-    void SetHasNonPublicFields()
+    void SetHasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD)VMFLAG_HASNONPUBLICFIELDS;
+        m_VMFlags |= (DWORD)VMFLAG_HASRVASTATICFIELDS;
     }
     DWORD IsNotTightlyPacked()
     {
@@ -1647,7 +1647,7 @@ public:
 
         VMFLAG_INLINE_ARRAY                    = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
-        VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
+        VMFLAG_HASRVASTATICFIELDS              = 0x00040000,
         VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
@@ -1800,6 +1800,7 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
     static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
     static constexpr size_t FieldDescList = offsetof(EEClass, m_pFieldDescList);
+    static constexpr size_t MethodDescChunk = offsetof(EEClass, m_pChunks);
     static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
     static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
     static constexpr size_t NumInstanceFields = offsetof(EEClass, m_NumInstanceFields);
@@ -2047,7 +2048,7 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
 
 
 
