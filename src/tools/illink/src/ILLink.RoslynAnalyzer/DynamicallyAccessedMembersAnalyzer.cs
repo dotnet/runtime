@@ -118,7 +118,7 @@ namespace ILLink.RoslynAnalyzer
                             context.ReportDiagnostic(
                                 Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(
                                     DiagnosticId.DataflowAnalysisDidNotConverge,
-                                    diagnosticSeverity: DiagnosticSeverity.Info),
+                                    diagnosticSeverity: DiagnosticSeverity.Warning),
                                 operationBlock.Syntax.GetLocation(),
                                 operationBlock.FindContainingSymbol(context.OwningSymbol).GetDisplayName()));
                         }
