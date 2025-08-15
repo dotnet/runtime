@@ -14,21 +14,6 @@ namespace System.Threading.Tests
 {
     public class MutexTests : FileCleanupTestBase
     {
-        private static bool IsCrossProcessNamedMutexSupported
-        {
-            get
-            {
-                if (PlatformDetection.IsWindows)
-                    return true;
-
-                 // Mobile platforms are constrained environments
-                 if (PlatformDetection.IsMobile)
-                    return false;
-
-                 return true;
-            }
-        }
-
         [Fact]
         public void ConstructorAndDisposeTest()
         {
@@ -241,7 +226,7 @@ namespace System.Threading.Tests
             m.ReleaseMutex();
         }
 
-        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
         {
@@ -788,7 +773,7 @@ namespace System.Threading.Tests
         }
 
         private static bool IsRemoteExecutorAndCrossProcessNamedMutexSupported =>
-            RemoteExecutor.IsSupported && IsCrossProcessNamedMutexSupported;
+            RemoteExecutor.IsSupported && PlatformDetection.IsNotMobile;
 
         [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
         [MemberData(nameof(NameOptionCombinations_MemberData))]
@@ -972,7 +957,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void NamedMutex_OtherEvent_NotCompatible()
         {
@@ -994,7 +979,7 @@ namespace System.Threading.Tests
             | UnixFileMode.OtherWrite
             | UnixFileMode.OtherExecute;
 
-        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [UnsupportedOSPlatform("windows")]
         public void NamedMutex_InvalidSharedMemoryHeaderVersion()
@@ -1016,7 +1001,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [UnsupportedOSPlatform("windows")]
         public void NamedMutex_SharedMemoryFileAlreadyOpen()
@@ -1039,7 +1024,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [UnsupportedOSPlatform("windows")]
         public void NamedMutex_InvalidSharedMemoryHeaderKind()
@@ -1060,7 +1045,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsCrossProcessNamedMutexSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [UnsupportedOSPlatform("windows")]
         public void NamedMutex_TooSmallSharedMemoryFile()
@@ -1088,7 +1073,7 @@ namespace System.Threading.Tests
             // Windows native named mutexes and in-proc named mutexes support very long (1000+ char) names.
             // Non-Windows cross-process named mutexes are emulated using file system. It imposes limit
             // on maximum name length.
-            if (PlatformDetection.IsWindows || !IsCrossProcessNamedMutexSupported)
+            if (PlatformDetection.IsWindows || PlatformDetection.IsMobile)
                 names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
 
             return names;
