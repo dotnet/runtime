@@ -39,26 +39,36 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             return 100;
         }
 
+        [Kept]
         public class DataObject
         {
-            public string Name { get; set; }
+            [Kept]
+            public string Name { [Kept] get; [Kept] set; }
+
+            [Kept]
+            public DataObject() { }
         }
 
         // Simplistic implementation of DI which is comparable in behavior to our DI
+        [Kept]
         class Services
         {
+            [Kept]
             private Dictionary<Type, Type> _services = new Dictionary<Type, Type>();
 
-            public void RegisterService(Type interfaceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+            [Kept]
+            public void RegisterService(Type interfaceType, [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
             {
                 _services.Add(interfaceType, implementationType);
             }
 
+            [Kept]
             public T GetService<T>()
             {
                 return (T)GetService(typeof(T));
             }
 
+            [Kept]
             public object GetService(Type interfaceType)
             {
                 Type typeDef = interfaceType.IsGenericType ? interfaceType.GetGenericTypeDefinition() : interfaceType;
@@ -117,43 +127,64 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
             }
 
+            [Kept]
             private bool DamAnnotationsMatch(Type argument, Type parameter)
             {
                 // .... - not interesting for this test, it will be true in the cases we use in this test
                 return true;
             }
+
+            [Kept]
+            public Services() { }
         }
 
-        interface INameProvider<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
+        [Kept]
+        interface INameProvider<[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
         {
+            [Kept]
+            [return: KeptAttributeAttribute(typeof(System.Runtime.CompilerServices.NullableAttribute))]
             string? GetName(T instance);
         }
 
-        class NameProviderService<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
+        [Kept]
+        [KeptInterface(typeof(INameProvider<>))]
+        class NameProviderService<[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
             : INameProvider<T>
         {
+            [Kept]
+            [return: KeptAttributeAttribute(typeof(System.Runtime.CompilerServices.NullableAttribute))]
             public string? GetName(T instance)
             {
                 return (string?)typeof(T).GetProperty("Name")?.GetValue(instance);
             }
+
+            [Kept]
+            public NameProviderService() { }
         }
 
+        [Kept]
         interface IDataObjectPrinter
         {
+            [Kept]
             int GetNameLength(DataObject instance);
         }
 
+        [Kept]
+        [KeptInterface(typeof(IDataObjectPrinter))]
         class DataObjectPrinterService : IDataObjectPrinter
         {
             // The data flow is not applied on the INameProvider<DataObject> here, or in the method parameter
             // or in the call to the GetName below inside Print.
+            [Kept]
             INameProvider<DataObject> _nameProvider;
 
+            [Kept]
             public DataObjectPrinterService(INameProvider<DataObject> nameProvider)
             {
                 _nameProvider = nameProvider;
             }
 
+            [Kept]
             public int GetNameLength(DataObject instance)
             {
                 // This throws because DataObject.Name is not preserved
@@ -162,75 +193,108 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        interface ICustomFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>
+        [Kept]
+        interface ICustomFactory<[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>
         {
+            [Kept]
             T Create();
         }
 
-        class CustomFactoryImpl<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : ICustomFactory<T>
+        [Kept]
+        [KeptInterface(typeof(ICustomFactory<>))]
+        class CustomFactoryImpl<[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : ICustomFactory<T>
         {
+            [Kept]
             public T Create()
             {
                 return Activator.CreateInstance<T>();
             }
+
+            [Kept]
+            public CustomFactoryImpl() { }
         }
 
+        [Kept]
         class FactoryCreated
         {
+            [Kept]
             int _value;
 
+            [Kept]
             public FactoryCreated()
             {
                 _value = 42;
             }
 
+            [Kept]
             public int GetValue() => _value;
         }
 
+        [Kept]
         interface ICustomFactoryWithConstraintWrapper
         {
+            [Kept]
             FactoryWithConstraintCreated Create();
         }
 
+        [Kept]
+        [KeptInterface(typeof(ICustomFactoryWithConstraintWrapper))]
         class CustomFactoryWithConstraintWrapperImpl : ICustomFactoryWithConstraintWrapper
         {
+            [Kept]
             private FactoryWithConstraintCreated _value;
 
+            [Kept]
             public CustomFactoryWithConstraintWrapperImpl(ICustomFactoryWithConstraint<FactoryWithConstraintCreated> factory)
             {
                 _value = factory.Create();
             }
 
+            [Kept]
             public FactoryWithConstraintCreated Create() => _value;
         }
 
-        interface ICustomFactoryWithConstraint<T> where T : new()
+        [Kept]
+        interface ICustomFactoryWithConstraint<[KeptGenericParamAttributes(GenericParameterAttributes.DefaultConstructorConstraint)] T> where T : new()
         {
+            [Kept]
             T Create();
         }
 
-        class CustomFactoryWithConstraintImpl<T> : ICustomFactoryWithConstraint<T> where T : new()
+        [Kept]
+        [KeptInterface(typeof(ICustomFactoryWithConstraint<>))]
+        class CustomFactoryWithConstraintImpl<[KeptGenericParamAttributes(GenericParameterAttributes.DefaultConstructorConstraint)] T> : ICustomFactoryWithConstraint<T> where T : new()
         {
+            [Kept]
             public T Create()
             {
                 return Activator.CreateInstance<T>();
             }
+
+            [Kept]
+            public CustomFactoryWithConstraintImpl() { }
         }
 
+        [Kept]
         class FactoryWithConstraintCreated
         {
+            [Kept]
             int _value;
 
+            [Kept]
             public FactoryWithConstraintCreated()
             {
                 _value = 42;
             }
 
+            [Kept]
             public int GetValue() => _value;
         }
 
+        [Kept]
         static class Assert
         {
+            [Kept]
             public static void Equal(int expected, int actual)
             {
                 if (expected != actual)
