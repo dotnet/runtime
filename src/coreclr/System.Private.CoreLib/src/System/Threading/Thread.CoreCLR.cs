@@ -557,7 +557,9 @@ namespace System.Threading
         }
 #endif
 
+#pragma warning disable CA1822 // Member 'OnThreadExiting' does not access instance data and can be marked as static
         private void OnThreadExiting()
+#pragma warning restore CA1822 // Member 'OnThreadExiting' does not access instance data and can be marked as static
         {
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
             // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
