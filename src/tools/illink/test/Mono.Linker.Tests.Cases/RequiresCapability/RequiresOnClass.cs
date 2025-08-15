@@ -349,8 +349,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         [ExpectedWarning("IL2026", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.Analyzer, "")]
         [ExpectedWarning("IL2026", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
-        [ExpectedWarning("IL3050", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.Analyzer, "NativeAOT Specific warning")]
-        [ExpectedWarning("IL3050", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RUC", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
+        [ExpectedWarning("IL3050", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RDC", Tool.Analyzer, "NativeAOT Specific warning")]
+        [ExpectedWarning("IL3050", "BaseWithRequiresOnType.BaseWithRequiresOnType()", "RDC", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
         class DerivedWithoutRequiresOnType : BaseWithRequiresOnType
         {
             public override void Method() { }
@@ -708,6 +708,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "")]
             [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "NativeAOT Specific warning")]
+            [ExpectedWarning("IL3050", "WithRequires.WithRequires()", "--WithRequires--", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
             class DerivedWithoutRequires : WithRequires
             {
                 public static int DerivedStaticField;
@@ -873,6 +875,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "")]
             [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "NativeAOT Specific warning")]
+            [ExpectedWarning("IL3050", "WithRequires.WithRequires()", "--WithRequires--", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
             class DerivedWithoutRequires : WithRequires
             {
                 public static event EventHandler DerivedStaticEvent;
@@ -1074,6 +1078,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "")]
             [ExpectedWarning("IL2026", "WithRequires.WithRequires()", "--WithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+            [ExpectedWarning("IL3050", "WithRequires.WithRequires()", "--WithRequires--", Tool.Analyzer, "NativeAOT Specific warning")]
+            [ExpectedWarning("IL3050", "WithRequires.WithRequires()", "--WithRequires--", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
             class DerivedWithoutRequires : WithRequires
             {
                 public static int DerivedStaticProperty { get; set; }

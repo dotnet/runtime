@@ -36,37 +36,6 @@ namespace ILLink.RoslynAnalyzer
 
         private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Class;
 
-        private protected override ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions =>
-            ImmutableArray.Create<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>(
-                (AnalyzeImplicitBaseCtor, new[] { SymbolKind.NamedType })
-            );
-
-        private void AnalyzeImplicitBaseCtor(SymbolAnalysisContext context)
-        {
-            var typeSymbol = (INamedTypeSymbol)context.Symbol;
-
-            if (typeSymbol.TypeKind != TypeKind.Class || typeSymbol.BaseType == null)
-                return;
-
-            if (typeSymbol.InstanceConstructors.Length != 1 || !typeSymbol.InstanceConstructors[0].IsImplicitlyDeclared)
-                return;
-
-            var implicitCtor = typeSymbol.InstanceConstructors[0];
-
-            var baseCtor = typeSymbol.BaseType.InstanceConstructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty);
-            if (baseCtor == null)
-                return;
-
-            var diagnosticContext = new DiagnosticContext(
-                typeSymbol.Locations[0],
-                context.ReportDiagnostic);
-
-            CheckAndCreateRequiresDiagnostic(
-                baseCtor,
-                implicitCtor,
-                ImmutableArray<ISymbol>.Empty,
-                diagnosticContext);
-        }
 
         private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresUnreferencedCodeRule;
 
