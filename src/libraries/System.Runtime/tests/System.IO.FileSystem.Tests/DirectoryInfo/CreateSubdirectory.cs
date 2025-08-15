@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.RemoteExecutor;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
 {
     public class DirectoryInfo_CreateSubDirectory : FileSystemTest
     {
+        private static bool IsUnixAndPrivilegedProcess => !PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess;
         #region UniversalTests
 
         [Fact]
@@ -233,6 +236,108 @@ namespace System.IO.Tests
             DirectoryInfo di = Directory.CreateDirectory(Path.Combine(TestDirectory, randomName));
 
             Assert.Throws<ArgumentException>(() => di.CreateSubdirectory(Path.Combine("..", randomName + "abc", GetTestFileName())));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSubstAvailable))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CreateSubdirectoryFromRootDirectory_Windows()
+        {
+#if TARGET_WINDOWS
+            // On Windows, use VirtualDriveHelper to create a test root directory
+            using VirtualDriveHelper virtualDrive = new();
+            char driveLetter = virtualDrive.VirtualDriveLetter;
+            string rootPath = $"{driveLetter}:\\";
+            
+            DirectoryInfo rootDir = new DirectoryInfo(rootPath);
+            string subDirName = GetTestFileName();
+            
+            // This should work without throwing ArgumentException
+            DirectoryInfo result = rootDir.CreateSubdirectory(subDirName);
+            
+            Assert.NotNull(result);
+            Assert.Equal(Path.Combine(rootPath, subDirName), result.FullName);
+            Assert.True(result.Exists);
+            
+            // VirtualDriveHelper handles cleanup when disposed
+#endif
+        }
+
+        [ConditionalFact(typeof(DirectoryInfo_CreateSubDirectory), nameof(IsUnixAndPrivilegedProcess))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CreateSubdirectoryFromRootDirectory_Unix()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                string newRoot = Directory.CreateTempSubdirectory("new_root").FullName;
+                
+                // Use chroot to change the root directory
+                if (chroot(newRoot) != 0)
+                {
+                    throw new InvalidOperationException("chroot failed");
+                }
+                
+                // Test CreateSubdirectory on the new root
+                DirectoryInfo rootDir = new DirectoryInfo("/");
+                string subDirName = Path.GetRandomFileName();
+                
+                // This should work without throwing ArgumentException
+                DirectoryInfo result = rootDir.CreateSubdirectory(subDirName);
+                
+                Assert.NotNull(result);
+                Assert.Equal(Path.Combine("/", subDirName), result.FullName);
+                Assert.True(result.Exists);
+                
+                // No need to cleanup since this is a temp folder in a separate process
+            }).Dispose();
+        }
+        
+        [DllImport("libc", SetLastError = true)]
+        private static extern int chroot(string path);
+
+        [Fact]
+        public void CreateSubdirectoryFromRootDirectory_Fallback()
+        {
+            // Fallback test for when specialized tests can't run
+            // This test ensures the validation logic works correctly even if actual creation fails
+            string rootPath = Path.GetPathRoot(TestDirectory);
+            if (rootPath != null)
+            {
+                DirectoryInfo rootDir = new DirectoryInfo(rootPath);
+                string subDirName = GetTestFileName();
+                
+                // For the actual root directory, we expect permission issues, but the validation should pass
+                // So we can't test actual creation, but we can ensure it doesn't throw ArgumentException
+                try
+                {
+                    DirectoryInfo result = rootDir.CreateSubdirectory(subDirName);
+                    
+                    // If we get here without ArgumentException, the validation passed
+                    Assert.NotNull(result);
+                    Assert.Equal(Path.Combine(rootPath, subDirName), result.FullName);
+                    
+                    // Clean up if somehow we managed to create it
+                    try
+                    {
+                        if (result.Exists)
+                            result.Delete();
+                    }
+                    catch
+                    {
+                        // Ignore cleanup errors
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // This is expected for root directories - the validation passed but creation failed due to permissions
+                    // This is the correct behavior and indicates our fix worked
+                }
+                catch (IOException)
+                {
+                    // This is expected for root directories - the validation passed but creation failed due to permissions or read-only filesystem
+                    // This is the correct behavior and indicates our fix worked
+                }
+                // ArgumentException should NOT be thrown - if it is, the test will fail
+            }
         }
 
         #endregion
