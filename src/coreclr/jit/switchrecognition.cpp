@@ -9,7 +9,13 @@
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1)
-#define SWITCH_MIN_TESTS    3
+
+#if TARGET_ARM64
+// ARM64 has conditional instructions which can be more efficient than a switch->bittest (optOptimizeBools)
+#define SWITCH_MIN_TESTS 5
+#else
+#define SWITCH_MIN_TESTS 3
+#endif
 
 // This is a heuristics based value tuned for optimal performance
 #define CONVERT_SWITCH_TO_CCMP_MIN_TEST 5
@@ -35,9 +41,6 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             continue;
         }
 
-// Limit to XARCH, ARM is already doing a great job with such comparisons using
-// a series of ccmp instruction (see ifConvert phase).
-#ifdef TARGET_XARCH
         // block->KindIs(BBJ_COND) check is for better throughput.
         if (block->KindIs(BBJ_COND) && optSwitchDetectAndConvert(block))
         {
@@ -47,10 +50,7 @@ PhaseStatus Compiler::optRecognizeAndOptimizeSwitchJumps()
             // Converted switches won't have dominant cases, so we can skip the switch peeling check.
             assert(!block->GetSwitchTargets()->HasDominantCase());
         }
-        else
-#endif
-
-            if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
+        else if (block->KindIs(BBJ_SWITCH) && block->GetSwitchTargets()->HasDominantCase())
         {
             fgPeelSwitch(block);
             modified = true;
