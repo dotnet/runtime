@@ -92,9 +92,12 @@ public class ManagedToNativeGenerator : Task
             m2n.Generate(cookies, InterpToNativeOutputPath);
 
             if (!string.IsNullOrEmpty(CacheFilePath))
-                File.WriteAllLines(CacheFilePath, PInvokeModules);
+            {
+                using TempFileName tmpCacheFilePath = new();
+                File.WriteAllLines(tmpCacheFilePath.Path, PInvokeModules);
+                Utils.CopyIfDifferent(tmpCacheFilePath.Path, CacheFilePath, useHash: false);
+            }
         }
-
         List<string> fileWritesList = new() { PInvokeOutputPath, InterpToNativeOutputPath };
         if (IcallOutputPath != null)
             fileWritesList.Add(IcallOutputPath);
