@@ -286,6 +286,7 @@ CDAC_TYPE_BEGIN(MethodTableAuxiliaryData)
 CDAC_TYPE_INDETERMINATE(MethodTableAuxiliaryData)
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*pointer*/, LoaderModule, offsetof(MethodTableAuxiliaryData, m_pLoaderModule))
 CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*int16*/, OffsetToNonVirtualSlots, offsetof(MethodTableAuxiliaryData, m_offsetToNonVirtualSlots))
+CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*uint32*/, Flags, offsetof(MethodTableAuxiliaryData, m_dwFlags))
 CDAC_TYPE_END(MethodTableAuxiliaryData)
 
 CDAC_TYPE_BEGIN(EEClass)
