@@ -36,7 +36,6 @@ namespace ILLink.RoslynAnalyzer
 
         private protected override DiagnosticTargets AnalyzerDiagnosticTargets => DiagnosticTargets.MethodOrConstructor | DiagnosticTargets.Class;
 
-
         private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresUnreferencedCodeRule;
 
         private protected override DiagnosticId RequiresDiagnosticId => DiagnosticId.RequiresUnreferencedCode;
