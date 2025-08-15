@@ -72,7 +72,7 @@ namespace System.Threading
         /// </summary>
         public static unsafe Lock GetLockObject(object o)
         {
-            return SyncTable.GetLockObject(GetSyncIndex(o));
+            return SyncTable.GetLockObject(GetSyncIndex(o), o);
         }
 
         private static unsafe int GetSyncIndex(object o)
@@ -159,7 +159,7 @@ namespace System.Threading
                     }
                     else if (GetSyncEntryIndex(oldBits, out int syncIndex))
                     {
-                        if (SyncTable.GetLockObject(syncIndex).TryEnterOneShot(currentThreadID))
+                        if (SyncTable.GetLockObject(syncIndex, obj).TryEnterOneShot(currentThreadID))
                         {
                             return -1;
                         }
@@ -322,7 +322,7 @@ namespace System.Threading
                         throw new SynchronizationLockException();
                     }
 
-                    fatLock = SyncTable.GetLockObject(syncIndex);
+                    fatLock = SyncTable.GetLockObject(syncIndex, obj);
                     break;
                 }
             }
@@ -353,7 +353,7 @@ namespace System.Threading
 
                 if (GetSyncEntryIndex(oldBits, out int syncIndex))
                 {
-                    return SyncTable.GetLockObject(syncIndex).GetIsHeldByCurrentThread(currentThreadID);
+                    return SyncTable.GetLockObject(syncIndex, obj).GetIsHeldByCurrentThread(currentThreadID);
                 }
 
                 // someone else owns or noone.

@@ -49,7 +49,7 @@ namespace System.Threading
 
             Lock lck = resultOrIndex == 0 ?
                 ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex);
+                SyncTable.GetLockObject(resultOrIndex, obj);
 
             lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
         }
@@ -79,7 +79,7 @@ namespace System.Threading
             // We may have initialized the thread Id in TryAcquire, so re-read it here.
             currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
 
-            Lock lck = SyncTable.GetLockObject(resultOrIndex);
+            Lock lck = SyncTable.GetLockObject(resultOrIndex, obj);
 
             // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
             // initialized, so cover it here in case it wasn't already done
@@ -114,7 +114,7 @@ namespace System.Threading
 
             Lock lck = resultOrIndex == 0 ?
                 ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex);
+                SyncTable.GetLockObject(resultOrIndex, obj);
 
             // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
             // initialized, so cover it here in case it wasn't already done
