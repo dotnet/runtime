@@ -934,15 +934,10 @@ extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOn
 
     BEGIN_QCALL;
 
+    GCX_COOP();
+
     _ASSERTE(0 <= idx && idx <= SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
-
-    OBJECTHANDLE lock = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock();
-
-    {
-        GCX_COOP();
-
-        obj.Set(ObjectFromHandle(lock));
-    }
+    obj.Set(ObjectFromHandle(SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock()));
 
     END_QCALL;
 }
