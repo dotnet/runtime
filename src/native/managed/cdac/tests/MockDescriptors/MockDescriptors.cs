@@ -57,6 +57,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.MethodTableAuxiliaryData.LoaderModule), DataType.pointer),
             new(nameof(Data.MethodTableAuxiliaryData.OffsetToNonVirtualSlots), DataType.int16),
+            new(nameof(Data.MethodTableAuxiliaryData.Flags), DataType.uint32),
         ]
     };
 

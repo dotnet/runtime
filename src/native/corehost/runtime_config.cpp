@@ -409,6 +409,7 @@ bool runtime_config_t::ensure_parsed()
     json_parser_t json;
     if (!json.parse_file(m_path))
     {
+        trace::error(_X("Failed to parse file [%s]. %s"), m_path.c_str(), json.get_error_message().c_str());
         return false;
     }
 
