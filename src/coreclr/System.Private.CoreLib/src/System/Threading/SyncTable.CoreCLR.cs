@@ -23,7 +23,7 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SyncTable_AssignEntry")]
         private static partial int AssignEntryInternal(ObjectHandleOnStack obj);
 
-        internal static Lock GetLockObject(int index)
+        internal static Lock GetLockObject(int index, object obj)
         {
             IntPtr lockHandle = GetLockHandleIfExists(index);
             if (lockHandle != 0)
@@ -31,7 +31,7 @@ namespace System.Threading
                 return GCHandle<Lock>.FromIntPtr(lockHandle).Target;
             }
             object? lockObj = null;
-            GetLockObject(index, ObjectHandleOnStack.Create(ref lockObj));
+            GetLockObject(index, ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
             return (Lock)lockObj!;
         }
 
@@ -39,6 +39,6 @@ namespace System.Threading
         private static extern IntPtr GetLockHandleIfExists(int index);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SyncTable_GetLockObject")]
-        private static partial void GetLockObject(int index, ObjectHandleOnStack obj);
+        private static partial void GetLockObject(int index, ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
     }
 }

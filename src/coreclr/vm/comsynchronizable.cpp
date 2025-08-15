@@ -924,11 +924,16 @@ FCIMPL1(OBJECTHANDLE, SyncTable_GetLockHandleIfExists, int idx)
     FCALL_CONTRACT;
 
     _ASSERTE(0 <= idx && idx <= SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
-    return SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLockIfExists();
+    PTR_SyncBlock pSyncBlock = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock;
+    if (pSyncBlock == NULL)
+    {
+        return (OBJECTHANDLE)NULL;
+    }
+    return pSyncBlock->GetLockIfExists();
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOnStack obj)
+extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
 {
     QCALL_CONTRACT;
 
@@ -937,7 +942,15 @@ extern "C" void QCALLTYPE SyncTable_GetLockObject(int idx, QCall::ObjectHandleOn
     GCX_COOP();
 
     _ASSERTE(0 <= idx && idx <= SyncBlockCache::GetSyncBlockCache()->GetTableEntryCount());
-    obj.Set(ObjectFromHandle(SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock->GetLock()));
+    PTR_SyncBlock pSyncBlock = SyncTableEntry::GetSyncTableEntry()[idx].m_SyncBlock;
+    if (pSyncBlock == NULL)
+    {
+        // We don't have a syncblock for the object, just the slot.
+        // Create the syncblock now.
+        pSyncBlock = obj.Get()->GetSyncBlock();
+    }
+
+    lockObj.Set(ObjectFromHandle(pSyncBlock->GetLock()));
 
     END_QCALL;
 }
