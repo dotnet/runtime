@@ -2232,7 +2232,16 @@ public:
     HINSTANCE           m_AltJITCompiler;
     bool                m_AltJITRequired;
 #endif //ALLOW_SXS_JIT
+
+    friend struct ::cdac_data<EEJitManager>;
 };
+
+template<>
+struct cdac_data<EEJitManager>
+{
+    static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
+};
+
 
 //*****************************************************************************
 //

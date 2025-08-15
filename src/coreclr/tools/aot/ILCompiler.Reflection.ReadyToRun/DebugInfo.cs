@@ -158,7 +158,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 uint bitsCollected = 0;
                 ulong bitTemp = 0;
                 uint curBoundsProcessed = 0;
-                
+
                 uint previousNativeOffset = 0;
 
                 while (curBoundsProcessed < boundsEntryCount)
