@@ -213,7 +213,7 @@ namespace System
             }
         }
 
-        internal new unsafe bool IsInterface
+        internal unsafe bool IsActualInterface
         {
             get
             {
