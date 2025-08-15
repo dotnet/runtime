@@ -122,7 +122,7 @@ std::string GetProcessCommandLine()
 
         while (getdelim(&cmdLine, &size, '\0', fp) != -1)
         {
-            // /proc/self/cmdline uses \0 as delimeter, convert it to space
+            // /proc/self/cmdline uses \0 as delimiter, convert it to space
             if (!result.empty())
                 result += ' ';
 
@@ -155,7 +155,7 @@ bool LoadRealJitLib(HMODULE& jitLib, const std::string& jitLibPath)
         jitLib = ::LoadLibraryExA(jitLibPath.c_str(), NULL, 0);
         if (jitLib == NULL)
         {
-            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (%d)", jitLibPath.c_str(), ::GetLastError());
+            LogError("LoadRealJitLib - LoadLibrary failed to load '%s' (0x%08x)", jitLibPath.c_str(), ::GetLastError());
             return false;
         }
 #else
