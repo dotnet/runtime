@@ -263,7 +263,6 @@ namespace System.IO.Compression
                     throw new NotSupportedException(SR.SeekingNotSupported);
 
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _endInSuperStream - _startInSuperStream);
 
                 _positionInSuperStream = _startInSuperStream + value;
             }
@@ -385,10 +384,7 @@ namespace System.IO.Compression
             };
 
             if (newPositionInSuperStream < _startInSuperStream)
-                throw new IOException("An attempt was made to move the position before the beginning of the stream.");
-
-            if (newPositionInSuperStream > _endInSuperStream)
-                throw new IOException("An attempt was made to move the position beyond the end of the stream.");
+                throw new IOException(SR.IO_SeekBeforeBegin);
 
             _positionInSuperStream = newPositionInSuperStream;
 
