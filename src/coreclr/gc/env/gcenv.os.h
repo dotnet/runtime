@@ -451,9 +451,6 @@ public:
     // Misc
     //
 
-    // Flush write buffers of processors that are executing threads of the current process
-    static void FlushProcessWriteBuffers();
-
     // Break into a debugger
     static void DebugBreak();
 
