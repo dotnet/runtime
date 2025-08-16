@@ -9065,23 +9065,27 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
         if (lastNode->OperIs(GT_JTRUE, GT_JCMP, GT_JTEST))
         {
-            GenTree* op = lastNode->gtGetOp1();
-            consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
+            assert(!lastNode->OperIs(GT_JTRUE) || !lastNode->gtGetOp1()->isContained());
+            if (!lastNode->gtGetOp1()->isContained())
+            {
+                GenTree* op = lastNode->gtGetOp1();
+                consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
 
-            if (op->OperIs(GT_COPY))
-            {
-                GenTree* srcOp = op->gtGetOp1();
-                consumedRegs |= genSingleTypeRegMask(srcOp->GetRegNum());
-            }
-            else if (op->IsLocal())
-            {
-                GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
-                terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+                if (op->OperIs(GT_COPY))
+                {
+                    GenTree* srcOp = op->gtGetOp1();
+                    consumedRegs |= genSingleTypeRegMask(srcOp->GetRegNum());
+                }
+                else if (op->IsLocal())
+                {
+                    GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
+                    terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+                }
             }
 
             if (lastNode->OperIs(GT_JCMP, GT_JTEST) && !lastNode->gtGetOp2()->isContained())
             {
-                op = lastNode->gtGetOp2();
+                GenTree* op = lastNode->gtGetOp2();
                 consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
 
                 if (op->OperIs(GT_COPY))
