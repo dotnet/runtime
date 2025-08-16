@@ -6,6 +6,7 @@
     <PackageDescription>IL verification library.</PackageDescription>
     <PackageReleaseNotes>
         9.0.0 - In the ILVerify.IResolver interface, the type of the first parameter of each method is now System.Reflection.Metadata.AssemblyNameInfo rather than System.Reflection.AssemblyName.
+        10.0.0 - The ILVerification package now targets .NET 10.0 and later.
     </PackageReleaseNotes>
   </PropertyGroup>
 
@@ -15,13 +16,8 @@
 
   <ItemGroup>
     <PackageFile Include="$(ArtifactsDir)bin\ILVerification\$(TargetArchitecture)\$(Configuration)\ILVerification.dll">
-       <TargetPath>lib\netstandard2.0\ILVerification.dll</TargetPath>
+       <TargetPath>lib\$(NetCoreAppToolCurrent)\ILVerification.dll</TargetPath>
     </PackageFile>
-    <Dependency Include="System.Reflection.Metadata">
-       <Version>$(SystemReflectionMetadataVersion)</Version>
-       <TargetFramework>netstandard2.0</TargetFramework>
-       <Exclude>Build,Analyzers</Exclude>
-    </Dependency>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
