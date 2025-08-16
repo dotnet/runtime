@@ -1934,7 +1934,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         // The value should at least be >= weightPreheader.
         //
         const weight_t loopEntries = max(weightPreheader, weightCond - weightStayInLoopSucc);
-        loopIterations             = weightStayInLoopSucc / loopEntries;
+        loopIterations             = max(loopIterations, weightStayInLoopSucc / loopEntries);
     }
 
     // Check if loop is small enough to consider for inversion.
