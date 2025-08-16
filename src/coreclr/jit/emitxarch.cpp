@@ -12648,9 +12648,34 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
     {
         printf("%d", (int)val);
     }
-    else if ((val > 0) || (val < -0xFFFFFF))
+    else if (val > 0)
     {
         printf("0x%zX", (ssize_t)val);
+    }
+    else if (val < -0xFFFFFF)
+    {
+        switch (id->idOpSize())
+        {
+            case EA_1BYTE:
+                printf("0x%X", static_cast<int8_t>(val));
+                break;
+
+            case EA_2BYTE:
+                printf("0x%X", static_cast<int16_t>(val));
+                break;
+
+            case EA_4BYTE:
+                printf("0x%X", static_cast<int32_t>(val));
+                break;
+
+            case EA_8BYTE:
+                printf("0x%X", static_cast<int64_t>(val));
+                break;
+
+            default:
+                printf("0x%zX", (ssize_t)val);
+                break;
+        }
     }
     else
     {
