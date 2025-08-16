@@ -7,6 +7,7 @@ namespace System
 {
     public partial class Object
     {
+        // NOOP comment change
         [Intrinsic]
         public Type GetType() => GetType();
 
