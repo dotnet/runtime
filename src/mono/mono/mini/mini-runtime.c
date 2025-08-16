@@ -5363,12 +5363,10 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
-		if (mono_is_corlib_image (image)) {
-			if (strcmp (method->name, "GuardedFinalize") == 0) {
-				invoke = mono_marshal_get_runtime_invoke_full (method, FALSE, TRUE);
-				mono_compile_method_checked (invoke, error);
-				mono_error_assert_ok (error);
-			}
+		if (strcmp (method->name, "GuardedFinalize") == 0) {
+			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
+			mono_compile_method_checked (invoke, error);
+			mono_error_assert_ok (error);
 		}
 	}
 
