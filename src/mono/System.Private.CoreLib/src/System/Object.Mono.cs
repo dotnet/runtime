@@ -16,7 +16,7 @@ namespace System
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
         private static extern void CallFinalize(object o);
-        internal virtual void GuardedFinalize()
+        internal void GuardedFinalize()
         {
             try
             {
