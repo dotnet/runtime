@@ -297,14 +297,14 @@ mono_gc_run_finalize (void *obj, void *data)
 	}
 
 #ifndef HOST_WASM
-	if (!finalize_runtime_invoke) {
-		MonoMethod *invoke = mono_marshal_get_runtime_invoke (finalize_method, TRUE);
+	//if (!finalize_runtime_invoke) {
+	//	MonoMethod *invoke = mono_marshal_get_runtime_invoke (finalize_method, TRUE);
 
-		finalize_runtime_invoke = (RuntimeInvokeFunction)mono_compile_method_checked (invoke, error);
-		mono_error_assert_ok (error); /* expect this not to fail */
-	}
+	//	finalize_runtime_invoke = (RuntimeInvokeFunction)mono_compile_method_checked (invoke, error);
+	//	mono_error_assert_ok (error); /* expect this not to fail */
+	//}
 
-	RuntimeInvokeFunction runtime_invoke = finalize_runtime_invoke;
+	//RuntimeInvokeFunction runtime_invoke = finalize_runtime_invoke;
 #endif
 
 	mono_runtime_class_init_full (o->vtable, error);
@@ -325,7 +325,12 @@ mono_gc_run_finalize (void *obj, void *data)
 	params [0] = NULL;
 	mono_runtime_try_invoke (finalize_method, o, params, &exc, error);
 #else
-	runtime_invoke (o, NULL, &exc, NULL);
+	// runtime_invoke (o, NULL, &exc, NULL);
+
+	gpointer params [1];
+	params [0] = NULL;
+	mono_runtime_try_invoke (finalize_method, o, params, &exc, error);
+
 #endif
 
 	MONO_PROFILER_RAISE (gc_finalized_object, (o));
