@@ -4415,20 +4415,6 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
         return 0;
     }
 
-#ifdef FEATURE_INTERPRETER
-    RangeSection * pRS = ExecutionManager::FindCodeRange(PINSTRToPCODE(start), ExecutionManager::GetScanFlags());
-    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
-    {
-        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
-        {
-            if (((StubPrecode*)start)->GetType() == PRECODE_INTERPRETER)
-            {
-                start = ((InterpreterPrecode*)start)->GetData()->ByteCodeAddr;
-            }
-        }
-    }
-#endif // FEATURE_INTERPRETER
-
     return start;
 }
 

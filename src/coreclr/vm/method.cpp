@@ -2207,7 +2207,8 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     }
     CONTRACTL_END
 
-    RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
+    ExecutionManager::ScanFlag scanFlag = ExecutionManager::GetScanFlags();
+    RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, scanFlag);
     if (pRS == NULL)
     {
         return NULL;
@@ -2222,7 +2223,18 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         }
         if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
         {
-            return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+            StubPrecode *stubPrecode = (StubPrecode*)PCODEToPINSTR(entryPoint);
+#ifdef FEATURE_INTERPRETER
+            if (stubPrecode->GetType() == PRECODE_INTERPRETER)
+            {
+                entryPoint = dac_cast<PTR_InterpreterPrecode>(stubPrecode)->GetData()->ByteCodeAddr;
+                pRS = ExecutionManager::FindCodeRange(entryPoint, scanFlag);
+            }
+            else
+#endif // FEATURE_INTERPRETER
+            {
+                return (MethodDesc*)(stubPrecode)->GetMethodDesc();
+            }
         }
     }
 
