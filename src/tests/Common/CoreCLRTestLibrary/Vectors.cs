@@ -24,6 +24,25 @@ namespace TestLibrary
             {
                 data[i] = TestLibrary.Generator.GetByte();
             }
+
+            // TODO-ARM64-SVE: Some test functions do not support propagation of NaN/Inf values.
+            if (typeof(T) == typeof(float))
+            {
+                for (int i = 0; i < vsize / sizeof(float); i++)
+                {
+                    // Clear bit 23 to suppress generation of NaN/Inf values.
+                    data[i * sizeof(float) + 2] &= byte.CreateTruncating(~(1 << 7));
+                }
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                for (int i = 0; i < vsize / sizeof(double); i++)
+                {
+                    // Clear bit 52 to suppress generation of NaN/Inf values.
+                    data[i * sizeof(double) + 6] &= byte.CreateTruncating(~(1 << 4));
+                }
+            }
+
             return new Vector<T>(data.AsSpan());
         }
 
@@ -37,7 +56,15 @@ namespace TestLibrary
             long count = vsize / tsize;
             for (int i = 0; i < count; i++)
             {
-                data[i * tsize] |= (byte)(TestLibrary.Generator.GetByte() & 1);
+                // Bias the generator to produces zero values at least 50% of the time.
+                // Elements that pass through this choice will be filled with random data.
+                if (TestLibrary.Generator.GetBool())
+                {
+                    for (int j = 0; j < tsize; j++)
+                    {
+                        data[i * tsize + j] = TestLibrary.Generator.GetByte();
+                    }
+                }
             }
 
             return new Vector<T>(data.AsSpan());
