@@ -42,6 +42,9 @@
 #include "perfmap.h"
 #endif
 
+// cpufeatures for VM
+int cpuFeatures = 0;
+
 // Default number of jump stubs in a jump stub block
 #define DEFAULT_JUMPSTUBS_PER_BLOCK  32
 
@@ -1178,7 +1181,7 @@ void EEJitManager::SetCpuInfo()
 
     CORJIT_FLAGS CPUCompileFlags;
 
-    int cpuFeatures = minipal_getcpufeatures();
+    cpuFeatures = minipal_getcpufeatures();
 
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
