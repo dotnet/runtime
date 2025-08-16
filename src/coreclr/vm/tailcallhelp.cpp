@@ -10,6 +10,9 @@
 #include "gcrefmap.h"
 #include "threads.h"
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
 
 FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
 {
@@ -39,7 +42,13 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
 
     Thread* thread = GetThread();
 
-    *retAddr = thread->GetReturnAddress(retAddrSlot);
+    void* retAddrFromSlot = thread->GetReturnAddress(retAddrSlot);
+
+#if defined(TARGET_ARM64)
+    retAddrFromSlot = PacStripPtr(retAddrFromSlot);
+#endif // TARGET_ARM64
+    *retAddr = retAddrFromSlot;
+
     return thread->GetTailCallTls();
 }
 FCIMPLEND

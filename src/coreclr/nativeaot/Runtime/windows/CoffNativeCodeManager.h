@@ -90,6 +90,8 @@ public:
 
     bool IsUnwindable(PTR_VOID pvAddress);
 
+    bool IsPacPresent(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet);
+
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,        // in
                                     PTR_PTR_VOID *  ppvRetAddrLocation); // out
