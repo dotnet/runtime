@@ -29,9 +29,12 @@ namespace Mono.Linker.Dataflow
             if (methodDefinition == null)
                 return false;
 
+            var annotations = context.Annotations;
+            var flowAnnotations = annotations.FlowAnnotations;
             return Intrinsics.GetIntrinsicIdForMethod(methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
-                context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis(methodDefinition) ||
-                context.Annotations.DoesMethodRequireUnreferencedCode(methodDefinition, out _) ||
+                flowAnnotations.RequiresDataFlowAnalysis(methodDefinition) ||
+                GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, calledMethod) ||
+                annotations.DoesMethodRequireUnreferencedCode(methodDefinition, out _) ||
                 IsPInvokeDangerous(methodDefinition, context, out _);
         }
 
@@ -47,7 +50,20 @@ namespace Mono.Linker.Dataflow
             if (fieldDefinition == null)
                 return false;
 
-            return context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis(fieldDefinition);
+            var flowAnnotations = context.Annotations.FlowAnnotations;
+            return GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, field) ||
+                flowAnnotations.RequiresDataFlowAnalysis(fieldDefinition);
+        }
+
+        public static bool RequiresReflectionMethodBodyScannerForAccess(LinkContext context, TypeReference type)
+        {
+            TypeDefinition? typeDefinition = context.TryResolve(type);
+            if (typeDefinition == null)
+                return false;
+
+            var annotations = context.Annotations;
+            return GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(annotations.FlowAnnotations, type)
+                || annotations.TryGetLinkerAttribute<RequiresUnreferencedCodeAttribute>(typeDefinition, out _);
         }
 
         public ReflectionMethodBodyScanner(LinkContext context, MarkStep parent, MessageOrigin origin)
@@ -91,7 +107,11 @@ namespace Mono.Linker.Dataflow
         MethodParameterValue GetMethodParameterValue(ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
             => _annotations.GetMethodParameterValue(parameter, dynamicallyAccessedMemberTypes);
 
-        protected override MultiValue GetFieldValue(FieldReference field) => _annotations.GetFieldValue(field);
+        protected override MultiValue GetFieldValue(FieldReference field)
+        {
+            ProcessGenericArgumentDataFlow(field);
+            return _annotations.GetFieldValue(field);
+        }
 
         protected override MethodReturnValue GetReturnValue(MethodIL methodIL) => _annotations.GetMethodReturnValue(methodIL.Method, isNewObj: false);
 
@@ -112,6 +132,31 @@ namespace Mono.Linker.Dataflow
 
         protected override void HandleReturnValue(MethodIL methodIL, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(returnValue, operation, valueToStore, null);
+
+        protected override void HandleTypeTokenAccess(MethodIL methodIL, int offset, TypeReference accessedType)
+        {
+            // Note that ldtoken alone is technically a reflection access to the type
+            // it doesn't lead to full reflection marking of the type
+            // since we implement full dataflow for type values and accesses to them.
+            _origin = _origin.WithInstructionOffset(offset);
+
+            // Only check for generic instantiations.
+            ProcessGenericArgumentDataFlow(accessedType);
+        }
+
+        protected override void HandleMethodTokenAccess(MethodIL methodIL, int offset, MethodReference accessedMethod)
+        {
+            _origin = _origin.WithInstructionOffset(offset);
+
+            ProcessGenericArgumentDataFlow(accessedMethod);
+        }
+
+        protected override void HandleFieldTokenAccess(MethodIL methodIL, int offset, FieldReference accessedField)
+        {
+            _origin = _origin.WithInstructionOffset(offset);
+
+            ProcessGenericArgumentDataFlow(accessedField);
+        }
 
         public override MultiValue HandleCall(MethodIL callingMethodIL, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams)
         {
@@ -150,6 +195,8 @@ namespace Mono.Linker.Dataflow
                 arguments,
                 _origin
             ));
+
+            ProcessGenericArgumentDataFlow(calledMethod);
 
             var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: false, _context);
             return HandleCall(
@@ -275,6 +322,47 @@ namespace Mono.Linker.Dataflow
             }
 
             return false;
+        }
+
+        private void ProcessGenericArgumentDataFlow(MethodReference method)
+        {
+            // We mostly need to validate static methods and generic methods
+            // Instance non-generic methods on reference types don't need validation
+            // because the creation of the instance is the place where the validation will happen.
+            if (_context.TryResolve(method) is not MethodDefinition methodDefinition)
+                return;
+
+            if (!methodDefinition.IsStatic && !method.IsGenericInstance && !methodDefinition.IsConstructor && !methodDefinition.DeclaringType.IsValueType)
+                return;
+
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_annotations, method))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationAccessPattern(method, _origin));
+            }
+        }
+
+        private void ProcessGenericArgumentDataFlow(FieldReference field)
+        {
+            // We only need to validate static field accesses, instance field accesses don't need generic parameter validation
+            // because the create of the instance would do that instead.
+            if (_context.TryResolve(field) is not FieldDefinition fieldDefinition)
+                return;
+
+            if (!fieldDefinition.IsStatic)
+                return;
+
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_annotations, field))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationAccessPattern(field, _origin));
+            }
+        }
+
+        private void ProcessGenericArgumentDataFlow(TypeReference type)
+        {
+            if (type.IsGenericInstance && _annotations.HasGenericParameterAnnotation(type))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationAccessPattern(type, _origin));
+            }
         }
 
         internal static bool IsPInvokeDangerous(MethodDefinition methodDefinition, LinkContext context, out bool comDangerousMethod)

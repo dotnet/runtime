@@ -626,9 +626,9 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.newarr:
                         {
                             StackSlot count = PopUnknown(currentStack, 1, methodIL, offset);
-                            var arrayElement = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            HandleTypeTokenAccess(methodIL, offset, arrayElement);
-                            currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElement)));
+                            var arrayElementType = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                            HandleTypeTokenAccess(methodIL, offset, arrayElementType);
+                            currentStack.Push(new StackSlot(ArrayValue.Create(count.Value, arrayElementType)));
                         }
                         break;
 

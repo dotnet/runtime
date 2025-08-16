@@ -1319,7 +1319,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 public static RequiresAll<T> field;
 
-                [UnexpectedWarning("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/108523")]
                 public RequiresAll<T> instanceField;
 
                 [RequiresOnCtor]
@@ -1402,7 +1401,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL2026", "--ClassWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
             [ExpectedWarning("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
-            [ExpectedWarning("IL2091", Tool.Trimmer, "")]
             public static void Test(ClassWithRequires inst = null)
             {
                 var f = ClassWithRequires.field;
