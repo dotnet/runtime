@@ -71,15 +71,11 @@ void append_path(pal::string_t* path1, const pal::char_t* path2)
 
 pal::string_t strip_executable_ext(const pal::string_t& filename)
 {
-    const pal::char_t* exe_suffix = pal::exe_suffix();
-    if (exe_suffix == nullptr)
-        return filename;
-
-    size_t suffix_len = pal::strlen(exe_suffix);
+    size_t suffix_len = STRING_LENGTH(EXE_FILE_EXT);
     if (suffix_len == 0)
         return filename;
 
-    if (utils::ends_with(filename, exe_suffix, suffix_len, false))
+    if (utils::ends_with(filename, _STRINGIFY(EXE_FILE_EXT), false))
     {
         // We need to strip off the old extension
         pal::string_t result(filename);

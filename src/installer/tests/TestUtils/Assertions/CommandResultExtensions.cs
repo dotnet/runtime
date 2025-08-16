@@ -7,7 +7,7 @@ using Microsoft.DotNet.Cli.Build.Framework;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
-    public static class CommandResultExtensions
+    public static partial class CommandResultExtensions
     {
         public static CommandResultAssertions Should(this CommandResult commandResult)
         {

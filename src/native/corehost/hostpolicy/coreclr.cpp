@@ -165,6 +165,7 @@ namespace
         _X("STARTUP_HOOKS"),
         _X("APP_PATHS"),
         _X("RUNTIME_IDENTIFIER"),
+        _X("DOTNET_HOST_PATH"),
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");
