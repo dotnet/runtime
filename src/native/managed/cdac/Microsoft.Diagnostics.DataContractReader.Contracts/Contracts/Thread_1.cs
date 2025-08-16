@@ -154,4 +154,30 @@ internal readonly struct Thread_1 : IThread
         }
         return threadLocalStaticBase;
     }
+    TargetPointer IThread.GetThrowableObject(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        TargetPointer ExceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
+        if (ExceptionTrackerPtr == TargetPointer.Null)
+            return TargetPointer.Null;
+        Data.ExceptionInfo exceptionTracker = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(ExceptionTrackerPtr);
+        Data.ObjectHandle throwableObject = exceptionTracker.ThrownObject;
+        return throwableObject.Object;
+    }
+
+    TargetPointer IThread.GetUEWatsonBuckets(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        return thread.UEWatsonBucketTrackerBuckets;
+    }
+
+    TargetPointer IThread.GetCurrentExceptionWatsonBuckets(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        TargetPointer ExceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
+        if (ExceptionTrackerPtr == TargetPointer.Null)
+            return TargetPointer.Null;
+        Data.ExceptionInfo exceptionTracker = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(ExceptionTrackerPtr);
+        return exceptionTracker.ExceptionWatsonBucketTrackerBuckets;
+    }
 }

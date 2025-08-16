@@ -48,6 +48,9 @@ ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, int indexOffset, int indexType);
+TargetPointer GetThrowableObject(TargetPointer threadPointer);
+TargetPointer GetUEWatsonBuckets(TargetPointer threadPointer);
+TargetPointer GetCurrentExceptionWatsonBuckets(TargetPointer threadPointer);
 ```
 
 ## Version 1
@@ -240,4 +243,27 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
     }
     return threadLocalStaticBase;
 }
+
+TargetPointer IThread.GetThrowableObject(TargetPointer threadPointer)
+{
+    TargetPointer ExceptionTrackerPtr = target.ReadPointer(threadPointer + /* Thread::ExceptionTracker offset */);
+    if (ExceptionTrackerPtr == TargetPointer.Null)
+        return TargetPointer.Null;
+    TargetPointer throwableHandle = target.ReadPointer(ExceptionTrackerPtr + /* ExceptionInfo::ThrownObject offset */)
+    return target.ReadPointer(throwableHandle);
+}
+
+TargetPointer IThread.GetUEWatsonBuckets(TargetPointer threadPointer)
+{
+    return target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
+}
+
+TargetPointer IThread.GetCurrentExceptionWatsonBuckets(TargetPointer threadPointer)
+{
+    TargetPointer ExceptionTrackerPtr = target.ReadPointer(threadPointer + /* Thread::ExceptionTracker offset */);
+    if (ExceptionTrackerPtr == TargetPointer.Null)
+        return TargetPointer.Null;
+    return target.ReadPointer(ExceptionTrackerPtr + /* ExceptionInfo::ExceptionWatsonBucketTrackerBuckets offset */)
+}
+
 ```
