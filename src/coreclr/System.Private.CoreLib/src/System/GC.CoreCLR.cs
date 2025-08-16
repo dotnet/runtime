@@ -307,23 +307,31 @@ namespace System
         public static int MaxGeneration => GetMaxGeneration();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
-        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
+        private static unsafe partial void GetNextFinalizeableObject(ObjectHandleOnStack target);
 
+        // Do not inline this method -- if this is ever called from a managed method,
+        // we do not want to accidentally have any temps in the caller which contain
+        // objects that came off of the finalizer queue.  If such temps were reported across the duration of the
+        // finalizer thread wait operation, it could cause unpredictable behavior with weak handles.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe uint RunFinalizers()
         {
             Thread currentThread = Thread.CurrentThread;
-
-            uint count = 0;
+            uint finalizerCount = 0;
+            // Drain the queue of finalizable objects.
             while (true)
             {
                 object? target = null;
-                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
-                if (fptr == null)
-                    break;
+                GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                if (target == null)
+                    return finalizerCount;
+
+                finalizerCount++;
 
                 try
                 {
-                    ((delegate*<object, void>)fptr)(target!);
+                    // Call the finalizer on the current target object.
+                    object.CallFinalize(target);
                 }
                 catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {
@@ -331,9 +339,7 @@ namespace System
                 }
 
                 currentThread.ResetFinalizerThread();
-                count++;
             }
-            return count;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
