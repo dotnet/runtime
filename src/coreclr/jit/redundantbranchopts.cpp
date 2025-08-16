@@ -2246,6 +2246,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 //    fromBlock - staring block
 //    toBlock   - ending block
 //    excludedBlock - ignore paths that flow through this block
+//    pBudget - number of blocks to examine before returning false as 'ran out of budget'
 //
 // Returns:
 //    true if there is a path, false if there is no path
@@ -2257,11 +2258,19 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 //    This may overstate "true" reachability in methods where there are
 //    finallies with multiple continuations.
 //
-bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock)
+bool Compiler::optReachable(BasicBlock* const fromBlock,
+                            BasicBlock* const toBlock,
+                            BasicBlock* const excludedBlock,
+                            int*              pBudget)
 {
     if (fromBlock == toBlock)
     {
         return true;
+    }
+
+    if ((pBudget != nullptr) && (*pBudget <= 0))
+    {
+        return false;
     }
 
     if (optReachableBitVecTraits == nullptr)
@@ -2288,9 +2297,17 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
             continue;
         }
 
-        BasicBlockVisit result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
+        bool            ranOutOfBudget = false;
+        BasicBlockVisit result =
+            nextBlock->VisitAllSuccs(this, [this, toBlock, &stack, &ranOutOfBudget, pBudget](BasicBlock* succ) {
             if (succ == toBlock)
             {
+                return BasicBlockVisit::Abort;
+            }
+
+            if ((pBudget != nullptr) && (--(*pBudget) <= 0))
+            {
+                ranOutOfBudget = true;
                 return BasicBlockVisit::Abort;
             }
 
@@ -2305,7 +2322,7 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
 
         if (result == BasicBlockVisit::Abort)
         {
-            return true;
+            return !ranOutOfBudget;
         }
     }
 
