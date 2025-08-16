@@ -84,7 +84,7 @@ static MonoInternalThread *gc_thread;
 
 static MonoMethod *finalize_method;
 #ifndef HOST_WASM
-static RuntimeInvokeFunction finalize_runtime_invoke;
+// static RuntimeInvokeFunction finalize_runtime_invoke;
 #endif
 
 /*
