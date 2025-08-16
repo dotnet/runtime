@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.ExceptionServices;
@@ -791,5 +792,11 @@ namespace System.Threading
             }
         }
 #endif
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+#if NATIVEAOT
+        [RuntimeImport(RuntimeImports.RuntimeLibrary, "RhpCurrentThreadIsFinalizerThread")]
+#endif
+        internal static extern bool CurrentThreadIsFinalizerThread();
     }
 }
