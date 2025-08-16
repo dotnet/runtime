@@ -604,6 +604,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ProxyTypeMapRequestNode(type);
             });
 
+            _analysisCharacteristics = new NodeCache<string, AnalysisCharacteristicNode>(c =>
+            {
+                return new AnalysisCharacteristicNode(c);
+            });
+
             NativeLayout = new NativeLayoutHelper(this);
         }
 
@@ -1524,6 +1529,12 @@ namespace ILCompiler.DependencyAnalysis
         public ProxyTypeMapRequestNode ProxyTypeMapRequest(TypeDesc type)
         {
             return _proxyTypeMapRequests.GetOrAdd(type);
+        }
+
+        private NodeCache<string, AnalysisCharacteristicNode> _analysisCharacteristics;
+        public AnalysisCharacteristicNode AnalysisCharacteristic(string ch)
+        {
+            return _analysisCharacteristics.GetOrAdd(ch);
         }
 
         /// <summary>
