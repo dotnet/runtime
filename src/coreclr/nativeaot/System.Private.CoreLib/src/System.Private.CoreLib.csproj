@@ -325,9 +325,6 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs">
       <Link>Utilities\TypeHashingAlgorithms.cs</Link>
     </Compile>
-    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>System\Collections\Generic\LowLevelList.cs</Link>
-    </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>

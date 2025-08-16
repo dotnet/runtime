@@ -110,7 +110,7 @@ namespace Internal.Reflection.Extensions.NonPortable
         //
         private IEnumerable<CustomAttributeData> GetMatchingCustomAttributesIterator(E element, Func<Type, bool> passesFilter, bool inherit)
         {
-            LowLevelList<CustomAttributeData> immediateResults = new LowLevelList<CustomAttributeData>();
+            List<CustomAttributeData> immediateResults = new List<CustomAttributeData>();
             foreach (CustomAttributeData cad in GetDeclaredCustomAttributes(element))
             {
                 if (passesFilter(cad.AttributeType))
