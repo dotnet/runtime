@@ -327,6 +327,27 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        public void PartNamesAreCaseInsensitive()
+        {
+            using var ms = new MemoryStream();
+
+            using (var zipPackage = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+            {
+                zipPackage.CreatePart(new Uri("/part", UriKind.Relative), "text/plain");
+            }
+            ms.Position = 0;
+            using (var zipPackage = Package.Open(ms, FileMode.Open, FileAccess.Read))
+            {
+                var lowerPart = zipPackage.GetPart(new Uri("/part", UriKind.Relative));
+                var upperPart = zipPackage.GetPart(new Uri("/PART", UriKind.Relative));
+
+                Assert.Same(lowerPart, upperPart);
+                Assert.Equal(lowerPart.Uri, upperPart.Uri);
+                Assert.Equal(lowerPart.ContentType, upperPart.ContentType);
+            }
+        }
+
+        [Fact]
         public void CanCreateAtomicPart()
         {
             using var ms = new MemoryStream();
