@@ -949,6 +949,12 @@ namespace System
                 result = checked((nint)actualValue);
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = checked((nint)actualValue);
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -1029,6 +1035,13 @@ namespace System
 #else
                 result = (nint)actualValue;
 #endif
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = (actualValue >= (BFloat16)nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= (BFloat16)nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1118,6 +1131,13 @@ namespace System
 #else
                 result = (nint)actualValue;
 #endif
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = (actualValue >= (BFloat16)nint_t.MaxValue) ? unchecked((nint)nint_t.MaxValue) :
+                         (actualValue <= (BFloat16)nint_t.MinValue) ? unchecked((nint)nint_t.MinValue) : (nint)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
