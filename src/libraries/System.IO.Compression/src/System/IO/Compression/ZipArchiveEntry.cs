@@ -719,7 +719,7 @@ namespace System.IO.Compression
                 case CompressionMethodValues.Deflate:
                 case CompressionMethodValues.Deflate64:
                 default:
-                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
+                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen, true);
                     break;
 
             }
@@ -975,7 +975,6 @@ namespace System.IO.Compression
                 CompressionMethod = CompressionMethodValues.Stored;
                 compressedSizeTruncated = 0;
                 uncompressedSizeTruncated = 0;
-                Debug.Assert(_compressedSize == 0);
                 Debug.Assert(_uncompressedSize == 0);
                 Debug.Assert(_crc32 == 0);
             }
