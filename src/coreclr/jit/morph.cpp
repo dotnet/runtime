@@ -11143,6 +11143,28 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 }
             }
 
+            /* Check for either "(val >> N) << N" or "(val >>> N) << N" */
+
+            if (op2->IsCnsIntOrI() && (op1->OperIs(GT_RSH) || op1->OperIs(GT_RSZ)))
+            {
+                GenTree* cns = op1->AsOp()->gtOp2;
+                if (cns->IsCnsIntOrI())
+                {
+                    ssize_t lhs = op2->AsIntConCommon()->IconValue();
+                    ssize_t rhs = cns->AsIntConCommon()->IconValue();
+
+                    if (lhs == rhs && lhs > 0 && lhs < 64)
+                    {
+                        /* Replace with "val & ~((1 << N) - 1)" */
+                        tree->ChangeOper(GT_AND);
+                        tree->gtOp1        = op1->AsOp()->gtOp1;
+                        ssize_t andLiteral = ~((1 << lhs) - 1);
+                        op2->AsIntConCommon()->SetValueTruncating(andLiteral);
+                        DEBUG_DESTROY_NODE(op1);
+                    }
+                }
+            }
+
             break;
 
         case GT_INIT_VAL:
