@@ -292,7 +292,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o_name, o);
 
 	if (!finalize_method) {
-		finalize_method = mono_class_get_method_from_name_checked (mono_defaults.finalizer_class, "GuardedFinalize", 0, 0, error);
+		finalize_method = mono_class_get_method_from_name_checked (mono_defaults.finalizer_class, "GuardedFinalize", 1, 0, error);
 		mono_error_assert_ok (error);
 	}
 
@@ -322,14 +322,14 @@ mono_gc_run_finalize (void *obj, void *data)
 
 #ifdef HOST_WASM
 	gpointer params [1];
-	params [0] = NULL;
-	mono_runtime_try_invoke (finalize_method, o, params, &exc, error);
+	params [0] = o;
+	mono_runtime_try_invoke (finalize_method, NULL, params, &exc, error);
 #else
 	// runtime_invoke (o, NULL, &exc, NULL);
 
 	gpointer params [1];
-	params [0] = NULL;
-	mono_runtime_try_invoke (finalize_method, o, params, &exc, error);
+	params [0] = o;
+	mono_runtime_try_invoke (finalize_method, NULL, params, &exc, error);
 
 #endif
 
