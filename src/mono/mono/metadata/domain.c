@@ -154,6 +154,9 @@ mono_init_internal (const char *root_domain_name)
 	mono_defaults.object_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Object");
 
+	mono_defaults.finalizer_class = mono_class_load_from_name (
+                mono_defaults.corlib, "System", "FinalizerHelper");
+
 	mono_defaults.void_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Void");
 

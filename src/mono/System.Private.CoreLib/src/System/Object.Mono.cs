@@ -13,10 +13,13 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         protected extern object MemberwiseClone();
+    }
 
+    internal sealed class FinalizerHelper
+    {
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
         private static extern void CallFinalize(object o);
-        internal void GuardedFinalize()
+        private void GuardedFinalize()
         {
             try
             {
