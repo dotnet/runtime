@@ -19,11 +19,11 @@ namespace System
     {
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
         private static extern void CallFinalize(object o);
-        private void GuardedFinalize()
+        private static void GuardedFinalize(object o)
         {
             try
             {
-                CallFinalize(this);
+                CallFinalize(o);
             }
             catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
             {
