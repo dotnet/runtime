@@ -154,9 +154,6 @@ mono_init_internal (const char *root_domain_name)
 	mono_defaults.object_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Object");
 
-	mono_defaults.finalizer_class = mono_class_load_from_name (
-                mono_defaults.corlib, "System", "FinalizerHelper");
-
 	mono_defaults.void_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Void");
 
@@ -240,6 +237,9 @@ mono_init_internal (const char *root_domain_name)
 
 	/* There is only one thread class */
 	mono_defaults.internal_thread_class = mono_defaults.thread_class;
+
+	mono_defaults.gc_class = mono_class_load_from_name (
+                mono_defaults.corlib, "System", "GC");
 
 #if defined(HOST_DARWIN)
 	mono_defaults.autoreleasepool_class = mono_class_try_load_from_name (
