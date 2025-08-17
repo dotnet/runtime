@@ -82,10 +82,7 @@ static MonoCoopCond exited_cond;
 
 static MonoInternalThread *gc_thread;
 
-static MonoMethod *finalize_method;
-#ifndef HOST_WASM
-// static RuntimeInvokeFunction finalize_runtime_invoke;
-#endif
+static MonoMethod *finalize_helper;
 
 /*
  * This must be a GHashTable, since these objects can't be finalized
@@ -291,24 +288,10 @@ mono_gc_run_finalize (void *obj, void *data)
 	if (mono_log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o_name, o);
 
-	if (!finalize_method) {
-		finalize_method = mono_class_get_method_from_name_checked (mono_defaults.finalizer_class, "GuardedFinalize", 1, 0, error);
+	if (!finalize_helper) {
+		finalize_helper = mono_class_get_method_from_name_checked (mono_defaults.gc_class, "GuardedFinalize", 1, 0, error);
 		mono_error_assert_ok (error);
 	}
-
-#ifndef HOST_WASM
-	//if (!finalize_runtime_invoke) {
-	//	MonoMethod *invoke = mono_marshal_get_runtime_invoke (finalize_method, TRUE);
-
-	//	finalize_runtime_invoke = (RuntimeInvokeFunction)mono_compile_method_checked (invoke, error);
-	//	mono_error_assert_ok (error); /* expect this not to fail */
-	//}
-
-	//RuntimeInvokeFunction runtime_invoke = finalize_runtime_invoke;
-#endif
-
-	mono_runtime_class_init_full (o->vtable, error);
-	goto_if_nok (error, unhandled_error);
 
 	if (G_UNLIKELY (MONO_GC_FINALIZE_INVOKE_ENABLED ())) {
 		MONO_GC_FINALIZE_INVOKE ((unsigned long)o, mono_object_get_size_internal (o),
@@ -320,25 +303,15 @@ mono_gc_run_finalize (void *obj, void *data)
 
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
-#ifdef HOST_WASM
 	gpointer params [1];
 	params [0] = o;
-	mono_runtime_try_invoke (finalize_method, NULL, params, &exc, error);
-#else
-	// runtime_invoke (o, NULL, &exc, NULL);
-
-	gpointer params [1];
-	params [0] = o;
-	mono_runtime_try_invoke (finalize_method, NULL, params, &exc, error);
-
-#endif
+	mono_runtime_try_invoke (finalize_helper, NULL, params, &exc, error);
 
 	MONO_PROFILER_RAISE (gc_finalized_object, (o));
 
 	if (mono_log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Returned from finalizer.", o_name, o);
 
-unhandled_error:
 	if (!is_ok (error))
 		exc = (MonoObject*)mono_error_convert_to_exception (error);
 	if (exc)

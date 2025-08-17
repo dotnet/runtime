@@ -278,8 +278,8 @@
 			<method name="GetHashCode" />
 		</type>
 
-		<!-- domain.c: mono_defaults.finalizer_class -->
-		<type fullname="System.FinalizerHelper">
+		<!-- domain.c: mono_defaults.gc_class -->
+		<type fullname="System.GC">
 			<!-- gc.c: mono_gc_run_finalize -->
 			<method name="GuardedFinalize" />
 		</type>

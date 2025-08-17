@@ -857,7 +857,6 @@ mono_generic_param_get_base_type (MonoClass *klass);
 typedef struct {
 	MonoImage *corlib;
 	MonoClass *object_class;
-	MonoClass *finalizer_class;
 	MonoClass *object_class_array; // used via token pasting in mono_array_class_get_cached
 	MonoClass *byte_class;
 	MonoClass *void_class;
@@ -890,6 +889,7 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
+	MonoClass *gc_class;
 	MonoClass *autoreleasepool_class;
 	MonoClass *mono_method_message_class;
 	MonoClass *field_info_class;
