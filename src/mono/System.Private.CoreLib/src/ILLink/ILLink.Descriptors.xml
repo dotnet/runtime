@@ -276,6 +276,10 @@
 			<!-- class.c: initialize_object_slots -->
 			<method name="Finalize" />
 			<method name="GetHashCode" />
+		</type>
+
+		<!-- domain.c: mono_defaults.finalizer_class -->
+		<type fullname="System.FinalizerHelper">
 			<!-- gc.c: mono_gc_run_finalize -->
 			<method name="GuardedFinalize" />
 		</type>

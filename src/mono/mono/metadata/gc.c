@@ -292,7 +292,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o_name, o);
 
 	if (!finalize_method) {
-		finalize_method = mono_class_get_method_from_name_checked (mono_defaults.object_class, "GuardedFinalize", 0, 0, error);
+		finalize_method = mono_class_get_method_from_name_checked (mono_defaults.finalizer_class, "GuardedFinalize", 0, 0, error);
 		mono_error_assert_ok (error);
 	}
 

@@ -4977,7 +4977,7 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, get_runtime_invoke_sig (csig));
 
 		/* runtime-invoke used by finalizers */
-		add_method (acfg, get_runtime_invoke (acfg, get_method_nofail (mono_defaults.object_class, "GuardedFinalize", 0, 0), FALSE));
+		add_method (acfg, get_runtime_invoke (acfg, get_method_nofail (mono_defaults.finalizer_class, "GuardedFinalize", 0, 0), FALSE));
 
 		/* This is used by mono_runtime_capture_context () */
 		method = mono_get_context_capture_method ();
