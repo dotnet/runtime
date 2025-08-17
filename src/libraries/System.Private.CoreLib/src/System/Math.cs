@@ -1496,7 +1496,7 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowMinMaxException<T>(T min, T max)
         {
-            throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
+            throw new ArgumentOutOfRangeException("minValue", SR.Format(SR.Argument_MinMaxValue, $"minValue = {min}", $"maxValue = {max}"));
         }
 
         public static double ScaleB(double x, int n)
