@@ -7,6 +7,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("Foo", typeof(DeadCodeElimination.TestInteropMapTrimming.ConditionalTypeMapEntry), typeof(DeadCodeElimination.TestInteropMapTrimming.TypeMapTrimTarget))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("Bar", typeof(DeadCodeElimination.TestInteropMapTrimming.UnconditionalTypeMapEntry))]
+[assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.SourceType), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyType))]
+
 class DeadCodeElimination
 {
     public static int Run()
@@ -36,6 +40,7 @@ class DeadCodeElimination
         TestInvisibleGenericsTrimming.Run();
         TestTypeHandlesInGenericDictionaries.Run();
         TestMetadataMethodTables.Run();
+        TestInteropMapTrimming.Run();
 
         return 100;
     }
@@ -1267,6 +1272,59 @@ class DeadCodeElimination
         }
     }
 
+    internal class TestInteropMapTrimming
+    {
+        internal class Universe;
+
+        internal class ConditionalTypeMapEntry;
+        internal class UnconditionalTypeMapEntry;
+        internal class TypeMapTrimTarget;
+
+        internal class SourceType;
+        internal class ProxyType;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetUnknown() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Consume(object o) { }
+
+        public static void Run()
+        {
+            var map = TypeMapping.GetOrCreateExternalTypeMapping<Universe>();
+
+            {
+                if (GetUnknown() is TypeMapTrimTarget)
+                {
+                    Console.WriteLine("Unexpected!");
+                }
+
+                var mappedType = map["Foo"];
+                ThrowIfUsableMethodTable(mappedType);
+                if (mappedType.Name != nameof(ConditionalTypeMapEntry))
+                    throw new Exception();
+            }
+
+            {
+                var mappedType = map["Bar"];
+                ThrowIfUsableMethodTable(mappedType);
+                if (mappedType.Name != nameof(UnconditionalTypeMapEntry))
+                    throw new Exception();
+            }
+
+            var proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<Universe>();
+
+            {
+                Consume(new SourceType());
+
+                var mappedType = proxyMap[typeof(SourceType)];
+                ThrowIfUsableMethodTable(mappedType);
+                if (mappedType.Name != nameof(ProxyType))
+                    throw new Exception();
+            }
+        }
+    }
+
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
     private static Type GetTypeSecretly(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public);
@@ -1279,14 +1337,19 @@ class DeadCodeElimination
         }
     }
 
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-        Justification = "That's the point")]
     private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
     {
         Type t = GetTypeSecretly(testType, typeName);
         if (t == null)
             return;
 
+        ThrowIfUsableMethodTable(t);
+    }
+
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
+    private static void ThrowIfUsableMethodTable(Type t)
+    {
         try
         {
             RuntimeHelpers.GetUninitializedObject(t);
