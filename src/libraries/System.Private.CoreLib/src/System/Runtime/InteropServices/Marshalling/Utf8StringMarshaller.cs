@@ -34,12 +34,82 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
+        /// Converts a string to an unmanaged version.
+        /// </summary>
+        /// <param name="managed">The managed string to convert.</param>
+        /// <returns>An unmanaged string pointer.</returns>
+        public static unsafe IntPtr ConvertToUnmanagedIntPtr(string? managed)
+        {
+            return (IntPtr)ConvertToUnmanaged(managed);
+        }
+
+        /// <summary>
         /// Converts an unmanaged string to a managed version.
         /// </summary>
         /// <param name="unmanaged">The unmanaged string to convert.</param>
         /// <returns>A managed string.</returns>
-        public static string? ConvertToManaged(byte* unmanaged)
-            => Marshal.PtrToStringUTF8((IntPtr)unmanaged);
+        public static unsafe string? ConvertToManaged(byte* unmanaged)
+        {
+            if (unmanaged is null)
+                return null;
+
+            int nbBytes = string.strlen(unmanaged);
+            return string.CreateStringFromEncoding(unmanaged, nbBytes, Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// Converts an unmanaged string to a managed version.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged string to convert.</param>
+        /// <param name="byteLen">The length of the unmanaged string in bytes.</param>
+        /// <returns>A managed string.</returns>
+        public static unsafe string ConvertToManaged(byte* unmanaged, int byteLen)
+        {
+            ArgumentNullException.ThrowIfNull(unmanaged);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteLen);
+
+            return string.CreateStringFromEncoding(unmanaged, byteLen, Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// Converts an unmanaged string to a managed version.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged string pointer to convert.</param>
+        /// <returns>A managed string.</returns>
+        public static unsafe string? ConvertToManaged(IntPtr unmanaged)
+        {
+            if (IsNullOrWin32Atom(unmanaged))
+                return null;
+
+            return ConvertToManaged((byte*)unmanaged);
+        }
+
+        /// <summary>
+        /// Converts an unmanaged string to a managed version.
+        /// </summary>
+        /// <param name="unmanaged">The unmanaged string pointer to convert.</param>
+        /// <param name="byteLen">The length of the unmanaged string in bytes.</param>
+        /// <returns>A managed string.</returns>
+        public static unsafe string ConvertToManaged(IntPtr unmanaged, int byteLen)
+        {
+            return ConvertToManaged((byte*)unmanaged, byteLen);
+        }
+
+#if TARGET_WINDOWS
+        // Win32 has the concept of Atoms, where a pointer can either be a pointer
+        // or an int.  If it's less than 64K, this is guaranteed to NOT be a
+        // pointer since the bottom 64K bytes are reserved in a process' page table.
+        // We should be careful about deallocating this stuff.
+        private static bool IsNullOrWin32Atom(IntPtr ptr)
+        {
+            const long HIWORDMASK = unchecked((long)0xffffffffffff0000L);
+
+            long lPtr = (long)ptr;
+            return 0 == (lPtr & HIWORDMASK);
+        }
+#else
+        private static bool IsNullOrWin32Atom(IntPtr ptr) => ptr == IntPtr.Zero;
+#endif
 
         /// <summary>
         /// Free the memory for a specified unmanaged string.
