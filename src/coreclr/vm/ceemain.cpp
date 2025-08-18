@@ -1818,7 +1818,6 @@ static void OsAttachThread(void* thread)
         // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
         // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
         // suppress this assert in release builds if we have encountered any mixed mode binaries.
-        // compatibility.
         if (Module::HasAnyIJWBeenLoaded())
         {
             _ASSERTE(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
