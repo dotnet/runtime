@@ -42,7 +42,7 @@ namespace System.IO
 
             if (name.Contains(Path.DirectorySeparatorChar))
             {
-                throw new IOException(SR.IO_InvalidName);
+                throw new IOException(SR.Argument_DirectorySeparatorInvalid);
             }
 
             IsUserScope = isUserScope;
