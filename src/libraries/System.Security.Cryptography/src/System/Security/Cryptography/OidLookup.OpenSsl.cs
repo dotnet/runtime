@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Security.Cryptography
 {
@@ -26,7 +27,7 @@ namespace System.Security.Cryptography
                     Debug.Assert(friendlyNamePtr != IntPtr.Zero);
 
                     // The pointer is to a shared string, so marshalling it out is all that's required.
-                    return Marshal.PtrToStringUTF8(friendlyNamePtr);
+                    return Utf8StringMarshaller.ConvertToManaged(friendlyNamePtr);
                 case -1: /* OpenSSL internal error */
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 default:

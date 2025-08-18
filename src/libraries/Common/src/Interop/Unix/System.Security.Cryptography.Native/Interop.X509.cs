@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -252,7 +253,7 @@ internal static partial class Interop
 
         internal static string GetX509VerifyCertErrorString(int n)
         {
-            return Marshal.PtrToStringUTF8(CryptoNative_X509VerifyCertErrorString(n))!;
+            return Utf8StringMarshaller.ConvertToManaged(CryptoNative_X509VerifyCertErrorString(n))!;
         }
 
         [LibraryImport(Libraries.CryptoNative)]

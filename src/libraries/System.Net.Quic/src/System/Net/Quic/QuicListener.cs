@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Threading;
@@ -341,7 +342,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             NetEventSource.Info(this, $"{this} New inbound connection {connection}.");
         }
 
-        SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
+        SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Utf8StringMarshaller.ConvertToManaged((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
         // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
         StartConnectionHandshake(connection, clientHello);

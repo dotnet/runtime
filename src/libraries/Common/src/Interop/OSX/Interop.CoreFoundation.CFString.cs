@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -42,7 +43,7 @@ internal static partial class Interop
 
             if (interiorPointer != IntPtr.Zero)
             {
-                return Marshal.PtrToStringUTF8(interiorPointer)!;
+                return Utf8StringMarshaller.ConvertToManaged(interiorPointer)!;
             }
 
             SafeCFDataHandle cfData = CFStringCreateExternalRepresentation(

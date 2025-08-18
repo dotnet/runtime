@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -886,7 +887,7 @@ namespace System
             Debug.Assert(context.Configurations != null);
             Dictionary<string, object> configurationDictionary = context.Configurations!;
 
-            string nameAsString = Marshal.PtrToStringUTF8((IntPtr)name)!;
+            string nameAsString = Utf8StringMarshaller.ConvertToManaged((IntPtr)name)!;
             switch (type)
             {
                 case GCConfigurationType.Int64:
@@ -895,7 +896,7 @@ namespace System
 
                 case GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Marshal.PtrToStringUTF8((nint)data);
+                        string? dataAsString = Utf8StringMarshaller.ConvertToManaged((IntPtr)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }
