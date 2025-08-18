@@ -8966,11 +8966,13 @@ void Debugger::ThreadCreated(Thread* pRuntimeThread)
         return;
     }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     if (DebuggerController::GetProcessingDetach())
     {
         int cActiveDispatchedExceptions = DebuggerController::IncrementActiveDispatchedExceptions();
         LOG((LF_CORDB, LL_INFO10000, "DebuggerThreadStarter allocated, incrementing ActiveDispatchedExceptions - cActiveDispatchedExceptions=%d\n", cActiveDispatchedExceptions));
     }
+#endif
 
     starter->EnableTraceCall(LEAF_MOST_FRAME);
 }
@@ -10850,7 +10852,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 #endif
             {
                 // Reply to the detach message before we release any Runtime threads. This ensures that the debugger will get
-                // the detach reply before the process exits if the main thread is near exiting.
+                // the detach reply before the process exits if the main thread is near exiting.69
                 DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
                 InitIPCEvent(pResult, DB_IPCE_DETACH_FROM_PROCESS_RESULT, NULL);
 
@@ -10859,6 +10861,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
                 m_pRCThread->SendIPCReply();
             }
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
             else
             {
                 // If Out Of Process SetThreadContext is enabled
@@ -10874,6 +10877,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 // respond to this IPC
                 DebuggerController::SetProcessingDetach(TRUE);
             }
+#endif
         }
 
         if (this->m_isBlockedOnGarbageCollectionEvent)
