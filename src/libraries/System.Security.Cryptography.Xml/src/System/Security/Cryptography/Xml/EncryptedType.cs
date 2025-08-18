@@ -13,9 +13,7 @@ namespace System.Security.Cryptography.Xml
         private string? _mimeType;
         private string? _encoding;
         private EncryptionMethod? _encryptionMethod;
-        private CipherData? _cipherData;
         private EncryptionPropertyCollection? _props;
-        private KeyInfo? _keyInfo;
         internal XmlElement? _cachedXml;
 
         [MemberNotNullWhen(true, nameof(_cachedXml))]
@@ -70,8 +68,8 @@ namespace System.Security.Cryptography.Xml
         [AllowNull]
         public KeyInfo KeyInfo
         {
-            get => _keyInfo ??= new KeyInfo();
-            set => _keyInfo = value;
+            get => field ??= new KeyInfo();
+            set => field = value;
         }
 
         public virtual EncryptionMethod? EncryptionMethod
@@ -93,13 +91,13 @@ namespace System.Security.Cryptography.Xml
 
         public virtual CipherData CipherData
         {
-            get => _cipherData ??= new CipherData();
+            get => field ??= new CipherData();
             set
             {
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                _cipherData = value;
+                field = value;
                 _cachedXml = null;
             }
         }

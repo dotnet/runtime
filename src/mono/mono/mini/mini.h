@@ -1306,6 +1306,12 @@ typedef enum {
 #define vreg_is_ref(cfg, vreg) (GINT_TO_UINT32(vreg) < (cfg)->vreg_is_ref_len ? (cfg)->vreg_is_ref [(vreg)] : 0)
 #define vreg_is_mp(cfg, vreg) (GINT_TO_UINT32(vreg) < (cfg)->vreg_is_mp_len ? (cfg)->vreg_is_mp [(vreg)] : 0)
 
+typedef struct {
+	MonoInst* addr_var;
+	int alloc_size;
+	GSList* localloc_ins;
+} MonoCachedLocallocInfo;
+
 /*
  * Control Flow Graph and compilation unit information
  */
@@ -1661,6 +1667,8 @@ typedef struct {
 
 	gboolean *clause_is_dead;
 
+	MonoCachedLocallocInfo localloc_cache [2];
+
 	/* Stats */
 	int stat_allocate_var;
 	int stat_locals_stack_size;
@@ -1679,7 +1687,7 @@ typedef struct {
 	G_UNLIKELY ((cfg)->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ ## flag)
 
 #define MONO_CFG_PROFILE_CALL_CONTEXT(cfg) \
-	(MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) || MONO_CFG_PROFILE (cfg, SAMPLEPOINT_CONTEXT) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
+	(MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) || MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
 
 typedef enum {
 	MONO_CFG_HAS_ALLOCA = 1 << 0,

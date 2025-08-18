@@ -846,9 +846,11 @@ static pfnSetThreadDescription g_pfnSetThreadDescription = SET_THREAD_DESCRIPTIO
 
 bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
+    DWORD stacksize = (DWORD)GetDefaultStackSizeSetting();
+
     HANDLE hThread = CreateThread(
         NULL,
-        0,
+        (DWORD)stacksize,
         (LPTHREAD_START_ROUTINE)callback,
         pCallbackContext,
         highPriority ? CREATE_SUSPENDED : 0,

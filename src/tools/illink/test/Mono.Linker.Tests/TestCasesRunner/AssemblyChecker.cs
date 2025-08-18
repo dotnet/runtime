@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -149,15 +150,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 if (linked == null)
                     yield break;
 
-                // Compiler generated members can't be annotated with `Kept` attributes directly
-                // For some of them we have special attributes (backing fields for example), but it's impractical to define
-                // special attributes for all types of compiler generated members (there are quite a few of them and they're
-                // going to change/increase over time).
-                // So we're effectively disabling Kept validation on compiler generated members
-                // Note that we still want to go "inside" each such member, as it might have additional attributes
+                // Note that we still want to go "inside" each skipped type, as it might have additional attributes
                 // we do want to validate. There's no specific use case right now, but I can easily imagine one
                 // for more detailed testing of for example custom attributes on local functions, or similar.
-                if (!IsCompilerGeneratedMember(original))
+                if (!SkipKeptItemsValidation(original))
                     yield return $"Type `{original}' should have been removed";
             }
 
@@ -202,9 +198,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         IEnumerable<string> VerifyKeptByAttribute(string keptAttributeProviderName, CustomAttribute attribute)
         {
-            // public KeptByAttribute (string dependencyProvider, string reason) { }
-            // public KeptByAttribute (Type dependencyProvider, string reason) { }
-            // public KeptByAttribute (Type dependencyProvider, string memberName, string reason) { }
+            // public KeptByAttribute(string dependencyProvider, string reason) { }
+            // public KeptByAttribute(Type dependencyProvider, string reason) { }
+            // public KeptByAttribute(Type dependencyProvider, string memberName, string reason) { }
 
             Assert.AreEqual(nameof(KeptByAttribute), attribute.AttributeType.Name);
 
@@ -214,8 +210,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
             expectedDependency.Marked = true;
             if (attribute.ConstructorArguments.Count == 2)
             {
-                // public KeptByAttribute (string dependencyProvider, string reason) { }
-                // public KeptByAttribute (Type dependencyProvider, string reason) { }
+                // public KeptByAttribute(string dependencyProvider, string reason) { }
+                // public KeptByAttribute(Type dependencyProvider, string reason) { }
                 if (attribute.ConstructorArguments[0].Type.IsTypeOf<string>())
                     expectedDependency.Source = (string)attribute.ConstructorArguments[0].Value;
                 else if (attribute.ConstructorArguments[0].Type.IsTypeOf<Type>())
@@ -227,7 +223,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
             else if (attribute.ConstructorArguments.Count == 3)
             {
-                // public KeptByAttribute (Type dependencyProvider, string memberName, string reason) { }
+                // public KeptByAttribute(Type dependencyProvider, string memberName, string reason) { }
                 if (!attribute.ConstructorArguments[0].Type.IsTypeOf<Type>())
                     throw new NotImplementedException("Unexpected KeptByAttribute ctor variant");
                 var type = (TypeDefinition)attribute.ConstructorArguments[0].Value;
@@ -259,8 +255,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 yield break;
             }
 
-            // Skip verification of type metadata for compiler generated types (we don't currently need it yet)
-            if (!IsCompilerGeneratedMember(original))
+            if (!SkipKeptItemsValidation(original))
             {
                 foreach (var err in VerifyKeptByAttributes(original, linked))
                     yield return err;
@@ -270,9 +265,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                 foreach (var err in VerifyInterfaces(original, linked))
                     yield return err;
-                foreach (var err in VerifyPseudoAttributes(original, linked))
+                foreach (var err in VerifyPseudoAttributes(original, linked))   
                     yield return err;
-                foreach (var err in VerifyGenericParameters(original, linked, compilerGenerated: false))
+                foreach (var err in VerifyGenericParameters(original, linked, skipKeptItemsValidation: false))
                     yield return err;
                 foreach (var err in VerifyCustomAttributes(original, linked))
                     yield return err;
@@ -445,23 +440,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         IEnumerable<string> VerifyField(FieldDefinition src, FieldDefinition linked)
         {
-            bool compilerGenerated = IsCompilerGeneratedMember(src);
-            bool expectedKept = ShouldBeKept(src) ||
-                (compilerGenerated ? !IsBackingField(src) : false);
+            bool skipKeptItemsValidation = SkipKeptItemsValidation(src);
+            bool expectedKept = ShouldBeKept(src);
 
             if (!expectedKept)
             {
-                if (linked != null)
+                if (linked != null && !skipKeptItemsValidation)
                     yield return $"Field `{src}' should have been removed";
 
                 yield break;
             }
 
-            foreach (var err in VerifyFieldKept(src, linked, compilerGenerated))
+            foreach (var err in VerifyFieldKept(src, linked, skipKeptItemsValidation))
                 yield return err;
         }
 
-        IEnumerable<string> VerifyFieldKept(FieldDefinition src, FieldDefinition linked, bool compilerGenerated)
+        IEnumerable<string> VerifyFieldKept(FieldDefinition src, FieldDefinition linked, bool skipKeptItemsValidation)
         {
             if (linked == null)
             {
@@ -475,7 +469,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             foreach (var err in VerifyKeptByAttributes(src, linked))
                 yield return err;
             VerifyPseudoAttributes(src, linked);
-            if (!compilerGenerated)
+            if (!skipKeptItemsValidation)
                 foreach (var err in VerifyCustomAttributes(src, linked))
                     yield return err;
         }
@@ -485,12 +479,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             foreach (var err in VerifyMemberBackingField(src, linkedType))
                 yield return err;
 
-            bool compilerGenerated = IsCompilerGeneratedMember(src);
-            bool expectedKept = ShouldBeKept(src) || compilerGenerated;
+            bool skipKeptItemsValidation = SkipKeptItemsValidation(src);
+            bool expectedKept = ShouldBeKept(src);
 
             if (!expectedKept)
             {
-                if (linked != null)
+                if (linked != null && !skipKeptItemsValidation)
                     yield return $"Property `{src}' should have been removed";
 
                 yield break;
@@ -509,7 +503,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 yield return err;
             foreach (var err in VerifyPseudoAttributes(src, linked))
                 yield return err;
-            if (!compilerGenerated)
+            if (!skipKeptItemsValidation)
                 foreach (var err in VerifyCustomAttributes(src, linked))
                     yield return err;
         }
@@ -519,12 +513,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             foreach (var err in VerifyMemberBackingField(src, linkedType))
                 yield return err;
 
-            bool compilerGenerated = IsCompilerGeneratedMember(src);
-            bool expectedKept = ShouldBeKept(src) || compilerGenerated;
+            bool skipKeptItemsValidation = SkipKeptItemsValidation(src);
+            bool expectedKept = ShouldBeKept(src);
 
             if (!expectedKept)
             {
-                if (linked != null)
+                if (linked != null && !skipKeptItemsValidation)
                     yield return $"Event `{src}' should have been removed";
 
                 yield break;
@@ -538,7 +532,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             if (src.CustomAttributes.Any(attr => attr.AttributeType.Name == nameof(KeptEventAddMethodAttribute)))
             {
-                foreach (var err in VerifyMethodInternal(src.AddMethod, linked.AddMethod, true, compilerGenerated))
+                foreach (var err in VerifyMethodInternal(src.AddMethod, linked.AddMethod, true, skipKeptItemsValidation))
                     yield return err;
                 verifiedEventMethods.Add(src.AddMethod.FullName);
                 linkedMembers.Remove(src.AddMethod.FullName);
@@ -546,7 +540,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             if (src.CustomAttributes.Any(attr => attr.AttributeType.Name == nameof(KeptEventRemoveMethodAttribute)))
             {
-                foreach (var err in VerifyMethodInternal(src.RemoveMethod, linked.RemoveMethod, true, compilerGenerated))
+                foreach (var err in VerifyMethodInternal(src.RemoveMethod, linked.RemoveMethod, true, skipKeptItemsValidation))
                     yield return err;
                 verifiedEventMethods.Add(src.RemoveMethod.FullName);
                 linkedMembers.Remove(src.RemoveMethod.FullName);
@@ -556,37 +550,36 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 yield return err;
             foreach (var err in VerifyPseudoAttributes(src, linked))
                 yield return err;
-            if (!compilerGenerated)
+            if (!skipKeptItemsValidation)
                 foreach (var err in VerifyCustomAttributes(src, linked))
                     yield return err;
         }
 
         IEnumerable<string> VerifyMethod(MethodDefinition src, MethodDefinition linked)
         {
-            bool compilerGenerated = IsCompilerGeneratedMember(src);
+            bool skipKeptItemsValidation = SkipKeptItemsValidation(src);
             bool expectedKept = ShouldMethodBeKept(src);
-            foreach (var err in VerifyMethodInternal(src, linked, expectedKept, compilerGenerated))
+            foreach (var err in VerifyMethodInternal(src, linked, expectedKept, skipKeptItemsValidation))
                 yield return err;
         }
 
-        IEnumerable<string> VerifyMethodInternal(MethodDefinition src, MethodDefinition linked, bool expectedKept, bool compilerGenerated)
+        IEnumerable<string> VerifyMethodInternal(MethodDefinition src, MethodDefinition linked, bool expectedKept, bool skipKeptItemsValidation)
         {
             if (!expectedKept)
             {
                 if (linked == null)
                     yield break;
 
-                // Similar to comment on types, compiler-generated methods can't be annotated with Kept attribute directly
-                // so we're not going to validate kept/remove on them. Note that we're still going to go validate "into" them
-                // to check for other properties (like parameter name presence/removal for example)
-                if (!compilerGenerated)
+                // Note that we're still going to go validate "into" skipped methods to check for other properties
+                // (like parameter name presence/removal for example)
+                if (!skipKeptItemsValidation)
                     yield return $"Method `{src.FullName}' should have been removed";
             }
 
             foreach (var err in VerifyOverrides(src, linked))
                 yield return err;
 
-            foreach (var err in VerifyMethodKept(src, linked, compilerGenerated))
+            foreach (var err in VerifyMethodKept(src, linked, skipKeptItemsValidation: skipKeptItemsValidation))
                 yield return err;
         }
 
@@ -616,13 +609,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 yield break;
             }
 
-            foreach (var err in VerifyFieldKept(srcField, linkedType?.Fields.FirstOrDefault(l => srcField.Name == l.Name), compilerGenerated: true))
+            foreach (var err in VerifyFieldKept(srcField, linkedType?.Fields.FirstOrDefault(l => srcField.Name == l.Name), skipKeptItemsValidation: true))
                 yield return err;
             verifiedGeneratedFields.Add(srcField.FullName);
             linkedMembers.Remove(srcField.FullName);
         }
 
-        protected virtual IEnumerable<string> VerifyMethodKept(MethodDefinition src, MethodDefinition linked, bool compilerGenerated)
+        protected virtual IEnumerable<string> VerifyMethodKept(MethodDefinition src, MethodDefinition linked, bool skipKeptItemsValidation)
         {
             if (linked == null)
             {
@@ -632,9 +625,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             foreach (var err in VerifyPseudoAttributes(src, linked))
                 yield return err;
-            foreach (var err in VerifyGenericParameters(src, linked, compilerGenerated))
+            foreach (var err in VerifyGenericParameters(src, linked, skipKeptItemsValidation))
                 yield return err;
-            if (!compilerGenerated)
+            if (!skipKeptItemsValidation)
             {
                 foreach (var err in VerifyCustomAttributes(src, linked))
                     yield return err;
@@ -642,7 +635,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     yield return err;
 
             }
-            foreach (var err in VerifyParameters(src, linked, compilerGenerated))
+            foreach (var err in VerifyParameters(src, linked, skipKeptItemsValidation))
                 yield return err;
             foreach (var err in VerifySecurityAttributes(src, linked))
                 yield return err;
@@ -857,14 +850,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 .ToHashSet();
 
             /*
-			 - The test case will always need to have at least 1 reference.
-			 - Forcing all tests to define their expected references seems tedious
+             - The test case will always need to have at least 1 reference.
+             - Forcing all tests to define their expected references seems tedious
 
-			 Given the above, let's assume that when no [KeptReference] attributes are present,
-			 the test case does not want to make any assertions regarding references.
+             Given the above, let's assume that when no [KeptReference] attributes are present,
+             the test case does not want to make any assertions regarding references.
 
-			 Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
-			*/
+             Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
+            */
             if (expected.Count == 0)
                 yield break;
 
@@ -1013,7 +1006,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     yield return $"Could not locate original private implementation details method {methodName}";
 
                 var linkedMethod = linkedImplementationDetails.Methods.FirstOrDefault(m => m.Name == methodName);
-                foreach (var erro in VerifyMethodKept(originalMethod, linkedMethod, compilerGenerated: true))
+                foreach (var erro in VerifyMethodKept(originalMethod, linkedMethod, skipKeptItemsValidation: true))
                     yield return erro;
                 linkedMembers.Remove(linkedMethod.FullName);
             }
@@ -1090,7 +1083,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         IEnumerable<string> VerifyInitializerField(FieldDefinition src, FieldDefinition linked)
         {
-            foreach (var err in VerifyFieldKept(src, linked, compilerGenerated: true))
+            foreach (var err in VerifyFieldKept(src, linked, skipKeptItemsValidation: true))
                 yield return err;
             verifiedGeneratedFields.Add(linked.FullName);
             linkedMembers.Remove(linked.FullName);
@@ -1160,6 +1153,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         if (linked is AssemblyDefinition)
                             continue;
                         break;
+
+                    // TargetFrameworkAttribute is generated for most testcases, so don't check this.
+                    case "System.Runtime.Versioning.TargetFrameworkAttribute":
+                        if (linked is AssemblyDefinition)
+                            continue;
+                        break;
                 }
 
                 yield return attr.AttributeType.FullName;
@@ -1196,7 +1195,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     yield return $"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}";
 
                 var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault();
-                foreach (var err in VerifyFieldKept(originalElementField, linkedField, compilerGenerated: true))
+                foreach (var err in VerifyFieldKept(originalElementField, linkedField, skipKeptItemsValidation: true))
                     yield return err;
                 verifiedGeneratedFields.Add(originalElementField.FullName);
                 linkedMembers.Remove(linkedField.FullName);
@@ -1231,7 +1230,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         yield return $"Invalid expected delegate backing field {expectedFieldName} in {src}. This member was not in the unlinked assembly";
 
                     var linkedField = linkedNestedType?.Fields.FirstOrDefault(f => f.Name == expectedFieldName);
-                    foreach (var err in VerifyFieldKept(originalField, linkedField, compilerGenerated: true))
+                    foreach (var err in VerifyFieldKept(originalField, linkedField, skipKeptItemsValidation: true))
                         yield return err;
                     verifiedGeneratedFields.Add(linkedField.FullName);
                     linkedMembers.Remove(linkedField.FullName);
@@ -1243,7 +1242,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
         }
 
-        IEnumerable<string> VerifyGenericParameters(IGenericParameterProvider src, IGenericParameterProvider linked, bool compilerGenerated)
+        IEnumerable<string> VerifyGenericParameters(IGenericParameterProvider src, IGenericParameterProvider linked, bool skipKeptItemsValidation)
         {
             Assert.AreEqual(src.HasGenericParameters, linked.HasGenericParameters);
             if (src.HasGenericParameters)
@@ -1258,7 +1257,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     foreach (var err in VerifyGenericParameterAttributes(srcp, lnkp))
                         yield return err;
 
-                    if (!compilerGenerated)
+                    if (!skipKeptItemsValidation)
                     {
                         foreach (var err in VerifyCustomAttributes(srcp, lnkp))
                             yield return err;
@@ -1353,7 +1352,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 yield return $"Mismatch in generic parameter attributes on {src} of {src.Owner}. Expected: {expectedAttributes}, Output: {linkedAttributes}";
         }
 
-        IEnumerable<string> VerifyParameters(IMethodSignature src, IMethodSignature linked, bool compilerGenerated)
+        IEnumerable<string> VerifyParameters(IMethodSignature src, IMethodSignature linked, bool skipKeptItemsValidation)
         {
             if (src.HasParameters != linked.HasParameters)
                 yield return $"Mismatch in parameters. {src} has parameters: {src.HasParameters}, {linked} has parameters: {linked.HasParameters}";
@@ -1364,7 +1363,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     var srcp = src.Parameters[i];
                     var lnkp = linked.Parameters[i];
 
-                    if (!compilerGenerated)
+                    if (!skipKeptItemsValidation)
                     {
                         foreach (var err in VerifyCustomAttributes(srcp, lnkp))
                             yield return err;
