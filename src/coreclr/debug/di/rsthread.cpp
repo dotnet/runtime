@@ -2682,6 +2682,11 @@ void CordbThread::ClearStackFrameCache()
     m_stackFrames.Clear();
 }
 
+typedef CordbEnumerator<CorDebugBlockingObject,
+                        CorDebugBlockingObject,
+                        ICorDebugBlockingObjectEnum, IID_ICorDebugBlockingObjectEnum,
+                        IdentityConvert<CorDebugBlockingObject> > CordbBlockingObjectEnumerator;
+
 // ----------------------------------------------------------------------------
 // CordbThread::GetBlockingObjects
 //
@@ -2701,9 +2706,15 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     VALIDATE_POINTER_TO_OBJECT(ppBlockingObjectEnum, ICorDebugBlockingObjectEnum **);
-    *ppBlockingObjectEnum = NULL;
-    return S_OK;
 
+    // We don't have any blocking objects to enumerate from the native side,
+    // so we create an empty enumerator.
+    CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(
+        GetProcess(),
+        new CorDebugBlockingObject[0],
+        0);
+    GetProcess()->GetContinueNeuterList()->Add(GetProcess(), objEnum);
+    return objEnum->QueryInterface(__uuidof(ICorDebugBlockingObjectEnum), (void**)ppBlockingObjectEnum);
 }
 
 #ifdef FEATURE_INTEROP_DEBUGGING

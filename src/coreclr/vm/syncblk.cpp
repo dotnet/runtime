@@ -781,6 +781,8 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
         psb->m_pEnCInfo->Cleanup();
 #endif // FEATURE_METADATA_UPDATER
 
+    // Cleanup lock info
+    psb->m_thinLock = 0;
     if (psb->m_Lock)
     {
         DestroyHandle(psb->m_Lock);
