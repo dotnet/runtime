@@ -2384,6 +2384,11 @@ struct MSLAYOUT DebuggerIPCEvent
             void * pMetadataStart;
             ULONG nMetadataSize;
         } MetadataUpdateRequest;
+
+        struct MSLAYOUT
+        {
+            DWORD cDispatchedFlares;
+        } DetachFromProcessResult;
     };
 };
 
