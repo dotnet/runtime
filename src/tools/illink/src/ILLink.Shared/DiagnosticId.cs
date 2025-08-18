@@ -189,6 +189,8 @@ namespace ILLink.Shared
         TypeNameIsNotAssemblyQualified = 2122,
         RequiresUnreferencedCodeOnEntryPoint = 2123,
         TypeMapGroupTypeCannotBeStaticallyDetermined = 2124,
+        ReferenceNotMarkedIsTrimmable = 2125,
+        DataflowAnalysisDidNotConverge = 2126,
         _EndTrimAnalysisWarningsSentinel,
 
         // Single-file diagnostic ids.
@@ -208,6 +210,7 @@ namespace ILLink.Shared
         CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
         RequiresDynamicCodeOnStaticConstructor = 3056,
         RequiresDynamicCodeOnEntryPoint = 3057,
+        ReferenceNotMarkedIsAotCompatible = 3058,
         _EndAotAnalysisWarningsSentinel,
 
         // Feature guard diagnostic ids.

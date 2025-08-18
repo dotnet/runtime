@@ -1100,7 +1100,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     }
 #endif // defined(DEBUG)
 
-    if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
+    if (lvaHaveManyLocals(0.9f))
     {
         // For now, attributing this to call site, though it's really
         // more of a budget issue (lvaCount currently includes all

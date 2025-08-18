@@ -961,8 +961,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-          # Tracking issue: https://github.com/dotnet/dnceng/issues/5909
-          # - android_x64
+          - android_x64
           - android_arm64
           variables:
             # map dependencies variables to local variables
@@ -974,7 +973,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

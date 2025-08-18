@@ -163,7 +163,7 @@ namespace System.Net.Mail.Tests
         [InlineData("shouldnotexist")]
         [InlineData("\0")]
         [InlineData("C:\\some\\path\\like\\string")]
-        public void PickupDirectoryLocationTest(string folder)
+        public void PickupDirectoryLocationTest(string? folder)
         {
             Smtp.PickupDirectoryLocation = folder;
             Assert.Equal(folder, Smtp.PickupDirectoryLocation);

@@ -174,11 +174,11 @@ namespace System.ServiceModel.Syndication
 
         private static string AsString(DateTimeOffset dateTime)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if (dateTime.TotalOffsetMinutes == 0)
 #else
             if (dateTime.Offset == TimeSpan.Zero)
-#endif // NET8_0_OR_GREATER
+#endif // NET
             {
                 return dateTime.ToUniversalTime().ToString(Rfc822OutputUtcDateTimeFormat, CultureInfo.InvariantCulture);
             }

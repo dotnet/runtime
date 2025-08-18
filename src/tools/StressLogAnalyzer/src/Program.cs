@@ -520,7 +520,7 @@ public static class Program
         {
             Baseline = BaseContractDescriptor.Baseline,
             Version = BaseContractDescriptor.Version,
-            Contracts = new(){ { "StressLog", stressLogVersion } },
+            Contracts = new() { { "StressLog", stressLogVersion } },
             Types = BaseContractDescriptor.Types,
             Globals = BaseContractDescriptor.Globals,
         };
@@ -542,7 +542,8 @@ public static class Program
                         "Logs": 24,
                         "TickFrequency": 48,
                         "StartTimestamp": 56,
-                        "ModuleOffset": 72
+                        "ModuleOffset": 72,
+                        "Modules": 80
                     },
                     "StressLogModuleDesc": {
                         "!": 16,

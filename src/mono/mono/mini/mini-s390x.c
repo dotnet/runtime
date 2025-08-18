@@ -1606,7 +1606,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			continue;
 
 		/*--------------------------------------------------*/
-		/* inst->backend.is_pinvoke indicates native sized  */
+		/* inst->backend.is_pinvoke indicates native-sized  */
 		/* value types this is used by the pinvoke wrappers */
 		/* when they call functions returning structure     */
 		/*--------------------------------------------------*/
