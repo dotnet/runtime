@@ -78,9 +78,9 @@
     <Property Id="ProductCPU" Value="$(var.Platform)" />
     <Property Id="RTM_ProductVersion" Value="$(var.Dotnet_ProductVersion)" />
 
-    <DirectoryRef Id="$(var.Program_Files)">
+    <StandardDirectory Id="ProgramFiles6432Folder">
       <Directory Id="PROGRAMFILES_DOTNET" Name="dotnet" />
-    </DirectoryRef>
+    </StandardDirectory>
     
     <?if $(var.Platform)~=x64 ?>
     <CustomActionRef Id="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" />
