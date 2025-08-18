@@ -907,7 +907,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     if (EA_IS_RELOC(size))
     {
         assert(genIsValidIntReg(reg));
-        GetEmitter()->emitIns_R_AI(INS_jal, size, reg, imm);
+        GetEmitter()->emitIns_R_AI(INS_addi, size, reg, imm);
     }
     else
     {
@@ -2746,7 +2746,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 
         if (compiler->opts.compReloc)
         {
-            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)helperFunction.addr);
+            GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)helperFunction.addr);
         }
         else
         {
@@ -3643,8 +3643,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
         if (compiler->opts.compReloc)
         {
-            // TODO-RISCV64: here the jal is special flag rather than a real instruction.
-            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
+            GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
         }
         else
         {
@@ -4455,7 +4454,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     {
         if (compiler->opts.compReloc)
         {
-            emit->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+            emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         }
         else
         {
@@ -4499,7 +4498,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
         if (compiler->opts.compReloc)
         {
-            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, regGSConst,
+            GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, regGSConst,
                                        (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         }
         else
@@ -6547,7 +6546,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
                 // TODO-RISCV64-RVC: Remove hardcoded branch offset here
                 ssize_t imm = (3 + 1) << 2;
                 emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-                emit->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)pAddr);
+                emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)pAddr);
             }
             else
             {
