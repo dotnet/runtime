@@ -273,13 +273,12 @@ namespace MonoTests.System.Runtime.Caching
                 File.WriteAllText(setup.Item2, "I am the first file. Updated.");
 
                 // Wait for the monitor to detect the change - 5s should be more than enough
-                var delay = 5000;
-                var inc = 50;
-                for (int i = 0; i < delay; i += inc)
+                var stop = DateTime.UtcNow.AddMilliseconds(5000);
+                while (DateTime.UtcNow < stop)
                 {
                     if (!mc.Contains("key"))
                         break;
-                    await Task.Delay(inc);
+                    await Task.Delay(50);
                 }
 
                 Assert.Null(mc["key"]);
