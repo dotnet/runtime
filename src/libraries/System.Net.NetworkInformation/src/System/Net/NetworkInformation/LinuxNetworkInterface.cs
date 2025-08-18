@@ -95,7 +95,7 @@ namespace System.Net.NetworkInformation
 
                 for (int i = 0; i < interfaceCount; i++)
                 {
-                    var lni = new LinuxNetworkInterface(Utf8StringMarshaller.ConvertToManaged((IntPtr)nii->Name)!, nii->InterfaceIndex, systemProperties);
+                    var lni = new LinuxNetworkInterface(Utf8StringMarshaller.ConvertToManaged((byte*)nii->Name)!, nii->InterfaceIndex, systemProperties);
                     lni._interfaceType = (NetworkInterfaceType)nii->HardwareType;
                     lni._speed = nii->Speed;
                     lni._operationalStatus = (OperationalStatus)nii->OperationalState;

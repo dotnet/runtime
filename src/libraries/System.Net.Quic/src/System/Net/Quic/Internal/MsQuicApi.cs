@@ -171,7 +171,7 @@ internal sealed unsafe partial class MsQuicApi
                 }
                 return;
             }
-            string? gitHash = Utf8StringMarshaller.ConvertToManaged((IntPtr)libGitHash);
+            string? gitHash = Utf8StringMarshaller.ConvertToManaged((byte*)libGitHash);
 
             MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} {Version} ({gitHash})";
 

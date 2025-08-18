@@ -253,7 +253,7 @@ internal static partial class Interop
 
         internal static string GetX509VerifyCertErrorString(int n)
         {
-            return Utf8StringMarshaller.ConvertToManaged(CryptoNative_X509VerifyCertErrorString(n))!;
+            return Utf8StringMarshaller.ConvertToManaged((byte*)CryptoNative_X509VerifyCertErrorString(n))!;
         }
 
         [LibraryImport(Libraries.CryptoNative)]

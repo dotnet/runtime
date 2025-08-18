@@ -58,7 +58,7 @@ namespace System.Net
             try
             {
                 hostName = !justAddresses && hostEntry.CanonicalName != null
-                    ? Utf8StringMarshaller.ConvertToManaged((IntPtr)hostEntry.CanonicalName)
+                    ? Utf8StringMarshaller.ConvertToManaged((byte*)hostEntry.CanonicalName)
                     : null;
 
                 IPAddress[] localAddresses;
@@ -114,7 +114,7 @@ namespace System.Net
                         localAliases = new string[numAliases];
                         for (int i = 0; i < localAliases.Length; i++)
                         {
-                            localAliases[i] = Utf8StringMarshaller.ConvertToManaged((IntPtr)hostEntry.Aliases[i])!;
+                            localAliases[i] = Utf8StringMarshaller.ConvertToManaged((byte*)hostEntry.Aliases[i])!;
                         }
                     }
                 }
@@ -187,7 +187,7 @@ namespace System.Net
 
             socketError = GetSocketErrorForNativeError(error);
             nativeErrorCode = error;
-            return socketError == SocketError.Success ? Utf8StringMarshaller.ConvertToManaged((IntPtr)buffer) : null;
+            return socketError == SocketError.Success ? Utf8StringMarshaller.ConvertToManaged((byte*)buffer) : null;
         }
 
         public static string GetHostName() => Interop.Sys.GetHostName();
