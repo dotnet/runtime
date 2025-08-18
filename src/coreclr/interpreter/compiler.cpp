@@ -1232,9 +1232,26 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
     return m_pMethodCode;
 }
 
+InterpreterStackMap* InterpCompiler::GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle)
+{
+    InterpreterStackMap* result = nullptr;
+    if (!dn_simdhash_ptr_ptr_try_get_value(m_stackmapsByClass.GetValue(), classHandle, (void **)&result))
+    {
+        result = new InterpreterStackMap(m_compHnd, classHandle);
+        checkAddedNew(dn_simdhash_ptr_ptr_try_add(m_stackmapsByClass.GetValue(), classHandle, result));
+    }
+    return result;
+}
+
+static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
+{
+    delete (InterpreterStackMap *)value;
+}
+
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
-    : m_pInitLocalsIns(nullptr)
+    : m_stackmapsByClass(FreeInterpreterStackMap)
+    , m_pInitLocalsIns(nullptr)
     , m_globalVarsWithRefsStackTop(0)
 {
     m_genericLookupToDataItemIndex.Init(&m_dataItems, this);
@@ -6523,17 +6540,6 @@ void InterpCompiler::PrintCompiledIns(const int32_t *ip, const int32_t *start)
 
     PrintInsData(NULL, insOffset, ip, opcode);
     printf("\n");
-}
-
-InterpreterStackMap* InterpCompiler::GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle)
-{
-    InterpreterStackMap* result = nullptr;
-    if (!dn_simdhash_ptr_ptr_try_get_value(m_stackmapsByClass.GetValue(), classHandle, (void **)&result))
-    {
-        result = new InterpreterStackMap(m_compHnd, classHandle);
-        checkAddedNew(dn_simdhash_ptr_ptr_try_add(m_stackmapsByClass.GetValue(), classHandle, result));
-    }
-    return result;
 }
 
 extern "C" void assertAbort(const char* why, const char* file, unsigned line)

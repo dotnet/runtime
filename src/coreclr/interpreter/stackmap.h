@@ -21,4 +21,11 @@ public:
     {
         PopulateStackMap(jitInfo, classHandle);
     }
+
+    ~InterpreterStackMap ()
+    {
+        if (m_slots)
+            free(m_slots);
+        m_slots = nullptr;
+    }
 };
