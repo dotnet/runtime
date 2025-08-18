@@ -3748,12 +3748,14 @@ void Compiler::fgFindBasicBlocks()
             if (clause.Flags & CORINFO_EH_CLAUSE_FINALLY)
             {
                 hndBegBB->bbCatchTyp = BBCT_FINALLY;
+                HBtab->ebdTyp        = 0;
             }
             else
             {
                 if (clause.Flags & CORINFO_EH_CLAUSE_FAULT)
                 {
                     hndBegBB->bbCatchTyp = BBCT_FAULT;
+                    HBtab->ebdTyp        = 0;
                 }
                 else
                 {
