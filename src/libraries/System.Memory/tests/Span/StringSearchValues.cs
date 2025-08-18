@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -231,7 +232,11 @@ namespace System.Memory.Tests.Span
                         .First(c => !values.AsSpan().ContainsAny(c, char.ToLowerInvariant(c)));
                 }
 
-                TestWithDifferentMarkerChars(haystack, '\0');
+                if (!values.Contains('\0'))
+                {
+                    TestWithDifferentMarkerChars(haystack, '\0');
+                }
+
                 TestWithDifferentMarkerChars(haystack, '\u00FC');
                 TestWithDifferentMarkerChars(haystack, asciiNumberNotInSet);
                 TestWithDifferentMarkerChars(haystack, asciiLetterLowerNotInSet);
@@ -313,6 +318,7 @@ namespace System.Memory.Tests.Span
             IndexOfAny(StringComparison.OrdinalIgnoreCase, -1, " foO\uD801bar", "oo\uD800baR, bar\uD800foo");
 
             // Low surrogate without the high surrogate.
+            IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, "\uD801\uDCD8\uD8FB\uDCD8", "\uDCD8");
             IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, "\uD801\uDCD8\uD8FB\uDCD8", "foo, \uDCD8");
         }
 
@@ -337,6 +343,15 @@ namespace System.Memory.Tests.Span
         [InlineData("abcd!")]
         [InlineData("abcdefgh")]
         [InlineData("abcdefghi")]
+        [InlineData("123456789")]
+        [InlineData("123456789a")]
+        [InlineData("123456789ab")]
+        [InlineData("123456789abc")]
+        [InlineData("123456789abcd")]
+        [InlineData("123456789abcde")]
+        [InlineData("123456789abcdef")]
+        [InlineData("123456789abcdefg")]
+        [InlineData("123456789abcdefgh")]
         // Multiple values, but they all share the same prefix
         [InlineData("abc", "ab", "abcd")]
         // These should hit the Aho-Corasick implementation
@@ -396,8 +411,24 @@ namespace System.Memory.Tests.Span
             valuesArray[offset] = $"{original[0]}\u00F6{original.AsSpan(1)}";
             TestCore(valuesArray);
 
+            // Test non-ASCII values over 0xFF
+            valuesArray[offset] = $"{original}\u2049";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"\u2049{original}";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"{original[0]}\u2049{original.AsSpan(1)}";
+            TestCore(valuesArray);
+
             // Test null chars in values
             valuesArray[offset] = $"{original[0]}\0{original.AsSpan(1)}";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"\0{original}";
+            TestCore(valuesArray);
+
+            valuesArray[offset] = $"{original}\0";
             TestCore(valuesArray);
 
             static void TestCore(string[] valuesArray)
@@ -406,9 +437,25 @@ namespace System.Memory.Tests.Span
                 Values_ImplementsSearchValuesBase(StringComparison.OrdinalIgnoreCase, valuesArray);
 
                 string values = string.Join(", ", valuesArray);
+                string text = valuesArray[0];
 
-                IndexOfAny(StringComparison.Ordinal, 0, valuesArray[0], values);
-                IndexOfAny(StringComparison.OrdinalIgnoreCase, 0, valuesArray[0], values);
+                IndexOfAny(StringComparison.Ordinal, 0, text, values);
+                IndexOfAny(StringComparison.OrdinalIgnoreCase, 0, text, values);
+
+                // Replace every position in the text with a different character.
+                foreach (StringComparison comparisonType in new[] { StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase })
+                {
+                    SearchValues<string> stringValues = SearchValues.Create(valuesArray, comparisonType);
+
+                    for (int i = 0; i < text.Length - 1; i++)
+                    {
+                        foreach (char replacement in "AaBb _!\u00F6")
+                        {
+                            string newText = $"{text.AsSpan(0, i)}{replacement}{text.AsSpan(i + 1)}";
+                            Assert.Equal(IndexOfAnyReferenceImpl(newText, valuesArray, comparisonType), newText.IndexOfAny(stringValues));
+                        }
+                    }
+                }
             }
         }
 
@@ -499,6 +546,20 @@ namespace System.Memory.Tests.Span
         {
             RunStress();
 
+            if (RemoteExecutor.IsSupported && Avx512F.IsSupported)
+            {
+                var psi = new ProcessStartInfo();
+                psi.Environment.Add("DOTNET_EnableAVX512", "0");
+                RemoteExecutor.Invoke(RunStress, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
+            }
+
+            if (RemoteExecutor.IsSupported && Avx2.IsSupported)
+            {
+                var psi = new ProcessStartInfo();
+                psi.Environment.Add("DOTNET_EnableAVX2", "0");
+                RemoteExecutor.Invoke(RunStress, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
+            }
+
             if (CanTestInvariantCulture)
             {
                 RunUsingInvariantCulture(static () => RunStress());
@@ -556,7 +617,7 @@ namespace System.Memory.Tests.Span
             Assert.True(CanTestInvariantCulture);
 
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true");
 
             RemoteExecutor.Invoke(action, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
@@ -567,7 +628,7 @@ namespace System.Memory.Tests.Span
             Assert.True(CanTestNls);
 
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_USENLS", "true");
 
             RemoteExecutor.Invoke(action, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();

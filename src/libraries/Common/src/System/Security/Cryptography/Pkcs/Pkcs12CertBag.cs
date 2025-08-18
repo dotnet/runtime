@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Formats.Asn1;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
@@ -75,6 +76,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public ReadOnlyMemory<byte> EncodedCertificate => _decoded.CertValue;
 
+        [UnsupportedOSPlatform("browser")]
         public X509Certificate2 GetCertificate()
         {
             if (!IsX509Certificate)
@@ -87,10 +89,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static byte[] EncodeBagValue(Oid certificateType, ReadOnlyMemory<byte> encodedCertificate)
         {
-            if (certificateType is null)
-            {
-                throw new ArgumentNullException(nameof(certificateType));
-            }
+            ArgumentNullException.ThrowIfNull(certificateType);
 
             if (certificateType.Value == null)
                 throw new CryptographicException(SR.Argument_InvalidOidValue);

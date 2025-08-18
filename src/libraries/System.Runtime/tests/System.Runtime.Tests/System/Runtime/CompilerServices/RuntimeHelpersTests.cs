@@ -127,6 +127,22 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
+        [ComImport]
+        [Guid("00000000-0000-0000-0000-000000000000")]
+        interface ComInterface
+        {
+            void Func();
+        }
+
+        // This class is used to test the PrepareMethod API with COM interop on non-Windows platforms.
+        [ComImport]
+        [Guid("00000000-0000-0000-0000-000000000000")]
+        class ComClass : ComInterface
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            public extern void Func();
+        }
+
         [Fact]
         public static void PrepareMethod()
         {
@@ -138,6 +154,16 @@ namespace System.Runtime.CompilerServices.Tests
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
+            }
+
+            try
+            {
+                // This is expected to either succeed or throw PlatformNotSupportedException depending on the platform
+                // and runtime flavor
+                RuntimeHelpers.PrepareMethod(typeof(ComClass).GetMethod("Func").MethodHandle);
+            }
+            catch (PlatformNotSupportedException)
+            {
             }
         }
 

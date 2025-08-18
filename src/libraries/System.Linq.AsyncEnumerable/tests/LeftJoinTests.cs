@@ -26,6 +26,22 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("resultSelector", () => AsyncEnumerable.LeftJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), async (outer, ct) => outer, async (inner, ct) => inner, (Func<string, string, CancellationToken, ValueTask<string>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            IAsyncEnumerable<string> empty = AsyncEnumerable.Empty<string>();
+            IAsyncEnumerable<string> nonEmpty = CreateSource("1", "2", "3");
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.LeftJoin(empty, s => s, s => s, (s1, s2) => s1));
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.LeftJoin(empty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
+
+            Assert.NotSame(AsyncEnumerable.Empty<string>(), nonEmpty.LeftJoin(empty, s => s, s => s, (s1, s2) => s1));
+            Assert.NotSame(AsyncEnumerable.Empty<string>(), nonEmpty.LeftJoin(empty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.LeftJoin(nonEmpty, s => s, s => s, (s1, s2) => s1));
+            Assert.Same(AsyncEnumerable.Empty<string>(), empty.LeftJoin(nonEmpty, async (s, ct) => s, async (s, ct) => s, async (s1, s2, ct) => s1));
+        }
+
 #if NET
         [Fact]
         public async Task VariousValues_MatchesEnumerable_String()

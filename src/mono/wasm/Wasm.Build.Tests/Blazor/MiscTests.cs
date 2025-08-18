@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
+using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -63,14 +66,14 @@ public class MiscTests : BlazorWasmTestBase
                                     : "<RunAOTCompilation>true</RunAOTCompilation>";
         ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_aot_prj_file", extraProperties: extraProperties);
 
-        // No relinking, no AOT
-        BlazorBuild(info, config);
+        // build relinks
+        BlazorBuild(info, config, isNativeBuild: true);
 
         // will aot
         BlazorPublish(info, config, new PublishOptions(UseCache: false, AOT: true));
 
         // build again
-        BlazorBuild(info, config, new BuildOptions(UseCache: false));
+        BlazorBuild(info, config, new BuildOptions(UseCache: false), isNativeBuild: true);
     }
 
     [Fact]
@@ -84,23 +87,15 @@ public class MiscTests : BlazorWasmTestBase
         ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_razor_lib_top", extraItems: extraItems);
 
         // No relinking, no AOT
-        BlazorBuild(info, config);
+        BlazorBuild(info, config, new BuildOptions(UseCache: false));
 
         // will relink
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
 
         // publish/wwwroot/_framework/blazor.boot.json
-        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
-        string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
+        string bootConfigPath = _provider.GetBootConfigPath(GetBlazorBinFrameworkDir(config, forPublish: true));
+        BootJsonData bootJson = _provider.GetBootJson(bootConfigPath);
 
-        Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");
-        var jdoc = JsonDocument.Parse(File.ReadAllText(bootJson));
-        if (!jdoc.RootElement.TryGetProperty("resources", out JsonElement resValue) ||
-            !resValue.TryGetProperty("lazyAssembly", out JsonElement lazyVal))
-        {
-            throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
-        }
-
-        Assert.True(lazyVal.EnumerateObject().Select(jp => jp.Name).FirstOrDefault(f => f.StartsWith(razorClassLibraryName)) != null);
+        Assert.Contains(((AssetsData)bootJson.resources).lazyAssembly, f => f.name.StartsWith(razorClassLibraryName));
     }
 }

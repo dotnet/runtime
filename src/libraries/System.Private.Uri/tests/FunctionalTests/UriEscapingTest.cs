@@ -303,9 +303,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriEscapeUnescapeDataString_LongInputs()
         {
-            // Test the no-longer-existing "c_MaxUriBufferSize" limit of 0xFFF0,
-            // as well as lengths longer than the max Uri length of ushort.MaxValue.
-            foreach (int length in new[] { 1, 0xFFF0, 0xFFF1, ushort.MaxValue + 10 })
+            foreach (int length in new[] { 1, 64_000, 66_000, 1_000_000 })
             {
                 string unescaped = new string('s', length);
                 string escaped = unescaped;
@@ -411,9 +409,7 @@ namespace System.PrivateUri.Tests
 
         public static IEnumerable<object[]> UriEscapingUriString_Long_MemberData()
         {
-            // Test the no-longer-existing "c_MaxUriBufferSize" limit of 0xFFF0,
-            // as well as lengths longer than the max Uri length of ushort.MaxValue.
-            foreach (int length in new[] { 1, 0xFFF0, 0xFFF1, ushort.MaxValue + 10 })
+            foreach (int length in new[] { 1, 64_000, 66_000, 1_000_000 })
             {
                 yield return new object[] { new string('s', length), string.Concat(Enumerable.Repeat("s", length)) };
                 yield return new object[] { new string('<', length), string.Concat(Enumerable.Repeat("%3C", length)) };

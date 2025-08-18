@@ -115,26 +115,52 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <param name="propertyName">The name of the property to return.</param>
         /// <param name="jsonNode">The JSON value of the property with the specified name.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="propertyName"/> is <see langword="null"/>.
+        /// </exception>
         /// <returns>
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode)
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) => TryGetPropertyValue(propertyName, out jsonNode, out _);
+
+        /// <summary>
+        ///   Gets the value associated with the specified property name.
+        /// </summary>
+        /// <param name="propertyName">The property name of the value to get.</param>
+        /// <param name="jsonNode">
+        ///   When this method returns, it contains the value associated with the specified property name, if the property name is found;
+        ///   otherwise <see langword="null"/>.
+        /// </param>
+        /// <param name="index">The index of <paramref name="propertyName"/> if found; otherwise, -1.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="propertyName"/> is <see langword="null"/>.
+        /// </exception>
+        /// <returns>
+        ///   <see langword="true"/> if the <see cref="JsonObject"/> contains an element with the specified property name; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode, out int index)
         {
-            if (propertyName is null)
+            ArgumentNullException.ThrowIfNull(propertyName);
+
+#if NET9_0
+            index = Dictionary.IndexOf(propertyName);
+            if (index < 0)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+                jsonNode = null;
+                return false;
             }
 
-            return Dictionary.TryGetValue(propertyName, out jsonNode);
+            jsonNode = Dictionary.GetAt(index).Value;
+            return true;
+#else
+            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
+#endif
         }
 
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
@@ -187,9 +213,7 @@ namespace System.Text.Json.Nodes
 
                     foreach (KeyValuePair<string, JsonNode?> item in currentDict)
                     {
-                        otherDict.TryGetValue(item.Key, out JsonNode? jsonNode);
-
-                        if (!DeepEquals(item.Value, jsonNode))
+                        if (!otherDict.TryGetValue(item.Key, out JsonNode? jsonNode) || !DeepEquals(item.Value, jsonNode))
                         {
                             return false;
                         }
@@ -204,10 +228,7 @@ namespace System.Text.Json.Nodes
 
         internal JsonNode? GetItem(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
@@ -241,22 +262,19 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
             if (
-#if NET10_0_OR_GREATER
-                !dict.TryAdd(propertyName, value, out int index)
-#else
+#if NET9_0
                 !dict.TryAdd(propertyName, value)
+#else
+                !dict.TryAdd(propertyName, value, out int index)
 #endif
                 )
             {
-#if !NET10_0_OR_GREATER
+#if NET9_0
                 int index = dict.IndexOf(propertyName);
 #endif
                 Debug.Assert(index >= 0);

@@ -32,7 +32,6 @@
     <Compile Include="System\Net\Mime\MediaTypeNames.cs" />
     <Compile Include="System\Net\Mime\MimeBasePart.cs" />
     <Compile Include="System\Net\Mime\SmtpDateTime.cs" />
-    <Compile Include="System\Net\Mime\MultiAsyncResult.cs" />
     <Compile Include="System\Net\Mime\ByteEncoder.cs" />
     <Compile Include="System\Net\Mime\Base64Encoder.cs" />
     <Compile Include="System\Net\Mime\IByteEncoder.cs" />
@@ -68,12 +67,12 @@
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
+    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
+             Link="Common\System\Net\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
-             Link="Common\System\Net\LazyAsyncResult.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
@@ -104,54 +103,25 @@
     <Compile Include="System\Net\Mail\SmtpNtlmAuthenticationModule.cs" />
     <Compile Include="System\Net\Mail\MailWriter.cs" />
     <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
-             Link="Common\System\Net\ContextAwareResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
-             Link="Common\System\Net\DebugSafeHandle.cs" />
-    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
-             Link="Common\System\Net\InternalException.cs" />
-    <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
-             Link="Common\System\Net\ExceptionCheck.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
-             Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
   </ItemGroup>
 
-  <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
-             Link="Common\System\Net\ContextAwareResult.Unix.cs" />
-  </ItemGroup>
-
-  <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
-             Link="Common\System\Net\ContextAwareResult.Windows.cs" />
-  </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.EventBasedAsync" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.NetworkInformation" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Requests" />
-    <Reference Include="System.Net.Security" />
-    <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.EventBasedAsync\src\System.ComponentModel.EventBasedAsync.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.NetworkInformation\src\System.Net.NetworkInformation.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\src\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Requests\src\System.Net.Requests.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\src\System.Net.Security.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Sockets\src\System.Net.Sockets.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\src\System.Security.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
 </Project>

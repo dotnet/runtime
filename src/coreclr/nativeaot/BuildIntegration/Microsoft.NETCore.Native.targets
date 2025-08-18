@@ -38,6 +38,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
     <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
+    <UseSizeOptimizedLinq Condition="'$(UseSizeOptimizedLinq)' == ''">true</UseSizeOptimizedLinq>
   </PropertyGroup>
 
   <!-- Configure LINQ expressions -->
@@ -70,6 +71,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
+    <NativeBinaryPrefix Condition="'$(_UseNativeLibPrefix)' == 'true' and '$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win'">lib</NativeBinaryPrefix>
+
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_IsApplePlatform)' == 'true'">.dSYM</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_targetOS)' == 'win'">.pdb</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == ''">.dbg</NativeSymbolExt>
@@ -78,7 +81,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ExportsFileExt Condition="'$(_targetOS)' != 'win'">.exports</ExportsFileExt>
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
-    <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <NativeBinary>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
@@ -132,30 +135,30 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <PropertyGroup>
+      <!--
+        If we're actually using the runtime pack from the ResolvedFrameworkReference, pull the path from there.
+        Otherwise pull it from the RuntimePackagePath.
+      -->
+      <_NETCoreAppRuntimePackPath Condition="'$(PublishAotUsingRuntimePack)' == 'true'">%(_NETCoreAppFrameworkReference.RuntimePackPath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
+      <_NETCoreAppRuntimePackPath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
+      <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == ''">$(_NETCoreAppRuntimePackPath)\lib\</IlcFrameworkPath>
+      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == ''">$(_NETCoreAppRuntimePackPath)\native\</IlcFrameworkNativePath>
+      <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(IlcFrameworkNativePath)</IlcSdkPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
       <!-- Define paths used in build targets to point to the runtime-specific ILCompiler implementation -->
       <IlcToolsPath Condition="'$(IlcToolsPath)' == ''">$(IlcHostPackagePath)\tools\</IlcToolsPath>
-      <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)\framework\</IlcFrameworkPath>
-      <_NETCoreAppRuntimePackPath>%(_NETCoreAppFrameworkReference.RuntimePackPath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
-      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(PublishAotUsingRuntimePack)' == 'true'">$(_NETCoreAppRuntimePackPath)\native\</IlcFrameworkNativePath>
-      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
-      <IlcSdkPath Condition="'$(IlcSdkPath)' == '' and '$(PublishAotUsingRuntimePack)' == 'true'">$(IlcFrameworkNativePath)</IlcSdkPath>
-      <IlcSdkPath Condition="'$(IlcSdkPath)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)\sdk\</IlcSdkPath>
       <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
+    <ItemGroup>
       <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll"/>
-      <FrameworkAssemblies Include="@(RuntimePackAsset)" Condition="'%(Extension)' == '.dll'" />
+      <FrameworkAssemblies Include="@(RuntimePackAsset)" Condition="'$(PublishAotUsingRuntimePack)' == 'true' and '%(Extension)' == '.dll'" />
+      <!-- When we aren't pulling in runtime pack assets, make sure we manually grab the assets that the SDK would select from within the package. -->
+      <FrameworkAssemblies Include="$(IlcFrameworkPath)**/*.dll" Condition="'$(PublishAotUsingRuntimePack)' != 'true'" />
       <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(PublishAotUsingRuntimePack)' != 'true'">
-      <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll"/>
-      <!-- Exclude unmanaged dlls -->
-      <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
-
-      <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
-      <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
+      <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" Exclude="@(DefaultFrameworkAssemblies)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -207,17 +210,24 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- Now process the raw ItemGroup into the form that ILC accepts: assembly names only -->
       <!-- Use the logic that ILLinker uses: if the file exists, this is a file name. Otherwise it's an assembly name -->
-      <_IlcRootedAssemblies Include="@(_IlcRootedAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
-      <_IlcRootedAssemblies Include="@(_IlcRootedAssembliesRaw)" Condition="!Exists('%(Identity)')" />
-      <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
-      <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw)" Condition="!Exists('%(Identity)')" />
-      <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
-      <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw)" Condition="!Exists('%(Identity)')" />
-      <_IlcSingleWarnAssemblies Include="@(_IlcSingleWarnAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
-      <_IlcSingleWarnAssemblies Include="@(_IlcSingleWarnAssembliesRaw)" Condition="!Exists('%(Identity)')" />
-      <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
-      <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw)" Condition="!Exists('%(Identity)')" />
+      <!-- Use System.IO.File.Exists() to avoid directories-->
+      <_IlcRootedAssemblies Include="@(_IlcRootedAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcRootedAssemblies Include="@(_IlcRootedAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcSingleWarnAssemblies Include="@(_IlcSingleWarnAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcSingleWarnAssemblies Include="@(_IlcSingleWarnAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw->'%(Filename)')" Condition="$([System.IO.File]::Exists('%(Identity)'))" />
+      <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw)" Condition="!$([System.IO.File]::Exists('%(Identity)'))" />
     </ItemGroup>
+
+    <PropertyGroup>
+      <_IlcMethodBodyFoldingValue Condition="$(IlcFoldIdenticalMethodBodies) == 'true' or $(StackTraceSupport) == 'false'">all</_IlcMethodBodyFoldingValue>
+      <_IlcMethodBodyFoldingValue Condition="$(_IlcMethodBodyFoldingValue) == '' and $(IlcFoldIdenticalMethodBodies) != 'false' and $(IlcMultiModule) != 'true'">generic</_IlcMethodBodyFoldingValue>
+      <_IlcMethodBodyFoldingValue Condition="$(_IlcMethodBodyFoldingValue) == '' or $(Optimize) != 'true'">none</_IlcMethodBodyFoldingValue>
+    </PropertyGroup>
 
     <ItemGroup>
       <IlcArg Include="@(IlcCompileInput)" />
@@ -226,10 +236,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(IlcSatelliteAssembly->'--satellite:%(Identity)')" />
       <IlcArg Include="@(MibcFile->'--mibc:%(Identity)')" />
       <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
-      <IlcArg Condition="$(_targetOS) != ''" Include="--targetos:$(_targetOS)" />
+      <!-- To the NativeAOT compiler, Android is just another linux -->
+      <IlcArg Condition="'$(_targetOS)' == 'android'" Include="--targetos:linux" />
+      <IlcArg Condition="'$(_targetOS)' != '' and '$(_targetOS)' != 'android'" Include="--targetos:$(_targetOS)" />
       <IlcArg Condition="$(_targetArchitectureWithAbi) != ''" Include="--targetarch:$(_targetArchitectureWithAbi)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
-      <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false'" Include="--dehydrate" />
+      <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false' and ($(_targetOS) != 'win' or '$(OptimizationPreference)' == 'Size' or '$(IlcDehydrate)' == 'true')" Include="--dehydrate" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(NativeDebugSymbols) == 'true'" Include="-g" />
       <IlcArg Condition="$(IlcDwarfVersion) == '5'" Include="--gdwarf-5" />
@@ -257,7 +269,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(StackTraceSupport) != 'false'" Include="--stacktracedata" />
       <IlcArg Condition="$(IlcScanReflection) != 'false'" Include="--scanreflection" />
-      <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true' or $(StackTraceSupport) == 'false'" Include="--methodbodyfolding" />
+      <IlcArg Include="--methodbodyfolding:$(_IlcMethodBodyFoldingValue)" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Speed'" Include="--Ot" />
       <IlcArg Condition="'$(_linuxLibcFlavor)' == 'bionic'" Include="--noinlinetls" />
@@ -285,6 +297,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy' or '$(TrimMode)' == 'partial'" Include="--defaultrooting" />
       <IlcArg Condition="$(IlcResilient) != 'false'" Include="--resilient" />
       <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
+      <IlcArg Condition="$(IlcOrderFile) != ''" Include="--order:$(IlcOrderFile)" />
+      <IlcArg Condition="$(IlcOrderFile) != ''" Include="--method-layout:explicit" />
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(DebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
@@ -304,7 +318,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Target Name="IlcCompile"
-      Inputs="@(IlcCompileInput);@(IlcReference);@(IlcSatelliteAssembly);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
+      Inputs="@(IlcCompileInput);@(IlcReference);@(IlcSatelliteAssembly);@(RdXmlFile);$(IlcOrderFile);%(ManagedBinary.IlcRspFile)"
       Outputs="%(ManagedBinary.IlcOutputFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Importance="high" />
@@ -345,7 +359,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(_targetOS)' == 'win' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-exported_symbols_list /dev/null" Condition="'$(OutputType)' == 'exe' and '$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' == ''" />
-      <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-Wl,--version-script=&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-Wl,-dead_strip" Condition="'$(_IsApplePlatform)' == 'true'" />
       <CustomLinkerArg Include="@(LinkerArg)" />
@@ -370,13 +384,18 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <!-- write linker script for lld (13+) to retain the __modules section -->
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
 
-    <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')" Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
+    <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')"
+      Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' != 'Static'"
+      IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)"
+      CustomWarningRegularExpression="$(IlcCppLinkerCustomWarningRegularExpression)" />
     <Exec Command="&quot;$(CppLibCreator)&quot; @(CustomLibArg, ' ')" Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' == 'Static'" />
 
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Encoding="utf-8" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static'" />
-    <Exec Command="&quot;$(CppLinker)&quot; @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static'" />
+    <Exec Command="&quot;$(CppLinker)&quot; @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;"
+      Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static'"
+      CustomWarningRegularExpression="$(IlcCppLinkerCustomWarningRegularExpression)" />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Encoding="utf-8" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'" />
     <Exec Command="&quot;$(CppLibCreator)&quot; @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'" />
 

@@ -1545,7 +1545,7 @@ namespace System.Data.Common
                     }
                     finally
                     {
-                        // using Close which can optimize its { while(dataReader.NextResult()); } loop
+                        // using Close which can optimize its { while (dataReader.NextResult()); } loop
                         dataReader.Close();
 
                         // RecordsAffected is available after Close, but don't trust it after Dispose

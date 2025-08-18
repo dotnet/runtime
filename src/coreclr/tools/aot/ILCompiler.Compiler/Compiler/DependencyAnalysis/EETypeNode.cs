@@ -84,11 +84,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public EETypeNode(NodeFactory factory, TypeDesc type)
         {
-            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                Debug.Assert(this is CanonicalDefinitionEETypeNode);
-            else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                Debug.Assert((this is CanonicalEETypeNode) || (this is NecessaryCanonicalEETypeNode));
-
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || !type.IsMdArray); // MDArray doesn't have type loader templates
             Debug.Assert(!type.IsGenericParameter);
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
@@ -203,11 +200,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
-            // If there is a constructed version of this node in the graph, emit that instead
-            if (ConstructedEETypeNode.CreationAllowed(_type))
-                return factory.ConstructedTypeSymbol(_type).Marked;
-
-            return false;
+            return factory.MetadataTypeSymbol(_type).Marked;
         }
 
         public virtual ISymbolNode NodeForLinkage(NodeFactory factory)
@@ -228,6 +221,8 @@ namespace ILCompiler.DependencyAnalysis
         public int MinimumObjectSize => EETypeBuilderHelpers.GetMinimumObjectSize(_type.Context);
 
         protected virtual bool EmitVirtualSlots => false;
+
+        protected virtual bool IsReflectionVisible => false;
 
         public override bool InterestingForDynamicDependencyAnalysis
             => (_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) != 0;
@@ -253,7 +248,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (!_type.HasInstantiation)
+                if (_type.IsArrayTypeWithoutGenericInterfaces())
                     return false;
 
                 if (!_type.Context.SupportsCanon)
@@ -263,16 +258,12 @@ namespace ILCompiler.DependencyAnalysis
                 if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
                     return false;
 
-                // If we reach here, a universal canon variant can exist (if universal canon is supported)
-                if (_type.Context.SupportsUniversalCanon)
-                    return true;
-
                 // Attempt to convert to canon. If the type changes, then the CanonForm exists
                 return (_type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type);
             }
         }
 
-        public sealed override bool HasConditionalStaticDependencies
+        public override bool HasConditionalStaticDependencies
         {
             get
             {
@@ -288,6 +279,9 @@ namespace ILCompiler.DependencyAnalysis
                 // implementation being used.
                 // It might also be necessary for casting purposes.
                 if (_type.RuntimeInterfaces.Length > 0)
+                    return true;
+
+                if (IsReflectionVisible && _hasConditionalDependenciesFromMetadataManager)
                     return true;
 
                 if (!EmitVirtualSlots)
@@ -319,13 +313,30 @@ namespace ILCompiler.DependencyAnalysis
                     currentType = currentType.BaseType;
                 }
 
-                return _hasConditionalDependenciesFromMetadataManager;
+                return false;
             }
         }
 
-        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
+
+            if (IsReflectionVisible)
+            {
+                factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(ref result, factory, _type, allocated: EmitVirtualSlots);
+
+                if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    foreach (DefType iface in _type.RuntimeInterfaces)
+                    {
+                        var ifaceDefinition = (DefType)iface.GetTypeDefinition();
+                        result.Add(new CombinedDependencyListEntry(
+                            GetInterfaceTypeNode(factory, iface),
+                            factory.InterfaceUse(ifaceDefinition),
+                            "Interface definition was visible"));
+                    }
+                }
+            }
 
             IEETypeNode maximallyConstructableType = factory.MaximallyConstructableType(_type);
 
@@ -337,9 +348,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (CanonFormTypeMayExist)
                 {
                     result.Add(new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Trigger full type generation if canonical form exists"));
-
-                    if (_type.Context.SupportsUniversalCanon)
-                        result.Add(new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Universal)), "Trigger full type generation if universal canonical form exists"));
                 }
                 return result;
             }
@@ -351,18 +359,6 @@ namespace ILCompiler.DependencyAnalysis
                     factory.GenericStaticBaseInfo((MetadataType)_type),
                     factory.NativeLayout.TemplateTypeLayout(canonOwningType),
                     "Information about static bases for type with template"));
-            }
-
-            if (!_type.IsGenericDefinition && !_type.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                foreach (DefType iface in _type.RuntimeInterfaces)
-                {
-                    var ifaceDefinition = (DefType)iface.GetTypeDefinition();
-                    result.Add(new CombinedDependencyListEntry(
-                        GetInterfaceTypeNode(factory, iface),
-                        factory.InterfaceUse(ifaceDefinition),
-                        "Interface definition was visible"));
-                }
             }
 
             if (!EmitVirtualSlots)
@@ -565,8 +561,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(ref result, factory, _type);
-
             return result;
         }
 
@@ -634,10 +628,6 @@ namespace ILCompiler.DependencyAnalysis
                 // Generated type contains generic virtual methods that will get added to the GVM tables
                 if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
                 {
-                    dependencies.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
-
-                    AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencies);
-
                     TypeDesc canonicalType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
                     if (canonicalType != _type)
                         dependencies.Add(factory.ConstructedTypeSymbol(canonicalType), "Type with generic virtual methods");
@@ -767,7 +757,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
-            if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
+            if (_type.GetTypeDefinition() == factory.TypeSystemContext.ArrayOfTEnumeratorType)
             {
                 // Generic array enumerators use special variance rules recognized by the runtime
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
@@ -805,16 +795,9 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsArray)
             {
                 TypeDesc elementType = ((ArrayType)_type).ElementType;
-                if (elementType == elementType.Context.UniversalCanonType)
-                {
-                    // elementSize == 0
-                }
-                else
-                {
-                    int elementSize = elementType.GetElementSize().AsInt;
-                    // We validated that this will fit the short when the node was constructed. No need for nice messages.
-                    flags |= (uint)checked((ushort)elementSize);
-                }
+                int elementSize = elementType.GetElementSize().AsInt;
+                // We validated that this will fit the short when the node was constructed. No need for nice messages.
+                flags |= (uint)checked((ushort)elementSize);
             }
             else if (_type.IsString)
             {
@@ -839,11 +822,12 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
-            return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType) : null;
+            return _type.BaseType != null ? factory.NecessaryTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
         }
 
         protected virtual FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
+            Debug.Assert(!_type.IsCanonicalSubtype(CanonicalFormKind.Any));
             return factory.SerializedNecessaryRuntimeTypeObject(_type);
         }
 
@@ -943,9 +927,7 @@ namespace ILCompiler.DependencyAnalysis
                     declType.ConvertToCanonForm(CanonicalFormKind.Specific) == declType;
 
                 // Note: Canonical type instantiations always have a generic dictionary vtable slot, but it's empty
-                // Note: If the current EETypeNode represents a universal canonical type, any dictionary slot must be empty
                 if (declType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                    || implType.IsCanonicalSubtype(CanonicalFormKind.Universal)
                     || factory.LazyGenericsPolicy.UsesLazyGenerics(declType)
                     || isInterfaceWithAnEmptySlot)
                 {
@@ -1056,19 +1038,36 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
         {
-            return factory.NecessaryTypeSymbol(interfaceType);
+            return factory.NecessaryTypeSymbol(interfaceType.NormalizeInstantiation());
         }
 
-        protected virtual void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
+        private void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            foreach (var itf in _type.RuntimeInterfaces)
+            if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                IEETypeNode interfaceTypeNode = GetInterfaceTypeNode(factory, itf);
-
-                // Only emit interfaces that were not optimized away.
-                if (interfaceTypeNode.Marked)
+                // Canonical types (type loader templates) do not generate an interface list - we build
+                // one for the loaded type at runtime dynamically from template data.
+                foreach (DefType itf in _type.RuntimeInterfaces)
                 {
-                    objData.EmitPointerReloc(interfaceTypeNode);
+                    // If the interface was optimized away, skip it
+                    if (factory.InterfaceUse(itf.GetTypeDefinition()).Marked)
+                    {
+                        // Interface omitted for canonical instantiations (constructed at runtime for dynamic types from the native layout info)
+                        objData.EmitZeroPointer();
+                    }
+                }
+            }
+            else
+            {
+                foreach (var itf in _type.RuntimeInterfaces)
+                {
+                    IEETypeNode interfaceTypeNode = GetInterfaceTypeNode(factory, itf);
+
+                    // Only emit interfaces that were not optimized away.
+                    if (interfaceTypeNode.Marked)
+                    {
+                        objData.EmitPointerReloc(interfaceTypeNode);
+                    }
                 }
             }
         }
@@ -1135,7 +1134,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!_type.IsTypeDefinition)
                 {
-                    IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
+                    IEETypeNode typeDefNode = IsReflectionVisible ?
+                        factory.MetadataTypeSymbol(_type.GetTypeDefinition()) : factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(typeDefNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                     else
@@ -1143,7 +1143,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     ISymbolNode compositionNode;
 
-                    if (this == factory.MaximallyConstructableType(_type)
+                    if (IsReflectionVisible
                         && factory.MetadataManager.IsTypeInstantiationReflectionVisible(_type))
                     {
                         compositionNode = _type.Instantiation.Length > 1
@@ -1165,7 +1165,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                 {
                     GenericVarianceDetails details;
-                    if (_type == factory.ArrayOfTEnumeratorType)
+                    if (_type == factory.TypeSystemContext.ArrayOfTEnumeratorType)
                     {
                         // Generic array enumerators use special variance rules recognized by the runtime
                         details = new GenericVarianceDetails(new[] { GenericVariance.ArrayCovariant });
@@ -1231,32 +1231,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> MethodTable");
         }
 
-        protected static void AddDependenciesForUniversalGVMSupport(NodeFactory factory, TypeDesc type, ref DependencyList dependencies)
-        {
-            if (factory.TypeSystemContext.SupportsUniversalCanon)
-            {
-                foreach (MethodDesc method in type.GetVirtualMethods())
-                {
-                    if (!method.HasInstantiation)
-                        continue;
-
-                    if (method.IsAbstract)
-                        continue;
-
-                    TypeDesc[] universalCanonArray = new TypeDesc[method.Instantiation.Length];
-                    for (int i = 0; i < universalCanonArray.Length; i++)
-                        universalCanonArray[i] = factory.TypeSystemContext.UniversalCanonType;
-
-                    InstantiatedMethod universalCanonMethodNonCanonicalized = method.MakeInstantiatedMethod(new Instantiation(universalCanonArray));
-                    MethodDesc universalCanonGVMMethod = universalCanonMethodNonCanonicalized.GetCanonMethodTarget(CanonicalFormKind.Universal);
-
-                    dependencies ??= new DependencyList();
-
-                    dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(universalCanonGVMMethod), "USG GVM Method"));
-                }
-            }
-        }
-
         public override int ClassCode => 1521789141;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -1312,7 +1286,8 @@ namespace ILCompiler.DependencyAnalysis
                 // If the whole program view contains a reference to a preallocated RuntimeType
                 // instance for this type, generate a reference to it.
                 // Otherwise, generate as zero to save size.
-                if (!_type.Type.IsCanonicalSubtype(CanonicalFormKind.Any)
+                if (!relocsOnly
+                    && !_type.Type.IsCanonicalSubtype(CanonicalFormKind.Any)
                     && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
                 {
                     builder.EmitPointerReloc(runtimeTypeObject);

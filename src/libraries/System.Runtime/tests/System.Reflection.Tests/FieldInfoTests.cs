@@ -777,7 +777,7 @@ namespace System.Reflection.Tests
         [InlineData(long.MaxValue)]
         [InlineData(byte.MaxValue)]
         [InlineData(null)]
-        public static void SetValueDirect_GetValueDirectRoundDataTest(object value)
+        public static void SetValueDirect_GetValueDirectRoundDataTest(object? value)
         {
             FieldData testField = new FieldData { inner = new Inner() { field = -1 } };
             FieldInfo innerFieldInfo = typeof(FieldData).GetField(nameof(FieldData.inner));
@@ -868,7 +868,9 @@ namespace System.Reflection.Tests
 
         private class RawData
         {
+            #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value null
             public byte Data;
+            #pragma warning restore CS0649
         }
     }
 }

@@ -62,7 +62,7 @@ namespace System.Collections.Generic
         /// </summary>
         public int Capacity => _array.Length;
 
-        /// <inheritdoc cref="ICollection{T}"/>
+        /// <inheritdoc cref="ICollection.IsSynchronized" />
         bool ICollection.IsSynchronized => false;
 
         object ICollection.SyncRoot => this;
@@ -360,67 +360,50 @@ namespace System.Collections.Generic
             {
                 _stack = stack;
                 _version = stack._version;
-                _index = -2;
+                _index = stack.Count;
                 _currentElement = default;
             }
 
-            public void Dispose()
-            {
-                _index = -1;
-            }
+            public void Dispose() => _index = -1;
 
             public bool MoveNext()
             {
-                bool retval;
-                if (_version != _stack._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                if (_index == -2)
-                {  // First call to enumerator.
-                    _index = _stack._size - 1;
-                    retval = (_index >= 0);
-                    if (retval)
-                        _currentElement = _stack._array[_index];
-                    return retval;
-                }
-                if (_index == -1)
-                {  // End of enumeration.
-                    return false;
-                }
-
-                retval = (--_index >= 0);
-                if (retval)
-                    _currentElement = _stack._array[_index];
-                else
-                    _currentElement = default;
-                return retval;
-            }
-
-            public T Current
-            {
-                get
+                if (_version != _stack._version)
                 {
-                    if (_index < 0)
-                        ThrowEnumerationNotStartedOrEnded();
-                    return _currentElement!;
+                    ThrowInvalidVersion();
                 }
+
+                T[] array = _stack._array;
+                int index = _index - 1;
+                if ((uint)index < (uint)array.Length)
+                {
+                    Debug.Assert(index < _stack.Count);
+                    _currentElement = array[index];
+                    _index = index;
+                    return true;
+                }
+
+                _currentElement = default;
+                _index = -1;
+                return false;
             }
 
-            private void ThrowEnumerationNotStartedOrEnded()
-            {
-                Debug.Assert(_index == -1 || _index == -2);
-                throw new InvalidOperationException(_index == -2 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);
-            }
+            public T Current => _currentElement!;
 
-            object? System.Collections.IEnumerator.Current
-            {
-                get { return Current; }
-            }
+            object? System.Collections.IEnumerator.Current => Current;
 
             void IEnumerator.Reset()
             {
-                if (_version != _stack._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                _index = -2;
+                if (_version != _stack._version)
+                {
+                    ThrowInvalidVersion();
+                }
+
+                _index = _stack.Count;
                 _currentElement = default;
             }
+
+            private static void ThrowInvalidVersion() => throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
         }
     }
 }

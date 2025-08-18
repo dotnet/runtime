@@ -35,7 +35,7 @@
 // dllimport.cpp
 void CreateCLRToDispatchCOMStub(
             MethodDesc * pMD,
-            DWORD        dwStubFlags             // NDirectStubFlags
+            DWORD        dwStubFlags             // PInvokeStubFlags
             );
 
 
@@ -108,10 +108,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
         return pComInfo;
 
     //
-    // Compute NDirectStubFlags
+    // Compute PInvokeStubFlags
     //
 
-    DWORD dwStubFlags = NDIRECTSTUB_FL_COM;
+    DWORD dwStubFlags = PINVOKESTUB_FL_COM;
 
     // Determine if this is a special COM event call.
     BOOL fComEventCall = pItfMT->IsComEventItfType();
@@ -120,10 +120,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     BOOL fLateBound = !fComEventCall && pItfMT->IsInterface() && pItfMT->GetComInterfaceType() == ifDispatch;
 
     if (fLateBound)
-        dwStubFlags |= NDIRECTSTUB_FL_COMLATEBOUND;
+        dwStubFlags |= PINVOKESTUB_FL_COMLATEBOUND;
 
     if (fComEventCall)
-        dwStubFlags |= NDIRECTSTUB_FL_COMEVENTCALL;
+        dwStubFlags |= PINVOKESTUB_FL_COMEVENTCALL;
 
     BOOL BestFit = TRUE;
     BOOL ThrowOnUnmappableChar = FALSE;
@@ -131,10 +131,10 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
 
     if (BestFit)
-        dwStubFlags |= NDIRECTSTUB_FL_BESTFIT;
+        dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
 
     if (ThrowOnUnmappableChar)
-        dwStubFlags |= NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR;
+        dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
 
     //
     // fill in out param
@@ -154,7 +154,7 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
     // Get the call signature information
     StubSigDesc sigDesc(pMD);
 
-    return NDirect::CreateCLRToNativeILStub(
+    return PInvoke::CreateCLRToNativeILStub(
                     &sigDesc,
                     (CorNativeLinkType)0,
                     (CorNativeLinkFlags)0,
@@ -229,6 +229,13 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         WrapperTypeArr = (I4ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I4, numArgs);
 
         GCX_PREEMP();
+        
+        
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMD->IsAsyncMethod())
+        {
+            ThrowHR(COR_E_NOTSUPPORTED);
+        }
 
         // Collects ParamDef information in an indexed array where element 0 represents
         // the return type.
@@ -340,7 +347,7 @@ UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDe
         MethodDescCallSite eventProvider(pEvProvMD, &gc.EventProviderObj);
 
         // Retrieve the event handler passed in.
-        OBJECTREF EventHandlerObj = *(OBJECTREF*)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset());
+        OBJECTREF EventHandlerObj = ObjectToOBJECTREF(*(Object**)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset()));
 
         ARG_SLOT EventMethArgs[] =
         {
@@ -503,6 +510,12 @@ UINT32 CLRToCOMLateBoundWorker(
     mdProperty propToken;
     LPCUTF8 strMemberName;
     ULONG uSemantic;
+
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pItfMD->IsAsyncMethod())
+    {
+        ThrowHR(COR_E_NOTSUPPORTED);
+    }
 
     // See if there is property information for this member.
     hr = pItfMT->GetMDImport()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);
@@ -713,7 +726,7 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMe
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
-    FrameWithCookie<CLRToCOMMethodFrame> frame(pTransitionBlock, pMD);
+    CLRToCOMMethodFrame frame(pTransitionBlock, pMD);
     CLRToCOMMethodFrame * pFrame = &frame;
 
     //we need to zero out the return value buffer because we will report it during GC
@@ -843,7 +856,7 @@ TADDR CLRToCOMCall::GetFrameCallIP(FramedMethodFrame *frame)
     RETURN ip;
 }
 
-void CLRToCOMMethodFrame::GetUnmanagedCallSite(TADDR* ip,
+void CLRToCOMMethodFrame::GetUnmanagedCallSite_Impl(TADDR* ip,
                                               TADDR* returnIP,
                                               TADDR* returnSP)
 {
@@ -884,7 +897,7 @@ void CLRToCOMMethodFrame::GetUnmanagedCallSite(TADDR* ip,
 
 
 
-BOOL CLRToCOMMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
+BOOL CLRToCOMMethodFrame::TraceFrame_Impl(Thread *thread, BOOL fromPatch,
                                     TraceDestination *trace, REGDISPLAY *regs)
 {
     CONTRACTL
@@ -937,76 +950,3 @@ BOOL CLRToCOMMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
 
     return TRUE;
 }
-
-#ifdef TARGET_X86
-
-#ifndef DACCESS_COMPILE
-
-CrstStatic   CLRToCOMCall::s_RetThunkCacheCrst;
-SHash<CLRToCOMCall::RetThunkSHashTraits> *CLRToCOMCall::s_pRetThunkCache = NULL;
-
-// One time init.
-void CLRToCOMCall::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    s_RetThunkCacheCrst.Init(CrstRetThunkCache);
-}
-
-LPVOID CLRToCOMCall::GetRetThunk(UINT numStackBytes)
-{
-    STANDARD_VM_CONTRACT;
-
-    LPVOID pRetThunk = NULL;
-    CrstHolder crst(&s_RetThunkCacheCrst);
-
-    // Lazily allocate the ret thunk cache.
-    if (s_pRetThunkCache == NULL)
-        s_pRetThunkCache = new SHash<RetThunkSHashTraits>();
-
-    const RetThunkCacheElement *pElement = s_pRetThunkCache->LookupPtr(numStackBytes);
-    if (pElement != NULL)
-    {
-        pRetThunk = pElement->m_pRetThunk;
-    }
-    else
-    {
-        // cache miss -> create a new thunk
-        AllocMemTracker dummyAmTracker;
-        size_t thunkSize = (numStackBytes == 0) ? 1 : 3;
-        pRetThunk = (LPVOID)dummyAmTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(thunkSize)));
-
-        ExecutableWriterHolder<BYTE> thunkWriterHolder((BYTE *)pRetThunk, thunkSize);
-        BYTE *pThunkRW = thunkWriterHolder.GetRW();
-
-        if (numStackBytes == 0)
-        {
-            pThunkRW[0] = 0xc3;
-        }
-        else
-        {
-            pThunkRW[0] = 0xc2;
-            *(USHORT *)&pThunkRW[1] = (USHORT)numStackBytes;
-        }
-
-        // add it to the cache
-        RetThunkCacheElement element;
-        element.m_cbStack = numStackBytes;
-        element.m_pRetThunk = pRetThunk;
-        s_pRetThunkCache->Add(element);
-
-        dummyAmTracker.SuppressRelease();
-    }
-
-    return pRetThunk;
-}
-
-#endif // !DACCESS_COMPILE
-
-#endif // TARGET_X86

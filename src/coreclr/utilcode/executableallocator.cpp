@@ -94,27 +94,27 @@ void ExecutableAllocator::DumpHolderUsage()
     LARGE_INTEGER freq;
     QueryPerformanceFrequency(&freq);
 
-    fprintf(stderr, "Map time with lock sum: %lldms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map time sum: %lldms\n", g_mapTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map find RX time sum: %lldms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map create time sum: %lldms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Unmap time with lock sum: %lldms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Unmap time sum: %lldms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Map time with lock sum: %lldms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Map time sum: %lldms\n", g_mapTimeSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Map find RX time sum: %lldms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Map create time sum: %lldms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Unmap time with lock sum: %lldms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
+    minipal_log_print_info("Unmap time sum: %lldms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
 
-    fprintf(stderr, "Reserve count: %lld\n", g_reserveCount);
-    fprintf(stderr, "Release count: %lld\n", g_releaseCount);
+    minipal_log_print_info("Reserve count: %lld\n", g_reserveCount);
+    minipal_log_print_info("Release count: %lld\n", g_releaseCount);
 
-    fprintf(stderr, "g_MapRW_Calls: %lld\n", g_MapRW_Calls);
-    fprintf(stderr, "g_MapRW_CallsWithCacheMiss: %lld\n", g_MapRW_CallsWithCacheMiss);
-    fprintf(stderr, "g_MapRW_LinkedListWalkDepth: %lld\n", g_MapRW_LinkedListWalkDepth);
-    fprintf(stderr, "g_MapRW_LinkedListAverageDepth: %f\n", (double)g_MapRW_LinkedListWalkDepth/(double)g_MapRW_CallsWithCacheMiss);
-    fprintf(stderr, "g_LinkedListTotalDepth: %lld\n", g_LinkedListTotalDepth);
+    minipal_log_print_info("g_MapRW_Calls: %lld\n", g_MapRW_Calls);
+    minipal_log_print_info("g_MapRW_CallsWithCacheMiss: %lld\n", g_MapRW_CallsWithCacheMiss);
+    minipal_log_print_info("g_MapRW_LinkedListWalkDepth: %lld\n", g_MapRW_LinkedListWalkDepth);
+    minipal_log_print_info("g_MapRW_LinkedListAverageDepth: %f\n", (double)g_MapRW_LinkedListWalkDepth/(double)g_MapRW_CallsWithCacheMiss);
+    minipal_log_print_info("g_LinkedListTotalDepth: %lld\n", g_LinkedListTotalDepth);
 
-    fprintf(stderr, "ExecutableWriterHolder usage:\n");
+    minipal_log_print_info("ExecutableWriterHolder usage:\n");
 
     for (int i = 0; i < s_logMaxIndex; i++)
     {
-        fprintf(stderr, "Count: %d at %s:%d in %s\n", s_usageLog[i].count, s_usageLog[i].source, s_usageLog[i].line, s_usageLog[i].function);
+        minipal_log_print_info("Count: %d at %s:%d in %s\n", s_usageLog[i].count, s_usageLog[i].source, s_usageLog[i].line, s_usageLog[i].function);
     }
 }
 
@@ -124,7 +124,7 @@ bool ExecutableAllocator::IsDoubleMappingEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64) || defined(HOST_WASM)
     return false;
 #else
     return g_isWXorXEnabled;
@@ -251,7 +251,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
         {
             if ((customCacheSize > ARRAY_SIZE(m_cachedMapping)) || (customCacheSize <= 0))
             {
-                printf("Invalid value in 'EXECUTABLE_ALLOCATOR_CACHE_SIZE' environment variable'\n");
+                minipal_log_print_error("Invalid value in 'EXECUTABLE_ALLOCATOR_CACHE_SIZE' environment variable'\n");
                 return E_FAIL;
             }
             
@@ -504,6 +504,11 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
 
 void ExecutableAllocator::Release(void* pRX)
 {
+    ReleaseWorker(pRX, false /* this is the standard Release of normally allocated memory */);
+}
+
+void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate)
+{
     LIMITED_METHOD_CONTRACT;
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
@@ -548,9 +553,19 @@ void ExecutableAllocator::Release(void* pRX)
                 cachedMappingThatOverlaps = FindOverlappingCachedMapping(pBlock);
             }
 
-            if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
+            if (releaseTemplate)
             {
-                g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the double mapped memory failed"));
+                if (!VMToOSInterface::FreeThunksFromTemplate(pRX, pBlock->size / 2))
+                {
+                    g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the template mapped memory failed"));
+                }
+            }
+            else
+            {
+                if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
+                {
+                    g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the double mapped memory failed"));
+                }
             }
             // Put the released block into the free block list
             pBlock->baseRX = NULL;
@@ -961,4 +976,61 @@ void ExecutableAllocator::UnmapRW(void* pRW)
     {
         g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the RW mapping failed"));
     }
+}
+
+void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
+{
+    if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
+    {
+        CRITSEC_Holder csh(m_CriticalSection);
+        
+        bool isFreeBlock;
+        BlockRX* block = AllocateBlock(templateSize * 2, &isFreeBlock);
+        if (block == NULL)
+        {
+            return NULL;
+        }
+        
+        void* result = VMToOSInterface::ReserveDoubleMappedMemory(m_doubleMemoryMapperHandle, block->offset, templateSize * 2, 0, 0);
+
+        if (result != NULL)
+        {
+            block->baseRX = result;
+            AddRXBlock(block);
+        }
+        else
+        {
+            BackoutBlock(block, isFreeBlock);
+        }
+
+        void *pTemplateAddressAllocated = VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, block->baseRX, dataPageGenerator);
+
+        if (pTemplateAddressAllocated == NULL)
+        {
+            ReleaseWorker(block->baseRX, false);
+        }
+
+        return pTemplateAddressAllocated;
+    }
+    else
+    {
+        return VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, NULL, dataPageGenerator);
+    }
+}
+
+void ExecutableAllocator::FreeThunksFromTemplate(void *pThunks, size_t templateSize)
+{
+    if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
+    {
+        ReleaseWorker(pThunks, true /* This is a release of template allocated memory */);
+    }
+    else
+    {
+        VMToOSInterface::FreeThunksFromTemplate(pThunks, templateSize);
+    }
+}
+
+void* ExecutableAllocator::CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
+{
+    return VMToOSInterface::CreateTemplate(templateInImage, templateSize, codePageGenerator);
 }

@@ -1727,6 +1727,7 @@ namespace System.Data
         DateTime2 = 33,
         DateTimeOffset = 34,
         Json = 35,
+        Vector = 36,
     }
     public sealed partial class StateChangeEventArgs : System.EventArgs
     {
@@ -2273,7 +2274,7 @@ namespace System.Data.Common
         System.Data.IDbTransaction System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
         System.Data.IDbCommand System.Data.IDbConnection.CreateCommand() { throw null; }
     }
-    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
     public partial class DbConnectionStringBuilder : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.ComponentModel.ICustomTypeDescriptor
     {
         public DbConnectionStringBuilder() { }

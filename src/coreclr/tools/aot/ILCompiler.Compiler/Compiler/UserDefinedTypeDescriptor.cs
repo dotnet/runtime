@@ -732,11 +732,11 @@ namespace ILCompiler
                 statics[i] = staticsDescs[i];
             }
 
-            LayoutInt elementSize = defType.GetElementSize();
-            int elementSizeEmit = elementSize.IsIndeterminate ? 0xBAAD : elementSize.AsInt;
+            LayoutInt instanceSize = defType.IsValueType ? defType.InstanceFieldSize : defType.InstanceByteCount;
+            int instanceSizeEmit = instanceSize.IsIndeterminate ? 0xBAAD : instanceSize.AsInt;
             ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor
             {
-                Size = (ulong)elementSizeEmit,
+                Size = (ulong)instanceSizeEmit,
                 FieldsCount = fieldsDescs.Count,
             };
 

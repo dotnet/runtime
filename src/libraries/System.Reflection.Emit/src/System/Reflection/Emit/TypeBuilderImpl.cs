@@ -15,7 +15,6 @@ namespace System.Reflection.Emit
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly string? _namespace;
-        private string? _strFullName;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private readonly TypeBuilderImpl? _declaringType;
@@ -131,14 +130,6 @@ namespace System.Reflection.Emit
                 MethodBuilderImpl method = _methodDefinitions[i];
                 MethodAttributes methodAttrs = method.Attributes;
 
-                // Any of these flags in the implementation flags is set, we will not check the IL method body
-                if (((method.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
-                    ((methodAttrs & MethodAttributes.PinvokeImpl) != 0))
-                {
-                    continue;
-                }
-
-                ILGeneratorImpl? body = method.ILGeneratorImpl;
                 if ((methodAttrs & MethodAttributes.Abstract) != 0)
                 {
                     // Check if an abstract method declared on a non-abstract class
@@ -148,14 +139,11 @@ namespace System.Reflection.Emit
                     }
 
                     // If this is an abstract method or an interface should not have body.
+                    ILGeneratorImpl? body = method.ILGeneratorImpl;
                     if (body != null && body.ILOffset > 0)
                     {
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, method.Name));
                     }
-                }
-                else if ((body == null || body.ILOffset == 0) && !method._canBeRuntimeImpl)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, method.Name));
                 }
             }
         }
@@ -611,7 +599,7 @@ namespace System.Reflection.Emit
         // You will never have to deal with a TypeBuilder if you are just referring to arrays.
         public override Type GetElementType() => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override string? AssemblyQualifiedName => throw new NotSupportedException();
-        public override string? FullName => _strFullName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
+        public override string? FullName => field ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;
@@ -729,23 +717,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                Type? argType = argumentTypes[i];
-                Type? paramType = parameterTypes[i];
-
-                if (argType.IsArray != paramType.IsArray ||
-                    argType.IsByRef != paramType.IsByRef ||
-                    argType.IsPointer != argType.IsPointer)
-                {
-                    return false;
-                }
-
-                if (argType.HasElementType || paramType.HasElementType)
-                {
-                    argType = argType.GetElementType();
-                    paramType = paramType.GetElementType();
-                }
-
-                if (argType == null || !argType.Equals(paramType))
+                if (!argumentTypes[i].Equals(parameterTypes[i]))
                 {
                     return false;
                 }
@@ -955,7 +927,6 @@ namespace System.Reflection.Emit
             return fields.ToArray();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
@@ -983,7 +954,10 @@ namespace System.Reflection.Emit
                 }
             }
 
+// Analyzer is not able to propagate `.Interfaces` on `this`.
+#pragma warning disable IL2063
             return match;
+#pragma warning restore IL2063
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
@@ -993,7 +967,7 @@ namespace System.Reflection.Emit
 
             List<Type> interfaces = _interfaces ?? [];
 
-            if(_typeParent != null)
+            if (_typeParent != null)
             {
                 interfaces.AddRange(_typeParent.GetInterfaces());
             }

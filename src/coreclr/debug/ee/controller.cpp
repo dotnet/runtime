@@ -67,9 +67,79 @@ bool DebuggerControllerPatch::IsSafeForStackTrace()
 
 }
 
+#ifndef DACCESS_COMPILE
 #ifndef FEATURE_EMULATE_SINGLESTEP
-// returns a pointer to the shared buffer.  each call will AddRef() the object
-// before returning it so callers only need to Release() when they're finished with it.
+
+//
+// We have to have a whole separate function for this because you
+// can't use __try in a function that requires object unwinding...
+//
+
+LONG FilterAccessViolation2(LPEXCEPTION_POINTERS ep, PVOID pv)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
+        ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH;
+}
+
+// This helper is required because the AVInRuntimeImplOkayHolder can not
+// be directly placed inside the scope of a PAL_TRY
+void _CopyInstructionBlockHelper(BYTE* to, const BYTE* from)
+{
+    AVInRuntimeImplOkayHolder AVOkay;
+
+    // This function only copies the portion of the instruction that follows the
+    // breakpoint opcode, not the breakpoint itself
+    to += CORDbg_BREAK_INSTRUCTION_SIZE;
+    from += CORDbg_BREAK_INSTRUCTION_SIZE;
+
+    // If an AV occurs because we walked off a valid page then we need
+    // to be certain that all bytes on the previous page were copied.
+    // We are certain that we copied enough bytes to contain the instruction
+    // because it must have fit within the valid page.
+    for (int i = 0; i < MAX_INSTRUCTION_LENGTH - CORDbg_BREAK_INSTRUCTION_SIZE; i++)
+    {
+        *to++ = *from++;
+    }
+
+}
+
+// WARNING: this function skips copying the first CORDbg_BREAK_INSTRUCTION_SIZE bytes by design
+// See the comment at the callsite in DebuggerPatchSkip::DebuggerPatchSkip for more details on
+// this
+void DebuggerControllerPatch::CopyInstructionBlock(BYTE *to, const BYTE* from)
+{
+    // We wrap the memcpy in an exception handler to handle the
+    // extremely rare case where we're copying an instruction off the
+    // end of a method that is also at the end of a page, and the next
+    // page is unmapped.
+    struct Param
+    {
+        BYTE *to;
+        const BYTE* from;
+    } param;
+    param.to = to;
+    param.from = from;
+    PAL_TRY(Param *, pParam, &param)
+    {
+        _CopyInstructionBlockHelper(pParam->to, pParam->from);
+    }
+    PAL_EXCEPT_FILTER(FilterAccessViolation2)
+    {
+        // The whole point is that if we copy up the AV, then
+        // that's enough to execute, otherwise we would not have been
+        // able to execute the code anyway. So we just ignore the
+        // exception.
+        LOG((LF_CORDB, LL_INFO10000,
+             "DCP::CIP: AV copying instruction block ignored.\n"));
+    }
+    PAL_ENDTRY
+}
+
+
+// Creates a new shared patch bypass buffer
+// AddRef() before returning it so callers need to Release() when they're finished with it.
 SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBuffer()
 {
     CONTRACTL
@@ -79,27 +149,110 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
     }
     CONTRACTL_END;
 
-    if (m_pSharedPatchBypassBuffer == NULL)
+    if (m_pSharedPatchBypassBuffer != NULL)
     {
-        void *pSharedPatchBypassBufferRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(SharedPatchBypassBuffer));
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        ExecutableWriterHolder<SharedPatchBypassBuffer> sharedPatchBypassBufferWriterHolder((SharedPatchBypassBuffer*)pSharedPatchBypassBufferRX, sizeof(SharedPatchBypassBuffer));
-        void *pSharedPatchBypassBufferRW = sharedPatchBypassBufferWriterHolder.GetRW();
-#else // HOST_OSX && HOST_ARM64
-        void *pSharedPatchBypassBufferRW = pSharedPatchBypassBufferRX;
-#endif // HOST_OSX && HOST_ARM64
-        new (pSharedPatchBypassBufferRW) SharedPatchBypassBuffer();
-        m_pSharedPatchBypassBuffer = (SharedPatchBypassBuffer*)pSharedPatchBypassBufferRX;
-
-        _ASSERTE(m_pSharedPatchBypassBuffer);
-        TRACE_ALLOC(m_pSharedPatchBypassBuffer);
+        m_pSharedPatchBypassBuffer->AddRef();
+        return m_pSharedPatchBypassBuffer;
     }
+
+    // NOTE: in order to correctly single-step RIP-relative writes on multiple threads we need to set up
+    // a shared buffer with the instruction and a buffer for the RIP-relative value so that all threads
+    // are working on the same copy.  as the single-steps complete the modified data in the buffer is
+    // copied back to the real address to ensure proper execution of the program.
+
+    SharedPatchBypassBuffer *pSharedPatchBypassBufferRX = (SharedPatchBypassBuffer*)g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(SharedPatchBypassBuffer));
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    ExecutableWriterHolder<SharedPatchBypassBuffer> sharedPatchBypassBufferWriterHolder((SharedPatchBypassBuffer*)pSharedPatchBypassBufferRX, sizeof(SharedPatchBypassBuffer));
+    SharedPatchBypassBuffer *pSharedPatchBypassBufferRW = sharedPatchBypassBufferWriterHolder.GetRW();
+#else // HOST_OSX && HOST_ARM64
+    SharedPatchBypassBuffer *pSharedPatchBypassBufferRW = pSharedPatchBypassBufferRX;
+#endif // HOST_OSX && HOST_ARM64
+    new (pSharedPatchBypassBufferRW) SharedPatchBypassBuffer();
+    m_pSharedPatchBypassBuffer = (SharedPatchBypassBuffer*)pSharedPatchBypassBufferRX;
+    _ASSERTE(m_pSharedPatchBypassBuffer);
+    TRACE_ALLOC(m_pSharedPatchBypassBuffer);
 
     m_pSharedPatchBypassBuffer->AddRef();
 
+    BYTE* patchBypassRW = pSharedPatchBypassBufferRW->PatchBypass;
+    BYTE* patchBypassRX = m_pSharedPatchBypassBuffer->PatchBypass;
+
+    LOG((LF_CORDB, LL_INFO10000, "DCP::CSPBB: Patch skip for opcode 0x%.4x at address %p buffer allocated at 0x%.8x\n", this->opcode, this->address, m_pSharedPatchBypassBuffer));
+
+    // CopyInstructionBlock copies all the code bytes except the breakpoint byte(s).
+    _ASSERTE( this->IsBound() );
+    CopyInstructionBlock(patchBypassRW, (const BYTE *)this->address);
+
+    // Technically, we could create a patch skipper for an inactive patch, but we rely on the opcode being
+    // set here.
+    _ASSERTE( this->IsActivated() );
+    CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypassRW, this->opcode);
+
+    LOG((LF_CORDB, LL_EVERYTHING, "DCP::CSPBB: SetInstruction was called\n"));
+
+    //
+    // Look at instruction to get some attributes
+    //
+    InstructionAttribute instrAttrib = { 0 };
+    NativeWalker::DecodeInstructionForPatchSkip(patchBypassRX, &instrAttrib);
+
+#if defined(TARGET_AMD64)
+    // The code below handles RIP-relative addressing on AMD64. The original implementation made the assumption that
+    // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information). This
+    // has since been expanded to handle RIP-relative writes as well.
+    if (instrAttrib.m_dwOffsetToDisp != 0)
+    {
+        _ASSERTE(pSharedPatchBypassBufferRW != NULL);
+        _ASSERTE(instrAttrib.m_cbInstr != 0);
+
+        //
+        // Populate the RIP-relative buffer with the current value if needed
+        //
+
+        BYTE* bufferBypassRW = pSharedPatchBypassBufferRW->BypassBuffer;
+        
+        // Overwrite the *signed* displacement.
+        int dwOldDisp = *(int*)(&patchBypassRX[instrAttrib.m_dwOffsetToDisp]);
+        int dwNewDisp = offsetof(SharedPatchBypassBuffer, BypassBuffer) -
+        (offsetof(SharedPatchBypassBuffer, PatchBypass) + instrAttrib.m_cbInstr);
+        *(int*)(&patchBypassRW[instrAttrib.m_dwOffsetToDisp]) = dwNewDisp;
+        
+        // This could be an LEA, which we'll just have to change into a MOV and copy the original address.
+        if (((patchBypassRX[0] == 0x4C) || (patchBypassRX[0] == 0x48)) && (patchBypassRX[1] == 0x8d))
+        {
+            patchBypassRW[1] = 0x8b; // MOV reg, mem
+            _ASSERTE((int)sizeof(void*) <= SharedPatchBypassBuffer::cbBufferBypass);
+            *(void**)bufferBypassRW = (void*)(this->address + instrAttrib.m_cbInstr + dwOldDisp);
+        }
+        else
+        {
+            _ASSERTE(instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
+            // Copy the data into our buffer.
+            memcpy(bufferBypassRW, this->address + instrAttrib.m_cbInstr + dwOldDisp, instrAttrib.m_cOperandSize);
+            
+            if (instrAttrib.m_fIsWrite)
+            {
+                // save the actual destination address and size so when we TriggerSingleStep() we can update the value
+                pSharedPatchBypassBufferRW->RipTargetFixup = (UINT_PTR)(this->address + instrAttrib.m_cbInstr + dwOldDisp);
+                pSharedPatchBypassBufferRW->RipTargetFixupSize = instrAttrib.m_cOperandSize;
+            }
+        }
+    }
+    
+    #endif // TARGET_AMD64
+
+    m_pSharedPatchBypassBuffer->SetInstructionAttrib(instrAttrib);
+    
+    // Since we just created a new buffer of code, but the CPU caches code and may
+    // not be aware of our changes. This should force the CPU to dump any cached
+    // instructions it has in this region and load the new ones from memory
+    FlushInstructionCache(GetCurrentProcess(), patchBypassRW + CORDbg_BREAK_INSTRUCTION_SIZE,
+    MAX_INSTRUCTION_LENGTH - CORDbg_BREAK_INSTRUCTION_SIZE);
+    
     return m_pSharedPatchBypassBuffer;
 }
 #endif // !FEATURE_EMULATE_SINGLESTEP
+#endif // !DACCESS_COMPILE
 
 // @todo - remove all this splicing trash
 // This Sort/Splice stuff just reorders the patches within a particular chain such
@@ -1990,7 +2143,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
     {
         fOk = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return fOk;
 }
 
@@ -3237,7 +3390,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
         context = GetManagedStoppedCtx(thread);
     }
     CONSISTENCY_CHECK_MSGF(context != NULL, ("Can't apply ss flag to thread 0x%p b/c it's not in a safe place.\n", thread));
-    PREFIX_ASSUME(context != NULL);
+    _ASSERTE(context != NULL);
 
 
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
@@ -3620,7 +3773,7 @@ VOID DebuggerController::PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID*
     {
         // not much we can do here
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 //
@@ -4268,7 +4421,7 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_EVERYTHING, "DispatchNativeException was called\n"));
-    LOG((LF_CORDB, LL_INFO10000, "Native exception at 0x%p, code=0x%8x, context=0x%p, er=0x%p\n",
+    LOG((LF_CORDB, LL_INFO10000, "Native exception at %p, code=0x%8x, context=%p, er=%p\n",
          pException->ExceptionAddress, dwCode, pContext, pException));
 
 
@@ -4509,53 +4662,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
     // the single-step emulation itself.
 #ifndef FEATURE_EMULATE_SINGLESTEP
 
-    // NOTE: in order to correctly single-step RIP-relative writes on multiple threads we need to set up
-    // a shared buffer with the instruction and a buffer for the RIP-relative value so that all threads
-    // are working on the same copy.  as the single-steps complete the modified data in the buffer is
-    // copied back to the real address to ensure proper execution of the program.
-
-    //
-    // Create the shared instruction block. this will also create the shared RIP-relative buffer
-    //
-
+    _ASSERTE(DebuggerController::HasLock());
     m_pSharedPatchBypassBuffer = patch->GetOrCreateSharedPatchBypassBuffer();
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    ExecutableWriterHolder<SharedPatchBypassBuffer> sharedPatchBypassBufferWriterHolder((SharedPatchBypassBuffer*)m_pSharedPatchBypassBuffer, sizeof(SharedPatchBypassBuffer));
-    SharedPatchBypassBuffer *pSharedPatchBypassBufferRW = sharedPatchBypassBufferWriterHolder.GetRW();
-#else // HOST_OSX && HOST_ARM64
-    SharedPatchBypassBuffer *pSharedPatchBypassBufferRW = m_pSharedPatchBypassBuffer;
-#endif // HOST_OSX && HOST_ARM64
-
-    BYTE* patchBypassRX = m_pSharedPatchBypassBuffer->PatchBypass;
-    BYTE* patchBypassRW = pSharedPatchBypassBufferRW->PatchBypass;
-    LOG((LF_CORDB, LL_INFO10000, "DPS::DPS: Patch skip for opcode 0x%.4x at address %p buffer allocated at 0x%.8x\n", patch->opcode, patch->address, m_pSharedPatchBypassBuffer));
-
-    // Copy the instruction block over to the patch skip
-    // WARNING: there used to be an issue here because CopyInstructionBlock copied the breakpoint from the
-    // jitted code stream into the patch buffer. Further below CORDbgSetInstruction would correct the
-    // first instruction. This buffer is shared by all threads so if another thread executed the buffer
-    // between this thread's execution of CopyInstructionBlock and CORDbgSetInstruction the wrong
-    // code would be executed. The bug has been fixed by changing CopyInstructionBlock to only copy
-    // the code bytes after the breakpoint.
-    //   You might be tempted to stop copying the code at all, however that wouldn't work well with rejit.
-    // If we skip a breakpoint that is sitting at the beginning of a method, then the profiler rejits that
-    // method causing a jump-stamp to be placed, then we skip the breakpoint again, we need to make sure
-    // the 2nd skip executes the new jump-stamp code and not the original method prologue code. Copying
-    // the code every time ensures that we have the most up-to-date version of the code in the buffer.
-    _ASSERTE( patch->IsBound() );
-    CopyInstructionBlock(patchBypassRW, (const BYTE *)patch->address);
-
-    // Technically, we could create a patch skipper for an inactive patch, but we rely on the opcode being
-    // set here.
-    _ASSERTE( patch->IsActivated() );
-    CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypassRW, patch->opcode);
-
-    LOG((LF_CORDB, LL_EVERYTHING, "SetInstruction was called\n"));
-    //
-    // Look at instruction to get some attributes
-    //
-
-    NativeWalker::DecodeInstructionForPatchSkip(patchBypassRX, &(m_instrAttrib));
+    m_instrAttrib = m_pSharedPatchBypassBuffer->GetInstructionAttrib();
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     if (g_pDebugInterface->IsOutOfProcessSetContextEnabled() && m_instrAttrib.m_fIsCall)
@@ -4563,51 +4672,6 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         m_fInPlaceSS = true;
     }
 #endif
-
-#if defined(TARGET_AMD64)
-
-    // The code below handles RIP-relative addressing on AMD64. The original implementation made the assumption that
-    // we are only using RIP-relative addressing to access read-only data (see VSW 246145 for more information). This
-    // has since been expanded to handle RIP-relative writes as well.
-    if (m_instrAttrib.m_dwOffsetToDisp != 0 && !IsInPlaceSingleStep())
-    {
-        _ASSERTE(m_instrAttrib.m_cbInstr != 0);
-
-        //
-        // Populate the RIP-relative buffer with the current value if needed
-        //
-
-        BYTE* bufferBypassRW = pSharedPatchBypassBufferRW->BypassBuffer;
-
-        // Overwrite the *signed* displacement.
-        int dwOldDisp = *(int*)(&patchBypassRX[m_instrAttrib.m_dwOffsetToDisp]);
-        int dwNewDisp = offsetof(SharedPatchBypassBuffer, BypassBuffer) -
-                          (offsetof(SharedPatchBypassBuffer, PatchBypass) + m_instrAttrib.m_cbInstr);
-        *(int*)(&patchBypassRW[m_instrAttrib.m_dwOffsetToDisp]) = dwNewDisp;
-
-        // This could be an LEA, which we'll just have to change into a MOV and copy the original address.
-        if (((patchBypassRX[0] == 0x4C) || (patchBypassRX[0] == 0x48)) && (patchBypassRX[1] == 0x8d))
-        {
-            patchBypassRW[1] = 0x8b; // MOV reg, mem
-            _ASSERTE((int)sizeof(void*) <= SharedPatchBypassBuffer::cbBufferBypass);
-            *(void**)bufferBypassRW = (void*)(patch->address + m_instrAttrib.m_cbInstr + dwOldDisp);
-        }
-        else
-        {
-            _ASSERTE(m_instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
-            // Copy the data into our buffer.
-            memcpy(bufferBypassRW, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
-
-            if (m_instrAttrib.m_fIsWrite)
-            {
-                // save the actual destination address and size so when we TriggerSingleStep() we can update the value
-                pSharedPatchBypassBufferRW->RipTargetFixup = (UINT_PTR)(patch->address + m_instrAttrib.m_cbInstr + dwOldDisp);
-                pSharedPatchBypassBufferRW->RipTargetFixupSize = m_instrAttrib.m_cOperandSize;
-            }
-        }
-    }
-
-#endif // TARGET_AMD64
 
 #endif // !FEATURE_EMULATE_SINGLESTEP
 
@@ -4672,7 +4736,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 #else // FEATURE_EMULATE_SINGLESTEP
 
 #ifdef TARGET_ARM64
-    patchBypassRX = NativeWalker::SetupOrSimulateInstructionForPatchSkip(context, m_pSharedPatchBypassBuffer, (const BYTE *)patch->address, patch->opcode);
+    BYTE* patchBypassRX = NativeWalker::SetupOrSimulateInstructionForPatchSkip(context, m_pSharedPatchBypassBuffer, (const BYTE *)patch->address, patch->opcode);
+#else
+    BYTE* patchBypassRX = m_pSharedPatchBypassBuffer->PatchBypass;
 #endif //TARGET_ARM64
 
     if (!IsInPlaceSingleStep())
@@ -4740,80 +4806,6 @@ void DebuggerPatchSkip::DebuggerDetachClean()
         }
     }
 #endif // !FEATURE_EMULATE_SINGLESTEP
-}
-
-
-//
-// We have to have a whole separate function for this because you
-// can't use __try in a function that requires object unwinding...
-//
-
-LONG FilterAccessViolation2(LPEXCEPTION_POINTERS ep, PVOID pv)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return (ep->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
-        ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH;
-}
-
-// This helper is required because the AVInRuntimeImplOkayHolder can not
-// be directly placed inside the scope of a PAL_TRY
-void _CopyInstructionBlockHelper(BYTE* to, const BYTE* from)
-{
-    AVInRuntimeImplOkayHolder AVOkay;
-
-    // This function only copies the portion of the instruction that follows the
-    // breakpoint opcode, not the breakpoint itself
-    to += CORDbg_BREAK_INSTRUCTION_SIZE;
-    from += CORDbg_BREAK_INSTRUCTION_SIZE;
-
-    // If an AV occurs because we walked off a valid page then we need
-    // to be certain that all bytes on the previous page were copied.
-    // We are certain that we copied enough bytes to contain the instruction
-    // because it must have fit within the valid page.
-    for (int i = 0; i < MAX_INSTRUCTION_LENGTH - CORDbg_BREAK_INSTRUCTION_SIZE; i++)
-    {
-        *to++ = *from++;
-    }
-
-}
-
-// WARNING: this function skips copying the first CORDbg_BREAK_INSTRUCTION_SIZE bytes by design
-// See the comment at the callsite in DebuggerPatchSkip::DebuggerPatchSkip for more details on
-// this
-void DebuggerPatchSkip::CopyInstructionBlock(BYTE *to, const BYTE* from)
-{
-    // We wrap the memcpy in an exception handler to handle the
-    // extremely rare case where we're copying an instruction off the
-    // end of a method that is also at the end of a page, and the next
-    // page is unmapped.
-    struct Param
-    {
-        BYTE *to;
-        const BYTE* from;
-    } param;
-    param.to = to;
-    param.from = from;
-    PAL_TRY(Param *, pParam, &param)
-    {
-        _CopyInstructionBlockHelper(pParam->to, pParam->from);
-    }
-    PAL_EXCEPT_FILTER(FilterAccessViolation2)
-    {
-        // The whole point is that if we copy up the AV, then
-        // that's enough to execute, otherwise we would not have been
-        // able to execute the code anyway. So we just ignore the
-        // exception.
-        LOG((LF_CORDB, LL_INFO10000,
-             "DPS::DPS: AV copying instruction block ignored.\n"));
-    }
-    PAL_ENDTRY
-
-    // We just created a new buffer of code, but the CPU caches code and may
-    // not be aware of our changes. This should force the CPU to dump any cached
-    // instructions it has in this region and load the new ones from memory
-    FlushInstructionCache(GetCurrentProcess(), to + CORDbg_BREAK_INSTRUCTION_SIZE,
-                          MAX_INSTRUCTION_LENGTH - CORDbg_BREAK_INSTRUCTION_SIZE);
 }
 
 TP_RESULT DebuggerPatchSkip::TriggerPatch(DebuggerControllerPatch *patch,
@@ -5144,7 +5136,6 @@ DebuggerStepper::DebuggerStepper(Thread *thread,
     m_rgfMappingStop(rgfMappingStop),
     m_range(NULL),
     m_rangeCount(0),
-    m_realRangeCount(0),
     m_fp(LEAF_MOST_FRAME),
 #if defined(FEATURE_EH_FUNCLETS)
     m_fpParentMethod(LEAF_MOST_FRAME),
@@ -5926,11 +5917,11 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
 #ifdef TARGET_X86
     LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
         "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
-        info->m_activeFrame.registers.PCTAddr));
+        GetRegdisplayPCTAddr(&info->m_activeFrame.registers)));
 #endif
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
-    // it was causing problems creating a stepper while sitting in ndirect stubs after we'd returned from the unmanaged
+    // it was causing problems creating a stepper while sitting in PInvoke stubs after we'd returned from the unmanaged
     // function that had been called.
     DebuggerJitInfo *ji = info->m_activeFrame.GetJitInfoFromFrame();
     if( ji != NULL )
@@ -6049,7 +6040,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     fCallingIntoFunclet = IsAddrWithinMethodIncludingFunclet(ji, info->m_activeFrame.md, walker.GetNextIP()) &&
                         ((CORDB_ADDRESS)(SIZE_T)walker.GetNextIP() != ji->m_addrOfCode);
 #endif
-                    // If we are stepping into a tail call that uses the StoreTailCallArgs 
+                    // If we are stepping into a tail call that uses the StoreTailCallArgs
                     // we need to enable the method enter, otherwise it will behave like a resume
                     if (in && IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::StoreTailCallArgs))
                     {
@@ -6546,7 +6537,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 _ASSERTE(dji != NULL);
 
                 // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value
-                // in that, and it was causing problems creating a stepper while sitting in ndirect stubs after we'd
+                // in that, and it was causing problems creating a stepper while sitting in PInvoke stubs after we'd
                 // returned from the unmanaged function that had been called.
                 ULONG reloffset = info->m_activeFrame.relOffset;
 
@@ -6613,8 +6604,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 m_reason = STEP_EXIT;
                 break;
             }
-            else if (info->m_activeFrame.frame->GetFrameType() == Frame::TYPE_SECURITY &&
-                     info->m_activeFrame.frame->GetInterception() == Frame::INTERCEPTION_NONE)
+            else if (info->m_activeFrame.frame->GetInterception() == Frame::INTERCEPTION_NONE)
             {
                 // If we're stepping out of something that was protected by (declarative) security,
                 // the security subsystem may leave a frame on the stack to cache it's computation.
@@ -6826,7 +6816,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
     CONTRACTL_END;
 
     // Note: we used to pass in the IP from the active frame to GetJitInfo, but there seems to be no value in that, and
-    // it was causing problems creating a stepper while sitting in ndirect stubs after we'd returned from the unmanaged
+    // it was causing problems creating a stepper while sitting in PInvoke stubs after we'd returned from the unmanaged
     // function that had been called.
     MethodDesc *fd = dji->m_nativeCodeVersion.GetMethodDesc();
 
@@ -6978,7 +6968,6 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
 
 
     m_rangeCount = rangeCount;
-    m_realRangeCount = rangeCount;
 
     return true;
 }
@@ -7052,7 +7041,6 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         DeleteInteropSafe(m_range);
         m_range = NULL;
         m_rangeCount = 0;
-        m_realRangeCount = 0;
     }
 
     if (rangeCount > 0)
@@ -7077,11 +7065,10 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
             }
 
             memcpy(m_range, ranges, sizeof(COR_DEBUG_STEP_RANGE) * rangeCount);
-            m_realRangeCount  = m_rangeCount = rangeCount;
+            m_rangeCount = rangeCount;
         }
         _ASSERTE(m_range != NULL);
         _ASSERTE(m_rangeCount > 0);
-        _ASSERTE(m_realRangeCount > 0);
     }
     else
     {
@@ -7588,9 +7575,9 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
         // Sometimes we can get here with a callstack that is coming from an APC
         // this will disable the single stepping and incorrectly resume an app that the user
         // is stepping through.
-#ifdef FEATURE_THREAD_ACTIVATION        
+#ifdef FEATURE_THREAD_ACTIVATION
         if ((thread->m_State & Thread::TS_DebugWillSync) == 0)
-#endif   
+#endif // FEATURE_THREAD_ACTIVATION
         {
             DisableSingleStep();
         }
@@ -8694,23 +8681,19 @@ void DebuggerUserBreakpoint::HandleDebugBreak(Thread * pThread)
     }
 }
 
-
 DebuggerUserBreakpoint::DebuggerUserBreakpoint(Thread *thread)
   : DebuggerStepper(thread, (CorDebugUnmappedStop) (STOP_ALL & ~STOP_UNMANAGED), INTERCEPT_ALL,  NULL)
 {
     // Setup a step out from the current frame (which we know is
     // unmanaged, actually...)
 
-
-    // This happens to be safe, but it's a very special case (so we have a special case ticket)
-    // This is called while we're live (so no filter context) and from the fcall,
-    // and we pushed a HelperMethodFrame to protect us. We also happen to know that we have
-    // done anything illegal or dangerous since then.
+    // Initiate a step-out from Debug.Break() if the current frame allows it.
+    // This is now safe because the entry point uses QCall or dynamic transition,
+    // so no special frame setup is required.
 
     StackTraceTicket ticket(this);
     StepOut(LEAF_MOST_FRAME, ticket);
 }
-
 
 // Is this frame interesting?
 // Use this to skip all code in the namespace "Debugger.Diagnostics"
@@ -9204,7 +9187,7 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
     }
 
     // On WIN64, by the time we get here the DebuggerExState is gone already.
-    // ExceptionTrackers are cleaned up before we resume execution for a handled exception.
+    // ExInfos are cleaned up before we resume execution for a handled exception.
 #if !defined(FEATURE_EH_FUNCLETS)
     thread->GetExceptionState()->GetDebuggerState()->SetDebuggerInterceptContext(NULL);
 #endif // !FEATURE_EH_FUNCLETS

@@ -57,7 +57,7 @@ namespace System.Tests
         //  Name abbreviations, if available, are used instead
         public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
         {
-            if (PlatformDetection.IsBrowser || (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform  && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS)))
+            if (PlatformDetection.IsBrowser)
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "PST", "PDT", null },
@@ -68,7 +68,7 @@ namespace System.Tests
                     { s_NewfoundlandTz, "(UTC-03:30) America/St_Johns", null, "NST", "NDT", null },
                     { s_catamarcaTz, "(UTC-03:00) America/Argentina/Catamarca", null, "-03", "-02", null }
                 };
-            else if (PlatformDetection.IsHybridGlobalizationOnApplePlatform && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS))
+            else if (PlatformDetection.IsAppleMobile)
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "Pacific Standard Time", "Pacific Daylight Time", "Pacific Summer Time" },
@@ -93,7 +93,7 @@ namespace System.Tests
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (Los Angeles)", null, "Pacific Standard Time", "Pacific Daylight Time", "Pacific Summer Time"  },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Eastern Australia Time (Sydney)", null, "Australian Eastern Standard Time", "Australian Eastern Daylight Time", null },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Eastern Australia Time (Sydney)", "(UTC+10:00) Australian Eastern Time (Sydney)", "Australian Eastern Standard Time", "Australian Eastern Daylight Time", null },
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time (Perth)", null, "Australian Western Standard Time", "Australian Western Daylight Time", null },
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Iran Time", "(UTC+03:30) Iran Standard Time (Tehran)", "Iran Standard Time", "Iran Daylight Time", "Iran Summer Time" },
                     { s_NewfoundlandTz, "(UTC-03:30) Newfoundland Time (St. John’s)", null, "Newfoundland Standard Time", "Newfoundland Daylight Time", null },
@@ -2159,7 +2159,7 @@ namespace System.Tests
             }
         }
 
-        private static byte[] timeZoneFileContents = new byte[]
+        private static byte[] s_timeZoneFileContents = new byte[]
         {
             //
             // Start of v1 Header
@@ -2274,7 +2274,7 @@ namespace System.Tests
             string zoneFilePath = Path.GetTempPath() + Path.GetRandomFileName();
             using (FileStream fs = new FileStream(zoneFilePath, FileMode.Create))
             {
-                fs.Write(timeZoneFileContents.AsSpan());
+                fs.Write(s_timeZoneFileContents.AsSpan());
 
                 // Append the POSIX rule
                 fs.WriteByte(0x0A);
@@ -2314,6 +2314,33 @@ namespace System.Tests
             {
                 try { File.Delete(zoneFilePath); } catch { } // don't fail the test if we couldn't delete the file.
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void ArbitraryTZ_UsedAsLocal()
+        {
+            const string tzId = "America/Monterrey";
+            const string tzPath = "/usr/share/zoneinfo/" + tzId;
+
+            if (!File.Exists(tzPath))
+            {
+                throw new SkipTestException($"The file {tzPath} does not exist.");
+            }
+
+            string tmp = Path.GetTempPath() + Path.GetRandomFileName();
+            File.WriteAllBytes(tmp, File.ReadAllBytes(tzPath));
+
+            ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
+            psi.Environment.Add("TZ", tzPath);
+
+            RemoteExecutor.Invoke(() =>
+            {
+                TimeZoneInfo tzi = TimeZoneInfo.GetSystemTimeZones().FirstOrDefault(t => t.Id == tzId);
+
+                Assert.NotNull(tzi);
+                Assert.Equal(tzi.Id, TimeZoneInfo.Local.Id);
+            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -2705,6 +2732,7 @@ namespace System.Tests
 
         [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117731", TestPlatforms.Android)]
         public static void NoBackwardTimeZones()
         {
             if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26))

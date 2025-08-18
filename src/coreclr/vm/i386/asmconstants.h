@@ -32,12 +32,22 @@
 #define DBG_FRE(dbg,fre) fre
 #endif
 
+#define FRAMETYPE_InlinedCallFrame 0x1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
+
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+#define FRAMETYPE_TailCallFrame 0x2
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_TailCallFrame == (int)FrameIdentifier::TailCallFrame)
+#endif
+
 #define INITIAL_SUCCESS_COUNT               0x100
 
 #define DynamicHelperFrameFlags_Default     0
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
+#define ThisPtrRetBufPrecodeData__Target      0x00
+ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBufPrecodeData, Target));
 
 // CONTEXT from pal.h
 #define CONTEXT_Edi 0x9c
@@ -94,60 +104,13 @@ ASMCONSTANTS_C_ASSERT(EHContext_Esp == offsetof(EHContext,Esp))
 ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
 #endif // FEATURE_EH_FUNCLETS
 
-
-// from clr/src/fjit/helperframe.h
-#define SIZEOF_MachState          40
-ASMCONSTANTS_C_ASSERT(SIZEOF_MachState == sizeof(MachState))
-
-#define MachState__pEdi           0
-ASMCONSTANTS_C_ASSERT(MachState__pEdi == offsetof(MachState, _pEdi))
-
-#define MachState__edi            4
-ASMCONSTANTS_C_ASSERT(MachState__edi == offsetof(MachState, _edi))
-
-#define MachState__pEsi           8
-ASMCONSTANTS_C_ASSERT(MachState__pEsi == offsetof(MachState, _pEsi))
-
-#define MachState__esi            12
-ASMCONSTANTS_C_ASSERT(MachState__esi == offsetof(MachState, _esi))
-
-#define MachState__pEbx           16
-ASMCONSTANTS_C_ASSERT(MachState__pEbx == offsetof(MachState, _pEbx))
-
-#define MachState__ebx            20
-ASMCONSTANTS_C_ASSERT(MachState__ebx == offsetof(MachState, _ebx))
-
-#define MachState__pEbp           24
-ASMCONSTANTS_C_ASSERT(MachState__pEbp == offsetof(MachState, _pEbp))
-
-#define MachState__ebp            28
-ASMCONSTANTS_C_ASSERT(MachState__ebp == offsetof(MachState, _ebp))
-
-#define MachState__esp            32
-ASMCONSTANTS_C_ASSERT(MachState__esp == offsetof(MachState, _esp))
-
-#define MachState__pRetAddr       36
-ASMCONSTANTS_C_ASSERT(MachState__pRetAddr == offsetof(MachState, _pRetAddr))
-
-#define LazyMachState_captureEbp  40
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEbp == offsetof(LazyMachState, captureEbp))
-
-#define LazyMachState_captureEsp  44
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEsp == offsetof(LazyMachState, captureEsp))
-
-#define LazyMachState_captureEip  48
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEip == offsetof(LazyMachState, captureEip))
-
-
 #define VASigCookie__StubOffset 4
-ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
+ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pPInvokeILStub))
 
 #ifndef UNIX_X86_ABI
 #define SIZEOF_TailCallFrame 32
 ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
 #endif // !UNIX_X86_ABI
-
-#define SIZEOF_GSCookie 4
 
 // ICodeManager::SHADOW_SP_IN_FILTER from clr/src/inc/eetwain.h
 #define SHADOW_SP_IN_FILTER_ASM 0x1
@@ -170,6 +133,19 @@ ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 ASMCONSTANTS_C_ASSERT(Thread::TS_Hijacked == TS_Hijacked_ASM)
 #endif
 
+#define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
+
+#ifdef TARGET_WINDOWS
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+#else
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x4
+#endif
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
+
+#define               OFFSETOF__ee_alloc_context__combined_limit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__combined_limit == offsetof(ee_alloc_context, m_CombinedLimit));
 
 
 // from clr/src/vm/appdomain.hpp
@@ -193,8 +169,36 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_MethodTable == sizeof(MethodTable))
 #define SIZEOF_InterfaceInfo_t          0x4
 ASMCONSTANTS_C_ASSERT(SIZEOF_InterfaceInfo_t == sizeof(InterfaceInfo_t))
 
+#define               OFFSETOF__MethodTable__m_dwFlags              0x00
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags
+                    == offsetof(MethodTable, m_dwFlags));
+
+#define               OFFSETOF__MethodTable__m_usComponentSize    0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_usComponentSize == offsetof(MethodTable, m_dwFlags));
+
+#define               OFFSETOF__MethodTable__m_uBaseSize    0x04
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_uBaseSize == offsetof(MethodTable, m_BaseSize));
+
+#define               OFFSETOF__Object__m_pEEType   0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Object__m_pEEType == offsetof(Object, m_pMethTab));
+
+#define               OFFSETOF__Array__m_Length     0x4
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComponents));
+
+#define               MAX_STRING_LENGTH 0x3FFFFFDF
+ASMCONSTANTS_C_ASSERT(MAX_STRING_LENGTH == CORINFO_String_MaxLength);
+
+#define               STRING_COMPONENT_SIZE 2
+
+#define               STRING_BASE_SIZE 0xE
+ASMCONSTANTS_C_ASSERT(STRING_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + sizeof(WCHAR));
+
+#define               SZARRAY_BASE_SIZE 0xC
+ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD));
+
 #ifdef FEATURE_COMINTEROP
 
+#ifndef FEATURE_EH_FUNCLETS
 #define SIZEOF_FrameHandlerExRecord 0x0c
 #define OFFSETOF__FrameHandlerExRecord__m_ExReg__Next 0
 #define OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler 4
@@ -203,6 +207,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecord == sizeof(FrameHandlerExRecord
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Next == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Next))
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Handler))
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(FrameHandlerExRecord, m_pEntryFrame))
+#endif
 
 #ifdef _DEBUG
 #ifndef STACK_OVERWRITE_BARRIER_SIZE
@@ -217,8 +222,8 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 #define CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo DBG_FRE(0x20, 0xC)
 ASMCONSTANTS_C_ASSERT(CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo == offsetof(CLRToCOMCallMethodDesc, m_pCLRToCOMCallInfo))
 
-#define CLRToCOMCallInfo__m_pRetThunk 0x10
-ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_pRetThunk == offsetof(CLRToCOMCallInfo, m_pRetThunk))
+#define CLRToCOMCallInfo__m_cbStackPop 0x0e
+ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_cbStackPop == offsetof(CLRToCOMCallInfo, m_cbStackPop))
 
 #define COMMETHOD_PREPAD_ASM  8
 ASMCONSTANTS_C_ASSERT(COMMETHOD_PREPAD_ASM == COMMETHOD_PREPAD)
@@ -254,12 +259,6 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
-#define               UMEntryThunk__m_pUMThunkMarshInfo     0x0C
-ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_pUMThunkMarshInfo == offsetof(UMEntryThunk, m_pUMThunkMarshInfo))
-
-#define               UMThunkMarshInfo__m_pILStub           0x00
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, m_pILStub))
-
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x04
 ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next));
@@ -287,6 +286,9 @@ ASMCONSTANTS_C_ASSERT(ResolveCacheElem__token   == offsetof(ResolveCacheElem, to
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target  == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext   == offsetof(ResolveCacheElem, pNext));
 
+#define ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT (0x100)
+ASMCONSTANTS_C_ASSERT(ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT == CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT)
+
 #define FixupPrecodeData__Target 0x00
 ASMCONSTANTS_C_ASSERT(FixupPrecodeData__Target            == offsetof(FixupPrecodeData, Target))
 #define FixupPrecodeData__MethodDesc 0x04
@@ -296,8 +298,8 @@ ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPreco
 
 #define StubPrecodeData__Target 0x04
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecodeData, Target))
-#define StubPrecodeData__MethodDesc 0x00
-ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc        == offsetof(StubPrecodeData, MethodDesc))
+#define StubPrecodeData__SecretParam 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))

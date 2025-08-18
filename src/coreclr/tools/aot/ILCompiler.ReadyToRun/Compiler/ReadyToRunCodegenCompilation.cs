@@ -19,6 +19,7 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
@@ -293,7 +294,7 @@ namespace ILCompiler
         private readonly Func<MethodDesc, string> _printReproInstructions;
 
         private readonly ProfileDataManager _profileData;
-        private readonly ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
+        private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
@@ -333,8 +334,8 @@ namespace ILCompiler
             bool generateProfileFile,
             int parallelism,
             ProfileDataManager profileData,
-            ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
-            ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
+            MethodLayoutAlgorithm methodLayoutAlgorithm,
+            FileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
             bool verifyTypeAndFieldLayout)
             : base(
@@ -378,7 +379,7 @@ namespace ILCompiler
 
             _profileData = profileData;
 
-            _fileLayoutOptimizer = new ReadyToRunFileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
+            _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
         }
 
         private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
@@ -448,7 +449,7 @@ namespace ILCompiler
                 ReadyToRunFlags.READYTORUN_FLAG_Component |
                 ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
 
-            if (inputModule.IsPlatformNeutral)
+            if (inputModule.IsPlatformNeutral || inputModule.PEReader.IsReadyToRunPlatformNeutralSource())
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
@@ -801,7 +802,7 @@ namespace ILCompiler
 
             void CompilationThread(object objThreadId)
             {
-                while(true)
+                while (true)
                 {
                     _compilationThreadSemaphore.Wait();
                     lock(this)

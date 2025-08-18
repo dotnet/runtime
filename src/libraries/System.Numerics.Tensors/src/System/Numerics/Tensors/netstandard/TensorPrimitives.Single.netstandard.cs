@@ -3477,7 +3477,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Exp(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Sinh(x)</summary>
@@ -3487,7 +3487,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Sinh(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Cosh(x)</summary>
@@ -3497,7 +3497,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Cosh(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Tanh(x)</summary>
@@ -3507,7 +3507,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Tanh(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Log(x)</summary>
@@ -3517,7 +3517,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => MathF.Log(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftRightArithmetic (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>MathF.Log2(x)</summary>
@@ -3527,7 +3527,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => Log2(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftRightArithmetic (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>1f / (1f + MathF.Exp(-x))</summary>
@@ -3537,7 +3537,7 @@ namespace System.Numerics.Tensors
             public float Invoke(float x) => 1.0f / (1.0f + MathF.Exp(-x));
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftRightArithmetic (.NET 7+)
-                throw new NotImplementedException();
+                throw new NotSupportedException();
         }
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>

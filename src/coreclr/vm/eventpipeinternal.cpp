@@ -10,6 +10,7 @@
 #endif // TARGET_UNIX
 
 #include <minipal/guid.h>
+#include <minipal/time.h>
 
 #ifdef FEATURE_PERFTRACING
 
@@ -79,7 +80,7 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, Eve
         {
             pSessionInfo->StartTimeAsUTCFileTime = EventPipeAdapter::GetSessionStartTime(pSession);
             pSessionInfo->StartTimeStamp.QuadPart = EventPipeAdapter::GetSessionStartTimestamp(pSession);
-            QueryPerformanceFrequency(&pSessionInfo->TimeStampFrequency);
+            pSessionInfo->TimeStampFrequency.QuadPart = minipal_hires_tick_frequency();
             retVal = true;
         }
     }
@@ -192,7 +193,7 @@ extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t contr
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
 
-            minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(pActivityId));
+            minipal_guid_v4_create(pActivityId);
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:

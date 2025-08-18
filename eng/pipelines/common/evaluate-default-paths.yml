@@ -61,12 +61,7 @@ parameters:
         eng/testing/BrowserVersions.props
     ]
     _perf_pipeline_specific_only: [
-        eng/pipelines/runtime-wasm-perf.yml
-        eng/pipelines/coreclr/perf*.yml
-        eng/pipelines/coreclr/templates/perf-job.yml
-        eng/pipelines/coreclr/templates/*-perf-*
-        eng/pipelines/coreclr/templates/run-perf*
-        eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        eng/pipelines/performance/*
         eng/testing/performance/*
     ]
 
@@ -99,6 +94,7 @@ jobs:
       - src/mono/*
       - src/libraries/*
       - src/native/libs/*
+      - src/native/managed/cdac/*
       - src/tests/*
       - src/tools/*
       - eng/pipelines/installer/*
@@ -127,6 +123,7 @@ jobs:
       - src/coreclr/*
       - src/libraries/*
       - src/native/libs/*
+      - src/native/managed/cdac/*
       - src/tests/*
       - src/tools/*
       - eng/pipelines/installer/*
@@ -143,6 +140,7 @@ jobs:
       - src/tests/*
       - src/tools/*
       - src/native/eventpipe/*
+      - src/native/managed/cdac/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
@@ -166,9 +164,10 @@ jobs:
       - src/coreclr/tools/ILVerification/*
       - global.json
 
-    - subset: tools_cdacreader
+    - subset: tools_cdac
       include:
-      - src/native/managed/cdacreader/*
+      - src/native/managed/cdac/*
+      - src/coreclr/debug/runtimeinfo/*
 
     - subset: installer
       include:
@@ -181,6 +180,7 @@ jobs:
       - src/tests/*
       - src/tools/*
       - src/native/eventpipe/*
+      - src/native/managed/cdac/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*

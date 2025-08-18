@@ -26,15 +26,8 @@ namespace System.Text.Json.Schema
         /// <returns>A JSON object containing the schema for <paramref name="type"/>.</returns>
         public static JsonNode GetJsonSchemaAsNode(this JsonSerializerOptions options, Type type, JsonSchemaExporterOptions? exporterOptions = null)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(type);
 
             ValidateOptions(options);
             JsonTypeInfo typeInfo = options.GetTypeInfoInternal(type);
@@ -49,10 +42,7 @@ namespace System.Text.Json.Schema
         /// <returns>A JSON object containing the schema for <paramref name="typeInfo"/>.</returns>
         public static JsonNode GetJsonSchemaAsNode(this JsonTypeInfo typeInfo, JsonSchemaExporterOptions? exporterOptions = null)
         {
-            if (typeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(typeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(typeInfo);
 
             ValidateOptions(typeInfo.Options);
             exporterOptions ??= JsonSchemaExporterOptions.Default;
@@ -357,16 +347,29 @@ namespace System.Text.Json.Schema
             {
                 if (schema.Ref is null)
                 {
-                    // A schema is marked as nullable if either
-                    // 1. We have a schema for a property where either the getter or setter are marked as nullable.
-                    // 2. We have a schema for a reference type, unless we're explicitly treating null-oblivious types as non-nullable.
-                    bool isNullableSchema = propertyInfo != null
-                        ? propertyInfo.IsGetNullable || propertyInfo.IsSetNullable
-                        : typeInfo.CanBeNull && !parentPolymorphicTypeIsNonNullable && !state.ExporterOptions.TreatNullObliviousAsNonNullable;
-
-                    if (isNullableSchema)
+                    if (IsNullableSchema(state.ExporterOptions))
                     {
                         schema.MakeNullable();
+                    }
+
+                    bool IsNullableSchema(JsonSchemaExporterOptions options)
+                    {
+                        // A schema is marked as nullable if either:
+                        // 1. We have a schema for a property where either the getter or setter are marked as nullable.
+                        // 2. We have a schema for a Nullable<T> type.
+                        // 3. We have a schema for a reference type, unless we're explicitly treating null-oblivious types as non-nullable.
+
+                        if (propertyInfo is not null)
+                        {
+                            return propertyInfo.IsGetNullable || propertyInfo.IsSetNullable;
+                        }
+
+                        if (typeInfo.IsNullable)
+                        {
+                            return true;
+                        }
+
+                        return !typeInfo.Type.IsValueType && !parentPolymorphicTypeIsNonNullable && !options.TreatNullObliviousAsNonNullable;
                     }
                 }
 

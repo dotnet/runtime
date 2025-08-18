@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct OriginatorIdentifierOrKeyAsn
     {
-        internal System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
+        internal System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn? IssuerAndSerialNumber;
         internal ReadOnlyMemory<byte>? SubjectKeyIdentifier;
         internal System.Security.Cryptography.Pkcs.Asn1.OriginatorPublicKeyAsn? OriginatorKey;
 
@@ -110,8 +110,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn tmpIssuerAndSerialNumber;
-                System.Security.Cryptography.Pkcs.Asn1.IssuerAndSerialNumberAsn.Decode(ref reader, rebind, out tmpIssuerAndSerialNumber);
+                System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn tmpIssuerAndSerialNumber;
+                System.Security.Cryptography.Asn1.Pkcs7.IssuerAndSerialNumberAsn.Decode(ref reader, rebind, out tmpIssuerAndSerialNumber);
                 decoded.IssuerAndSerialNumber = tmpIssuerAndSerialNumber;
 
             }

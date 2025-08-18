@@ -24,6 +24,7 @@
 #include "gcconfig.h"
 #include "numasupport.h"
 #include <minipal/thread.h>
+#include <minipal/time.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -35,6 +36,9 @@
 #define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
 #elif HAVE_SYS_MEMBARRIER_H
 #include <sys/membarrier.h>
+#ifdef TARGET_BROWSER
+#define membarrier(cmd, flags, cpu_id) 0 // browser/wasm is currently single threaded
+#endif
 #endif
 
 #include <sys/resource.h>
@@ -218,7 +222,7 @@ bool GCToOSInterface::Initialize()
     //
     // support for FlusProcessWriteBuffers
     //
-
+#ifndef TARGET_WASM
     assert(s_flushUsingMemBarrier == 0);
 
     if (CanFlushUsingMembarrier())
@@ -258,6 +262,7 @@ bool GCToOSInterface::Initialize()
         }
     }
 #endif // !TARGET_APPLE
+#endif // !TARGET_WASM
 
     InitializeCGroup();
 
@@ -408,6 +413,7 @@ bool GCToOSInterface::CanGetCurrentProcessorNumber()
 // Flush write buffers of processors that are executing threads of the current process
 void GCToOSInterface::FlushProcessWriteBuffers()
 {
+#ifndef TARGET_WASM
 #if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
@@ -486,6 +492,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         CHECK_MACH("vm_deallocate()", machret);
     }
 #endif // TARGET_APPLE
+#endif // !TARGET_WASM
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -572,7 +579,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -620,9 +627,13 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
+#ifndef TARGET_WASM
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
+#else
+    bool success = true;
+#endif // !TARGET_WASM
 
-#ifdef MADV_DODUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.
@@ -900,7 +911,7 @@ static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* ca
             }
         }
     }
-#endif 
+#endif
 }
 
 static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t* cacheSize)
@@ -948,7 +959,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
     }
 
-    if (cacheSize == 0) 
+    if (cacheSize == 0)
     {
         GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
         if (cacheSize == 0)
@@ -1446,22 +1457,7 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 //  The counter value
 int64_t GCToOSInterface::QueryPerformanceCounter()
 {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#elif HAVE_CLOCK_MONOTONIC
-    struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    if (result != 0)
-    {
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
-        __UNREACHABLE();
-    }
-
-    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
-#else
-#error " clock_gettime(CLOCK_MONOTONIC) or clock_gettime_nsec_np() must be supported."
-#endif
+    return minipal_hires_ticks();
 }
 
 // Get a frequency of the high precision performance counter
@@ -1470,7 +1466,7 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
     // The counter frequency of gettimeofday is in microseconds.
-    return tccSecondsToNanoSeconds;
+    return minipal_hires_tick_frequency();
 }
 
 // Get a time stamp with a low precision
@@ -1478,42 +1474,7 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 //  Time stamp in milliseconds
 uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    uint64_t retval = 0;
-
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    retval = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds;
-#elif HAVE_CLOCK_MONOTONIC
-    struct timespec ts;
-
-#if HAVE_CLOCK_MONOTONIC_COARSE
-    clockid_t clockType = CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
-#else
-    clockid_t clockType = CLOCK_MONOTONIC;
-#endif
-
-    if (clock_gettime(clockType, &ts) != 0)
-    {
-#if HAVE_CLOCK_MONOTONIC_COARSE
-        assert(!"clock_gettime(HAVE_CLOCK_MONOTONIC_COARSE) failed\n");
-#else
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed\n");
-#endif
-    }
-
-    retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
-#else
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == 0)
-    {
-        retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
-    }
-    else
-    {
-        assert(!"gettimeofday() failed\n");
-    }
-#endif
-
-    return retval;
+    return (uint64_t)minipal_lowres_ticks();
 }
 
 // Gets the total number of processors on the machine, not taking
@@ -1588,44 +1549,4 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
 bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index)
 {
     return ParseIndexOrRange(config_string, start_index, end_index);
-}
-
-// Initialize the critical section
-bool CLRCriticalSection::Initialize()
-{
-    pthread_mutexattr_t mutexAttributes;
-    int st = pthread_mutexattr_init(&mutexAttributes);
-    if (st != 0)
-    {
-        return false;
-    }
-
-    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    if (st == 0)
-    {
-        st = pthread_mutex_init(&m_cs.mutex, &mutexAttributes);
-    }
-
-    pthread_mutexattr_destroy(&mutexAttributes);
-
-    return (st == 0);
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    int st = pthread_mutex_destroy(&m_cs.mutex);
-    assert(st == 0);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    pthread_mutex_lock(&m_cs.mutex);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    pthread_mutex_unlock(&m_cs.mutex);
 }

@@ -27,10 +27,26 @@ namespace System.Threading
                 bool debuggerBreakOnWorkStarvation =
                     AppContextConfigHelper.GetBooleanComPlusOrDotNetConfig("System.Threading.ThreadPool.DebugBreakOnWorkerStarvation", "ThreadPool_DebugBreakOnWorkerStarvation", false);
 
+                // CPU utilization is updated when the gate thread performs periodic activities (GateActivitiesPeriodMs), so
+                // that would also affect the actual interval. Set to 0 to disable using CPU utilization and have components
+                // behave as though CPU utilization is low. The default value of 1 causes CPU utilization to be updated whenever
+                // the gate thread performs periodic activities.
+                int cpuUtilizationIntervalMs =
+                    AppContextConfigHelper.GetInt32Config(
+                        "System.Threading.ThreadPool.CpuUtilizationIntervalMs",
+                        "DOTNET_ThreadPool_CpuUtilizationIntervalMs",
+                        defaultValue: 1,
+                        allowNegative: false);
+
                 // The first reading is over a time range other than what we are focusing on, so we do not use the read other
                 // than to send it to any runtime-specific implementation that may also use the CPU utilization.
                 CpuUtilizationReader cpuUtilizationReader = default;
-                _ = cpuUtilizationReader.CurrentUtilization;
+                int lastCpuUtilizationRefreshTimeMs = 0;
+                if (cpuUtilizationIntervalMs > 0)
+                {
+                    lastCpuUtilizationRefreshTimeMs = Environment.TickCount;
+                    _ = cpuUtilizationReader.CurrentUtilization;
+                }
 
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
                 LowLevelLock threadAdjustmentLock = threadPoolInstance._threadAdjustmentLock;
@@ -102,8 +118,17 @@ namespace System.Threading
                                 (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
                         }
 
-                        int cpuUtilization = (int)cpuUtilizationReader.CurrentUtilization;
-                        threadPoolInstance._cpuUtilization = cpuUtilization;
+                        // Determine whether CPU utilization should be updated. CPU utilization is only used by the starvation
+                        // heuristic and hill climbing, and neither of those are active when there is a pending blocking
+                        // adjustment.
+                        if (cpuUtilizationIntervalMs > 0 &&
+                            threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
+                            (uint)(currentTimeMs - lastCpuUtilizationRefreshTimeMs) >= (uint)cpuUtilizationIntervalMs)
+                        {
+                            lastCpuUtilizationRefreshTimeMs = currentTimeMs;
+                            int cpuUtilization = (int)cpuUtilizationReader.CurrentUtilization;
+                            threadPoolInstance._cpuUtilization = cpuUtilization;
+                        }
 
                         if (!disableStarvationDetection &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&

@@ -6,8 +6,6 @@
 
 You can think of [NrbfDecoder](https://learn.microsoft.com/en-us/dotnet/api/system.formats.nrbf.nrbfdecoder) as being the equivalent of using a JSON/XML reader without the deserializer.
 
-**Note:** The 9.0.0 release of the `System.Formats.Nrbf` package is marked `[Experimental]` as the API shape is subject to change in the next major release. Even with the experimental annotation, the package is officially supported. Using the APIs from this package will produce a build warning with diagnostic ID `SYSLIB5005`. The diagnostic can be suppressed with the acknowledgement that the API shape is subject to change in the next major release.
-
 ## How to Use
 
 The NRBF payload consists of serialization records that represent the serialized objects and their metadata. To read the whole payload and get the root record, you need to call one of the [NrbfDecoder.Decode](https://learn.microsoft.com/dotnet/api/system.formats.nrbf.nrbfdecoder.decode) methods.

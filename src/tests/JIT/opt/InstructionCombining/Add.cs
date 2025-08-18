@@ -85,6 +85,56 @@ namespace TestAdd
                 fail = true;
             }
 
+            if (!AddsSingleLine(-5, 5))
+            {
+                fail = true;
+            }
+
+            if (!AddsSingleLineLSL(-0x70, 0x7))
+            {
+                fail = true;
+            }
+
+            if (AddsBinOp(-5, 5, 2, -2) != 1)
+            {
+                fail = true;
+            }
+
+            if (!AddsBinOpSingleLine(-5, 5, 4, -2))
+            {
+                fail = true;
+            }
+
+            if (AddExtendedB(0, 0x101) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedH(0, 0x10001) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedW(0, 0x100000001) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedUB(0, 0x101) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedUH(0, 0x10001) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddExtendedUW(0, 0x100000001) != 1)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -139,6 +189,48 @@ namespace TestAdd
         {
             //ARM64-FULL-LINE: add {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ASR #41
             return a + (b>>169);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedB(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, SXTB
+            return a + (sbyte)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedH(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, SXTH
+            return a + (short)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedW(long a, long b)
+        {
+            //ARM64-FULL-LINE: add {{x[0-9]+}}, {{x[0-9]+}}, {{w[0-9]+}}, SXTW
+            return a + (int)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedUB(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, UXTB
+            return a + (byte)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedUH(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, UXTH
+            return a + (ushort)b;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long AddExtendedUW(long a, long b)
+        {
+            //ARM64-FULL-LINE: add {{x[0-9]+}}, {{x[0-9]+}}, {{w[0-9]+}}, UXTW
+            return a + (uint)b;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -210,6 +302,39 @@ namespace TestAdd
                 return 1;
             }
             return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsSingleLine(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return a + b == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsSingleLineLSL(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #4
+            return a + (b<<4) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddsBinOp(int a, int b, int c, int d)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            if ((a + b == 0) == (c + d == 0)) {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool AddsBinOpSingleLine(int a, int b, int c, int d)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            return (a + b == 0) | (c + d == 0);
         }
     }
 }

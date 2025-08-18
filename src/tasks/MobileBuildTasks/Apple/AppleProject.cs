@@ -82,23 +82,23 @@ namespace Microsoft.Apple.Build
                 buildOptions.CompilerArguments.Add($"-arch {targetAbi}");
             }
 
-            foreach(string compilerArg in buildOptions.CompilerArguments)
+            foreach (string compilerArg in buildOptions.CompilerArguments)
             {
                 ret.Append(compilerArg);
                 ret.Append(' ');
             }
 
-            foreach(string includeDir in buildOptions.IncludePaths)
+            foreach (string includeDir in buildOptions.IncludePaths)
             {
                 ret.Append($"-I {includeDir} ");
             }
 
-            foreach(string linkerArg in buildOptions.LinkerArguments)
+            foreach (string linkerArg in buildOptions.LinkerArguments)
             {
                 ret.Append($"{linkerArg} ");
             }
 
-            foreach(string source in buildOptions.Sources)
+            foreach (string source in buildOptions.Sources)
             {
                 string ext = Path.GetExtension(source);
 
@@ -115,7 +115,7 @@ namespace Microsoft.Apple.Build
             }
 
             HashSet<string> libDirs = new HashSet<string>();
-            foreach(string lib in buildOptions.NativeLibraryPaths)
+            foreach (string lib in buildOptions.NativeLibraryPaths)
             {
                 string rootPath = Path.GetDirectoryName(lib)!;
                 string libName = Path.GetFileName(lib);

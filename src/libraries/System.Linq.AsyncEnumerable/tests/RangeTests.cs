@@ -17,6 +17,12 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Range(42, 0));
+        }
+
+        [Fact]
         public async Task VariousValues_MatchesEnumerable()
         {
             foreach (int start in new[] { int.MinValue, -1, 0, 1, 1_000_000 })

@@ -19,35 +19,31 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             IEqualityComparer<TSource>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source, comparer, default);
+            return
+                source.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(source, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> source,
                 IEqualityComparer<TSource>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
-                try
+                await using IAsyncEnumerator<TSource> e = source.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
                 {
-                    if (await e.MoveNextAsync().ConfigureAwait(false))
+                    HashSet<TSource> set = new(comparer);
+                    do
                     {
-                        HashSet<TSource> set = new(comparer);
-                        do
+                        TSource element = e.Current;
+                        if (set.Add(element))
                         {
-                            TSource element = e.Current;
-                            if (set.Add(element))
-                            {
-                                yield return element;
-                            }
+                            yield return element;
                         }
-                        while (await e.MoveNextAsync().ConfigureAwait(false));
                     }
-                }
-                finally
-                {
-                    await e.DisposeAsync().ConfigureAwait(false);
+                    while (await e.MoveNextAsync());
                 }
             }
         }

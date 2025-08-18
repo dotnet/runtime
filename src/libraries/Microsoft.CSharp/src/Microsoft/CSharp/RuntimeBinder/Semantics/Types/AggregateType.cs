@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // Represents a generic constructed (or instantiated) type. Parent is the AggregateSymbol.
     // ----------------------------------------------------------------------------
-
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class AggregateType : CType
     {
         private AggregateType _baseType;  // This is the result of calling SubstTypeArray on the aggregate's baseClass.

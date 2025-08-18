@@ -19,8 +19,7 @@ parameters:
   variables: {}
   pool: ''
   dependsOn: []
-  compileOnHelix: false
-  interpreter: false
+  extraHelixArguments: ''
   buildAllTestsAsStandalone: false
   #arcade-specific parameters
   condition: always()
@@ -28,7 +27,6 @@ parameters:
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
-  gatherAssetManifests: false
   shouldContinueOnError: false
 
 steps:
@@ -84,56 +82,41 @@ steps:
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
 
-  # Checks the value of the compileOnHelix parameter
-  # and if set invokes libraries pipeline for AOT on Helix
-  - ${{ if eq(parameters.compileOnHelix, 'true') }}:
-    - template: /eng/pipelines/libraries/helix.yml
-      parameters:
-        osGroup: ${{ parameters.osGroup }}
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        archType: ${{ parameters.archType }}
-        targetRid: ${{ parameters.targetRid }}
-        buildConfig: ${{ parameters.buildConfig }}
-        interpreter: ${{ parameters.interpreter }}
-        testRunNamePrefixSuffix: ${{ parameters.testRunNamePrefixSuffix }}
-        extraHelixArguments: ${{ parameters.extraHelixArguments }}
-        helixQueues: ${{ parameters.helixQueues }}
-        creator: ${{ parameters.creator }}
-  - ${{ else }}:
-    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
-      parameters:
-        displayName: Send tests to Helix
-        buildConfig: $(buildConfigUpper)
-        archType: ${{ parameters.archType }}
-        osGroup: ${{ parameters.osGroup }}
-        osSubgroup: ${{ parameters.osSubgroup}}
-        coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
-        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        runtimeVariant: ${{ parameters.runtimeVariant }}
+  - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+    parameters:
+      displayName: Send tests to Helix
+      buildConfig: $(buildConfigUpper)
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup}}
+      coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
 
-        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          # Access token variable for internal project from the
-          # DotNet-HelixApi-Access variable group
-          helixAccessToken: $(HelixApiAccessToken)
-        ${{ else }}:
-          creator: $(Build.DefinitionName)
+      ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        # Access token variable for internal project from the
+        # DotNet-HelixApi-Access variable group
+        helixAccessToken: $(HelixApiAccessToken)
+      ${{ else }}:
+        creator: $(Build.DefinitionName)
 
-        helixBuild: $(Build.BuildNumber)
-        helixSource: $(_HelixSource)
-        ${{ if ne(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/cli/'
+      helixBuild: $(Build.BuildNumber)
+      helixSource: $(_HelixSource)
+      ${{ if ne(parameters.readyToRun, true) }}:
+        helixType: 'test/functional/cli/'
 
-        helixQueues: ${{ parameters.helixQueues }}
-        # This tests whether an array is empty
-        ${{ if eq(join('', parameters.helixQueues), '') }}:
-          condition: false
-        publishTestResults: true
-        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
-        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
-        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
-        compositeBuildMode: ${{ parameters.compositeBuildMode }}
-        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
-        nativeAotTest: ${{ parameters.nativeAotTest }}
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
-        scenarios: ${{ parameters.scenarios }}
+      helixQueues: ${{ parameters.helixQueues }}
+      # This tests whether an array is empty
+      ${{ if eq(join('', parameters.helixQueues), '') }}:
+        condition: false
+      publishTestResults: true
+      timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+      timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+      runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
+      compositeBuildMode: ${{ parameters.compositeBuildMode }}
+      runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+      nativeAotTest: ${{ parameters.nativeAotTest }}
+      helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+      extraHelixArguments: ${{ parameters.extraHelixArguments }}
+      scenarios: ${{ parameters.scenarios }}

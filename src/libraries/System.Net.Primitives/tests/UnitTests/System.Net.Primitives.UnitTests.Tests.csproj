@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);169;649</NoWarn>
@@ -28,6 +28,10 @@
              Link="ProductionCode\System\Net\Sockets\SocketError.cs" />
     <Compile Include="..\..\src\System\Net\IPAddress.cs"
              Link="ProductionCode\System\Net\IPAddress.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
+             Link="ProductionCode\Common\System\Net\IPv4AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"
+             Link="ProductionCode\Common\System\Net\IPv6AddressHelper.Common.cs" />
     <Compile Include="..\..\src\System\Net\EndPoint.cs"
              Link="ProductionCode\System\Net\EndPoint.cs" />
     <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs"
@@ -58,9 +62,6 @@
   <ItemGroup>
     <Compile Include="CookieCollectionTest.cs" />
     <Compile Include="Fakes\CookieException.cs" />
-    <Compile Include="Fakes\HostInformation.cs" />
-    <Compile Include="Fakes\IPv4AddressHelper.cs" />
-    <Compile Include="Fakes\IPv6AddressHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"

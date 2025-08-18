@@ -642,7 +642,7 @@ UINT OleVariant::GetElementSizeForVarType(VARTYPE vt, MethodTable *pInterfaceMT)
 
     if (vt == VTHACK_NONBLITTABLERECORD || vt == VTHACK_BLITTABLERECORD || vt == VT_RECORD)
     {
-        PREFIX_ASSUME(pInterfaceMT != NULL);
+        _ASSERTE(pInterfaceMT != NULL);
         return pInterfaceMT->GetNativeSize();
     }
     else if (vt > VT_LPWSTR)
@@ -705,7 +705,7 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
         case VT_DECIMAL:
             return CoreLibBinder::GetClass(CLASS__DECIMAL);
         default:
-            PREFIX_ASSUME(pManagedMT != NULL);
+            _ASSERTE(pManagedMT != NULL);
             return pManagedMT;
     }
 }
@@ -2975,7 +2975,7 @@ BOOL OleVariant::CheckVariant(VARIANT* pOle)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return bValidVariant;
 }
@@ -3298,7 +3298,7 @@ void OleVariant::MarshalArrayVariantOleToObject(const VARIANT* pOleVariant,
         {
             GCX_PREEMP();
 
-            pStructMarshalStub = NDirect::CreateStructMarshalILStub(pElemMT);
+            pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pElemMT);
         }
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
@@ -3343,7 +3343,7 @@ void OleVariant::MarshalArrayVariantObjectToOle(OBJECTREF * const & pObj,
     {
         GCX_PREEMP();
 
-        pStructMarshalStub = NDirect::CreateStructMarshalILStub(pElemMT);
+        pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pElemMT);
     }
     GCPROTECT_END();
 
@@ -3385,7 +3385,7 @@ void OleVariant::MarshalArrayVariantOleRefToObject(const VARIANT *pOleVariant,
         {
             GCX_PREEMP();
 
-            pStructMarshalStub = NDirect::CreateStructMarshalILStub(pElemMT);
+            pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pElemMT);
         }
 
         BASEARRAYREF pArrayRef = CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
@@ -3886,7 +3886,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     MethodDesc* pStructMarshalStub;
     {
         GCX_PREEMP();
-        pStructMarshalStub = NDirect::CreateStructMarshalILStub(pValueClassMT);
+        pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pValueClassMT);
     }
 
     MarshalStructViaILStub(pStructMarshalStub, (*pBoxedValueClass)->GetData(), (BYTE*)V_RECORD(pRecHolder), StructMarshalStubs::MarshalOperation::Marshal);

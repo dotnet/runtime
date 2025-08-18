@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Microsoft.XmlSerializer.Generator\tests\SerializableAssembly.csproj" />
-    <TrimmerRootAssembly Include="SerializableAssembly" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.cs" />
@@ -50,9 +48,16 @@
              Link="SerializationTestTypes\SelfRefAndCycles.cs" />
     <Compile Include="$(TestSourceFolder)..\System.Xml\XmlBinaryNodeType.cs"
              Link="System.Xml\XmlBinaryNodeType.cs" />
-    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
   </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
+    <TrimmerRootAssembly Include="SerializableAssembly" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
+    <ProjectReference Include="..\..\..\Microsoft.XmlSerializer.Generator\tests\SerializableAssembly.csproj" />
   </ItemGroup>
+
 </Project>

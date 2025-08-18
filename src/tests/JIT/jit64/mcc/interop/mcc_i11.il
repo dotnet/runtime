@@ -5,6 +5,7 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
+.assembly extern TestLibrary {}
 
 .assembly 'mcc_i11' {}
 
@@ -23,6 +24,19 @@
           01 00 00 00
       )
       .entrypoint
+      .maxstack  1
+      call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
+      brtrue.s   DoTest
+      ldc.i4     100
+      ret
+
+    DoTest:
+      call       int32 MCCTest.MyClass::Test()
+      ret
+    }
+
+    .method public static int32 Test()
+    {
       .maxstack  64
       .locals init	(
         [0] valuetype MCCTest.VType1 res,
@@ -67,7 +81,7 @@
 
       ldloc.s    rc
       ret
-    } // end of method MyClass::Main
+    } // end of method MyClass::Test
 
   } // end of class MyClass
 

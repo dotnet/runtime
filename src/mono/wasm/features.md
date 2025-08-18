@@ -23,7 +23,7 @@ Some of these properties require a unique build of the runtime, which means that
 
 ### Multi-threading
 
-Multi-threading support is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`, and is currently disabled by default. It requires a unique build of the runtime.
+Multi-threading experiment is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`, and is currently disabled by default. It requires a unique build of the runtime.
 
 Your HTTPS server and/or proxy must be configured to send HTTP headers similar to `Cross-Origin-Embedder-Policy:require-corp` and `Cross-Origin-Opener-Policy:same-origin` in order to enable multi-threading support in end-user web browsers for security reasons.
 
@@ -54,6 +54,14 @@ If an application uses the [HttpClient](https://learn.microsoft.com/dotnet/api/s
 Because web browsers do not expose direct access to sockets, we are unable to provide our own implementation of HTTP, and HttpClient's behavior and feature set will as a result depend also on the browser you use to run the application.
 
 A prominent limitation is that your application must obey `Cross-Origin Resource Sharing` (CORS) rules in order to perform network requests successfully - see [CORS on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) for more information.
+
+Since Net 10 Preview 3 the HTTP client supports [streaming HTTP response](https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams#consuming_a_fetch_as_a_stream) by default because all evergreen browsers now support it.
+
+This is a breaking change because the `response.Content.ReadAsStreamAsync()` is no longer `MemoryStream` but `BrowserHttpReadStream` which doesn't support synchronous operations like `Stream.Read(Span<Byte>)`. If your code uses synchronous operations, you can disable the feature or copy the stream into `MemoryStream` yourself.
+
+If you need to disable it, you can use `<WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>` or `DOTNET_WASM_ENABLE_STREAMING_RESPONSE` env variable to do it for all HTTP requests.
+
+Or you can use `request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), false);` for individual request.
 
 ### WebSocket
 Applications using the [WebSocketClient](https://learn.microsoft.com/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
@@ -129,11 +137,13 @@ When you want to call JavaScript functions from C# or managed code from JavaScri
 * or [the documentation](https://learn.microsoft.com/aspnet/core/client-side/dotnet-interop).
 
 ### Embedding dotnet in existing JavaScript applications
-To embed the .NET runtime inside of a JavaScript application, you will need to use both the MSBuild toolchain (to build and publish your managed code) and your existing web build toolchain.
+The default build output relies on exact file names produced during .NET build. In our testing the dynamic loading of assets provides faster startup and shorter download times.
 
-The output of the MSBuild toolchain - located in the [AppBundle](#Project-folder-structure) folder - must be fed in to your web build toolchain in order to ensure that the runtime and managed binaries are deployed with the rest of your application assets.
-
-For a sample of using the .NET runtime in a React component, [see here](https://github.com/maraf/dotnet-wasm-react).
+JavaScript tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) can be used for further file modifications.
+An msbuild property `<WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>` can be used to generate different JavaScript files that are not runnable
+in the browsers, but they can be consumed by these JavaScript tools. Some examples:
+  - Merge all JavaScript files, resolve wasm & other files as files, copying them to the output directory, optionally fingerprinting them, etc.
+  - Embed all JavaScripts files and wasm & other files as base64 encoded blobs directly into a single file.
 
 ## Project folder structure
 
@@ -166,7 +176,7 @@ Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
 - `dotnet.runtime.js` - is integration of the dotnet with the browser
-- `blazor.boot.json` - contains list of all other assets and their integrity hash and also various configuration flags.
+- `dotnet.boot.js` - contains list of all other assets and their integrity hash and also various configuration flags.
 - `dotnet.native.wasm` - is the compiled binary of the dotnet (Mono) runtime.
 - `System.Private.CoreLib.*` - is NET assembly with the core implementation of dotnet runtime and class library
 - `*.wasm` - are .NET assemblies stored in `WebCIL` format (for better compatibility with firewalls and virus scanners).
@@ -202,7 +212,7 @@ Adding too many files into prefetch could be counterproductive.
 Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
-<link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
+<link rel="preload" href="./_framework/dotnet.boot.js" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
 ```
@@ -266,11 +276,6 @@ Browsers do not offer a way to access the contents of their time zone database, 
 
 This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
-### Bundling JavaScript and other assets
-Many web developers use tools like [webpack](https://github.com/webpack/webpack) or [rollup](https://github.com/rollup/rollup) to bundle many files into one large .js file. When deploying a .NET application to the web, you can safely bundle the `dotnet.js` ES6 module with the rest of your JavaScript application, but the other assets and modules in the `_framework` folder may not be bundled as they are loaded dynamically.
-
-In our testing the dynamic loading of assets provides faster startup and shorter download times. We would like to [hear from the community](https://github.com/dotnet/runtime/issues/86162) if there are scenarios where you need the ability to bundle the rest of an application.
-
 ## Resources consumed on the target device
 When you deploy a .NET application to the browser, many necessary components and databases are included:
 - The .NET runtime, including a garbage collector, interpreter, and JIT compiler
@@ -291,9 +296,6 @@ Note that all browsers on iOS and iPadOS are required to use the Safari browser 
 Mobile browsers typically have strict limits on the amount of memory they can use, and many users are on slow internet connections.
 
 A WebAssembly application that works well on desktop PCs browser may take minutes to download or run out of memory before it is able to start on a mobile device, and the same is true for .NET.
-
-### Shell environments - V8
-While our primary target is web browsers, we have partial support for D8/V8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
 
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
@@ -371,79 +373,63 @@ await dotnet
 
 See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
 
-### Profiling
-
-You can enable integration with browser profiler via following elements in your .csproj
-```xml
-<PropertyGroup>
-  <WasmProfilers>browser;</WasmProfilers>
-</PropertyGroup>
-```
-
-In Blazor, you can customize the startup in your index.html
-```html
-<script src="_framework/blazor.webassembly.js" autostart="false"></script>
-<script>
-Blazor.start({
-    configureRuntime: function (dotnet) {
-        dotnet.withConfig({
-            browserProfilerOptions: {}
-        });
-    }
-});
-</script>
-```
-
-In simple browser template, you can add following to your `main.js`
-
-```javascript
-import { dotnet } from './dotnet.js'
-await dotnet.withConfig({browserProfilerOptions: {}}).run();
-```
-
-### Log Profiling for Memory Troubleshooting
-
-You can enable integration with log profiler via following elements in your .csproj:
+### Diagnostics tools
 
 ```xml
 <PropertyGroup>
-  <WasmProfilers>log;</WasmProfilers>
-  <WasmBuildNative>true</WasmBuildNative>
+  <!-- enables diagnostic server -->
+  <EnableDiagnostics>true</EnableDiagnostics>
+
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  Only when WasmPerformanceInstrumentation is not empty or none.
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmPerformanceInstrumentation>N:Sample</WasmPerformanceInstrumentation>
+  <!-- alternatively all methods -->
+  <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
+
+  <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
+  <!-- this is existing switch also on other targets -->
+  <MetricsSupport>true</MetricsSupport>
+
+  <!-- enables system events https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/diagnostics#observability-and-telemetry -->
+  <!-- this is existing switch also on other targets -->
+  <EventSourceSupport>true</EventSourceSupport>
 </PropertyGroup>
 ```
 
-In simple browser template, you can add following to your `main.js`
+`Timing-Allow-Origin` HTTP header allows for more precise time measurements.
 
-```javascript
-import { dotnet } from './dotnet.js'
-await dotnet.withConfig({
-    logProfilerOptions: {
-        takeHeapshot: "MyApp.Profiling::TakeHeapshot",
-        configuration: "log:alloc,output=output.mlpd"
-    }}).run();
+Then you can trigger collection of a trace from browser dev tools
+
+```js
+globalThis.getDotnetRuntime(0).collectGcDump()
 ```
 
-In order to trigger a heap shot, add the following:
-
-```csharp
-namespace MyApp;
-
-class Profiling
-{
-    [JSExport]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TakeHeapshot() { }
-}
+The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
+```js
+globalThis.getDotnetRuntime(0).collectMetrics({durationSeconds: 60})
 ```
 
-Invoke `MyApp.Profiling.TakeHeapshot()` from your code in order to create a memory heap shot and flush the contents of the profile to the VFS. Make sure to align the namespace and class of the `logProfilerOptions.takeHeapshot` with your class.
+The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`
 
-You can download the mpld file to analyze it.
+```js
+globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
+```
 
-### Diagnostic tools
+The counters could be opened in VS or in `PerfView.exe`
 
-We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe)
 
-At the moment it requires multi-threaded build of the runtime.
+### Profiling in the browser dev tools
 
-For more details see [diagnostic-server.md](../browser/runtime/diagnostics/diagnostic-server.md)
+You can enable integration with the profiler in browser dev tools via following elements in your .csproj
+```xml
+<PropertyGroup>
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
+  <!-- alternatively all methods -->
+  <WasmProfilers>browser:callspec=all</WasmProfilers>
+</PropertyGroup>
+```

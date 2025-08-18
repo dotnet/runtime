@@ -107,10 +107,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static ApplicationPartition GetApplicationPartition(DirectoryContext context)
         {
             // validate the context
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             // contexttype should be ApplicationPartiton
             if (context.ContextType != DirectoryContextType.ApplicationPartition)
@@ -376,10 +373,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             if (_appType == ApplicationPartitionType.ADApplicationPartition)
             {
@@ -430,10 +424,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             if (_appType == ApplicationPartitionType.ADApplicationPartition)
             {
@@ -481,10 +472,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             if (_appType == ApplicationPartitionType.ADApplicationPartition)
             {
@@ -527,10 +515,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             if (_appType == ApplicationPartitionType.ADApplicationPartition)
             {
@@ -864,10 +849,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private void ValidateApplicationPartitionParameters(DirectoryContext context, string distinguishedName, string? objectClass, bool objectClassSpecified)
         {
             // validate context
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             // contexttype should be DirectoryServer
             if ((context.Name == null) || (!context.isServer()))
@@ -876,10 +858,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // check that the distinguished name is not null or empty
-            if (distinguishedName == null)
-            {
-                throw new ArgumentNullException(nameof(distinguishedName));
-            }
+            ArgumentNullException.ThrowIfNull(distinguishedName);
 
             if (distinguishedName.Length == 0)
             {
@@ -914,10 +893,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // ADAM case and objectClass is explicitly specified, so must be validated
 
-                if (objectClass == null)
-                {
-                    throw new ArgumentNullException(nameof(objectClass));
-                }
+                ArgumentNullException.ThrowIfNull(objectClass);
 
                 if (objectClass.Length == 0)
                 {

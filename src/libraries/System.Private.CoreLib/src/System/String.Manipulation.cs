@@ -924,7 +924,7 @@ namespace System
             {
                 if (values.GetType() == typeof(List<string?>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
                 {
-                    return JoinCore(separator, CollectionsMarshal.AsSpan(Unsafe.As<List<string?>>(values)));
+                    return JoinCore(separator, CollectionsMarshal.AsSpan((List<string?>)values));
                 }
 
                 if (values is string?[] valuesArray)

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
@@ -14,7 +14,6 @@
     <Compile Include="..\MethodInfoTests.cs" />
     <Compile Include="..\MethodInvokerTests.cs" />
     <Compile Include="..\PropertyInfoTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Reflection\InvokeEmitTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TestAssembly\TestAssembly.csproj" />

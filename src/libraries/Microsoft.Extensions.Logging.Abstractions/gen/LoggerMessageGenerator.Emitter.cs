@@ -3,14 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
     public partial class LoggerMessageGenerator
     {
-        internal sealed class Emitter
+        internal sealed class Emitter(Compilation compilation)
         {
             // The maximum arity of LoggerMessage.Define.
             private const int MaxLoggerMessageDefineArguments = 6;
@@ -28,6 +30,14 @@ namespace Microsoft.Extensions.Logging.Generators
             private const string EditorBrowsableAttribute =
                 "global::System.ComponentModel.EditorBrowsableAttribute(" +
                 "global::System.ComponentModel.EditorBrowsableState.Never)";
+
+            private readonly bool _hasStringCreate =
+                compilation.GetSpecialType(SpecialType.System_String).GetMembers("Create").OfType<IMethodSymbol>()
+                    .Any(m => m.IsStatic &&
+                              m.Parameters.Length == 2 &&
+                              m.Parameters[0].Type.Name == "IFormatProvider" &&
+                              m.Parameters[1].RefKind == RefKind.Ref);
+
             private readonly StringBuilder _builder = new StringBuilder(DefaultStringBuilderCapacity);
             private bool _needEnumerationHelper;
 
@@ -163,8 +173,15 @@ namespace {lc.Namespace}
             {nestedIndentation}{{
 ");
                 GenVariableAssignments(lm, nestedIndentation);
+
+                string formatMethodBegin =
+                    !lm.Message.Contains('{') ? "" :
+                    _hasStringCreate ? "string.Create(global::System.Globalization.CultureInfo.InvariantCulture, " :
+                    "global::System.FormattableString.Invariant(";
+                string formatMethodEnd = formatMethodBegin.Length > 0 ? ")" : "";
+
                 _builder.Append($@"
-                {nestedIndentation}return $""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}"";
+                {nestedIndentation}return {formatMethodBegin}$""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}""{formatMethodEnd};
             {nestedIndentation}}}
 ");
                 _builder.Append($@"

@@ -3,11 +3,13 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Numerics;
+
 #if SYSTEM_PRIVATE_CORELIB
-using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.Unicode;
@@ -97,6 +99,7 @@ namespace System
         internal static (Vector128<byte>, Vector128<byte>) AsciiToHexVector128(Vector128<byte> src, Vector128<byte> hexMap)
         {
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
+
             // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
             // into nibbles and then, via hexMap, converted into a HEX representation via
             // Shuffle(nibbles, srcVec). ASCII is then expanded to UTF-16.
@@ -104,18 +107,20 @@ namespace System
             Vector128<byte> lowNibbles = Vector128.UnpackLow(shiftedSrc, src);
             Vector128<byte> highNibbles = Vector128.UnpackHigh(shiftedSrc, src);
 
-            return (Vector128.ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
-                Vector128.ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
+            return (
+                Vector128.ShuffleNative(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
+                Vector128.ShuffleNative(hexMap, highNibbles & Vector128.Create((byte)0xF))
+            );
         }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        private static void EncodeToUtf16_Vector128(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
+        private static void EncodeTo_Vector128<TChar>(ReadOnlySpan<byte> source, Span<TChar> destination, Casing casing)
         {
-            Debug.Assert(bytes.Length >= Vector128<int>.Count);
+            Debug.Assert(source.Length >= (Vector128<TChar>.Count / 2));
 
-            ref byte srcRef = ref MemoryMarshal.GetReference(bytes);
-            ref ushort destRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(chars));
+            ref byte srcRef = ref MemoryMarshal.GetReference(source);
+            ref TChar destRef = ref MemoryMarshal.GetReference(destination);
 
             Vector128<byte> hexMap = casing == Casing.Upper ?
                 Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
@@ -128,25 +133,41 @@ namespace System
                                  (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
             nuint pos = 0;
-            nuint lengthSubVector128 = (nuint)bytes.Length - (nuint)Vector128<int>.Count;
+            nuint lengthSubVector128 = (nuint)source.Length - (nuint)(Vector128<TChar>.Count / 2);
             do
             {
-                // This implementation processes 4 bytes of input at once, it can be easily modified
+                // This implementation processes 4 or 8 bytes of input at once, it can be easily modified
                 // to support 16 bytes at once, but that didn't demonstrate noticeable wins
                 // for Converter.ToHexString (around 8% faster for large inputs) so
                 // it focuses on small inputs instead.
 
-                uint i32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref srcRef, pos));
-                Vector128<byte> vec = Vector128.CreateScalar(i32).AsByte();
+                Vector128<byte> vec;
+
+                if (typeof(TChar) == typeof(byte))
+                {
+                    vec = Vector128.CreateScalar(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref srcRef, pos))).AsByte();
+                }
+                else
+                {
+                    Debug.Assert(typeof(TChar) == typeof(ushort));
+                    vec = Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref srcRef, pos))).AsByte();
+                }
 
                 // JIT is expected to eliminate all unused calculations
                 (Vector128<byte> hexLow, _) = AsciiToHexVector128(vec, hexMap);
-                (Vector128<ushort> v0, _) = Vector128.Widen(hexLow);
 
-                v0.StoreUnsafe(ref destRef, pos * 2);
+                if (typeof(TChar) == typeof(byte))
+                {
+                    hexLow.As<byte, TChar>().StoreUnsafe(ref destRef, pos * 2);
+                }
+                else
+                {
+                    Debug.Assert(typeof(TChar) == typeof(ushort));
+                    Vector128.WidenLower(hexLow).As<ushort, TChar>().StoreUnsafe(ref destRef, pos * 2);
+                }
 
-                pos += (nuint)Vector128<int>.Count;
-                if (pos == (nuint)bytes.Length)
+                pos += (nuint)(Vector128<TChar>.Count / 2);
+                if (pos == (nuint)source.Length)
                 {
                     return;
                 }
@@ -161,27 +182,44 @@ namespace System
         }
 #endif
 
-        public static void EncodeToUtf16(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing = Casing.Upper)
+        public static void EncodeToUtf8(ReadOnlySpan<byte> source, Span<byte> utf8Destination, Casing casing = Casing.Upper)
         {
-            Debug.Assert(chars.Length >= bytes.Length * 2);
+            Debug.Assert(utf8Destination.Length >= (source.Length * 2));
 
 #if SYSTEM_PRIVATE_CORELIB
-            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && bytes.Length >= 4)
+            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && (source.Length >= (Vector128<byte>.Count / 2)))
             {
-                EncodeToUtf16_Vector128(bytes, chars, casing);
+                EncodeTo_Vector128(source, utf8Destination, casing);
                 return;
             }
 #endif
-            for (int pos = 0; pos < bytes.Length; pos++)
+            for (int pos = 0; pos < source.Length; pos++)
             {
-                ToCharsBuffer(bytes[pos], chars, pos * 2, casing);
+                ToBytesBuffer(source[pos], utf8Destination, pos * 2, casing);
             }
         }
 
-        public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
+        public static void EncodeToUtf16(ReadOnlySpan<byte> source, Span<char> destination, Casing casing = Casing.Upper)
+        {
+            Debug.Assert(destination.Length >= (source.Length * 2));
+
+#if SYSTEM_PRIVATE_CORELIB
+            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && (source.Length >= (Vector128<ushort>.Count / 2)))
+            {
+                EncodeTo_Vector128(source, Unsafe.BitCast<Span<char>, Span<ushort>>(destination), casing);
+                return;
+            }
+#endif
+            for (int pos = 0; pos < source.Length; pos++)
+            {
+                ToCharsBuffer(source[pos], destination, pos * 2, casing);
+            }
+        }
+
+        public static string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
 #if NETFRAMEWORK || NETSTANDARD2_0
-            Span<char> result = bytes.Length > 16 ?
+            Span<char> result = (bytes.Length > 16) ?
                 new char[bytes.Length * 2].AsSpan() :
                 stackalloc char[bytes.Length * 2];
 
@@ -192,10 +230,24 @@ namespace System
                 pos += 2;
             }
             return result.ToString();
+#elif NET9_0_OR_GREATER
+            SpanCasingPair args = new() { Bytes = bytes, Casing = casing };
+            return string.Create(bytes.Length * 2, args, static (chars, args) =>
+                EncodeToUtf16(args.Bytes, chars, args.Casing));
 #else
-            return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
-                EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
+            // .NET 8.0 path (doesn't support 'allow ref struct' feature)
+            unsafe
+            {
+                return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
+                    EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
+            }
 #endif
+        }
+
+        private ref struct SpanCasingPair
+        {
+            public ReadOnlySpan<byte> Bytes { get; set; }
+            public Casing Casing { get; set; }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -226,79 +278,139 @@ namespace System
             return (char)value;
         }
 
-        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        public static bool TryDecodeFromUtf8(ReadOnlySpan<byte> utf8Source, Span<byte> destination, out int bytesProcessed)
         {
 #if SYSTEM_PRIVATE_CORELIB
-            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
-                chars.Length >= Vector128<ushort>.Count * 2)
+            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
+                (utf8Source.Length >= Vector128<byte>.Count))
             {
-                return TryDecodeFromUtf16_Vector128(chars, bytes, out charsProcessed);
+                return TryDecodeFrom_Vector128(utf8Source, destination, out bytesProcessed);
             }
 #endif
-            return TryDecodeFromUtf16_Scalar(chars, bytes, out charsProcessed);
+            return TryDecodeFromUtf8_Scalar(utf8Source, destination, out bytesProcessed);
+        }
+
+        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int charsProcessed)
+        {
+#if SYSTEM_PRIVATE_CORELIB
+            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
+                (source.Length >= (Vector128<ushort>.Count * 2)))
+            {
+                return TryDecodeFrom_Vector128(Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<ushort>>(source), destination, out charsProcessed);
+            }
+#endif
+            return TryDecodeFromUtf16_Scalar(source, destination, out charsProcessed);
         }
 
 #if SYSTEM_PRIVATE_CORELIB
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Ssse3))]
-        public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        public static bool TryDecodeFrom_Vector128<TChar>(ReadOnlySpan<TChar> source, Span<byte> destination, out int elementsProcessed)
         {
-            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
-            Debug.Assert(chars.Length <= bytes.Length * 2);
-            Debug.Assert(chars.Length % 2 == 0);
-            Debug.Assert(chars.Length >= Vector128<ushort>.Count * 2);
+            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
+            Debug.Assert(source.Length <= (destination.Length * 2));
+            Debug.Assert((source.Length % 2) == 0);
+
+            int elementsReadPerIteration;
+
+            if (typeof(TChar) == typeof(byte))
+            {
+                elementsReadPerIteration = Vector128<byte>.Count;
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(ushort));
+                elementsReadPerIteration = Vector128<ushort>.Count * 2;
+            }
+            Debug.Assert(source.Length >= elementsReadPerIteration);
 
             nuint offset = 0;
-            nuint lengthSubTwoVector128 = (nuint)chars.Length - ((nuint)Vector128<ushort>.Count * 2);
+            nuint lengthSubElementsReadPerIteration = (nuint)source.Length - (nuint)elementsReadPerIteration;
 
-            ref ushort srcRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(chars));
-            ref byte destRef = ref MemoryMarshal.GetReference(bytes);
+            ref TChar srcRef = ref MemoryMarshal.GetReference(source);
+            ref byte destRef = ref MemoryMarshal.GetReference(destination);
 
             do
             {
                 // The algorithm is UTF8 so we'll be loading two UTF-16 vectors to narrow them into a
                 // single UTF8 ASCII vector - the implementation can be shared with UTF8 paths.
-                Vector128<ushort> vec1 = Vector128.LoadUnsafe(ref srcRef, offset);
-                Vector128<ushort> vec2 = Vector128.LoadUnsafe(ref srcRef, offset + (nuint)Vector128<ushort>.Count);
-                Vector128<byte> vec = Ascii.ExtractAsciiVector(vec1, vec2);
+                Vector128<byte> vec;
+
+                if (typeof(TChar) == typeof(byte))
+                {
+                    vec = Vector128.LoadUnsafe(ref srcRef, offset).AsByte();
+
+                    if (!Utf8Utility.AllBytesInVector128AreAscii(vec))
+                    {
+                        // Input is non-ASCII
+                        break;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(typeof(TChar) == typeof(ushort));
+
+                    Vector128<ushort> vec1 = Vector128.LoadUnsafe(ref srcRef, offset).AsUInt16();
+                    Vector128<ushort> vec2 = Vector128.LoadUnsafe(ref srcRef, offset + (nuint)Vector128<ushort>.Count).AsUInt16();
+
+                    vec = Ascii.ExtractAsciiVector(vec1, vec2);
+
+                    if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2))
+                    {
+                        // Input is non-ASCII
+                        break;
+                    }
+                }
 
                 // Based on "Algorithm #3" https://github.com/WojciechMula/toys/blob/master/simd-parse-hex/geoff_algorithm.cpp
                 // by Geoff Langdale and Wojciech Mula
                 // Move digits '0'..'9' into range 0xf6..0xff.
-                Vector128<byte> t1 = vec + Vector128.Create((byte)(0xFF - '9'));
+                Vector128<byte> t1 = vec + Vector128.Create<byte>(0xFF - '9');
+
                 // And then correct the range to 0xf0..0xf9.
                 // All other bytes become less than 0xf0.
-                Vector128<byte> t2 = Vector128.SubtractSaturate(t1, Vector128.Create((byte)6));
+                Vector128<byte> t2 = Vector128.SubtractSaturate(t1, Vector128.Create<byte>(6));
+
                 // Convert into uppercase 'a'..'f' => 'A'..'F' and
                 // move hex letter 'A'..'F' into range 0..5.
-                Vector128<byte> t3 = (vec & Vector128.Create((byte)0xDF)) - Vector128.Create((byte)'A');
+                Vector128<byte> t3 = (vec & Vector128.Create<byte>(0xDF)) - Vector128.Create((byte)'A');
+
                 // And correct the range into 10..15.
                 // The non-hex letters bytes become greater than 0x0f.
-                Vector128<byte> t4 = Vector128.AddSaturate(t3, Vector128.Create((byte)10));
+                Vector128<byte> t4 = Vector128.AddSaturate(t3, Vector128.Create<byte>(10));
+
                 // Convert '0'..'9' into nibbles 0..9. Non-digit bytes become
                 // greater than 0x0f. Finally choose the result: either valid nibble (0..9/10..15)
                 // or some byte greater than 0x0f.
-                Vector128<byte> nibbles = Vector128.Min(t2 - Vector128.Create((byte)0xF0), t4);
+                Vector128<byte> nibbles = Vector128.Min(t2 - Vector128.Create<byte>(0xF0), t4);
+
                 // Any high bit is a sign that input is not a valid hex data
-                if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2) ||
-                    Vector128.AddSaturate(nibbles, Vector128.Create((byte)(127 - 15))).ExtractMostSignificantBits() != 0)
+                if (Vector128.AddSaturate(nibbles, Vector128.Create<byte>(127 - 15)).ExtractMostSignificantBits() != 0)
                 {
-                    // Input is either non-ASCII or invalid hex data
+                    // Input is invalid hex data
                     break;
                 }
+
                 Vector128<byte> output;
                 if (Ssse3.IsSupported)
                 {
-                    output = Ssse3.MultiplyAddAdjacent(nibbles,
-                        Vector128.Create((short)0x0110).AsSByte()).AsByte();
+                    output = Ssse3.MultiplyAddAdjacent(nibbles, Vector128.Create<short>(0x0110).AsSByte()).AsByte();
                 }
                 else if (AdvSimd.Arm64.IsSupported)
                 {
                     // Workaround for missing MultiplyAddAdjacent on ARM
                     Vector128<short> even = AdvSimd.Arm64.TransposeEven(nibbles, Vector128<byte>.Zero).AsInt16();
                     Vector128<short> odd = AdvSimd.Arm64.TransposeOdd(nibbles, Vector128<byte>.Zero).AsInt16();
+
                     even = AdvSimd.ShiftLeftLogical(even, 4).AsInt16();
                     output = AdvSimd.AddSaturate(even, odd).AsByte();
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    Vector128<byte> shiftedNibbles = PackedSimd.ShiftLeft(nibbles, 4);
+                    Vector128<byte> zipped = PackedSimd.BitwiseSelect(nibbles, shiftedNibbles, Vector128.Create<ushort>(0xFF00).AsByte());
+                    output = PackedSimd.AddPairwiseWidening(zipped).AsByte();
                 }
                 else
                 {
@@ -306,57 +418,111 @@ namespace System
                     ThrowHelper.ThrowUnreachableException();
                     output = default;
                 }
+
                 // Accumulate output in lower INT64 half and take care about endianness
                 output = Vector128.Shuffle(output, Vector128.Create((byte)0, 2, 4, 6, 8, 10, 12, 14, 0, 0, 0, 0, 0, 0, 0, 0));
+
                 // Store 8 bytes in dest by given offset
                 Unsafe.WriteUnaligned(ref Unsafe.Add(ref destRef, offset / 2), output.AsUInt64().ToScalar());
 
-                offset += (nuint)Vector128<ushort>.Count * 2;
-                if (offset == (nuint)chars.Length)
+                offset += (nuint)elementsReadPerIteration;
+                if (offset == (nuint)source.Length)
                 {
-                    charsProcessed = chars.Length;
+                    elementsProcessed = source.Length;
                     return true;
                 }
+
                 // Overlap with the current chunk for trailing elements
-                if (offset > lengthSubTwoVector128)
+                if (offset > lengthSubElementsReadPerIteration)
                 {
-                    offset = lengthSubTwoVector128;
+                    offset = lengthSubElementsReadPerIteration;
                 }
             }
             while (true);
 
             // Fall back to the scalar routine in case of invalid input.
-            bool fallbackResult = TryDecodeFromUtf16_Scalar(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out int fallbackProcessed);
-            charsProcessed = (int)offset + fallbackProcessed;
+            bool fallbackResult;
+
+            if (typeof(TChar) == typeof(byte))
+            {
+                fallbackResult = TryDecodeFromUtf8_Scalar(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(source.Slice((int)offset)), destination.Slice((int)(offset / 2)), out elementsProcessed);
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(ushort));
+                fallbackResult = TryDecodeFromUtf16_Scalar(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(source.Slice((int)offset)), destination.Slice((int)(offset / 2)), out elementsProcessed);
+            }
+
+            elementsProcessed = (int)offset + elementsProcessed;
             return fallbackResult;
         }
 #endif
 
-        private static bool TryDecodeFromUtf16_Scalar(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        private static bool TryDecodeFromUtf8_Scalar(ReadOnlySpan<byte> utf8Source, Span<byte> destination, out int bytesProcessed)
         {
-            Debug.Assert(chars.Length % 2 == 0, "Un-even number of characters provided");
-            Debug.Assert(chars.Length / 2 == bytes.Length, "Target buffer not right-sized for provided characters");
+            Debug.Assert((utf8Source.Length % 2) == 0, "Un-even number of characters provided");
+            Debug.Assert((utf8Source.Length / 2) == destination.Length, "Target buffer not right-sized for provided characters");
 
             int i = 0;
             int j = 0;
             int byteLo = 0;
             int byteHi = 0;
-            while (j < bytes.Length)
+
+            while (j < destination.Length)
             {
-                byteLo = FromChar(chars[i + 1]);
-                byteHi = FromChar(chars[i]);
+                byteLo = FromChar(utf8Source[i + 1]);
+                byteHi = FromChar(utf8Source[i]);
 
                 // byteHi hasn't been shifted to the high half yet, so the only way the bitwise or produces this pattern
                 // is if either byteHi or byteLo was not a hex character.
                 if ((byteLo | byteHi) == 0xFF)
+                {
                     break;
+                }
 
-                bytes[j++] = (byte)((byteHi << 4) | byteLo);
+                destination[j++] = (byte)((byteHi << 4) | byteLo);
                 i += 2;
             }
 
             if (byteLo == 0xFF)
+            {
                 i++;
+            }
+
+            bytesProcessed = i;
+            return (byteLo | byteHi) != 0xFF;
+        }
+
+        private static bool TryDecodeFromUtf16_Scalar(ReadOnlySpan<char> source, Span<byte> destination, out int charsProcessed)
+        {
+            Debug.Assert((source.Length % 2) == 0, "Un-even number of characters provided");
+            Debug.Assert((source.Length / 2) == destination.Length, "Target buffer not right-sized for provided characters");
+
+            int i = 0;
+            int j = 0;
+            int byteLo = 0;
+            int byteHi = 0;
+
+            while (j < destination.Length)
+            {
+                byteLo = FromChar(source[i + 1]);
+                byteHi = FromChar(source[i]);
+
+                // byteHi hasn't been shifted to the high half yet, so the only way the bitwise or produces this pattern
+                // is if either byteHi or byteLo was not a hex character.
+                if ((byteLo | byteHi) == 0xFF)
+                {
+                    break;
+                }
+
+                destination[j++] = (byte)((byteHi << 4) | byteLo);
+                i += 2;
+            }
+
+            if (byteLo == 0xFF)
+            {
+                i++;
+            }
 
             charsProcessed = i;
             return (byteLo | byteHi) != 0xFF;
@@ -365,23 +531,27 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromChar(int c)
         {
-            return c >= CharToHexLookup.Length ? 0xFF : CharToHexLookup[c];
+            return (c >= CharToHexLookup.Length) ? 0xFF : CharToHexLookup[c];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromUpperChar(int c)
         {
-            return c > 71 ? 0xFF : CharToHexLookup[c];
+            return (c > 71) ? 0xFF : CharToHexLookup[c];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromLowerChar(int c)
         {
-            if ((uint)(c - '0') <= '9' - '0')
+            if ((uint)(c - '0') <= ('9' - '0'))
+            {
                 return c - '0';
+            }
 
-            if ((uint)(c - 'a') <= 'f' - 'a')
+            if ((uint)(c - 'a') <= ('f' - 'a'))
+            {
                 return c - 'a' + 10;
+            }
 
             return 0xFF;
         }
@@ -420,13 +590,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsHexUpperChar(int c)
         {
-            return (uint)(c - '0') <= 9 || (uint)(c - 'A') <= ('F' - 'A');
+            return ((uint)(c - '0') <= 9) || ((uint)(c - 'A') <= ('F' - 'A'));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsHexLowerChar(int c)
         {
-            return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
+            return ((uint)(c - '0') <= 9) || ((uint)(c - 'a') <= ('f' - 'a'));
         }
 
         /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>

@@ -186,6 +186,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="initialState">Whether the event is set initially or not.</param>
         /// <param name="spinCount">The spin count that decides when the event will block.</param>
+#pragma warning disable IDE0060 // Remove unused parameter spinCount, on single-threaded systems, the spin count is not used.
         private void Initialize(bool initialState, int spinCount)
         {
             m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
@@ -196,6 +197,7 @@ namespace System.Threading
 
             SpinCount = Environment.IsSingleProcessor ? DEFAULT_SPIN_SP : spinCount;
         }
+#pragma warning restore IDE0060
 
         /// <summary>
         /// Helper to ensure the lock object is created before first use.
@@ -506,7 +508,7 @@ namespace System.Threading
 
 
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
-                uint startTime = 0;
+                long startTime = 0;
                 bool bNeedTimeoutAdjustment = false;
                 int realMillisecondsTimeout = millisecondsTimeout; // this will be adjusted if necessary.
 
@@ -518,7 +520,7 @@ namespace System.Threading
                     // period of time.  The timeout adjustments only take effect when and if we actually
                     // decide to block in the kernel below.
 
-                    startTime = TimeoutHelper.GetTime();
+                    startTime = Environment.TickCount64;
                     bNeedTimeoutAdjustment = true;
                 }
 
@@ -556,7 +558,8 @@ namespace System.Threading
                             // update timeout (delays in wait commencement are due to spinning and/or spurious wakeups from other waits being canceled)
                             if (bNeedTimeoutAdjustment)
                             {
-                                realMillisecondsTimeout = TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
+                                // TimeoutHelper.UpdateTimeOut returns a long but the value is capped as millisecondsTimeout is an int.
+                                realMillisecondsTimeout = (int)TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
                                 if (realMillisecondsTimeout <= 0)
                                     return false;
                             }

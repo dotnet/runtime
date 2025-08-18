@@ -167,12 +167,35 @@ namespace System.Linq
                     // they're covariant. It's not worthwhile checking for List<T> to use the ListWhereSelectIterator
                     // because List<> is not covariant.
                     Func<object, bool> isTResult = static o => o is TResult;
-                    return objectSource is object[] array ?
+                    return !IsSizeOptimized && objectSource is object[] array ?
                         new ArrayWhereSelectIterator<object, TResult2>(array, isTResult, localSelector) :
                         new IEnumerableWhereSelectIterator<object, TResult2>(objectSource, isTResult, localSelector);
                 }
 
                 return base.Select(selector);
+            }
+
+            public override bool Contains(TResult value)
+            {
+                // Avoid checking for IList when size-optimized because it keeps IList
+                // implementations which may otherwise be trimmed. Since List<T> implements
+                // IList and List<T> is popular, this could potentially be a lot of code.
+                if (!IsSizeOptimized &&
+                    !typeof(TResult).IsValueType && // don't box TResult
+                    _source is IList list)
+                {
+                    return list.Contains(value);
+                }
+
+                foreach (object? item in _source)
+                {
+                    if (item is TResult castItem && EqualityComparer<TResult>.Default.Equals(castItem, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

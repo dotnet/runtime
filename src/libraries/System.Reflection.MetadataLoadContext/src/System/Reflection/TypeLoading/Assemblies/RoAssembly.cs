@@ -38,8 +38,7 @@ namespace System.Reflection.TypeLoading
         protected abstract AssemblyNameData ComputeNameData();
         private volatile AssemblyNameData? _lazyAssemblyNameData;
 
-        public sealed override string FullName => _lazyFullName ??= GetName().FullName;
-        private volatile string? _lazyFullName;
+        public sealed override string FullName => field ??= GetName().FullName;
 
         internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
 
@@ -99,10 +98,7 @@ namespace System.Reflection.TypeLoading
         // Api to retrieve types by name. Retrieves both types physically defined in this module and types this assembly forwards from another assembly.
         public sealed override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             // Known compat disagreement: This api is supposed to throw an ArgumentException if the name has an assembly qualification
             // (though the intended meaning seems clear.) This is difficult for us to implement as we don't have our own type name parser.
@@ -198,7 +194,7 @@ namespace System.Reflection.TypeLoading
         }
 
         // Serialization
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

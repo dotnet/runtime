@@ -16,6 +16,12 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => AsyncEnumerable.Reverse<int>(null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().Reverse());
+        }
+
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 1 })]

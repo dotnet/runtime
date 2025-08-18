@@ -74,7 +74,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             return GetPrivateKey<T>(certificate);
         }
 
-        private static T? GetPrivateKey<T>(X509Certificate2 certificate) where T : AsymmetricAlgorithm
+        private static T? GetPrivateKey<T>(X509Certificate2 certificate) where T : class, IDisposable
         {
             if (typeof(T) == typeof(RSA))
                 return (T?)(object?)certificate.GetRSAPrivateKey();
@@ -84,6 +84,10 @@ namespace Internal.Cryptography.Pal.AnyOS
             if (typeof(T) == typeof(DSA) && Internal.Cryptography.Helpers.IsDSASupported)
                 return (T?)(object?)certificate.GetDSAPrivateKey();
 #endif
+            if (typeof(T) == typeof(MLDsa) && MLDsa.IsSupported)
+                return (T?)(object?)certificate.GetMLDsaPrivateKey();
+            if (typeof(T) == typeof(SlhDsa) && SlhDsa.IsSupported)
+                return (T?)(object?)certificate.GetSlhDsaPrivateKey();
 
             Debug.Fail($"Unknown key type requested: {typeof(T).FullName}");
             return null;
