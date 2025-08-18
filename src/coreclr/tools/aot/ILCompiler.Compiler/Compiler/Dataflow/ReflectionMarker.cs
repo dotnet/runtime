@@ -314,6 +314,11 @@ namespace ILCompiler.Dataflow
 
             Debug.Assert(_typeHierarchyDataFlowOrigin != null);
 
+            // Allow RUC on the type itself to suppress these warnings.
+            // This allows a type with RUC to suppress warnings about the type using other RUC types.
+            if (DiagnosticUtilities.TryGetRequiresAttribute(_typeHierarchyDataFlowOrigin, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
+                return;
+
             static bool IsDeclaredWithinType(TypeSystemEntity member, TypeDesc type)
             {
                 TypeDesc owningType = member.GetOwningType();

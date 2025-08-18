@@ -171,32 +171,6 @@ namespace ILLink.RoslynAnalyzer
                 context.RegisterCompilationAction(extraCompilationAction);
         }
 
-        internal void CheckAndCreateRequiresDiagnostic(
-            ISymbol member,
-            ISymbol containingSymbol,
-            ImmutableArray<ISymbol> incompatibleMembers,
-            in DiagnosticContext diagnosticContext)
-        {
-            // Do not emit any diagnostic if caller is annotated with the attribute too.
-            if (containingSymbol.IsInRequiresScope(RequiresAttributeName, out _))
-                return;
-
-            if (CreateSpecialIncompatibleMembersDiagnostic(incompatibleMembers, member, diagnosticContext))
-                return;
-
-            // Warn on the most derived base method taking into account covariant returns
-            while (member is IMethodSymbol method && method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals(method.ReturnType, method.OverriddenMethod.ReturnType))
-                member = method.OverriddenMethod;
-
-            if (!member.DoesMemberRequire(RequiresAttributeName, out var requiresAttribute))
-                return;
-
-            if (!VerifyAttributeArguments(requiresAttribute))
-                return;
-
-            CreateRequiresDiagnostic(member, requiresAttribute, diagnosticContext);
-        }
-
         [Flags]
         protected enum DiagnosticTargets
         {
@@ -374,12 +348,63 @@ namespace ILLink.RoslynAnalyzer
 
             ISymbol containingSymbol = operation.FindContainingSymbol(owningSymbol);
 
+            // Do not emit any diagnostic if caller is annotated with the attribute too
+            if (containingSymbol.IsInRequiresScope(RequiresAttributeName, out _))
+            {
+                // Warnings for attributes on type declarations are not suppressed by RUC on the type.
+                // This allows attribute warnings to still be reported when attributes are applied to RUC types.
+                if (containingSymbol is not INamedTypeSymbol || !IsAttributeOnType(operation, member))
+                {
+                    return;
+                }
+            }
+
             var incompatibleMembers = context.GetSpecialIncompatibleMembers(this);
-            CheckAndCreateRequiresDiagnostic(
-                member,
-                containingSymbol,
-                incompatibleMembers,
-                diagnosticContext);
+            if (CreateSpecialIncompatibleMembersDiagnostic(incompatibleMembers, member, diagnosticContext))
+                return;
+
+            // Warn on the most derived base method taking into account covariant returns
+            while (member is IMethodSymbol method && method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals(method.ReturnType, method.OverriddenMethod.ReturnType))
+                member = method.OverriddenMethod;
+
+            if (!member.DoesMemberRequire(RequiresAttributeName, out var requiresAttribute))
+                return;
+
+            if (!VerifyAttributeArguments(requiresAttribute))
+                return;
+
+            CreateRequiresDiagnostic(member, requiresAttribute, diagnosticContext);
+        }
+
+        private static bool IsAttributeOnType(IOperation operation, ISymbol member)
+        {
+            INamedTypeSymbol? potentialAttrType = null;
+            if (operation.Kind == OperationKind.ObjectCreation &&
+                member is IMethodSymbol potentialAttrCtor &&
+                potentialAttrCtor.IsConstructor())
+            {
+                potentialAttrType = potentialAttrCtor.ContainingType;
+            }
+            else if (member is IMethodSymbol method &&
+                     method.MethodKind == MethodKind.PropertySet &&
+                     method.AssociatedSymbol is IPropertySymbol associatedProperty)
+            {
+                potentialAttrType = associatedProperty.ContainingType;
+            }
+
+            return potentialAttrType != null && IsAttributeType(potentialAttrType);
+        }
+
+        private static bool IsAttributeType(INamedTypeSymbol? type)
+        {
+            var current = type;
+            while (current != null)
+            {
+                if (current.ToDisplayString() == "System.Attribute")
+                    return true;
+                current = current.BaseType;
+            }
+            return false;
         }
 
         internal virtual bool IsIntrinsicallyHandled(

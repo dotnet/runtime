@@ -1713,7 +1713,13 @@ namespace Mono.Linker.Steps
         void ReportWarningsForReflectionAccess(in MessageOrigin origin, MethodDefinition method, DependencyKind dependencyKind)
         {
             if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _))
-                return;
+            {
+                // Warnings for attributes on type declarations are not suppressed by RUC on the type.
+                // This allows attribute warnings to still be reported when attributes are applied to RUC types.
+                if (dependencyKind is not (DependencyKind.AttributeConstructor or DependencyKind.AttributeProperty) ||
+                    origin.Provider is not TypeDefinition)
+                    return;
+            }
 
             bool isReflectionAccessCoveredByRUC;
             bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(method);
@@ -1790,6 +1796,11 @@ namespace Mono.Linker.Steps
 
             var type = origin.Provider as TypeDefinition;
             Debug.Assert(type != null);
+
+            // Allow RUC on the type itself to suppress these warnings.
+            // This allows a type with RUC to suppress warnings about the type using other RUC types.
+            if (Annotations.TryGetLinkerAttribute<RequiresUnreferencedCodeAttribute>(type, out _))
+                return;
 
             static bool IsDeclaredWithinType(IMemberDefinition member, TypeDefinition type)
             {

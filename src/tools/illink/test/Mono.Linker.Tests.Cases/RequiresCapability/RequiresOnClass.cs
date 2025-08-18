@@ -36,6 +36,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             AttributeParametersAndProperties.Test();
             MembersOnClassWithRequires<int>.Test();
             ConstFieldsOnClassWithRequires.Test();
+            RequiresOnClassWithAttributes.Test();
+            RequiresOnAttributeTypeWithDAM.Test();
         }
 
         [RequiresUnreferencedCode("Message for --ClassWithRequires--")]
@@ -767,13 +769,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
             [RequiresUnreferencedCode("This class is dangerous")]
             [RequiresDynamicCode("This class is dangerous")]
-            [ExpectedWarning("IL2113", "BaseForDAMAnnotatedClass.baseField")]
             class DAMAnnotatedClass : BaseForDAMAnnotatedClass
             {
-                [ExpectedWarning("IL2112", "DAMAnnotatedClass.publicField")]
                 public static int publicField;
 
-                [ExpectedWarning("IL2112", "DAMAnnotatedClass.privatefield")]
                 static int privatefield;
             }
 
@@ -1183,23 +1182,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             [RequiresUnreferencedCode("This class is dangerous")]
             [RequiresDynamicCode("This class is dangerous")]
-            [ExpectedWarning("IL2113", "BaseForDAMAnnotatedClass.baseProperty.get")]
-            [ExpectedWarning("IL2113", "BaseForDAMAnnotatedClass.baseProperty.set")]
             class DAMAnnotatedClass : BaseForDAMAnnotatedClass
             {
                 public static int publicProperty
                 {
-                    [ExpectedWarning("IL2112", "DAMAnnotatedClass.publicProperty.get")]
                     get;
-                    [ExpectedWarning("IL2112", "DAMAnnotatedClass.publicProperty.set")]
                     set;
                 }
 
                 static int privateProperty
                 {
-                    [ExpectedWarning("IL2112", "DAMAnnotatedClass.privateProperty.get")]
                     get;
-                    [ExpectedWarning("IL2112", "DAMAnnotatedClass.privateProperty.set")]
                     set;
                 }
             }
@@ -1358,15 +1351,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 }
             }
 
-            // This warning should ideally be suppressed by the RUC on the type:
-            [UnexpectedWarning("IL2091", Tool.All, "https://github.com/dotnet/runtime/issues/108523")]
             [RequiresUnreferencedCode("--GenericClassWithWarningWithRequires--")]
             public class GenericClassWithWarningWithRequires<U> : RequiresAll<U>
             {
             }
 
-            // This warning should ideally be suppressed by the RUC on the type:
-            [UnexpectedWarning("IL2091", Tool.All, "https://github.com/dotnet/runtime/issues/108523")]
             [RequiresUnreferencedCode("--ClassWithWarningWithRequires--")]
             public class ClassWithWarningWithRequires : RequiresAll<T>
             {
@@ -1382,13 +1371,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 }
             }
 
-            [UnexpectedWarning("IL2026", Tool.All, "https://github.com/dotnet/runtime/issues/108507")]
             [RequiresUnreferencedCode("--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
             class ClassWithWarningOnGenericArgumentConstructorWithRequires : RequiresNew<ClassWithRequires>
             {
             }
 
-            [UnexpectedWarning("IL2091", Tool.All, "https://github.com/dotnet/runtime/issues/108523")]
             [RequiresUnreferencedCode("--GenericAnnotatedWithWarningWithRequires--")]
             public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
             {
@@ -1465,6 +1452,79 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
                 TestClassWithRequires();
                 TestClassUsingFieldInAttribute();
+            }
+        }
+
+        class RequiresOnClassWithAttributes
+        {
+            public static void Test()
+            {
+                typeof(RUCTypeWithAttribute).GetCustomAttributes();
+            }
+
+            // Requires on the type should not suppress attribute warnings
+            [ExpectedWarning("IL2026", nameof(AttributeWithRUCAttribute))]
+            [ExpectedWarning("IL2026", nameof(AttributeWithRUCPropertyAttribute))]
+            [RequiresUnreferencedCode(nameof(RUCTypeWithAttribute))]
+            [AttributeWithRUCProperty(Property = 4)]
+            [AttributeWithRUC]
+            class RUCTypeWithAttribute
+            {
+            }
+
+            class AttributeWithRUCPropertyAttribute : Attribute
+            {
+                public int Property { get; [RequiresUnreferencedCode(nameof(AttributeWithRUCPropertyAttribute.Property))] set; }
+            }
+
+            [RequiresUnreferencedCode(nameof(AttributeWithRUCAttribute))]
+            class AttributeWithRUCAttribute : Attribute
+            {
+            }
+        }
+
+        public class RequiresOnAttributeTypeWithDAM
+        {
+            public static void Test(
+                AttributeWithDAMAttribute instance = null,
+                DerivedAttributeWithDAMAttribute derivedInstance = null,
+                DerivedAttributePropertyRequiresAttribute derivedInstanceWithProperty = null)
+            {
+                instance.GetType().GetConstructors();
+                derivedInstance.GetType().GetConstructors();
+                derivedInstanceWithProperty.GetType().GetMethods();
+            }
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [RequiresUnreferencedCode("Suppresses DAM type hierarchy warnings on the ctor")]
+            public class AttributeWithDAMAttribute : Attribute
+            {
+                [RequiresUnreferencedCode(nameof(AttributeWithDAMAttribute))]
+                public AttributeWithDAMAttribute()
+                {
+                }
+            }
+
+            [RequiresUnreferencedCode(nameof(AttributeWithRequiresAttribute))]
+            public class AttributeWithRequiresAttribute : Attribute
+            {
+            }
+
+            [RequiresUnreferencedCode("Suppresses DAM type hierarchy warnings on the type")]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            public class DerivedAttributeWithDAMAttribute : AttributeWithRequiresAttribute
+            {
+            }
+
+            public class AttributePropertyRequiresAttribute : Attribute
+            {
+                public int Property { get; [RequiresUnreferencedCode(nameof(AttributePropertyRequiresAttribute.Property))] set; }
+            }
+
+            [RequiresUnreferencedCode("Suppresses DAM type hierarchy warnings on the type")]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            public class DerivedAttributePropertyRequiresAttribute : Attribute
+            {
             }
         }
     }
