@@ -12644,43 +12644,27 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
         }
     }
 
-    if ((val > -1000) && (val < 1000))
+    switch (id->idOpSize())
     {
-        printf("%d", (int)val);
-    }
-    else if (val > 0)
-    {
-        printf("0x%zX", (ssize_t)val);
-    }
-    else if (val < -0xFFFFFF)
-    {
-        switch (id->idOpSize())
-        {
-            case EA_1BYTE:
-                printf("0x%X", static_cast<int8_t>(val));
-                break;
+        case EA_1BYTE:
+            printf("0x%X", static_cast<uint8_t>(val));
+            break;
 
-            case EA_2BYTE:
-                printf("0x%X", static_cast<int16_t>(val));
-                break;
+        case EA_2BYTE:
+            printf("0x%X", static_cast<uint16_t>(val));
+            break;
 
-            case EA_4BYTE:
-                printf("0x%X", static_cast<int32_t>(val));
-                break;
+        case EA_4BYTE:
+            printf("0x%X", static_cast<uint32_t>(val));
+            break;
 
-            case EA_8BYTE:
-                printf("0x%X", static_cast<int64_t>(val));
-                break;
+        case EA_8BYTE:
+            printf("0x%X", static_cast<uint64_t>(val));
+            break;
 
-            default:
-                printf("0x%zX", (ssize_t)val);
-                break;
-        }
-    }
-    else
-    {
-        // (val < 0)
-        printf("-0x%zX", (ssize_t)-val);
+        default:
+            printf("0x%zX", (ssize_t)val);
+            break;
     }
 
     emitDispCommentForHandle(cnsVal.cnsVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
