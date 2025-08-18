@@ -155,7 +155,7 @@ namespace System.Runtime.CompilerServices
             // We only support this intrinsic when it occurs within a well-defined IL sequence.
             // If a call to this method occurs within the recognized sequence, codegen must expand the IL sequence completely.
             // For any other purpose, the API is currently unsupported.
-            // We shortcut this here as opposed in GetSpanDataFrom to avoid `typeof(T)` below marking T target of reflection.
+            // We shortcut this here instead of in `GetSpanDataFrom` to avoid `typeof(T)` below marking T target of reflection.
             => throw new PlatformNotSupportedException();
 #else
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
