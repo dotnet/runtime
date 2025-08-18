@@ -2268,11 +2268,6 @@ bool Compiler::optReachable(BasicBlock* const fromBlock,
         return true;
     }
 
-    if ((pBudget != nullptr) && (*pBudget <= 0))
-    {
-        return false;
-    }
-
     if (optReachableBitVecTraits == nullptr)
     {
         optReachableBitVecTraits = new (this, CMK_Reachability) BitVecTraits(fgBBNumMax + 1, this);
@@ -2296,29 +2291,46 @@ bool Compiler::optReachable(BasicBlock* const fromBlock,
         {
             continue;
         }
-
+        BasicBlockVisit result;
         bool            ranOutOfBudget = false;
-        BasicBlockVisit result =
-            nextBlock->VisitAllSuccs(this, [this, toBlock, &stack, &ranOutOfBudget, pBudget](BasicBlock* succ) {
-            if (succ == toBlock)
-            {
-                return BasicBlockVisit::Abort;
-            }
+        if (pBudget == nullptr)
+        {
+            result = nextBlock->VisitAllSuccs(this, [this, toBlock, &stack](BasicBlock* succ) {
+                if (succ == toBlock)
+                {
+                    return BasicBlockVisit::Abort;
+                }
 
-            if ((pBudget != nullptr) && (--(*pBudget) <= 0))
-            {
-                ranOutOfBudget = true;
-                return BasicBlockVisit::Abort;
-            }
-
-            if (!BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
-            {
+                if (BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
+                {
+                    stack.Push(succ);
+                }
                 return BasicBlockVisit::Continue;
-            }
+            });
+        }
+        else
+        {
+            result =
+                nextBlock->VisitAllSuccs(this, [this, toBlock, &stack, &ranOutOfBudget, pBudget](BasicBlock* succ) {
+                if (succ == toBlock)
+                {
+                    return BasicBlockVisit::Abort;
+                }
 
-            stack.Push(succ);
-            return BasicBlockVisit::Continue;
-        });
+                if ((pBudget != nullptr) && (--(*pBudget) <= 0))
+                {
+                    ranOutOfBudget = true;
+                    return BasicBlockVisit::Abort;
+                }
+
+                if (BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
+                {
+                    stack.Push(succ);
+                }
+
+                return BasicBlockVisit::Continue;
+            });
+        }
 
         if (result == BasicBlockVisit::Abort)
         {
