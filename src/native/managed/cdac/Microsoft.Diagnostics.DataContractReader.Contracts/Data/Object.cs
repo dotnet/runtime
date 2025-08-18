@@ -10,7 +10,7 @@ internal sealed class Object : IData<Object>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Object);
 
-        MethodTable = target.ProcessedData.GetOrAdd<Data.MethodTable>(target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset));
+        MethodTable = target.ProcessedData.GetOrAdd<Data.MethodTable>(target.ReadPointer(address + (ulong)type.Fields["m_pMethTab"].Offset));
     }
 
     public MethodTable MethodTable { get; init; }

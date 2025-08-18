@@ -121,7 +121,7 @@ CDAC_TYPE_END(GCHandle)
 
 CDAC_TYPE_BEGIN(Object)
 CDAC_TYPE_INDETERMINATE(Object)
-CDAC_TYPE_FIELD(Object, /*pointer*/, MethodTable, cdac_data<Object>::m_pMethTab)
+CDAC_TYPE_FIELD(Object, /*pointer*/, m_pMethTab, cdac_data<Object>::m_pMethTab)
 CDAC_TYPE_END(Object)
 
 CDAC_TYPE_BEGIN(String)
