@@ -96,6 +96,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
 
         if (dnCtx == NULL)
         {
+            EVP_MAC_CTX_free(evpMac);
             return NULL;
         }
 
@@ -128,6 +129,7 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
 
     if (dnCtx == NULL)
     {
+        HMAC_CTX_free(ctx);
         return NULL;
     }
 
@@ -143,7 +145,7 @@ void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx)
         ENSURE_DN_MAC_CONSISTENCY(ctx);
 
 #ifdef NEED_OPENSSL_3_0
-        if (HAVE_EVP_MAC && ctx->mac)
+        if (ctx->mac)
         {
             EVP_MAC_CTX_free(ctx->mac);
             ctx->mac = NULL;
@@ -275,6 +277,7 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
 
         if (dnCtx == NULL)
         {
+            EVP_MAC_CTX_free(macDup);
             return NULL;
         }
 
@@ -312,6 +315,7 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
 
     if (dnCtx == NULL)
     {
+        HMAC_CTX_free(dup);
         return NULL;
     }
 
