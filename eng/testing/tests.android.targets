@@ -28,7 +28,6 @@
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
 
       <AndroidBuildDir>$(PublishDir)</AndroidBuildDir>
-      <AndroidBundleDir>$(BundleDir)</AndroidBundleDir>
     </PropertyGroup>
 
     <ItemGroup>

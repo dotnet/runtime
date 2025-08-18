@@ -5220,39 +5220,6 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
 
 /*****************************************************************************
  *
- *  Is the BasicBlock bJump a forward branch?
- *   Optionally bSrc can be supplied to indicate that
- *   bJump must be forward with respect to bSrc
- */
-bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
-{
-    assert((bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest)) ||
-           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
-
-    bool        result = false;
-    BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;
-
-    while (true)
-    {
-        bTemp = bTemp->Next();
-
-        if (bTemp == nullptr)
-        {
-            break;
-        }
-
-        if (bTemp == bDest)
-        {
-            result = true;
-            break;
-        }
-    }
-
-    return result;
-}
-
-/*****************************************************************************
- *
  *  Function called to move the range of blocks [bStart .. bEnd].
  *  The blocks are placed immediately after the insertAfterBlk.
  *  fgFirstFuncletBB is not updated; that is the responsibility of the caller, if necessary.

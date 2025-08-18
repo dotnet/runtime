@@ -742,6 +742,7 @@ protected:
 #endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
+    bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
 
 #if defined(TARGET_X86)
     void genCodeForLongUMod(GenTreeOp* node);

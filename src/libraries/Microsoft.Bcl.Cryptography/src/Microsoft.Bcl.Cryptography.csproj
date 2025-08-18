@@ -370,6 +370,8 @@
              Link="Common\System\Security\Cryptography\AesAEAD.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\AuthenticationTagMismatchException.cs"
              Link="Common\System\Security\Cryptography\AuthenticationTagMismatchException.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs"
+             Link="Common\System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
@@ -495,6 +497,10 @@
              Link="Common\System\Security\Cryptography\CngHelpers.SignVerify.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
              Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLDsaCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyPropertyName.cs"
              Link="Common\System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.cs"
@@ -577,6 +583,8 @@
              Link="Common\Interop\Windows\NCrypt\Interop.NCryptBuffer.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptDecapsulateEncapsulate.cs"
              Link="Common\Internal\Windows\NCrypt\Interop.NCryptDecapsulateEncapsulate.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Properties.cs"
              Link="Common\Interop\Windows\NCrypt\Interop.Properties.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.SignVerify.cs"
