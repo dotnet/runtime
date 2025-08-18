@@ -96,6 +96,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         IsInitError = 0x0100,
     }
 
+    internal enum AsyncMethodKind
+    {
+        NotAsync = 0,
+        TaskReturning = 1,
+        RuntimeAsync = 2,
+        AsyncVariantImpl = 3,
+        AsyncVariantThunk = 4,
+        AsyncExplicitImpl = 5,
+    }
+
     internal struct MethodDesc
     {
         private readonly Data.MethodDesc _desc;
@@ -151,10 +161,29 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return target.Read<byte>(methodDescSizeTable + arrayOffset);
         }
 
+        internal bool IsAsyncThunkMethod()
+        {
+            if (!HasFlags(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
+                return false;
+
+            TargetPointer methodDescSizeTable = _target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
+            ushort arrayOffset = (ushort)((MethodDescFlags_1.MethodDescFlags)_desc.Flags &
+                    MethodDescFlags_1.MethodDescFlags.ClassificationMask |
+                    MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot |
+                    MethodDescFlags_1.MethodDescFlags.HasMethodImpl |
+                    MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot);
+            byte size = _target.Read<byte>(methodDescSizeTable + arrayOffset);
+            TargetPointer asyncMethodDataPtr = Address + size;
+            Data.AsyncMethodData asyncMethodData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(asyncMethodDataPtr);
+            AsyncMethodKind asyncMethodKind = (AsyncMethodKind)asyncMethodData.Kind;
+            return asyncMethodKind == AsyncMethodKind.AsyncVariantThunk || asyncMethodKind == AsyncMethodKind.RuntimeAsync;
+        }
+
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
 
-        private bool HasFlags(MethodDescFlags_1.MethodDescFlags flags) => (_desc.Flags & (ushort)flags) != 0;
+        internal bool HasFlags(MethodDescFlags_1.MethodDescFlags flags) => (_desc.Flags & (ushort)flags) != 0;
         internal bool HasFlags(MethodDescFlags_1.MethodDescFlags3 flags) => (_desc.Flags3AndTokenRemainder & (ushort)flags) != 0;
+        internal MethodDescFlags_1.MethodDescFlags Flags => (MethodDescFlags_1.MethodDescFlags)_desc.Flags;
 
         internal bool HasFlags(MethodDescChunkFlags flags) => (_chunk.FlagsAndTokenRange & (ushort)flags) != 0;
 
@@ -1227,6 +1256,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
         return slot < GetNumVtableSlots(typeHandle);
+    }
+
+    bool IRuntimeTypeSystem.MayHaveILHeader(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.IsIL && !methodDesc.IsUnboxingStub && methodDesc.IsAsyncThunkMethod();
     }
 
 }

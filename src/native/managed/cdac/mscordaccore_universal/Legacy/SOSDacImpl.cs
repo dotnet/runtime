@@ -2285,8 +2285,67 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetReJITInformation(methodDesc, rejitId, pRejitData) : HResults.E_NOTIMPL;
+    int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, DacpReJitData2* pRejitData)
+    {
+        int hr = HResults.S_OK;
+        if (methodDesc == 0 || pRejitData == null || rejitId < 0)
+            hr = HResults.E_INVALIDARG;
+        else
+        {
+            try
+            {
+                pRejitData->rejitID = (ulong)rejitId;
+                ICodeVersions cv = _target.Contracts.CodeVersions;
+                IReJIT rejitContract = _target.Contracts.ReJIT;
+                TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+                ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersions(methodDescPtr)
+                    .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId,
+                        ILCodeVersionHandle.Invalid);
+
+                if (!ilCodeVersion.IsValid)
+                    hr = HResults.E_INVALIDARG;
+                else
+                {
+                    switch (rejitContract.GetRejitState(ilCodeVersion))
+                    {
+                        case RejitState.Requested:
+                            pRejitData->flags = DacpReJitData2.Flags.kRequested;
+                            break;
+                        case RejitState.Active:
+                            pRejitData->flags = DacpReJitData2.Flags.kActive;
+                            break;
+                        default:
+                            pRejitData->flags = DacpReJitData2.Flags.kUnknown;
+                            break;
+                    }
+                    TargetPointer mdPtr = methodDescPtr;
+                    pRejitData->il = ilCodeVersion.ToClrDataAddress(_target);
+                    if (ilCodeVersion.IsExplicit)
+                        pRejitData->ilCodeVersionNodePtr = ilCodeVersion.ILCodeVersionNode.ToClrDataAddress(_target);
+                    else
+                        pRejitData->ilCodeVersionNodePtr = 0;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                return ex.HResult;
+            }
+        }
+#if DEBUG
+        if (_legacyImpl7 is not null)
+        {
+            DacpReJitData2 rejitDataLocal;
+            int hrLocal = _legacyImpl7.GetReJITInformation(methodDesc, rejitId, &rejitDataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pRejitData->flags == rejitDataLocal.flags);
+                Debug.Assert(pRejitData->ilCodeVersionNodePtr == rejitDataLocal.ilCodeVersionNodePtr);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData)
         => _legacyImpl7 is not null ? _legacyImpl7.GetProfilerModifiedILInformation(methodDesc, pILData) : HResults.E_NOTIMPL;
     int ISOSDacInterface7.GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs)

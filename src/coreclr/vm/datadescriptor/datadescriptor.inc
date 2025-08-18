@@ -173,6 +173,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToDescMap, cdac_data<Module>::Meth
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_data<Module>::TypeDefToMethodTableMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_data<Module>::TypeRefToMethodTableMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToILCodeVersioningStateMap, cdac_data<Module>::MethodDefToILCodeVersioningStateMap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicILBlobTable, cdac_data<Module>::DynamicILBlobTable)
 CDAC_TYPE_END(Module)
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
@@ -664,6 +665,7 @@ CDAC_TYPE_INDETERMINATE(ILCodeVersionNode)
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*nuint*/, VersionId, cdac_data<ILCodeVersionNode>::VersionId)
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*pointer*/, Next, cdac_data<ILCodeVersionNode>::Next)
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*uint32*/, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
+CDAC_TYPE_FIELD(ILCodeVersionNode, /*pointer*/, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
 CDAC_TYPE_END(ILCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ProfControlBlock)
@@ -876,7 +878,18 @@ CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryValue, cdac_data<
 CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<InstMethodHashTable>::VolatileEntryNextEntry)
 CDAC_TYPE_END(InstMethodHashTable)
 
-CDAC_TYPES_END()
+CDAC_TYPE_BEGIN(DynamicILBlobTable)
+CDAC_TYPE_INDETERMINATE(DynamicILBlobTable)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, Table, cdac_data<DynamicILBlobTable>::Table)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, TableSize, cdac_data<DynamicILBlobTable>::TableSize)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntrySize, sizeof(DynamicILBlobEntry))
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, offsetof(DynamicILBlobEntry, m_methodToken))
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryIL, offsetof(DynamicILBlobEntry, m_il))
+CDAC_TYPE_END(DynamicILBlobTable)
+
+CDAC_TYPE_BEGIN(AsyncMethodData)
+CDAC_TYPE_FIELD(AsyncMethodData, /*uint32*/, Kind, offsetof(AsyncMethodData, kind))
+CDAC_TYPE_END(AsyncMethodData)
 
 CDAC_GLOBALS_BEGIN()
 

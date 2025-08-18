@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Formats.Tar;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -421,5 +424,55 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
         return loaderAllocator.StubHeap;
+    }
+
+    TargetPointer ILoader.GetIL(ModuleHandle handle, uint token)
+    {
+        // we need module
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        TargetPointer headerPtr = GetDynamicIL(handle, token);
+        if (headerPtr == TargetPointer.Null)
+        {
+            // If we can't find the IL, return null
+            return TargetPointer.Null;
+        }
+        return headerPtr;
+    }
+
+    private static TEntry LookupSHash<TKey, TEntry>(SHash<TKey, TEntry> hashTable, TKey key)
+    {
+        if (hashTable.TableSize == 0)
+            return hashTable.Traits.Null();
+
+        uint hash = hashTable.Traits.Hash(key);
+        uint index = hash % hashTable.TableSize;
+        uint increment = 0;
+        while (true)
+        {
+            TEntry current = hashTable.Entries![(int)index];
+            if (hashTable.Traits.IsNull(current))
+                return hashTable.Traits.Null();
+            // we don't support the removal of entries
+            if (hashTable.Traits.Equals(key, hashTable.Traits.GetKey(current)))
+                return current;
+
+            if (increment == 0)
+                increment = (hash % (hashTable.TableSize - 1)) + 1;
+
+            index += increment;
+            if (index >= hashTable.TableSize)
+                index -= hashTable.TableSize;
+        }
+    }
+
+    private TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.DynamicILBlobTable == TargetPointer.Null)
+        {
+            return TargetPointer.Null;
+        }
+        DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
+        return LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 }

@@ -183,6 +183,7 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    bool MayHaveILHeader(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
 }
 

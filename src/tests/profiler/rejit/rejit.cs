@@ -44,6 +44,8 @@ namespace Profiler.Tests
                 Console.WriteLine("ReJIT did not update all instances of InlineeTarget!");
                 return 1234;
             }
+            Console.WriteLine("ReJIT updated all instances of InlineeTarget!");
+            Console.ReadKey();
 
             TriggerRevert();
 
