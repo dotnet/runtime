@@ -214,6 +214,12 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingFor
 {
     assert(firstBlock->KindIs(BBJ_COND));
 
+#ifdef TARGET_ARM
+    // Bitmap test (TryLowerSwitchToBitTest) is quite verbose on ARM32 (~6 instructions), it results in massive size
+    // regressions.
+    return false;
+#endif
+
     GenTree*    variableNode                    = nullptr;
     ssize_t     cns                             = 0;
     BasicBlock* trueTarget                      = nullptr;
