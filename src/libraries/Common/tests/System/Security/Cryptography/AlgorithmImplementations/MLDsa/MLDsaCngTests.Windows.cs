@@ -17,8 +17,8 @@ namespace System.Security.Cryptography.Tests
         protected override MLDsa ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPrivateSeed(algorithm, source, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 
-        protected override MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            MLDsaTestHelpers.ImportSecretKey(algorithm, source, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
+        protected override MLDsa ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            MLDsaTestHelpers.ImportPrivateKey(algorithm, source, CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport);
 
         protected override MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPublicKey(algorithm, source);
@@ -37,8 +37,8 @@ namespace System.Security.Cryptography.Tests
         protected override MLDsa ImportPrivateSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPrivateSeed(algorithm, source, CngExportPolicies.AllowExport);
 
-        protected override MLDsa ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
-            MLDsaTestHelpers.ImportSecretKey(algorithm, source, CngExportPolicies.AllowExport);
+        protected override MLDsa ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+            MLDsaTestHelpers.ImportPrivateKey(algorithm, source, CngExportPolicies.AllowExport);
 
         protected override MLDsa ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             MLDsaTestHelpers.ImportPublicKey(algorithm, source);
@@ -55,12 +55,12 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void ImportPrivateKey_NoExportFlag(MLDsaKeyInfo info)
         {
-            using MLDsa mldsa = MLDsaTestHelpers.ImportSecretKey(info.Algorithm, info.SecretKey, CngExportPolicies.None);
+            using MLDsa mldsa = MLDsaTestHelpers.ImportPrivateKey(info.Algorithm, info.PrivateKey, CngExportPolicies.None);
 
             MLDsaTestHelpers.AssertExportMLDsaPublicKey(
                 export => AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(
+            MLDsaTestHelpers.AssertExportMLDsaPrivateKey(
                 export => Assert.Throws<CryptographicException>(() => export(mldsa)),
                 export => MLDsaTestHelpers.AssertThrowsCryptographicExceptionWithHResult(() => export(mldsa)));
 
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Tests
             MLDsaTestHelpers.AssertExportMLDsaPublicKey(
                 export => AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)));
 
-            MLDsaTestHelpers.AssertExportMLDsaSecretKey(
+            MLDsaTestHelpers.AssertExportMLDsaPrivateKey(
                 export => Assert.Throws<CryptographicException>(() => export(mldsa)),
                 export => MLDsaTestHelpers.AssertThrowsCryptographicExceptionWithHResult(() => export(mldsa)));
 
@@ -125,9 +125,9 @@ namespace System.Security.Cryptography.Tests
                     MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
                         AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PublicKey, export(mldsa)));
 
-                    MLDsaTestHelpers.AssertExportMLDsaSecretKey(
-                        export => AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.SecretKey, export(mldsa)),
-                        // Seed is preferred in PKCS#8, so secret key won't be available
+                    MLDsaTestHelpers.AssertExportMLDsaPrivateKey(
+                        export => AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PrivateKey, export(mldsa)),
+                        // Seed is preferred in PKCS#8, so private key won't be available
                         export => Assert.Null(export(mldsa)));
 
                     MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
@@ -144,12 +144,12 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Fact]
-        public void ImportSecretKey_Persisted()
+        [ConditionalFact(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
+        public void ImportPrivateKey_Persisted()
         {
             CngKey key = PqcBlobHelpers.EncodeMLDsaBlob(
                 PqcBlobHelpers.GetMLDsaParameterSet(MLDsaAlgorithm.MLDsa44),
-                MLDsaTestsData.IetfMLDsa44.SecretKey,
+                MLDsaTestsData.IetfMLDsa44.PrivateKey,
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
                 blob =>
                 {
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Tests
                     creationParams.ExportPolicy = CngExportPolicies.AllowPlaintextExport;
                     creationParams.KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey;
 
-                    CngKey key = CngKey.Create(CngAlgorithm.MLDsa, $"MLDsaCngTests_{nameof(ImportSecretKey_Persisted)}", creationParams);
+                    CngKey key = CngKey.Create(CngAlgorithm.MLDsa, $"MLDsaCngTests_{nameof(ImportPrivateKey_Persisted)}", creationParams);
                     return key;
                 });
 
@@ -174,8 +174,8 @@ namespace System.Security.Cryptography.Tests
                     MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
                         AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PublicKey, export(mldsa)));
 
-                    MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                        AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.SecretKey, export(mldsa)));
+                    MLDsaTestHelpers.AssertExportMLDsaPrivateKey(export =>
+                        AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PrivateKey, export(mldsa)));
 
                     MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(
                         export => Assert.Throws<CryptographicException>(() => export(mldsa)),
@@ -232,6 +232,28 @@ namespace System.Security.Cryptography.Tests
             finally
             {
                 key.Delete();
+            }
+        }
+
+        [Fact]
+        public static void MLDsaCng_GetKey()
+        {
+            CngProperty parameterSet = MLDsaTestHelpers.GetCngProperty(MLDsaAlgorithm.MLDsa65);
+            CngKeyCreationParameters creationParams = new();
+            creationParams.Parameters.Add(parameterSet);
+
+            using CngKey key = CngKey.Create(CngAlgorithm.MLDsa, keyName: null, creationParams);
+
+            using (MLDsaCng mlDsaKey = new(key))
+            using (CngKey getKey1 = mlDsaKey.GetKey())
+            {
+                using (CngKey getKey2 = mlDsaKey.GetKey())
+                {
+                    Assert.NotSame(key, getKey1);
+                    Assert.NotSame(getKey1, getKey2);
+                }
+
+                Assert.Equal(key.Algorithm, getKey1.Algorithm); // Assert.NoThrow on getKey1.Algorithm
             }
         }
     }

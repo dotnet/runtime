@@ -306,7 +306,7 @@ namespace System.Diagnostics.Tests
         [InlineData("Open", true)]
         [InlineData("invalid", false)]
         [PlatformSpecific(TestPlatforms.Linux)] // s_allowedProgramsToRun is Linux specific
-        public void ProcessStart_UseShellExecute_OnUnix_ValidVerbs(string verb, bool isValid)
+        public void ProcessStart_UseShellExecute_OnUnix_ValidVerbs(string? verb, bool isValid)
         {
             // Create a script that we'll use to 'open' the file by putting it on PATH
             // with the appropriate name.
@@ -1047,5 +1047,16 @@ namespace System.Diagnostics.Tests
                 return process.StandardOutput.ReadToEnd();
             }
         }
+
+        private static void SendSignal(PosixSignal signal, int processId)
+        {
+            int result = kill(processId, Interop.Sys.GetPlatformSignalNumber(signal));
+            if (result != 0)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Failed to send signal {signal} to process {processId}");
+            }
+        }
+
+        private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
     }
 }

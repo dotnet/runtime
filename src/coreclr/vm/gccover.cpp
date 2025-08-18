@@ -406,7 +406,7 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         switch (pPrecode->GetType())
         {
             case PRECODE_STUB:
-            case PRECODE_NDIRECT_IMPORT:
+            case PRECODE_PINVOKE_IMPORT:
             case PRECODE_THISPTR_RETBUF:
                 return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
             default:
@@ -444,13 +444,27 @@ void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
         return;
     }
 
-    if (IsPointerReturnKind(returnKind))
+    if (callMD->IsAsyncMethod())
     {
-        *instrToReplace = INTERRUPT_INSTR_PROTECT_FIRST_RET;
+        if (IsPointerReturnKind(returnKind))
+        {
+            *instrToReplace = INTERRUPT_INSTR_PROTECT_CONT_AND_RET;
+        }
+        else
+        {
+            *instrToReplace = INTERRUPT_INSTR_PROTECT_CONT;
+        }
     }
     else
     {
-        *instrToReplace = INTERRUPT_INSTR;
+        if (IsPointerReturnKind(returnKind))
+        {
+            *instrToReplace = INTERRUPT_INSTR_PROTECT_RET;
+        }
+        else
+        {
+            *instrToReplace = INTERRUPT_INSTR;
+        }
     }
 }
 
@@ -639,14 +653,22 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // `if (!IsGcCoverageInterruptInstruction(instrPtr))` after we read `*instrPtr`.
 
     bool atCall;
-    bool afterCallProtect = false;
+    bool afterCallRetProtect = false;
+    bool afterCallContProtect = false;
 
     BYTE instrVal = *instrPtr;
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
 
-    if (instrVal == INTERRUPT_INSTR_PROTECT_FIRST_RET)
+    if (instrVal == INTERRUPT_INSTR_PROTECT_RET ||
+        instrVal == INTERRUPT_INSTR_PROTECT_CONT_AND_RET)
     {
-        afterCallProtect = true;
+        afterCallRetProtect = true;
+    }
+
+    if (instrVal == INTERRUPT_INSTR_PROTECT_CONT ||
+        instrVal == INTERRUPT_INSTR_PROTECT_CONT_AND_RET)
+    {
+        afterCallContProtect = true;
     }
 
     if (!IsGcCoverageInterruptInstruction(instrPtr))
@@ -842,15 +864,20 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     // The legacy X86 GC encoder does not encode the state of return registers at
     // call sites, so we must add an extra frame to protect returns.
-    DWORD_PTR retValReg = 0;
+    DWORD_PTR protRegs[2] = {};
 
-    if (afterCallProtect)
+    if (afterCallRetProtect)
     {
-        retValReg = regs->Eax;
+        protRegs[0] = regs->Eax;
+    }
+
+    if (afterCallContProtect)
+    {
+        protRegs[1] = regs->Ecx;
     }
 
     _ASSERTE(sizeof(OBJECTREF) == sizeof(DWORD_PTR));
-    GCFrame gcFrame(pThread, (OBJECTREF*)&retValReg, 1, TRUE);
+    GCFrame gcFrame(pThread, (OBJECTREF*)protRegs, 2, TRUE);
 
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
     LOG((LF_GCROOTS, LL_EVERYTHING, "GCCOVER: Doing GC at method %s::%s offset 0x%x\n",
@@ -876,9 +903,14 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     CONSISTENCY_CHECK(!pThread->HasPendingGCStressInstructionUpdate());
 
-    if (afterCallProtect)
+    if (afterCallRetProtect)
     {
-        regs->Eax = retValReg;
+        regs->Eax = protRegs[0];
+    }
+
+    if (afterCallContProtect)
+    {
+        regs->Ecx = protRegs[1];
     }
 
     if (!Thread::UseRedirectForGcStress())

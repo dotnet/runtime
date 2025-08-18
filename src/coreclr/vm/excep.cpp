@@ -946,8 +946,8 @@ bool EHRangeTreeNode::TryContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1023,8 +1023,8 @@ bool EHRangeTreeNode::HandlerContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1099,8 +1099,8 @@ bool EHRangeTreeNode::FilterContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1416,10 +1416,10 @@ EHRangeTreeNode *EHRangeTree::FindNextMostSpecificContainer(EHRangeTreeNode *pNo
     // keep a reasonable default around.
     EHRangeTreeNode *pNodeCandidate = pNodeSearch;
 
-    USHORT cSubRanges = pNodeSearch->m_containees.Count();
+    INT32 cSubRanges = pNodeSearch->m_containees.Count();
     EHRangeTreeNode **ppNodeCur = pNodeSearch->m_containees.Table();
 
-    for (int i = 0; i < cSubRanges; i++, ppNodeCur++)
+    for (INT32 i = 0; i < cSubRanges; i++, ppNodeCur++)
     {
         if ((*ppNodeCur)->Contains(addr) &&
             pNodeCandidate->Contains((*ppNodeCur)))
@@ -3223,21 +3223,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     return CoreLibBinder::IsException(pThrowableMT, reKind);
 }
 
-BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    if (  (GetThreadNULLOk() && GetThread()->IsRudeAbort() && GetThread()->IsRudeAbortInitiated())
-        ||IsExceptionOfType(kThreadAbortException, pThrowable)
-        ||IsExceptionOfType(kThreadInterruptedException, pThrowable)) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
 BOOL IsUncatchable(OBJECTREF *pThrowable)
 {
     CONTRACTL {
@@ -3567,8 +3552,14 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 #ifdef HOST_WINDOWS
                 CreateCrashDumpIfEnabled(fSOException);
 #endif
-                RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
-                                       pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
+                // RaiseFailFastException validates that the context matches a valid return address on the stack as part of CET.
+                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in 
+                // checked builds of Windows OS. 
+                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not 
+                // match a valid return address on the stack.
+                bool fAvoidReportContextToRaiseFailFast = tore.IsFatalError();
+                RaiseFailFastException(pExceptionInfo == NULL                                       ? NULL : pExceptionInfo->ExceptionRecord,
+                                       pExceptionInfo == NULL || fAvoidReportContextToRaiseFailFast ? NULL : pExceptionInfo->ContextRecord,
                                        0);
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
             }
@@ -4954,7 +4945,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     IsOutOfMemory)
                 {
                     // We have to be very careful.  If we walk off the end of the stack, the process will just
-                    // die. e.g. IsAsyncThreadException() and Exception.ToString both consume too much stack -- and can't
+                    // die. e.g. Exception.ToString both consume too much stack -- and can't
                     // be called here.
                     dump = FALSE;
 
@@ -4966,12 +4957,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     {
                         PrintToStdErrA("Stack overflow.\n");
                     }
-                }
-                else if (IsAsyncThreadException(&throwable))
-                {
-                    // We don't print anything on async exceptions, like ThreadAbort.
-                    dump = FALSE;
-                    INDEBUG(suppressSelectiveBreak=TRUE);
                 }
 
                 // Finally, should we print the message?
@@ -10839,7 +10824,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10852,7 +10837,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     // !
     // ! COMPlusThrowHR(hr, kGetErrorInfo)
 
-    RealCOMPlusThrowHR(hr, (IErrorInfo*)NULL);
+    EX_THROW(EEMessageException, (hr));
 }
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
@@ -10898,7 +10883,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;

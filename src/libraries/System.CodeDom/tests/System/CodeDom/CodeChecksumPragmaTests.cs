@@ -62,7 +62,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData(new byte[0])]
         [InlineData(new byte[] { 0, 1, 2, 3 })]
-        public void ChecksumData_Set_Get_ReturnsExpected(byte[] value)
+        public void ChecksumData_Set_Get_ReturnsExpected(byte[]? value)
         {
             var pragma = new CodeChecksumPragma();
             pragma.ChecksumData = value;

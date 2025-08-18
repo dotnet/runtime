@@ -247,7 +247,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098", nameof(UnsupportedType))]
             static void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 UnsupportedType unsupportedTypeInstance)
             {
                 RequirePublicFields(unsupportedTypeInstance);
@@ -255,7 +255,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098", nameof(UnsupportedType))]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 UnsupportedType unsupportedTypeInstance)
             {
             }
@@ -270,7 +270,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type[] types)
             {
                 RequirePublicFields(types);
@@ -278,7 +278,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type[] types)
             {
             }
@@ -293,7 +293,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static unsafe void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 Type* typePtr)
             {
                 RequirePublicFields(typePtr);
@@ -301,7 +301,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static unsafe void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type* typePtr)
             {
             }
@@ -316,7 +316,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicMethods<T>(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 T t) where T : Type
             {
                 RequirePublicFields(t);
@@ -324,7 +324,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields<T>(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 T t) where T : Type
             {
             }
@@ -339,7 +339,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 ref string stringRef)
             {
                 RequirePublicFields(ref stringRef);
@@ -347,7 +347,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2098")]
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 ref string stringRef)
             {
             }
@@ -375,14 +375,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [ExpectedWarning("IL2067")]
             [ExpectedWarning("IL2067", Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101734")]
             static void RequirePublicMethods(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 ref Type typeRef)
             {
                 RequirePublicFields(ref typeRef);
             }
 
             static void RequirePublicFields(
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 ref Type typeRef)
             {
             }

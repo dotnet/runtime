@@ -162,6 +162,7 @@ public:
     HRESULT GetDefinesBitField(ULONG32 *pDefines);
     HRESULT GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
+    HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly);
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
@@ -182,13 +183,6 @@ private:
     void GetSequencePoints(MethodDesc *    pMethodDesc,
                            CORDB_ADDRESS    startAddr,
                            SequencePoints * pNativeMap);
-
-    // Helper to compose a IL->IL and IL->Native mapping
-    void ComposeMapping(const InstrumentedILOffsetMapping * pProfilerILMap, ICorDebugInfo::OffsetMapping nativeMap[], ULONG32* pEntryCount);
-
-    // Helper function to convert an instrumented IL offset to the corresponding original IL offset.
-    ULONG TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset,
-                                                  const InstrumentedILOffsetMapping * pMapping);
 
 public:
 //----------------------------------------------------------------------------------

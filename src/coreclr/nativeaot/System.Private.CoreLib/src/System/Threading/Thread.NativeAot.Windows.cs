@@ -176,8 +176,13 @@ namespace System.Threading
         private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             const int AllocationGranularity = 0x10000;  // 64 KiB
-
             int stackSize = _startHelper._maxStackSize;
+
+            if (stackSize <= 0)
+            {
+                stackSize = (int)RuntimeImports.RhGetDefaultStackSize();
+            }
+
             if ((0 < stackSize) && (stackSize < AllocationGranularity))
             {
                 // If StackSizeParamIsAReservation flag is set and the reserve size specified by CreateThread's
@@ -284,7 +289,14 @@ namespace System.Threading
             {
                 if (throwOnError)
                 {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
+                    // NOTE: We do the enum stringification manually to avoid introducing a dependency
+                    // on enum stringification in small apps. We set apartment state in the startup path.
+                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState switch
+                    {
+                        ApartmentState.MTA => "MTA",
+                        ApartmentState.STA => "STA",
+                        _ => "Unknown"
+                    });
                     throw new InvalidOperationException(msg);
                 }
 

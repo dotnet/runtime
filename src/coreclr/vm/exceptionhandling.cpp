@@ -579,32 +579,21 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     }
 #endif
 
-    if (pThread->HasThreadStateNC(Thread::TSNC_UnhandledException2ndPass) && !(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
-    {
-        // We are in the 1st pass of exception handling, but the thread mark says that it has already executed 2nd pass
-        // of unhandled exception handling. That means that some external native code on top of the stack has caught the
-        // exception that runtime considered to be unhandled, and a new native exception was thrown on the current thread.
-        // We need to reset the flags below so that we no longer block exception handling for the managed frames.
-        pThread->ResetThreadStateNC(Thread::TSNC_UnhandledException2ndPass);
-        pThread->ResetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
-    }
-
     // Also skip all frames when processing unhandled exceptions. That allows them to reach the host app
     // level and let 3rd party the chance to handle them.
-    if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+    if (pThread->HasThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine))
     {
         if (pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING)
         {
-            if (!pThread->HasThreadStateNC(Thread::TSNC_UnhandledException2ndPass))
+            // The 3rd argument passes to PopExplicitFrame is normally the parent SP to correctly handle InlinedCallFrame embbeded
+            // in parent managed frame. But at this point there are no further managed frames are on the stack, so we can pass NULL.
+            // Also don't pop the GC frames, their destructor will pop them as the exception propagates.
+            // NOTE: this needs to be popped in the 2nd pass to ensure that crash dumps and Watson get the dump with these still
+            // present.
+            ExInfo *pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+            if (pExInfo != NULL)
             {
-                pThread->SetThreadStateNC(Thread::TSNC_UnhandledException2ndPass);
                 GCX_COOP();
-                // The 3rd argument passes to PopExplicitFrame is normally the parent SP to correctly handle InlinedCallFrame embbeded
-                // in parent managed frame. But at this point there are no further managed frames are on the stack, so we can pass NULL.
-                // Also don't pop the GC frames, their destructor will pop them as the exception propagates.
-                // NOTE: this needs to be popped in the 2nd pass to ensure that crash dumps and Watson get the dump with these still
-                // present.
-                ExInfo *pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
                 void *sp = (void*)GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
                 PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
                 ExInfo::PopExInfos(pThread, sp);
@@ -2738,8 +2727,7 @@ StackFrame ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFram
     CopyOSContext(&tempContext, pRD->pCallerContext);
 
     // Now unwind it to get the context of the caller's caller.
-    EECodeInfo codeInfo(dac_cast<PCODE>(GetIP(pRD->pCallerContext)));
-    Thread::VirtualUnwindCallFrame(&tempContext, NULL, &codeInfo);
+    pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
 
     StackFrame sfRetVal = StackFrame((UINT_PTR)(GetSP(&tempContext)));
     _ASSERTE(!sfRetVal.IsNull() && !sfRetVal.IsMaxVal());
@@ -2986,7 +2974,7 @@ void MarkInlinedCallFrameAsFuncletCall(Frame* pFrame)
 {
     _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-    pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
+    pInlinedCallFrame->m_Datum = (PTR_PInvokeMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller);
 }
 
 // Mark the pinvoke frame as invoking any exception handling helper
@@ -2994,7 +2982,7 @@ void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
 {
     _ASSERTE(pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame);
     InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-    pInlinedCallFrame->m_Datum = (PTR_NDirectMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
+    pInlinedCallFrame->m_Datum = (PTR_PInvokeMethodDesc)((TADDR)pInlinedCallFrame->m_Datum | (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper);
 }
 
 static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
@@ -3758,7 +3746,10 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     Thread* pThread = GET_THREAD();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    pThread->ResetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+    if (pExInfo->m_passNumber == 1)
+    {
+        pThread->ResetThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine);
+    }
 
     BEGIN_QCALL;
 
@@ -3873,14 +3864,13 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     }
     else
     {
+        // There are no managed frames on the stack
         EH_LOG((LL_INFO100, "SfiInit: No more managed frames found on stack\n"));
-        // There are no managed frames on the stack, fail fast and report unhandled exception
-        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
 #ifdef HOST_WINDOWS
-        CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
-        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+        GetThread()->SetThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine);
         RaiseException(pExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pExInfo->m_ptrs.ExceptionRecord->NumberParameters, pExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
+        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
         CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
 #endif
     }
@@ -3971,6 +3961,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
         if (isPropagatingToNativeCode)
         {
+            // Propagating through Reverse pinvoke
 #ifdef HOST_UNIX
             void* callbackCxt = NULL;
             Interop::ManagedToNativeExceptionCallback callback = Interop::GetPropagatingExceptionCallback(
@@ -3984,13 +3975,14 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
                 pTopExInfo->m_propagateExceptionContext = callbackCxt;
             }
             else
+#endif // HOST_UNIX
             {
                 isPropagatingToExternalNativeCode = true;
             }
-#endif // HOST_UNIX
         }
         else
         {
+            // Propagating to CallDescrWorkerInternal, filter funclet or CallEHFunclet.
             if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext)))
             {
                 EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal"));
@@ -4000,10 +3992,6 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
             {
                 EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet"));
                 isPropagatingToNativeCode = TRUE;
-            }
-            else
-            {
-                isPropagatingToExternalNativeCode = true;
             }
         }
 
@@ -4025,18 +4013,21 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
             if (isNotHandledByRuntime && IsExceptionFromManagedCode(pTopExInfo->m_ptrs.ExceptionRecord))
             {
-                EH_LOG((LL_INFO100, "SfiNext (pass %d): no more managed frames on the stack, the exception is unhandled", pTopExInfo->m_passNumber));
+                EH_LOG((LL_INFO100, "SfiNext (pass %d): no more managed frames on the stack, the exception is not handled by the runtime\n", pTopExInfo->m_passNumber));
                 if (pTopExInfo->m_passNumber == 1)
                 {
-                    LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
 #ifdef HOST_WINDOWS
-                    CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
+                    if (!isPropagatingToExternalNativeCode)
 #endif
+                    {
+                        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
+                        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+                    }
                 }
                 else
                 {
 #ifdef HOST_WINDOWS
-                    GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+                    GetThread()->SetThreadStateNC(Thread::TSNC_SkipManagedPersonalityRoutine);
                     RaiseException(pTopExInfo->m_ExceptionCode, EXCEPTION_NONCONTINUABLE, pTopExInfo->m_ptrs.ExceptionRecord->NumberParameters, pTopExInfo->m_ptrs.ExceptionRecord->ExceptionInformation);
 #else
                     CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);

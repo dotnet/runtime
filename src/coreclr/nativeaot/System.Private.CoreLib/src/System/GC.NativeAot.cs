@@ -764,7 +764,7 @@ namespace System
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
-        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
+        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfoUnchecked(GCKind.Any);
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <param name="kind">The kind of collection for which to retrieve memory information.</param>
@@ -780,6 +780,11 @@ namespace System
                                           GCKind.Background));
             }
 
+            return GetGCMemoryInfoUnchecked(kind);
+        }
+
+        private static GCMemoryInfo GetGCMemoryInfoUnchecked(GCKind kind)
+        {
             var data = new GCMemoryInfoData();
             RuntimeImports.RhGetMemoryInfo(ref data.GetRawData(), kind);
             return new GCMemoryInfo(data);

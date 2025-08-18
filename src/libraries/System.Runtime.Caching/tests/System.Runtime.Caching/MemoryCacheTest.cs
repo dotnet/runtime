@@ -72,7 +72,7 @@ namespace MonoTests.System.Runtime.Caching
 
         private bool IsFullFramework = RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
 
-        private PokerMemoryCache CreatePokerMemoryCache(string name, string throwOnDisposed)
+        private PokerMemoryCache CreatePokerMemoryCache(string name, string? throwOnDisposed)
         {
             if (throwOnDisposed == null)
             {
@@ -259,7 +259,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
-        public void Indexer(string throwOnDisposed)
+        public void Indexer(string? throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
@@ -304,7 +304,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
-        public void Contains(string throwOnDisposed)
+        public void Contains(string? throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
@@ -401,7 +401,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
-        public void AddOrGetExisting_String_Object_DateTimeOffset_String(string throwOnDisposed)
+        public void AddOrGetExisting_String_Object_DateTimeOffset_String(string? throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
@@ -675,7 +675,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
-        public void Set_String_Object_CacheItemPolicy_String(string throwOnDisposed)
+        public void Set_String_Object_CacheItemPolicy_String(string? throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
@@ -901,7 +901,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
-        public void Remove(string throwOnDisposed)
+        public void Remove(string? throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
@@ -1010,7 +1010,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
-        public void GetValues(string throwOnDisposed)
+        public void GetValues(string? throwOnDisposed)
         {
             var mc = CreatePokerMemoryCache("MyCache", throwOnDisposed);
 
@@ -1110,7 +1110,7 @@ namespace MonoTests.System.Runtime.Caching
 
         [Theory]
         [InlineData("true"), InlineData("false"), InlineData(null)]
-        public void Trim(string throwOnDisposed)
+        public void Trim(string? throwOnDisposed)
         {
             var config = new NameValueCollection();
             config["__MonoEmulateOneCPU"] = "true";

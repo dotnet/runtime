@@ -500,13 +500,23 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 
     // Create a tree representing string's Length:
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
-    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset, compCurBB);
+    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset);
     varStrLcl             = gtClone(varStrLcl)->AsLclVar();
 
     GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, kind, (WCHAR*)str, cnsLength,
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
+        // Wrap with the reference equality check for Equals.
+        // We believe it's less likely to be useful for StartsWith/EndsWith.
+        if (kind == StringComparisonKind::Equals)
+        {
+            GenTreeColon* refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
+            unrolled =
+                gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(varStrLcl), gtCloneExpr(cnsStr)),
+                               refEqualityColon);
+        }
+
         impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
@@ -647,8 +657,13 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             return nullptr;
         }
 
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n",
-                convertUtf16ToUtf8ForPrinting((WCHAR*)str));
+#if DEBUG
+        constexpr int maxLiteralLength = 256;
+        char          dst[maxLiteralLength];
+        convertUtf16ToUtf8ForPrinting(str, cnsLength, dst, maxLiteralLength);
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%.50s%s\")...\n", dst,
+                cnsLength > 50 ? "..." : "");
+#endif
     }
 
     unsigned spanLclNum;
@@ -673,6 +688,16 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
 
     if (unrolled != nullptr)
     {
+        // Wrap with the reference equality check for Equals.
+        // We believe it's less likely to be useful for StartsWith/EndsWith.
+        if (kind == StringComparisonKind::Equals)
+        {
+            GenTreeColon* refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
+            unrolled                       = gtNewQmarkNode(TYP_INT,
+                                                            gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(spanReferenceFld), gtCloneExpr(cnsStr)),
+                                                            refEqualityColon);
+        }
+
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
             impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);

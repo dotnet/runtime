@@ -95,7 +95,7 @@ static insOpts AddEmbRoundingMode(insOpts instOptions, int8_t mode)
     {
         case 0x01:
         {
-            result |= INS_OPTS_EVEX_eb_er_rd;
+            result |= INS_OPTS_EVEX_er_rd;
             break;
         }
 
@@ -1059,6 +1059,44 @@ void CodeGen::genHWIntrinsic_R_RM(
     {
         instOptions = AddEmbBroadcastMode(instOptions);
     }
+    else if ((instOptions == INS_OPTS_NONE) && !GetEmitter()->IsVexEncodableInstruction(ins))
+    {
+        // We may have opportunistically selected an EVEX only instruction
+        // that isn't actually required, so fallback to the VEX compatible
+        // encoding to potentially save on the number of bytes emitted.
+
+        switch (ins)
+        {
+            case INS_vbroadcastf64x2:
+            {
+                ins = INS_vbroadcastf32x4;
+                break;
+            }
+
+            case INS_vbroadcasti64x2:
+            {
+                ins = INS_vbroadcasti32x4;
+                break;
+            }
+
+            case INS_vmovdqa64:
+            {
+                ins = INS_movdqa32;
+                break;
+            }
+
+            case INS_vmovdqu64:
+            {
+                ins = INS_movdqu32;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
 
     OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
 
@@ -1976,8 +2014,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
             noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-            bool     isEBPbased;
-            unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+            bool isEBPbased;
+            int  offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
             if (!isEBPbased)
@@ -2055,6 +2093,14 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                         offset += op1->AsLclFld()->GetLclOffs();
                     }
                     baseReg = (isEBPbased) ? REG_EBP : REG_ESP;
+                }
+                else if (op1->IsCnsVec())
+                {
+                    CORINFO_FIELD_HANDLE hnd =
+                        GetEmitter()->emitSimdConst(&op1->AsVecCon()->gtSimdVal, emitTypeSize(op1));
+
+                    baseReg = internalRegisters.GetSingle(node);
+                    GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), baseReg, hnd, 0, INS_OPTS_NONE);
                 }
                 else
                 {
@@ -2137,8 +2183,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
                 noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
-                bool     isEBPbased;
-                unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+                bool isEBPbased;
+                int  offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
                 if (!isEBPbased)
@@ -2577,7 +2623,8 @@ void CodeGen::genSse42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             regNumber   op1Reg = op1->GetRegNum();
             GenTree*    op2    = node->Op(2);
 
-            assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg));
+            assert(!op2->isUsedFromReg() || (op2->GetRegNum() != targetReg) || (op1Reg == targetReg) ||
+                   genIsSameLocalVar(op1, op2));
             emit->emitIns_Mov(INS_mov, emitTypeSize(targetType), targetReg, op1Reg, /* canSkip */ true);
 
 #ifdef TARGET_AMD64
