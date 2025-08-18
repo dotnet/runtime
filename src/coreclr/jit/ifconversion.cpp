@@ -45,8 +45,7 @@ private:
     IfConvertOperation m_thenOperation; // The single operation in the Then case.
     IfConvertOperation m_elseOperation; // The single operation in the Else case.
 
-    int m_checkLimit         = 4; // Max number of chained blocks to allow in both the True and Else cases.
-    int m_reachabilityBudget = 5000;
+    int m_checkLimit = 4; // Max number of chained blocks to allow in both the True and Else cases.
 
     genTreeOps m_mainOper         = GT_COUNT; // The main oper of the if conversion.
     bool       m_doElseConversion = false;    // Does the If conversion have an else statement.
@@ -66,7 +65,7 @@ private:
 #endif
 
 public:
-    bool optIfConvert();
+    bool optIfConvert(int* pReachabilityBudget);
 };
 
 //-----------------------------------------------------------------------------
@@ -409,6 +408,9 @@ void OptIfConversionDsc::IfConvertDump()
 // Find blocks representing simple if statements represented by conditional jumps
 // over another block. Try to replace the jumps by use of SELECT nodes.
 //
+// Arguments:
+//   pReachabilityBudget -- budget for optReachability
+//
 // Returns:
 //   true if any IR changes possibly made.
 //
@@ -552,9 +554,9 @@ void OptIfConversionDsc::IfConvertDump()
 // ------------ BB04 [00D..010), preds={} succs={BB06}
 // ------------ BB05 [00D..010), preds={} succs={BB06}
 //
-bool OptIfConversionDsc::optIfConvert()
+bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 {
-    if (m_reachabilityBudget <= 0)
+    if ((*pReachabilityBudget) <= 0)
     {
         return false;
     }
@@ -1029,11 +1031,12 @@ PhaseStatus Compiler::optIfConversion()
 
 #if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_RISCV64)
     // Reverse iterate through the blocks.
-    BasicBlock* block = fgLastBB;
+    BasicBlock* block              = fgLastBB;
+    int         reachabilityBudget = 10000;
     while (block != nullptr)
     {
         OptIfConversionDsc optIfConversionDsc(this, block);
-        madeChanges |= optIfConversionDsc.optIfConvert();
+        madeChanges |= optIfConversionDsc.optIfConvert(&reachabilityBudget);
         block = block->Prev();
     }
 #endif
