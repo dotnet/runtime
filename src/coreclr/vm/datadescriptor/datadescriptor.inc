@@ -105,7 +105,7 @@ CDAC_TYPE_END(Exception)
 
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
-CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExInfo, m_hThrowable))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(ExceptionWatsonBucketTrackerBuckets, /*pointer*/, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
