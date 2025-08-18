@@ -164,12 +164,15 @@ internal class TestPlaceholderTarget : Target
 
     public override T ReadLittleEndian<T>(ulong address)
     {
-        value = default;
-        Span<byte> buffer = stackalloc byte[sizeof(T)];
-        if (_dataReader(address, buffer) < 0)
-            throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+        T value = default;
+        unsafe
+        {
+            Span<byte> buffer = stackalloc byte[sizeof(T)];
+            if (_dataReader(address, buffer) < 0)
+                throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
-        value = ReadFromSpan<T>(buffer, true);
+            T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value);
+        }
         return value;
     }
 
