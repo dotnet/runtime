@@ -76,7 +76,7 @@ namespace System.Threading
         protected const uint InvalidProcessId = unchecked((uint)-1);
         protected const uint InvalidThreadId = unchecked((uint)-1);
 
-        // Use PThread mutex-backed named mutexes on all platforms except Apple platforms.
+        // Use PThread mutex-backed named mutexes if possible.
         // macOS has support for the features we need in the pthread mutexes on arm64
         // but not in the Rosetta 2 x64 emulation layer.
         // Until Rosetta 2 is removed, we need to use the non-PThread mutexes on Apple platforms.
@@ -659,7 +659,7 @@ namespace System.Threading
                         MutexTryAcquireLockResult.AcquiredLock => WaitHandle.WaitSuccess,
                         MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned => WaitHandle.WaitAbandoned,
                         MutexTryAcquireLockResult.TimedOut => WaitHandle.WaitTimeout,
-                        _ => throw new InvalidOperationException("Unexpected result from TryAcquireLock")
+                        _ => throw new UnreachableException()
                     };
                 }
                 finally

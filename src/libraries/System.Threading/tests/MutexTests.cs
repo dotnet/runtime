@@ -230,12 +230,15 @@ namespace System.Threading.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
         {
-            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
             Assert.Throws<IOException>(() => new Mutex("Foo/Bar", options: default));
-            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: default));
-            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
             Assert.Throws<IOException>(() => new Mutex("Global\\Foo/Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
-            Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+            if (PlatformDetection.IsCoreCLR)
+            {
+                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
+                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: default));
+                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+                Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
+            }
         }
 
         [Theory]
@@ -997,7 +1000,7 @@ namespace System.Threading.Tests
                 fs.SetLength(Environment.SystemPageSize);
 
                 // Try opening a mutex when we still have the file locked.
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+                AssertExtensions.ThrowsAny<WaitHandleCannotBeOpenedException, InvalidDataException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
             }
         }
 
@@ -1041,7 +1044,7 @@ namespace System.Threading.Tests
                 // Make the file large enough for a valid named mutex file and divisible by page size (it should always be under one page).
                 fs.SetLength(Environment.SystemPageSize);
                 // Try opening a mutex when we still have the file locked.
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+                AssertExtensions.ThrowsAny<WaitHandleCannotBeOpenedException, InvalidDataException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
             }
         }
 
@@ -1062,7 +1065,7 @@ namespace System.Threading.Tests
                 // Make the file large enough for a valid named mutex file but not divisible by page size.
                 fs.SetLength(Environment.SystemPageSize - 1);
                 // Try opening a mutex when we still have the file locked.
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
+                AssertExtensions.ThrowsAny<WaitHandleCannotBeOpenedException, InvalidDataException>(() => new Mutex($"Global\\{name}", new NamedWaitHandleOptions { CurrentSessionOnly = false, CurrentUserOnly = false }));
             }
         }
 

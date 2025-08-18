@@ -200,35 +200,20 @@ namespace System.Threading
 #if FEATURE_CROSS_PROCESS_MUTEX
         public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, bool isUserScope, out bool createdNew)
         {
-            try
+            NamedMutex? namedMutex = NamedMutex.CreateNamedMutex(name, isUserScope, initiallyOwned: initiallyOwned, out createdNew);
+            if (namedMutex == null)
             {
-                NamedMutex? namedMutex = NamedMutex.CreateNamedMutex(name, isUserScope, initiallyOwned: initiallyOwned, out createdNew);
-                if (namedMutex == null)
-                {
-                    return null;
-                }
-                SafeWaitHandle safeWaitHandle = NewHandle(namedMutex);
-                return safeWaitHandle;
+                return null;
             }
-            catch (InvalidSharedMemoryHeaderException ex)
-            {
-                throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name), ex);
-            }
+            SafeWaitHandle safeWaitHandle = NewHandle(namedMutex);
+            return safeWaitHandle;
         }
 
         public static OpenExistingResult OpenNamedMutex(string name, bool isUserScope, out SafeWaitHandle? result)
         {
-            try
-            {
-                OpenExistingResult status = NamedMutex.OpenNamedMutex(name, isUserScope, out NamedMutex? mutex);
-                result = status == OpenExistingResult.Success ? NewHandle(mutex!) : null;
-                return status;
-            }
-            catch (InvalidSharedMemoryHeaderException)
-            {
-                result = null;
-                return OpenExistingResult.NameInvalid;
-            }
+            OpenExistingResult status = NamedMutex.OpenNamedMutex(name, isUserScope, out NamedMutex? mutex);
+            result = status == OpenExistingResult.Success ? NewHandle(mutex!) : null;
+            return status;
         }
 #else
         public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, bool isUserScope, out bool createdNew)
