@@ -3147,6 +3147,18 @@ void CordbProcess::DetachShim()
         InitIPCEvent(pIPCEvent, DB_IPCE_DETACH_FROM_PROCESS, true, VMPTR_AppDomain::NullPtr());
 
         hr = m_cordb->SendIPCEvent(this, pIPCEvent, CorDBIPC_BUFFER_SIZE);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+        if (hr == CORDBG_E_PROCESS_TERMINATED)
+        {
+            // The detach implementation in the left-side process is deferred until all breakpoints and single-step exceptions have been processed
+            // This increases the chances that the process has exited while we are still waiting for the detach to complete
+            // In the case where this occurs, CordbWin32EventThread should still get the exit process notification and so we will proceed from here
+            // as if detach had succeeded.
+            m_detached = true;
+            m_stopCount = 0;
+            return;
+        }
+#endif
         hr = WORST_HR(hr, pIPCEvent->hr);
         IfFailThrow(hr);
 
