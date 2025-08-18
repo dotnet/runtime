@@ -4,7 +4,7 @@ One of our supported targets is 32-bit ARM. It can be quite challenging to const
 
 ## Configuring your ARM64 environment to run ARM32 binaries
 
-By default your ARM64 Linux install probably doesn't have support for ARM32 binaries enabled, which will cause running the binaries to fail with a cryptic error. So you'll need to add the architecture to dpkg and install some core userspace libraries that CoreCLR will need to actually run your tests, i.e.:
+By default your ARM64 Linux install probably doesn't have support for ARM32 binaries enabled, which will cause running the binaries to fail with a cryptic error. So you'll need to add the architecture to dpkg and install some core userspace libraries that CoreCLR will need to actually run your tests, which on Debian or Ubuntu will look like:
 
 ```bash
 $ sudo dpkg --add-architecture armhf
