@@ -13,62 +13,54 @@
 // Forward declarations - shim API must not depend on knowing layout of these types.
 typedef struct hmac_ctx_st HMAC_CTX;
 
-/**
- * Creates and initializes an HMAC_CTX with the given key and EVP_MD.
- *
- * Implemented by:
- *    1) allocating a new HMAC_CTX
- *    2) calling HMAC_CTX_Init on the new HMAC_CTX
- *    3) calling HMAC_Init_ex with the new HMAC_CTX and the given args.
- *
- * Returns new HMAC_CTX on success, nullptr on failure.
- */
-PALEXPORT HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md);
+struct _DN_MAC_CTX {
+    HMAC_CTX* legacy;
+    EVP_MAC_CTX* mac;
+};
+
+typedef struct _DN_MAC_CTX DN_MAC_CTX;
 
 /**
- * Cleans up and deletes an HMAC_CTX instance created by HmacCreate.
+ * Creates and initializes a context with the given key and EVP_MD. The context is not guaranteed to be a particular
+ * OpenSSL construct. It should be treated as an opaque pointer that is passed to the appropriate CryptoNative functions.
  *
- * Implemented by:
- *   1) Calling HMAC_CTX_Cleanup
- *   2) Deleting the HMAC_CTX instance.
+ * Returns new context on success, nullptr on failure.
+ */
+PALEXPORT DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* md);
+
+/**
+ * Cleans up and deletes an context instance created by HmacCreate.
  *
  * No-op if ctx is null.
- * The given HMAC_CTX pointer is invalid after this call.
  * Always succeeds.
  */
-PALEXPORT void CryptoNative_HmacDestroy(HMAC_CTX* ctx);
+PALEXPORT void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx);
 
 /**
- * Resets an HMAC_CTX instance for a new computation, preserving the key and EVP_MD.
- *
- * Implemented by passing all null/0 values but ctx to HMAC_Init_ex.
+ * Resets an instance for a new computation, preserving the key and EVP_MD.
 */
-PALEXPORT int32_t CryptoNative_HmacReset(HMAC_CTX* ctx);
+PALEXPORT int32_t CryptoNative_HmacReset(DN_MAC_CTX* ctx);
 
 /**
  * Appends data to the computation.
  *
- * Direct shim to HMAC_Update.
- *
- * Returns 1 for success or 0 for failure. (Always succeeds on platforms where HMAC_Update returns void.)
+ * Returns 1 for success or 0 for failure.
  */
-PALEXPORT int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len);
+PALEXPORT int32_t CryptoNative_HmacUpdate(DN_MAC_CTX* ctx, const uint8_t* data, int32_t len);
 
 /**
  * Finalizes the computation and obtains the result.
  *
- * Direct shim to HMAC_Final.
- *
- * Returns 1 for success or 0 for failure. (Always succeeds on platforms where HMAC_Update returns void.)
+ * Returns 1 for success or 0 for failure.
  */
-PALEXPORT int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len);
+PALEXPORT int32_t CryptoNative_HmacFinal(DN_MAC_CTX* ctx, uint8_t* md, int32_t* len);
 
 /**
  * Retrieves the HMAC for the data already accumulated in ctx without finalizing the state.
  *
  * Returns 1 for success or 0 for failure.
  */
-PALEXPORT int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len);
+PALEXPORT int32_t CryptoNative_HmacCurrent(const DN_MAC_CTX* ctx, uint8_t* md, int32_t* len);
 
 /**
  * Computes the HMAC of data using a key in a single operation.
@@ -86,4 +78,4 @@ PALEXPORT int32_t CryptoNative_HmacOneShot(const EVP_MD* type,
  * Clones the context of the HMAC.
  * Returns NULL on failure.
 */
-PALEXPORT HMAC_CTX* CryptoNative_HmacCopy(const HMAC_CTX* ctx);
+PALEXPORT DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx);
