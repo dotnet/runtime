@@ -66,6 +66,9 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
         }
 
         const char* algorithm = EVP_MD_get0_name(md);
+
+        // OSSL_PARAM_construct_utf8_string wants a non-const qualified value. Rather than suppress compiler warnings
+        // which differ from compiler to compiler, we copy the string in to a temporary value.
         char* algorithmDup = strdup(algorithm);
 
         if (algorithmDup == NULL)
