@@ -175,7 +175,7 @@ namespace Microsoft.Win32.SafeHandles
                 return false;
             }
 
-            string? targetName = Marshal.PtrToStringUTF8(namePtr);
+            string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
             if (!string.IsNullOrEmpty(targetName))
