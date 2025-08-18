@@ -45,7 +45,7 @@ private:
     IfConvertOperation m_thenOperation; // The single operation in the Then case.
     IfConvertOperation m_elseOperation; // The single operation in the Else case.
 
-    int m_checkLimit         = 4; // Max number of chained blocks to allow in both the True and Else cases.
+    int m_checkLimit = 4; // Max number of chained blocks to allow in both the True and Else cases.
 
     genTreeOps m_mainOper         = GT_COUNT; // The main oper of the if conversion.
     bool       m_doElseConversion = false;    // Does the If conversion have an else statement.
