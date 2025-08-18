@@ -12,6 +12,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
@@ -1077,7 +1078,7 @@ internal static partial class Interop
             // Capture last error to be consistent with CreateOpenSslCryptographicException
             ulong errorVal = Crypto.ErrPeekLastError();
             Crypto.ErrClearError();
-            string msg = SR.Format(message, Marshal.PtrToStringUTF8(Crypto.ErrReasonErrorString(errorVal)));
+            string msg = SR.Format(message, Utf8StringMarshaller.ConvertToManaged(Crypto.ErrReasonErrorString(errorVal)));
             return new SslException(msg, (int)errorVal);
         }
 
