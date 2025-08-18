@@ -161,7 +161,7 @@ internal readonly struct Thread_1 : IThread
         if (ExceptionTrackerPtr == TargetPointer.Null)
             return TargetPointer.Null;
         Data.ExceptionInfo exceptionTracker = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(ExceptionTrackerPtr);
-        Data.ObjectHandle throwableObject = exceptionTracker.ThrownObject;
+        Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionTracker.ThrownObjectHandle);
         return throwableObject.Object;
     }
 

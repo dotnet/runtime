@@ -175,7 +175,8 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.ExceptionInfo.PreviousNestedInfo), DataType.pointer),
-            new(nameof(Data.ExceptionInfo.ThrownObject), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.ThrownObjectHandle), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.ExceptionWatsonBucketTrackerBuckets), DataType.pointer),
         ]
     };
 
