@@ -12663,7 +12663,7 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
             break;
 
         default:
-            printf("0x%zX", (ssize_t)val);
+            printf("0x%zX", (size_t)val);
             break;
     }
 
