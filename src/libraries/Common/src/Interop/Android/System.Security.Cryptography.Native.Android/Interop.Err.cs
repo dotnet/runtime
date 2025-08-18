@@ -35,7 +35,7 @@ internal static partial class Interop
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
-                return Utf8StringMarshaller.ConvertToManaged((IntPtr)buf)!;
+                return Utf8StringMarshaller.ConvertToManaged((byte*)buf)!;
             }
         }
 

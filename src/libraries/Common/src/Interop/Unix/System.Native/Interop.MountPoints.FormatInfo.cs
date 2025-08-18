@@ -60,7 +60,7 @@ internal static partial class Interop
             int result = GetFileSystemTypeNameForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &formatType);
             if (result == 0)
             {
-                format = formatType == -1 ? Utf8StringMarshaller.ConvertToManaged((IntPtr)formatBuffer)!
+                format = formatType == -1 ? Utf8StringMarshaller.ConvertToManaged((byte*)formatBuffer)!
                                           : (Enum.GetName(typeof(UnixFileSystemTypes), formatType) ?? "");
                 return Error.SUCCESS;
             }

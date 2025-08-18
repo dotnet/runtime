@@ -887,7 +887,7 @@ namespace System
             Debug.Assert(context.Configurations != null);
             Dictionary<string, object> configurationDictionary = context.Configurations!;
 
-            string nameAsString = Utf8StringMarshaller.ConvertToManaged((IntPtr)name)!;
+            string nameAsString = Utf8StringMarshaller.ConvertToManaged((byte*)name)!;
             switch (type)
             {
                 case GCConfigurationType.Int64:
@@ -896,7 +896,7 @@ namespace System
 
                 case GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Utf8StringMarshaller.ConvertToManaged((IntPtr)data);
+                        string? dataAsString = Utf8StringMarshaller.ConvertToManaged((byte*)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }

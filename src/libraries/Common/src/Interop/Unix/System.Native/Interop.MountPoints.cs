@@ -28,7 +28,7 @@ internal static partial class Interop
             AllMountPointsContext* callbackContext = (AllMountPointsContext*)context;
             try
             {
-                callbackContext->_results.Add(Utf8StringMarshaller.ConvertToManaged((IntPtr)name)!);
+                callbackContext->_results.Add(Utf8StringMarshaller.ConvertToManaged((byte*)name)!);
             }
             catch (Exception e)
             {

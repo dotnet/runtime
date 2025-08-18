@@ -2592,11 +2592,7 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class Utf8StringMarshaller
     {
         public static byte* ConvertToUnmanaged(string? managed) { throw null; }
-        public static System.IntPtr ConvertToUnmanagedIntPtr(string? managed) { throw null; }
         public static string? ConvertToManaged(byte* unmanaged) { throw null; }
-        public static string ConvertToManaged(byte* unmanaged, int byteLen) { throw null; }
-        public static string? ConvertToManaged(System.IntPtr unmanaged) { throw null; }
-        public static string ConvertToManaged(System.IntPtr unmanaged, int byteLen) { throw null; }
         public static void Free(byte* unmanaged) { throw null; }
 
         public ref struct ManagedToUnmanagedIn

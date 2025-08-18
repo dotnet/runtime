@@ -42,31 +42,6 @@ namespace System.Runtime.InteropServices.Marshalling
             => Marshal.PtrToStringUTF8((IntPtr)unmanaged);
 
         /// <summary>
-        /// Converts an unmanaged string to a managed version.
-        /// </summary>
-        /// <param name="unmanaged">The unmanaged string pointer to convert.</param>
-        /// <returns>A managed string.</returns>
-        public static string? ConvertToManaged(IntPtr unmanaged)
-            => Marshal.PtrToStringUTF8(unmanaged);
-
-        /// <summary>
-        /// Converts an unmanaged string to a managed version.
-        /// </summary>
-        /// <param name="unmanaged">The unmanaged string pointer to convert.</param>
-        /// <param name="byteLen">The length of the unmanaged string in bytes.</param>
-        /// <returns>A managed string.</returns>
-        public static string? ConvertToManaged(IntPtr unmanaged, int byteLen)
-            => Marshal.PtrToStringUTF8(unmanaged, byteLen);
-
-        /// <summary>
-        /// Converts a string to an unmanaged version and returns it as an IntPtr.
-        /// </summary>
-        /// <param name="managed">The managed string to convert.</param>
-        /// <returns>An unmanaged string pointer.</returns>
-        public static IntPtr ConvertToUnmanagedIntPtr(string? managed)
-            => Marshal.StringToCoTaskMemUTF8(managed);
-
-        /// <summary>
         /// Free the memory for a specified unmanaged string.
         /// </summary>
         /// <param name="unmanaged">The memory allocated for the unmanaged string.</param>

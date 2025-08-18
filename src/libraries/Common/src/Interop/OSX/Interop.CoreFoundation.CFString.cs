@@ -43,7 +43,7 @@ internal static partial class Interop
 
             if (interiorPointer != IntPtr.Zero)
             {
-                return Utf8StringMarshaller.ConvertToManaged(interiorPointer)!;
+                return Utf8StringMarshaller.ConvertToManaged((byte*)interiorPointer)!;
             }
 
             SafeCFDataHandle cfData = CFStringCreateExternalRepresentation(
