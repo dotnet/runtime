@@ -206,6 +206,7 @@ namespace System.Numerics.Tensors
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Slice(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> Slice(params scoped System.ReadOnlySpan<nint> startIndexes) { throw null; }
         public override string ToString() { throw null; }
+        public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
         public bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.ReadOnlySpan<T> span) { throw null; }
@@ -570,9 +571,6 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> TanPi<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Tan<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Tan<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
-        public static string ToString<T>(this in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, System.ReadOnlySpan<nint> maximumLengths) { throw null; }
-        public static string ToString<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, System.ReadOnlySpan<nint> maximumLengths) { throw null; }
-        public static string ToString<T>(this System.Numerics.Tensors.Tensor<T> tensor, System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> TrailingZeroCount<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> TrailingZeroCount<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBinaryInteger<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Transpose<T>(System.Numerics.Tensors.Tensor<T> tensor) { throw null; }
@@ -1218,6 +1216,7 @@ namespace System.Numerics.Tensors
         public System.Numerics.Tensors.TensorSpan<T> Slice(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges) { throw null; }
         public System.Numerics.Tensors.TensorSpan<T> Slice(params scoped System.ReadOnlySpan<nint> startIndexes) { throw null; }
         public override string ToString() { throw null; }
+        public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
         public bool TryGetSpan(scoped System.ReadOnlySpan<nint> startIndexes, int length, out System.Span<T> span) { throw null; }
@@ -1297,6 +1296,7 @@ namespace System.Numerics.Tensors
         static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
         static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateFromShapeUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
         public System.Numerics.Tensors.Tensor<T> ToDenseTensor() { throw null; }
+        public override string ToString() { throw null; }
         public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
