@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -76,7 +77,7 @@ internal static partial class Interop
 
             if (error.ErrorMessage != IntPtr.Zero)
             {
-                message = Marshal.PtrToStringUTF8(error.ErrorMessage);
+                message = Utf8StringMarshaller.ConvertToManaged(error.ErrorMessage);
             }
 
             return new NetworkFrameworkException(error.ErrorCode, domain, message);

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 
 namespace System
@@ -20,7 +21,7 @@ namespace System
 
             if (s_environment == null)
             {
-                return Marshal.PtrToStringUTF8(Interop.Sys.GetEnv(variable));
+                return Utf8StringMarshaller.ConvertToManaged(Interop.Sys.GetEnv(variable));
             }
 
             variable = TrimStringOnFirstZero(variable);
