@@ -2317,7 +2317,7 @@ bool Compiler::optReachable(BasicBlock* const fromBlock,
                     return BasicBlockVisit::Abort;
                 }
 
-                if ((pBudget != nullptr) && (--(*pBudget) <= 0))
+                if (--(*pBudget) <= 0)
                 {
                     ranOutOfBudget = true;
                     return BasicBlockVisit::Abort;
