@@ -66,23 +66,31 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
         }
 
         const char* algorithm = EVP_MD_get0_name(md);
+        char* algorithmDup = strdup(algorithm);
+
+        if (algorithmDup == NULL)
+        {
+            EVP_MAC_CTX_free(evpMac);
+            return NULL;
+        }
+
         size_t keyLenT = Int32ToSizeT(keyLen);
 
         OSSL_PARAM params[] =
         {
             OSSL_PARAM_construct_octet_string(OSSL_MAC_PARAM_KEY, (void*) key, keyLenT),
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-pointer-types-discards-qualifiers"
-            OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, algorithm, 0),
-#pragma clang diagnostic pop
+            OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, algorithmDup, 0),
             OSSL_PARAM_construct_end(),
         };
 
         if (!EVP_MAC_init(evpMac, NULL, 0, params))
         {
             EVP_MAC_CTX_free(evpMac);
+            free(algorithmDup);
             return NULL;
         }
+
+        free(algorithmDup);
 
         DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
 
