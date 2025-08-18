@@ -1,3 +1,5 @@
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -58,7 +60,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [KeptBackingField]
         static Type MismatchAssignedToField
         {
-            [ExpectedWarning("IL2074", nameof(WithNone), Tool.NativeAot | Tool.Trimmer, "https://github.com/dotnet/runtime/issues/117065")]
+            [ExpectedWarning("IL2074", nameof(WithNone))]
             [Kept]
             get
             {

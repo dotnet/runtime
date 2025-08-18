@@ -131,9 +131,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public abstract TValue GetFieldTargetValue(IFieldReferenceOperation fieldReference, in TContext context);
 
-        public abstract TValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyOrFieldReference, in TContext context);
+        public abstract TValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in TContext context);
 
-        public abstract TValue GetBackingFieldTargetValue(IFieldReferenceOperation propertyOrFieldReference, in TContext context);
+        public abstract TValue GetBackingFieldTargetValue(IFieldReferenceOperation backingFieldReference, in TContext context);
 
         public abstract TValue GetParameterTargetValue(IParameterSymbol parameter);
 

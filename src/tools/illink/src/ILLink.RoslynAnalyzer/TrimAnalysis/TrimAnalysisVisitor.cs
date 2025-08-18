@@ -94,18 +94,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             return returnValue;
         }
 
-        public override MultiValue VisitInvalid(IInvalidOperation invalidOperation, StateValue argument)
-        {
-            if (invalidOperation.Syntax.ToString() == "field"
-                && invalidOperation.FindContainingSymbol(OwningSymbol) is IMethodSymbol methodSymbol
-                && methodSymbol.AssociatedSymbol is IPropertySymbol propertySymbol)
-            {
-                return new FieldValue(propertySymbol);
-            }
-
-            return base.VisitInvalid(invalidOperation, argument);
-        }
-
         public override MultiValue VisitArrayCreation(IArrayCreationOperation operation, StateValue state)
         {
             var value = base.VisitArrayCreation(operation, state);
@@ -258,17 +246,17 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             }
         }
 
-        public override MultiValue GetBackingFieldTargetValue(IFieldReferenceOperation fieldOrPropertyReference, in FeatureContext featureContext)
+        public override MultiValue GetBackingFieldTargetValue(IFieldReferenceOperation backingFieldReference, in FeatureContext featureContext)
         {
-            var property = fieldOrPropertyReference.Field.AssociatedSymbol as IPropertySymbol;
+            var property = backingFieldReference.Field.AssociatedSymbol as IPropertySymbol;
             if (property == null)
                 return UnknownValue.Instance;
 
             TrimAnalysisPatterns.Add(
-                new TrimAnalysisBackingFieldAccessPattern(property, fieldOrPropertyReference, OwningSymbol, featureContext)
+                new TrimAnalysisBackingFieldAccessPattern(property, backingFieldReference, OwningSymbol, featureContext)
             );
 
-            ProcessGenericArgumentDataFlow(property, fieldOrPropertyReference, featureContext);
+            ProcessGenericArgumentDataFlow(property, backingFieldReference, featureContext);
 
             return new FieldValue(property);
         }
