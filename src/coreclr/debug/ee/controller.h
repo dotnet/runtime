@@ -1157,6 +1157,7 @@ class DebuggerController
 
     static int GetTotalMethodEnter() {LIMITED_METHOD_CONTRACT;  return g_cTotalMethodEnter; }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     static bool GetProcessingDetach() {LIMITED_METHOD_CONTRACT;  return g_fProcessingDetach; }
     static void SetProcessingDetach(bool fProcessingDetach) {LIMITED_METHOD_CONTRACT;  g_fProcessingDetach = fProcessingDetach; }
     static int GetActiveDispatchedExceptions() {LIMITED_METHOD_CONTRACT;  return g_cActiveDispatchedExceptions; }
@@ -1167,6 +1168,7 @@ class DebuggerController
     static int GetDispatchedFlares() {LIMITED_METHOD_DAC_CONTRACT;  return g_cDispatchedFlares; }
     static void SetDispatchedFlares(int cDispatchedFlares) { LIMITED_METHOD_DAC_CONTRACT; g_cDispatchedFlares = cDispatchedFlares; }
     static int IncrementDispatchedFlares() { LIMITED_METHOD_DAC_CONTRACT;  return (int)InterlockedIncrement(&g_cDispatchedFlares); }
+#endif
 
 #if defined(_DEBUG)
     // Debug check that we only have 1 thread-starter per thread.

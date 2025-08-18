@@ -2702,12 +2702,14 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
         // !!! check result
         LOG((LF_CORDB,LL_INFO10000, "DC::APS: About to skip from PC=0x%p\n", PC));
         skip = new (interopsafe) DebuggerPatchSkip(thread, patch);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
         if (DebuggerController::GetProcessingDetach())
         {
             DebuggerController::IncrementActiveDispatchedExceptions();
             int cActiveDispatchedExceptions = DebuggerController::IncrementActiveDispatchedExceptions(); // increment twice - once for debugger patch skip, the second SetIP back to original location
             LOG((LF_CORDB, LL_INFO10000, "DebuggerPatchSkip allocated, incrementing ActiveDispatchedExceptions - cActiveDispatchedExceptions=%d\n", cActiveDispatchedExceptions));
         }
+#endif
         TRACE_ALLOC(skip);
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
@@ -4373,6 +4375,7 @@ void DebuggerController::TriggerExternalMethodFixup(PCODE target)
     _ASSERTE(!"This code should be unreachable. If your controller enables ExternalMethodFixup events, it should also override this callback to do something useful when the event arrives.");
 }
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 /*static*/ int DebuggerController::GetNumPendingControllers()
 {
     CONTRACTL
@@ -4392,7 +4395,7 @@ void DebuggerController::TriggerExternalMethodFixup(PCODE target)
 
     return cTotalPendingControllers;
 }
-
+#endif
 
 #ifdef _DEBUG
 // See comment in DispatchNativeException
