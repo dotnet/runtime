@@ -422,7 +422,7 @@ void InterpCompiler::AllocOffsets()
                 (pVar->interpType == InterpTypeByRef) ||
                 (
                     (pVar->interpType == InterpTypeVT) &&
-                    (GetInterpreterStackMap(m_compHnd, pVar->clsHnd)->m_slotCount > 0)
+                    (GetInterpreterStackMap(pVar->clsHnd)->m_slotCount > 0)
                 )
             )
         )

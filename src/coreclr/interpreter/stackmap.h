@@ -22,5 +22,3 @@ public:
         PopulateStackMap(jitInfo, classHandle);
     }
 };
-
-InterpreterStackMap* GetInterpreterStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle);
