@@ -21,6 +21,7 @@
 
 #define OSSL_MAC_PARAM_KEY    "key"
 #define OSSL_MAC_PARAM_CUSTOM "custom"
+#define OSSL_MAC_PARAM_DIGEST "digest"
 #define OSSL_MAC_PARAM_XOF    "xof"
 #define OSSL_MAC_PARAM_SIZE   "size"
 
