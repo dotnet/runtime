@@ -144,13 +144,13 @@ namespace System.Globalization
         private static CultureInfo InitializeUserDefaultCulture()
         {
             Interlocked.CompareExchange(ref s_userDefaultCulture, GetUserDefaultCulture(), null);
-            return s_userDefaultCulture!;
+            return s_userDefaultCulture;
         }
 
         private static CultureInfo InitializeUserDefaultUICulture()
         {
             Interlocked.CompareExchange(ref s_userDefaultUICulture, GetUserDefaultUICulture(), null);
-            return s_userDefaultUICulture!;
+            return s_userDefaultUICulture;
         }
 
         private static string GetCultureNotSupportedExceptionMessage() => GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported;
@@ -377,7 +377,7 @@ namespace System.Globalization
                 {
                     Interlocked.CompareExchange(ref s_asyncLocalCurrentCulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentCulture), null);
                 }
-                s_asyncLocalCurrentCulture!.Value = value;
+                s_asyncLocalCurrentCulture.Value = value;
             }
         }
 
@@ -401,7 +401,7 @@ namespace System.Globalization
                 }
 
                 // this one will set s_currentThreadUICulture too
-                s_asyncLocalCurrentUICulture!.Value = value;
+                s_asyncLocalCurrentUICulture.Value = value;
             }
         }
 

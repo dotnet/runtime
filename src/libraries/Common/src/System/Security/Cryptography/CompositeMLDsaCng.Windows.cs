@@ -13,11 +13,11 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
 
         /// <inheritdoc/>
-        protected override bool TryExportCompositeMLDsaPrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
 
         /// <inheritdoc/>
-        protected override bool TryExportCompositeMLDsaPublicKeyCore(Span<byte> destination, out int bytesWritten) =>
+        protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
 
         /// <inheritdoc/>

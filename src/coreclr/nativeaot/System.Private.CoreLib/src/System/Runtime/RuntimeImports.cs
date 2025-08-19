@@ -673,11 +673,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhUnregisterForGCReporting")]
         internal static extern unsafe void RhUnregisterForGCReporting(GCFrameRegistration* pRegistration);
 
-#if FEATURE_PERFTRACING
-        [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void NativeRuntimeEventSource_LogExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, int hresult);
-#endif // FEATURE_PERFTRACING
-
         //
         // Interlocked helpers
         //
