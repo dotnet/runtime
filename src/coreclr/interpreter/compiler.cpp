@@ -1241,7 +1241,7 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
 
     bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
 
     return pMethod;
 }
