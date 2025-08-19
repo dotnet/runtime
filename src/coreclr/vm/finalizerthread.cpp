@@ -198,25 +198,6 @@ Again:
     ETW::GCLog::SendFinalizeObjectEvent(pMT, OBJECTREFToObject(obj));
 #endif // FEATURE_EVENT_TRACE
 
-    // Check for precise init class constructors that have failed, if any have failed, then we didn't run the
-    // constructor for the object, and running the finalizer for the object would violate the CLI spec by running
-    // instance code without having successfully run the precise-init class constructor.
-    if (pMT->HasPreciseInitCctors())
-    {
-        MethodTable *pMTCur = pMT;
-        do
-        {
-            if ((!pMTCur->GetClass()->IsBeforeFieldInit()) && pMTCur->IsInitError())
-            {
-                // Precise init Type Initializer for type failed... do not run finalizer
-                goto Again;
-            }
-
-            pMTCur = pMTCur->GetParentMethodTable();
-        }
-        while (pMTCur != NULL);
-    }
-
     return obj;
 }
 
