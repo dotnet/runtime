@@ -205,6 +205,8 @@ BOOL DacUnwindStackFrame(CONTEXT * pContext, KNONVOLATILE_CONTEXT_POINTERS* pCon
 
     if (res && pContextPointers)
     {
+        // TODO APX: this function restores the callee saved registers. 
+        // As of now, this does not need to restore APX EGPRs.
         for (int i = 0; i < 16; i++)
         {
             *(&pContextPointers->Rax + i) = &pContext->Rax + i;

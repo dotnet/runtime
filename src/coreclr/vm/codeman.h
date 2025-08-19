@@ -70,6 +70,9 @@ Abstract:
 #ifdef TARGET_X86
 #include "gc_unwind_x86.h"
 #endif
+#ifdef TARGET_AMD64
+#include <minipal/cpufeatures.h>
+#endif
 
 class MethodDesc;
 class ICorJitCompiler;
@@ -87,6 +90,17 @@ typedef struct
     TADDR pExceptionClauseArray;
 } EH_CLAUSE_ENUMERATOR;
 class EECodeInfo;
+
+// Cache the cpufeatures for use in other parts of VM.
+// This is mainly added here to use the variable in GC 
+// APX support checks
+extern int cpuFeatures;
+#if defined(TARGET_AMD64)
+inline bool IsAPXSupported()
+{
+    return (cpuFeatures & XArchIntrinsicConstants_Apx);
+}
+#endif // TARGET_AMD64
 
 #define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
 #define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
