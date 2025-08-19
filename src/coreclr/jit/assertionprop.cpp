@@ -1232,9 +1232,18 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     if (op2->OperIs(GT_CNS_INT))
                     {
                         ssize_t iconVal = op2->AsIntCon()->IconValue();
-                        if (varTypeIsSmall(lclVar) && op1->OperIs(GT_STORE_LCL_VAR))
+                        if (varTypeIsSmall(lclVar))
                         {
-                            iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            ssize_t truncatedIconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            if (!op1->OperIs(GT_STORE_LCL_VAR) && (truncatedIconVal != iconVal))
+                            {
+                                // This assertion would be saying that a small local is equal to a value
+                                // outside its range. It means this block is unreachable. Avoid creating
+                                // such impossible assertions which can hit assertions in other places.
+                                goto DONE_ASSERTION;
+                            }
+
+                            iconVal = truncatedIconVal;
                             if (!optLocalAssertionProp)
                             {
                                 assertion.op2.vn = vnStore->VNForIntCon(static_cast<int>(iconVal));
@@ -4169,7 +4178,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
 
         // Look for matching exact type assertions based on vtable accesses. E.g.:
         //
-        //   op1:       VNF_InvariantLoad(myObj) or in other words: a vtable access
+        //   op1:       VNF_InvariantNonNullLoad(myObj) or in other words: a vtable access
         //   op2:       'MyType' class handle
         //   Assertion: 'myObj's type is exactly MyType
         //
@@ -4178,7 +4187,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         {
             VNFuncApp funcApp;
             if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
-                (funcApp.m_func == VNF_InvariantLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
+                (funcApp.m_func == VNF_InvariantNonNullLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
             {
                 return assertionIndex;
             }
@@ -5633,8 +5642,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     GenTree* switchTree = switchBb->lastStmt()->GetRootNode()->gtEffectiveVal();
     assert(switchTree->OperIs(GT_SWITCH));
 
-    // bbsCount is uint32_t, but it's unlikely to be more than INT32_MAX.
-    noway_assert(switchBb->GetSwitchTargets()->bbsCount <= INT32_MAX);
+    // Case count is uint32_t, but it's unlikely to be more than INT32_MAX.
+    noway_assert(switchBb->GetSwitchTargets()->GetCaseCount() <= INT32_MAX);
 
     ValueNum opVN = optConservativeNormalVN(switchTree->gtGetOp1());
     if (opVN == ValueNumStore::NoVN)
@@ -5652,9 +5661,9 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     int offset = 0;
     vnStore->PeelOffsetsI32(&opVN, &offset);
 
-    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->bbsCount);
-    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->bbsDstTab;
-    bool       hasDefault = switchBb->GetSwitchTargets()->bbsHasDefault;
+    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->GetCaseCount());
+    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->GetCases();
+    bool       hasDefault = switchBb->GetSwitchTargets()->HasDefaultCase();
 
     for (int jmpTargetIdx = 0; jmpTargetIdx < jumpCount; jmpTargetIdx++)
     {
@@ -5666,14 +5675,15 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
         int value = jmpTargetIdx - offset;
 
         // We can only make "X == caseValue" assertions for blocks with a single edge from the switch.
-        BasicBlock* target = jumpTable[jmpTargetIdx]->getDestinationBlock();
+        FlowEdge* const   edge   = jumpTable[jmpTargetIdx];
+        BasicBlock* const target = edge->getDestinationBlock();
         if (target->GetUniquePred(this) != switchBb)
         {
             // Target block is potentially reachable from multiple blocks (outside the switch).
             continue;
         }
 
-        if (fgGetPredForBlock(target, switchBb)->getDupCount() > 1)
+        if (edge->getDupCount() > 1)
         {
             // We have just one predecessor (BBJ_SWITCH), but there may be multiple edges (cases) per target.
             continue;

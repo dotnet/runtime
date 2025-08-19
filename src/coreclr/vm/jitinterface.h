@@ -84,7 +84,7 @@ void getMethodInfoILMethodHeaderHelper(
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry,
-                          BOOL mayUsePrecompiledNDirectMethods = TRUE);
+                          BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
@@ -574,7 +574,6 @@ public:
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
     InfoAccessType emptyStringLiteral(void ** ppValue) override;
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
     CORINFO_METHOD_INFO* getMethodInfoInternal();
     CORJIT_FLAGS* getJitFlagsInternal();

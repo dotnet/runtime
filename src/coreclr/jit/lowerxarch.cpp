@@ -9255,15 +9255,15 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX512_LoadAlignedVector512:
         {
-            // In minOpts, we need to ensure that an unaligned address will fault when an explicit LoadAligned is used.
-            // Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for scalar
-            // loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
+            // For debug code, we need to ensure that an unaligned address will fault when an explicit LoadAligned is
+            // used. Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for
+            // scalar loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
             //
             // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's
             // requirement.
 
-            return (supportsSIMDLoad &&
-                    ((!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16)) || !comp->opts.MinOpts()));
+            return (supportsSIMDLoad && (comp->opts.OptimizationEnabled() ||
+                                         (!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16))));
         }
 
         case NI_X86Base_LoadScalarVector128:
@@ -9279,7 +9279,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX512_BroadcastScalarToVector512:
         {
-            if (comp->opts.MinOpts() || !comp->canUseEmbeddedBroadcast())
+            if (!comp->opts.Tier0OptimizationEnabled() || !comp->canUseEmbeddedBroadcast())
             {
                 return false;
             }
@@ -9781,14 +9781,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             for (GenTree* longOp : op1->Operands())
                             {
-                                if (!varTypeIsSmall(longOp) && IsContainableMemoryOp(longOp) &&
-                                    IsSafeToContainMem(node, longOp))
+                                if (!varTypeIsSmall(longOp))
                                 {
-                                    MakeSrcContained(node, longOp);
-                                }
-                                else if (IsSafeToMarkRegOptional(node, longOp))
-                                {
-                                    MakeSrcRegOptional(node, longOp);
+                                    if (IsContainableMemoryOp(longOp) && IsSafeToContainMem(node, longOp))
+                                    {
+                                        MakeSrcContained(node, longOp);
+                                    }
+                                    else if (IsSafeToMarkRegOptional(node, longOp))
+                                    {
+                                        MakeSrcRegOptional(node, longOp);
+                                    }
                                 }
                             }
 
@@ -9904,15 +9906,35 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         // because it will prevent other transforms that will be better for codegen.
 
                         LIR::Use use;
-
-                        if ((oper == GT_XOR) && isEmbeddedBroadcastCompatible && BlockRange().TryGetUse(node, &use) &&
-                            use.User()->OperIsVectorFusedMultiplyOp())
+                        if (isEmbeddedBroadcastCompatible && BlockRange().TryGetUse(node, &use))
                         {
-                            // xor is bitwise and the actual xor node might be a different base type
-                            // from the FMA node, so we check if its negative zero using the FMA base
-                            // type since that's what the end negation would end up using
-                            var_types fmaSimdBaseType     = use.User()->AsHWIntrinsic()->GetSimdBaseType();
-                            isEmbeddedBroadcastCompatible = !containedOperand->IsVectorNegativeZero(fmaSimdBaseType);
+                            if ((oper == GT_XOR) && use.User()->OperIsVectorFusedMultiplyOp())
+                            {
+                                // xor is bitwise and the actual xor node might be a different base type
+                                // from the FMA node, so we check if its negative zero using the FMA base
+                                // type since that's what the end negation would end up using
+                                var_types fmaSimdBaseType = use.User()->AsHWIntrinsic()->GetSimdBaseType();
+                                isEmbeddedBroadcastCompatible =
+                                    !containedOperand->IsVectorNegativeZero(fmaSimdBaseType);
+                            }
+                            else if (((oper == GT_AND) || (oper == GT_AND_NOT)) && use.User()->OperIsHWIntrinsic())
+                            {
+                                // For EQ/NE(AND(X, CnsVec), ZeroVector) we don't need to fold CnsVec into a contained
+                                // broadcast operand - AND will be folded into TestZ anyway.
+                                GenTreeHWIntrinsic* userHw = use.User()->AsHWIntrinsic();
+                                NamedIntrinsic      userId = userHw->GetHWIntrinsicId();
+
+                                bool isEQ = (userId == NI_Vector128_op_Equality) ||
+                                            (userId == NI_Vector256_op_Equality) ||
+                                            (userId == NI_Vector512_op_Equality);
+                                bool isNE = (userId == NI_Vector128_op_Inequality) ||
+                                            (userId == NI_Vector256_op_Inequality) ||
+                                            (userId == NI_Vector512_op_Inequality);
+                                if ((isEQ || isNE) && (userHw->Op(1)->IsVectorZero() || userHw->Op(2)->IsVectorZero()))
+                                {
+                                    isEmbeddedBroadcastCompatible = false;
+                                }
+                            }
                         }
 
                         if (isEmbeddedBroadcastCompatible)

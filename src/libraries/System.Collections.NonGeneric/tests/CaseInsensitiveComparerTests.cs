@@ -24,7 +24,7 @@ namespace System.Collections.Tests
         [InlineData(5, null, 1)]
         [InlineData(null, 5, -1)]
         [InlineData(null, null, 0)]
-        public void Ctor_Empty_Compare(object a, object b, int expected)
+        public void Ctor_Empty_Compare(object? a, object? b, int expected)
         {
             CaseInsensitiveComparer comparer = new CaseInsensitiveComparer();
             Assert.Equal(expected, Math.Sign(comparer.Compare(a, b)));
@@ -43,7 +43,7 @@ namespace System.Collections.Tests
         [InlineData(5, null, 1)]
         [InlineData(null, 5, -1)]
         [InlineData(null, null, 0)]
-        public void Ctor_CultureInfo_Compare(object a, object b, int expected)
+        public void Ctor_CultureInfo_Compare(object? a, object? b, int expected)
         {
             var cultureNames = Helpers.TestCultureNames;
 
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
         [InlineData(5, null, 1)]
         [InlineData(null, 5, -1)]
         [InlineData(null, null, 0)]
-        public void DefaultInvariant_Compare(object a, object b, int expected)
+        public void DefaultInvariant_Compare(object? a, object? b, int expected)
         {
             var cultureNames = Helpers.TestCultureNames;
 
@@ -157,7 +157,7 @@ namespace System.Collections.Tests
         [InlineData(5, null, 1)]
         [InlineData(null, 5, -1)]
         [InlineData(null, null, 0)]
-        public void Default_Compare(object a, object b, int expected)
+        public void Default_Compare(object? a, object? b, int expected)
         {
             Assert.Equal(expected, Math.Sign(CaseInsensitiveComparer.Default.Compare(a, b)));
         }

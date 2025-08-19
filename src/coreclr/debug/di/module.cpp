@@ -27,7 +27,7 @@ CordbModule::CordbModule(
     CordbProcess *     pProcess,
     VMPTR_Module        vmModule,
     VMPTR_DomainAssembly    vmDomainAssembly)
-: CordbBase(pProcess, vmDomainAssembly.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainAssembly), enumCordbModule),
+: CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
     m_classes(11),

@@ -953,6 +953,14 @@ JS_ENGINES = [NODE_JS]
       <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')&quot;</_MonoAOTCFLAGSOption>
       <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')&quot;</_MonoAOTCXXFLAGSOption>
     </PropertyGroup>
+
+    <PropertyGroup>
+      <_PythonCmd Condition="'$(HostOS)' != 'windows'">python3</_PythonCmd>
+      <_PythonCmd Condition="'$(HostOS)' == 'windows'">python</_PythonCmd>
+      <!-- Use python from the transport pack on Browser/Wasi -->
+      <_PythonCmd Condition="'$(HostOS)' == 'windows' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_56_Python_win-x64)', 'tools', 'python.exe'))</_PythonCmd>
+    </PropertyGroup>
+
     <ItemGroup>
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' == 'true'" Include="-G Ninja"/>
@@ -975,15 +983,12 @@ JS_ENGINES = [NODE_JS]
       <!-- rename exe -->
       <MonoAOTCMakeArgs Include="-DMONO_CROSS_COMPILE_EXECUTABLE_NAME=1" />
       <MonoAOTCMakeArgs Include="-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true" Condition="'$(KeepNativeSymbols)' == 'true'" />
+      <MonoAOTCMakeArgs Condition="'$(HostOS)' == 'windows' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')" Include="-DPython_ROOT_DIR=$([System.IO.Directory]::GetParent('$(_PythonCmd)'))" />
     </ItemGroup>
 
     <PropertyGroup>
       <_MonoSkipInitCompiler Condition="'$(AotHostArchitecture)' != '$(BuildArchitecture)'">false</_MonoSkipInitCompiler>
       <_MonoSkipInitCompiler Condition="'$(CrossBuild)' == 'true'">false</_MonoSkipInitCompiler>
-      <_PythonCmd Condition="'$(HostOS)' != 'windows'">python3</_PythonCmd>
-      <_PythonCmd Condition="'$(HostOS)' == 'windows'">python</_PythonCmd>
-      <!-- Use python from the transport pack on Browser/Wasi -->
-      <_PythonCmd Condition="'$(HostOS)' == 'windows' and ('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_56_Python_win-x64)', 'tools', 'python.exe'))</_PythonCmd>
       <_MonoAotCrossOffsetsToolPath>$(MonoProjectRoot)mono\offsets\offsets-tool.py</_MonoAotCrossOffsetsToolPath>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(_PythonCmd) $(_MonoAotCrossOffsetsToolPath) @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoAotCMakeConfigureCommand>
@@ -1134,13 +1139,13 @@ JS_ENGINES = [NODE_JS]
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Mono.release">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Mono.release">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release.dwarf">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework\Mono.release.dwarf') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release.dwarf">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono.dwarf</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Mono.release.dwarf">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Mono.release.dwarf')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Mono.release.dwarf">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono.dwarf</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.debug.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
@@ -1149,25 +1154,25 @@ JS_ENGINES = [NODE_JS]
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and !Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Mono.debug">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Mono.debug">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and !Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug.dwarf">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug.dwarf') and !Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug.dwarf">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono.dwarf</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Mono.debug.dwarf">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Mono.debug.dwarf')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Mono.debug.dwarf">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono.dwarf</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Info.plist">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Info.plist</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Resources\Info.plist">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Resources\Info.plist">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Info.plist</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and !Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Info.plist">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Info.plist</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Resources\Info.plist">
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Resources\Info.plist">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Info.plist</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeBuildArtifacts Include="$(MonoObjDir)\build\**" />

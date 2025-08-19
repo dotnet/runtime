@@ -36,6 +36,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
+#include <minipal/memorybarrierprocesswide.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -248,7 +249,7 @@ Abstract:
 void
 InitializeDefaultStackSize()
 {
-    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("DefaultStackSize", /*noprefix*/ false, &getenv);
+    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("Thread_DefaultStackSize", /*noprefix*/ false, &getenv);
     if (defStackSize.IsSet())
     {
         DWORD size;
@@ -580,7 +581,7 @@ Initialize(
         if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
         {
             // Initialize before first thread is created for faster load on Linux
-            if (!InitializeFlushProcessWriteBuffers())
+            if (!minipal_initialize_memory_barrier_process_wide())
             {
                 ERROR("Unable to initialize flush process write buffers\n");
                 palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
@@ -588,7 +589,7 @@ Initialize(
             }
         }
 
-#ifndef __wasm__
+#ifndef TARGET_WASM
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -601,7 +602,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-#endif
+#endif // !TARGET_WASM
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -719,6 +720,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
+#ifndef TARGET_WASM // we don't use shared libraries on wasm
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -726,6 +728,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
+#endif // !TARGET_WASM
 
     if (!PROCAbortInitialize())
     {
@@ -916,7 +919,7 @@ Return value:
 --*/
 static BOOL INIT_IncreaseDescriptorLimit(void)
 {
-#ifdef __wasm__
+#ifdef TARGET_WASM
     // WebAssembly cannot set limits
     return TRUE;
 #endif

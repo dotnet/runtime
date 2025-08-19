@@ -197,6 +197,12 @@ namespace System.Numerics.Tensors
             return ref ret;
         }
 
+        /// <inheritdoc cref="ITensor{TSelf, T}.GetSpan(ReadOnlySpan{nint}, int)" />
+        public Span<T> GetSpan(scoped ReadOnlySpan<nint> startIndexes, int length) => AsTensorSpan().GetSpan(startIndexes, length);
+
+        /// <inheritdoc cref="ITensor{TSelf, T}.GetSpan(ReadOnlySpan{NIndex}, int)" />
+        public Span<T> GetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length) => AsTensorSpan().GetSpan(startIndexes, length);
+
         /// <summary>Pins and gets a <see cref="MemoryHandle"/> to the backing memory.</summary>
         /// <returns><see cref="MemoryHandle"/></returns>
         public unsafe MemoryHandle GetPinnedHandle()
@@ -257,7 +263,7 @@ namespace System.Numerics.Tensors
 
             if (!IsDense)
             {
-                result = Tensor.Create<T>(Lengths, IsPinned);
+                result = Tensor.CreateFromShape<T>(Lengths, IsPinned);
                 CopyTo(result);
             }
 
@@ -270,21 +276,23 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryFlattenTo(Span{T})" />
         public bool TryFlattenTo(scoped Span<T> destination) => AsReadOnlyTensorSpan().TryFlattenTo(destination);
 
-        /// <summary>
-        /// Creates a <see cref="string"/> representation of the <see cref="TensorSpan{T}"/>."/>
-        /// </summary>
-        /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        /// <returns>A <see cref="string"/> representation of the <see cref="Tensor{T}"/></returns>
-        public string ToString(params ReadOnlySpan<nint> maximumLengths)
-        {
-            var sb = new StringBuilder($"System.Numerics.Tensors.Tensor<{typeof(T).Name}>[{_shape}]");
+        /// <inheritdoc cref="ITensor{TSelf, T}.TryGetSpan(ReadOnlySpan{nint}, int, out Span{T})" />
+        public bool TryGetSpan(scoped ReadOnlySpan<nint> startIndexes, int length, out Span<T> span) => AsTensorSpan().TryGetSpan(startIndexes, length, out span);
 
-            sb.AppendLine("{");
-            Tensor.ToString(AsReadOnlyTensorSpan(), maximumLengths, sb);
-            sb.AppendLine("}");
+        /// <inheritdoc cref="ITensor{TSelf, T}.TryGetSpan(ReadOnlySpan{NIndex}, int, out Span{T})" />
+        public bool TryGetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length, out Span<T> span) => AsTensorSpan().TryGetSpan(startIndexes, length, out span);
 
-            return sb.ToString();
-        }
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{nint}, int, out ReadOnlySpan{T})" />
+        public bool TryGetSpan(scoped ReadOnlySpan<nint> startIndexes, int length, out ReadOnlySpan<T> span) => AsReadOnlyTensorSpan().TryGetSpan(startIndexes, length, out span);
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{NIndex}, int, out ReadOnlySpan{T})" />
+        public bool TryGetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length, out ReadOnlySpan<T> span) => AsReadOnlyTensorSpan().TryGetSpan(startIndexes, length, out span);
+
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ToString()" />
+        public override string ToString() => ToString([]);
+
+        /// <inheritdoc cref="ReadOnlyTensorSpan{T}.ToString(ReadOnlySpan{nint})" />
+        public string ToString(params scoped ReadOnlySpan<nint> maximumLengths) => Tensor.ToString(AsReadOnlyTensorSpan(), maximumLengths, "System.Numerics.Tensors.Tensor");
 
         //
         // IEnumerable
@@ -318,6 +326,10 @@ namespace System.Numerics.Tensors
 
         ref readonly T IReadOnlyTensor<Tensor<T>, T>.GetPinnableReference() => ref GetPinnableReference();
 
+        ReadOnlySpan<T> IReadOnlyTensor<Tensor<T>, T>.GetSpan(scoped ReadOnlySpan<nint> startIndexes, int length) => AsReadOnlyTensorSpan().GetSpan(startIndexes, length);
+
+        ReadOnlySpan<T> IReadOnlyTensor<Tensor<T>, T>.GetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length) => AsReadOnlyTensorSpan().GetSpan(startIndexes, length);
+
         //
         // ITensor
         //
@@ -350,13 +362,13 @@ namespace System.Numerics.Tensors
         // ITensor<TSelf, T>
         //
 
-        static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.Create<T>(lengths, pinned);
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateFromShape(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.CreateFromShape<T>(lengths, pinned);
 
-        static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.Create<T>(lengths, strides, pinned);
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateFromShape(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.CreateFromShape<T>(lengths, strides, pinned);
 
-        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.CreateUninitialized<T>(lengths, pinned);
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateFromShapeUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned) => Tensor.CreateFromShapeUninitialized<T>(lengths, pinned);
 
-        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.CreateUninitialized<T>(lengths, strides, pinned);
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateFromShapeUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned) => Tensor.CreateFromShapeUninitialized<T>(lengths, strides, pinned);
 
         /// <summary>Enumerates the elements of a tensor.</summary>
         public struct Enumerator : IEnumerator<T>
