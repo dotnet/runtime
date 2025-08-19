@@ -187,8 +187,7 @@ public unsafe partial class TargetTests
 
         bool success = builder.TryCreateTarget(new(builder), out ContractDescriptorTarget? target);
         Assert.True(success);
-        bool writeSuccess = target.Write<uint>(addr, expected);
-        Assert.True(writeSuccess);
+        target.Write<uint>(addr, expected);
         Assert.Equal(expected, target.Read<uint>(addr));
     }
 

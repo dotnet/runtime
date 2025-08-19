@@ -1181,9 +1181,8 @@ internal class AMD64Unwinder(Target target)
 
             return new UnwindInfoHeader(unwindInfoAddress, headerValue);
         }
-        catch (InvalidOperationException)
+        catch (VirtualReadException)
         {
-            // InvalidOperationException thrown if failed to read memory
             return null;
         }
     }
