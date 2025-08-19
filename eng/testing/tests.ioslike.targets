@@ -21,7 +21,6 @@
     <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
     <_ResetSimulatorSwitch Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and '$(IncludesTestRunner)' == 'true'">--reset-simulator</_ResetSimulatorSwitch>
-    <_SignalAppEndSwitch>--signal-app-end</_SignalAppEndSwitch>
     <_AppleSignCommand Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">sign &quot;$app&quot;</_AppleSignCommand>
 
     <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
