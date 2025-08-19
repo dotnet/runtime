@@ -1457,7 +1457,7 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowMinMaxException<T>(T min, T max)
         {
-            throw new ArgumentOutOfRangeException(nameof(max), value, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(max), max, min));
+            throw new ArgumentOutOfRangeException(nameof(max), max, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(max), max, min));
         }
 
         public static double ScaleB(double x, int n)
