@@ -240,6 +240,7 @@
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.NativeAot.cs" />
   </ItemGroup>
