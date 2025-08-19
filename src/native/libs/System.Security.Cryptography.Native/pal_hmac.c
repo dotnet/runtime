@@ -160,7 +160,7 @@ void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx)
             ctx->legacy = NULL;
         }
 
-        OPENSSL_free(ctx);
+        free(ctx);
     }
 }
 
