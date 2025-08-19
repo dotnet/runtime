@@ -49,10 +49,7 @@ namespace Internal.Runtime.CompilerServices
             public IntPtr InstantiationArgument;
         }
 
-        private static uint s_genericFunctionPointerNextIndex;
-        private const uint c_genericDictionaryChunkSize = 1024;
-        private static LowLevelList<IntPtr> s_genericFunctionPointerCollection = new LowLevelList<IntPtr>();
-        private static LowLevelDictionary<GenericMethodDescriptorInfo, uint> s_genericFunctionPointerDictionary = new LowLevelDictionary<GenericMethodDescriptorInfo, uint>();
+        private static LowLevelDictionary<GenericMethodDescriptorInfo, IntPtr> s_genericFunctionPointerDictionary = new LowLevelDictionary<GenericMethodDescriptorInfo, IntPtr>();
 
         public static unsafe IntPtr GetGenericMethodFunctionPointer(IntPtr canonFunctionPointer, IntPtr instantiationArgument)
         {
@@ -69,38 +66,17 @@ namespace Internal.Runtime.CompilerServices
                     InstantiationArgument = instantiationArgument
                 };
 
-                uint index = 0;
-                if (!s_genericFunctionPointerDictionary.TryGetValue(key, out index))
+                if (!s_genericFunctionPointerDictionary.TryGetValue(key, out IntPtr descriptor))
                 {
-                    // Capture new index value
-                    index = s_genericFunctionPointerNextIndex;
+                    descriptor = (IntPtr)NativeMemory.Alloc((uint)sizeof(GenericMethodDescriptor));
 
-                    int newChunkIndex = (int)(index / c_genericDictionaryChunkSize);
-                    uint newSubChunkIndex = index % c_genericDictionaryChunkSize;
-
-                    // Generate new chunk if existing chunks are insufficient
-                    if (s_genericFunctionPointerCollection.Count <= newChunkIndex)
-                    {
-                        Debug.Assert(newSubChunkIndex == 0);
-
-                        // New generic descriptors are allocated on the native heap and not tracked in the GC.
-                        IntPtr pNewMem = (IntPtr)NativeMemory.Alloc(c_genericDictionaryChunkSize, (nuint)sizeof(GenericMethodDescriptor));
-                        s_genericFunctionPointerCollection.Add(pNewMem);
-                    }
-
-                    ((GenericMethodDescriptor*)s_genericFunctionPointerCollection[newChunkIndex])[newSubChunkIndex] =
+                    *(GenericMethodDescriptor*)descriptor =
                         new GenericMethodDescriptor(canonFunctionPointer, instantiationArgument);
 
-                    s_genericFunctionPointerDictionary.LookupOrAdd(key, index);
-
-                    // Now that we can no longer have failed, update the next index.
-                    s_genericFunctionPointerNextIndex++;
+                    s_genericFunctionPointerDictionary.LookupOrAdd(key, descriptor);
                 }
 
-                // Lookup within list
-                int chunkIndex = (int)(index / c_genericDictionaryChunkSize);
-                uint subChunkIndex = index % c_genericDictionaryChunkSize;
-                GenericMethodDescriptor* genericFunctionPointer = &((GenericMethodDescriptor*)s_genericFunctionPointerCollection[chunkIndex])[subChunkIndex];
+                GenericMethodDescriptor* genericFunctionPointer = (GenericMethodDescriptor*)descriptor;
 
                 Debug.Assert(canonFunctionPointer == genericFunctionPointer->MethodFunctionPointer);
                 Debug.Assert(instantiationArgument == genericFunctionPointer->InstantiationArgument);
