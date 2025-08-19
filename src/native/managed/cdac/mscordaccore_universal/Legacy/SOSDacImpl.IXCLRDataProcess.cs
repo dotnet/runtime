@@ -413,11 +413,6 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
                 hr = HResults.S_FALSE;
             }
         }
-        catch (InvalidOperationException)
-        {
-            // If the target read fails, expect HResult to be CORDBG_E_READVIRTUAL_FAILURE
-            hr = CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE;
-        }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
