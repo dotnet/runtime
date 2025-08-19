@@ -530,7 +530,7 @@ namespace System.Runtime.Loader
             {
                 Interlocked.CompareExchange<AsyncLocal<AssemblyLoadContext?>?>(ref s_asyncLocalCurrent, new AsyncLocal<AssemblyLoadContext?>(), null);
             }
-            s_asyncLocalCurrent!.Value = value; // Remove ! when compiler specially-recognizes CompareExchange for nullability
+            s_asyncLocalCurrent.Value = value;
         }
 
         /// <summary>Enter scope using this AssemblyLoadContext for ContextualReflection</summary>
