@@ -33,6 +33,7 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
@@ -578,8 +579,6 @@ FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
 }
 FCIMPLEND
@@ -587,8 +586,6 @@ FCIMPLEND
 FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     GCMEMORYINFODATAREF objGCMemoryInfo = (GCMEMORYINFODATAREF)(ObjectToOBJECTREF (objUNSAFE));
 
@@ -620,8 +617,6 @@ FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetMemoryLoad();
     return result;
 }
@@ -630,8 +625,6 @@ FCIMPLEND
 FCIMPL0(int, GCInterface::GetGcLatencyMode)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();
     return result;
@@ -642,8 +635,6 @@ FCIMPL1(int, GCInterface::SetGcLatencyMode, int newLatencyMode)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     return GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
 }
 FCIMPLEND
@@ -651,8 +642,6 @@ FCIMPLEND
 FCIMPL0(int, GCInterface::GetLOHCompactionMode)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetLOHCompactionMode();
     return result;
@@ -663,8 +652,6 @@ FCIMPL1(void, GCInterface::SetLOHCompactionMode, int newLOHCompactionyMode)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     GCHeapUtilities::GetGCHeap()->SetLOHCompactionMode(newLOHCompactionyMode);
 }
 FCIMPLEND
@@ -674,8 +661,6 @@ FCIMPL2(FC_BOOL_RET, GCInterface::RegisterForFullGCNotification, UINT32 gen2Perc
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->RegisterForFullGCNotification(gen2Percentage, lohPercentage));
 }
 FCIMPLEND
@@ -684,7 +669,6 @@ FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->CancelFullGCNotification());
 }
 FCIMPLEND
@@ -853,7 +837,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory()
 **Arguments: args->generation:  The maximum generation to collect
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure)
 {
     QCALL_CONTRACT;
 
@@ -865,7 +849,7 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
     //We don't need to check the top end because the GC will take care of that.
 
     GCX_COOP();
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, mode);
+    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, lowMemoryPressure, mode);
 
     END_QCALL;
 }
@@ -1471,7 +1455,7 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
     {
         // Ignore failures
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -1578,7 +1562,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 {
     QCALL_CONTRACT;
 
-    FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 }
 
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)

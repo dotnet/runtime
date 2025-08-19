@@ -7,9 +7,14 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
     <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/112827 -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Temporarily disabled due to problems with generating interpreter bytecode for methods with existing prestub -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InterpreterTester.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />

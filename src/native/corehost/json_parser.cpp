@@ -66,15 +66,16 @@ bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t
 
         get_line_column_from_offset(data, size, offset, &line, &column);
 
-        trace::error(_X("A JSON parsing exception occurred in [%s], offset %zu (line %d, column %d): %s"),
-            context.c_str(), offset, line, column,
-            rapidjson::GetParseError_En(m_document.GetParseError()));
+        m_parse_error = utils::format_string(_X("JSON parsing exception: %s [offset %zu: line %d, column %d]"),
+            rapidjson::GetParseError_En(m_document.GetParseError()),
+            offset, line, column
+        );
         return false;
     }
 
     if (!m_document.IsObject())
     {
-        trace::error(_X("Expected a JSON object in [%s]"), context.c_str());
+        m_parse_error = _X("Expected a JSON object");
         return false;
     }
 
@@ -123,7 +124,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     size_t size = m_size;
 
     // Skip over UTF-8 BOM, if present
-    if (size >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[1] == 0xBF)
+    if (size >= 3 && static_cast<unsigned char>(data[0]) == 0xEF && static_cast<unsigned char>(data[1]) == 0xBB && static_cast<unsigned char>(data[2]) == 0xBF)
     {
         size -= 3;
         data += 3;

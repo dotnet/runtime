@@ -90,6 +90,18 @@ freely, subject to the following restrictions:
 
 3. This notice may not be removed or altered from any source distribution.
 
+License notice for opentelemetry-dotnet
+---------------------------------------
+
+https://github.com/open-telemetry/opentelemetry-dotnet/blob/805dd6b4abfa18ef2706d04c30d0ed28dbc2955e/LICENSE.TXT#L1
+
+Apache License
+Version 2.0, January 2004
+http://www.apache.org/licenses/
+
+Copyright The OpenTelemetry Authors
+
+
 License notice for LinuxTracepoints
 -----------------------------------
 

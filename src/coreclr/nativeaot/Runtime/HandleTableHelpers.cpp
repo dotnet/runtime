@@ -1,18 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// Helper functions that are p/invoked from redhawkm in order to expose handle table functionality to managed
-// code. These p/invokes are special in that the handle table code requires we remain in co-operative mode
-// (since these routines mutate the handle tables which are also accessed during garbage collections). The
-// binder has special knowledge of these methods and doesn't generate the normal code to transition out of the
-// runtime prior to the call.
-//
 #include "common.h"
 #include "gcenv.h"
 #include "objecthandle.h"
 #include "RestrictedCallouts.h"
 #include "gchandleutilities.h"
+#include "interoplibinterface.h"
 
 
 FCIMPL2(OBJECTHANDLE, RhpHandleAlloc, Object *pObject, int type)
@@ -68,6 +62,27 @@ FCIMPLEND
 FCIMPL2(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable * pTypeFilter)
 {
     RestrictedCallouts::UnregisterRefCountedHandleCallback(pCallout, pTypeFilter);
+}
+FCIMPLEND
+
+FCIMPL2(OBJECTHANDLE, RhpHandleAllocCrossReference, Object *pPrimary, void *pContext)
+{
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleWithExtraInfo(pPrimary, HNDTYPE_CROSSREFERENCE, pContext);
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, RhHandleTryGetCrossReferenceContext, OBJECTHANDLE handle, void **pContext)
+{
+    *pContext = nullptr;
+
+    IGCHandleManager* gcHandleManager = GCHandleUtilities::GetGCHandleManager();
+    if (gcHandleManager->HandleFetchType(handle) != HNDTYPE_CROSSREFERENCE)
+    {
+        FC_RETURN_BOOL(false);
+    }
+
+    *pContext = gcHandleManager->GetExtraInfoFromHandle(handle);
+    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
 
@@ -133,4 +148,13 @@ EXTERN_C uint32_t __stdcall RhIUnknown_AddRef(void* pComThis)
 {
     ManagedObjectWrapper* wrapper = ToManagedObjectWrapper(pComThis);
     return wrapper->AddRef();
+}
+
+//
+// Release is implemented in native code so that it does not need to synchronize with the GC. This is important because Xaml
+// can invoke this Release during shutdown, and we don't want to synchronize with the GC at that time.
+//
+EXTERN_C uint32_t __stdcall RhUntracked_AddRefRelease(void*)
+{
+    return 1;
 }

@@ -385,7 +385,8 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 #endif
-
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
@@ -414,7 +415,7 @@ namespace System.Runtime.CompilerServices
 
         // Returns pointer to the multi-dimensional array bounds.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ref int GetMultiDimensionalArrayBounds(Array array)
+        internal static ref int GetMultiDimensionalArrayBounds(this Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
             // See comment on RawArrayData for details
@@ -422,7 +423,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int GetMultiDimensionalArrayRank(Array array)
+        internal static unsafe int GetMultiDimensionalArrayRank(this Array array)
         {
             int rank = GetMethodTable(array)->MultiDimensionalArrayRank;
             GC.KeepAlive(array); // Keep MethodTable alive
@@ -487,15 +488,41 @@ namespace System.Runtime.CompilerServices
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr AllocTailCallArgBufferWorker(int size, IntPtr gcDesc);
+        private static extern unsafe TailCallArgBuffer* GetTailCallArgBuffer();
 
-        private static IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc)
+        [LibraryImport(QCall, EntryPoint = "TailCallHelp_AllocTailCallArgBufferInternal")]
+        private static unsafe partial TailCallArgBuffer* AllocTailCallArgBufferInternal(int size);
+
+        private const int TAILCALLARGBUFFER_ACTIVE = 0;
+        // private const int TAILCALLARGBUFFER_INSTARG_ONLY = 1;
+        private const int TAILCALLARGBUFFER_INACTIVE = 2;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // To allow unrolling of Span.Clear
+        private static unsafe TailCallArgBuffer* AllocTailCallArgBuffer(int size, IntPtr gcDesc)
         {
-            IntPtr buffer = AllocTailCallArgBufferWorker(size, gcDesc);
-            if (buffer == IntPtr.Zero)
+            TailCallArgBuffer* buffer = GetTailCallArgBuffer();
+            if (buffer != null && buffer->Size >= size)
             {
-                throw new OutOfMemoryException();
+                buffer->State = TAILCALLARGBUFFER_INACTIVE;
             }
+            else
+            {
+                buffer = AllocTailCallArgBufferWorker(size);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static TailCallArgBuffer* AllocTailCallArgBufferWorker(int size) => AllocTailCallArgBufferInternal(size);
+            }
+            Debug.Assert(buffer != null);
+            Debug.Assert(buffer->Size >= size);
+            Debug.Assert(buffer->State == TAILCALLARGBUFFER_INACTIVE);
+
+            buffer->GCDesc = gcDesc;
+
+            new Span<byte>(buffer + 1, size - sizeof(TailCallArgBuffer)).Clear();
+
+            // The buffer is now ready to be used.
+            buffer->State = TAILCALLARGBUFFER_ACTIVE;
+
             return buffer;
         }
 
@@ -505,7 +532,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
-            delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> callTarget,
+            delegate*<TailCallArgBuffer*, ref byte, PortableTailCallFrame*, void> callTarget,
             ref byte retVal)
         {
             IntPtr callersRetAddr;
@@ -536,11 +563,8 @@ namespace System.Runtime.CompilerServices
             {
                 tls->Frame = prevFrame;
 
-                // If the arg buffer is reporting inst argument, it is safe to abandon it now
-                if (tls->ArgBuffer != IntPtr.Zero && *(int*)tls->ArgBuffer == 1 /* TAILCALLARGBUFFER_INSTARG_ONLY */)
-                {
-                    *(int*)tls->ArgBuffer = 2 /* TAILCALLARGBUFFER_ABANDONED */;
-                }
+                // If the arg buffer is reporting inst argument (TAILCALLARGBUFFER_INSTARG_ONLY), it is safe to abandon it now.
+                tls->ArgBuffer->State = TAILCALLARGBUFFER_INACTIVE;
             }
         }
 
@@ -625,6 +649,8 @@ namespace System.Runtime.CompilerServices
         public IntPtr CodeData;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         private MethodDescChunk* GetMethodDescChunk() => (MethodDescChunk*)(((byte*)Unsafe.AsPointer<MethodDesc>(ref this)) - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
 
         public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
@@ -819,6 +845,16 @@ namespace System.Runtime.CompilerServices
 
         public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
 
+        public bool IsSzArray
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(IsArray);
+                return BaseSize == (uint)(3 * sizeof(IntPtr));
+            }
+        }
+
         public bool IsMultiDimensionalArray
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -962,6 +998,8 @@ namespace System.Runtime.CompilerServices
         /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
         /// If the class it initialized, this mask is not necessary
         /// </summary>
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         internal static ref byte MaskStaticsPointer(ref byte staticsPtr)
         {
             fixed (byte* p = &staticsPtr)
@@ -1052,12 +1090,16 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public ref DynamicStaticsInfo GetDynamicStaticsInfo()
         {
             return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, DynamicStaticsInfo>(ref this), 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
         public ref ThreadStaticsInfo GetThreadStaticsInfo()
         {
             return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, ThreadStaticsInfo>(ref this), 1);
@@ -1198,13 +1240,22 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct PortableTailCallFrame
     {
         public IntPtr TailCallAwareReturnAddress;
-        public delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> NextCall;
+        public delegate*<TailCallArgBuffer*, ref byte, PortableTailCallFrame*, void> NextCall;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TailCallArgBuffer
+    {
+        public int State;
+        public int Size;
+        public IntPtr GCDesc;
+        // Args
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct TailCallTls
     {
         public PortableTailCallFrame* Frame;
-        public IntPtr ArgBuffer;
+        public TailCallArgBuffer* ArgBuffer;
     }
 }

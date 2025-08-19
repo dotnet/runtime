@@ -37,7 +37,6 @@
 #include <formattype.h>
 #include "fieldmarshaler.h"
 #include "sigbuilder.h"
-#include "metadataexports.h"
 #include "inlinetracking.h"
 #include "threads.h"
 #include "nativeimage.h"
@@ -66,6 +65,8 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
+
+#include "interpexec.h"
 
 #ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT
@@ -661,7 +662,7 @@ void Module::Destruct()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         END_PROFILER_CALLBACK();
     }
@@ -717,7 +718,7 @@ void Module::Destruct()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
         END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
@@ -1515,7 +1516,7 @@ void Module::StartUnload()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         END_PROFILER_CALLBACK();
     }
@@ -1657,18 +1658,9 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
     {
         ret = GetISymUnmanagedReader();
     }
-    EX_CATCH
-    {
-        // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
-        // The only type of error that should be possible here is OOM.
-        /* DISABLED due to Dev10 bug 619495
-        CONSISTENCY_CHECK_MSG(
-            GET_EXCEPTION()->GetHR() == E_OUTOFMEMORY,
-            "Exception from GetISymUnmanagedReader");
-         */
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
+    EX_SWALLOW_NONTERMINAL
+    // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
+    // The only type of error that should be possible here is OOM.
     RETURN (ret);
 }
 
@@ -2112,7 +2104,7 @@ PTR_READYTORUN_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
     return GetReadyToRunInfo()->GetImportSectionForRVA(rva);
 }
 
-TADDR Module::GetIL(DWORD target)
+TADDR Module::GetIL(RVA target)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -2868,7 +2860,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
         LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     RETURN pMDRet;
 }
@@ -3363,11 +3355,11 @@ void Module::FixupVTables()
                     iCurMethod++;
 
 #ifdef _DEBUG
-                    if (pMD->IsNDirect())
+                    if (pMD->IsPInvoke())
                     {
                         LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
-                            (size_t)(((NDirectMethodDesc*)pMD)->GetNDirectTarget())));
+                            (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
 #endif // _DEBUG
 
@@ -3396,14 +3388,14 @@ void Module::FixupVTables()
                     LOG((LF_INTEROP, LL_INFO10, "[0x%p] <-- VTable  thunk for \"%s\" (pMD = 0x%p)\n",
                         (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
 
-                    UMEntryThunk *pUMEntryThunk = UMEntryThunk::CreateUMEntryThunk();
+                    UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
                     UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
 
                     pUMThunkMarshInfo->LoadTimeInit(pMD);
-                    pUMEntryThunk->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
+                    pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
-                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
+                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
                 }
@@ -3627,7 +3619,7 @@ void Module::RunEagerFixupsUnlocked()
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
@@ -3643,7 +3635,7 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
     {
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods))
             return FALSE;
 
         _ASSERTE(*fixupCell != 0);
@@ -3752,10 +3744,19 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #endif
 }
 
+static bool g_fIJWLoaded = false;
+
 void Module::SetIsIJWFixedUp()
 {
     LIMITED_METHOD_CONTRACT;
     InterlockedOr((LONG*)&m_dwTransientFlags, IS_IJW_FIXED_UP);
+    g_fIJWLoaded = true;
+}
+
+bool Module::HasAnyIJWBeenLoaded()
+{
+    LIMITED_METHOD_CONTRACT;
+    return g_fIJWLoaded;
 }
 #endif // !DACCESS_COMPILE
 
@@ -4055,9 +4056,9 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-
     BYTE* pByte = NULL;
-    m_pCeeFileGen->GetMethodBuffer(il, &pByte);
+    if (il != 0)
+        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
     return TADDR(pByte);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
@@ -4356,7 +4357,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
             pCookie->pModule = pDefiningModule;
-            pCookie->pNDirectILStub = 0;
+            pCookie->pPInvokeILStub = 0;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
             pCookie->pLoaderModule = pLoaderModule;
@@ -4617,8 +4618,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         }
     }
 
-    ECall::EnumFCallMethods();
-
 #ifdef FEATURE_METADATA_UPDATER
     m_ClassList.EnumMemoryRegions();
 
@@ -4756,7 +4755,7 @@ void Module::ExpandAll()
             {
                 hr = GET_EXCEPTION()->GetHR();
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             //Only do this for non-generic types and unshared generic types
             //(canonical generics and value type generic instantiations).
@@ -4781,7 +4780,7 @@ void Module::ExpandAll()
             {
                 hr = GET_EXCEPTION()->GetHR();
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
     };
     //Jit all methods eagerly

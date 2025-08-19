@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="../types/sidecar.d.ts" />
 
-import { exceptions, simd } from "wasm-feature-detect";
+import { exceptions, simd, relaxedSimd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
@@ -16,7 +16,6 @@ import { mono_download_assets, resolve_single_asset_path, retrieve_asset_downloa
 import { mono_log_error, set_thread_prefix, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { deep_merge_config, isDebuggingSupported } from "./config";
-import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 // if we are the first script loaded in the web worker, we are expected to become the sidecar
 if (typeof importScripts === "function" && !globalThis.onmessage) {
@@ -122,8 +121,6 @@ export function setLoaderGlobals (
         resolve_single_asset_path,
         setup_proxy_console,
         set_thread_prefix,
-        logDownloadStatsToConsole,
-        purgeUnusedCacheEntriesAsync,
         installUnhandledErrorHandler,
 
         retrieve_asset_download,
@@ -133,6 +130,7 @@ export function setLoaderGlobals (
         // from wasm-feature-detect npm package
         exceptions,
         simd,
+        relaxedSimd
     };
     Object.assign(runtimeHelpers, rh);
     Object.assign(loaderHelpers, lh);

@@ -20,7 +20,7 @@ steps:
           artifactName:  AndroidMonoArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App JIT Mono
           artifactName: AndroidHelloWorldArm64Mono
@@ -43,7 +43,7 @@ steps:
           artifactName:  AndroidMonoAOTArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App AOT Mono
           artifactName: AndroidHelloWorldArm64MonoAOT
@@ -67,10 +67,33 @@ steps:
           artifactName:  AndroidCoreCLRArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App JIT CoreCLR
           artifactName: AndroidHelloWorldArm64CoreCLR
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+      - script: rm -r -f $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp
+        workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
+        displayName: clean bindir
+
+      # CoreCLR JIT static linking build
+      - script: make run TARGET_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_FLAVOR=CoreCLR STATIC_LINKING=true
+        workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
+        displayName: Build HelloAndroid sample app RUNTIME_FLAVOR=CoreCLR STATIC_LINKING=true
+      - task: PublishBuildArtifacts@1
+        condition: succeededOrFailed()
+        displayName: 'Publish binlog'
+        inputs:
+          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/Android/msbuild.binlog
+          artifactName:  AndroidCoreCLRArm64StaticLinkingBuildLog
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
+          includeRootFolder: true
+          displayName: Android Sample App JIT CoreCLR Static Linking
+          artifactName: AndroidHelloWorldArm64CoreCLRStaticLinking
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz
@@ -90,7 +113,7 @@ steps:
           artifactName:  AndroidCoreCLRR2RArm64BuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk
+          rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/AppBundle/bin/HelloAndroid.apk
           includeRootFolder: true
           displayName: Android Sample App R2R CoreCLR
           artifactName: AndroidHelloWorldArm64CoreCLRR2R

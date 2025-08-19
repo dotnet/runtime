@@ -13,6 +13,7 @@ namespace System.Tests
 {
     public static class IntPtrTests
     {
+        private static unsafe bool Is32Bit => sizeof(void*) == 4;
         private static unsafe bool Is64Bit => sizeof(void*) == 8;
 
         [Fact]
@@ -111,7 +112,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void EqualsTest(nint value, object obj, bool expected)
+        public static void EqualsTest(nint value, object? obj, bool expected)
         {
             if (obj is nint other)
             {
@@ -245,7 +246,7 @@ namespace System.Tests
         [InlineData(-234, 234, -1)]
         [InlineData(-234, -432, 1)]
         [InlineData(234, null, 1)]
-        public static void CompareTo_Other_ReturnsExpected(int l, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(int l, object? value, int expected)
         {
             nint i = l;
             if (value is int intValue)
@@ -1074,5 +1075,43 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat(nint i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
+
+        [ConditionalTheory(nameof(Is32Bit))]
+        [InlineData(0, 0, "0000000000000000")]
+        [InlineData(0, 1, "0000000000000000")]
+        [InlineData(1, 0, "0000000000000000")]
+        [InlineData(2, 3, "0000000000000006")]
+        [InlineData(3, -2, "FFFFFFFFFFFFFFFA")]
+        [InlineData(-1, -1, "0000000000000001")]
+        [InlineData(-1, int.MinValue, "0000000080000000")]
+        [InlineData(1, int.MinValue, "FFFFFFFF80000000")]
+        [InlineData(0x19E3BD39, 0x69A5D354, "0AAF2DC48A6D11B4")]
+        [InlineData(0x7CA0BE4B, -0x7ED29BBA, "C2425AAB1C785482")]
+        [InlineData(-0x56154C28, 0x3370AB0B, "EEB3DEFEC9B70248")]
+        [InlineData(-0x778E4F94, -0x541A44C9, "2746F6B050E7CB34")]
+        public static void BigMul32(int a, int b, string result)
+        {
+            nint upper = nint.BigMul(a, b, out nint lower);
+            Assert.Equal(result, $"{upper:X8}{lower:X8}");
+        }
+
+        [ConditionalTheory(nameof(Is64Bit))]
+        [InlineData(0L, 0L, "00000000000000000000000000000000")]
+        [InlineData(0L, 1L, "00000000000000000000000000000000")]
+        [InlineData(1L, 0L, "00000000000000000000000000000000")]
+        [InlineData(2L, 3L, "00000000000000000000000000000006")]
+        [InlineData(3L, -2L, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA")]
+        [InlineData(-1L, -1L, "00000000000000000000000000000001")]
+        [InlineData(-1L, long.MinValue, "00000000000000008000000000000000")]
+        [InlineData(1L, long.MinValue, "FFFFFFFFFFFFFFFF8000000000000000")]
+        [InlineData(0x7DD8FD06E61C42C7, 0x23B8308969A5D354, "118F366A0AEB79CDB340AA067592EE4C")]
+        [InlineData(0x6DACB8FC835F41B5, -0x2D90EF8C7ED29BBA, "EC7A8BB31D6035AD27742486E387AB7E")]
+        [InlineData(-0x166FA7C456154C28, 0x13CF93153370AB0B, "FE43855FCCDA31541A45864AC9B70248")]
+        [InlineData(-0x57A14FB8778E4F94, -0x33BDC4C7D41A44C9, "11B61855830A65CBA363C1FE50E7CB34")]
+        public static void BigMul64(long a, long b, string result)
+        {
+            nint upper = nint.BigMul((nint)a, (nint)b, out nint lower);
+            Assert.Equal(result, $"{upper:X16}{lower:X16}");
+        }
     }
 }

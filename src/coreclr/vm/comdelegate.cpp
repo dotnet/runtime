@@ -475,6 +475,18 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 #endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
     }
 
+    // Handle async continuation argument.
+    _ASSERTE(!!sArgPlacerDst.HasAsyncContinuation() == !!sArgPlacerSrc.HasAsyncContinuation());
+    if (sArgPlacerDst.HasAsyncContinuation())
+    {
+        // The async continuation is implicit in both signatures.
+        sArgPlacerSrc.GetAsyncContinuationLoc(&sArgSrc);
+        sArgPlacerDst.GetAsyncContinuationLoc(&sArgDst);
+
+        if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
+            return FALSE;
+    }
+
     // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
     // destination locations.
     while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
@@ -1328,12 +1340,12 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
     }
     else
     {
-        UMEntryThunk*   pUMEntryThunk   = NULL;
-        SyncBlock*      pSyncBlock      = pDelegate->GetSyncBlock();
+        UMEntryThunkData*   pUMEntryThunk   = NULL;
+        SyncBlock*          pSyncBlock      = pDelegate->GetSyncBlock();
 
         InteropSyncBlockInfo* pInteropInfo = pSyncBlock->GetInteropInfo();
 
-        pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
+        pUMEntryThunk = pInteropInfo->GetUMEntryThunk();
 
         if (!pUMEntryThunk)
         {
@@ -1360,8 +1372,8 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             _ASSERTE(pUMThunkMarshInfo != NULL);
             _ASSERTE(pUMThunkMarshInfo == pClass->m_pUMThunkMarshInfo);
 
-            pUMEntryThunk = UMEntryThunk::CreateUMEntryThunk();
-            Holder<UMEntryThunk *, DoNothing, UMEntryThunk::FreeUMEntryThunk> umHolder;
+            pUMEntryThunk = UMEntryThunkData::CreateUMEntryThunk();
+            Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
             umHolder.Assign(pUMEntryThunk);
 
             // multicast. go thru Invoke
@@ -1379,7 +1391,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
             if (!pInteropInfo->SetUMEntryThunk(pUMEntryThunk))
             {
-                pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
+                pUMEntryThunk = pInteropInfo->GetUMEntryThunk();
             }
             else
             {
@@ -1387,7 +1399,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             }
 
             _ASSERTE(pUMEntryThunk != NULL);
-            _ASSERTE(pUMEntryThunk == (UMEntryThunk*)pInteropInfo->GetUMEntryThunk());
+            _ASSERTE(pUMEntryThunk == pInteropInfo->GetUMEntryThunk());
 
         }
         pCode = (PCODE)pUMEntryThunk->GetCode();
@@ -1432,7 +1444,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Otherwise, we'll treat this as an unmanaged callsite.
     // Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
     OBJECTHANDLE DelegateHnd = (pUMEntryThunk != NULL)
-        ? pUMEntryThunk->GetObjectHandle()
+        ? pUMEntryThunk->GetData()->GetObjectHandle()
         : (OBJECTHANDLE)NULL;
 
     if (DelegateHnd != (OBJECTHANDLE)NULL)
@@ -1541,9 +1553,9 @@ PCODE COMDelegate::GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** 
 
     ValidateDelegatePInvoke(pDelegateMD);
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
-    RETURN NDirect::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
+    RETURN PInvoke::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
 }
 
 
@@ -1555,10 +1567,10 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     MethodTable *pMT = pDelegateMD->GetMethodTable();
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
-    return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
+    return PInvoke::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
 
 extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
@@ -2034,7 +2046,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
-    if (NDirect::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
+    if (PInvoke::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 

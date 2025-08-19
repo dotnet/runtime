@@ -94,6 +94,7 @@ jobs:
       - src/mono/*
       - src/libraries/*
       - src/native/libs/*
+      - src/native/managed/cdac/*
       - src/tests/*
       - src/tools/*
       - eng/pipelines/installer/*
@@ -122,6 +123,7 @@ jobs:
       - src/coreclr/*
       - src/libraries/*
       - src/native/libs/*
+      - src/native/managed/cdac/*
       - src/tests/*
       - src/tools/*
       - eng/pipelines/installer/*
@@ -138,6 +140,7 @@ jobs:
       - src/tests/*
       - src/tools/*
       - src/native/eventpipe/*
+      - src/native/managed/cdac/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
@@ -164,6 +167,7 @@ jobs:
     - subset: tools_cdac
       include:
       - src/native/managed/cdac/*
+      - src/coreclr/debug/runtimeinfo/*
 
     - subset: installer
       include:
@@ -176,6 +180,7 @@ jobs:
       - src/tests/*
       - src/tools/*
       - src/native/eventpipe/*
+      - src/native/managed/cdac/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*

@@ -246,11 +246,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
         bmtEnumFields.dwNumInstanceFields = 1;
     }
 
-    // We shouldn't have to fill this in b/c we're not allowed to EnC value classes, or
-    // anything else with layout info associated with it.
-    // Provide 2, 1 placeholder and 1 for the actual field - see BuildMethodTableThrowing().
-    LayoutRawFieldInfo layoutRawFieldInfos[2];
-
     // If not NULL, it means there are some by-value fields, and this contains an entry for each instance or static field,
     // which is NULL if not a by value field, and points to the EEClass of the field if a by value field.  Instance fields
     // come first, statics come second.
@@ -288,7 +283,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
         GCX_PREEMP();
         unsigned totalDeclaredFieldSize = 0;
         builder.InitializeFieldDescs(pFD,
-                                 layoutRawFieldInfos,
                                  &bmtInternal,
                                  &genericsInfo,
                                  &bmtMetaData,
@@ -397,6 +391,8 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
             LOG((LF_ENC, LL_INFO100, "EEClass::AddField Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+            CrstHolder ch(pMod->GetClassLoader()->GetAvailableTypesLock());
+
             EETypeHashTable::Iterator it(paramTypes);
             EETypeHashEntry* pEntry;
             while (paramTypes->FindNext(&it, &pEntry))
@@ -593,6 +589,8 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
             LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
 
             EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+            CrstHolder ch(pMod->GetClassLoader()->GetAvailableTypesLock());
+
             EETypeHashTable::Iterator it(paramTypes);
             EETypeHashEntry* pEntry;
             while (paramTypes->FindNext(&it, &pEntry))
@@ -737,7 +735,7 @@ HRESULT EEClass::AddMethodDesc(
                                 dwImplFlags,
                                 dwMemberAttrs,
                                 TRUE,   // fEnC
-                                0,      // RVA - non-zero only for NDirect
+                                0,      // RVA - non-zero only for PInvoke
                                 pImport,
                                 NULL,
                                 Signature(),
@@ -1138,6 +1136,22 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     if (!pMT->IsCanonicalMethodTable())
     {
         EnsureLoaded(TypeHandle(pMT->GetCanonicalMethodTable()), CLASS_LOAD_EXACTPARENTS);
+    }
+
+    if (pMT->GetClass()->HasRVAStaticFields())
+    {
+        ApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::STATIC_FIELDS);
+        FieldDesc* pFD = NULL;
+        while ((pFD = fdIterator.Next()) != NULL)
+        {
+            if (pFD->IsByValue() && pFD->IsRVA())
+            {
+                if (pFD->GetApproxFieldTypeHandleThrowing().GetMethodTable()->GetClass()->HasFieldsWhichMustBeInited())
+                {
+                    ThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+        }
     }
 
     LoadExactParentAndInterfacesTransitively(pMT);
@@ -1849,6 +1863,29 @@ EEClass::CheckForHFA()
                     fieldHFAType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
 #endif
                 }
+
+                int requiredAlignment;
+                switch (fieldHFAType)
+                {
+                case CORINFO_HFA_ELEM_FLOAT:
+                    requiredAlignment = 4;
+                    break;
+                case CORINFO_HFA_ELEM_VECTOR64:
+                case CORINFO_HFA_ELEM_DOUBLE:
+                    requiredAlignment = 8;
+                    break;
+                case CORINFO_HFA_ELEM_VECTOR128:
+                    requiredAlignment = 16;
+                    break;
+                default:
+                    // VT without a valid HFA type inside of this struct means this struct is not an HFA
+                    return false;
+                }
+
+                if (requiredAlignment && (pFD->GetOffset() % requiredAlignment != 0)) // HFAs don't have unaligned fields.
+                {
+                    return false;
+                }
             }
             break;
 
@@ -2474,7 +2511,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
              LOG((LF_CLASSLOADER, LL_ALWAYS, "<Exception Thrown>\n"));
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 //*******************************************************************************
@@ -2591,7 +2628,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
              LOG((LF_ALWAYS, LL_ALWAYS, "<Exception Thrown>\n"));
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 } // MethodTable::DebugDumpFieldLayout
 
 //*******************************************************************************
@@ -2680,7 +2717,7 @@ MethodTable::DebugDumpGCDesc(
             LOG((LF_ALWAYS, LL_ALWAYS, "<Exception Thrown>\n"));
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 } // MethodTable::DebugDumpGCDesc
 
 #endif // _DEBUG
@@ -2900,11 +2937,14 @@ WORD SparseVTableMap::GetNumVTableSlots()
 //*******************************************************************************
 void EEClass::AddChunk (MethodDescChunk* pNewChunk)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    _ASSERTE(pNewChunk->GetNextChunk() == NULL);
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pNewChunk != NULL);
+        PRECONDITION(pNewChunk->GetNextChunk() == NULL);
+    }
+    CONTRACTL_END;
 
     MethodDescChunk* head = GetChunks();
 
@@ -2926,9 +2966,13 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
 //*******************************************************************************
 void EEClass::AddChunkIfItHasNotBeenAdded (MethodDescChunk* pNewChunk)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pNewChunk != NULL);
+    }
+    CONTRACTL_END;
 
     // return if the chunk has been added
     if (pNewChunk->GetNextChunk() != NULL)

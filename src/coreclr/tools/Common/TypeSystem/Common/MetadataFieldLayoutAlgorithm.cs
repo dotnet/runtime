@@ -510,6 +510,12 @@ namespace Internal.TypeSystem
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayFieldCount, type);
             }
 
+            var layoutMetadata = type.GetClassLayout();
+            if (layoutMetadata.Size != 0)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicitSize, type);
+            }
+
             if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
             {
                 long size = instanceByteSizeAndAlignment.Size.AsInt;
@@ -1080,7 +1086,9 @@ namespace Internal.TypeSystem
             if (type.Context.Target.Abi == TargetAbi.NativeAotArmel)
                 return NotHA;
 
-            MetadataType metadataType = (MetadataType)type;
+            // If type represents an enum, we want to treat it as its underlying type.
+            MetadataType metadataType = (MetadataType)type.UnderlyingType;
+
             int haElementSize = 0;
 
             switch (metadataType.Category)

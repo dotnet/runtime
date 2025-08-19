@@ -144,12 +144,8 @@ namespace ILCompiler
 
             if (string.Equals(GetAttribute(fieldNav, "initialize"), "true", StringComparison.InvariantCultureIgnoreCase))
             {
-                // We would need to also mess with the cctor of the type to set the field to this value:
-                //
-                // * ILLink will remove all stsfld instructions referencing this field from the cctor
-                // * It will place an explicit stsfld in front of the last "ret" instruction in the cctor
-                //
-                // This approach... has issues.
+                // We would need to also mess with the cctor of the type to set the field to this value,
+                // and doing so correctly is difficult.
                 throw new NotSupportedException();
             }
 

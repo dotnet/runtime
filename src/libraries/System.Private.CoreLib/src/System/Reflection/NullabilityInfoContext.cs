@@ -422,7 +422,7 @@ namespace System.Reflection
 
             if (metaType != null)
             {
-                CheckGenericParameters(nullability, metaMember!, metaType, memberInfo.ReflectedType);
+                CheckGenericParameters(nullability, metaMember, metaType, memberInfo.ReflectedType);
             }
         }
 
@@ -657,6 +657,11 @@ namespace System.Reflection
                         when index < args.Count && args[index].Value is byte elementB:
                         state = TranslateByte(elementB);
                         return true;
+#if MONO
+                    case byte[] ba when index < ba.Length:
+                        state = TranslateByte(ba[index]);
+                        return true;
+#endif
                     default:
                         return false;
                 }

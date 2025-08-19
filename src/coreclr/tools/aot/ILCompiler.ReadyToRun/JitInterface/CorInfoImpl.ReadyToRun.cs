@@ -1128,6 +1128,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ULNG2DBL:
                     id = ReadyToRunHelper.ULng2Dbl;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_LNG2FLT:
+                    id = ReadyToRunHelper.Lng2Flt;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ULNG2FLT:
+                    id = ReadyToRunHelper.ULng2Flt;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_DIV:
                     id = ReadyToRunHelper.Div;
@@ -1142,9 +1148,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.UMod;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT:
-                    id = ReadyToRunHelper.Dbl2Int;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_OVF:
                     id = ReadyToRunHelper.Dbl2IntOvf;
                     break;
@@ -1153,9 +1156,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_OVF:
                     id = ReadyToRunHelper.Dbl2LngOvf;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT:
-                    id = ReadyToRunHelper.Dbl2UInt;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF:
                     id = ReadyToRunHelper.Dbl2UIntOvf;
@@ -2954,11 +2954,6 @@ namespace Internal.JitInterface
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
 
-        private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
-        {
-            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(getMethodSync)}");
-        }
-
         private byte[] _bbCounts;
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset)
@@ -3079,11 +3074,6 @@ namespace Internal.JitInterface
                         Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
                         return true;
                     }
-
-                    // Marshalling behavior isn't modeled as protected by R2R rules, so disable pinvoke inlining for code outside
-                    // of the version bubble
-                    if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(method))
-                        return true;
                 }
                 catch (RequiresRuntimeJitException)
                 {
@@ -3108,13 +3098,6 @@ namespace Internal.JitInterface
             throw new NotImplementedException();
         }
 
-        private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-        {
-            // If we answer "true" here, RyuJIT is going to ask for the cookie and for the CORINFO_HELP_PINVOKE_CALLI
-            // helper. The helper doesn't exist in ReadyToRun, so let's just throw right here.
-            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(canGetCookieForPInvokeCalliSig)}");
-        }
-
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * PointerSize;
         private int SizeOfReversePInvokeTransitionFrame
         {
@@ -3134,8 +3117,8 @@ namespace Internal.JitInterface
 
         private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
-            // Filters don't have class token in the clause.ClassTokenOrOffset
-            if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) == 0)
+            // Filters, finallys, and faults don't have class token in the clause.ClassTokenOrOffset
+            if ((clause.Flags & (CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER | CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY | CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT)) == 0)
             {
                 if (clause.ClassTokenOrOffset != 0)
                 {

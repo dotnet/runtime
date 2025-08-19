@@ -139,7 +139,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                 {
                     hr = GET_EXCEPTION()->GetHR();
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
             }
         }
         EX_CATCH
@@ -147,7 +147,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
             if (SUCCEEDED(hr))
                 hr = E_FAIL;
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
     GCPROTECT_END();
     return hr;
@@ -607,9 +607,9 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     }
     EX_CATCH
     {
-        IfFailGo(COR_E_BADIMAGEFORMAT);
+        return COR_E_BADIMAGEFORMAT;
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
 
 #ifdef FEATURE_COMINTEROP
@@ -1056,7 +1056,7 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
     {
         hr = E_OUTOFMEMORY;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -1174,7 +1174,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 }
 #include <optdefault.h>
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
 
 //--------------------------------------------------------------------------------
 // Cleanup helpers
@@ -1186,7 +1186,7 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION( GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() ) );
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
 
@@ -1197,12 +1197,6 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     if (pRCW)
         pRCW->MinorCleanup();
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-        ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
-#endif // FEATURE_COMWRAPPERS
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1214,9 +1208,6 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    if ((g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() )
-        MinorCleanupSyncBlockComData(pInteropInfo);
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     ComClassFactory* pComClassFactory = pInteropInfo->GetComClassFactory();
@@ -1245,20 +1236,9 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pCCW->Cleanup();
     }
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    pInteropInfo->ClearManagedObjectComWrappers(&ComWrappersNative::DestroyManagedObjectComWrapper);
-
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-    {
-        (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
-        ComWrappersNative::DestroyExternalComObjectContext(eoc);
-    }
-#endif // FEATURE_COMWRAPPERS
 }
 
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1314,7 +1294,7 @@ void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 //--------------------------------------------------------------------------------
@@ -1387,7 +1367,7 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
@@ -1573,7 +1553,7 @@ HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
         {
             hr = GET_EXCEPTION()->GetHR();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     return hr;
@@ -1964,7 +1944,7 @@ HRESULT TryGetDefaultInterfaceForClass(TypeHandle hndClass, TypeHandle *pHndDefC
         {
             pThrowable = GET_THROWABLE();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
             hr = SetupErrorInfo(pThrowable);
@@ -2371,7 +2351,7 @@ HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         {
             pThrowable = GET_THROWABLE();
         }
-        EX_END_CATCH (SwallowAllExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
             hr = SetupErrorInfo(pThrowable);
@@ -2935,8 +2915,9 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
             // If we get here we need to throw an TargetInvocationException
             pThrowable = GET_THROWABLE();
             _ASSERTE(pThrowable != NULL);
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
         {
@@ -3679,7 +3660,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();

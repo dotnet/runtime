@@ -142,6 +142,11 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
+            Collect(generation, mode, blocking, compacting, lowMemoryPressure: false);
+        }
+
+        internal static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting, bool lowMemoryPressure)
+        {
             ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
@@ -186,7 +191,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes);
+            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure);
         }
 
         /// <summary>
@@ -759,7 +764,7 @@ namespace System
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
-        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
+        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfoUnchecked(GCKind.Any);
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <param name="kind">The kind of collection for which to retrieve memory information.</param>
@@ -775,6 +780,11 @@ namespace System
                                           GCKind.Background));
             }
 
+            return GetGCMemoryInfoUnchecked(kind);
+        }
+
+        private static GCMemoryInfo GetGCMemoryInfoUnchecked(GCKind kind)
+        {
             var data = new GCMemoryInfoData();
             RuntimeImports.RhGetMemoryInfo(ref data.GetRawData(), kind);
             return new GCMemoryInfo(data);

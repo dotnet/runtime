@@ -201,7 +201,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameResolver.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\RuntimeTypeMetadataUpdateHandler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\BypassReadyToRunAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\GenericsHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InitHelpers.cs" />
@@ -224,6 +223,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Java\JavaMarshal.CoreCLR.cs" Condition="'$(FeatureJavaMarshal)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
@@ -254,7 +254,8 @@
     <Compile Include="src\System\RuntimeType.GenericCache.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TrackerObjectManager.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
@@ -312,37 +313,8 @@
     <CompilerVisibleProperty Include="InformationalVersion" />
   </ItemGroup>
 
-  <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
-
-  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile" />
-
-  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
-
   <!-- Setup eventing file generation -->
-  <ItemGroup>
-    <EventingGenerationScript Include="$(CoreClrProjectRoot)scripts/genRuntimeEventSources.py" />
-    <EventManifestFile Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)NativeRuntimeEventSource.Generated.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
-      <Link>src\System\Diagnostics\Eventing\NativeRuntimeEventSource.Generated.cs</Link>
-    </EventingSourceFile>
-    <Compile Include="@(EventingSourceFile)" />
+  <ItemGroup Condition="'$(FeaturePerfTracing)' == 'true'">
+    <AdditionalFiles Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
   </ItemGroup>
-
-  <Target Name="GenerateEventingFiles" Inputs="@(EventingGenerationScript);@(EventManifestFile)" Outputs="@(EventingSourceFile)" DependsOnTargets="FindPython" BeforeTargets="BeforeCompile">
-
-    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Generated.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
-    <PropertyGroup>
-      <_PythonWarningParameter>-Wall</_PythonWarningParameter>
-      <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>
-      <_EventingSourceFileDirectory>%(EventingSourceFile.RootDir)%(EventingSourceFile.Directory)</_EventingSourceFileDirectory>
-      <_EventingSourceFileDirectory Condition="HasTrailingSlash('$(_EventingSourceFileDirectory)')">$(_EventingSourceFileDirectory.TrimEnd('\'))</_EventingSourceFileDirectory>
-
-    </PropertyGroup>
-
-    <Exec Command="&quot;$(PYTHON)&quot; -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot;" />
-
-    <ItemGroup>
-      <FileWrites Include="@(EventingSourceFile)" />
-    </ItemGroup>
-  </Target>
 </Project>

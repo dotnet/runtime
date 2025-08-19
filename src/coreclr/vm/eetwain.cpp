@@ -161,7 +161,7 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
  *  could easily duplicate what they do, which is why we're calling into them.
  */
 
-HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
+ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                                         EECodeInfo *     pOldCodeInfo,
                    const ICorDebugInfo::NativeVarInfo *  oldMethodVars,
                                         SIZE_T           oldMethodVarsCount,
@@ -206,6 +206,11 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         return E_FAIL; // stack should be empty - <TODO> @TODO : Barring localloc</TODO>
     }
 
+#ifdef FEATURE_EH_FUNCLETS
+    // EnC remap inside handlers is not supported
+    if (pOldCodeInfo->IsFunclet() || pNewCodeInfo->IsFunclet())
+        return CORDBG_E_ENC_IN_FUNCLET;
+#else
     if (oldInfo->handlers)
     {
         bool      hasInnerFilter;
@@ -229,13 +234,16 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             }
         }
     }
+#endif // FEATURE_EH_FUNCLETS
 
     /* @TODO: Check if we have grown out of space for locals, in the face of localloc */
     _ASSERTE(!oldInfo->localloc && !newInfo->localloc);
 
+#ifndef FEATURE_EH_FUNCLETS
     // @TODO: If nesting level grows above the MAX_EnC_HANDLER_NESTING_LEVEL,
     // we should return EnC_NESTED_HANLDERS
     _ASSERTE(oldInfo->handlers && newInfo->handlers);
+#endif
 
     LOG((LF_ENC, LL_INFO100, "EECM::FixContextForEnC: Checks out\n"));
 
@@ -851,18 +859,21 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    hdrInfo         info = { 0 };
+    hdrInfo info = { 0 };
 
     /* Extract the necessary information from the info block header */
 
-    pCodeInfo->DecodeGCHdrInfo(&info, dwRelOffset);
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&info, dwRelOffset);
 
     /* workaround: prevent interruption within prolog/epilog */
 
     if  (info.prologOffs != hdrInfo::NOT_IN_PROLOG || info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
         return false;
 
-    return (info.interruptible);
+    if  (!info.interruptible)
+        return false;
+
+    return !::IsInNoGCRegion(&info, table, dwRelOffset);
 }
 
 #endif // !USE_GC_INFO_DECODER
@@ -1109,6 +1120,17 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     return true;
 }
 
+void EECodeManager::UnwindStackFrame(T_CONTEXT  *pContext)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(dac_cast<PCODE>(GetIP(pContext)));
+    Thread::VirtualUnwindCallFrame(pContext, NULL, &codeInfo);
+}
+
 /*****************************************************************************/
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1279,16 +1301,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
     {
         // We've been given an override offset for GC Info
-#ifdef _DEBUG
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_CODE_LENGTH
-                      );
-
-        // We only use override offset for wantsReportOnlyLeaf
-        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
-#endif // _DEBUG
-
         curOffs = relOffsetOverride;
 
 #ifdef TARGET_ARM
@@ -1494,13 +1506,20 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
 #endif
 
+    /* Skip over no-GC region table */
+    unsigned count = hdrInfoBody->noGCRegionCnt;
+    while (count-- > 0)
+    {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
+
 #ifndef FEATURE_EH_FUNCLETS
     /* Parse the untracked frame variable table */
 
     /* The 'this' pointer can never be located in the untracked table */
     /* as we only allow pinned and byrefs in the untracked table      */
 
-    unsigned count = hdrInfoBody->untrackedCnt;
+    count = hdrInfoBody->untrackedCnt;
     while (count-- > 0)
     {
         fastSkipSigned(table);
@@ -1542,7 +1561,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
 #endif
 
 #else // FEATURE_EH_FUNCLETS
-    if (pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()) // Generic Context is "this"
+    if (pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis() && (hdrInfoBody->genericsContext)) // Generic Context is "this"
     {
         // Untracked table must have at least one entry - this pointer
         _ASSERTE(hdrInfoBody->untrackedCnt > 0);
@@ -1797,6 +1816,7 @@ bool EECodeManager::IsInPrologOrEpilog(DWORD       relPCoffset,
             (info.epilogOffs != hdrInfo::NOT_IN_EPILOG));
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 /*****************************************************************************
  *
  *  Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
@@ -1827,6 +1847,7 @@ bool  EECodeManager::IsInSynchronizedRegion(DWORD       relOffset,
         // Everything after the epilog is also in synchronized region.
         (info.epilogCnt != 0 && info.syncEpilogStart + info.epilogSize <= relOffset);
 }
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*****************************************************************************
@@ -1999,7 +2020,7 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 #ifndef TARGET_WASM
 
 // This is an assembly helper that enables us to call into EH funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
+EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
@@ -2012,26 +2033,6 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
-#endif
-}
-
-static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextRecord)
-{
-#if defined(TARGET_AMD64)
-    return (UINT_PTR*)&(pContextRecord->Rbx);
-#elif defined(TARGET_ARM)
-    return (UINT_PTR*)&(pContextRecord->R4);
-#elif defined(TARGET_ARM64)
-    return (UINT_PTR*)&(pContextRecord->X19);
-#elif defined(TARGET_LOONGARCH64)
-    return (UINT_PTR*)&(pContextRecord->S0);
-#elif defined(TARGET_X86)
-    return (UINT_PTR*)&(pContextRecord->Edi);
-#elif defined(TARGET_RISCV64)
-    return (UINT_PTR*)&(pContextRecord->Fp);
-#else
-    PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
-    return NULL;
 #endif
 }
 
@@ -2068,7 +2069,7 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     {
         dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
                                  CastHandlerFn(pfnHandler),
-                                 GetFirstNonVolatileRegisterAddress(pRD->pCurrentContext),
+                                 pRD->pCurrentContext,
                                  pFuncletCallerSP);
     }
 
@@ -2144,9 +2145,61 @@ void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
 #ifdef FEATURE_INTERPRETER
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
 {
-    // Interpreter-TODO: implement calling the funclet in the intepreted code
-    _ASSERTE(FALSE);
-    return 0;
+    Thread *pThread = GetThread();
+    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
+    if (threadContext == nullptr || threadContext->pStackStart == nullptr)
+    {
+        COMPlusThrow(kOutOfMemoryException);
+    }
+    int8_t *sp = threadContext->pStackPointer;
+
+    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+    // InterpMethodContextFrame. This is important for the stack walking code.
+    struct Frames
+    {
+        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpreterFrame interpreterFrame;
+
+        Frames(TransitionBlock* pTransitionBlock)
+        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        {
+        }
+    }
+    frames(NULL);
+
+    // Use the InterpreterFrame address as a representation of the caller SP of the funclet
+    // Note: this needs to match what the VirtualUnwindInterpreterCallFrame sets as the SP
+    // when it unwinds out of a block of interpreter frames belonging to that InterpreterFrame.
+    pExInfo->m_csfEHClause.SP = (TADDR)&frames.interpreterFrame;
+
+    InterpMethodContextFrame *pOriginalFrame = (InterpMethodContextFrame*)GetRegdisplaySP(pRD);
+
+    StackVal retVal;
+
+    frames.interpMethodContextFrame.startIp = pOriginalFrame->startIp;
+    frames.interpMethodContextFrame.pStack = isFilter ? sp : pOriginalFrame->pStack;
+    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
+
+    ExceptionClauseArgs exceptionClauseArgs;
+    exceptionClauseArgs.ip = (const int32_t *)pHandler;
+    exceptionClauseArgs.pFrame = pOriginalFrame;
+    exceptionClauseArgs.isFilter = isFilter;
+    exceptionClauseArgs.throwable = throwable;
+
+    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext, &exceptionClauseArgs);
+
+    frames.interpreterFrame.Pop();
+
+    if (isFilter)
+    {
+        // The filter funclet returns the result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
+        return retVal.data.i;
+    }
+    else
+    {
+        // The catch funclet returns the address to resume at after the catch returns.
+        return (DWORD_PTR)retVal.data.s;
+    }
 }
 
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)
@@ -2376,11 +2429,14 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     else
     {
         // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
-        // The stack walker will not find any code manager for the address 0 and move on to the next explicit
-        // frame which is the InterpreterFrame.
+        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0) 
+        // and move on to the next explicit frame which is the InterpreterFrame.
+        // The SP is set to the address of the InterpreterFrame. For the case of interpreted exception handling
+        // funclets, this matches the pExInfo->m_csfEHClause.SP that the CallFunclet sets.
         // Interpreter-TODO: Consider returning the context of the JITted / AOTed code that called the interpreter instead
-        SetIP(pContext, 0);
-        SetSP(pContext, sp);
+        SetIP(pContext, InterpreterFrame::DummyCallerIP);
+        TADDR interpreterFrameAddress = GetFirstArgReg(pContext);
+        SetSP(pContext, interpreterFrameAddress);
     }
     pContext->ContextFlags = CONTEXT_FULL;
 }
@@ -2412,6 +2468,20 @@ bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     pRD->IsCallerSPValid = FALSE;
 
     return true;
+}
+
+void InterpreterCodeManager::UnwindStackFrame(T_CONTEXT *pContext)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pContext != NULL);
+    VirtualUnwindInterpreterCallFrame(GetSP(pContext), pContext);
 }
 
 void InterpreterCodeManager::EnsureCallerContextIsValid(PREGDISPLAY  pRD, EECodeInfo * pCodeInfo /*= NULL*/, unsigned flags /*= 0*/)
@@ -2485,16 +2555,6 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
     {
         // We've been given an override offset for GC Info
-#ifdef _DEBUG
-        InterpreterGcInfoDecoder _gcInfoDecoder(
-                                                gcInfoToken,
-                                                DECODE_CODE_LENGTH
-                                                );
-
-        // We only use override offset for wantsReportOnlyLeaf
-        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
-#endif // _DEBUG
-
         curOffs = relOffsetOverride;
 
         LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset to provided override offset. Now reporting GC refs for %s at offset %04x.\n",

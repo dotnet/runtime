@@ -38,7 +38,7 @@
 template <bool ssaLiveness>
 void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 {
-    assert((tree->OperIsLocal() && (tree->OperGet() != GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
+    assert((tree->OperIsLocal() && !tree->OperIs(GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
 
     const unsigned   lclNum = tree->GetLclNum();
     LclVarDsc* const varDsc = lvaGetDesc(lclNum);
@@ -66,9 +66,10 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 
         if (compRationalIRForm && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
         {
-            // If this is an enregisterable variable that is not marked doNotEnregister,
+            // If this is an enregisterable variable that is not marked doNotEnregister and not defined via address,
             // we should only see direct references (not ADDRs).
-            assert(varDsc->lvDoNotEnregister || tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            assert(varDsc->lvDoNotEnregister || varDsc->lvDefinedViaAddress ||
+                   tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
         }
 
         if (isUse && !VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
@@ -342,11 +343,11 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 }
             }
 
-            GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
-            if (definedLcl != nullptr)
-            {
-                fgMarkUseDef<!lowered>(definedLcl);
-            }
+            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+                fgMarkUseDef<!lowered>(lcl);
+                return GenTree::VisitResult::Continue;
+            };
+            call->VisitLocalDefNodes(this, visitDef);
             break;
         }
 
@@ -796,13 +797,11 @@ void Compiler::fgLiveVarAnalysis()
 //    call          - The call node in question.
 //
 // Returns:
-//    local defined by the call, if any (eg retbuf)
+//    partially defined local by the call, if any (eg retbuf)
 //
 GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call)
 {
     assert(call != nullptr);
-    GenTreeLclVarCommon* definedLcl = nullptr;
-
     // If this is a tail-call via helper, and we have any unmanaged p/invoke calls in
     // the method, then we're going to run the p/invoke epilog
     // So we mark the FrameRoot as used by this instruction.
@@ -824,7 +823,7 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
     }
 
     // TODO: we should generate the code for saving to/restoring
-    //       from the inlined N/Direct frame instead.
+    //       from the inlined PInvoke frame instead.
 
     /* Is this call to unmanaged code? */
     if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())
@@ -861,13 +860,22 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
         }
     }
 
-    definedLcl = gtCallGetDefinedRetBufLclAddr(call);
-    if (definedLcl != nullptr)
-    {
-        fgComputeLifeLocal(life, keepAliveVars, definedLcl);
-    }
+    GenTreeLclVarCommon* partialDef = nullptr;
 
-    return definedLcl;
+    auto visitDef = [&](const LocalDef& def) {
+        if (!def.IsEntire)
+        {
+            assert(partialDef == nullptr);
+            partialDef = def.Def;
+        }
+
+        fgComputeLifeLocal(life, keepAliveVars, def.Def);
+        return GenTree::VisitResult::Continue;
+    };
+
+    call->VisitLocalDefs(this, visitDef);
+
+    return partialDef;
 }
 
 //------------------------------------------------------------------------
@@ -1198,7 +1206,7 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     for (GenTree* tree = startNode; tree != endNode; tree = tree->gtPrev)
     {
     AGAIN:
-        assert(tree->OperGet() != GT_QMARK);
+        assert(!tree->OperIs(GT_QMARK));
 
         bool       isUse        = false;
         bool       doAgain      = false;
@@ -1207,11 +1215,12 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
 
         if (tree->IsCall())
         {
-            GenTreeLclVarCommon* const definedLcl = fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
-            if (definedLcl != nullptr)
+            GenTreeLclVarCommon* const partialDef = fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
+            if (partialDef != nullptr)
             {
-                isUse  = (definedLcl->gtFlags & GTF_VAR_USEASG) != 0;
-                varDsc = lvaGetDesc(definedLcl);
+                assert((partialDef->gtFlags & GTF_VAR_USEASG) != 0);
+                isUse  = true;
+                varDsc = lvaGetDesc(partialDef);
             }
         }
         else if (tree->OperIsNonPhiLocal())
@@ -1289,7 +1298,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();
-                if (((call->TypeGet() == TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
+                if ((call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
                 {
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
@@ -1624,7 +1633,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
         // (as opposed to side effects of their children).
         // This default case should never include calls or stores.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-        if (!node->gtSetFlags() && !node->OperMayThrow(this))
+        if (!node->gtSetFlags() && !node->OperMayThrow(this) && fgCanUncontainOrRemoveOperands(node))
         {
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);
@@ -1667,8 +1676,7 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
     if ((lclNode->gtFlags & GTF_VAR_USEASG) == 0)
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNode);
-        if (varDsc->lvHasExplicitInit && (varDsc->TypeGet() == TYP_STRUCT) && varDsc->HasGCPtr() &&
-            (varDsc->lvRefCnt() > 1))
+        if (varDsc->lvHasExplicitInit && varDsc->TypeIs(TYP_STRUCT) && varDsc->HasGCPtr() && (varDsc->lvRefCnt() > 1))
         {
             JITDUMP("Not removing a potential explicit init [%06u] of V%02u\n", dspTreeID(store), lclNode->GetLclNum());
             return false;
@@ -1682,6 +1690,38 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
     fgStmtRemoved = true;
 
     return true;
+}
+
+//---------------------------------------------------------------------
+// fgCanUncontainOrRemoveOperands - Check if the operands of a node that is
+// slated for removal can be either uncontained or deleted entirely.
+//
+// Arguments:
+//   node - The node whose operands are to be checked
+//
+// Return Value:
+//   Whether the operands can be uncontained or removed.
+//
+// Remarks:
+//   Only embedded mask ops do not support standalone codegen. All other
+//   nodes can be uncontained.
+//
+bool Compiler::fgCanUncontainOrRemoveOperands(GenTree* node)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    auto visit = [=](GenTree* op) {
+        if (!op->isContained() || !op->IsEmbMaskOp() || !op->NodeOrContainedOperandsMayThrow(this))
+        {
+            return GenTree::VisitResult::Continue;
+        }
+
+        return GenTree::VisitResult::Abort;
+    };
+
+    return node->VisitOperands(visit) != GenTree::VisitResult::Abort;
+#else
+    return true;
+#endif
 }
 
 //---------------------------------------------------------------------

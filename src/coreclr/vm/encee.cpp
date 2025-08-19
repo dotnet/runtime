@@ -194,7 +194,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     IfFailRet(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
 
     // get an emitter interface
-    IfFailRet(GetMetaDataPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
+    IfFailRet(GetMDPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
 
     // Copy the delta IL into our RVA-able IL memory
     BYTE* pLocalILMemory = (BYTE*)(void*)GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbDeltaIL));
@@ -343,13 +343,6 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
-
-    if (pMethod->HasAsyncMethodData())
-    {
-        // TODO: (async) revisit and examine if this can be supported
-        LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
-        return E_FAIL;
-    }
 
     // Notify the debugger of the update
     if (CORDebuggerAttached())
@@ -642,7 +635,7 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             LOG((LF_ENC, LL_INFO100, errorMessage.GetUTF8()));
         }
 #endif
-    } EX_END_CATCH(SwallowAllExceptions)
+    } EX_END_CATCH
 
     resFrame.Pop(pCurThread);
 
@@ -1757,7 +1750,7 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     // Either it's been fixed up so we can use it, or we're the Debugger RC thread, we can't fix it up,

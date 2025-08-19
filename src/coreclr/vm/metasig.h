@@ -169,8 +169,8 @@
 
 
 // static methods:
-DEFINE_METASIG_T(SM(Int_IntPtr_Obj_RetException, i I j, C(EXCEPTION)))
-DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType, P(u) C(ASSEMBLY) F F, C(CLASS)))
+DEFINE_METASIG_T(SM(Int_IntPtr_IntPtr_RetException, i I I, C(EXCEPTION)))
+DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_IntPtr_RetRuntimeType, P(u) C(ASSEMBLY) F F I, C(CLASS)))
 DEFINE_METASIG_T(SM(Type_RetIntPtr, C(TYPE), I))
 DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(IntPtr_UInt_VoidPtr_RetObj, I K P(v), j))
@@ -193,10 +193,8 @@ DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr, j I r(I) r(F), I))
 DEFINE_METASIG(SM(Obj_IntPtr_RefIntPtr_RetIntPtr, j I r(I), I))
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_COMWRAPPERS
-DEFINE_METASIG_T(SM(Scenario_ComWrappers_Obj_CreateFlags_RefInt_RetPtrVoid, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) j g(CREATECOMINTERFACEFLAGS) r(i), P(v)))
-DEFINE_METASIG_T(SM(Scenario_ComWrappers_IntPtr_CreateFlags_RetObj, g(COMWRAPPERSSCENARIO) C(COMWRAPPERS) I g(CREATEOBJECTFLAGS), j))
-DEFINE_METASIG_T(SM(ComWrappers_IEnumerable_RetVoid, C(COMWRAPPERS) C(IENUMERABLE), v))
-DEFINE_METASIG_T(SM(Obj_RefGuid_RefIntPtr_RetInt, j r(g(GUID)) r(I), i))
+DEFINE_METASIG_T(SM(IntPtr_CreateObjectFlags_RetObj, I g(CREATEOBJECTFLAGS), j))
+DEFINE_METASIG_T(SM(ManagedObjectWrapperHolder_RefGuid_RefIntPtr_RetInt, C(MANAGED_OBJECT_WRAPPER_HOLDER) r(g(GUID)) r(I), i))
 #endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_METASIG_T(SM(Exception_Obj_RefIntPtr_RetVoidPtr, C(EXCEPTION) j r(I), P(v)))
@@ -332,7 +330,6 @@ DEFINE_METASIG_T(SM(RetMethodBase, _, C(METHOD_BASE)))
 DEFINE_METASIG(SM(RetVoid, _, v))
 DEFINE_METASIG(SM(Str_IntPtr_Int_RetVoid, s I i, v))
 DEFINE_METASIG(SM(Int_RetIntPtr, i, I))
-DEFINE_METASIG(SM(Int_IntPtr_RetIntPtr, i I, I))
 
 DEFINE_METASIG_T(SM(DateTime_RetDbl, g(DATE_TIME), d))
 DEFINE_METASIG(SM(Dbl_RetLong, d, l))

@@ -20,7 +20,16 @@ typedef enum
     InterpOpThreeInts,
     InterpOpBranch,
     InterpOpSwitch,
-    InterpOpMethodToken,
+    InterpOpMethodHandle,
+    InterpOpClassHandle,
+    InterpOpGenericLookup,
+    InterpOpGenericHelperFtn,
+    InterpOpLdPtr,
+    InterpOpHelperFtn,
+    InterpOpHelperFtnNoArgs,
+    InterpOpPointerHelperFtn,
+    InterpOpPointerInt,
+    InterpOpGenericLookupInt,
 } InterpOpArgType;
 
 extern const uint8_t g_interpOpLen[];
@@ -47,12 +56,16 @@ int CEEOpcodeSize(const uint8_t *ip, const uint8_t *codeEnd);
 #define INTOP_LDIND_I INTOP_LDIND_I8
 #define INTOP_STIND_I INTOP_STIND_I8
 #define INTOP_ADD_P_IMM INTOP_ADD_I8_IMM
+#define INTOP_LDELEM_I INTOP_LDELEM_I8
+#define INTOP_STELEM_I INTOP_STELEM_I8
 #else
 #define INTOP_MOV_P INTOP_MOV_4
 #define INTOP_LDNULL INTOP_LDC_I4_0
 #define INTOP_LDIND_I INTOP_LDIND_I4
 #define INTOP_STIND_I INTOP_STIND_I4
 #define INTOP_ADD_P_IMM INTOP_ADD_I4_IMM
+#define INTOP_LDELEM_I INTOP_LDELEM_I4
+#define INTOP_STELEM_I INTOP_STELEM_I4
 #endif
 
 static inline bool InterpOpIsEmitNop(int32_t opcode)
@@ -93,7 +106,7 @@ inline int32_t getI4LittleEndian(const uint8_t* ptr)
 
 inline int64_t getI8LittleEndian(const uint8_t* ptr)
 {
-    return (int64_t)getI4LittleEndian(ptr) | ((int64_t)getI4LittleEndian(ptr + 4)) << 32;
+    return (int64_t)getU4LittleEndian(ptr) | ((int64_t)getI4LittleEndian(ptr + 4)) << 32;
 }
 
 inline float getR4LittleEndian(const uint8_t* ptr)

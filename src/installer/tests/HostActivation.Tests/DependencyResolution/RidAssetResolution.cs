@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.Extensions.DependencyModel;
 using Xunit;
@@ -69,7 +70,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             Action<NetCoreAppBuilder.RuntimeLibraryBuilder> assetsCustomizer,
             TestSetup setup,
             ResolvedPaths expected,
-            Action<NetCoreAppBuilder> appCustomizer = null);
+            Action<NetCoreAppBuilder> appCustomizer = null,
+            [CallerMemberName] string caller = "");
 
         protected TestApp UpdateAppConfigForTest(TestApp app, TestSetup setup, bool copyOnUpdate)
         {
@@ -649,7 +651,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             Action<NetCoreAppBuilder.RuntimeLibraryBuilder> assetsCustomizer,
             TestSetup setup,
             ResolvedPaths expected,
-            Action<NetCoreAppBuilder> appCustomizer)
+            Action<NetCoreAppBuilder> appCustomizer,
+            [CallerMemberName] string caller = "")
         {
             using (TestApp app = NetCoreAppBuilder.PortableForNETCoreApp(SharedState.FrameworkReferenceApp)
                 .WithProject(p => { p.WithAssemblyGroup(null, g => g.WithMainAssembly()); assetsCustomizer?.Invoke(p); })
@@ -672,7 +675,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 var result = dotnet.Exec(app.AppDll)
                     .EnableTracingAndCaptureOutputs()
                     .RuntimeId(setup.Rid)
-                    .Execute();
+                    .Execute(caller);
                 result.Should().Pass()
                     .And.HaveResolvedAssembly(expected.IncludedAssemblyPaths, app)
                     .And.NotHaveResolvedAssembly(expected.ExcludedAssemblyPaths, app)
@@ -703,7 +706,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             Action<NetCoreAppBuilder.RuntimeLibraryBuilder> assetsCustomizer,
             TestSetup setup,
             ResolvedPaths expected,
-            Action<NetCoreAppBuilder> appCustomizer)
+            Action<NetCoreAppBuilder> appCustomizer,
+            [CallerMemberName] string caller = "")
         {
             var component = SharedState.CreateComponentWithNoDependencies(b => b
                 .WithPackage("NativeDependency", "1.0.0", p => assetsCustomizer?.Invoke(p))
@@ -722,8 +726,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             TestApp app = UpdateAppConfigForTest(SharedState.FrameworkReferenceApp, setup, copyOnUpdate: true);
 
-            var result = SharedState.RunComponentResolutionTest(component.AppDll, app, dotnet.GreatestVersionHostFxrPath, command => command
-                .RuntimeId(setup.Rid));
+            var result = SharedState.RunComponentResolutionTest(
+                component.AppDll,
+                app,
+                dotnet.GreatestVersionHostFxrPath,
+                command => command.RuntimeId(setup.Rid),
+                caller: caller);
             result.Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
                 .And.HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
@@ -754,7 +762,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             Action<NetCoreAppBuilder.RuntimeLibraryBuilder> assetsCustomizer,
             TestSetup setup,
             ResolvedPaths expected,
-            Action<NetCoreAppBuilder> appCustomizer)
+            Action<NetCoreAppBuilder> appCustomizer,
+            [CallerMemberName] string caller = "")
         {
             var component = SharedState.CreateComponentWithNoDependencies(b => b
                 .WithPackage("NativeDependency", "1.0.0", p => assetsCustomizer?.Invoke(p))
@@ -773,8 +782,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             app = UpdateAppConfigForTest(app, setup, copyOnUpdate: true);
 
-            var result = SharedState.RunComponentResolutionTest(component.AppDll, app, app.Location, command => command
-                .RuntimeId(setup.Rid));
+            var result = SharedState.RunComponentResolutionTest(
+                component.AppDll,
+                app,
+                app.Location,
+                command => command.RuntimeId(setup.Rid),
+                caller: caller);
             result.Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
                 .And.HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
