@@ -63,7 +63,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct NetworkFrameworkError
+        internal unsafe struct NetworkFrameworkError
         {
             public int ErrorCode;
             public int ErrorDomain;
