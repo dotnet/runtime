@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -705,19 +706,32 @@ public partial class ApkBuilder
 
     private Dictionary<string, string> ParseRuntimeConfigProperties()
     {
+        // This method reads the binary runtimeconfig.bin file created by RuntimeConfigParserTask.ConvertDictionaryToBlob.
+        // The binary format is: compressed integer count, followed by count pairs of length-prefixed UTF8 strings (key, value).
+        // See src/tasks/MonoTargetsTasks/RuntimeConfigParser/RuntimeConfigParser.cs for the corresponding write logic.
+
         var configProperties = new Dictionary<string, string>();
-        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), $"{ProjectName}.runtimeconfig.json");
+        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), "runtimeconfig.bin");
 
         try
         {
-            string jsonContent = File.ReadAllText(runtimeConfigPath);
-            using JsonDocument doc = JsonDocument.Parse(jsonContent);
-            JsonElement root = doc.RootElement;
-            if (root.TryGetProperty("runtimeOptions", out JsonElement runtimeOptions) && runtimeOptions.TryGetProperty("configProperties", out JsonElement propertiesJson))
+            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
+            unsafe
             {
-                foreach (JsonProperty property in propertiesJson.EnumerateObject())
+                fixed (byte* ptr = fileBytes)
                 {
-                    configProperties[property.Name] = property.Value.ToString();
+                    var blobReader = new BlobReader(ptr, fileBytes.Length);
+
+                    // Read the compressed integer count
+                    int count = blobReader.ReadCompressedInteger();
+
+                    // Read each key-value pair
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = blobReader.ReadSerializedString() ?? string.Empty;
+                        string value = blobReader.ReadSerializedString() ?? string.Empty;
+                        configProperties[key] = value;
+                    }
                 }
             }
         }

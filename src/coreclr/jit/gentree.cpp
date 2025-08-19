@@ -5541,9 +5541,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 case GT_MDARR_LOWER_BOUND:
                     level++;
 
-                    // Array meta-data access should be the same as an IND(ADD(ADDR, SMALL_CNS)).
-                    costEx = IND_COST_EX + 1;
-                    costSz = 2 * 2;
+                    // Array meta-data access should be the same as an indirection, which has a costEx of IND_COST_EX.
+                    costEx = IND_COST_EX - 1;
+                    costSz = 2;
                     break;
 
                 case GT_BLK:
