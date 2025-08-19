@@ -3117,8 +3117,8 @@ namespace Internal.JitInterface
 
         private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
-            // Filters don't have class token in the clause.ClassTokenOrOffset
-            if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) == 0)
+            // Filters, finallys, and faults don't have class token in the clause.ClassTokenOrOffset
+            if ((clause.Flags & (CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER | CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY | CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT)) == 0)
             {
                 if (clause.ClassTokenOrOffset != 0)
                 {
