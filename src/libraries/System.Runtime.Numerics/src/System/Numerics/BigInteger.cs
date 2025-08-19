@@ -3966,7 +3966,7 @@ namespace System.Numerics
             [DoesNotReturn]
             static void ThrowMinMaxException<T>(T min, T max)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
+                throw new ArgumentOutOfRangeException(nameof(max), SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(max), max, $"{nameof(min)} = {min}"));
             }
         }
 
