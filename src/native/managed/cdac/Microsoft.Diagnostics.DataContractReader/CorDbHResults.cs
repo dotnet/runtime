@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
-internal static class CorDbgHResults
+public static class CorDbgHResults
 {
     public const int CORDBG_E_READVIRTUAL_FAILURE = unchecked((int)0x80131c49);
 }
