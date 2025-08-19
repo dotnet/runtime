@@ -131,8 +131,8 @@ The PEM import routines for the PQC primitives follow the precedent of PEM impor
 * As all currently known formats use BER encoding, PEM import will fail if the Base64-encoded data is other than a single BER-encoded value.
   * i.e. Non-BER will fail.
   * i.e. BER followed by trailing data will fail.
-  * Some key formats require the more specific DER encoding, but the same payload restrictions apply. 
-* PEM import is valid for both public key formats, and private key formats. 
+  * Some key formats require the more specific DER encoding, but the same payload restrictions apply.
+* PEM import is valid for both public key formats and private key formats.
 * `ImportFromEncryptedPem` defers work to `ImportEncryptedPkcs8PrivateKey` after decode.
 * `ImportFromPem` defers work to an appropriate method, based on the label, after decode.
   * Thus there is no fuzzy matching, e.g. "BEGIN PUBLIC KEY" is only routed to ImportSubjectPublicKeyInfo
@@ -189,8 +189,8 @@ public sealed partial class MLKemAlgorithm : IEquatable<MLKemAlgorithm>
     public string Name { get; }
     public int PrivateSeedSizeInBytes { get; }
     public int SharedSecretSizeInBytes { get; }
-    public override bool Equals([NotNullWhenAttribute(true)] object? obj);
-    public bool Equals([NotNullWhenAttribute(true)] MLKemAlgorithm? other);
+    public override bool Equals([NotNullWhen(true)] object? obj);
+    public bool Equals([NotNullWhen(true)] MLKemAlgorithm? other);
     public override int GetHashCode();
     public static bool operator ==(MLKemAlgorithm? left, MLKemAlgorithm? right);
     public static bool operator !=(MLKemAlgorithm? left, MLKemAlgorithm? right);
@@ -243,8 +243,8 @@ public sealed partial class MLDsaAlgorithm : IEquatable<MLDsaAlgorithm>
     public int PublicKeySizeInBytes { get; }
     public int PrivateKeySizeInBytes { get; }
     public int SignatureSizeInBytes { get; }
-    public override bool Equals([NotNullWhenAttribute(true)] object? obj);
-    public bool Equals([NotNullWhenAttribute(true)] MLDsaAlgorithm? other);
+    public override bool Equals([NotNullWhen(true)] object? obj);
+    public bool Equals([NotNullWhen(true)] MLDsaAlgorithm? other);
     public override int GetHashCode();
     public static bool operator ==(MLDsaAlgorithm? left, MLDsaAlgorithm? right);
     public static bool operator !=(MLDsaAlgorithm? left, MLDsaAlgorithm? right);
@@ -302,8 +302,8 @@ public sealed partial class SlhDsaAlgorithm : IEquatable<SlhDsaAlgorithm>
     public static SlhDsaAlgorithm SlhDsaShake192s { get; }
     public static SlhDsaAlgorithm SlhDsaShake256f { get; }
     public static SlhDsaAlgorithm SlhDsaShake256s { get; }
-    public override bool Equals([NotNullWhenAttribute(true)] object? obj);
-    public bool Equals([NotNullWhenAttribute(true)] SlhDsaAlgorithm? other);
+    public override bool Equals([NotNullWhen(true)] object? obj);
+    public bool Equals([NotNullWhen(true)] SlhDsaAlgorithm? other);
     public override int GetHashCode();
     public static bool operator ==(SlhDsaAlgorithm? left, SlhDsaAlgorithm? right);
     public static bool operator !=(SlhDsaAlgorithm? left, SlhDsaAlgorithm? right);
@@ -360,8 +360,8 @@ public sealed partial class CompositeMLDsaAlgorithm : IEquatable<CompositeMLDsaA
     public static CompositeMLDsaAlgorithm MLDsa87WithRSA3072Pss { get; }
     public static CompositeMLDsaAlgorithm MLDsa87WithRSA4096Pss { get; }
     public string Name { get; }
-    public override bool Equals([NotNullWhenAttribute(true)] object? obj);
-    public bool Equals([NotNullWhenAttribute(true)] CompositeMLDsaAlgorithm? other);
+    public override bool Equals([NotNullWhen(true)] object? obj);
+    public bool Equals([NotNullWhen(true)] CompositeMLDsaAlgorithm? other);
     public override int GetHashCode();
     public static bool operator ==(CompositeMLDsaAlgorithm? left, CompositeMLDsaAlgorithm? right);
     public static bool operator !=(CompositeMLDsaAlgorithm? left, CompositeMLDsaAlgorithm? right);
