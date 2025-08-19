@@ -19,7 +19,7 @@ namespace System.IO.Compression
             internal IntPtr nextIn;  //Bytef    *next_in;  /* next input byte */
             internal IntPtr nextOut; //Bytef    *next_out; /* next output byte should be put there */
 
-            internal byte* msg;     //char     *msg;      /* last error message, NULL if no error */
+            internal byte* msg;      //char     *msg;      /* last error message, NULL if no error */
 
             private readonly IntPtr internalState;    //internal state that is not visible to managed code
 
