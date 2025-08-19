@@ -58,7 +58,10 @@ public:
     void Flush()
     {
         if (m_fPending)
+        {
             m_SigBuilder.AppendByte(m_PendingNibble);
+            m_fPending = false;
+        }
     }
 
     PVOID GetBlob(DWORD * pdwLength)
@@ -79,12 +82,7 @@ public:
     // Write a single nibble to the stream.
     void WriteNibble(NIBBLE i)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
+        WRAPPER_NO_CONTRACT;
 
         _ASSERTE(i <= 0xF);
 
@@ -111,12 +109,7 @@ public:
 
     void WriteEncodedU32(DWORD dw)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
+        WRAPPER_NO_CONTRACT;
 
         // Fast path for common small inputs
         if (dw <= 63)
@@ -148,12 +141,7 @@ public:
     // Write a signed 32 bit value.
     void WriteEncodedI32(int x)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
+        WRAPPER_NO_CONTRACT;
 
         DWORD dw = (x < 0) ? (((-x) << 1) + 1) : (x << 1);
         WriteEncodedU32(dw);
@@ -175,6 +163,12 @@ public:
         }
     }
 
+    void WriteRawByte(uint8_t b)
+    {
+        Flush();
+        m_SigBuilder.AppendByte(b);
+    }
+
 protected:
     NIBBLE m_PendingNibble;     // Pending value, not yet written out.
     bool m_fPending;
@@ -188,15 +182,47 @@ protected:
 class NibbleReader
 {
 public:
+#ifdef BIGENDIAN
+    typedef uint8_t NibbleChunkType; // Alternatively we could byteswap the data after we load it, but I don't have a convenient helper here, so we just use a byte type
+#else
+#ifdef HOST_64BIT
+    typedef uint64_t NibbleChunkType;
+#else
+    typedef uint32_t NibbleChunkType;
+#endif // HOST_64BIT
+#endif // !BIGENDIAN
     NibbleReader(PTR_BYTE pBuffer, size_t size)
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         _ASSERTE(pBuffer != NULL);
 
-        m_pBuffer = pBuffer;
-        m_cBytes = size;
-        m_cNibble = 0;
+        TADDR pBufferAddr = dac_cast<TADDR>(pBuffer);
+        TADDR pBufferChunkAddr = AlignDown(pBufferAddr, sizeof(NibbleChunkType));
+
+        m_pNibblesBuffer = dac_cast<DPTR(NibbleChunkType)>(pBufferChunkAddr);
+        m_curNibbleData = m_pNibblesBuffer[0];
+        m_cNibbleMapOffset = (pBufferAddr - pBufferChunkAddr);
+        m_curNibbleData >>= 8 * m_cNibbleMapOffset; // Adjust to the first nibble in the first chunk
+        m_nibblesInCurrentNibbleData = (uint32_t)((sizeof(NibbleChunkType) * 2) - m_cNibbleMapOffset * 2); // Calculate how many nibbles are in the first chunk
+
+        m_cNibbleChunksConsumed = 1;
+
+        if (size >= 0xFFFFFFFF)
+        {
+            m_cNibbleChunksTotal = 0xFFFFFFFF;
+        }
+        else
+        {
+            if ((m_nibblesInCurrentNibbleData / 2) >= size)
+            {
+                m_cNibbleChunksTotal = 1; // No more chunks to read, we have enough nibbles in the first chunk
+            }
+            else
+            {
+                m_cNibbleChunksTotal = 1 + AlignUp((size * 2 - m_nibblesInCurrentNibbleData), sizeof(NibbleChunkType) * 2)/(sizeof(NibbleChunkType) * 2);
+            }
+        }
     }
 
     // Get the index of the next Byte.
@@ -207,7 +233,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return (m_cNibble + 1) / 2;
+        size_t nextNibbleChunkOffset = m_cNibbleChunksConsumed * sizeof(NibbleChunkType) - m_cNibbleMapOffset;
+        size_t result = nextNibbleChunkOffset - m_nibblesInCurrentNibbleData / 2;
+
+        return result;
     }
 
     NIBBLE ReadNibble()
@@ -220,27 +249,23 @@ public:
         }
         CONTRACTL_END;
 
-        NIBBLE i = 0;
-        // Bufer should have been allocated large enough to hold data.
-        if (!(m_cNibble / 2 < m_cBytes))
+        if (m_nibblesInCurrentNibbleData == 0)
         {
-            // We should never get here in a normal retail scenario.
-            // We could wind up here if somebody provided us invalid data (maybe by corrupting an ngenned image).
-            EX_THROW(HRException, (E_INVALIDARG));
+            // We have consumed all nibbles in the current nibble data.
+            // Move to the next chunk of nibbles.
+            if (m_cNibbleChunksConsumed >= m_cNibbleChunksTotal)
+            {
+                // No more nibbles left to read.
+                EX_THROW(HRException, (E_INVALIDARG));
+            }
+
+            m_curNibbleData = m_pNibblesBuffer[m_cNibbleChunksConsumed++];
+            m_nibblesInCurrentNibbleData = (sizeof(NibbleChunkType) * 2);
         }
 
-        BYTE p = m_pBuffer[m_cNibble / 2];
-        if ((m_cNibble & 1) == 0)
-        {
-            // Read the low nibble first
-            i = (NIBBLE) (p & 0xF);
-        }
-        else
-        {
-            // Read the high nibble after the low nibble has been read
-            i = (NIBBLE) (p >> 4) & 0xF;
-        }
-        m_cNibble++;
+        m_nibblesInCurrentNibbleData--;
+        NIBBLE i = (NIBBLE) (m_curNibbleData & 0xF);
+        m_curNibbleData >>= 4; // Shift right to get the next nibble for the next call
 
         return i;
     }
@@ -289,6 +314,68 @@ public:
         return dw;
     }
 
+    FORCEINLINE NIBBLE ReadNibble_NoThrow()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        if (m_nibblesInCurrentNibbleData == 0)
+        {
+            // We have consumed all nibbles in the current nibble data.
+            // Move to the next chunk of nibbles.
+            if (m_cNibbleChunksConsumed < m_cNibbleChunksTotal)
+            {
+                // Read the next nibble chunk. If we're past the end, we'll just skip
+                // that, and the nibble data will just be 0.
+                m_curNibbleData = m_pNibblesBuffer[m_cNibbleChunksConsumed++];
+            }
+
+            m_nibblesInCurrentNibbleData = (sizeof(NibbleChunkType) * 2);
+        }
+
+        m_nibblesInCurrentNibbleData--;
+        NIBBLE i = (NIBBLE) (m_curNibbleData & 0xF);
+        m_curNibbleData >>= 4; // Shift right to get the next nibble for the next call
+
+        return i;
+    }
+
+    // Read an unsigned int that was encoded via variable length nibble encoding
+    // from NibbleWriter::WriteEncodedU32.
+    DWORD ReadEncodedU32_NoThrow()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        DWORD dw = 0;
+
+#if defined(_DEBUG) || defined(DACCESS_COMPILE)
+        int dwCount = 0;
+#endif
+
+        // The encoding is variably lengthed, with the high-bit of every nibble indicating whether
+        // there is another nibble in the value.  Each nibble contributes 3 bits to the value.
+        NIBBLE n;
+        do
+        {
+#if defined(_DEBUG) || defined(DACCESS_COMPILE)
+            // If we've already read 11 nibbles (with 3 bits of usable data each), then we
+            // should be done reading a 32-bit integer.
+            // Avoid working with corrupted data and potentially long loops by failing
+            if(dwCount > 11)
+            {
+                _ASSERTE_MSG(false, "Corrupt nibble stream - value exceeded 32-bits in size");
+#ifdef DACCESS_COMPILE
+                DacError(CORDBG_E_TARGET_INCONSISTENT);
+#endif
+            }
+            dwCount++;
+#endif
+
+            n = ReadNibble_NoThrow();
+            dw = (dw << 3) + (n & 0x7);
+        } while((n & 0x8) > 0);
+
+        return dw;
+    }
     int ReadEncodedI32()
     {
         CONTRACTL
@@ -300,6 +387,15 @@ public:
         CONTRACTL_END;
 
         DWORD dw = ReadEncodedU32();
+        int x = dw >> 1;
+        return (dw & 1) ? (-x) : (x);
+    }
+
+    int ReadEncodedI32_NoThrow()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        DWORD dw = ReadEncodedU32_NoThrow();
         int x = dw >> 1;
         return (dw & 1) ? (-x) : (x);
     }
@@ -324,10 +420,27 @@ public:
         return result;
     }
 
+    DWORD ReadUnencodedU32_NoThrow()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        DWORD result = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            result |= static_cast<DWORD>(ReadNibble_NoThrow()) << (i * 4);
+        }
+
+        return result;
+    }
+
 protected:
-    PTR_BYTE m_pBuffer;
-    size_t m_cBytes; // size of buffer.
-    size_t m_cNibble; // Which nibble are we at?
+    DPTR(NibbleChunkType) m_pNibblesBuffer;
+    size_t m_cNibbleChunksTotal; // size of buffer remaining
+    size_t m_cNibbleChunksConsumed; // How many chunks of nibbles have we consumed?
+    size_t m_cNibbleMapOffset; // Offset in the nibble stream the nibble stream started
+    NibbleChunkType m_curNibbleData;
+    uint32_t m_nibblesInCurrentNibbleData;
 };
 
 

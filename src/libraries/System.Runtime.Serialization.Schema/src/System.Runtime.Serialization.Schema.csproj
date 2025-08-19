@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum)</TargetFrameworks>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for importing and exporting xsd schemas for DataContractSerializer.
 

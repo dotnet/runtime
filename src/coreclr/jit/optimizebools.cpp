@@ -1239,7 +1239,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             // We will now reach via B1 true.
             // Modify flow for true side of B1
             //
-            m_comp->fgRedirectTrueEdge(m_b1, m_b2->GetTrueTarget());
+            m_comp->fgRedirectEdge(m_b1->TrueEdgeRef(), m_b2->GetTrueTarget());
             origB1TrueEdge->setHeuristicBased(origB2TrueEdge->isHeuristicBased());
 
             newB1TrueLikelihood =
@@ -1576,11 +1576,13 @@ PhaseStatus Compiler::optOptimizeBools()
         printf("*************** In optOptimizeBools()\n");
     }
 #endif
-    bool     change    = false;
-    bool     retry     = false;
-    unsigned numCond   = 0;
-    unsigned numPasses = 0;
-    unsigned stress    = false;
+    bool         change    = false;
+    bool         retry     = false;
+    unsigned     numCond   = 0;
+    unsigned     numPasses = 0;
+    unsigned     stress    = false;
+    BitVecTraits ccmpTraits(fgBBNumMax + 1, this);
+    BitVec       ccmpVec = BitVecOps::MakeEmpty(&ccmpTraits);
 
     do
     {
@@ -1656,7 +1658,7 @@ PhaseStatus Compiler::optOptimizeBools()
                 // trigger or not
                 // else if ((compOpportunisticallyDependsOn(InstructionSet_APX) || JitConfig.JitEnableApxIfConv()) &&
                 // optBoolsDsc.optOptimizeCompareChainCondBlock())
-                else if (JitConfig.EnableApxConditionalChaining() && !optSwitchDetectAndConvert(b1, true) &&
+                else if (JitConfig.EnableApxConditionalChaining() && !optSwitchDetectAndConvert(b1, true, &ccmpVec) &&
                          optBoolsDsc.optOptimizeCompareChainCondBlock())
                 {
                     // The optimization will have merged b1 and b2. Retry the loop so that

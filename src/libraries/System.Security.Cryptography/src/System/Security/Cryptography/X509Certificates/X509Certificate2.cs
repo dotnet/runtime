@@ -865,12 +865,16 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                byte[] pk1 = publicKey.ExportEncapsulationKey();
-                byte[] pk2 = privateKey.ExportEncapsulationKey();
-
-                if (!pk1.AsSpan().SequenceEqual(pk2))
+                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.EncapsulationKeySizeInBytes, skipClear: true))
+                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.EncapsulationKeySizeInBytes, skipClear: true))
                 {
-                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    publicKey.ExportEncapsulationKey(pk1.Span);
+                    privateKey.ExportEncapsulationKey(pk2.Span);
+
+                    if (!pk1.Span.SequenceEqual(pk2.Span))
+                    {
+                        throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    }
                 }
             }
 
@@ -966,15 +970,16 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                byte[] pk1 = new byte[publicKey.Algorithm.PublicKeySizeInBytes];
-                byte[] pk2 = new byte[pk1.Length];
-
-                int w1 = publicKey.ExportMLDsaPublicKey(pk1);
-                int w2 = privateKey.ExportMLDsaPublicKey(pk2);
-
-                if (w1 != w2 || !pk1.AsSpan().SequenceEqual(pk2))
+                using (CryptoPoolLease pk1 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: true))
+                using (CryptoPoolLease pk2 = CryptoPoolLease.Rent(publicKey.Algorithm.PublicKeySizeInBytes, skipClear: true))
                 {
-                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    publicKey.ExportMLDsaPublicKey(pk1.Span);
+                    privateKey.ExportMLDsaPublicKey(pk2.Span);
+
+                    if (!pk1.Span.SequenceEqual(pk2.Span))
+                    {
+                        throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                    }
                 }
             }
 
@@ -1061,10 +1066,17 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
 
-                byte[] pk1 = publicKey.ExportSlhDsaPublicKey();
-                byte[] pk2 = privateKey.ExportSlhDsaPublicKey();
+                const int MaxPublicKeySize = 64;
+                Debug.Assert(publicKey.Algorithm.PublicKeySizeInBytes <= MaxPublicKeySize);
 
-                if (!pk1.AsSpan().SequenceEqual(pk2))
+                Span<byte> publicKeysBuffer = stackalloc byte[MaxPublicKeySize * 2];
+                Span<byte> pk1 = publicKeysBuffer.Slice(0, publicKey.Algorithm.PublicKeySizeInBytes);
+                Span<byte> pk2 = publicKeysBuffer.Slice(pk1.Length, publicKey.Algorithm.PublicKeySizeInBytes);
+
+                publicKey.ExportSlhDsaPublicKey(pk1);
+                privateKey.ExportSlhDsaPublicKey(pk2);
+
+                if (!pk1.SequenceEqual(pk2))
                 {
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
@@ -1072,6 +1084,108 @@ namespace System.Security.Cryptography.X509Certificates
 
             ICertificatePal pal = Pal.CopyWithPrivateKey(privateKey);
             return new X509Certificate2(pal);
+        }
+
+        /// <summary>
+        ///   Gets the <see cref="CompositeMLDsa"/> public key from this certificate.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if this certificate does not have a Composite ML-DSA public key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The certificate has a Composite ML-DSA public key, but the platform does not support Composite ML-DSA.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The public key was invalid, or otherwise could not be imported.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CompositeMLDsa? GetCompositeMLDsaPublicKey()
+        {
+            if (CompositeMLDsaAlgorithm.GetAlgorithmFromOid(GetKeyAlgorithm()) is null)
+            {
+                return null;
+            }
+
+            Debug.Assert(!OperatingSystem.IsBrowser());
+            return PublicKey.GetCompositeMLDsaPublicKey();
+        }
+
+        /// <summary>
+        ///   Gets the <see cref="CompositeMLDsa"/> private key from this certificate.
+        /// </summary>
+        /// <returns>
+        ///   The private key, or <see langword="null"/> if this certificate does not have a Composite ML-DSA private key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Retrieving a Composite ML-DSA private key from a certificate is not supported on this platform.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred accessing the private key.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CompositeMLDsa? GetCompositeMLDsaPrivateKey()
+        {
+            if (CompositeMLDsaAlgorithm.GetAlgorithmFromOid(GetKeyAlgorithm()) is null)
+            {
+                return null;
+            }
+
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        ///   Combines a private key with a certificate containing the associated public key into a
+        ///   new instance that can access the private key.
+        /// </summary>
+        /// <param name="privateKey">
+        ///   The Composite ML-DSA private key that corresponds to the Composite ML-DSA public key in this certificate.
+        /// </param>
+        /// <returns>
+        ///   A new certificate with the <see cref="HasPrivateKey" /> property set to <see langword="true"/>.
+        ///   The current certificate isn't modified.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="privateKey"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The specified private key doesn't match the public key for this certificate.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The certificate already has an associated private key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Combining a certificate and a Composite ML-DSA private key is not supported on this platform.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public X509Certificate2 CopyWithPrivateKey(CompositeMLDsa privateKey)
+        {
+            ArgumentNullException.ThrowIfNull(privateKey);
+
+            if (HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (CompositeMLDsa? publicKey = GetCompositeMLDsaPublicKey())
+            {
+                if (publicKey is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+                }
+
+                if (publicKey.Algorithm != privateKey.Algorithm)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+
+                byte[] pk1 = publicKey.ExportCompositeMLDsaPublicKey();
+                byte[] pk2 = privateKey.ExportCompositeMLDsaPublicKey();
+
+                if (!pk1.SequenceEqual(pk2))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+            }
+
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>

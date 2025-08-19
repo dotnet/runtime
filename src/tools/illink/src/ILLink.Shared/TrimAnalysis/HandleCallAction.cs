@@ -184,8 +184,8 @@ namespace ILLink.Shared.TrimAnalysis
                     }
                     break;
 
-                // System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle)
-                // System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
+                // System.Reflection.MethodBase.GetMethodFromHandle(RuntimeMethodHandle handle)
+                // System.Reflection.MethodBase.GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
                 case IntrinsicId.MethodBase_GetMethodFromHandle:
                 {
                     if (argumentValues[0].IsEmpty())
@@ -233,8 +233,8 @@ namespace ILLink.Shared.TrimAnalysis
                     throw new NotImplementedException("These intrinsics should be handled by the specific implementation: " + intrinsicId);
 
                 //
-                // GetInterface (String)
-                // GetInterface (String, bool)
+                // GetInterface(String)
+                // GetInterface(String, bool)
                 //
                 case IntrinsicId.Type_GetInterface:
                 {
@@ -351,7 +351,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Runtime.CompilerServices.RuntimeHelpers
                 //
-                // RunClassConstructor (RuntimeTypeHandle type)
+                // RunClassConstructor(RuntimeTypeHandle type)
                 //
                 case IntrinsicId.RuntimeHelpers_RunClassConstructor:
                     if (argumentValues[0].IsEmpty())
@@ -383,13 +383,13 @@ namespace ILLink.Shared.TrimAnalysis
                     break;
 
                 //
-                // GetConstructors (BindingFlags)
-                // GetMethods (BindingFlags)
-                // GetFields (BindingFlags)
-                // GetEvents (BindingFlags)
-                // GetProperties (BindingFlags)
-                // GetNestedTypes (BindingFlags)
-                // GetMembers (BindingFlags)
+                // GetConstructors(BindingFlags)
+                // GetMethods(BindingFlags)
+                // GetFields(BindingFlags)
+                // GetEvents(BindingFlags)
+                // GetProperties(BindingFlags)
+                // GetNestedTypes(BindingFlags)
+                // GetMembers(BindingFlags)
                 //
                 case IntrinsicId.Type_GetConstructors__BindingFlags:
                 case IntrinsicId.Type_GetMethods__BindingFlags:
@@ -442,17 +442,17 @@ namespace ILLink.Shared.TrimAnalysis
                 break;
 
                 //
-                // GetField (string)
-                // GetField (string, BindingFlags)
-                // GetEvent (string)
-                // GetEvent (string, BindingFlags)
-                // GetProperty (string)
-                // GetProperty (string, BindingFlags)
-                // GetProperty (string, Type)
-                // GetProperty (string, Type[])
-                // GetProperty (string, Type, Type[])
-                // GetProperty (string, Type, Type[], ParameterModifier[])
-                // GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
+                // GetField(string)
+                // GetField(string, BindingFlags)
+                // GetEvent(string)
+                // GetEvent(string, BindingFlags)
+                // GetProperty(string)
+                // GetProperty(string, BindingFlags)
+                // GetProperty(string, Type)
+                // GetProperty(string, Type[])
+                // GetProperty(string, Type, Type[])
+                // GetProperty(string, Type, Type[], ParameterModifier[])
+                // GetProperty(string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
                 //
                 case IntrinsicId.Type_GetField:
                 case IntrinsicId.Type_GetProperty:
@@ -519,9 +519,9 @@ namespace ILLink.Shared.TrimAnalysis
                 break;
 
                 //
-                // GetMember (String)
-                // GetMember (String, BindingFlags)
-                // GetMember (String, MemberTypes, BindingFlags)
+                // GetMember(String)
+                // GetMember(String, BindingFlags)
+                // GetMember(String, MemberTypes, BindingFlags)
                 //
                 case IntrinsicId.Type_GetMember:
                 {
@@ -573,17 +573,18 @@ namespace ILLink.Shared.TrimAnalysis
                 break;
 
                 //
-                // GetMethod (string)
-                // GetMethod (string, BindingFlags)
-                // GetMethod (string, Type[])
-                // GetMethod (string, Type[], ParameterModifier[])
-                // GetMethod (string, BindingFlags, Type[])
-                // GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[])
-                // GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
-                // GetMethod (string, int, Type[])
-                // GetMethod (string, int, Type[], ParameterModifier[]?)
-                // GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
-                // GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
+                // GetMethod(string)
+                // GetMethod(string, BindingFlags)
+                // GetMethod(string, Type[])
+                // GetMethod(string, Type[], ParameterModifier[])
+                // GetMethod(string, BindingFlags, Type[])
+                // GetMethod(string, BindingFlags, Binder, Type[], ParameterModifier[])
+                // GetMethod(string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
+                // GetMethod(string, int, Type[])
+                // GetMethod(string, int, Type[], ParameterModifier[]?)
+                // GetMethod(string, int, BindingFlags, Type[])
+                // GetMethod(string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
+                // GetMethod(string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
                 //
                 case IntrinsicId.Type_GetMethod:
                 {
@@ -663,8 +664,8 @@ namespace ILLink.Shared.TrimAnalysis
                 break;
 
                 //
-                // GetNestedType (string)
-                // GetNestedType (string, BindingFlags)
+                // GetNestedType(string)
+                // GetNestedType(string, BindingFlags)
                 //
                 case IntrinsicId.Type_GetNestedType:
                 {
@@ -746,10 +747,10 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Reflection.RuntimeReflectionExtensions
                 //
-                // static GetRuntimeEvent (this Type type, string name)
-                // static GetRuntimeField (this Type type, string name)
-                // static GetRuntimeMethod (this Type type, string name, Type[] parameters)
-                // static GetRuntimeProperty (this Type type, string name)
+                // static GetRuntimeEvent(this Type type, string name)
+                // static GetRuntimeField(this Type type, string name)
+                // static GetRuntimeMethod(this Type type, string name, Type[] parameters)
+                // static GetRuntimeProperty(this Type type, string name)
                 //
                 case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
                 case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
@@ -832,7 +833,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Linq.Expressions.Expression
                 //
-                // static New (Type)
+                // static New(Type)
                 //
                 case IntrinsicId.Expression_New:
                 {
@@ -854,7 +855,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Linq.Expressions.Expression
                 //
-                // static Property (Expression, MethodInfo)
+                // static Property(Expression, MethodInfo)
                 //
                 case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType((ParameterIndex)1, "System.Reflection.MethodInfo"):
                 {
@@ -890,8 +891,8 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Linq.Expressions.Expression
                 //
-                // static Field (Expression, Type, String)
-                // static Property (Expression, Type, String)
+                // static Field(Expression, Type, String)
+                // static Property(Expression, Type, String)
                 //
                 case IntrinsicId.Expression_Field:
                 case IntrinsicId.Expression_Property:
@@ -946,7 +947,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Linq.Expressions.Expression
                 //
-                // static Call (Type, String, Type[], Expression[])
+                // static Call(Type, String, Type[], Expression[])
                 //
                 case IntrinsicId.Expression_Call:
                 {
@@ -1032,12 +1033,12 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Type
                 //
-                // GetType (string)
-                // GetType (string, Boolean)
-                // GetType (string, Boolean, Boolean)
-                // GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
-                // GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
-                // GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
+                // GetType(string)
+                // GetType(string, Boolean)
+                // GetType(string, Boolean, Boolean)
+                // GetType(string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
+                // GetType(string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
+                // GetType(string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
                 //
                 case IntrinsicId.Type_GetType:
                 {
@@ -1093,7 +1094,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Type
                 //
-                // Type MakeGenericType (params Type[] typeArguments)
+                // Type MakeGenericType(params Type[] typeArguments)
                 //
                 case IntrinsicId.Type_MakeGenericType:
                     if (instanceValue.IsEmpty() || argumentValues[0].IsEmpty())
@@ -1275,10 +1276,10 @@ namespace ILLink.Shared.TrimAnalysis
                 break;
 
                 //
-                // GetConstructor (Type[])
-                // GetConstructor (BindingFlags, Type[])
-                // GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
-                // GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
+                // GetConstructor(Type[])
+                // GetConstructor(BindingFlags, Type[])
+                // GetConstructor(BindingFlags, Binder, Type[], ParameterModifier [])
+                // GetConstructor(BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
                 //
                 case IntrinsicId.Type_GetConstructor:
                 {
@@ -1337,7 +1338,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Reflection.MethodInfo
                 //
-                // MakeGenericMethod (Type[] typeArguments)
+                // MakeGenericMethod(Type[] typeArguments)
                 //
                 case IntrinsicId.MethodInfo_MakeGenericMethod:
                 {
@@ -1373,12 +1374,12 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Activator
                 //
-                // static CreateInstance (System.Type type)
-                // static CreateInstance (System.Type type, bool nonPublic)
-                // static CreateInstance (System.Type type, params object?[]? args)
-                // static CreateInstance (System.Type type, object?[]? args, object?[]? activationAttributes)
-                // static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
-                // static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
+                // static CreateInstance(System.Type type)
+                // static CreateInstance(System.Type type, bool nonPublic)
+                // static CreateInstance(System.Type type, params object?[]? args)
+                // static CreateInstance(System.Type type, object?[]? args, object?[]? activationAttributes)
+                // static CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
+                // static CreateInstance(System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
                 //
                 case IntrinsicId.Activator_CreateInstance__Type:
                 {
@@ -1462,9 +1463,9 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Activator
                 //
-                // static CreateInstance (string assemblyName, string typeName)
-                // static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
-                // static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
+                // static CreateInstance(string assemblyName, string typeName)
+                // static CreateInstance(string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
+                // static CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
                 //
                 case IntrinsicId.Activator_CreateInstance__AssemblyName_TypeName:
                     ProcessCreateInstanceByName(calledMethod, argumentValues);
@@ -1473,9 +1474,9 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Activator
                 //
-                // static CreateInstanceFrom (string assemblyFile, string typeName)
-                // static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                // static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+                // static CreateInstanceFrom(string assemblyFile, string typeName)
+                // static CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+                // static CreateInstanceFrom(string assemblyFile, string typeName, object? []? activationAttributes)
                 //
                 case IntrinsicId.Activator_CreateInstanceFrom:
                     ProcessCreateInstanceByName(calledMethod, argumentValues);
@@ -1484,21 +1485,21 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.AppDomain
                 //
-                // CreateInstance (string assemblyName, string typeName)
-                // CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                // CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
+                // CreateInstance(string assemblyName, string typeName)
+                // CreateInstance(string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+                // CreateInstance(string assemblyName, string typeName, object? []? activationAttributes)
                 //
-                // CreateInstanceAndUnwrap (string assemblyName, string typeName)
-                // CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                // CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
+                // CreateInstanceAndUnwrap(string assemblyName, string typeName)
+                // CreateInstanceAndUnwrap(string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+                // CreateInstanceAndUnwrap(string assemblyName, string typeName, object? []? activationAttributes)
                 //
-                // CreateInstanceFrom (string assemblyFile, string typeName)
-                // CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                // CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
+                // CreateInstanceFrom(string assemblyFile, string typeName)
+                // CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+                // CreateInstanceFrom(string assemblyFile, string typeName, object? []? activationAttributes)
                 //
-                // CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
-                // CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                // CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
+                // CreateInstanceFromAndUnwrap(string assemblyFile, string typeName)
+                // CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
+                // CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, object? []? activationAttributes)
                 //
                 case IntrinsicId.AppDomain_CreateInstance:
                 case IntrinsicId.AppDomain_CreateInstanceAndUnwrap:
@@ -1510,9 +1511,9 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Reflection.Assembly
                 //
-                // CreateInstance (string typeName)
-                // CreateInstance (string typeName, bool ignoreCase)
-                // CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
+                // CreateInstance(string typeName)
+                // CreateInstance(string typeName, bool ignoreCase)
+                // CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
                 //
                 case IntrinsicId.Assembly_CreateInstance:
                     // For now always fail since we don't track assemblies (dotnet/linker/issues/1947)

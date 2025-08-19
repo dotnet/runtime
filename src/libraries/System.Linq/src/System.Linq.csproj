@@ -62,6 +62,7 @@
     <Compile Include="System\Linq\RightJoin.cs" />
     <Compile Include="System\Linq\SegmentedArrayBuilder.cs" />
     <Compile Include="System\Linq\Select.cs" />
+    <Compile Include="System\Linq\Select.SizeOpt.cs" />
     <Compile Include="System\Linq\Select.SpeedOpt.cs" />
     <Compile Include="System\Linq\SelectMany.cs" />
     <Compile Include="System\Linq\SelectMany.SpeedOpt.cs" />
@@ -70,12 +71,10 @@
     <Compile Include="System\Linq\Single.cs" />
     <Compile Include="System\Linq\SingleLinkedNode.cs" />
     <Compile Include="System\Linq\Skip.cs" />
-    <Compile Include="System\Linq\Skip.SizeOpt.cs" />
     <Compile Include="System\Linq\Skip.SpeedOpt.cs" />
     <Compile Include="System\Linq\SkipTake.SpeedOpt.cs" />
     <Compile Include="System\Linq\Sum.cs" />
     <Compile Include="System\Linq\Take.cs" />
-    <Compile Include="System\Linq\Take.SizeOpt.cs" />
     <Compile Include="System\Linq\Take.SpeedOpt.cs" />
     <Compile Include="System\Linq\ThrowHelper.cs" />
     <Compile Include="System\Linq\ToCollection.cs" />
@@ -83,17 +82,18 @@
     <Compile Include="System\Linq\Union.SpeedOpt.cs" />
     <Compile Include="System\Linq\Utilities.cs" />
     <Compile Include="System\Linq\Where.cs" />
+    <Compile Include="System\Linq\Where.SizeOpt.cs" />
     <Compile Include="System\Linq\Where.SpeedOpt.cs" />
     <Compile Include="System\Linq\Zip.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.Intrinsics" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Intrinsics\src\System.Runtime.Intrinsics.csproj" />
   </ItemGroup>
 
 </Project>

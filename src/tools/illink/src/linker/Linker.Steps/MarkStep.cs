@@ -75,6 +75,8 @@ namespace Mono.Linker.Steps
         // method body scanner.
         readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
 
+        TypeMapHandler _typeMapHandler;
+
         MarkStepContext? _markContext;
         MarkStepContext MarkContext
         {
@@ -95,6 +97,8 @@ namespace Mono.Linker.Steps
                 return _dynamicallyAccessedMembersTypeHierarchy;
             }
         }
+
+        internal TypeMapHandler TypeMapHandler => _typeMapHandler;
 
 #if DEBUG
         static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
@@ -227,6 +231,7 @@ namespace Mono.Linker.Steps
             _pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)>();
             _entireTypesMarked = new HashSet<TypeDefinition>();
             _compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool>();
+            _typeMapHandler = new TypeMapHandler();
         }
 
         public AnnotationStore Annotations => Context.Annotations;
@@ -249,6 +254,13 @@ namespace Mono.Linker.Steps
         {
             InitializeCorelibAttributeXml();
             Context.Pipeline.InitializeMarkHandlers(Context, MarkContext);
+
+            if (Annotations.GetEntryPointAssembly() is AssemblyDefinition entryPoint)
+            {
+                _typeMapHandler = new TypeMapHandler(entryPoint);
+            }
+
+            _typeMapHandler.Initialize(Context, this);
 
             ProcessMarkedPending();
         }
@@ -1162,7 +1174,7 @@ namespace Mono.Linker.Steps
             }
         }
 
-        protected virtual void MarkCustomAttribute(CustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
+        protected internal virtual void MarkCustomAttribute(CustomAttribute ca, in DependencyInfo reason, MessageOrigin origin)
         {
             Annotations.Mark(ca, reason);
             MarkMethod(ca.Constructor, new DependencyInfo(DependencyKind.AttributeConstructor, ca), origin);
@@ -1540,7 +1552,7 @@ namespace Mono.Linker.Steps
                 // This can happen when the compiler emits typerefs into IL which aren't strictly necessary per ECMA 335.
                 foreach (TypeReference typeReference in assembly.MainModule.GetTypeReferences())
                 {
-                    if (!Visited!.Add(typeReference))
+                    if (!Visited.Add(typeReference))
                         continue;
                     markingHelpers.MarkForwardedScope(typeReference, new MessageOrigin(assembly));
                 }
@@ -1726,6 +1738,18 @@ namespace Mono.Linker.Steps
                     isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(method, out requiresUnreferencedCode);
                     break;
 
+                case DependencyKind.AttributeConstructor:
+                    // Attribute constructors for the System.Runtime.InteropServices.TypeMap*Attribute types should not
+                    // enforce RUC as directly accessing the attributes themselves is not valid.
+                    // They should only be accessed via the type-map APIs.
+                    // Additionally, there's no way to suppress the warnings for the linker.
+                    // By suppressing them here, they become analyzer-only, which is the expected behavior.
+                    isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(method, out requiresUnreferencedCode);
+                    if (origin.Provider is AssemblyDefinition && TypeMapHandler.IsTypeMapAttributeType(method.DeclaringType))
+                    {
+                        isReflectionAccessCoveredByRUC = false;
+                    }
+                    break;
                 default:
                     // If the method being accessed has warnings suppressed due to Requires attributes,
                     // we need to issue a warning for the reflection access. This is true even for instance
@@ -1789,7 +1813,7 @@ namespace Mono.Linker.Steps
                 Context.LogWarning(origin, id, type.GetDisplayName(),
                     ((MemberReference)member).GetDisplayName(), // The cast is valid since it has to be a method or field
                     MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute!.Message),
-                    MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute!.Url));
+                    MessageFormat.FormatRequiresAttributeMessageArg(requiresUnreferencedCodeAttribute.Url));
             }
 
             bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection(member);
@@ -1886,7 +1910,7 @@ namespace Mono.Linker.Steps
                 return;
 
             if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
-                ReportRequiresUnreferencedCode(field.GetDisplayName(), requiresUnreferencedCodeAttribute!, new DiagnosticContext(origin, diagnosticsEnabled: true, Context));
+                ReportRequiresUnreferencedCode(field.GetDisplayName(), requiresUnreferencedCodeAttribute, new DiagnosticContext(origin, diagnosticsEnabled: true, Context));
 
             switch (dependencyKind)
             {
@@ -1952,10 +1976,16 @@ namespace Mono.Linker.Steps
                 // If a type is visible to reflection, we need to stop doing optimization that could cause observable difference
                 // in reflection APIs. This includes APIs like MakeGenericType (where variant castability of the produced type
                 // could be incorrect) or IsAssignableFrom (where assignability of unconstructed types might change).
-                Annotations.MarkRelevantToVariantCasting(definition);
+                MarkRelevantToVariantCasting(definition);
                 Annotations.MarkReflectionUsed(definition);
                 MarkImplicitlyUsedFields(definition, origin);
             }
+        }
+
+        internal void MarkRelevantToVariantCasting(TypeDefinition type)
+        {
+            _typeMapHandler.ProcessType(type);
+            Annotations.MarkRelevantToVariantCasting(type);
         }
 
         internal void MarkMethodVisibleToReflection(MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
@@ -2092,7 +2122,11 @@ namespace Mono.Linker.Steps
                 // Also don't warn when the type is marked due to an assembly being rooted.
                 if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
                     reason.Kind is not DependencyKind.TypeInAssembly)
-                    Context.LogWarning(origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName());
+                {
+                    // Don't warn for type map attribute types. They're marked as "remove attributes" but we explicitly keep the ones needed.
+                    if (!TypeMapHandler.IsTypeMapAttributeType(type))
+                        Context.LogWarning(origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName());
+                }
             }
 
             if (CheckProcessed(type))
@@ -2117,17 +2151,6 @@ namespace Mono.Linker.Steps
                 MarkType(type.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, type), typeOrigin);
             MarkCustomAttributes(type, new DependencyInfo(DependencyKind.CustomAttribute, type), typeOrigin);
             MarkSecurityDeclarations(type, new DependencyInfo(DependencyKind.CustomAttribute, type), typeOrigin);
-
-            if (Context.TryResolve(type.BaseType) is TypeDefinition baseType &&
-                !Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute>(type) &&
-                Annotations.TryGetLinkerAttribute(baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode))
-            {
-
-                string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(effectiveRequiresUnreferencedCode.Message);
-                string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(effectiveRequiresUnreferencedCode.Url);
-                Context.LogWarning(typeOrigin, DiagnosticId.RequiresUnreferencedCodeOnBaseClass, type.GetDisplayName(), type.BaseType.GetDisplayName(), arg1, arg2);
-            }
-
 
             if (type.IsMulticastDelegate())
             {
@@ -2904,7 +2927,7 @@ namespace Mono.Linker.Steps
                 if (argumentTypeDef == null)
                     continue;
 
-                Annotations.MarkRelevantToVariantCasting(argumentTypeDef);
+                MarkRelevantToVariantCasting(argumentTypeDef);
 
                 if (parameter?.HasDefaultConstructorConstraint == true)
                     MarkDefaultConstructor(argumentTypeDef, new DependencyInfo(DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
@@ -3113,7 +3136,7 @@ namespace Mono.Linker.Steps
 
                 if (reference.Name == ".ctor" && Context.TryResolve(arrayType) is TypeDefinition typeDefinition)
                 {
-                    Annotations.MarkRelevantToVariantCasting(typeDefinition);
+                    MarkRelevantToVariantCasting(typeDefinition);
                 }
                 return null;
             }
@@ -3489,6 +3512,8 @@ namespace Mono.Linker.Steps
 
             Annotations.MarkInstantiated(type);
 
+            _typeMapHandler.ProcessType(type);
+
             var typeOrigin = new MessageOrigin(type);
 
             MarkInterfaceImplementations(type);
@@ -3500,6 +3525,8 @@ namespace Mono.Linker.Steps
             }
 
             MarkImplicitlyUsedFields(type, typeOrigin);
+
+            _typeMapHandler.ProcessInstantiated(type);
 
             DoAdditionalInstantiatedTypeProcessing(type);
         }
@@ -3955,7 +3982,7 @@ namespace Mono.Linker.Steps
                         case Code.Newarr:
                             if (Context.TryResolve(operand) is TypeDefinition typeDefinition)
                             {
-                                Annotations.MarkRelevantToVariantCasting(typeDefinition);
+                                MarkRelevantToVariantCasting(typeDefinition);
                             }
                             break;
                         case Code.Isinst:
@@ -3971,6 +3998,8 @@ namespace Mono.Linker.Steps
 
                             if (type.IsInterface)
                                 break;
+
+                            _typeMapHandler.ProcessType(type);
 
                             if (!Annotations.IsInstantiated(type))
                             {
@@ -4016,7 +4045,7 @@ namespace Mono.Linker.Steps
         }
 
         //
-        // Tries to mark additional dependencies used in reflection like calls (e.g. typeof (MyClass).GetField ("fname"))
+        // Tries to mark additional dependencies used in reflection like calls (e.g. typeof(MyClass).GetField("fname"))
         //
         protected virtual void MarkReflectionLikeDependencies(MethodIL methodIL, bool requiresReflectionMethodBodyScanner, MessageOrigin origin)
         {
@@ -4033,13 +4062,19 @@ namespace Mono.Linker.Steps
                     {
                         case MethodDefinition nestedFunction:
                             if (nestedFunction.Body is MethodBody nestedBody)
-                                requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(nestedBody), origin);
+                            {
+                                var nestedOrigin = new MessageOrigin(nestedFunction);
+                                requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(nestedBody), nestedOrigin);
+                            }
                             break;
                         case TypeDefinition stateMachineType:
                             foreach (var method in stateMachineType.Methods)
                             {
                                 if (method.Body is MethodBody stateMachineBody)
-                                    requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(stateMachineBody), origin);
+                                {
+                                    var stateMachineOrigin = new MessageOrigin(method);
+                                    requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(stateMachineBody), stateMachineOrigin);
+                                }
                             }
                             break;
                         default:

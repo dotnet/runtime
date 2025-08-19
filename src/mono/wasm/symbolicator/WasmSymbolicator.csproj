@@ -9,6 +9,7 @@
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

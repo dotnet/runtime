@@ -446,10 +446,10 @@ namespace ILLink.Shared.TrimAnalysis
             DynamicallyAccessedMemberTypes[]? typeGenericParameterAnnotations = null;
             if (type.HasGenericParameters)
             {
-                var attrs = GetGeneratedTypeAttributes(type);
+                var attrs = GetGeneratedTypeAttributes(type) ?? type.GenericParameters;
                 for (int genericParameterIndex = 0; genericParameterIndex < type.GenericParameters.Count; genericParameterIndex++)
                 {
-                    var provider = attrs?[genericParameterIndex] ?? type.GenericParameters[genericParameterIndex];
+                    var provider = attrs[genericParameterIndex];
                     var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(type, providerIfNotMember: provider);
                     if (annotation != DynamicallyAccessedMemberTypes.None)
                     {
@@ -462,7 +462,7 @@ namespace ILLink.Shared.TrimAnalysis
             return new TypeAnnotations(type, typeAnnotation, annotatedMethods.ToArray(), annotatedFields.ToArray(), typeGenericParameterAnnotations);
         }
 
-        private IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes(TypeDefinition typeDef)
+        private IList<GenericParameter>? GetGeneratedTypeAttributes(TypeDefinition typeDef)
         {
             if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
             {
@@ -597,8 +597,8 @@ namespace ILLink.Shared.TrimAnalysis
                 var annotation = parameterAnnotations[parameterIndex];
                 if (annotation != DynamicallyAccessedMemberTypes.None)
                     LogValidationWarning(
-                        ov.Override.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider()!,
-                        ov.Base.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider()!,
+                        ov.Override.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider(),
+                        ov.Base.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider(),
                         ov);
             }
         }

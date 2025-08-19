@@ -49,6 +49,7 @@
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
+#include "debugdebugger.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -477,19 +478,26 @@ static void ConvToJitSig(
 
         uint32_t data;
         IfFailThrow(sig.GetCallingConvInfo(&data));
-        sigRet->callConv = (CorInfoCallConv) data;
 
 #if defined(TARGET_UNIX) || defined(TARGET_ARM)
-        if ((isCallConv(sigRet->callConv, IMAGE_CEE_CS_CALLCONV_VARARG)) ||
-            (isCallConv(sigRet->callConv, IMAGE_CEE_CS_CALLCONV_NATIVEVARARG)))
+        if ((isCallConv(data, IMAGE_CEE_CS_CALLCONV_VARARG)) ||
+            (isCallConv(data, IMAGE_CEE_CS_CALLCONV_NATIVEVARARG)))
         {
             // This signature corresponds to a method that uses varargs, which are not supported.
              COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
         }
 #endif // defined(TARGET_UNIX) || defined(TARGET_ARM)
 
+        // We have an internal calling convention for async used for signatures
+        // in IL stubs. Translate that to the flag representation in
+        // CorInfoCallConv.
+        if (isCallConv(data, IMAGE_CEE_CS_CALLCONV_ASYNC))
+            sigRet->callConv = (CorInfoCallConv)(CORINFO_CALLCONV_DEFAULT | CORINFO_CALLCONV_ASYNCCALL | (data & ~IMAGE_CEE_CS_CALLCONV_MASK));
+        else
+            sigRet->callConv = (CorInfoCallConv) data;
+
         // Skip number of type arguments
-        if (sigRet->callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
           IfFailThrow(sig.GetData(NULL));
 
         uint32_t numArgs;
@@ -1795,7 +1803,6 @@ CEEInfo::findSig(
     if (IsDynamicScope(scopeHnd))
     {
         sig = GetDynamicResolver(scopeHnd)->ResolveSignature(sigTok);
-        sigTok = mdTokenNil;
     }
     else
     {
@@ -6137,6 +6144,7 @@ CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 // registers a vararg sig & returns a class-specific cookie for it.
 
 CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
+                                                 CORINFO_METHOD_HANDLE methHnd,
                                                  void **ppIndirection)
 {
     CONTRACTL {
@@ -6163,12 +6171,6 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
     EE_TO_JIT_TRANSITION();
 
     return result;
-}
-
-bool CEEInfo::canGetVarArgsHandle(CORINFO_SIG_INFO *sig)
-{
-    LIMITED_METHOD_CONTRACT;
-    return true;
 }
 
 /***********************************************************************/
@@ -6500,7 +6502,7 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_SHAREDINST;
     }
 
-    if (pMD->IsNDirect())
+    if (pMD->IsPInvoke())
     {
         result |= CORINFO_FLG_PINVOKE;
     }
@@ -7679,20 +7681,17 @@ CEEInfo::getMethodInfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
-    if (ftn->IsDynamicMethod())
-    {
-        getMethodInfoWorker(ftn, NULL, methInfo, context);
-        result = true;
-    }
-    else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
+    COR_ILMETHOD* pILHeader;
+    if (ftn->MayHaveILHeader() && (pILHeader = ftn->GetILHeader()) != NULL)
     {
         // Get the IL header and set it.
-        COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, ftn->GetMDImport(), NULL);
         getMethodInfoWorker(ftn, &header, methInfo, context);
         result = true;
     }
-    else if (ftn->IsIL() && ftn->GetRVA() == 0) // IL methods with no RVA indicate there is no implementation defined in metadata.
+    else if (ftn->IsIL() || ftn->IsDynamicMethod())
     {
+        // IL methods with no IL header indicate there is no implementation defined in metadata.
         getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
     }
@@ -7864,9 +7863,10 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
         if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
         {
-            if (pCallee->HasILHeader())
+            COR_ILMETHOD* pILHeader;
+            if (pCallee->MayHaveILHeader() && (pILHeader = pCallee->GetILHeader()) != NULL)
             {
-                COR_ILMETHOD_DECODER header(pCallee->GetILHeader(), pCallee->GetMDImport(), NULL);
+                COR_ILMETHOD_DECODER header(pILHeader, pCallee->GetMDImport(), NULL);
                 if (header.EHCount() > 0)
                 {
                     result = INLINE_FAIL;
@@ -7874,7 +7874,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                     goto exit;
                 }
             }
-            else if (pCallee->IsIL() && pCallee->GetRVA() == 0)
+            else if (pCallee->IsIL())
             {
                 CORINFO_METHOD_INFO methodInfo;
                 getMethodInfoWorker(pCallee, NULL, &methodInfo);
@@ -8609,23 +8609,29 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // We must ensure that pObjMT actually implements the
         // interface corresponding to pBaseMD.
         //
+        bool isArrayImplicitInterface = false;
+
         if (pObjMT->IsArray())
         {
-            // If we're in a shared context we'll devirt to a shared
-            // generic method and won't be able to inline, so just bail.
+            // Does the array implicitly implement this interface?
             //
-            if (pBaseMT->IsSharedByGenericInstantiations())
-            {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-            }
+            isArrayImplicitInterface = pBaseMT->HasInstantiation() && IsImplicitInterfaceOfSZArray(pBaseMT);
 
-            // Ensure we can cast the array to the interface type
-            //
-            if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+            if (!isArrayImplicitInterface)
             {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
-                return false;
+                if (pBaseMT->IsSharedByGenericInstantiations())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                // Ensure we can cast the array to the interface type
+                //
+                if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                    return false;
+                }
             }
         }
         else if (!pBaseMT->IsSharedByGenericInstantiations() && !pObjMT->CanCastToInterface(pBaseMT))
@@ -8640,10 +8646,24 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         {
             MethodTable* interfaceMT = nullptr;
 
-            if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
+            if (isArrayImplicitInterface)
+            {
+                _ASSERTE(pObjMT->IsArray());
+
+                // We cannot devirtualize unless we know the exact array element type
+                //
+                TypeHandle elemType = pObjMT->GetArrayElementTypeHandle();
+                if (elemType.IsCanonicalSubtype())
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    return false;
+                }
+                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, elemType);
+            }
+            else if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
             {
                 MethodTable* pCanonBaseMT = pBaseMT->GetCanonicalMethodTable();
-                
+
                 // Check to see if the derived class implements multiple variants of a matching interface.
                 // If so, we cannot predict exactly which implementation is in use here.
                 MethodTable::InterfaceMapIterator it = pObjMT->IterateInterfaceMap();
@@ -8666,7 +8686,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                         }
                     }
                 }
-                
+
                 if (canonicallyMatchingInterfacesFound == 0)
                 {
                     // The object doesn't implement the interface...
@@ -9112,7 +9132,17 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     // Resolve methodImpl.
     ftn = ftn->GetMethodTable()->MapMethodDeclToMethodImpl(ftn);
 
-    if (!ftn->IsFCall() && ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
+    if (ftn->IsFCall())
+    {
+        // FCalls can be called directly
+        ret = (void*)ECall::GetFCallImpl(ftn, false /* throwForInvalidFCall */);
+        if (ret == NULL)
+        {
+            ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
+            accessType = IAT_PVALUE;
+        }
+    }
+    else if (ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
         ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
         accessType = IAT_PVALUE;
@@ -9848,11 +9878,11 @@ namespace
 
         if (methodCallConv == CORINFO_CALLCONV_DEFAULT || methodCallConv == CORINFO_CALLCONV_VARARG)
         {
-            _ASSERTE(pMD->IsNDirect() || pMD->HasUnmanagedCallersOnlyAttribute());
-            if (pMD->IsNDirect())
+            _ASSERTE(pMD->IsPInvoke() || pMD->HasUnmanagedCallersOnlyAttribute());
+            if (pMD->IsPInvoke())
             {
                 CorInfoCallConvExtension unmanagedCallConv;
-                NDirect::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, pSuppressGCTransition);
+                PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, pSuppressGCTransition);
                 return unmanagedCallConv;
             }
             else
@@ -9932,7 +9962,7 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         // check the call site signature
         SigTypeContext typeContext;
         GetTypeContext(&callSiteSig->sigInst, &typeContext);
-        result = NDirect::MarshalingRequired(
+        result = PInvoke::MarshalingRequired(
                     NULL,
                     SigPointer{ callSiteSig->pSig, callSiteSig->cbSig },
                     GetModule(callSiteSig->scope),
@@ -9941,13 +9971,13 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
     else
     {
         MethodDesc* ftn = GetMethod(method);
-        _ASSERTE(ftn->IsNDirect());
-        NDirectMethodDesc *pMD = (NDirectMethodDesc*)ftn;
+        _ASSERTE(ftn->IsPInvoke());
+        PInvokeMethodDesc *pMD = (PInvokeMethodDesc*)ftn;
 
-#if defined(HAS_NDIRECT_IMPORT_PRECODE)
+#if defined(HAS_PINVOKE_IMPORT_PRECODE)
         if (pMD->IsVarArg())
         {
-            // Varag P/Invoke must not be inlined because its NDirectMethodDesc
+            // Varag P/Invoke must not be inlined because its PInvokeMethodDesc
             // does not contain a meaningful stack size (it is call site specific).
             // See code:InlinedCallFrame.UpdateRegDisplay where this is needed.
             result = TRUE;
@@ -9964,7 +9994,7 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         }
 #else
         // Marshalling is required to lazy initialize the indirection cell
-        // without NDirectImportPrecode.
+        // without PInvokeImportPrecode.
         result = TRUE;
 #endif
     }
@@ -9996,15 +10026,8 @@ LPVOID CEEInfo::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
 {
     WRAPPER_NO_CONTRACT;
 
-    return getVarArgsHandle(szMetaSig, ppIndirection);
+    return getVarArgsHandle(szMetaSig, NULL, ppIndirection);
 }
-
-bool CEEInfo::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-{
-    LIMITED_METHOD_CONTRACT;
-    return true;
-}
-
 
 // Check any constraints on method type arguments
 bool CEEInfo::satisfiesMethodConstraints(
@@ -10032,7 +10055,7 @@ bool CEEInfo::satisfiesMethodConstraints(
 
 
 /*********************************************************************/
-// return address of fixup area for late-bound N/Direct calls.
+// return address of fixup area for late-bound PInvoke calls.
 void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
                                         CORINFO_CONST_LOOKUP *pLookup)
 {
@@ -10045,12 +10068,12 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* pMD = GetMethod(method);
-    _ASSERTE(pMD->IsNDirect());
+    _ASSERTE(pMD->IsPInvoke());
 
-    NDirectMethodDesc* pNMD = reinterpret_cast<NDirectMethodDesc*>(pMD);
+    PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
 
     void* pIndirection;
-    if (NDirectMethodDesc::TryGetResolvedNDirectTarget(pNMD, &pIndirection))
+    if (PInvokeMethodDesc::TryGetResolvedPInvokeTarget(pNMD, &pIndirection))
     {
         pLookup->accessType = IAT_VALUE;
         pLookup->addr = pIndirection;
@@ -10058,7 +10081,7 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     else
     {
         pLookup->accessType = IAT_PVALUE;
-        pLookup->addr = (LPVOID)&(pNMD->ndirect.m_pNDirectTarget);
+        pLookup->addr = (LPVOID)&(pNMD->m_pPInvokeTarget);
     }
 
     EE_TO_JIT_TRANSITION();
@@ -10234,6 +10257,11 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__DATA));
     pAsyncInfoOut->continuationGCDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__GCDATA));
     pAsyncInfoOut->continuationsNeedMethodHandle = m_pMethodBeingCompiled->GetLoaderAllocator()->CanUnload();
+    pAsyncInfoOut->captureExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_EXECUTION_CONTEXT));
+    pAsyncInfoOut->restoreExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_EXECUTION_CONTEXT));
+    pAsyncInfoOut->captureContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTINUATION_CONTEXT));
+    pAsyncInfoOut->captureContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTEXTS));
+    pAsyncInfoOut->restoreContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS));
 
     EE_TO_JIT_TRANSITION();
 }
@@ -10699,8 +10727,6 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     , m_pCodeHeap(NULL)
     , m_ILHeader(header)
     , m_MethodInfo()
-    , m_GCinfo_len(0)
-    , m_EHinfo_len(0)
     , m_iOffsetMapping(0)
     , m_pOffsetMapping(NULL)
     , m_iNativeVarInfo(0)
@@ -10822,7 +10848,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                     activeCodeVersion = manager->GetActiveILCodeVersion(helperMD).GetActiveNativeCodeVersion(helperMD);
                 }
 
-                if (activeCodeVersion.IsFinalTier())
+                // activeCodeVersion may be a null version if the current active ILCodeVersion
+                // does not have an associated NativeCodeVersion
+                if (!activeCodeVersion.IsNull() && activeCodeVersion.IsFinalTier())
                 {
                     finalTierAddr = (LPVOID)activeCodeVersion.GetNativeCode();
                     if (finalTierAddr != NULL)
@@ -10990,23 +11018,6 @@ void CEEJitInfo::PublishFinalCodeAddress(PCODE addr)
     }
 }
 
-/*********************************************************************/
-void CEEJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    // The RemoveJitData call below requires the m_CodeHeader to be valid, so we need to write
-    // the code bytes to the target memory location.
-    WriteCodeBytes();
-
-    CodeHeader* pCodeHeader = (CodeHeader*)m_CodeHeader;
-    if (pCodeHeader)
-        jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
-}
-
 template<class TCodeHeader>
 void CEECodeGenInfo::NibbleMapSet()
 {
@@ -11034,11 +11045,11 @@ void CEEJitInfo::WriteCode(EECodeGenManager * jitMgr)
     // Now that the code header was written to the final location, publish the code via the nibble map
     NibbleMapSet<CodeHeader>();
 
-#if defined(TARGET_AMD64)
+#if defined(FEATURE_EH_FUNCLETS)
     // Publish the new unwind information in a way that the ETW stack crawler can find
     _ASSERTE(m_usedUnwindInfos == m_totalUnwindInfos);
     UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, ((CodeHeader*)m_CodeHeader)->GetUnwindInfo(0), m_totalUnwindInfos);
-#endif // defined(TARGET_AMD64)
+#endif // defined(FEATURE_EH_FUNCLETS)
 }
 
 /*********************************************************************/
@@ -11183,9 +11194,11 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 
 #ifdef FEATURE_INTERPRETER
 
+
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
     void* result = NULL;
+#ifndef TARGET_WASM
     JIT_TO_EE_TRANSITION();
 
     Module* module = GetModule(szMetaSig->scope);
@@ -11199,7 +11212,9 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     result = callStubGenerator.GenerateCallStubForSig(sig);
 
     EE_TO_JIT_TRANSITION();
-
+#else
+    PORTABILITY_ASSERT("GetCookieForInterpreterCalliSig is not supported on wasm yet");
+#endif // !TARGET_WASM
     return result;
 }
 
@@ -11240,7 +11255,7 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             pArgs->hotCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
                                                  , &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
                                                  , 0
@@ -11293,8 +11308,8 @@ void * CInterpreterJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
-    _ASSERTE(block);      // allocFromJitMetaHeap throws if there's not enough memory
+    block = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled, size);
+    _ASSERTE(block);      // AllocFromJitMetaHeap throws if there's not enough memory
 
     ((InterpreterCodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
 
@@ -11337,22 +11352,6 @@ void CInterpreterJitInfo::WriteCodeBytes()
     SetRealCodeHeader<InterpreterCodeHeader>();
 }
 
-void CInterpreterJitInfo::BackoutJitData(EECodeGenManager * jitMgr)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    // The RemoveJitData call below requires the m_CodeHeader to be valid, so we need to write
-    // the code bytes to the target memory location.
-    WriteCodeBytes();
-
-    InterpreterCodeHeader* pCodeHeader = (InterpreterCodeHeader*)m_CodeHeader;
-    if (pCodeHeader)
-        jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
-}
-
 void CInterpreterJitInfo::WriteCode(EECodeGenManager * jitMgr)
 {
     CONTRACTL {
@@ -11371,7 +11370,7 @@ void CInterpreterJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
 }
 #endif // FEATURE_INTERPRETER
 
-void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
+void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nativeCodeVersion)
 {
     CONTRACTL {
         THROWS;
@@ -11405,8 +11404,36 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
         if (m_jitManager->IsStoringRichDebugInfo())
             writeFlagByte = TRUE;
 
+
+    const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
+    InstrumentedILOffsetMapping loadTimeMapping;
+#ifdef FEATURE_REJIT
+    ILCodeVersion ilVersion;
+
+    if (!nativeCodeVersion.IsNull())
+    {
+        ilVersion = nativeCodeVersion.GetILCodeVersion();
+    }
+
+    // if there is a rejit IL map for this function, apply that in preference to load-time mapping
+    if (!ilVersion.IsNull() && !ilVersion.IsDefaultVersion())
+    {
+        pILOffsetMapping = ilVersion.GetInstrumentedILMap();
+    }
+    else
+    {
+#endif
+        // if there is a profiler load-time mapping and not a rejit mapping, apply that instead
+        loadTimeMapping =
+            m_pMethodBeingCompiled->GetAssembly()->GetModule()->GetInstrumentedILOffsetMapping(m_pMethodBeingCompiled->GetMemberDef());
+        if (!loadTimeMapping.IsNull())
+            pILOffsetMapping = &loadTimeMapping;
+#ifdef FEATURE_REJIT
+    }
+#endif
+
         PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
-            m_pOffsetMapping, m_iOffsetMapping,
+            m_pOffsetMapping, m_iOffsetMapping, pILOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
             patchpointInfo,
             m_inlineTreeNodes, m_numInlineTreeNodes,
@@ -11895,6 +11922,19 @@ void CEEJitInfo::recordRelocation(void * location,
 
 #endif // TARGET_LOONGARCH64
 
+
+#ifdef TARGET_RISCV64
+    case IMAGE_REL_RISCV64_PC:
+        {
+            _ASSERTE(addlDelta == 0);
+
+            INT64 offset = (INT64)target - (INT64)location;
+            PutRiscV64AuipcItype((UINT32 *)locationRW, offset);
+        }
+        break;
+
+#endif // TARGET_RISCV64
+
     default:
         _ASSERTE(!"Unknown reloc type");
         break;
@@ -12338,41 +12378,6 @@ CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HA
     return result;
 }
 
-/*********************************************************************/
-static void *GetClassSync(MethodTable *pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    GCX_COOP();
-
-    OBJECTREF ref = pMT->GetManagedClassObject();
-    return (void*)ref->GetSyncBlock()->GetMonitor();
-}
-
-/*********************************************************************/
-void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
-                                    void **ppIndirection)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void * result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    result = GetClassSync((GetMethod(ftnHnd))->GetMethodTable());
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 CORINFO_METHOD_INFO* CEECodeGenInfo::getMethodInfoInternal()
 {
     LIMITED_METHOD_CONTRACT;
@@ -12575,7 +12580,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
     }
 
-    m_jitManager->allocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
+    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
                                       , &m_pRealCodeHeader
 #ifdef FEATURE_EH_FUNCLETS
                                       , m_totalUnwindInfos
@@ -12645,8 +12650,8 @@ void * CEEJitInfo::allocGCInfo (size_t size)
     }
 #endif // HOST_64BIT
 
-    block = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled,(DWORD)size, &m_GCinfo_len);
-    _ASSERTE(block);      // allocFromJitMetaHeap throws if there's not enough memory
+    block = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled, size);
+    _ASSERTE(block);      // AllocFromJitMetaHeap throws if there's not enough memory
 
     ((CodeHeader*)m_CodeHeaderRW)->SetGCInfo(block);
 
@@ -12678,9 +12683,8 @@ void CEECodeGenInfo::setEHcountWorker(unsigned cEH)
     if (!ClrSafeInt<DWORD>::addition(temp, sizeof(size_t), blockSize))
         COMPlusThrowOM();
 
-    BYTE *pEHInfo = m_jitManager->allocFromJitMetaHeap(m_pMethodBeingCompiled, blockSize, &m_EHinfo_len);
-    _ASSERTE(pEHInfo);      // allocFromJitMetaHeap throws if there's not enough memory
-    _ASSERTE(m_EHinfo_len != 0);
+    BYTE *pEHInfo = m_jitManager->AllocFromJitMetaHeap(m_pMethodBeingCompiled, blockSize);
+    _ASSERTE(pEHInfo);      // AllocFromJitMetaHeap throws if there's not enough memory
 
     pCodeHeaderRW->SetEHInfo((EE_ILEXCEPTION*)(pEHInfo + sizeof(size_t)));
     pCodeHeaderRW->GetEHInfo()->Init(cEH);
@@ -12776,6 +12780,8 @@ void CEECodeGenInfo::getEHinfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* pMD = GetMethod(ftn);
+
+    COR_ILMETHOD* pILHeader;
     if (IsDynamicMethodHandle(ftn))
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
@@ -12784,12 +12790,12 @@ void CEECodeGenInfo::getEHinfo(
     {
         getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
     }
-    else if (pMD->HasILHeader())
+    else if (pMD->MayHaveILHeader() && (pILHeader = pMD->GetILHeader()) != NULL)
     {
-        COR_ILMETHOD_DECODER header(pMD->GetILHeader(), pMD->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
         getEHinfoHelper(ftn, EHnumber, clause, &header);
     }
-    else if (pMD->IsIL() && pMD->GetRVA() == 0)
+    else if (pMD->IsIL())
     {
         TransientMethodDetails* details;
         if (!FindTransientMethodDetails(pMD, &details))
@@ -12810,7 +12816,8 @@ void CEECodeGenInfo::getEHinfo(
 static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
                                        CEECodeGenInfo *comp,
                                        BYTE **nativeEntry,
-                                       uint32_t *nativeSizeOfCode)
+                                       uint32_t *nativeSizeOfCode,
+                                       NativeCodeVersion nativeCodeVersion)
 {
     STANDARD_VM_CONTRACT;
 
@@ -12833,7 +12840,6 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
 
         if (FAILED(ret))
         {
-            comp->BackoutJitData(jitMgr);
             comp->ResetForJitRetry();
             ret = CORJIT_SKIPPED;
         }
@@ -12854,7 +12860,6 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
                                          nativeSizeOfCode);
         if (FAILED(ret))
         {
-            comp->BackoutJitData(jitMgr);
             comp->ResetForJitRetry();
             ret = CORJIT_SKIPPED;
         }
@@ -12867,7 +12872,7 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
     //
     if (SUCCEEDED(ret) && !comp->JitAgain())
     {
-        comp->CompressDebugInfo((PCODE)*nativeEntry);
+        comp->CompressDebugInfo((PCODE)*nativeEntry, nativeCodeVersion);
         comp->MethodCompileComplete(methodInfo->ftn);
     }
 
@@ -13074,7 +13079,8 @@ static TADDR UnsafeJitFunctionWorker(
         res = invokeCompileMethod(pJitMgr,
                                   pJitInfo,
                                   &nativeEntry,
-                                  &sizeOfCode);
+                                  &sizeOfCode,
+                                  nativeCodeVersion);
 
 #if FEATURE_PERFMAP
         _ASSERTE(pSizeOfCode != NULL);
@@ -13120,12 +13126,17 @@ static TADDR UnsafeJitFunctionWorker(
         if (g_pDebugInterface)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
+
+            // Validation currently disabled, see https://github.com/dotnet/runtime/issues/117561
+            //
+//#ifdef DEBUG
+//            ValidateILOffsets(ftn, NULL, 0, (uint8_t*)nativeEntry, sizeOfCode);
+//#endif // DEBUG
         }
 #endif // DEBUGGING_SUPPORTED
     }
     else
     {
-        pJitInfo->BackoutJitData(pJitMgr);
         ThrowExceptionForJit(res);
     }
 
@@ -13214,8 +13225,7 @@ public:
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         if (jitInfo.IsJumpStubOverflow())
         {
-            // Backout and try again with fAllowRel32 == FALSE.
-            jitInfo.BackoutJitData(jitMgr);
+            // Try again with fAllowRel32 == FALSE.
 
 #if defined(TARGET_AMD64)
             // Disallow rel32 relocs in future.
@@ -13672,7 +13682,7 @@ bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry,
-                          BOOL mayUsePrecompiledNDirectMethods)
+                          BOOL mayUsePrecompiledPInvokeMethods)
 {
     STANDARD_VM_CONTRACT;
 
@@ -13810,20 +13820,20 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            _ASSERTE(pMethod->IsNDirect());
-            NDirectMethodDesc *pMD = (NDirectMethodDesc*)pMethod;
-            result = (size_t)(LPVOID)&(pMD->ndirect.m_pNDirectTarget);
+            _ASSERTE(pMethod->IsPInvoke());
+            PInvokeMethodDesc *pMD = (PInvokeMethodDesc*)pMethod;
+            result = (size_t)(LPVOID)&(pMD->m_pPInvokeTarget);
         }
         break;
 
     case READYTORUN_FIXUP_PInvokeTarget:
         {
-            if (mayUsePrecompiledNDirectMethods)
+            if (mayUsePrecompiledPInvokeMethods)
             {
                 MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-                _ASSERTE(pMethod->IsNDirect());
-                result = (size_t)(LPVOID)NDirectMethodDesc::ResolveAndSetNDirectTarget((NDirectMethodDesc*)pMethod);
+                _ASSERTE(pMethod->IsPInvoke());
+                result = (size_t)(LPVOID)PInvokeMethodDesc::ResolveAndSetPInvokeTarget((PInvokeMethodDesc*)pMethod);
             }
             else
             {
@@ -14435,7 +14445,6 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
 
     auto appendTypeHandle = [](SigBuilder& sigBuilder, TypeHandle th)
     {
-        _ASSERTE(!th.IsByRef());
         CorElementType ty = th.GetSignatureCorElementType();
         if (CorTypeInfo::IsObjRef(ty))
         {
@@ -14472,12 +14481,12 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     }
 
 #ifdef TARGET_X86
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+
     if (msig.HasGenericContextArg())
     {
         sigBuilder.AppendElementType(ELEMENT_TYPE_I);
     }
-
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
 #endif
 
     return AllocateSignature(alloc, sigBuilder, pamTracker);
@@ -14548,14 +14557,15 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     }
 
 #ifdef TARGET_X86
+    // Continuation
+    pCode->EmitLDARG(0);
+
     if (msig.HasGenericContextArg())
     {
         pCode->EmitLDC(0);
         numArgs++;
     }
 
-    // Continuation
-    pCode->EmitLDARG(0);
     numArgs++;
 #endif
 
@@ -14827,13 +14837,6 @@ InfoAccessType CEEInfo::emptyStringLiteral(void ** ppValue)
 
 CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
                                                          bool* pIsSpeculative)
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called on derived class.
-}
-
-void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
-                             void **ppIndirection)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

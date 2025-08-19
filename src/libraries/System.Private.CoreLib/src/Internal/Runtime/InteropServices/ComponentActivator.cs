@@ -353,7 +353,7 @@ namespace Internal.Runtime.InteropServices
             }
             else
             {
-                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName)!;
+                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName);
 
 #pragma warning disable CA1416 // This call site is reachable on all platforms.
                 functionPtr = Marshal.GetFunctionPointerForDelegate(d);
