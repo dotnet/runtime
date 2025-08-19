@@ -17,7 +17,7 @@ internal static partial class Interop
         /// If it has the wrong encoding, or if the interior pointer isn't being shared for some reason, returns NULL
         /// </summary>
         [LibraryImport(Libraries.CoreFoundationLibrary)]
-        private static partial IntPtr CFStringGetCStringPtr(
+        private static unsafe partial byte* CFStringGetCStringPtr(
             SafeCFStringHandle cfString,
             CFStringBuiltInEncodings encoding);
 
@@ -37,13 +37,13 @@ internal static partial class Interop
             // If the string is already stored internally as UTF-8 we can (usually)
             // get the raw pointer to the data blob, then we can Marshal in the string
             // via pointer semantics, avoiding a copy.
-            IntPtr interiorPointer = CFStringGetCStringPtr(
+            byte* interiorPointer = CFStringGetCStringPtr(
                 cfString,
                 CFStringBuiltInEncodings.kCFStringEncodingUTF8);
 
-            if (interiorPointer != IntPtr.Zero)
+            if (interiorPointer != null)
             {
-                return Utf8StringMarshaller.ConvertToManaged((byte*)interiorPointer)!;
+                return Utf8StringMarshaller.ConvertToManaged(interiorPointer)!;
             }
 
             SafeCFDataHandle cfData = CFStringCreateExternalRepresentation(

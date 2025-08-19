@@ -67,7 +67,7 @@ internal static partial class Interop
         {
             public int ErrorCode;
             public int ErrorDomain;
-            public IntPtr ErrorMessage; // C string of NULL
+            public byte* ErrorMessage; // C string of NULL
         }
 
         internal static Exception CreateExceptionForNetworkFrameworkError(in NetworkFrameworkError error)
@@ -75,7 +75,7 @@ internal static partial class Interop
             string? message = null;
             NetworkFrameworkErrorDomain domain = (NetworkFrameworkErrorDomain)error.ErrorDomain;
 
-            if (error.ErrorMessage != IntPtr.Zero)
+            if (error.ErrorMessage != null)
             {
                 message = Utf8StringMarshaller.ConvertToManaged(error.ErrorMessage);
             }

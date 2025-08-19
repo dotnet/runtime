@@ -14,14 +14,14 @@ internal static partial class Interop
         internal struct GssBuffer : IDisposable
         {
             internal ulong _length;
-            internal IntPtr _data;
+            internal byte* _data;
 
             internal int Copy(byte[] destination, int offset)
             {
                 Debug.Assert(destination != null, "target destination cannot be null");
                 Debug.Assert((offset >= 0 && offset < destination.Length) || destination.Length == 0, $"invalid offset {offset}");
 
-                if (_data == IntPtr.Zero || _length == 0)
+                if (_data == null || _length == 0)
                 {
                     return 0;
                 }
@@ -40,7 +40,7 @@ internal static partial class Interop
 
             internal byte[] ToByteArray()
             {
-                if (_data == IntPtr.Zero || _length == 0)
+                if (_data == null || _length == 0)
                 {
                     return Array.Empty<byte>();
                 }
@@ -51,16 +51,16 @@ internal static partial class Interop
                 return destination;
             }
 
-            internal unsafe ReadOnlySpan<byte> Span => (_data != IntPtr.Zero && _length != 0) ?
-                new ReadOnlySpan<byte>(_data.ToPointer(), checked((int)_length)) :
+            internal unsafe ReadOnlySpan<byte> Span => (_data != null && _length != 0) ?
+                new ReadOnlySpan<byte>(_data, checked((int)_length)) :
                 default;
 
             public void Dispose()
             {
-                if (_data != IntPtr.Zero)
+                if (_data != null)
                 {
                     Interop.NetSecurityNative.ReleaseGssBuffer(_data, _length);
-                    _data = IntPtr.Zero;
+                    _data = null;
                 }
 
                 _length = 0;

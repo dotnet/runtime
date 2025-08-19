@@ -70,7 +70,7 @@ internal static partial class Interop
         internal static unsafe string? GetX509RootStorePath(out bool defaultPath)
         {
             byte usedDefault;
-            IntPtr ptr = GetX509RootStorePath_private(&usedDefault);
+            byte* ptr = GetX509RootStorePath_private(&usedDefault);
             defaultPath = (usedDefault != 0);
             return Utf8StringMarshaller.ConvertToManaged(ptr);
         }
@@ -82,10 +82,10 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
-        private static unsafe partial IntPtr GetX509RootStorePath_private(byte* defaultPath);
+        private static unsafe partial byte* GetX509RootStorePath_private(byte* defaultPath);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
-        private static unsafe partial IntPtr GetX509RootStoreFile_private(byte* defaultPath);
+        private static unsafe partial byte* GetX509RootStoreFile_private(byte* defaultPath);
 
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreSetVerifyTime(
