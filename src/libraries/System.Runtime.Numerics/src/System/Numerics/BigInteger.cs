@@ -3949,7 +3949,7 @@ namespace System.Numerics
 
             if (min > max)
             {
-                ThrowMinMaxException(min, max);
+                ArgumentOutOfRangeException.ThrowLess(max, min, nameof(max));
             }
 
             if (value < min)
@@ -3962,12 +3962,6 @@ namespace System.Numerics
             }
 
             return value;
-
-            [DoesNotReturn]
-            static void ThrowMinMaxException<T>(T min, T max)
-            {
-                throw new ArgumentOutOfRangeException(nameof(max), SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(max), max, $"{nameof(min)} = {min}"));
-            }
         }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
