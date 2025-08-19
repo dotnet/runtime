@@ -597,8 +597,8 @@ namespace ILLink.Shared.TrimAnalysis
                 var annotation = parameterAnnotations[parameterIndex];
                 if (annotation != DynamicallyAccessedMemberTypes.None)
                     LogValidationWarning(
-                        ov.Override.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider()!,
-                        ov.Base.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider()!,
+                        ov.Override.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider(),
+                        ov.Base.GetParameter((ParameterIndex)parameterIndex).GetCustomAttributeProvider(),
                         ov);
             }
         }

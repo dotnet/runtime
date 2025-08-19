@@ -33,5 +33,6 @@ namespace Internal.Reflection.Core
         public abstract bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception);
 
         public abstract IList<AssemblyBindResult> GetLoadedAssemblies();
+        public abstract int GetLoadedAssembliesCount();
     }
 }

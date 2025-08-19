@@ -352,13 +352,13 @@ namespace ILLink.Shared.DataFlow
                         // Catch/filter regions get the initial state from the exception state of the corresponding try region.
                         // This is already accounted for in the non-exceptional control flow state of the catch block above,
                         // so we can just use the state we already computed, for both try and catch regions.
-                        exceptionState!.Value = lattice.Meet(exceptionState!.Value, currentState);
+                        exceptionState!.Value = lattice.Meet(exceptionState.Value, currentState);
 
                         if (isFinallyBlock)
                         {
                             // Exceptions could also be thrown from inside a finally that was entered due to a previous exception.
                             // So the exception state must also include values from the exceptional finally state (computed above).
-                            exceptionState!.Value = lattice.Meet(exceptionState!.Value, exceptionFinallyState!.Value);
+                            exceptionState.Value = lattice.Meet(exceptionState.Value, exceptionFinallyState!.Value);
                         }
                     }
 
@@ -412,7 +412,7 @@ namespace ILLink.Shared.DataFlow
                             // Filters can't contain try/catch/filters.
                             Debug.Assert(enclosingTryOrCatch.Kind != RegionKind.Filter);
                             Box<TValue> tryOrCatchExceptionState = cfgState.GetExceptionState(enclosingTryOrCatch);
-                            tryOrCatchExceptionState.Value = lattice.Meet(tryOrCatchExceptionState!.Value, exceptionState!.Value);
+                            tryOrCatchExceptionState.Value = lattice.Meet(tryOrCatchExceptionState.Value, exceptionState!.Value);
                             tryOrCatchOrFilterRegion = enclosingTryOrCatch;
                         }
                     }
