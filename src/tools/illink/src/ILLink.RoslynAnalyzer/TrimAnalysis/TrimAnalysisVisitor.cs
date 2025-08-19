@@ -241,21 +241,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         {
             var field = fieldReference.Field;
             ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
-            if (field.AssociatedSymbol is IPropertySymbol property)
-            {
-                // The field is a backing field for a property
-                TrimAnalysisPatterns.Add(
-                    new TrimAnalysisBackingFieldAccessPattern(property, fieldReference, OwningSymbol, featureContext)
-                );
-                return new FieldValue(property);
-            }
-            else
-            {
-                TrimAnalysisPatterns.Add(
-                    new TrimAnalysisFieldAccessPattern(field, fieldReference, OwningSymbol, featureContext)
-                );
-                return new FieldValue(field);
-            }
+            TrimAnalysisPatterns.Add(
+                new TrimAnalysisFieldAccessPattern(field, fieldReference, OwningSymbol, featureContext)
+            );
+
+            return new FieldValue(field);
         }
 
         public override MultiValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in FeatureContext featureContext)
