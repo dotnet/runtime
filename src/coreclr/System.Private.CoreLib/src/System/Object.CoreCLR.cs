@@ -43,8 +43,5 @@ namespace System
 
             return clone;
         }
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
-        internal static extern void CallFinalize(object o);
     }
 }

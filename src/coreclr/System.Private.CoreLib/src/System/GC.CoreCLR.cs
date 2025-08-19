@@ -309,6 +309,9 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
         private static unsafe partial void GetNextFinalizeableObject(ObjectHandleOnStack target);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
+        private static extern void CallFinalize(object o);
+
         // Do not inline this method -- if this is ever called from a managed method,
         // we do not want to accidentally have any temps in the caller which contain
         // objects that came off of the finalizer queue.  If such temps were reported across the duration of the
@@ -331,7 +334,7 @@ namespace System
                 try
                 {
                     // Call the finalizer on the current target object.
-                    object.CallFinalize(target);
+                    CallFinalize(target);
                 }
                 catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {
