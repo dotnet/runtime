@@ -15,7 +15,7 @@ namespace System
     {
         private static Dictionary<string, string>? s_environment;
 
-        private static string? GetEnvironmentVariableCore(string variable)
+        private static unsafe string? GetEnvironmentVariableCore(string variable)
         {
             Debug.Assert(variable != null);
 
