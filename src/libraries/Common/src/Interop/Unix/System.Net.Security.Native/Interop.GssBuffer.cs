@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class NetSecurityNative
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal struct GssBuffer : IDisposable
+        internal unsafe struct GssBuffer : IDisposable
         {
             internal ulong _length;
             internal byte* _data;
@@ -51,7 +51,7 @@ internal static partial class Interop
                 return destination;
             }
 
-            internal unsafe ReadOnlySpan<byte> Span => (_data != null && _length != 0) ?
+            internal ReadOnlySpan<byte> Span => (_data != null && _length != 0) ?
                 new ReadOnlySpan<byte>(_data, checked((int)_length)) :
                 default;
 
@@ -67,7 +67,7 @@ internal static partial class Interop
             }
 
 #if DEBUG
-            static unsafe GssBuffer()
+            static GssBuffer()
             {
                 // Verify managed size on both 32-bit and 64-bit matches the PAL_GssBuffer
                 // native struct size, which is also padded on 32-bit.

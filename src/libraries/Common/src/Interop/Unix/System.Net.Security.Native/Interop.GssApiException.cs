@@ -70,7 +70,7 @@ internal static partial class Interop
                 return errorMessage;
             }
 
-            private static string? GetGssApiDisplayStatus(Status status, bool isMinor)
+            private static unsafe string? GetGssApiDisplayStatus(Status status, bool isMinor)
             {
                 if (!System.Net.NegotiateAuthenticationPal.HasSystemNetSecurityNative)
                 {

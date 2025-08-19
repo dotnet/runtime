@@ -171,7 +171,7 @@ internal static partial class Interop
         internal static partial bool SslGetCurrentCipherId(SafeSslHandle ssl, out int cipherId);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
-        private static partial IntPtr GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
+        private static unsafe partial byte* GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -328,9 +328,9 @@ internal static partial class Interop
             return true;
         }
 
-        internal static string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
+        internal static unsafe string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
         {
-            string? ret = Utf8StringMarshaller.ConvertToManaged((byte*)GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
+            string? ret = Utf8StringMarshaller.ConvertToManaged(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
             isTls12OrLower = isTls12OrLowerInt != 0;
             return ret;
         }

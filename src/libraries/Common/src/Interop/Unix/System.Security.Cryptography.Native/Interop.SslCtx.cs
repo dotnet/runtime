@@ -166,7 +166,7 @@ namespace Microsoft.Win32.SafeHandles
             Interop.Ssl.SslCtxSetData(this, (IntPtr)_gch);
         }
 
-        internal bool TryAddSession(IntPtr namePtr, IntPtr session)
+        internal unsafe bool TryAddSession(IntPtr namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null && session != IntPtr.Zero);
 
@@ -216,7 +216,7 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr, IntPtr session)
+        internal unsafe void RemoveSession(IntPtr namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null);
 

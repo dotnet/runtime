@@ -426,7 +426,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
             // IDN mapping is handled by MsQuic.
             string sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
 
-            IntPtr targetHostPtr = Utf8StringMarshaller.ConvertToUnmanagedIntPtr(sni);
+            byte* targetHostPtr;
+            unsafe
+            {
+                targetHostPtr = Utf8StringMarshaller.ConvertToUnmanaged(sni);
+            }
             try
             {
                 unsafe
@@ -442,7 +446,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
             finally
             {
-                Marshal.FreeCoTaskMem(targetHostPtr);
+                unsafe
+                {
+                    Utf8StringMarshaller.Free(targetHostPtr);
+                }
             }
         }
 
