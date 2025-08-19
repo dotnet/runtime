@@ -3074,7 +3074,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             }
             else if (isCalli)
             {
-                AddIns(INTOP_CALLI);
+                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
                 m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
                 m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, callIFunctionPointerVar);
             }
@@ -3091,6 +3091,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 {
                     assert(!isPInvoke && !isMarshaledPInvoke);
                     AddIns(INTOP_CALLDELEGATE);
+                }
+                else if (tailcall)
+                {
+                    assert(!isPInvoke && !isMarshaledPInvoke);
+                    AddIns(INTOP_CALL_TAIL);
                 }
                 else
                 {
@@ -3128,14 +3133,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
             calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-            AddIns(INTOP_CALLI);
+            AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
             m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
             m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, codePointerLookupResult);
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
             // Traditional virtual call. In theory we could optimize this to using the vtable
-            AddIns(INTOP_CALLVIRT);
+            AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
             m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             break;
 
@@ -3163,13 +3168,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
                 calliCookie = m_compHnd->GetCookieForInterpreterCalliSig(&callInfo.sig);
 
-                AddIns(INTOP_CALLI);
+                AddIns(tailcall ? INTOP_CALLI_TAIL : INTOP_CALLI);
                 m_pLastNewIns->data[0] = GetDataItemIndex(calliCookie);
                 m_pLastNewIns->SetSVars2(CALL_ARGS_SVAR, synthesizedLdvirtftnPtrVar);
             }
             else
             {
-                AddIns(INTOP_CALLVIRT);
+                AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
             }
             break;
