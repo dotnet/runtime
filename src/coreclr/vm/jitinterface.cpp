@@ -478,19 +478,26 @@ static void ConvToJitSig(
 
         uint32_t data;
         IfFailThrow(sig.GetCallingConvInfo(&data));
-        sigRet->callConv = (CorInfoCallConv) data;
 
 #if defined(TARGET_UNIX) || defined(TARGET_ARM)
-        if ((isCallConv(sigRet->callConv, IMAGE_CEE_CS_CALLCONV_VARARG)) ||
-            (isCallConv(sigRet->callConv, IMAGE_CEE_CS_CALLCONV_NATIVEVARARG)))
+        if ((isCallConv(data, IMAGE_CEE_CS_CALLCONV_VARARG)) ||
+            (isCallConv(data, IMAGE_CEE_CS_CALLCONV_NATIVEVARARG)))
         {
             // This signature corresponds to a method that uses varargs, which are not supported.
              COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
         }
 #endif // defined(TARGET_UNIX) || defined(TARGET_ARM)
 
+        // We have an internal calling convention for async used for signatures
+        // in IL stubs. Translate that to the flag representation in
+        // CorInfoCallConv.
+        if (isCallConv(data, IMAGE_CEE_CS_CALLCONV_ASYNC))
+            sigRet->callConv = (CorInfoCallConv)(CORINFO_CALLCONV_DEFAULT | CORINFO_CALLCONV_ASYNCCALL | (data & ~IMAGE_CEE_CS_CALLCONV_MASK));
+        else
+            sigRet->callConv = (CorInfoCallConv) data;
+
         // Skip number of type arguments
-        if (sigRet->callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
           IfFailThrow(sig.GetData(NULL));
 
         uint32_t numArgs;
@@ -1796,7 +1803,6 @@ CEEInfo::findSig(
     if (IsDynamicScope(scopeHnd))
     {
         sig = GetDynamicResolver(scopeHnd)->ResolveSignature(sigTok);
-        sigTok = mdTokenNil;
     }
     else
     {
@@ -6138,6 +6144,7 @@ CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 // registers a vararg sig & returns a class-specific cookie for it.
 
 CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
+                                                 CORINFO_METHOD_HANDLE methHnd,
                                                  void **ppIndirection)
 {
     CONTRACTL {
@@ -6164,12 +6171,6 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
     EE_TO_JIT_TRANSITION();
 
     return result;
-}
-
-bool CEEInfo::canGetVarArgsHandle(CORINFO_SIG_INFO *sig)
-{
-    LIMITED_METHOD_CONTRACT;
-    return true;
 }
 
 /***********************************************************************/
@@ -7680,10 +7681,11 @@ CEEInfo::getMethodInfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
-    if (ftn->HasILHeader())
+    COR_ILMETHOD* pILHeader;
+    if (ftn->MayHaveILHeader() && (pILHeader = ftn->GetILHeader()) != NULL)
     {
         // Get the IL header and set it.
-        COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, ftn->GetMDImport(), NULL);
         getMethodInfoWorker(ftn, &header, methInfo, context);
         result = true;
     }
@@ -7861,9 +7863,10 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
         if (pRootModule->IsRuntimeWrapExceptions() != pCalleeModule->IsRuntimeWrapExceptions())
         {
-            if (pCallee->HasILHeader())
+            COR_ILMETHOD* pILHeader;
+            if (pCallee->MayHaveILHeader() && (pILHeader = pCallee->GetILHeader()) != NULL)
             {
-                COR_ILMETHOD_DECODER header(pCallee->GetILHeader(), pCallee->GetMDImport(), NULL);
+                COR_ILMETHOD_DECODER header(pILHeader, pCallee->GetMDImport(), NULL);
                 if (header.EHCount() > 0)
                 {
                     result = INLINE_FAIL;
@@ -10023,15 +10026,8 @@ LPVOID CEEInfo::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
 {
     WRAPPER_NO_CONTRACT;
 
-    return getVarArgsHandle(szMetaSig, ppIndirection);
+    return getVarArgsHandle(szMetaSig, NULL, ppIndirection);
 }
-
-bool CEEInfo::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-{
-    LIMITED_METHOD_CONTRACT;
-    return true;
-}
-
 
 // Check any constraints on method type arguments
 bool CEEInfo::satisfiesMethodConstraints(
@@ -11926,6 +11922,19 @@ void CEEJitInfo::recordRelocation(void * location,
 
 #endif // TARGET_LOONGARCH64
 
+
+#ifdef TARGET_RISCV64
+    case IMAGE_REL_RISCV64_PC:
+        {
+            _ASSERTE(addlDelta == 0);
+
+            INT64 offset = (INT64)target - (INT64)location;
+            PutRiscV64AuipcItype((UINT32 *)locationRW, offset);
+        }
+        break;
+
+#endif // TARGET_RISCV64
+
     default:
         _ASSERTE(!"Unknown reloc type");
         break;
@@ -12771,6 +12780,8 @@ void CEECodeGenInfo::getEHinfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* pMD = GetMethod(ftn);
+
+    COR_ILMETHOD* pILHeader;
     if (IsDynamicMethodHandle(ftn))
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
@@ -12779,9 +12790,9 @@ void CEECodeGenInfo::getEHinfo(
     {
         getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
     }
-    else if (pMD->HasILHeader())
+    else if (pMD->MayHaveILHeader() && (pILHeader = pMD->GetILHeader()) != NULL)
     {
-        COR_ILMETHOD_DECODER header(pMD->GetILHeader(), pMD->GetMDImport(), NULL);
+        COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
         getEHinfoHelper(ftn, EHnumber, clause, &header);
     }
     else if (pMD->IsIL())

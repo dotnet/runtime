@@ -161,9 +161,20 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
+
+    public override bool TryRead<T>(ulong address, out T value)
+    {
+        value = default;
+        if (!DefaultTryRead(address, out T readValue))
+            return false;
+
+        value = readValue;
+        return true;
+    }
+
     public override bool Write<T>(ulong address, T value) => throw new NotImplementedException();
 
-#region subclass reader helpers
+    #region subclass reader helpers
 
     /// <summary>
     /// Basic utility to read a value from memory, all the DefaultReadXXX methods call this.
@@ -224,7 +235,7 @@ internal class TestPlaceholderTarget : Target
         return value;
     }
 
-    protected TargetPointer DefaultReadPointer (ulong address)
+    protected TargetPointer DefaultReadPointer(ulong address)
     {
         if (!DefaultTryReadPointer(address, out TargetPointer pointer))
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
@@ -273,7 +284,7 @@ internal class TestPlaceholderTarget : Target
     {
         return new TargetCodePointer(DefaultReadPointer(address));
     }
-#endregion subclass reader helpers
+    #endregion subclass reader helpers
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
 
@@ -311,7 +322,8 @@ internal class TestPlaceholderTarget : Target
                 return constructed;
 
             bool found = TryGet(address, out result);
-            if (!found) {
+            if (!found)
+            {
                 throw new InvalidOperationException($"Failed to add {typeof(T)} at 0x{address:x8}.");
             }
             return result!;

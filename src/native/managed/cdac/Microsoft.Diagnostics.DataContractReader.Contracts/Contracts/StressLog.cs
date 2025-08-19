@@ -112,13 +112,22 @@ file sealed class StressLogTraversal(Target target, IStressMessageReader message
             return new TargetPointer(stressLog.ModuleOffset.Value + formatOffset);
         }
 
-        TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
+        TargetPointer? moduleTable;
+        if (!target.TryReadGlobalPointer(Constants.Globals.StressLogModuleTable, out moduleTable))
+        {
+            if (!target.TryReadGlobalPointer(Constants.Globals.StressLog, out TargetPointer? pStressLog))
+            {
+                throw new InvalidOperationException("StressLogModuleTable is not set and StressLog is not available, but StressLogHasModuleTable is set to 1.");
+            }
+            Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(pStressLog.Value);
+            moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
+        }
         uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
         uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
         ulong cumulativeOffset = 0;
         for (uint i = 0; i < maxModules; ++i)
         {
-            Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable + i * moduleEntrySize);
+            Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable.Value + i * moduleEntrySize);
             ulong relativeOffset = formatOffset - cumulativeOffset;
             if (relativeOffset < module.Size.Value)
             {
