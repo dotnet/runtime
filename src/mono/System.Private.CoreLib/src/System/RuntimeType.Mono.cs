@@ -679,17 +679,21 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<Type> GetNestedTypeCandidates(string? name, BindingFlags bindingAttr, bool allowPrefixLookup)
+        private ListBuilder<Type> GetNestedTypeCandidates(string? fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
+            bool prefixLookup;
             bindingAttr &= ~BindingFlags.Static;
-            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out _, out MemberListType listType);
+            string? name, ns;
+            MemberListType listType;
+            SplitName(fullname, out name, out ns);
+            FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out _, out listType);
 
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             ListBuilder<Type> candidates = new ListBuilder<Type>(cache.Length);
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeType nestedClass = cache[i];
-                if (FilterApplyType(nestedClass, bindingAttr, name, prefixLookup, null))
+                if (FilterApplyType(nestedClass, bindingAttr, name, prefixLookup, ns))
                 {
                     candidates.Add(nestedClass);
                 }
@@ -1000,37 +1004,31 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        internal Type? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr, bool ignoreAmbiguousMatch)
+        public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(fullname);
 
             bindingAttr &= ~BindingFlags.Static;
-            FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
+            string? name, ns;
+            MemberListType listType;
+            SplitName(fullname, out name, out ns);
+            FilterHelper(bindingAttr, ref name, out _, out listType);
             RuntimeType[] cache = GetNestedTypes_internal(name, bindingAttr, listType);
             RuntimeType? match = null;
 
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeType nestedType = cache[i];
-                if (FilterApplyType(nestedType, bindingAttr, name, false, null))
+                if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
                     if (match != null)
                         throw ThrowHelper.GetAmbiguousMatchException(match);
 
                     match = nestedType;
-
-                    if (ignoreAmbiguousMatch)
-                        break;
                 }
             }
 
             return match;
-        }
-
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
-        {
-            return GetNestedType(name, bindingAttr, ignoreAmbiguousMatch: false);
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
@@ -1320,6 +1318,8 @@ namespace System
             CacheFlag(TypeCacheEntries.IsValueType, res);
             return res;
         }
+
+        internal bool IsActualInterface => IsInterface;
 
         // Returns true for actual value types only, ignoring generic parameter constraints.
         internal bool IsActualValueType => RuntimeTypeHandle.IsValueType(this);
