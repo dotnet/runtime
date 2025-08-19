@@ -133,8 +133,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public abstract TValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in TContext context);
 
-        public abstract TValue GetBackingFieldTargetValue(IFieldReferenceOperation backingFieldReference, in TContext context);
-
         public abstract TValue GetParameterTargetValue(IParameterSymbol parameter);
 
         public abstract void HandleAssignment(

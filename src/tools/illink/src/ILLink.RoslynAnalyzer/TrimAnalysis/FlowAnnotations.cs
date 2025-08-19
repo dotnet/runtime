@@ -121,7 +121,8 @@ namespace ILLink.Shared.TrimAnalysis
             if (field.AssociatedSymbol is IPropertySymbol property)
             {
                 // If the field is a backing field for a property, the field assumes the annotation of the property it is associated with.
-                // The property annotation takes precedence over the field annotation.
+                // There should be no scenario where a field with an associated property has any other annotation
+                Debug.Assert(field.GetDynamicallyAccessedMemberTypes() is DynamicallyAccessedMemberTypes.None);
                 return GetBackingFieldAnnotation(property);
             }
 

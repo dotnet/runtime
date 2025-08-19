@@ -227,38 +227,22 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         public override MultiValue GetFieldTargetValue(IFieldReferenceOperation fieldReference, in FeatureContext featureContext)
         {
             var field = fieldReference.Field;
+            ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
             if (field.AssociatedSymbol is IPropertySymbol property)
             {
-                // If the field is a backing field for a property, we need to track the property as well.
+                // The field is a backing field for a property
                 TrimAnalysisPatterns.Add(
                     new TrimAnalysisBackingFieldAccessPattern(property, fieldReference, OwningSymbol, featureContext)
                 );
-                ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
-                return GetBackingFieldTargetValue(fieldReference, featureContext);
+                return new FieldValue(property);
             }
             else
             {
                 TrimAnalysisPatterns.Add(
                     new TrimAnalysisFieldAccessPattern(field, fieldReference, OwningSymbol, featureContext)
                 );
-                ProcessGenericArgumentDataFlow(field, fieldReference, featureContext);
                 return new FieldValue(field);
             }
-        }
-
-        public override MultiValue GetBackingFieldTargetValue(IFieldReferenceOperation backingFieldReference, in FeatureContext featureContext)
-        {
-            var property = backingFieldReference.Field.AssociatedSymbol as IPropertySymbol;
-            if (property == null)
-                return UnknownValue.Instance;
-
-            TrimAnalysisPatterns.Add(
-                new TrimAnalysisBackingFieldAccessPattern(property, backingFieldReference, OwningSymbol, featureContext)
-            );
-
-            ProcessGenericArgumentDataFlow(property, backingFieldReference, featureContext);
-
-            return new FieldValue(property);
         }
 
         public override MultiValue GetBackingFieldTargetValue(IPropertyReferenceOperation propertyReference, in FeatureContext featureContext)
