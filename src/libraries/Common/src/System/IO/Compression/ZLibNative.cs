@@ -318,7 +318,7 @@ namespace System.IO.Compression
             }
 
             // This can work even after XxflateEnd().
-            public unsafe string GetErrorMessage() => _zStream.msg != null ? Utf8StringMarshaller.ConvertToManaged(_zStream.msg)! : string.Empty;
+            public unsafe string GetErrorMessage() => Utf8StringMarshaller.ConvertToManaged(_zStream.msg) ?? "";
         }
 
         public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, CompressionLevel level,
