@@ -33,7 +33,7 @@ public readonly struct OffsetMapping
 public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
-    IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset) => throw new NotImplementedException();
+    IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
 }
 
 public readonly struct DebugInfo : IDebugInfo

@@ -24,8 +24,10 @@ public readonly struct OffsetMapping
 ```
 
 ```csharp
-// Given a code pointer, return the associated native/IL offset mapping
-IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset);
+// Given a code pointer, return the associated native/IL offset mapping and codeOffset.
+// If preferUninstrumented, will always read the uninstrumented bounds.
+// Otherwise will read the instrumented bounds and fallback to the uninstrumented bounds.
+IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset);
 ```
 
 ## Version 1
@@ -92,7 +94,7 @@ The bit-packed data is read byte by byte, collecting bits until enough are avail
 ### Implementation
 
 ``` csharp
-IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset)
+IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
 {
     // Get the method's DebugInfo
     if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
@@ -102,10 +104,10 @@ IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode
     TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
     codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
 
-    return RestoreBoundaries(debugInfo, hasFlagByte);
+    return RestoreBoundaries(debugInfo, hasFlagByte, preferUninstrumented);
 }
 
-private IEnumerable<OffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bool hasFlagByte)
+private IEnumerable<OffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bool hasFlagByte, bool preferUninstrumented)
 {
     if (hasFlagByte)
     {
@@ -126,8 +128,6 @@ private IEnumerable<OffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bo
         }
     }
 
-    }
-
     NativeReader nibbleNativeReader = new(new TargetStream(_target, debugInfo, 24 /*maximum size of 4 32bit ints compressed*/), _target.IsLittleEndian);
     NibbleReader nibbleReader = new(nibbleNativeReader, 0);
 
@@ -143,6 +143,13 @@ private IEnumerable<OffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bo
 
     TargetPointer addrBounds = debugInfo + (uint)nibbleReader.GetNextByteOffset();
     // TargetPointer addrVars = addrBounds + cbBounds + cbUninstrumentedBounds;
+
+    if (preferUninstrumented && cbUninstrumentedBounds != 0)
+    {
+        // If we have uninstrumented bounds, we will use them instead of the regular bounds.
+        addrBounds += cbBounds;
+        cbBounds = cbUninstrumentedBounds;
+    }
 
     if (cbBounds > 0)
     {

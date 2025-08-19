@@ -26,7 +26,7 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
-    IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, out uint codeOffset)
+    IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
     {
         // Get the method's DebugInfo
         if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
@@ -36,10 +36,10 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
         codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
 
-        return RestoreBoundaries(debugInfo, hasFlagByte);
+        return RestoreBoundaries(debugInfo, hasFlagByte, preferUninstrumented);
     }
 
-    private IEnumerable<OffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bool hasFlagByte)
+    private IEnumerable<OffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bool hasFlagByte, bool preferUninstrumented)
     {
         if (hasFlagByte)
         {
@@ -72,17 +72,24 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         NibbleReader nibbleReader = new(nibbleNativeReader, 0);
 
         uint cbBounds = nibbleReader.ReadUInt();
-        // uint cbUninstrumentedBounds = 0;
+        uint cbUninstrumentedBounds = 0;
         if (cbBounds == DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS)
         {
             // This means we have instrumented bounds.
             cbBounds = nibbleReader.ReadUInt();
-            uint _1 /*cbUninstrumentedBounds*/ = nibbleReader.ReadUInt();
+            cbUninstrumentedBounds = nibbleReader.ReadUInt();
         }
-        uint _2 /*cbVars*/ = nibbleReader.ReadUInt();
+        uint _ /*cbVars*/ = nibbleReader.ReadUInt();
 
         TargetPointer addrBounds = debugInfo + (uint)nibbleReader.GetNextByteOffset();
         // TargetPointer addrVars = addrBounds + cbBounds + cbUninstrumentedBounds;
+
+        if (preferUninstrumented && cbUninstrumentedBounds != 0)
+        {
+            // If we have uninstrumented bounds, we will use them instead of the regular bounds.
+            addrBounds += cbBounds;
+            cbBounds = cbUninstrumentedBounds;
+        }
 
         if (cbBounds > 0)
         {
