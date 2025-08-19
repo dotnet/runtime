@@ -63,7 +63,7 @@ public abstract class Target
     /// Read a code pointer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>Pointer read from the target</returns>}
+    /// <returns>Pointer read from the target</returns>
     /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract TargetCodePointer ReadCodePointer(ulong address);
 
@@ -94,7 +94,7 @@ public abstract class Target
     /// Read a null-terminated UTF-16 string from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>String read from the target</returns>}
+    /// <returns>String read from the target</returns>
     /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract string ReadUtf16String(ulong address);
 
