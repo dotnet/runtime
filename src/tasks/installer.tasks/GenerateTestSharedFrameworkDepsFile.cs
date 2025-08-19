@@ -50,8 +50,8 @@ namespace Microsoft.DotNet.Build.Tasks
                 ".xml"
             };
 
-            List<RuntimeFile> runtimeFiles = new List<RuntimeFile>();
-            List<RuntimeFile> nativeFiles = new List<RuntimeFile>();
+            List<RuntimeFile> runtimeFiles = [];
+            List<RuntimeFile> nativeFiles = [];
 
             foreach (string filePath in Directory.EnumerateFiles(SharedFrameworkDirectory))
             {
@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.Build.Tasks
                 string fileName = Path.GetFileName(filePath);
                 string fileVersion = FileUtilities.GetFileVersion(filePath)?.ToString() ?? string.Empty;
                 Version assemblyVersion = FileUtilities.GetAssemblyName(filePath)?.Version;
-                if (assemblyVersion == null)
+                if (assemblyVersion is null)
                 {
                     RuntimeFile nativeFile = new RuntimeFile(fileName, null, fileVersion);
                     nativeFiles.Add(nativeFile);
