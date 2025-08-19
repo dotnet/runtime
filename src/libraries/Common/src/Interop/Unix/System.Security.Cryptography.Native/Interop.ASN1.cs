@@ -94,7 +94,7 @@ internal static partial class Interop
                     throw new CryptographicException();
                 }
 
-                return System.Text.Encoding.UTF8.GetString(buf, bytesNeeded);
+                return Encoding.UTF8.GetString(buf, bytesNeeded);
             }
         }
     }
