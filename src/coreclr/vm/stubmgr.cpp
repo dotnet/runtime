@@ -1013,7 +1013,7 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
         switch (pPrecode->GetType())
         {
             case PRECODE_STUB:
-            case PRECODE_NDIRECT_IMPORT:
+            case PRECODE_PINVOKE_IMPORT:
             case PRECODE_UMENTRY_THUNK:
 #ifdef HAS_THISPTR_RETBUF_PRECODE
             case PRECODE_THISPTR_RETBUF:
@@ -1073,22 +1073,22 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
         case PRECODE_STUB:
             break;
 
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-        case PRECODE_NDIRECT_IMPORT:
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
+        case PRECODE_PINVOKE_IMPORT:
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_ARM64) && defined(__APPLE__)
-            // On ARM64 Mac, we cannot put a breakpoint inside of NDirectImportThunk
+            // On ARM64 Mac, we cannot put a breakpoint inside of PInvokeImportThunk
             LOG((LF_CORDB, LL_INFO10000, "PSM::DoTraceStub: Skipping on arm64-macOS\n"));
             return FALSE;
 #else
-            trace->InitForUnmanaged(GetEEFuncEntryPoint(NDirectImportThunk));
+            trace->InitForUnmanaged(GetEEFuncEntryPoint(PInvokeImportThunk));
 #endif //defined(TARGET_ARM64) && defined(__APPLE__)
 #else
             trace->InitForOther((PCODE)NULL);
 #endif
-            LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - NDirect import");
+            LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - PInvoke import");
             return TRUE;
-#endif // HAS_NDIRECT_IMPORT_PRECODE
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
         case PRECODE_FIXUP:
@@ -1796,11 +1796,11 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         // This is either direct forward P/Invoke or a CLR-to-COM call, the argument is MD
         MethodDesc *pMD = (MethodDesc *)arg;
-        if (pMD->IsNDirect())
+        if (pMD->IsPInvoke())
         {
-            NDirectMethodDesc* pNMD = reinterpret_cast<NDirectMethodDesc*>(pMD);
-            _ASSERTE_IMPL(!pNMD->NDirectTargetIsImportThunk());
-            target = (PCODE)pNMD->GetNDirectTarget();
+            PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
+            _ASSERTE_IMPL(!pNMD->PInvokeTargetIsImportThunk());
+            target = (PCODE)pNMD->GetPInvokeTarget();
             LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case 0x%p\n", target));
             trace->InitForUnmanaged(target);
         }
@@ -1961,9 +1961,9 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
         return FALSE;
 #else
-        NDirectMethodDesc *pNMD = (NDirectMethodDesc *)arg;
-        _ASSERTE(pNMD->IsNDirect());
-        PCODE target = (PCODE)pNMD->GetNDirectTarget();
+        PInvokeMethodDesc *pNMD = (PInvokeMethodDesc *)arg;
+        _ASSERTE(pNMD->IsPInvoke());
+        PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n", target));
         trace->InitForUnmanaged(target);

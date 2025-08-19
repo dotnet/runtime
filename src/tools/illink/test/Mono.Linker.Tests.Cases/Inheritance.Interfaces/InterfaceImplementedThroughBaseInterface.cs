@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
     [SkipILVerify]
 
 #if IL_ASSEMBLY_AVAILABLE
-	[KeptMemberInAssembly ("library.dll", typeof(C), "IBase.M()")]
+    [KeptMemberInAssembly("library.dll", typeof(C), "IBase.M()")]
 #endif
     [KeptMember(".ctor()")]
     public class InterfaceImplementedThroughBaseInterface

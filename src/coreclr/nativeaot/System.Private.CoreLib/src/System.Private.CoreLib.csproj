@@ -113,7 +113,6 @@
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
     <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
-    <Compile Include="Internal\Runtime\IDynamicInterfaceCastableSupport.cs" />
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
@@ -160,6 +159,7 @@
     <Compile Include="System\CrashInfo.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\Java\JavaMarshal.NativeAot.cs" Condition="'$(FeatureJavaMarshal)' == 'true'" />
     <Compile Include="System\Activator.NativeAot.cs" />
     <Compile Include="System\AppContext.NativeAot.cs" />
     <Compile Include="System\ArgIterator.cs" />
@@ -186,11 +186,10 @@
     <Compile Include="System\MathF.NativeAot.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
-    <Compile Include="System\RuntimeType.cs" />
+    <Compile Include="System\RuntimeType.NativeAot.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
@@ -201,6 +200,7 @@
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />

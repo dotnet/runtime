@@ -6,15 +6,17 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.DataFlow;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [assembly: KeptAttributeAttribute(typeof(AttributeConstructorDataflow.KeepsPublicPropertiesAttribute))]
-[assembly: ExpectedWarning("IL2026", "--ClassWithKeptPublicProperties--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
+[assembly: ExpectedWarning("IL2026", "--ClassWithKeptPublicProperties--")]
 [assembly: AttributeConstructorDataflow.KeepsPublicProperties(typeof(AttributeConstructorDataflow.ClassWithKeptPublicProperties))]
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [Kept]
     [ExpectedNoWarnings]
+    [SetupIlcWholeProgramAnalysis]
     class AttributeConstructorDataflow
     {
         [KeptAttributeAttribute(typeof(KeepsPublicConstructorAttribute))]
@@ -25,11 +27,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [KeepsPublicMethods("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods, test")]
         [KeepsPublicFields(null, null)]
         [TypeArray(new Type[] { typeof(AttributeConstructorDataflow) })]
-        [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
+        [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--")]
         public static void Main()
         {
             typeof(AttributeConstructorDataflow).GetMethod("Main").GetCustomAttribute(typeof(KeepsPublicConstructorAttribute));
             typeof(AttributeConstructorDataflow).GetMethod("Main").GetCustomAttribute(typeof(KeepsPublicMethodsAttribute));
+            Assembly.GetEntryAssembly().GetCustomAttributes();
             AllOnSelf.Test();
             AnnotationOnTypeArray.Test();
         }
@@ -53,8 +56,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             [Kept]
             public KeepsPublicMethodsAttribute(
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 string type)
             {
             }
@@ -84,8 +87,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             [Kept]
             public KeepsPublicPropertiesAttribute(
-                [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+                [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
                 Type type)
             {
             }
@@ -141,8 +144,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 [Kept]
                 public KeepsAllAttribute(
-                    [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+                    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
                     Type type)
                 {
                 }
@@ -172,8 +175,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [Kept]
                 [ExpectedWarning("IL2098")]
                 public AttributeRequiresTypeArrayAttribute(
-                    [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+                    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                     Type[] types)
                 {
                     RequirePublicFields(types);
@@ -182,8 +185,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [Kept]
                 [ExpectedWarning("IL2098")]
                 static void RequirePublicFields(
-                    [KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-                    [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+                    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                     Type[] types)
                 {
                 }

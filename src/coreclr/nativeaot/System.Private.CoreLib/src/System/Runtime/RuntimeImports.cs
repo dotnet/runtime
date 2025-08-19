@@ -294,6 +294,26 @@ namespace System.Runtime
             return h;
         }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpHandleAllocCrossReference")]
+        private static extern IntPtr RhpHandleAllocCrossReference(object value, IntPtr context);
+
+        internal static IntPtr RhHandleAllocCrossReference(object value, IntPtr context)
+        {
+            IntPtr h = RhpHandleAllocCrossReference(value, context);
+            if (h == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return h;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhHandleTryGetCrossReferenceContext")]
+        internal static extern bool RhHandleTryGetCrossReferenceContext(IntPtr handle, out IntPtr context);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhIsGCBridgeActive")]
+        internal static extern bool RhIsGCBridgeActive();
+
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]
@@ -396,7 +416,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static extern unsafe string RhNewString(MethodTable* pEEType, int length);
+        internal static extern unsafe string RhNewString(MethodTable* pEEType, nint length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhUnbox")]
@@ -584,6 +604,10 @@ namespace System.Runtime
         internal static extern unsafe ulong RhCurrentOSThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetDefaultStackSize")]
+        internal static extern unsafe IntPtr RhGetDefaultStackSize();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport("*", "RhGetCurrentThunkContext")]
         internal static extern IntPtr GetCurrentInteropThunkContext();
 
@@ -648,11 +672,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhUnregisterForGCReporting")]
         internal static extern unsafe void RhUnregisterForGCReporting(GCFrameRegistration* pRegistration);
-
-#if FEATURE_PERFTRACING
-        [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void NativeRuntimeEventSource_LogExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, int hresult);
-#endif // FEATURE_PERFTRACING
 
         //
         // Interlocked helpers

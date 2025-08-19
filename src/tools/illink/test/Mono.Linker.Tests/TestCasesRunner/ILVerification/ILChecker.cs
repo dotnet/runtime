@@ -176,7 +176,7 @@ public class ILChecker
         return new ILVerifier(new[]
         {
             directory,
-            typeof (object).Assembly.Location.ToNPath ().Parent
+            typeof(object).Assembly.Location.ToNPath().Parent
         }, "System.Private.CoreLib");
     }
 

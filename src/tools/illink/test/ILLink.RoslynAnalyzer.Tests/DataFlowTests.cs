@@ -53,6 +53,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task AttributePrimaryConstructorDataflow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task AttributePropertyDataflow()
         {
             return RunTest(nameof(AttributePropertyDataflow));
@@ -84,6 +90,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task CompilerGeneratedTypes()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task CompilerGeneratedTypesNet90()
+        {
+            return RunTest();
+        }
+
+        [Fact]
+        public Task CompilerGeneratedTypesReleaseNet90()
         {
             return RunTest();
         }
@@ -281,7 +299,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             return RunTest(nameof(LocalDataFlow));
         }
-
 
         [Fact]
         public Task ExceptionalDataFlow()
