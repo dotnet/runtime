@@ -187,6 +187,8 @@ public:
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
 
+    static FCDECL0(Object*,  GetNextFinalizableObject);
+
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
 
@@ -211,8 +213,6 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
 extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure);
-
-extern "C" void QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
 extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
 #ifdef FEATURE_BASICFREEZE

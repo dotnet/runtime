@@ -306,8 +306,8 @@ namespace System
         //
         public static int MaxGeneration => GetMaxGeneration();
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
-        private static unsafe partial void GetNextFinalizeableObject(ObjectHandleOnStack target);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern object GetNextFinalizeableObject();
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
         private static extern void CallFinalize(object o);
@@ -324,8 +324,7 @@ namespace System
             // Drain the queue of finalizable objects.
             while (true)
             {
-                object? target = null;
-                GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                object? target = GetNextFinalizeableObject();
                 if (target == null)
                     return finalizerCount;
 
