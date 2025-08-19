@@ -940,20 +940,14 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static double Clamp(double value, double min, double max)
         {
-            if (min > max)
-            {
-                Math.ThrowMinMaxException(min, max);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
             return Min(Max(value, min), max);
         }
 
         /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
         public static double ClampNative(double value, double min, double max)
         {
-            if (min > max)
-            {
-                Math.ThrowMinMaxException(min, max);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
             return MinNative(MaxNative(value, min), max);
         }
 

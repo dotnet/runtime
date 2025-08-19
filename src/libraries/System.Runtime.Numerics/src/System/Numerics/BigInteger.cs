@@ -3947,10 +3947,7 @@ namespace System.Numerics
             min.AssertValid();
             max.AssertValid();
 
-            if (min > max)
-            {
-                ArgumentOutOfRangeException.ThrowLess(max, min, nameof(max));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
 
             if (value < min)
             {

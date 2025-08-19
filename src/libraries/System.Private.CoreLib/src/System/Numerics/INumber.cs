@@ -24,10 +24,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
         static virtual TSelf Clamp(TSelf value, TSelf min, TSelf max)
         {
-            if (min > max)
-            {
-                Math.ThrowMinMaxException(min, max);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(max, min, nameof(max));
 
             TSelf result = value;
 
@@ -45,10 +42,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
         static virtual TSelf ClampNative(TSelf value, TSelf min, TSelf max)
         {
-            if (min > max)
-            {
-                Math.ThrowMinMaxException(min, max);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(max, min, nameof(max));
 
             TSelf result = value;
 

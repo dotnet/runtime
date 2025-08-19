@@ -1399,10 +1399,7 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static UInt128 Clamp(UInt128 value, UInt128 min, UInt128 max)
         {
-            if (min > max)
-            {
-                Math.ThrowMinMaxException(min, max);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(max, min);
 
             if (value < min)
             {
