@@ -673,7 +673,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // This writes/reads multiple fields - can't guess which one is the backing store.
                             // Return failure.
                             FieldDesc potentialField = (FieldDesc)body.GetObject(ilReader.ReadILToken());
-                            if (found != null && found != potentialField)
+                            if (found != null && !found.Equals(potentialField))
                             {
                                 found = null;
                                 return false;

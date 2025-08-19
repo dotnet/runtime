@@ -77,7 +77,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             [Kept]
             [ExpectedWarning("IL2077", nameof(MismatchAssignedFromField), nameof(WithMethods))]
-            [UnexpectedWarning("IL2078", nameof(MismatchAssignedFromField), Tool.NativeAot, "https://github.com/dotnet/runtime/issues/118873")]
             get
             {
                 WithMethods = field;
