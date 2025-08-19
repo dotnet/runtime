@@ -3061,6 +3061,7 @@ DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
     bool sendWaitEvents =
         millis != 0 &&
         (mode & WaitMode_Alertable) != 0 &&
+        (mode & WaitMode_HasAssociatedObject) != 0 && // wait events for waits with associated objects are sent from managed code.
         ETW_TRACING_CATEGORY_ENABLED(
             MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
             TRACE_LEVEL_VERBOSE,

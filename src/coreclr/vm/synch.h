@@ -13,6 +13,7 @@ enum WaitMode
     WaitMode_None =0x0,
     WaitMode_Alertable = 0x1,         // Can be waken by APC.  May pumping message.
     WaitMode_IgnoreSyncCtx = 0x2,     // Dispatch to synchronization context if existed.
+    WaitMode_HasAssociatedObject = 0x4, // Has an associated managed object with this wait.
 };
 
 class CLREventBase
