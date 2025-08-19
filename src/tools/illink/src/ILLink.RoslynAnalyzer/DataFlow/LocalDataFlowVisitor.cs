@@ -890,7 +890,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 TConditionValue conditionValue = GetConditionValue(argumentOperation, state);
                 var current = state.Current;
                 ApplyCondition(
-                    !doesNotReturnIfConditionValue
+                    doesNotReturnIfConditionValue == false
                         ? conditionValue
                         : conditionValue.Negate(),
                     ref current);

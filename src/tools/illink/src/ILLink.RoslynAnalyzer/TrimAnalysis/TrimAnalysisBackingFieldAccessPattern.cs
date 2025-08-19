@@ -20,12 +20,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public TrimAnalysisBackingFieldAccessPattern(
             IPropertySymbol property,
-            IPropertyReferenceOperation propertyReferenceOperation,
+            IPropertyReferenceOperation operation,
             ISymbol owningSymbol,
             FeatureContext featureContext)
         {
             Property = property;
-            Operation = propertyReferenceOperation;
+            Operation = operation;
             OwningSymbol = owningSymbol;
             FeatureContext = featureContext;
         }
