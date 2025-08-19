@@ -209,7 +209,7 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
+        internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, byte*, byte*, GCConfigurationType, long, void> callback);
 
         internal struct GCHeapHardLimitInfo
         {
