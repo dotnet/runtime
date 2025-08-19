@@ -138,7 +138,7 @@ namespace System
                 value = null;
 
                 // Point to current entry
-                byte* entry = *(byte**)current;
+                byte* entry = *current;
 
                 // Per man page, "The last pointer in this array has the value NULL"
                 // Therefore, if entry is null then we're at the end and can bail
