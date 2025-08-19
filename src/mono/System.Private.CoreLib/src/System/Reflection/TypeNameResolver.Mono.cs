@@ -74,7 +74,15 @@ namespace System.Reflection
             {
                 if (_throwOnError)
                 {
-                    assembly = Assembly.Load(name, ref _stackMark, null);
+                    try
+                    {
+                        assembly = Assembly.Load(name, ref _stackMark, null);
+                    }
+                    catch (FileNotFoundException ex) when (string.IsNullOrEmpty(ex.Message))
+                    {
+                        string message = $"Could not resolve assembly '{name.FullName}'.";
+                        throw new FileNotFoundException(message, name.FullName, ex);
+                    }
                 }
                 else
                 {
