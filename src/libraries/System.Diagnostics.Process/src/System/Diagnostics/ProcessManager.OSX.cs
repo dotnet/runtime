@@ -49,7 +49,7 @@ namespace System.Diagnostics
             if (string.IsNullOrEmpty(processName) && info != null)
             {
                 Interop.libproc.proc_taskallinfo temp = info.Value;
-                unsafe { processName = Utf8StringMarshaller.ConvertToManaged(new IntPtr(temp.pbsd.pbi_comm)); }
+                unsafe { processName = Utf8StringMarshaller.ConvertToManaged(temp.pbsd.pbi_comm); }
             }
 
             // Fallback to empty string if the process name could not be retrieved in any way
