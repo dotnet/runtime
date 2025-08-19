@@ -912,7 +912,14 @@ extern "C" int32_t QCALLTYPE SyncTable_AssignEntry(QCall::ObjectHandleOnStack ob
     GCX_COOP();
 
     // Force creation of a SyncBlock for the object.
-    index = (int32_t)obj.Get()->GetSyncBlock()->GetSyncBlockIndex();
+    PTR_SyncBlock pSyncBlock = obj.Get()->GetSyncBlock();
+
+    // We expect this index to remain valid for this object and we're going to
+    // put data in it that makes it "precious" soon.
+    // Mark it as precious now so the sync block doesn't get cleaned up between now
+    // and when we use it by GC.
+    pSyncBlock->SetPrecious();
+    index = (int32_t)pSyncBlock->GetSyncBlockIndex();
 
     END_QCALL;
 
