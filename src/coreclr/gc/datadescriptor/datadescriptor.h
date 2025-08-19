@@ -26,16 +26,6 @@ namespace GC_NAMESPACE {
 
 }
 
-// Hack to get the address of a VOLATILE(T) variable as a constexpr.
-// Since the Volatile<T> class overrides the & operator, it is not possible to take the address of a Volatile<T> directly.
-// After c++17 this would be possible with std::addressof which is implemented using compiler support.
-#ifdef USING_VOLATILE_CLASS
-#define ADDRESS_OF_VOLATILE(var) ((var).GetPointer())
-#else // !USING_VOLATILE_CLASS
-#define ADDRESS_OF_VOLATILE(var) &(var)
-#endif // !USING_VOLATILE_CLASS
-
-
 // On non-MSVC builds explicit specializations must be declared in the namespace the template was defined.
 // Due to the gc being built into coreclr, cdac_data must be defined in the global scope.
 template<>
