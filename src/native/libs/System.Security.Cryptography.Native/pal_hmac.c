@@ -23,7 +23,7 @@ static void EnsureMacHmac(void)
     g_evpMacHmac = NULL;
 }
 
-#define HAVE_EVP_MAC g_evpMacHmac == NULL
+#define HAVE_EVP_MAC (g_evpMacHmac != NULL)
 #define ENSURE_DN_MAC_CONSISTENCY(ctx) \
     do \
     { \
