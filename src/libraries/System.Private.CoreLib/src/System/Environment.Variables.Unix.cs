@@ -91,16 +91,16 @@ namespace System
             }
         }
 
-        private static Dictionary<string, string> GetSystemEnvironmentVariables()
+        private static unsafe Dictionary<string, string> GetSystemEnvironmentVariables()
         {
             var results = new Dictionary<string, string>();
 
-            IntPtr block = Interop.Sys.GetEnviron();
-            if (block != IntPtr.Zero)
+            byte** block = Interop.Sys.GetEnviron();
+            if (block != null)
             {
                 try
                 {
-                    IntPtr blockIterator = block;
+                    byte** blockIterator = block;
 
                     // Per man page, environment variables come back as an array of pointers to strings
                     // Parse each pointer of strings individually
@@ -119,7 +119,7 @@ namespace System
                         }
 
                         // Increment to next environment variable entry
-                        blockIterator += IntPtr.Size;
+                        blockIterator++;
                     }
                 }
                 finally
@@ -131,7 +131,7 @@ namespace System
             return results;
 
             // Use a local, unsafe function since we cannot use `yield return` inside of an `unsafe` block
-            static unsafe bool ParseEntry(IntPtr current, out string? key, out string? value)
+            static unsafe bool ParseEntry(byte** current, out string? key, out string? value)
             {
                 // Setup
                 key = null;

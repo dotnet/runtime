@@ -28,7 +28,7 @@ internal static partial class Interop
             CFStringBuiltInEncodings encoding,
             byte lossByte);
 
-        internal static string CFStringToString(SafeCFStringHandle cfString)
+        internal static unsafe string CFStringToString(SafeCFStringHandle cfString)
         {
             Debug.Assert(cfString != null);
             Debug.Assert(!cfString.IsInvalid);
