@@ -52,7 +52,7 @@ namespace System.Net.NetworkInformation
             var networkInterfaceInfo = (Interop.Sys.NetworkInterfaceInfo*)networkInterfacesPtr;
             for (int i = 0; i < interfaceCount; i++, networkInterfaceInfo++)
             {
-                var name = Utf8StringMarshaller.ConvertToManaged((byte*)networkInterfaceInfo->Name);
+                var name = Utf8StringMarshaller.ConvertToManaged(networkInterfaceInfo->Name);
                 networkInterfaces[i] = new AndroidNetworkInterface(name!, networkInterfaceInfo);
             }
 

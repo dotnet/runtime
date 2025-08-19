@@ -166,16 +166,16 @@ namespace Microsoft.Win32.SafeHandles
             Interop.Ssl.SslCtxSetData(this, (IntPtr)_gch);
         }
 
-        internal unsafe bool TryAddSession(IntPtr namePtr, IntPtr session)
+        internal unsafe bool TryAddSession(byte* namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null && session != IntPtr.Zero);
 
-            if (_sslSessions == null || namePtr == IntPtr.Zero)
+            if (_sslSessions == null || namePtr == null)
             {
                 return false;
             }
 
-            string? targetName = Utf8StringMarshaller.ConvertToManaged((byte*)namePtr);
+            string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
             if (!string.IsNullOrEmpty(targetName))
@@ -216,11 +216,11 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal unsafe void RemoveSession(IntPtr namePtr, IntPtr session)
+        internal unsafe void RemoveSession(byte* namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null);
 
-            string? targetName = Utf8StringMarshaller.ConvertToManaged((byte*)namePtr);
+            string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
             if (_sslSessions != null && targetName != null)

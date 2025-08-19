@@ -57,7 +57,7 @@ internal static partial class Interop
         internal static partial bool SslSetTlsExtHostName(SafeSslHandle ssl, string host);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetServerName")]
-        internal static unsafe partial IntPtr SslGetServerName(IntPtr ssl);
+        internal static unsafe partial byte* SslGetServerName(IntPtr ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSession")]
         internal static unsafe partial int SslSetSession(SafeSslHandle ssl, IntPtr session);
@@ -214,13 +214,13 @@ internal static partial class Interop
         private static partial int Tls13SupportedImpl();
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionGetHostname")]
-        internal static partial IntPtr SessionGetHostname(IntPtr session);
+        internal static unsafe partial byte* SessionGetHostname(IntPtr session);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionFree")]
         internal static partial void SessionFree(IntPtr session);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname")]
-        internal static partial int SessionSetHostname(IntPtr session, IntPtr name);
+        internal static unsafe partial int SessionSetHostname(IntPtr session, byte* name);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionGetData")]
         internal static partial IntPtr SslSessionGetData(IntPtr session);

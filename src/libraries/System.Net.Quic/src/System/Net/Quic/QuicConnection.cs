@@ -426,14 +426,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             // IDN mapping is handled by MsQuic.
             string sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
 
-            byte* targetHostPtr;
             unsafe
             {
-                targetHostPtr = Utf8StringMarshaller.ConvertToUnmanaged(sni);
-            }
-            try
-            {
-                unsafe
+                byte* targetHostPtr = Utf8StringMarshaller.ConvertToUnmanaged(sni);
+                try
                 {
                     ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ConnectionStart(
                         _handle,
@@ -443,10 +439,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                         (ushort)port),
                         "ConnectionStart failed");
                 }
-            }
-            finally
-            {
-                unsafe
+                finally
                 {
                     Utf8StringMarshaller.Free(targetHostPtr);
                 }
