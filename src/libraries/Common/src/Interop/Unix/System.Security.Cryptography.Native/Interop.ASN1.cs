@@ -68,7 +68,7 @@ internal static partial class Interop
 
             if (bytesNeeded < StackCapacity)
             {
-                return new string((sbyte*)bufStack, 0, bytesNeeded);
+                return System.Text.Encoding.UTF8.GetString(bufStack, bytesNeeded);
             }
 
             // bytesNeeded does not count the \0 which will be written on the end (based on OpenSSL 1.0.1f),
@@ -94,7 +94,7 @@ internal static partial class Interop
                     throw new CryptographicException();
                 }
 
-                return new string((sbyte*)buf, 0, bytesNeeded);
+                return System.Text.Encoding.UTF8.GetString(buf, bytesNeeded);
             }
         }
     }
