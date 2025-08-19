@@ -158,7 +158,7 @@ namespace System
                     return true;
 
                 // The key is the bytes from start (0) until our splitpoint
-                key = System.Text.Encoding.UTF8.GetString(entry, checked((int)(splitpoint - entry)));
+                key = Encoding.UTF8.GetString(entry, checked((int)(splitpoint - entry)));
                 // The value is the rest of the bytes starting after the splitpoint
                 value = Utf8StringMarshaller.ConvertToManaged(splitpoint + 1)!;
 
