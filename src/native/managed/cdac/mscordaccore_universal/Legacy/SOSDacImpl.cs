@@ -681,7 +681,7 @@ internal sealed unsafe partial class SOSDacImpl
         {
             // API is implemented for x64 only
             if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X64)
-                throw new Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
 
@@ -1134,7 +1134,7 @@ internal sealed unsafe partial class SOSDacImpl
 
             CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
             if (handle is not CodeBlockHandle codeHandle)
-                throw new Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
 
@@ -2174,7 +2174,7 @@ internal sealed unsafe partial class SOSDacImpl
             *pNeeded = (int)MaxClrNotificationArgs;
             TargetPointer basePtr = _target.ReadGlobalPointer(Constants.Globals.ClrNotificationArguments);
             if (_target.ReadNUInt(basePtr).Value == 0)
-                throw new Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
             {
