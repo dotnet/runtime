@@ -70,7 +70,7 @@ internal static partial class Interop
             public byte* ErrorMessage; // C string of NULL
         }
 
-        internal static Exception CreateExceptionForNetworkFrameworkError(in NetworkFrameworkError error)
+        internal static unsafe Exception CreateExceptionForNetworkFrameworkError(in NetworkFrameworkError error)
         {
             string? message = null;
             NetworkFrameworkErrorDomain domain = (NetworkFrameworkErrorDomain)error.ErrorDomain;
