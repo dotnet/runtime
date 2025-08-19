@@ -403,7 +403,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// Read a pointer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>Pointer read from the target</returns>}
+    /// <returns>Pointer read from the target</returns>
     public override TargetPointer ReadPointer(ulong address)
     {
         if (!TryReadPointer(address, _config, _dataTargetDelegates, out TargetPointer pointer))
@@ -455,7 +455,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>String read from the target</returns>}
+    /// <returns>String read from the target</returns>
     public override string ReadUtf8String(ulong address)
     {
         // Read characters until we find the null terminator
@@ -480,7 +480,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// Read a null-terminated UTF-16 string from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>String read from the target</returns>}
+    /// <returns>String read from the target</returns>
     public override string ReadUtf16String(ulong address)
     {
         // Read characters until we find the null terminator
