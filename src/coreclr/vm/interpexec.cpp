@@ -2534,6 +2534,29 @@ do                                                                      \
                     break;
                 }
 
+#define EXCHANGE(type)                                                  \
+do                                                                      \
+{                                                                       \
+    type* dst = LOCAL_VAR(ip[2], type*);                               \
+    NULL_CHECK(dst);                                                    \
+    type newValue = LOCAL_VAR(ip[3], type);                             \
+    type old = InterlockedExchangeT(dst, newValue);                     \
+    LOCAL_VAR(ip[1], type) = old;                                       \
+    ip += 4;                                                            \
+} while (0)
+
+                case INTOP_EXCHANGE_I4:
+                {
+                    EXCHANGE(int32_t);
+                    break;
+                }
+
+                case INTOP_EXCHANGE_I8:
+                {
+                    EXCHANGE(int64_t);
+                    break;
+                }
+
                 case INTOP_CALL_FINALLY:
                 {
                     const int32_t* targetIp = ip + ip[1];

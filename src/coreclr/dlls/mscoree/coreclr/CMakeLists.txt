@@ -203,8 +203,10 @@ endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
-if (CLR_CMAKE_HOST_ANDROID)
-    target_link_libraries(coreclr PUBLIC log)
+if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
+    if (CLR_CMAKE_HOST_ANDROID)
+        target_link_libraries(coreclr PUBLIC log)
+    endif()
     target_link_libraries(coreclr_static
         PUBLIC
         coreclrminipal_objects

@@ -417,9 +417,10 @@ internal sealed class Xcode
             string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
             if (targetRuntime == TargetRuntime.CoreCLR)
             {
-                foreach (string lib in dylibs)
+                string[] staticLibs = Directory.GetFiles(workspace, "*.a");
+                foreach (string lib in staticLibs)
                 {
-                    toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+                    toLink += $"    \"{lib}\"{Environment.NewLine}";
                 }
             }
             else

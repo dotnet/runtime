@@ -13,8 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EnvironmentVariables Include="DOTNET_Interpreter=RunInterpreter" />
-    <EnvironmentVariables Include="DOTNET_InterpDump=RunInterpreter" />
+    <EnvironmentVariables Include="DOTNET_InterpDump=*!*" />
     <EnvironmentVariables Include="DOTNET_ReadyToRun=0" />
   </ItemGroup>
 
