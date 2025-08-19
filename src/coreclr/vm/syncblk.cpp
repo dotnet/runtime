@@ -1742,7 +1742,7 @@ OBJECTHANDLE SyncBlock::GetLock()
     {
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__CTOR);
         DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[0] = OBJECTREF_TO_ARGHOLDER(lockObj);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(lockObj);
         CALL_MANAGED_METHOD_NORET(args);
         lockHandle = GetAppDomain()->CreateHandle(lockObj);
     }
