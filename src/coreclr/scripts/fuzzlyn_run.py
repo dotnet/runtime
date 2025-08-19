@@ -34,7 +34,7 @@ parser.add_argument("-output_directory", help="Path to output directory")
 parser.add_argument("-partition", help="Partition name")
 parser.add_argument("-core_root", help="path to CORE_ROOT directory")
 parser.add_argument("-run_duration", help="Run duration in minutes")
-parser.add_argument("-runtime_async", help="Test runtime async")
+parser.add_argument("-runtime_async", action="store_true", help="Test runtime async")
 is_windows = platform.system() == "Windows"
 
 
