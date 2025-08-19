@@ -188,17 +188,6 @@ Parameters:
 --*/
 VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize);
 
-/*++
-Function:
-  InitializeFlushProcessWriteBuffers
-
-Abstract
-  This function initializes data structures needed for the FlushProcessWriteBuffers
-Return
-  TRUE if it succeeded, FALSE otherwise
---*/
-BOOL InitializeFlushProcessWriteBuffers();
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
