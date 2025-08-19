@@ -91,7 +91,7 @@
     <HelixWorkItem Include="@(Run_Partition)">
       <PartitionName>Partition%(HelixWorkItem.Index)</PartitionName>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -partition %(PartitionName)%(HelixWorkItem.ExtraCommand)</Command>
+      <Command>$(WorkItemCommand) -partition %(PartitionName) %(HelixWorkItem.ExtraCommand)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt;$(ToolName)-$(RunConfiguration)-%(PartitionName).log</DownloadFilesFromResults>
     </HelixWorkItem>
