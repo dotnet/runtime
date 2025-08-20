@@ -1094,15 +1094,20 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         TargetPointer cannonMTPTr = GetCanonicalMethodTable(typeHandle);
         TypeHandle canonMT = GetTypeHandle(cannonMTPTr);
+        if (slot >= GetNumVtableSlots(canonMT))
+            throw new ArgumentException(nameof(slot), "Slot number is greater than the number of slots");
+
         TargetPointer slotPtr = GetAddressOfSlot(canonMT, slot);
         TargetCodePointer pCode = _target.ReadCodePointer(slotPtr);
 
         if (pCode == TargetCodePointer.Null)
         {
-            while (canonMT.Address != TargetPointer.Null)
+            TargetPointer lookupMTPtr = cannonMTPTr;
+            while (lookupMTPtr != TargetPointer.Null)
             {
                 // if pCode is null, we iterate through the method descs in the MT.
-                foreach (MethodDescHandle mdh in GetIntroducedMethods(canonMT))
+                TypeHandle lookupMT = GetTypeHandle(lookupMTPtr);
+                foreach (MethodDescHandle mdh in GetIntroducedMethods(lookupMT))
                 {
                     MethodDesc md = _methodDescs[mdh.Address];
                     if (md.Slot == slot)
@@ -1110,9 +1115,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                         return mdh.Address;
                     }
                 }
-                canonMT = GetTypeHandle(GetCanonicalMethodTable(GetTypeHandle(GetParentMethodTable(canonMT))));
+                lookupMTPtr = GetParentMethodTable(lookupMT);
+                if (lookupMTPtr != TargetPointer.Null)
+                    lookupMTPtr = GetCanonicalMethodTable(GetTypeHandle(lookupMTPtr));
             }
-            Debug.Fail("We should never reach here, as there should always be a MethodDesc for a slot");
+            return TargetPointer.Null;
         }
 
         return GetMethodDescForEntrypoint(pCode);
