@@ -286,7 +286,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data);
     [PreserveSig]
-    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, ClrDataAddress, void*, void> pCallback, void* token);
+    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, ulong, void*, void> pCallback, void* token);
     [PreserveSig]
     int GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
     [PreserveSig]

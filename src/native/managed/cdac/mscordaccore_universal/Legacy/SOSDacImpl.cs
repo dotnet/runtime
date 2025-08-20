@@ -2146,9 +2146,9 @@ internal sealed unsafe partial class SOSDacImpl
 
 #if DEBUG
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-    private static void TraverseModuleMapCallback(uint index, ClrDataAddress moduleAddr, void* expectedElements)
+    private static void TraverseModuleMapCallback(uint index, ulong moduleAddr, void* expectedElements)
     {
-        var expectedElementsDict = (Dictionary<ClrDataAddress, uint>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
+        var expectedElementsDict = (Dictionary<ulong, uint>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
         if (expectedElementsDict.TryGetValue(moduleAddr, out uint expectedIndex) && expectedIndex == index)
         {
             expectedElementsDict[default]++; // Increment the count for verification
@@ -2159,7 +2159,7 @@ internal sealed unsafe partial class SOSDacImpl
         }
     }
 #endif
-    int ISOSDacInterface.TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, ClrDataAddress, void*, void> pCallback, void* token)
+    int ISOSDacInterface.TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, ulong, void*, void> pCallback, void* token)
     {
         int hr = HResults.S_OK;
         IEnumerable<(TargetPointer Address, uint Index)> elements = Enumerable.Empty<(TargetPointer, uint)>();
@@ -2190,7 +2190,7 @@ internal sealed unsafe partial class SOSDacImpl
                     foreach ((TargetPointer element, uint index) in elements)
                     {
                         // Call the callback with each element
-                        pCallback(index, element.ToClrDataAddress(_target), token);
+                        pCallback(index, element.ToClrDataAddress(_target).Value, token);
                     }
                 }
             }
@@ -2202,10 +2202,10 @@ internal sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            Dictionary<ClrDataAddress, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target), tuple => tuple.Index);
+            Dictionary<ulong, uint> expectedElements = elements.ToDictionary(tuple => tuple.Address.ToClrDataAddress(_target).Value, tuple => tuple.Index);
             expectedElements.Add(default, 0);
             void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
-            delegate* unmanaged[Stdcall]<uint, ClrDataAddress, void*, void> callbackDebugPtr = &TraverseModuleMapCallback;
+            delegate* unmanaged[Stdcall]<uint, ulong, void*, void> callbackDebugPtr = &TraverseModuleMapCallback;
 
             int hrLocal = _legacyImpl.TraverseModuleMap(mmt, moduleAddr, callbackDebugPtr, tokenDebug);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
