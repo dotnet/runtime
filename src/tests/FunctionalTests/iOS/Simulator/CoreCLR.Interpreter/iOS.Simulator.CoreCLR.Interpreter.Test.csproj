@@ -4,7 +4,6 @@
     <UseMonoRuntime>false</UseMonoRuntime>
     <MonoForceInterpreter>false</MonoForceInterpreter>
     <RunAOTCompilation>false</RunAOTCompilation>
-    <PublishReadyToRun>false</PublishReadyToRun>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
