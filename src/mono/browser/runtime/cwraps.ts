@@ -49,6 +49,9 @@ const fn_signatures: SigLine[] = [
     [false, "mono_wasm_load_runtime", null, ["number"]],
     [true, "mono_wasm_change_debugger_log_level", "void", ["number"]],
 
+    [true, "MH_TestVoid", "void", []],
+    [true, "MH_SetLogVerbosity", "void", ["number"]],
+
     [true, "mono_wasm_assembly_load", "pointer", ["string"]],
     [true, "mono_wasm_assembly_find_class", "pointer", ["pointer", "string", "string"]],
     [true, "mono_wasm_assembly_find_method", "pointer", ["pointer", "string", "number"]],
@@ -175,6 +178,9 @@ export interface t_Cwraps {
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
     mono_wasm_load_runtime(debugLevel: number): void;
     mono_wasm_change_debugger_log_level(value: number): void;
+
+    MH_TestVoid(): void;
+    MH_SetLogVerbosity(value: number): void;
 
     mono_wasm_assembly_load(name: string): MonoAssembly;
     mono_wasm_assembly_find_class(assembly: MonoAssembly, namespace: string, name: string): MonoClass;

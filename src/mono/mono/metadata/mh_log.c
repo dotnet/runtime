@@ -1,6 +1,26 @@
 #include <mono/metadata/mh_log.h>
 #include <mono/metadata/metadata-internals.h>
 
+static int MH_LOG_verbosity_level = MH_LVL_DEBUG;
+static int MH_LOG_verbosity_initialized = 0;
+
+void mh_log_set_verbosity(int verbosity)
+{
+    MH_LOG_verbosity_level = verbosity;
+    MH_LOG_verbosity_initialized = 1;
+}
+
+int mh_log_get_verbosity() {
+    if (!MH_LOG_verbosity_initialized) {
+        const char* env = getenv("MH_LOG_VERBOSITY");
+        if (env) {
+            MH_LOG_verbosity_level = atoi(env);
+        }
+        MH_LOG_verbosity_initialized = 1;
+    }
+    return MH_LOG_verbosity_level;
+}
+
 
 void log_mono_type(MonoType* type) {
     if (!type) {

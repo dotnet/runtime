@@ -3,28 +3,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #define MH_LVL_TRACE 5
 #define MH_LVL_VERBOSE 4
 #define MH_LVL_DEBUG 3
 #define MH_LVL_INFO 2
 
 static int MH_LOG_indent_level = 0;
-static int MH_LOG_verbosity_level = MH_LVL_INFO;
-static int get_mh_log_verbosity() {
-    const char* env = getenv("MH_LOG_VERBOSITY");
-    if (env) {        
-        MH_LOG_verbosity_level = atoi(env);
-    } else {        
-        MH_LOG_verbosity_level = MH_LVL_INFO; // Default verbosity
-    }    
-    return MH_LOG_verbosity_level;
-}
+
+extern void mh_log_set_verbosity(int verbosity);
+extern int mh_log_get_verbosity();
+
+void MH_TestVoid();
+void MH_SetLogVerbosity(int32_t level);
 
 // make default verbosity MH_LVL_DEBUG (3). Set MH_LOG_VERBOSITY to this or higher for more verbose logging 
 #define MH_LOG(msg, ...) MH_LOGV(MH_LVL_TRACE, msg, ##__VA_ARGS__)
 
 #define MH_LOGV(verbosity, msg, ...) { \
-  if ((verbosity) <= get_mh_log_verbosity()) { \
+  if ((verbosity) <= mh_log_get_verbosity()) { \
       printf("MH_NATIVE_LOG: "); \
       for (int mh_idx = 0; mh_idx < MH_LOG_indent_level; mh_idx++) { \
         printf("  "); \

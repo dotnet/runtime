@@ -123,6 +123,13 @@ export function mono_wasm_change_debugger_log_level (level: number): void {
     cwraps.mono_wasm_change_debugger_log_level(level);
 }
 
+export function MH_TestVoid (): void {
+    cwraps.MH_TestVoid();
+}
+
+export function MH_SetLogVerbosity (value: number): void {
+    cwraps.MH_SetLogVerbosity(value);
+}
 /**
  * Raises an event for the debug proxy
  */

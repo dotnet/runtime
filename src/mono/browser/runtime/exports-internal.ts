@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { MonoObjectNull, type MonoObject } from "./types/internal";
 import cwraps, { profiler_c_functions, threads_c_functions as twraps } from "./cwraps";
-import { mono_wasm_send_dbg_command_with_parms, mono_wasm_send_dbg_command, mono_wasm_get_dbg_command_info, mono_wasm_get_details, mono_wasm_release_object, mono_wasm_call_function_on, mono_wasm_debugger_resume, mono_wasm_detach_debugger, mono_wasm_raise_debug_event, mono_wasm_change_debugger_log_level, mono_wasm_debugger_attached } from "./debug";
+import { mono_wasm_send_dbg_command_with_parms, mono_wasm_send_dbg_command, mono_wasm_get_dbg_command_info, mono_wasm_get_details, mono_wasm_release_object, mono_wasm_call_function_on, mono_wasm_debugger_resume, mono_wasm_detach_debugger, mono_wasm_raise_debug_event, mono_wasm_change_debugger_log_level, mono_wasm_debugger_attached, MH_TestVoid, MH_SetLogVerbosity } from "./debug";
 import { http_wasm_supports_streaming_request, http_wasm_supports_streaming_response, http_wasm_create_controller, http_wasm_abort, http_wasm_transform_stream_write, http_wasm_transform_stream_close, http_wasm_fetch, http_wasm_fetch_stream, http_wasm_fetch_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_bytes, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes, http_wasm_get_response_type, http_wasm_get_response_status } from "./http";
 import { exportedRuntimeAPI, Module, runtimeHelpers } from "./globals";
 import { get_property, set_property, has_property, get_typeof_property, get_global_this, dynamic_import } from "./invoke-js";
@@ -54,6 +54,9 @@ export function export_internal (): any {
         mono_wasm_debugger_attached,
         mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
         mono_wasm_get_func_id_to_name_mappings,
+
+        MH_TestVoid,
+        MH_SetLogVerbosity,
 
         // interop
         get_property,

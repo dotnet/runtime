@@ -104,6 +104,20 @@ typedef int32_t d_handle;
 #include <stdio.h>
 #include <stdlib.h>
 
+EMSCRIPTEN_KEEPALIVE void MH_TestVoid()
+{    
+    printf("MH_TestVoid called\n");
+}
+
+EMSCRIPTEN_KEEPALIVE void MH_SetLogVerbosity(int32_t level)
+{
+    printf("MH_LOG_verbosity_level set to %d\n", level);
+    const char* envVar = getenv("MH_LOG_VERBOSITY");
+    printf("Environment variable MH_LOG_VERBOSITY is: %s\n", envVar ? envVar : "empty");
+    mh_log_set_verbosity(level);
+    printf("Retrieved MH_LOG_VERBOSITY: %d\n", mh_log_get_verbosity());
+}
+
 EMSCRIPTEN_KEEPALIVE void log_message(const char *filename, const char *message) {
     FILE *file = fopen(filename, "a");  // Open for append, create if doesn't exist
     if (file == NULL) {
