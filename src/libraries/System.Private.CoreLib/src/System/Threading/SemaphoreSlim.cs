@@ -336,6 +336,17 @@ namespace System.Threading
                 return false;
             }
 
+            // Perf: If there is no wait handle, we can try entering the semaphore without using the lock.
+            // Otherwise, we would actually need to take the lock to avoid race conditions when calling m_waitHandle.Reset()
+            if (m_waitHandle is null)
+            {
+                int currentCount = m_currentCount;
+                if (currentCount > 0 && Interlocked.CompareExchange(ref m_currentCount, currentCount - 1, currentCount) == currentCount)
+                {
+                    return true;
+                }
+            }
+
             long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
             {
@@ -848,6 +859,16 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(
                     nameof(releaseCount), releaseCount, SR.SemaphoreSlim_Release_CountWrong);
             }
+
+            if (m_waitCount == 0 && m_waitHandle is null  && m_asyncHead is null)
+            {
+                int currentCount = m_currentCount;
+                if (m_maxCount - currentCount >= releaseCount && Interlocked.CompareExchange(ref m_currentCount, currentCount + releaseCount, currentCount) == currentCount)
+                {
+                    return currentCount;
+                }
+            }
+
             int returnCount;
 
             lock (m_lockObjAndDisposed)
