@@ -474,6 +474,8 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
+            if (name is not null)
+                name[0] = '\0';
             Contracts.ILoader contract = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = contract.GetModuleHandleFromAssemblyPtr(assembly.ToTargetPointer(_target));
             string path = contract.GetPath(handle);
