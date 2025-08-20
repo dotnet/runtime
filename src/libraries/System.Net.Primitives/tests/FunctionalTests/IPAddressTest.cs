@@ -358,7 +358,7 @@ namespace System.Net.Primitives.Functional.Tests
             var ip = IPV4Address1();
             SocketException ex = Assert.Throws<SocketException>(() => _ = ip.ScopeId);
             Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
-            Assert.Contains($"{nameof(AddressFamily)} '{ip.AddressFamily}'", ex.Message);
+            Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message);
         }
 
         [Fact]
@@ -367,7 +367,7 @@ namespace System.Net.Primitives.Functional.Tests
             var ip = IPV6Address1();
             SocketException ex = Assert.Throws<SocketException>(() => _ = ip.Address);
             Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
-            Assert.Contains($"{nameof(AddressFamily)} '{ip.AddressFamily}'", ex.Message);
+            Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message);
         }
 #pragma warning restore 618
     }
