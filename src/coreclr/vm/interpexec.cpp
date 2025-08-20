@@ -2537,7 +2537,7 @@ do                                                                      \
 #define EXCHANGE(type)                                                  \
 do                                                                      \
 {                                                                       \
-    type* dst = LOCAL_VAR(ip[2], type*);                               \
+    type* dst = LOCAL_VAR(ip[2], type*);                                \
     NULL_CHECK(dst);                                                    \
     type newValue = LOCAL_VAR(ip[3], type);                             \
     type old = InterlockedExchangeT(dst, newValue);                     \
