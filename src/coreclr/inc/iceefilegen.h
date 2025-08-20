@@ -149,12 +149,13 @@ class ICeeFileGen {
     // Emit the metadata from "emitter".
     // If 'section != 0, it will put the data in 'buffer'.  This
     // buffer is assumed to be in 'section' at 'offset' and of size 'buffLen'
-    // (should use GetSaveSize to insure that buffer is big enough
+    // (should use GetSaveSize to ensure that buffer is big enough
     virtual HRESULT EmitMetaDataAt (HCEEFILE ceeFile, IMetaDataEmit *emitter,
                                     HCEESECTION section, DWORD offset,
                                     BYTE* buffer, unsigned buffLen);
 
     virtual HRESULT GetFileTimeStamp (HCEEFILE ceeFile, DWORD *pTimeStamp);
+    virtual HRESULT SetFileHeaderTimeStamp(HCEEFILE ceeFile, DWORD timeStamp);
 
     virtual HRESULT SetFileAlignment(HCEEFILE ceeFile, ULONG fileAlignment);
 

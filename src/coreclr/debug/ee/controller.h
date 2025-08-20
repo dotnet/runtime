@@ -312,7 +312,11 @@ public:
     UINT_PTR                RipTargetFixup;
 #endif
 
+    const InstructionAttribute& GetInstructionAttrib() { return m_instrAttrib; }
+    void SetInstructionAttrib(const InstructionAttribute& instrAttrib) { m_instrAttrib = instrAttrib; }
+
 private:
+    InstructionAttribute   m_instrAttrib;      // info about the instruction being skipped over
     const static DWORD SentinelValue = 0xffffffff;
     LONG    m_refCount;
 };
@@ -550,9 +554,12 @@ public:
     // Is this patch at a position at which it's safe to take a stack?
     bool IsSafeForStackTrace();
 
+#ifndef DACCESS_COMPILE
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // gets a pointer to the shared buffer
     SharedPatchBypassBuffer* GetOrCreateSharedPatchBypassBuffer();
+
+    void CopyInstructionBlock(BYTE *to, const BYTE* from);
 
     // entry point for general initialization when the controller is being created
     void Initialize()
@@ -567,6 +574,7 @@ public:
             m_pSharedPatchBypassBuffer->Release();
     }
 #endif // !FEATURE_EMULATE_SINGLESTEP
+#endif // !DACCESS_COMPILE
 
     void LogInstance()
     {
@@ -1095,6 +1103,7 @@ class DebuggerController
     // fp is the frame pointer for that method.
     static void DispatchMethodEnter(void * pIP, FramePointer fp);
     static void DispatchMulticastDelegate(DELEGATEREF pbDel, INT32 countDel);
+    static void DispatchExternalMethodFixup(PCODE addr);
 
 
     // Delete any patches that exist for a specific module and optionally a specific AppDomain.
@@ -1318,6 +1327,9 @@ public:
     void EnableMultiCastDelegate();
     void DisableMultiCastDelegate();
 
+    void EnableExternalMethodFixup();
+    void DisableExternalMethodFixup();
+
     void DisableAll();
 
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
@@ -1419,6 +1431,8 @@ public:
 
     virtual void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
 
+    virtual void TriggerExternalMethodFixup(PCODE target);
+
     // Send the managed debug event.
     // This is called after TriggerPatch/TriggerSingleStep actually trigger.
     // Note this can have a strange interaction with SetIp. Specifically this thread:
@@ -1458,6 +1472,7 @@ private:
     bool                m_deleted;
     bool                m_fEnableMethodEnter;
     bool                m_multicastDelegateHelper;
+    bool                m_externalMethodFixup;
 
 #endif // !DACCESS_COMPILE
 };
@@ -1508,8 +1523,6 @@ class DebuggerPatchSkip : public DebuggerController
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
         { return DEBUGGER_CONTROLLER_PATCH_SKIP; }
 
-    void CopyInstructionBlock(BYTE *to, const BYTE* from);
-
     void DecodeInstruction(CORDB_ADDRESS_TYPE *code);
 
     void DebuggerDetachClean();
@@ -1535,12 +1548,12 @@ public:
 
 #endif // !FEATURE_EMULATE_SINGLESTEP
 
-    BOOL IsInPlaceSingleStep() 
-    { 
+    BOOL IsInPlaceSingleStep()
+    {
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #ifndef FEATURE_EMULATE_SINGLESTEP
         // only in-place single steps over call intructions are supported at this time
-        _ASSERTE(m_instrAttrib.m_fIsCall);
+        _ASSERTE(!m_fInPlaceSS || m_instrAttrib.m_fIsCall);
         return m_fInPlaceSS;
 #else
 #error only non-emulated single-steps with OUT_OF_PROCESS_SETTHREADCONTEXT enabled are supported
@@ -1696,6 +1709,7 @@ protected:
 
     virtual void TriggerMethodEnter(Thread * thread, DebuggerJitInfo * dji, const BYTE * ip, FramePointer fp);
     void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
+    void TriggerExternalMethodFixup(PCODE target);
 
     void ResetRange();
 
@@ -1732,7 +1746,6 @@ protected:
     COR_DEBUG_STEP_RANGE *  m_range; // Ranges for active steppers are always in native offsets.
 
     SIZE_T                  m_rangeCount;
-    SIZE_T                  m_realRangeCount; // @todo - delete b/c only used for CodePitching & Old-Enc
 
     // The original step intention.
     // As the stepper moves through code, it may change its other members.

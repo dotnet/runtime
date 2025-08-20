@@ -132,25 +132,36 @@ namespace System.Security.Cryptography.X509Certificates
             return new Pkcs12Return(pal);
         }
 
-        private static partial AsymmetricAlgorithm? CreateKey(string algorithm)
+        private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8)
         {
-            return algorithm switch
+            switch (algorithm)
             {
-                Oids.Rsa or Oids.RsaPss => new RSAImplementation.RSASecurityTransforms(),
-                Oids.EcPublicKey or Oids.EcDiffieHellman => new ECDsaImplementation.ECDsaSecurityTransforms(),
-                Oids.Dsa => new DSAImplementation.DSASecurityTransforms(),
-                _ => null,
-            };
+                case Oids.Rsa or Oids.RsaPss:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(
+                        pkcs8,
+                        static () => new RSAImplementation.RSASecurityTransforms());
+                case Oids.EcPublicKey or Oids.EcDiffieHellman:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(
+                        pkcs8,
+                        static () => new ECDsaImplementation.ECDsaSecurityTransforms());
+                case Oids.Dsa:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(
+                        pkcs8,
+                        static () => new DSAImplementation.DSASecurityTransforms());
+                default:
+                    // No PQC support on macOS.
+                    return null;
+            }
         }
 
-        internal static SafeSecKeyRefHandle? GetPrivateKey(AsymmetricAlgorithm? key)
+        internal static SafeSecKeyRefHandle? GetPrivateKey(Pkcs12Key? key)
         {
-            if (key == null)
+            if (key is null)
             {
                 return null;
             }
 
-            if (key is RSAImplementation.RSASecurityTransforms rsa)
+            if (key.Key is RSAImplementation.RSASecurityTransforms rsa)
             {
                 byte[] rsaPrivateKey = rsa.ExportRSAPrivateKey();
                 using (PinAndClear.Track(rsaPrivateKey))
@@ -159,7 +170,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            if (key is DSAImplementation.DSASecurityTransforms dsa)
+            if (key.Key is DSAImplementation.DSASecurityTransforms dsa)
             {
                 DSAParameters dsaParameters = dsa.ExportParameters(true);
 
@@ -169,7 +180,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            if (key is ECDsaImplementation.ECDsaSecurityTransforms ecdsa)
+            if (key.Key is ECDsaImplementation.ECDsaSecurityTransforms ecdsa)
             {
                 byte[] ecdsaPrivateKey = ecdsa.ExportECPrivateKey();
                 using (PinAndClear.Track(ecdsaPrivateKey))

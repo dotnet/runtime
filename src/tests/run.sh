@@ -41,6 +41,7 @@ function print_usage {
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
+    echo '  --interpreter                    : Runs the tests with the interpreter enabled'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -191,6 +192,9 @@ do
         --runnativeaottests)
             nativeaottest=1
             ;;
+        --interpreter)
+            export RunInterpreter=1
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -295,6 +299,11 @@ fi
 if [[ "$nativeaottest" -ne 0 ]]; then
     echo "Running NativeAOT compiled tests"
     runtestPyArguments+=("--run_nativeaot_tests")
+fi
+
+if [[ -n "$RunInterpreter" ]]; then
+    echo "Running tests with the interpreter"
+    runtestPyArguments+=("--interpreter")
 fi
 
 # Default to python3 if it is installed

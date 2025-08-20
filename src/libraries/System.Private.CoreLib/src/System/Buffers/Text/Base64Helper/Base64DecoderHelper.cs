@@ -827,16 +827,14 @@ namespace System.Buffers.Text
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
 
-            if (AdvSimd.Arm64.IsSupported)
+            if (Ssse3.IsSupported)
             {
-                right &= mask8F;
+                return Ssse3.Shuffle(left, right);
             }
-
-#if NET9_0_OR_GREATER
-            return Vector128.ShuffleUnsafe(left, right);
-#else
-            return Base64Helper.ShuffleUnsafe(left, right);
-#endif
+            else
+            {
+                return AdvSimd.Arm64.VectorTableLookup(left, right & mask8F);
+            }
         }
 
 #if NET9_0_OR_GREATER
@@ -1331,7 +1329,7 @@ namespace System.Buffers.Text
                 Vector256<sbyte> hi = Avx2.Shuffle(lutHigh, hiNibbles);
                 Vector256<sbyte> lo = Avx2.Shuffle(lutLow, loNibbles);
 
-                if (!Avx.TestZ(lo, hi))
+                if ((lo & hi) != Vector256<sbyte>.Zero)
                 {
                     result = default;
                     return false;

@@ -349,13 +349,13 @@ public sealed partial class QuicListener : IAsyncDisposable
         return QUIC_STATUS_SUCCESS;
 
     }
-    private unsafe int HandleEventStopComplete()
+    private int HandleEventStopComplete()
     {
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
 
-    private unsafe int HandleListenerEvent(ref QUIC_LISTENER_EVENT listenerEvent)
+    private int HandleListenerEvent(ref QUIC_LISTENER_EVENT listenerEvent)
         => listenerEvent.Type switch
         {
             QUIC_LISTENER_EVENT_TYPE.NEW_CONNECTION => HandleEventNewConnection(ref listenerEvent.NEW_CONNECTION),
@@ -418,10 +418,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         // Check if the listener has been shut down and if not, shut it down.
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {
-            unsafe
-            {
-                MsQuicApi.Api.ListenerStop(_handle);
-            }
+            MsQuicApi.Api.ListenerStop(_handle);
         }
 
         // Wait for STOP_COMPLETE, the last event, so that all resources can be safely released.

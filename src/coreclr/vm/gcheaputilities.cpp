@@ -36,12 +36,14 @@ GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-uint8_t* g_sw_ww_table = nullptr;
+uint8_t* g_write_watch_table = nullptr;
 bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
+
+thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
 
 enum GC_LOAD_STATUS {
     GC_LOAD_STATUS_BEFORE_START,
@@ -201,7 +203,8 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     if (result == nullptr)
     {
         // Look for the standalone GC module next to the clr binary
-        PathString libPath = GetInternalSystemDirectory();
+        PathString libPath;
+        IfFailThrow(GetClrModuleDirectory(libPath));
         libPath.Append(libFileName);
 
         LOG((LF_GC, LL_INFO100, "Loading standalone GC by coreclr %s\n", libPath.GetUTF8()));

@@ -69,6 +69,15 @@ namespace utils
     {
         return starts_with(value, prefix, L - 1, match_case);
     }
+
+    template <typename... Args>
+    pal::string_t format_string(const pal::char_t* format, Args&&... args)
+    {
+        int len = pal::strlen_printf(format, std::forward<Args>(args)...) + 1;
+        std::vector<pal::char_t> buffer(len);
+        pal::str_printf(&buffer[0], len, format, std::forward<Args>(args)...);
+        return pal::string_t(buffer.data(), buffer.size() - 1);
+    }
 }
 
 pal::string_t strip_executable_ext(const pal::string_t& filename);
@@ -76,7 +85,11 @@ pal::string_t get_directory(const pal::string_t& path);
 pal::string_t strip_file_ext(const pal::string_t& path);
 pal::string_t get_filename(const pal::string_t& path);
 pal::string_t get_filename_without_ext(const pal::string_t& path);
+
+// Concatenate path1 and path2 into path1, ensuring there is a directory separator.
+// This does not check for rooted paths or make any attempt to root the returned path.
 void append_path(pal::string_t* path1, const pal::char_t* path2);
+
 bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path);
 bool coreclr_exists_in_dir(const pal::string_t& candidate);
 void remove_trailing_dir_separator(pal::string_t* dir);
@@ -91,7 +104,7 @@ pal::string_t get_runtime_id();
 bool try_get_runtime_id_from_env(pal::string_t& out_rid);
 
 bool multilevel_lookup_enabled();
-void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations);
+void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);

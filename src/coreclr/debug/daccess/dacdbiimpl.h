@@ -162,6 +162,7 @@ public:
     HRESULT GetDefinesBitField(ULONG32 *pDefines);
     HRESULT GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
+    HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly);
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
@@ -182,13 +183,6 @@ private:
     void GetSequencePoints(MethodDesc *    pMethodDesc,
                            CORDB_ADDRESS    startAddr,
                            SequencePoints * pNativeMap);
-
-    // Helper to compose a IL->IL and IL->Native mapping
-    void ComposeMapping(const InstrumentedILOffsetMapping * pProfilerILMap, ICorDebugInfo::OffsetMapping nativeMap[], ULONG32* pEntryCount);
-
-    // Helper function to convert an instrumented IL offset to the corresponding original IL offset.
-    ULONG TranslateInstrumentedILOffsetToOriginal(ULONG                               ilOffset,
-                                                  const InstrumentedILOffsetMapping * pMapping);
 
 public:
 //----------------------------------------------------------------------------------
@@ -822,9 +816,8 @@ public:
     // (or a dump was generated while in this callback)
     VMPTR_OBJECTHANDLE GetCurrentCustomDebuggerNotification(VMPTR_Thread vmThread);
 
-
-    // Return the current appdomain the specified thread is in.
-    VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread);
+    // Return the current appdomain
+    VMPTR_AppDomain GetCurrentAppDomain();
 
     // Given an assembly ref token and metadata scope (via the DomainAssembly), resolve the assembly.
     VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef);
@@ -1107,7 +1100,7 @@ public:
 };
 
 
-// Global allocator for DD. Access is protected under the g_dacCritSec lock.
+// Global allocator for DD. Access is protected under the g_dacMutex lock.
 extern "C" IDacDbiInterface::IAllocator * g_pAllocator;
 
 
@@ -1116,7 +1109,7 @@ class DDHolder
 public:
     DDHolder(DacDbiInterfaceImpl* pContainer, bool fAllowReentrant)
     {
-        EnterCriticalSection(&g_dacCritSec);
+        minipal_mutex_enter(&g_dacMutex);
 
         // If we're not re-entrant, then assert.
         if (!fAllowReentrant)
@@ -1139,7 +1132,7 @@ public:
         g_dacImpl    = m_pOldContainer;
         g_pAllocator = m_pOldAllocator;
 
-        LeaveCriticalSection(&g_dacCritSec);
+        minipal_mutex_leave(&g_dacMutex);
     }
 
 protected:

@@ -195,7 +195,7 @@ HRESULT UTSemReadWrite::LockRead()
     // holding this lock.
     IncCantStopCount();
 
-    // First do some spinning - copied from file:..\VM\crst.cpp#CrstBase::SpinEnter
+    // First do some spinning
     for (DWORD iter = 0; iter < g_SpinConstants.dwRepetitions; iter++)
     {
         DWORD i = g_SpinConstants.dwInitialDuration;
@@ -287,7 +287,7 @@ HRESULT UTSemReadWrite::LockWrite()
     // holding this lock.
     IncCantStopCount();
 
-    // First do some spinning - copied from file:..\VM\crst.cpp#CrstBase::SpinEnter
+    // First do some spinning
     for (DWORD iter = 0; iter < g_SpinConstants.dwRepetitions; iter++)
     {
         DWORD i = g_SpinConstants.dwInitialDuration;

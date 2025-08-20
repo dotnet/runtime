@@ -66,11 +66,11 @@ static void DlOpen(const char* libraryName)
 
 static void OpenLibraryOnce(void)
 {
-    // If there is an override of the version specified using the CLR_OPENSSL_VERSION_OVERRIDE
+    // If there is an override of the version specified using the DOTNET_OPENSSL_VERSION_OVERRIDE
     // env variable, try to load that first.
     // The format of the value in the env variable is expected to be the version numbers,
     // like 1.0.0, 1.0.2 etc.
-    char* versionOverride = getenv("CLR_OPENSSL_VERSION_OVERRIDE");
+    char* versionOverride = getenv("DOTNET_OPENSSL_VERSION_OVERRIDE");
 
     if ((versionOverride != NULL) && strnlen(versionOverride, MaxVersionStringLength + 1) <= MaxVersionStringLength)
     {

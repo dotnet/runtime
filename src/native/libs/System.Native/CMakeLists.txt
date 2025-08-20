@@ -4,10 +4,6 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
-if (CLR_CMAKE_TARGET_OSX)
-    add_definitions(-D_DARWIN_C_SOURCE)
-endif ()
-
 set(NATIVE_SOURCES
     pal_errno.c
     pal_interfaceaddresses.c
@@ -142,3 +138,7 @@ add_library(System.Native-Static
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if(CLR_CMAKE_HOST_ANDROID)
+    install (TARGETS System.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+endif()

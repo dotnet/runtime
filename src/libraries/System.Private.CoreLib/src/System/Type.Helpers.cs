@@ -137,12 +137,12 @@ namespace System
             for (int i = 0; i < c.Length; i++)
             {
                 if (c[i] is Type t)
-                    ret[cnt++] = t!;
+                    ret[cnt++] = t;
             }
             return ret;
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public virtual MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object? filterCriteria)
         {
             // Define the work arrays

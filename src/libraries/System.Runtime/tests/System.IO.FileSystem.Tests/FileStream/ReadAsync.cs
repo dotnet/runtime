@@ -123,7 +123,7 @@ namespace System.IO.Tests
                 await Task.WhenAll(reads);
                 // but when they are finished, the first buffer should contain valid data:
                 Assert.Equal(fileSize, reads.First().Result);
-                AssertExtensions.SequenceEqual(content, buffers.First().AsSpan(0, fileSize));
+                AssertExtensions.SequenceEqual(content.AsSpan(), buffers.First().AsSpan(0, fileSize));
                 // and other reads should return 0:
                 Assert.All(reads.Skip(1), read => Assert.Equal(0, read.Result));
                 // and the Position must be correct:

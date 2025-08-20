@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Reflection;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -28,235 +29,30 @@ namespace JIT.HardwareIntrinsics.Arm
             return new Vector<T>(arr);
         }
 
-        public static byte[] CreateMaskForFirstActiveElement(byte[] mask, byte[] srcMask)
+        public static T[] CreateMaskForFirstActiveElement<T>(T[] mask, T[] srcMask)
+            where T : unmanaged, IBinaryInteger<T>
         {
-            var count = srcMask.Length;
-            var result = new byte[count];
-            Array.Copy(srcMask, 0, result, 0, count);
-            for (var i = 0; i < count; i++)
+            int count = srcMask.Length;
+            T[] result = new T[count];
+            Array.Copy(srcMask, result, count);
+
+            for (int i = 0; i < count; i++)
             {
-                if (mask[i] != 0)
+                if (mask[i] != T.Zero)
                 {
-                    result[i] = 1;
+                    result[i] = T.One;
                     return result;
                 }
             }
+
             return result;
         }
 
-        public static short[] CreateMaskForFirstActiveElement(short[] mask, short[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new short[count];
-            Array.Copy(srcMask, 0, result, 0, count);
-            for (var i = 0; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static int[] CreateMaskForFirstActiveElement(int[] mask, int[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new int[count];
-            Array.Copy(srcMask, 0, result, 0, count);
-            for (var i = 0; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static long[] CreateMaskForFirstActiveElement(long[] mask, long[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new long[count];
-            Array.Copy(srcMask, 0, result, 0, count);
-            for (var i = 0; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static sbyte[] CreateMaskForFirstActiveElement(sbyte[] mask, sbyte[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new sbyte[count];
-            Array.Copy(srcMask, 0, result, 0, count);
-            for (var i = 0; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static ushort[] CreateMaskForFirstActiveElement(ushort[] mask, ushort[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new ushort[count];
-            Array.Copy(srcMask, 0, result, 0, count);
-            for (var i = 0; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static uint[] CreateMaskForFirstActiveElement(uint[] mask, uint[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new uint[count];
-            Array.Copy(srcMask, 0, result, 0, count);
-            for (var i = 0; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static ulong[] CreateMaskForFirstActiveElement(ulong[] mask, ulong[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new ulong[count];
-            Array.Copy(srcMask, 0, result, 0, count);
-            for (var i = 0; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static int LastActiveElement(byte[] v)
-        {
-            for (var i = v.Length - 1; i >= 0; i--)
-            {
-                if (v[i] != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static int LastActiveElement(sbyte[] v)
-        {
-            for (var i = v.Length - 1; i >= 0; i--)
-            {
-                if (v[i] != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static int LastActiveElement(short[] v)
-        {
-            for (var i = v.Length - 1; i >= 0; i--)
-            {
-                if (v[i] != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static int LastActiveElement(ushort[] v)
-        {
-            for (var i = v.Length - 1; i >= 0; i--)
-            {
-                if (v[i] != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static int LastActiveElement(int[] v)
-        {
-            for (var i = v.Length - 1; i >= 0; i--)
-            {
-                if (v[i] != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static int LastActiveElement(uint[] v)
-        {
-            for (var i = v.Length - 1; i >= 0; i--)
-            {
-                if (v[i] != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static int LastActiveElement(long[] v)
-        {
-            for (var i = v.Length - 1; i >= 0; i--)
-            {
-                if (v[i] != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static int LastActiveElement(ulong[] v)
-        {
-            for (var i = v.Length - 1; i >= 0; i--)
-            {
-                if (v[i] != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        private static int LastActiveElement(float[] v)
+        public static int LastActiveElement<T>(T[] v) where T : INumber<T>
         {
             for (int i = v.Length - 1; i >= 0; i--)
             {
-                if (Unsafe.BitCast<float, int>(v[i]) != 0)
+                if (v[i] != T.Zero)
                 {
                     return i;
                 }
@@ -264,108 +60,53 @@ namespace JIT.HardwareIntrinsics.Arm
             return -1;
         }
 
-        private static int LastActiveElement(double[] v)
+        public static T[] CreateMaskForNextActiveElement<T>(T[] mask, T[] srcMask) where T : INumber<T>
         {
-            for (int i = v.Length - 1; i >= 0; i--)
-            {
-                if (Unsafe.BitCast<double, long>(v[i]) != 0)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
+            int count = srcMask.Length;
+            T[] result = new T[count];
+            int start = LastActiveElement(srcMask) + 1;
 
-        public static byte[] CreateMaskForNextActiveElement(byte[] mask, byte[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new byte[count];
-            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            for (int i = start; i < count; i++)
             {
-                if (mask[i] != 0)
+                if (mask[i] != T.Zero)
                 {
-                    result[i] = 1;
+                    result[i] = T.One;
                     return result;
                 }
             }
+
             return result;
         }
 
-        public static ushort[] CreateMaskForNextActiveElement(ushort[] mask, ushort[] srcMask)
+        public static T CountLeadingSignBits<T>(T value)
+            where T : unmanaged,
+                    INumber<T>,
+                    IBitwiseOperators<T, T, T>,
+                    IShiftOperators<T, int, T>
         {
-            var count = srcMask.Length;
-            var result = new ushort[count];
-            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
+            T shifted = value >> 1;
+            T xor = value ^ shifted;
+
+            return CountLeadingZeroBits(xor) - T.One;
+        }
+
+        public static unsafe T CountLeadingZeroBits<T>(T value)
+            where T : unmanaged, INumber<T>, IBitwiseOperators<T, T, T>
+        {
+            int bitSize = sizeof(T) * 8;
+            int highest = HighestSetBit(value);
+
+            return T.CreateChecked(bitSize - (highest + 1));
+        }
+
+        public static unsafe int HighestSetBit<T>(T value)
+            where T : unmanaged, INumber<T>, IBitwiseOperators<T, T, T>
+        {
+            ulong v = Convert.ToUInt64(value);
+
+            for (int i = sizeof(T) * 8 - 1; i >= 0; i--)
             {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static uint[] CreateMaskForNextActiveElement(uint[] mask, uint[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new uint[count];
-            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static ulong[] CreateMaskForNextActiveElement(ulong[] mask, ulong[] srcMask)
-        {
-            var count = srcMask.Length;
-            var result = new ulong[count];
-            for (var i = LastActiveElement(srcMask) + 1; i < count; i++)
-            {
-                if (mask[i] != 0)
-                {
-                    result[i] = 1;
-                    return result;
-                }
-            }
-            return result;
-        }
-
-        public static sbyte CountLeadingSignBits(sbyte op1)
-        {
-            return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
-        }
-
-        public static short CountLeadingSignBits(short op1)
-        {
-            return (short)(CountLeadingZeroBits((short)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
-        }
-
-        public static int CountLeadingSignBits(int op1)
-        {
-            return (int)(CountLeadingZeroBits((int)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
-        }
-
-        public static long CountLeadingSignBits(long op1)
-        {
-            return (long)(CountLeadingZeroBits((long)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
-        }
-
-        public static sbyte CountLeadingZeroBits(sbyte op1)
-        {
-            return (sbyte)(8 * sizeof(sbyte) - (HighestSetBit(op1) + 1));
-        }
-
-        private static int HighestSetBit(sbyte op1)
-        {
-            for (int i = 8 * sizeof(sbyte) - 1; i >= 0; i--)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
+                if ((v & (1UL << i)) != 0)
                 {
                     return i;
                 }
@@ -374,651 +115,92 @@ namespace JIT.HardwareIntrinsics.Arm
             return -1;
         }
 
-        public static byte CountLeadingZeroBits(byte op1)
+        public static T BitCount<T>(T value)
+            where T : unmanaged, INumber<T>, IBitwiseOperators<T, T, T>
         {
-            return (byte)(8 * sizeof(byte) - (HighestSetBit(op1) + 1));
-        }
+            ulong bits = Convert.ToUInt64(value);
+            int count = 0;
 
-        private static int HighestSetBit(byte op1)
-        {
-            for (int i = 8 * sizeof(byte) - 1; i >= 0; i--)
+            for (int i = 0; i < sizeof(ulong) * 8; i++)
             {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    return i;
-                }
+                if ((bits & (1UL << i)) != 0)
+                    count++;
             }
 
-            return -1;
+            return T.CreateChecked(count);
         }
-
-        public static short CountLeadingZeroBits(short op1)
-        {
-            return (short)(8 * sizeof(short) - (HighestSetBit(op1) + 1));
-        }
-
-        private static int HighestSetBit(short op1)
-        {
-            for (int i = 8 * sizeof(short) - 1; i >= 0; i--)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        public static ushort CountLeadingZeroBits(ushort op1)
-        {
-            return (ushort)(8 * sizeof(ushort) - (HighestSetBit(op1) + 1));
-        }
-
-        private static int HighestSetBit(ushort op1)
-        {
-            for (int i = 8 * sizeof(ushort) - 1; i >= 0; i--)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        public static int CountLeadingZeroBits(int op1)
-        {
-            return (int)(8 * sizeof(int) - (HighestSetBit(op1) + 1));
-        }
-
-        private static int HighestSetBit(int op1)
-        {
-            for (int i = 8 * sizeof(int) - 1; i >= 0; i--)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        public static uint CountLeadingZeroBits(uint op1)
-        {
-            return (uint)(8 * sizeof(uint) - (HighestSetBit(op1) + 1));
-        }
-
-        private static int HighestSetBit(uint op1)
-        {
-            for (int i = 8 * sizeof(uint) - 1; i >= 0; i--)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        public static long CountLeadingZeroBits(long op1)
-        {
-            return (long)(8 * sizeof(long) - (HighestSetBit(op1) + 1));
-        }
-
-        private static int HighestSetBit(long op1)
-        {
-            for (int i = 8 * sizeof(long) - 1; i >= 0; i--)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        public static ulong CountLeadingZeroBits(ulong op1)
-        {
-            return (ulong)(8 * sizeof(ulong) - (HighestSetBit(op1) + 1));
-        }
-
-        private static int HighestSetBit(ulong op1)
-        {
-            for (int i = 8 * sizeof(ulong) - 1; i >= 0; i--)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        public static sbyte BitCount(sbyte op1)
-        {
-            int result = 0;
-
-            for (int i = 0; i < 8 * sizeof(sbyte); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result + 1;
-                }
-            }
-
-            return (sbyte)result;
-        }
-
-        public static byte BitCount(byte op1)
-        {
-            int result = 0;
-
-            for (int i = 0; i < 8 * sizeof(byte); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result + 1;
-                }
-            }
-
-            return (byte)result;
-        }
-
-        public static short BitCount(short op1)
-        {
-            int result = 0;
-
-            for (int i = 0; i < 8 * sizeof(short); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result + 1;
-                }
-            }
-
-            return (short)result;
-        }
-
-        public static ushort BitCount(ushort op1)
-        {
-            int result = 0;
-
-            for (int i = 0; i < 8 * sizeof(ushort); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result + 1;
-                }
-            }
-
-            return (ushort)result;
-        }
-
-        public static int BitCount(int op1)
-        {
-            int result = 0;
-
-            for (int i = 0; i < 8 * sizeof(int); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result + 1;
-                }
-            }
-
-            return (int)result;
-        }
-
-        public static uint BitCount(uint op1)
-        {
-            int result = 0;
-
-            for (int i = 0; i < 8 * sizeof(uint); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result + 1;
-                }
-            }
-
-            return (uint)result;
-        }
-
-        public static long BitCount(long op1)
-        {
-            int result = 0;
-
-            for (int i = 0; i < 8 * sizeof(long); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result + 1;
-                }
-            }
-
-            return (long)result;
-        }
-
-        public static ulong BitCount(ulong op1)
-        {
-            int result = 0;
-
-            for (int i = 0; i < 8 * sizeof(ulong); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result + 1;
-                }
-            }
-
-            return (ulong)result;
-        }
-
         public static int BitCount(float op1) => BitCount(BitConverter.SingleToInt32Bits(op1));
 
         public static long BitCount(double op1) => BitCount(BitConverter.DoubleToInt64Bits(op1));
 
-        public static byte ReverseElementBits(byte op1)
-        {
-            byte val = (byte)op1;
-            byte result = 0;
-            const int bitsize = sizeof(byte) * 8;
-            const byte cst_one = 1;
 
-            for (int i = 0; i < bitsize; i++)
+        public static T ReverseElementBits<T>(T value)
+            where T : unmanaged,
+                    INumber<T>,
+                    IBitwiseOperators<T, T, T>,
+                    IShiftOperators<T, int, T>,
+                    IComparisonOperators<T, T, bool>
+        {
+            T result = T.Zero;
+            T one = T.One;
+            int bitSize = Unsafe.SizeOf<T>() * 8;
+
+            for (int i = 0; i < bitSize; i++)
             {
-                if ((val & (cst_one << i)) != 0)
+                if ((value & (one << i)) != T.Zero)
                 {
-                    result |= (byte)(cst_one << (bitsize  - 1 - i));
+                    result |= (one << (bitSize - 1 - i));
                 }
             }
 
-            return (byte)result;
+            return result;
         }
 
-        public static short ReverseElementBits(short op1)
-        {
-            short val = (short)op1;
-            short result = 0;
-            const int bitsize = sizeof(short) * 8;
-            const short cst_one = 1;
+        public static T And<T>(T op1, T op2)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => op1 & op2;
 
-            for (int i = 0; i < bitsize; i++)
+        public static T BitwiseClear<T>(T op1, T op2)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => op1 & ~op2;
+
+        public static T BitwiseSelect<T>(T op1, T op2, T op3)
+            where T : unmanaged,
+                    INumber<T>,
+                    IBitwiseOperators<T, T, T>,
+                    IShiftOperators<T, int, T>,
+                    IComparisonOperators<T, T, bool>
+        {
+            T result = T.Zero;
+            T one = T.One;
+            int bitSize = Unsafe.SizeOf<T>() * 8;
+
+            for (int i = 0; i < bitSize; i++)
             {
-                if ((val & (cst_one << i)) != 0)
-                {
-                    result |= (short)(cst_one << (bitsize  - 1 - i));
-                }
+                T bit = one << i;
+                result |= ((op1 & bit) != T.Zero)
+                    ? (op2 & bit)
+                    : (op3 & bit);
             }
 
-            return (short)result;
+            return result;
         }
 
-        public static int ReverseElementBits(int op1)
-        {
-            uint val = (uint)op1;
-            uint result = 0;
-            const int bitsize = sizeof(uint) * 8;
-            const uint cst_one = 1;
-
-            for (int i = 0; i < bitsize; i++)
-            {
-                if ((val & (cst_one << i)) != 0)
-                {
-                    result |= (uint)(cst_one << (bitsize  - 1 - i));
-                }
-            }
-
-            return (int)result;
-        }
-
-        public static long ReverseElementBits(long op1)
-        {
-            ulong val = (ulong)op1;
-            ulong result = 0;
-            const int bitsize = sizeof(ulong) * 8;
-            const ulong cst_one = 1;
-
-            for (int i = 0; i < bitsize; i++)
-            {
-                if ((val & (cst_one << i)) != 0)
-                {
-                    result |= (ulong)(cst_one << (bitsize  - 1 - i));
-                }
-            }
-
-            return (long)result;
-        }
-
-        public static sbyte ReverseElementBits(sbyte op1)
-        {
-            byte val = (byte)op1;
-            byte result = 0;
-            const int bitsize = sizeof(byte) * 8;
-            const byte cst_one = 1;
-
-            for (int i = 0; i < bitsize; i++)
-            {
-                if ((val & (cst_one << i)) != 0)
-                {
-                    result |= (byte)(cst_one << (bitsize  - 1 - i));
-                }
-            }
-
-            return (sbyte)result;
-        }
-
-        public static ushort ReverseElementBits(ushort op1)
-        {
-            ushort val = (ushort)op1;
-            ushort result = 0;
-            const int bitsize = sizeof(ushort) * 8;
-            const ushort cst_one = 1;
-
-            for (int i = 0; i < bitsize; i++)
-            {
-                if ((val & (cst_one << i)) != 0)
-                {
-                    result |= (ushort)(cst_one << (bitsize  - 1 - i));
-                }
-            }
-
-            return (ushort)result;
-        }
-
-        public static uint ReverseElementBits(uint op1)
-        {
-            uint val = (uint)op1;
-            uint result = 0;
-            const int bitsize = sizeof(uint) * 8;
-            const uint cst_one = 1;
-
-            for (int i = 0; i < bitsize; i++)
-            {
-                if ((val & (cst_one << i)) != 0)
-                {
-                    result |= (uint)(cst_one << (bitsize  - 1 - i));
-                }
-            }
-
-            return (uint)result;
-        }
-
-        public static ulong ReverseElementBits(ulong op1)
-        {
-            ulong val = (ulong)op1;
-            ulong result = 0;
-            const int bitsize = sizeof(ulong) * 8;
-            const ulong cst_one = 1;
-
-            for (int i = 0; i < bitsize; i++)
-            {
-                if ((val & (cst_one << i)) != 0)
-                {
-                    result |= (ulong)(cst_one << (bitsize  - 1 - i));
-                }
-            }
-
-            return (ulong)result;
-        }
-
-        public static sbyte And(sbyte op1, sbyte op2) => (sbyte)(op1 & op2);
-
-        public static sbyte BitwiseClear(sbyte op1, sbyte op2) => (sbyte)(op1 & ~op2);
-
-        public static sbyte BitwiseSelect(sbyte op1, sbyte op2, sbyte op3)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < 8 * sizeof(sbyte); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result | ((ulong)op2 & (1UL << i));
-                }
-                else
-                {
-                    result = result | ((ulong)op3 & (1UL << i));
-                }
-            }
-
-            return (sbyte)result;
-        }
-
-        public static sbyte Not(sbyte op1) => (sbyte)(~op1);
-
-        public static sbyte Or(sbyte op1, sbyte op2) => (sbyte)(op1 | op2);
-
-        public static sbyte OrNot(sbyte op1, sbyte op2) => (sbyte)(op1 | ~op2);
-
-        public static sbyte Xor(sbyte op1, sbyte op2) => (sbyte)(op1 ^ op2);
-
-        public static byte And(byte op1, byte op2) => (byte)(op1 & op2);
-
-        public static byte BitwiseClear(byte op1, byte op2) => (byte)(op1 & ~op2);
-
-        public static byte BitwiseSelect(byte op1, byte op2, byte op3)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < 8 * sizeof(byte); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result | ((ulong)op2 & (1UL << i));
-                }
-                else
-                {
-                    result = result | ((ulong)op3 & (1UL << i));
-                }
-            }
-
-            return (byte)result;
-        }
-
-        public static byte Not(byte op1) => (byte)(~op1);
-
-        public static byte Or(byte op1, byte op2) => (byte)(op1 | op2);
-
-        public static byte OrNot(byte op1, byte op2) => (byte)(op1 | ~op2);
-
-        public static byte Xor(byte op1, byte op2) => (byte)(op1 ^ op2);
-
-        public static short And(short op1, short op2) => (short)(op1 & op2);
-
-        public static short BitwiseClear(short op1, short op2) => (short)(op1 & ~op2);
-
-        public static short BitwiseSelect(short op1, short op2, short op3)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < 8 * sizeof(short); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result | ((ulong)op2 & (1UL << i));
-                }
-                else
-                {
-                    result = result | ((ulong)op3 & (1UL << i));
-                }
-            }
-
-            return (short)result;
-        }
-
-        public static short Not(short op1) => (short)(~op1);
-
-        public static short Or(short op1, short op2) => (short)(op1 | op2);
-
-        public static short OrNot(short op1, short op2) => (short)(op1 | ~op2);
-
-        public static short Xor(short op1, short op2) => (short)(op1 ^ op2);
-
-        public static ushort And(ushort op1, ushort op2) => (ushort)(op1 & op2);
-
-        public static ushort BitwiseClear(ushort op1, ushort op2) => (ushort)(op1 & ~op2);
-
-        public static ushort BitwiseSelect(ushort op1, ushort op2, ushort op3)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < 8 * sizeof(ushort); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result | ((ulong)op2 & (1UL << i));
-                }
-                else
-                {
-                    result = result | ((ulong)op3 & (1UL << i));
-                }
-            }
-
-            return (ushort)result;
-        }
-
-        public static ushort Not(ushort op1) => (ushort)(~op1);
-
-        public static ushort Or(ushort op1, ushort op2) => (ushort)(op1 | op2);
-
-        public static ushort OrNot(ushort op1, ushort op2) => (ushort)(op1 | ~op2);
-
-        public static ushort Xor(ushort op1, ushort op2) => (ushort)(op1 ^ op2);
-
-        public static int And(int op1, int op2) => (int)(op1 & op2);
-
-        public static int BitwiseClear(int op1, int op2) => (int)(op1 & ~op2);
-
-        public static int BitwiseSelect(int op1, int op2, int op3)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < 8 * sizeof(int); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result | ((ulong)op2 & (1UL << i));
-                }
-                else
-                {
-                    result = result | ((ulong)op3 & (1UL << i));
-                }
-            }
-
-            return (int)result;
-        }
-
-        public static int Not(int op1) => (int)(~op1);
-
-        public static int Or(int op1, int op2) => (int)(op1 | op2);
-
-        public static int OrNot(int op1, int op2) => (int)(op1 | ~op2);
-
-        public static int Xor(int op1, int op2) => (int)(op1 ^ op2);
-
-        public static uint And(uint op1, uint op2) => (uint)(op1 & op2);
-
-        public static uint BitwiseClear(uint op1, uint op2) => (uint)(op1 & ~op2);
-
-        public static uint BitwiseSelect(uint op1, uint op2, uint op3)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < 8 * sizeof(uint); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result | ((ulong)op2 & (1UL << i));
-                }
-                else
-                {
-                    result = result | ((ulong)op3 & (1UL << i));
-                }
-            }
-
-            return (uint)result;
-        }
-
-        public static uint Not(uint op1) => (uint)(~op1);
-
-        public static uint Or(uint op1, uint op2) => (uint)(op1 | op2);
-
-        public static uint OrNot(uint op1, uint op2) => (uint)(op1 | ~op2);
-
-        public static uint Xor(uint op1, uint op2) => (uint)(op1 ^ op2);
-
-        public static long And(long op1, long op2) => (long)(op1 & op2);
-
-        public static long BitwiseClear(long op1, long op2) => (long)(op1 & ~op2);
-
-        public static long BitwiseSelect(long op1, long op2, long op3)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < 8 * sizeof(long); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result | ((ulong)op2 & (1UL << i));
-                }
-                else
-                {
-                    result = result | ((ulong)op3 & (1UL << i));
-                }
-            }
-
-            return (long)result;
-        }
-
-        public static long Not(long op1) => (long)(~op1);
-
-        public static long Or(long op1, long op2) => (long)(op1 | op2);
-
-        public static long OrNot(long op1, long op2) => (long)(op1 | ~op2);
-
-        public static long Xor(long op1, long op2) => (long)(op1 ^ op2);
-
-        public static ulong And(ulong op1, ulong op2) => (ulong)(op1 & op2);
-
-        public static ulong BitwiseClear(ulong op1, ulong op2) => (ulong)(op1 & ~op2);
-
-        public static ulong BitwiseSelect(ulong op1, ulong op2, ulong op3)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < 8 * sizeof(ulong); i++)
-            {
-                if (((ulong)op1 & (1UL << i)) != 0)
-                {
-                    result = result | ((ulong)op2 & (1UL << i));
-                }
-                else
-                {
-                    result = result | ((ulong)op3 & (1UL << i));
-                }
-            }
-
-            return (ulong)result;
-        }
-
-        public static ulong Not(ulong op1) => (ulong)(~op1);
-
-        public static ulong Or(ulong op1, ulong op2) => (ulong)(op1 | op2);
-
-        public static ulong OrNot(ulong op1, ulong op2) => (ulong)(op1 | ~op2);
-
-        public static ulong Xor(ulong op1, ulong op2) => (ulong)(op1 ^ op2);
-
-        public static float Not(float op1) => BitConverter.Int32BitsToSingle(~BitConverter.SingleToInt32Bits(op1));
-
-        public static double Not(double op1) => BitConverter.Int64BitsToDouble(~BitConverter.DoubleToInt64Bits(op1));
+        public static T Not<T>(T op1)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => ~op1;
+
+        public static T Or<T>(T op1, T op2)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => op1 | op2;
+
+        public static T OrNot<T>(T op1, T op2)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => op1 | ~op2;
+
+        public static T Xor<T>(T op1, T op2)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => op1 ^ op2;
 
         public static float And(float op1, float op2) => BitConverter.Int32BitsToSingle(And(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));
 
@@ -1027,6 +209,14 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float BitwiseClear(float op1, float op2) => BitConverter.Int32BitsToSingle(BitwiseClear(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));
 
         public static double BitwiseClear(double op1, double op2) => BitConverter.Int64BitsToDouble(BitwiseClear(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2)));
+
+        public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
+
+        public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
+
+        public static float Not(float op1) => BitConverter.Int32BitsToSingle(~BitConverter.SingleToInt32Bits(op1));
+
+        public static double Not(double op1) => BitConverter.Int64BitsToDouble(~BitConverter.DoubleToInt64Bits(op1));
 
         public static float Or(float op1, float op2) => BitConverter.Int32BitsToSingle(Or(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));
 
@@ -1040,10 +230,31 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double Xor(double op1, double op2) => BitConverter.Int64BitsToDouble(Xor(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2)));
 
-        public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
-        public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
+        public static T CompareEqual<T>(T left, T right)
+            where T : unmanaged, IBinaryNumber<T>
+            => left == right ? T.AllBitsSet : T.Zero;
 
-        public static sbyte CompareEqual(sbyte left, sbyte right)
+        public static T CompareGreaterThan<T>(T left, T right)
+            where T : unmanaged, IBinaryNumber<T>
+            => left > right ? T.AllBitsSet : T.Zero;
+
+        public static T CompareGreaterThanOrEqual<T>(T left, T right)
+            where T : unmanaged, IBinaryNumber<T>
+            => left >= right ? T.AllBitsSet : T.Zero;
+
+        public static T CompareLessThan<T>(T left, T right)
+            where T : unmanaged, IBinaryNumber<T>
+            => left < right ? T.AllBitsSet : T.Zero;
+
+        public static T CompareLessThanOrEqual<T>(T left, T right)
+            where T : unmanaged, IBinaryNumber<T>
+            => left <= right ? T.AllBitsSet : T.Zero;
+
+        public static T CompareTest<T>(T left, T right)
+            where T : unmanaged, IBinaryNumber<T>
+            => (left & right) != T.Zero ? T.AllBitsSet : T.Zero;
+
+        public static double CompareEqual(double left, double right)
         {
             long result = 0;
 
@@ -1052,82 +263,22 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (sbyte)result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
-        public static sbyte CompareGreaterThan(sbyte left, sbyte right)
+        public static float CompareEqual(float left, float right)
         {
-            long result = 0;
-
-            if (left > right)
-            {
-                result = -1;
-            }
-
-            return (sbyte)result;
-        }
-
-        public static sbyte CompareGreaterThanOrEqual(sbyte left, sbyte right)
-        {
-            long result = 0;
-
-            if (left >= right)
-            {
-                result = -1;
-            }
-
-            return (sbyte)result;
-        }
-
-        public static sbyte CompareLessThan(sbyte left, sbyte right)
-        {
-            long result = 0;
-
-            if (left < right)
-            {
-                result = -1;
-            }
-
-            return (sbyte)result;
-        }
-
-        public static sbyte CompareLessThanOrEqual(sbyte left, sbyte right)
-        {
-            long result = 0;
-
-            if (left <= right)
-            {
-                result = -1;
-            }
-
-            return (sbyte)result;
-        }
-
-        public static sbyte CompareTest(sbyte left, sbyte right)
-        {
-            long result = 0;
-
-            if ((left & right) != 0)
-            {
-                result = -1;
-            }
-
-            return (sbyte)result;
-        }
-
-        public static byte CompareEqual(byte left, byte right)
-        {
-            long result = 0;
+            int result = 0;
 
             if (left == right)
             {
                 result = -1;
             }
 
-            return (byte)result;
+            return BitConverter.Int32BitsToSingle(result);
         }
 
-        public static byte CompareGreaterThan(byte left, byte right)
+        public static double CompareGreaterThan(double left, double right)
         {
             long result = 0;
 
@@ -1136,82 +287,22 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (byte)result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
-        public static byte CompareGreaterThanOrEqual(byte left, byte right)
+        public static float CompareGreaterThan(float left, float right)
         {
-            long result = 0;
-
-            if (left >= right)
-            {
-                result = -1;
-            }
-
-            return (byte)result;
-        }
-
-        public static byte CompareLessThan(byte left, byte right)
-        {
-            long result = 0;
-
-            if (left < right)
-            {
-                result = -1;
-            }
-
-            return (byte)result;
-        }
-
-        public static byte CompareLessThanOrEqual(byte left, byte right)
-        {
-            long result = 0;
-
-            if (left <= right)
-            {
-                result = -1;
-            }
-
-            return (byte)result;
-        }
-
-        public static byte CompareTest(byte left, byte right)
-        {
-            long result = 0;
-
-            if ((left & right) != 0)
-            {
-                result = -1;
-            }
-
-            return (byte)result;
-        }
-
-        public static short CompareEqual(short left, short right)
-        {
-            long result = 0;
-
-            if (left == right)
-            {
-                result = -1;
-            }
-
-            return (short)result;
-        }
-
-        public static short CompareGreaterThan(short left, short right)
-        {
-            long result = 0;
+            int result = 0;
 
             if (left > right)
             {
                 result = -1;
             }
 
-            return (short)result;
+            return BitConverter.Int32BitsToSingle(result);
         }
 
-        public static short CompareGreaterThanOrEqual(short left, short right)
+        public static double CompareGreaterThanOrEqual(double left, double right)
         {
             long result = 0;
 
@@ -1220,82 +311,22 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (short)result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
-        public static short CompareLessThan(short left, short right)
+        public static float CompareGreaterThanOrEqual(float left, float right)
         {
-            long result = 0;
-
-            if (left < right)
-            {
-                result = -1;
-            }
-
-            return (short)result;
-        }
-
-        public static short CompareLessThanOrEqual(short left, short right)
-        {
-            long result = 0;
-
-            if (left <= right)
-            {
-                result = -1;
-            }
-
-            return (short)result;
-        }
-
-        public static short CompareTest(short left, short right)
-        {
-            long result = 0;
-
-            if ((left & right) != 0)
-            {
-                result = -1;
-            }
-
-            return (short)result;
-        }
-
-        public static ushort CompareEqual(ushort left, ushort right)
-        {
-            long result = 0;
-
-            if (left == right)
-            {
-                result = -1;
-            }
-
-            return (ushort)result;
-        }
-
-        public static ushort CompareGreaterThan(ushort left, ushort right)
-        {
-            long result = 0;
-
-            if (left > right)
-            {
-                result = -1;
-            }
-
-            return (ushort)result;
-        }
-
-        public static ushort CompareGreaterThanOrEqual(ushort left, ushort right)
-        {
-            long result = 0;
+            int result = 0;
 
             if (left >= right)
             {
                 result = -1;
             }
 
-            return (ushort)result;
+            return BitConverter.Int32BitsToSingle(result);
         }
 
-        public static ushort CompareLessThan(ushort left, ushort right)
+        public static double CompareLessThan(double left, double right)
         {
             long result = 0;
 
@@ -1304,82 +335,22 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (ushort)result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
-        public static ushort CompareLessThanOrEqual(ushort left, ushort right)
+        public static float CompareLessThan(float left, float right)
         {
-            long result = 0;
-
-            if (left <= right)
-            {
-                result = -1;
-            }
-
-            return (ushort)result;
-        }
-
-        public static ushort CompareTest(ushort left, ushort right)
-        {
-            long result = 0;
-
-            if ((left & right) != 0)
-            {
-                result = -1;
-            }
-
-            return (ushort)result;
-        }
-
-        public static int CompareEqual(int left, int right)
-        {
-            long result = 0;
-
-            if (left == right)
-            {
-                result = -1;
-            }
-
-            return (int)result;
-        }
-
-        public static int CompareGreaterThan(int left, int right)
-        {
-            long result = 0;
-
-            if (left > right)
-            {
-                result = -1;
-            }
-
-            return (int)result;
-        }
-
-        public static int CompareGreaterThanOrEqual(int left, int right)
-        {
-            long result = 0;
-
-            if (left >= right)
-            {
-                result = -1;
-            }
-
-            return (int)result;
-        }
-
-        public static int CompareLessThan(int left, int right)
-        {
-            long result = 0;
+            int result = 0;
 
             if (left < right)
             {
                 result = -1;
             }
 
-            return (int)result;
+            return BitConverter.Int32BitsToSingle(result);
         }
 
-        public static int CompareLessThanOrEqual(int left, int right)
+        public static double CompareLessThanOrEqual(double left, double right)
         {
             long result = 0;
 
@@ -1388,235 +359,43 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = -1;
             }
 
-            return (int)result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
-        public static int CompareTest(int left, int right)
+        public static float CompareLessThanOrEqual(float left, float right)
         {
-            long result = 0;
-
-            if ((left & right) != 0)
-            {
-                result = -1;
-            }
-
-            return (int)result;
-        }
-
-        public static uint CompareEqual(uint left, uint right)
-        {
-            long result = 0;
-
-            if (left == right)
-            {
-                result = -1;
-            }
-
-            return (uint)result;
-        }
-
-        public static uint CompareGreaterThan(uint left, uint right)
-        {
-            long result = 0;
-
-            if (left > right)
-            {
-                result = -1;
-            }
-
-            return (uint)result;
-        }
-
-        public static uint CompareGreaterThanOrEqual(uint left, uint right)
-        {
-            long result = 0;
-
-            if (left >= right)
-            {
-                result = -1;
-            }
-
-            return (uint)result;
-        }
-
-        public static uint CompareLessThan(uint left, uint right)
-        {
-            long result = 0;
-
-            if (left < right)
-            {
-                result = -1;
-            }
-
-            return (uint)result;
-        }
-
-        public static uint CompareLessThanOrEqual(uint left, uint right)
-        {
-            long result = 0;
+            int result = 0;
 
             if (left <= right)
             {
                 result = -1;
             }
 
-            return (uint)result;
+            return BitConverter.Int32BitsToSingle(result);
         }
 
-        public static uint CompareTest(uint left, uint right)
+        public static double CompareTest(double left, double right)
         {
             long result = 0;
 
-            if ((left & right) != 0)
+            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
             {
                 result = -1;
             }
 
-            return (uint)result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
-        public static long CompareEqual(long left, long right)
+        public static float CompareTest(float left, float right)
         {
-            long result = 0;
+            int result = 0;
 
-            if (left == right)
+            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
             {
                 result = -1;
             }
 
-            return (long)result;
-        }
-
-        public static long CompareGreaterThan(long left, long right)
-        {
-            long result = 0;
-
-            if (left > right)
-            {
-                result = -1;
-            }
-
-            return (long)result;
-        }
-
-        public static long CompareGreaterThanOrEqual(long left, long right)
-        {
-            long result = 0;
-
-            if (left >= right)
-            {
-                result = -1;
-            }
-
-            return (long)result;
-        }
-
-        public static long CompareLessThan(long left, long right)
-        {
-            long result = 0;
-
-            if (left < right)
-            {
-                result = -1;
-            }
-
-            return (long)result;
-        }
-
-        public static long CompareLessThanOrEqual(long left, long right)
-        {
-            long result = 0;
-
-            if (left <= right)
-            {
-                result = -1;
-            }
-
-            return (long)result;
-        }
-
-        public static long CompareTest(long left, long right)
-        {
-            long result = 0;
-
-            if ((left & right) != 0)
-            {
-                result = -1;
-            }
-
-            return (long)result;
-        }
-
-        public static ulong CompareEqual(ulong left, ulong right)
-        {
-            long result = 0;
-
-            if (left == right)
-            {
-                result = -1;
-            }
-
-            return (ulong)result;
-        }
-
-        public static ulong CompareGreaterThan(ulong left, ulong right)
-        {
-            long result = 0;
-
-            if (left > right)
-            {
-                result = -1;
-            }
-
-            return (ulong)result;
-        }
-
-        public static ulong CompareGreaterThanOrEqual(ulong left, ulong right)
-        {
-            long result = 0;
-
-            if (left >= right)
-            {
-                result = -1;
-            }
-
-            return (ulong)result;
-        }
-
-        public static ulong CompareLessThan(ulong left, ulong right)
-        {
-            long result = 0;
-
-            if (left < right)
-            {
-                result = -1;
-            }
-
-            return (ulong)result;
-        }
-
-        public static ulong CompareLessThanOrEqual(ulong left, ulong right)
-        {
-            long result = 0;
-
-            if (left <= right)
-            {
-                result = -1;
-            }
-
-            return (ulong)result;
-        }
-
-        public static ulong CompareTest(ulong left, ulong right)
-        {
-            long result = 0;
-
-            if ((left & right) != 0)
-            {
-                result = -1;
-            }
-
-            return (ulong)result;
+            return BitConverter.Int32BitsToSingle(result);
         }
 
         public static double AbsoluteCompareGreaterThan(double left, double right)
@@ -1862,216 +641,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double SveCompareEqual(double left, double right) => BitConverter.Int64BitsToDouble((left == right) ? 1 : 0);
         public static float SveCompareEqual(float left, float right) => BitConverter.Int32BitsToSingle((left == right) ? 1 : 0);
-        public static sbyte SveCompareEqual(sbyte left, sbyte right) => (sbyte)((left == right) ? 1 : 0);
-        public static byte SveCompareEqual(byte left, byte right) => (byte)((left == right) ? 1 : 0);
-        public static short SveCompareEqual(short left, short right) => (short)((left == right) ? 1 : 0);
-        public static ushort SveCompareEqual(ushort left, ushort right) => (ushort)((left == right) ? 1 : 0);
-        public static int SveCompareEqual(int left, int right) => (int)((left == right) ? 1 : 0);
-        public static uint SveCompareEqual(uint left, uint right) => (uint)((left == right) ? 1 : 0);
-        public static long SveCompareEqual(long left, long right) => (long)((left == right) ? 1 : 0);
-        public static ulong SveCompareEqual(ulong left, ulong right) => (ulong)((left == right) ? 1 : 0);
+        public static T SveCompareEqual<T>(T left, T right)
+            where T : INumber<T>, IEqualityOperators<T, T, bool>
+            => left == right ? T.One : T.Zero;
 
         public static double SveCompareNotEqual(double left, double right) => BitConverter.Int64BitsToDouble((left != right) ? 1 : 0);
         public static float SveCompareNotEqual(float left, float right) => BitConverter.Int32BitsToSingle((left != right) ? 1 : 0);
-        public static sbyte SveCompareNotEqual(sbyte left, sbyte right) => (sbyte)((left != right) ? 1 : 0);
-        public static byte SveCompareNotEqual(byte left, byte right) => (byte)((left != right) ? 1 : 0);
-        public static short SveCompareNotEqual(short left, short right) => (short)((left != right) ? 1 : 0);
-        public static ushort SveCompareNotEqual(ushort left, ushort right) => (ushort)((left != right) ? 1 : 0);
-        public static int SveCompareNotEqual(int left, int right) => (int)((left != right) ? 1 : 0);
-        public static uint SveCompareNotEqual(uint left, uint right) => (uint)((left != right) ? 1 : 0);
-        public static long SveCompareNotEqual(long left, long right) => (long)((left != right) ? 1 : 0);
-        public static ulong SveCompareNotEqual(ulong left, ulong right) => (ulong)((left != right) ? 1 : 0);
-        
+        public static T SveCompareNotEqual<T>(T left, T right)
+            where T : INumber<T>, IEqualityOperators<T, T, bool>
+            => left != right ? T.One : T.Zero;
+
         public static double SveCompareGreaterThan(double left, double right) => BitConverter.Int64BitsToDouble((left > right) ? 1 : 0);
         public static float SveCompareGreaterThan(float left, float right) => BitConverter.Int32BitsToSingle((left > right) ? 1 : 0);
-        public static sbyte SveCompareGreaterThan(sbyte left, sbyte right) => (sbyte)((left > right) ? 1 : 0);
-        public static byte SveCompareGreaterThan(byte left, byte right) => (byte)((left > right) ? 1 : 0);
-        public static short SveCompareGreaterThan(short left, short right) => (short)((left > right) ? 1 : 0);
-        public static ushort SveCompareGreaterThan(ushort left, ushort right) => (ushort)((left > right) ? 1 : 0);
-        public static int SveCompareGreaterThan(int left, int right) => (int)((left > right) ? 1 : 0);
-        public static uint SveCompareGreaterThan(uint left, uint right) => (uint)((left > right) ? 1 : 0);
-        public static long SveCompareGreaterThan(long left, long right) => (long)((left > right) ? 1 : 0);
-        public static ulong SveCompareGreaterThan(ulong left, ulong right) => (ulong)((left > right) ? 1 : 0);
-        
+        public static T SveCompareGreaterThan<T>(T left, T right)
+            where T : INumber<T>, IComparisonOperators<T, T, bool>
+            => left > right ? T.One : T.Zero;
+
         public static double SveCompareGreaterThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left >= right) ? 1 : 0);
         public static float SveCompareGreaterThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left >= right) ? 1 : 0);
-        public static sbyte SveCompareGreaterThanOrEqual(sbyte left, sbyte right) => (sbyte)((left >= right) ? 1 : 0);
-        public static byte SveCompareGreaterThanOrEqual(byte left, byte right) => (byte)((left >= right) ? 1 : 0);
-        public static short SveCompareGreaterThanOrEqual(short left, short right) => (short)((left >= right) ? 1 : 0);
-        public static ushort SveCompareGreaterThanOrEqual(ushort left, ushort right) => (ushort)((left >= right) ? 1 : 0);
-        public static int SveCompareGreaterThanOrEqual(int left, int right) => (int)((left >= right) ? 1 : 0);
-        public static uint SveCompareGreaterThanOrEqual(uint left, uint right) => (uint)((left >= right) ? 1 : 0);
-        public static long SveCompareGreaterThanOrEqual(long left, long right) => (long)((left >= right) ? 1 : 0);
-        public static ulong SveCompareGreaterThanOrEqual(ulong left, ulong right) => (ulong)((left >= right) ? 1 : 0);
+        public static T SveCompareGreaterThanOrEqual<T>(T left, T right)
+            where T : INumber<T>, IComparisonOperators<T, T, bool>
+            => left >= right ? T.One : T.Zero;
 
         public static double SveCompareLessThan(double left, double right) => BitConverter.Int64BitsToDouble((left < right) ? 1 : 0);
         public static float SveCompareLessThan(float left, float right) => BitConverter.Int32BitsToSingle((left < right) ? 1 : 0);
-        public static sbyte SveCompareLessThan(sbyte left, sbyte right) => (sbyte)((left < right) ? 1 : 0);
-        public static byte SveCompareLessThan(byte left, byte right) => (byte)((left < right) ? 1 : 0);
-        public static short SveCompareLessThan(short left, short right) => (short)((left < right) ? 1 : 0);
-        public static ushort SveCompareLessThan(ushort left, ushort right) => (ushort)((left < right) ? 1 : 0);
-        public static int SveCompareLessThan(int left, int right) => (int)((left < right) ? 1 : 0);
-        public static uint SveCompareLessThan(uint left, uint right) => (uint)((left < right) ? 1 : 0);
-        public static long SveCompareLessThan(long left, long right) => (long)((left < right) ? 1 : 0);
-        public static ulong SveCompareLessThan(ulong left, ulong right) => (ulong)((left < right) ? 1 : 0);      
+        public static T SveCompareLessThan<T>(T left, T right)
+            where T : INumber<T>, IComparisonOperators<T, T, bool>
+            => left < right ? T.One : T.Zero;
 
         public static double SveCompareLessThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left <= right) ? 1 : 0);
         public static float SveCompareLessThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left <= right) ? 1 : 0);
-        public static sbyte SveCompareLessThanOrEqual(sbyte left, sbyte right) => (sbyte)((left <= right) ? 1 : 0);
-        public static byte SveCompareLessThanOrEqual(byte left, byte right) => (byte)((left <= right) ? 1 : 0);
-        public static short SveCompareLessThanOrEqual(short left, short right) => (short)((left <= right) ? 1 : 0);
-        public static ushort SveCompareLessThanOrEqual(ushort left, ushort right) => (ushort)((left <= right) ? 1 : 0);
-        public static int SveCompareLessThanOrEqual(int left, int right) => (int)((left <= right) ? 1 : 0);
-        public static uint SveCompareLessThanOrEqual(uint left, uint right) => (uint)((left <= right) ? 1 : 0);
-        public static long SveCompareLessThanOrEqual(long left, long right) => (long)((left <= right) ? 1 : 0);
-        public static ulong SveCompareLessThanOrEqual(ulong left, ulong right) => (ulong)((left <= right) ? 1 : 0);
+        public static T SveCompareLessThanOrEqual<T>(T left, T right)
+            where T : INumber<T>, IComparisonOperators<T, T, bool>
+            => left <= right ? T.One : T.Zero;
 
         public static double SveCompareUnordered(double left, double right) => BitConverter.Int64BitsToDouble((double.IsNaN(left) || double.IsNaN(right)) ? 1 : 0);
         public static float SveCompareUnordered(float left, float right) => BitConverter.Int32BitsToSingle((float.IsNaN(left) || float.IsNaN(right)) ? 1 : 0);
-
-        public static double CompareEqual(double left, double right)
-        {
-            long result = 0;
-
-            if (left == right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float CompareEqual(float left, float right)
-        {
-            int result = 0;
-
-            if (left == right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double CompareGreaterThan(double left, double right)
-        {
-            long result = 0;
-
-            if (left > right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float CompareGreaterThan(float left, float right)
-        {
-            int result = 0;
-
-            if (left > right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double CompareGreaterThanOrEqual(double left, double right)
-        {
-            long result = 0;
-
-            if (left >= right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float CompareGreaterThanOrEqual(float left, float right)
-        {
-            int result = 0;
-
-            if (left >= right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double CompareLessThan(double left, double right)
-        {
-            long result = 0;
-
-            if (left < right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float CompareLessThan(float left, float right)
-        {
-            int result = 0;
-
-            if (left < right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double CompareLessThanOrEqual(double left, double right)
-        {
-            long result = 0;
-
-            if (left <= right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float CompareLessThanOrEqual(float left, float right)
-        {
-            int result = 0;
-
-            if (left <= right)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double CompareTest(double left, double right)
-        {
-            long result = 0;
-
-            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float CompareTest(float left, float right)
-        {
-            int result = 0;
-
-            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
-            {
-                result = -1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
 
         public static byte Abs(sbyte value) => value < 0 ? (byte)-value : (byte)value;
 
@@ -2091,39 +696,23 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float Scale(float op1, int op2) => op1 * MathF.Pow((float)2.0, op2);
 
-        public static double Scale(double op1, long op2) =>  op1 * Math.Pow(2.0, op2);
+        public static double Scale(double op1, long op2) => op1 * Math.Pow(2.0, op2);
 
         public static float Sqrt(float value) => MathF.Sqrt(value);
 
         public static double Sqrt(double value) => Math.Sqrt(value);
 
-        public static long AbsoluteDifference(long op1, long op2) => op1 < op2 ? (long)(op2 - op1) : (long)(op1 - op2);
+        public static T AbsoluteDifference<T>(T op1, T op2)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+        {
+            return op1 < op2 ? op2 - op1 : op1 - op2;
+        }
 
-        public static byte AbsoluteDifference(sbyte op1, sbyte op2) => op1 < op2 ? (byte)(op2 - op1) : (byte)(op1 - op2);
-
-        public static sbyte AbsoluteDifferenceAdd(sbyte op1, sbyte op2, sbyte op3) => (sbyte)(op1 + AbsoluteDifference(op2, op3));
-
-        public static ushort AbsoluteDifference(short op1, short op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
-
-        public static short AbsoluteDifferenceAdd(short op1, short op2, short op3) => (short)(op1 + AbsoluteDifference(op2, op3));
-
-        public static uint AbsoluteDifference(int op1, int op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
-
-        public static int AbsoluteDifferenceAdd(int op1, int op2, int op3) => (int)(op1 + AbsoluteDifference(op2, op3));
-
-        public static byte AbsoluteDifference(byte op1, byte op2) => op1 < op2 ? (byte)(op2 - op1) : (byte)(op1 - op2);
-
-        public static byte AbsoluteDifferenceAdd(byte op1, byte op2, byte op3) => (byte)(op1 + AbsoluteDifference(op2, op3));
-
-        public static ushort AbsoluteDifference(ushort op1, ushort op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
-
-        public static ulong AbsoluteDifference(ulong op1, ulong op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
-
-        public static ushort AbsoluteDifferenceAdd(ushort op1, ushort op2, ushort op3) => (ushort)(op1 + AbsoluteDifference(op2, op3));
-
-        public static uint AbsoluteDifference(uint op1, uint op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
-
-        public static uint AbsoluteDifferenceAdd(uint op1, uint op2, uint op3) => (uint)(op1 + AbsoluteDifference(op2, op3));
+        public static T AbsoluteDifferenceAdd<T>(T op1, T op2, T op3)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+        {
+            return op1 + AbsoluteDifference(op2, op3);
+        }
 
         public static ushort AbsoluteDifferenceWidening(sbyte op1, sbyte op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
 
@@ -2133,31 +722,50 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AbsoluteDifferenceWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static short AddAcrossWidening(sbyte[] op1) => Reduce(AddWidening, op1);
+        public static short AbsoluteDifferenceWideningLowerAndAddEven(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static long AddAcrossWideningLong(sbyte[] op1) => Reduce(AddWidening, op1);
+        public static short AbsoluteDifferenceWideningLowerAndAddOdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
+
+        public static short AbsoluteDifferenceWideningEven(sbyte[] op1, sbyte[] op2, int i) => (short)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
+
+        public static short AbsoluteDifferenceWideningOdd(sbyte[] op1, sbyte[] op2, int i) => (short)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
+
+        public static short AddAcrossWidening(sbyte[] op1) => Reduce<short, sbyte>(AddWidening, op1);
+
+        public static long AddAcrossWideningLong(sbyte[] op1) => Reduce<long, sbyte>(AddWidening, op1);
 
         public static short AddPairwiseWidening(sbyte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static short AddPairwiseWideningAndAdd(short[] op1, sbyte[] op2, int i) => (short)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
 
-        private static sbyte HighNarrowing(short op1, bool round)
+        public static sbyte AddHighNarrowingEven(short[] op1, short[] op2, int i)
         {
-            ushort roundConst = 0;
-            if (round)
+            if (i % 2 == 0)
             {
-                roundConst = (ushort)1 << (8 * sizeof(sbyte) - 1);
+                return (sbyte) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(sbyte)));
             }
-            return (sbyte)(((ushort)op1 + roundConst) >> (8 * sizeof(sbyte)));
+
+            return 0;
         }
 
-        public static sbyte AddHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 + op2), round: false);
+        public static sbyte AddHighNarrowingOdd(sbyte[] even, short[] op1, short[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (sbyte) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(sbyte)));
+            }
 
-        public static sbyte AddHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+            return even[i];
+        }
 
-        public static sbyte AddRoundedHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 + op2), round: true);
+        public static unsafe U AddHighNarrowing<T, U>(T op1, T op2)
+            where U : unmanaged, INumber<U>
+            where T : unmanaged, INumber<T>, IShiftOperators<T, int, T>
+            => HighNarrowing<T, U>(op1 + op2, round: false);
 
-        public static short AddRoundedHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+        public static sbyte AddHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing<short, sbyte>(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static short AddRoundedHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing<short, sbyte>(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static short AddWidening(sbyte op1, sbyte op2) => (short)((short)op1 + (short)op2);
 
@@ -2169,21 +777,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short AddWideningUpper(short[] op1, sbyte[] op2, int i) => AddWidening(op1[i], op2[i + op2.Length / 2]);
 
-        public static sbyte BooleanNot(sbyte value) => (sbyte)(value == 0 ? 1 : 0);
-
-        public static byte BooleanNot(byte value) => (byte)(value == 0 ? 1 : 0);
-
-        public static short BooleanNot(short value) => (short)(value == 0 ? 1 : 0);
-
-        public static ushort BooleanNot(ushort value) => (ushort)(value == 0 ? 1 : 0);
-
-        public static int BooleanNot(int value) => (int)(value == 0 ? 1 : 0);
-
-        public static uint BooleanNot(uint value) => (uint)(value == 0 ? 1 : 0);
-
-        public static long BooleanNot(long value) => (long)(value == 0 ? 1 : 0);
-
-        public static ulong BooleanNot(ulong value) => (ulong)(value == 0 ? 1 : 0);
+        public static T BooleanNot<T>(T value)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+        {
+            return value == T.Zero ? T.One : T.Zero;
+        }
 
         public static sbyte ExtractNarrowing(short op1) => (sbyte)op1;
 
@@ -2197,29 +795,48 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short MultiplyByScalarWideningUpper(sbyte[] op1, sbyte op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
 
-        public static short MultiplyByScalarWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+        public static short MultiplyByScalarWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3);
 
         public static short MultiplyByScalarWideningUpperAndSubtract(short[] op1, sbyte[] op2, sbyte op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static short MultiplyWidening(sbyte op1, sbyte op2) => (short)((short)op1 * (short)op2);
 
-        public static short MultiplyWideningAndAdd(short op1, sbyte op2, sbyte op3) => (short)(op1 + MultiplyWidening(op2, op3));
-
         public static short MultiplyWideningAndSubtract(short op1, sbyte op2, sbyte op3) => (short)(op1 - MultiplyWidening(op2, op3));
 
         public static short MultiplyWideningUpper(sbyte[] op1, sbyte[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
-        public static short MultiplyWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+        public static short MultiplyWideningUpperAndAdd(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static short MultiplyWideningUpperAndSubtract(short[] op1, sbyte[] op2, sbyte[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static sbyte SubtractHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 - op2), round: false);
+        public static N SubtractHighNarrowing<W, N>(W op1, W op2)
+            where W : unmanaged, IBinaryInteger<W>
+            where N : unmanaged, IBinaryInteger<N>
+            => HighNarrowing<W, N>(op1 - op2, round: false);
 
-        public static short SubtractHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+        public static N SubtractHighNarrowingUpper<W, N>(N[] op1, W[] op2, W[] op3, int i)
+            where W : unmanaged, IBinaryInteger<W>
+            where N : unmanaged, IBinaryInteger<N>
+        {
+            if (i < op1.Length)
+            {
+                return op1[i];
+            }
 
-        public static sbyte SubtractRoundedHighNarrowing(short op1, short op2) => HighNarrowing((short)(op1 - op2), round: true);
+            return SubtractHighNarrowing<W, N>(op2[i - op1.Length], op3[i - op1.Length]);
+        }
 
-        public static short SubtractRoundedHighNarrowingUpper(sbyte[] op1, short[] op2, short[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+        public static N SubtractRoundedHighNarrowingUpper<W, N>(N[] op1, W[] op2, W[] op3, int i)
+            where W : unmanaged, IBinaryInteger<W>
+            where N : unmanaged, IBinaryInteger<N>
+        {
+            if (i < op1.Length)
+            {
+                return op1[i];
+            }
+
+            return SubtractRoundedHighNarrowing<W, N>(op2[i - op1.Length], op3[i - op1.Length]);
+        }
 
         public static short SubtractWidening(sbyte op1, sbyte op2) => (short)((short)op1 - (short)op2);
 
@@ -2233,30 +850,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short ZeroExtendWideningUpper(sbyte[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
-        private static short Reduce(Func<short, sbyte, short> reduceOp, sbyte[] op1)
-        {
-            short acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        private static long Reduce(Func<long, sbyte, long> reduceOp, sbyte[] op1)
-        {
-            long acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
         public static uint AbsoluteDifferenceWidening(short op1, short op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
 
         public static uint AbsoluteDifferenceWideningUpper(short[] op1, short[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -2265,31 +858,131 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int AbsoluteDifferenceWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static int AddAcrossWidening(short[] op1) => Reduce(AddWidening, op1);
+        public static int AbsoluteDifferenceWideningLowerAndAddEven(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static long AddAcrossWideningLong(short[] op1) => Reduce(AddWidening, op1);
+        public static int AbsoluteDifferenceWideningLowerAndAddOdd(int[] op1, short[] op2, short[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
+
+        public static int AbsoluteDifferenceWideningEven(short[] op1, short[] op2, int i) => (int)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
+
+        public static int AbsoluteDifferenceWideningOdd(short[] op1, short[] op2, int i) => (int)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
+
+        public static int AddAcrossWidening(short[] op1) => Reduce<int, short>(AddWidening, op1);
+
+        public static long AddAcrossWideningLong(short[] op1) => Reduce<long, short>(AddWidening, op1);
 
         public static int AddPairwiseWidening(short[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static int AddPairwiseWideningAndAdd(int[] op1, short[] op2, int i) => (int)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
 
-        private static short HighNarrowing(int op1, bool round)
+        public static uint AddCarryWideningEven(uint[] op1, uint[] op2, uint[] op3, int i)
         {
-            uint roundConst = 0;
-            if (round)
+            uint lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
             {
-                roundConst = (uint)1 << (8 * sizeof(short) - 1);
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
             }
-            return (short)(((uint)op1 + roundConst) >> (8 * sizeof(short)));
+
+            if (i % 2 == 0)
+            {
+                if (i + 1 >= op2.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
+
+                lsb = op2[i + 1] & 1u;
+                res = (ulong)op1[i] + op3[i] + lsb;
+                return (uint)res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op1.Length) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1u;
+                res = (ulong)op1[i - 1] + op3[i - 1] + lsb;
+
+                // Shift result to get the carry bit
+                return (uint)(res >> 32);
+            }
         }
 
-        public static short AddHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 + op2), round: false);
+        public static uint AddCarryWideningOdd(uint[] op1, uint[] op2, uint[] op3, int i)
+        {
+            uint lsb;
+            ulong res;
 
-        public static short AddHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
 
-        public static short AddRoundedHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 + op2), round: true);
+            if (i % 2 == 0)
+            {
+                if (((i + 1) >= op1.Length) || ((i + 1) >= op2.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
 
-        public static int AddRoundedHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+                lsb = op2[i + 1] & 1u;
+                res = (ulong)op1[i + 1] + op3[i] + lsb;
+                return (uint)res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1u;
+                res = (ulong)op1[i] + op3[i - 1] + lsb;
+
+                // Shift result to get the carry bit
+                return (uint)(res >> 32);
+            }
+        }
+
+        public static unsafe U HighNarrowing<T, U>(T op1, bool round)
+            where U : unmanaged, INumber<U>
+            where T : unmanaged, INumber<T>, IShiftOperators<T, int, T>
+        {
+            T roundConst = T.Zero;
+            int shift = 8 * Unsafe.SizeOf<U>();
+            if (round)
+            {
+                roundConst = T.One << (shift - 1);
+            }
+
+            return U.CreateChecked((op1 + roundConst) >> shift);
+        }
+
+        public static short AddHighNarrowingEven(int[] op1, int[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (short) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(short)));
+            }
+
+            return 0;
+        }
+
+        public static short AddHighNarrowingOdd(short[] even, int[] op1, int[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (short) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(short)));
+            }
+
+            return even[i];
+        }
+
+        public static short AddHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing<int, short>(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static int AddRoundedHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing<int, short>(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static int AddWidening(short op1, short op2) => (int)((int)op1 + (int)op2);
 
@@ -2311,29 +1004,45 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short FusedSubtractHalving(short op1, short op2) => (short)((uint)((int)op1 - (int)op2) >> 1);
 
+        public static int Log2(float val)
+        {
+            if (float.IsNaN(val) || val <= 0)
+            {
+                return int.MinValue;
+            }
+            if (float.IsInfinity(val))
+            {
+                return int.MaxValue;
+            }
+
+            double log2 = Math.Log(val, 2.0);
+            if (log2 >= int.MaxValue) return int.MaxValue;
+            if (log2 <= int.MinValue) return int.MinValue;
+
+            return (int)Math.Floor(log2);
+        }
+
         public static int MultiplyByScalarWideningUpper(short[] op1, short op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
 
-        public static int MultiplyByScalarWideningUpperAndAdd(int[] op1, short[] op2, short op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+        public static int MultiplyByScalarWideningUpperAndAdd(int[] op1, short[] op2, short op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3);
 
         public static int MultiplyByScalarWideningUpperAndSubtract(int[] op1, short[] op2, short op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static int MultiplyWidening(short op1, short op2) => (int)((int)op1 * (int)op2);
 
-        public static int MultiplyWideningAndAdd(int op1, short op2, short op3) => (int)(op1 + MultiplyWidening(op2, op3));
-
         public static int MultiplyWideningAndSubtract(int op1, short op2, short op3) => (int)(op1 - MultiplyWidening(op2, op3));
 
         public static int MultiplyWideningUpper(short[] op1, short[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
-        public static int MultiplyWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+        public static int MultiplyWideningUpperAndAdd(int[] op1, short[] op2, short[] op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static int MultiplyWideningUpperAndSubtract(int[] op1, short[] op2, short[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static short SubtractHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 - op2), round: false);
+        public static short SubtractHighNarrowing(int op1, int op2) => HighNarrowing<int, short>((int)(op1 - op2), round: false);
 
         public static int SubtractHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static short SubtractRoundedHighNarrowing(int op1, int op2) => HighNarrowing((int)(op1 - op2), round: true);
+        public static short SubtractRoundedHighNarrowing(int op1, int op2) => HighNarrowing<int, short>((int)(op1 - op2), round: true);
 
         public static int SubtractRoundedHighNarrowingUpper(short[] op1, int[] op2, int[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
@@ -2349,30 +1058,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int ZeroExtendWideningUpper(short[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
-        private static int Reduce(Func<int, short, int> reduceOp, short[] op1)
-        {
-            int acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        private static long Reduce(Func<long, short, long> reduceOp, short[] op1)
-        {
-            long acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
         public static ulong AbsoluteDifferenceWidening(int op1, int op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
 
         public static ulong AbsoluteDifferenceWideningUpper(int[] op1, int[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -2381,29 +1066,125 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long AbsoluteDifferenceWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static long AddAcrossWidening(int[] op1) => Reduce(AddWidening, op1);
+        public static long AbsoluteDifferenceWideningLowerAndAddEven(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
+
+        public static long AbsoluteDifferenceWideningLowerAndAddOdd(long[] op1, int[] op2, int[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
+
+        public static long AbsoluteDifferenceWideningEven(int[] op1, int[] op2, int i) => (long)AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
+
+        public static long AbsoluteDifferenceWideningOdd(int[] op1, int[] op2, int i) => (long)AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
+
+        public static long AddAcrossWidening(int[] op1) => Reduce<long, int>(AddWidening, op1);
 
         public static long AddPairwiseWidening(int[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static long AddPairwiseWideningAndAdd(long[] op1, int[] op2, int i) => (long)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
 
-        private static int HighNarrowing(long op1, bool round)
+        public static ulong AddCarryWideningEven(ulong[] op1, ulong[] op2, ulong[] op3, int i)
         {
-            ulong roundConst = 0;
-            if (round)
+            ulong lsb;
+            ulong res;
+
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
             {
-                roundConst = (ulong)1 << (8 * sizeof(int) - 1);
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
             }
-            return (int)(((ulong)op1 + roundConst) >> (8 * sizeof(int)));
+
+            if (i % 2 == 0)
+            {
+                if ((i + 1) >= op2.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range for op3.");
+                }
+
+                lsb = op2[i + 1] & 1UL;
+                res = op1[i] + op3[i] + lsb;
+                return res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op1.Length) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1UL;
+
+                // Look for an overflow in the addition to get the carry bit
+                ulong sum1 = op1[i - 1] + op3[i - 1];
+                bool overflow1 = sum1 < op1[i - 1];
+
+                ulong sum2 = sum1 + lsb;
+                bool overflow2 = sum2 < sum1;
+
+                return (overflow1 || overflow2) ? 1UL : 0UL;
+            }
         }
 
-        public static int AddHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 + op2), round: false);
+        public static ulong AddCarryWideningOdd(ulong[] op1, ulong[] op2, ulong[] op3, int i)
+        {
+            ulong lsb;
+            ulong res;
 
-        public static int AddHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+            if ((i < 0) || (i >= op1.Length) || (i >= op2.Length) || (i >= op3.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), "Index i is out of range");
+            }
 
-        public static int AddRoundedHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 + op2), round: true);
+            if (i % 2 == 0)
+            {
+                if (((i + 1) >= op1.Length) || ((i + 1) >= op2.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i + 1 is out of range.");
+                }
 
-        public static long AddRoundedHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+                lsb = op2[i + 1] & 1UL;
+                res = op1[i + 1] + op3[i] + lsb;
+                return res;
+            }
+            else
+            {
+                if (((i - 1) < 0) || ((i - 1) >= op3.Length))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(i), "Index i - 1 is out of range.");
+                }
+
+                lsb = op2[i] & 1UL;
+
+                // Look for an overflow in the addition to get the carry bit
+                ulong sum1 = op1[i] + op3[i - 1];
+                bool overflow1 = sum1 < op1[i];
+
+                ulong sum2 = sum1 + lsb;
+                bool overflow2 = sum2 < sum1;
+
+                return (overflow1 || overflow2) ? 1UL : 0UL;
+            }
+        }
+
+        public static int AddHighNarrowingEven(long[] op1, long[] op2, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (int) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(int)));
+            }
+
+            return 0;
+        }
+
+        public static int AddHighNarrowingOdd(int[] even, long[] op1, long[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (int) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(int)));
+            }
+
+            return even[i];
+        }
+
+        public static int AddHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing<long, int>(op2[i - op1.Length], op3[i - op1.Length]);
+
+        public static long AddRoundedHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing<long, int>(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static long AddWidening(int op1, int op2) => (long)((long)op1 + (long)op2);
 
@@ -2423,21 +1204,37 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int FusedSubtractHalving(int op1, int op2) => (int)((ulong)((long)op1 - (long)op2) >> 1);
 
+        public static long Log2(double val)
+        {
+            if (double.IsNaN(val) || val <= 0)
+            {
+                return long.MinValue;
+            }
+            if (double.IsInfinity(val))
+            {
+                return long.MaxValue;
+            }
+
+            double log2 = Math.Log(val, 2.0);
+            if (log2 >= long.MaxValue) return long.MaxValue;
+            if (log2 <= long.MinValue) return long.MinValue;
+
+            return (long)Math.Floor(log2);
+        }
+
         public static long MultiplyByScalarWideningUpper(int[] op1, int op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
 
-        public static long MultiplyByScalarWideningUpperAndAdd(long[] op1, int[] op2, int op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+        public static long MultiplyByScalarWideningUpperAndAdd(long[] op1, int[] op2, int op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3);
 
         public static long MultiplyByScalarWideningUpperAndSubtract(long[] op1, int[] op2, int op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static long MultiplyWidening(int op1, int op2) => (long)((long)op1 * (long)op2);
 
-        public static long MultiplyWideningAndAdd(long op1, int op2, int op3) => (long)(op1 + MultiplyWidening(op2, op3));
-
         public static long MultiplyWideningAndSubtract(long op1, int op2, int op3) => (long)(op1 - MultiplyWidening(op2, op3));
 
         public static long MultiplyWideningUpper(int[] op1, int[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
-        public static long MultiplyWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+        public static long MultiplyWideningUpperAndAdd(long[] op1, int[] op2, int[] op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static long MultiplyWideningUpperAndSubtract(long[] op1, int[] op2, int[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
@@ -2463,10 +1260,10 @@ namespace JIT.HardwareIntrinsics.Arm
             return op1;
         }
 
-        public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible
+        public static T SignExtend<T>(T n, int numBits, bool zeroExtend) where T : struct, IComparable, IConvertible, IBinaryInteger<T>
         {
             // Get the underlying integer value
-            dynamic value = Convert.ChangeType(n, typeof(long));
+            long value = long.CreateTruncating(n);
 
             // Mask to extract the lowest numBits
             long mask = (1L << numBits) - 1;
@@ -2486,11 +1283,11 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        public static int SubtractHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 - op2), round: false);
+        public static int SubtractHighNarrowing(long op1, long op2) => HighNarrowing<long, int>((long)(op1 - op2), round: false);
 
         public static long SubtractHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static int SubtractRoundedHighNarrowing(long op1, long op2) => HighNarrowing((long)(op1 - op2), round: true);
+        public static int SubtractRoundedHighNarrowing(long op1, long op2) => HighNarrowing<long, int>((long)(op1 - op2), round: true);
 
         public static long SubtractRoundedHighNarrowingUpper(int[] op1, long[] op2, long[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
@@ -2506,18 +1303,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long ZeroExtendWideningUpper(int[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
-        private static long Reduce(Func<long, int, long> reduceOp, int[] op1)
-        {
-            long acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
         public static ushort AbsoluteDifferenceWidening(byte op1, byte op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
 
         public static ushort AbsoluteDifferenceWideningUpper(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -2526,31 +1311,45 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort AbsoluteDifferenceWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static ushort AddAcrossWidening(byte[] op1) => Reduce(AddWidening, op1);
+        public static ushort AbsoluteDifferenceWideningLowerAndAddEven(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static ulong AddAcrossWideningULong(byte[] op1) => Reduce(AddWidening, op1);
+        public static ushort AbsoluteDifferenceWideningLowerAndAddOdd(ushort[] op1, byte[] op2, byte[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
+
+        public static ushort AbsoluteDifferenceWideningEven(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
+
+        public static ushort AbsoluteDifferenceWideningOdd(byte[] op1, byte[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
+
+        public static ushort AddAcrossWidening(byte[] op1) => Reduce<ushort, byte>(AddWidening, op1);
+
+        public static ulong AddAcrossWideningULong(byte[] op1) => Reduce<ulong, byte>(AddWidening, op1);
 
         public static ushort AddPairwiseWidening(byte[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static ushort AddPairwiseWideningAndAdd(ushort[] op1, byte[] op2, int i) => (ushort)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
 
-        private static byte HighNarrowing(ushort op1, bool round)
+        public static byte AddHighNarrowingEven(ushort[] op1, ushort[] op2, int i)
         {
-            ushort roundConst = 0;
-            if (round)
+            if (i % 2 == 0)
             {
-                roundConst = (ushort)1 << (8 * sizeof(byte) - 1);
+                return (byte) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(byte)));
             }
-            return (byte)(((ushort)op1 + roundConst) >> (8 * sizeof(byte)));
+
+            return 0;
         }
 
-        public static byte AddHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 + op2), round: false);
+        public static byte AddHighNarrowingOdd(byte[] even, ushort[] op1, ushort[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (byte) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(byte)));
+            }
 
-        public static byte AddHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+            return even[i];
+        }
 
-        public static byte AddRoundedHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 + op2), round: true);
+        public static byte AddHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing<ushort, byte>(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static ushort AddRoundedHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ushort AddRoundedHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing<ushort, byte>(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static ushort AddWidening(byte op1, byte op2) => (ushort)((ushort)op1 + (ushort)op2);
 
@@ -2574,27 +1373,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort MultiplyByScalarWideningUpper(byte[] op1, byte op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
 
-        public static ushort MultiplyByScalarWideningUpperAndAdd(ushort[] op1, byte[] op2, byte op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+        public static ushort MultiplyByScalarWideningUpperAndAdd(ushort[] op1, byte[] op2, byte op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3);
 
         public static ushort MultiplyByScalarWideningUpperAndSubtract(ushort[] op1, byte[] op2, byte op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static ushort MultiplyWidening(byte op1, byte op2) => (ushort)((ushort)op1 * (ushort)op2);
 
-        public static ushort MultiplyWideningAndAdd(ushort op1, byte op2, byte op3) => (ushort)(op1 + MultiplyWidening(op2, op3));
-
         public static ushort MultiplyWideningAndSubtract(ushort op1, byte op2, byte op3) => (ushort)(op1 - MultiplyWidening(op2, op3));
 
         public static ushort MultiplyWideningUpper(byte[] op1, byte[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
-        public static ushort MultiplyWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+        public static ushort MultiplyWideningUpperAndAdd(ushort[] op1, byte[] op2, byte[] op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static ushort MultiplyWideningUpperAndSubtract(ushort[] op1, byte[] op2, byte[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static byte SubtractHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 - op2), round: false);
+        public static byte SubtractHighNarrowing(ushort op1, ushort op2) => HighNarrowing<ushort, byte>((ushort)(op1 - op2), round: false);
 
         public static ushort SubtractHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static byte SubtractRoundedHighNarrowing(ushort op1, ushort op2) => HighNarrowing((ushort)(op1 - op2), round: true);
+        public static byte SubtractRoundedHighNarrowing(ushort op1, ushort op2) => HighNarrowing<ushort, byte>((ushort)(op1 - op2), round: true);
 
         public static ushort SubtractRoundedHighNarrowingUpper(byte[] op1, ushort[] op2, ushort[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
@@ -2610,30 +1407,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ZeroExtendWideningUpper(byte[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
-        private static ushort Reduce(Func<ushort, byte, ushort> reduceOp, byte[] op1)
-        {
-            ushort acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        private static ulong Reduce(Func<ulong, byte, ulong> reduceOp, byte[] op1)
-        {
-            ulong acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
         public static uint AbsoluteDifferenceWidening(ushort op1, ushort op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
 
         public static uint AbsoluteDifferenceWideningUpper(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -2642,31 +1415,45 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifferenceWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static uint AddAcrossWidening(ushort[] op1) => Reduce(AddWidening, op1);
+        public static uint AbsoluteDifferenceWideningLowerAndAddEven(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
 
-        public static ulong AddAcrossWideningULong(ushort[] op1) => Reduce(AddWidening, op1);
+        public static uint AbsoluteDifferenceWideningLowerAndAddOdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
+
+        public static uint AbsoluteDifferenceWideningEven(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
+
+        public static uint AbsoluteDifferenceWideningOdd(ushort[] op1, ushort[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
+
+        public static uint AddAcrossWidening(ushort[] op1) => Reduce<uint, ushort>(AddWidening, op1);
+
+        public static ulong AddAcrossWideningULong(ushort[] op1) => Reduce<ulong, ushort>(AddWidening, op1);
 
         public static uint AddPairwiseWidening(ushort[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static uint AddPairwiseWideningAndAdd(uint[] op1, ushort[] op2, int i) => (uint)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
 
-        private static ushort HighNarrowing(uint op1, bool round)
+        public static ushort AddHighNarrowingEven(uint[] op1, uint[] op2, int i)
         {
-            uint roundConst = 0;
-            if (round)
+            if (i % 2 == 0)
             {
-                roundConst = (uint)1 << (8 * sizeof(ushort) - 1);
+                return (ushort) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(ushort)));
             }
-            return (ushort)(((uint)op1 + roundConst) >> (8 * sizeof(ushort)));
+
+            return 0;
         }
 
-        public static ushort AddHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 + op2), round: false);
+        public static ushort AddHighNarrowingOdd(ushort[] even, uint[] op1, uint[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (ushort) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(ushort)));
+            }
 
-        public static ushort AddHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+            return even[i];
+        }
 
-        public static ushort AddRoundedHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 + op2), round: true);
+        public static ushort AddHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing<uint, ushort>(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static uint AddRoundedHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+        public static uint AddRoundedHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing<uint, ushort>(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static uint AddWidening(ushort op1, ushort op2) => (uint)((uint)op1 + (uint)op2);
 
@@ -2690,27 +1477,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint MultiplyByScalarWideningUpper(ushort[] op1, ushort op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
 
-        public static uint MultiplyByScalarWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+        public static uint MultiplyByScalarWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3);
 
         public static uint MultiplyByScalarWideningUpperAndSubtract(uint[] op1, ushort[] op2, ushort op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static uint MultiplyWidening(ushort op1, ushort op2) => (uint)((uint)op1 * (uint)op2);
 
-        public static uint MultiplyWideningAndAdd(uint op1, ushort op2, ushort op3) => (uint)(op1 + MultiplyWidening(op2, op3));
-
         public static uint MultiplyWideningAndSubtract(uint op1, ushort op2, ushort op3) => (uint)(op1 - MultiplyWidening(op2, op3));
 
         public static uint MultiplyWideningUpper(ushort[] op1, ushort[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
-        public static uint MultiplyWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+        public static uint MultiplyWideningUpperAndAdd(uint[] op1, ushort[] op2, ushort[] op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static uint MultiplyWideningUpperAndSubtract(uint[] op1, ushort[] op2, ushort[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static ushort SubtractHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 - op2), round: false);
+        public static ushort SubtractHighNarrowing(uint op1, uint op2) => HighNarrowing<uint, ushort>((uint)(op1 - op2), round: false);
 
         public static uint SubtractHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static ushort SubtractRoundedHighNarrowing(uint op1, uint op2) => HighNarrowing((uint)(op1 - op2), round: true);
+        public static ushort SubtractRoundedHighNarrowing(uint op1, uint op2) => HighNarrowing<uint, ushort>((uint)(op1 - op2), round: true);
 
         public static uint SubtractRoundedHighNarrowingUpper(ushort[] op1, uint[] op2, uint[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
@@ -2726,30 +1511,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint ZeroExtendWideningUpper(ushort[] op1, int i) => ZeroExtendWidening(op1[i + op1.Length / 2]);
 
-        private static uint Reduce(Func<uint, ushort, uint> reduceOp, ushort[] op1)
-        {
-            uint acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        private static ulong Reduce(Func<ulong, ushort, ulong> reduceOp, ushort[] op1)
-        {
-            ulong acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
         public static ulong AbsoluteDifferenceWidening(uint op1, uint op2) => op1 < op2 ? (ulong)(op2 - op1) : (ulong)(op1 - op2);
 
         public static ulong AbsoluteDifferenceWideningUpper(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
@@ -2758,29 +1519,43 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong AbsoluteDifferenceWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static ulong AddAcrossWidening(uint[] op1) => Reduce(AddWidening, op1);
+        public static ulong AbsoluteDifferenceWideningLowerAndAddEven(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[i * 2], op3[i * 2]);
+
+        public static ulong AbsoluteDifferenceWideningLowerAndAddOdd(ulong[] op1, uint[] op2, uint[] op3, int i) => AbsoluteDifferenceWideningAndAdd(op1[i], op2[(i * 2) + 1], op3[(i * 2) + 1]);
+
+        public static ulong AbsoluteDifferenceWideningEven(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[i * 2], op2[i * 2]);
+
+        public static ulong AbsoluteDifferenceWideningOdd(uint[] op1, uint[] op2, int i) => AbsoluteDifferenceWidening(op1[(i * 2) + 1], op2[(i * 2) + 1]);
+
+        public static ulong AddAcrossWidening(uint[] op1) => Reduce<ulong, uint>(AddWidening, op1);
 
         public static ulong AddPairwiseWidening(uint[] op1, int i) => AddWidening(op1[2 * i], op1[2 * i + 1]);
 
         public static ulong AddPairwiseWideningAndAdd(ulong[] op1, uint[] op2, int i) => (ulong)(op1[i] + AddWidening(op2[2 * i], op2[2 * i + 1]));
 
-        private static uint HighNarrowing(ulong op1, bool round)
+        public static uint AddHighNarrowingEven(ulong[] op1, ulong[] op2, int i)
         {
-            ulong roundConst = 0;
-            if (round)
+            if (i % 2 == 0)
             {
-                roundConst = (ulong)1 << (8 * sizeof(uint) - 1);
+                return (uint) ((op1[i / 2] + op2[i / 2]) >> (8 * sizeof(uint)));
             }
-            return (uint)(((ulong)op1 + roundConst) >> (8 * sizeof(uint)));
+
+            return 0;
         }
 
-        public static uint AddHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 + op2), round: false);
+        public static uint AddHighNarrowingOdd(uint[] even, ulong[] op1, ulong[] op2, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (uint) ((op1[(i - 1) / 2] + op2[(i - 1) / 2]) >> (8 * sizeof(uint)));
+            }
 
-        public static uint AddHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+            return even[i];
+        }
 
-        public static uint AddRoundedHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 + op2), round: true);
+        public static uint AddHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddHighNarrowing<ulong, uint>(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static ulong AddRoundedHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
+        public static ulong AddRoundedHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : AddRoundedHighNarrowing<ulong, uint>(op2[i - op1.Length], op3[i - op1.Length]);
 
         public static ulong AddWidening(uint op1, uint op2) => (ulong)((ulong)op1 + (ulong)op2);
 
@@ -2796,33 +1571,63 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint FusedAddHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2) >> 1);
 
+        public static ulong FusedAddHalving(ulong op1, ulong op2)
+        {
+            ulong sum = op1 + op2;
+            bool carry = sum < op1;
+            return (sum >> 1) + (carry ? 1UL << 63 : 0);
+        }
+        public static long FusedAddHalving(long op1, long op2)
+        {
+            long sum = op1 + op2;
+            bool carry = sum < op1;
+            return (sum >> 1) + (carry ? 1L << 63 : 0);
+        }
+
+        public static long FusedSubtractHalving(long op1, long op2)
+        {
+            ulong uop1 = (ulong)op1;
+            ulong uop2 = (ulong)op2;
+
+            ulong udiff = uop1 - uop2;
+            long sdiff = unchecked((long)udiff);
+
+            return sdiff >> 1;
+        }
+
+        public static ulong FusedSubtractHalving(ulong op1, ulong op2)
+        {
+            ulong diff = op1 - op2;
+            bool overflow = op1 < op2;
+            return (diff >> 1) + (overflow ? 1UL << 63 : 0);
+        }
+
+
         public static uint FusedAddRoundedHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2 + 1) >> 1);
 
         public static uint FusedSubtractHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 - (ulong)op2) >> 1);
 
         public static ulong MultiplyByScalarWideningUpper(uint[] op1, uint op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2);
 
-        public static ulong MultiplyByScalarWideningUpperAndAdd(ulong[] op1, uint[] op2, uint op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3);
+        public static ulong MultiplyByScalarWideningUpperAndAdd(ulong[] op1, uint[] op2, uint op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3);
 
         public static ulong MultiplyByScalarWideningUpperAndSubtract(ulong[] op1, uint[] op2, uint op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3);
 
         public static ulong MultiplyWidening(uint op1, uint op2) => (ulong)((ulong)op1 * (ulong)op2);
 
-        public static ulong MultiplyWideningAndAdd(ulong op1, uint op2, uint op3) => (ulong)(op1 + MultiplyWidening(op2, op3));
-
         public static ulong MultiplyWideningAndSubtract(ulong op1, uint op2, uint op3) => (ulong)(op1 - MultiplyWidening(op2, op3));
 
         public static ulong MultiplyWideningUpper(uint[] op1, uint[] op2, int i) => MultiplyWidening(op1[i + op1.Length / 2], op2[i + op2.Length / 2]);
 
-        public static ulong MultiplyWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => MultiplyWideningAndAdd(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+        public static ulong MultiplyWideningUpperAndAdd(ulong[] op1, uint[] op2, uint[] op3, int i) => MultiplyAddWidening(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static ulong MultiplyWideningUpperAndSubtract(ulong[] op1, uint[] op2, uint[] op3, int i) => MultiplyWideningAndSubtract(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
-        public static uint SubtractHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 - op2), round: false);
+        public static uint SubtractHighNarrowing(ulong op1, ulong op2) => HighNarrowing<ulong, uint>((ulong)(op1 - op2), round: false);
 
         public static ulong SubtractHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
-        public static uint SubtractRoundedHighNarrowing(ulong op1, ulong op2) => HighNarrowing((ulong)(op1 - op2), round: true);
+        public static uint SubtractRoundedHighNarrowing(ulong op1, ulong op2) => HighNarrowing<ulong, uint>((ulong)(op1 - op2), round: true);
 
         public static ulong SubtractRoundedHighNarrowingUpper(uint[] op1, ulong[] op2, ulong[] op3, int i) => i < op1.Length ? op1[i] : SubtractRoundedHighNarrowing(op2[i - op1.Length], op3[i - op1.Length]);
 
@@ -3058,6 +1863,28 @@ namespace JIT.HardwareIntrinsics.Arm
             var (val, ovf) = MultiplyDoublingOvf(op2, op3, rounding: true, minuend, subOp: true);
 
             return SaturateHigh(val, ovf);
+        }
+
+        public static sbyte[] MultiplyAddRoundedDoublingSaturateHighRotateComplex(sbyte[] op1, sbyte[] op2, sbyte[] op3, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (sbyte ans1, sbyte ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3[img])),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3[real])),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3[img])),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3[real])),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
         }
 
         public static short MultiplyDoublingWideningAndAddSaturate(short op1, sbyte op2, sbyte op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -3399,6 +2226,51 @@ namespace JIT.HardwareIntrinsics.Arm
             return SaturateHigh(val, ovf);
         }
 
+        public static short[] MultiplyAddRoundedDoublingSaturateHighRotateComplex(short[] op1, short[] op2, short[] op3, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (short ans1, short ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3[img])),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3[real])),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3[img])),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3[real])),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
+        public static short[] MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(short[] op1, short[] op2, short[] op3, byte index, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (short op3Real, short op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                (short ans1, short ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3Real), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3Img)),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3Img), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3Real)),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3Real), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3Img)),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3Img), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3Real)),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static int MultiplyDoublingWideningAndAddSaturate(int op1, short op2, short op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
 
         public static int MultiplyDoublingWideningAndSubtractSaturate(int op1, short op2, short op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -3738,6 +2610,51 @@ namespace JIT.HardwareIntrinsics.Arm
             return SaturateHigh(val, ovf);
         }
 
+        public static int[] MultiplyAddRoundedDoublingSaturateHighRotateComplex(int[] op1, int[] op2, int[] op3, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (int ans1, int ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3[img])),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3[real])),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3[img])),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3[real])),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
+        public static int[] MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(int[] op1, int[] op2, int[] op3, byte index, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (int op3Real, int op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                (int ans1, int ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3Real), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3Img)),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3Img), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3Real)),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3Real), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3Img)),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3Img), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3Real)),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static long MultiplyDoublingWideningAndAddSaturate(long op1, int op2, int op3) => AddSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
 
         public static long MultiplyDoublingWideningAndSubtractSaturate(long op1, int op2, int op3) => SubtractSaturate(op1, MultiplyDoublingWideningSaturate(op2, op3));
@@ -3753,6 +2670,86 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long MultiplyDoublingWideningUpperAndAddSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndAddSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
 
         public static long MultiplyDoublingWideningUpperAndSubtractSaturate(long[] op1, int[] op2, int[] op3, int i) => MultiplyDoublingWideningAndSubtractSaturate(op1[i], op2[i + op2.Length / 2], op3[i + op3.Length / 2]);
+
+        public static long MultiplyDoublingSaturateHigh(long op1, long op2)
+        {
+            return MultiplyDoublingSaturate(op1, op2, rounding: false, 0, subOp: false);
+        }
+
+        public static long MultiplyRoundedDoublingSaturateHigh(long op1, long op2)
+        {
+            return MultiplyDoublingSaturate(op1, op2, rounding: true, 0, subOp: false);
+        }
+
+        public static long MultiplyRoundedDoublingAndAddSaturateHigh(long op1, long op2, long op3)
+        {
+            return MultiplyDoublingSaturate(op2, op3, rounding: true, op1, subOp: false);
+        }
+
+        public static long MultiplyRoundedDoublingAndSubtractSaturateHigh(long op1, long op2, long op3)
+        {
+            return MultiplyDoublingSaturate(op2, op3, rounding: true, op1, subOp: true);
+        }
+
+        private static long MultiplyDoublingSaturate(long op1, long op2, bool rounding, long op3, bool subOp)
+        {
+            BigInteger a = new BigInteger(op1);
+            BigInteger b = new BigInteger(op2);
+            BigInteger c = new BigInteger(op3);
+
+            BigInteger result =  a * b << 1;
+
+            int shift = 8 * sizeof(long);
+            c = c << shift;
+            if (subOp)
+            {
+                result = c - result;
+            }
+            else
+            {
+                result = c + result;
+            }
+
+            if (rounding)
+            {
+                result += new BigInteger(1) << (8 * sizeof(long) - 1);
+            }
+
+            result = result >> shift;
+
+            if (result > long.MaxValue)
+            {
+                return long.MaxValue;
+            }
+            else if (result < long.MinValue)
+            {
+                return long.MinValue;
+            }
+
+            return long.CreateChecked(result);
+        }
+
+        public static long[] MultiplyAddRoundedDoublingSaturateHighRotateComplex(long[] op1, long[] op2, long[] op3, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (long ans1, long ans2) = rot switch
+                {
+                    0 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[real], op3[img])),
+                    1 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndAddSaturateHigh(op1[img], op2[img], op3[real])),
+                    2 => (MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[real], op2[real], op3[real]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[real], op3[img])),
+                    3 => (MultiplyRoundedDoublingAndAddSaturateHigh(op1[real], op2[img], op3[img]), MultiplyRoundedDoublingAndSubtractSaturateHigh(op1[img], op2[img], op3[real])),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
 
         public static long ShiftLeftLogicalWidening(int op1, byte op2) => UnsignedShift((long)op1, (long)op2);
 
@@ -3862,6 +2859,35 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        private static long GetShift(long shift, long size, bool shiftSat)
+        {
+            if (shiftSat)
+            {
+                // SVE shifts are saturated to element size
+                shift = (int)ShiftSat(shift, size);
+            }
+            else
+            {
+                // NEON shifts are truncated to bottom byte
+                shift = (sbyte)shift;
+            }
+            return shift;
+        }
+
+        public static long ShiftSat(long shift, long size)
+        {
+            if (shift > size + 1)
+            {
+                return size + 1;
+            }
+            else if (shift < -(size + 1))
+            {
+                return -(size + 1);
+            }
+
+            return shift;
+        }
+
         public static int ShiftRightLogicalNarrowingSaturateUpper(int[] op1, long[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (int)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
 
         public static uint ShiftRightLogicalNarrowingSaturateUpper(uint[] op1, ulong[] op2, byte op3, int i) => i < op1.Length ? op1[i] : (uint)ShiftRightLogicalNarrowingSaturate(op2[i - op1.Length], op3);
@@ -3878,9 +2904,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte ShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false)
+        private static sbyte SignedShift(sbyte op1, sbyte op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 8, shiftSat);
 
             sbyte rndCns = 0;
 
@@ -3888,7 +2914,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((sbyte)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((sbyte)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -3916,7 +2942,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = sbyte.MaxValue;
+                        result = op2 < 0 ? sbyte.MinValue : sbyte.MaxValue;
                     }
                 }
             }
@@ -3964,11 +2990,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte ShiftRightArithmetic(sbyte op1, byte op2) => SignedShift(op1, (sbyte)(-op2));
 
-        public static sbyte ShiftRightArithmeticAdd(sbyte op1, sbyte op2, byte op3) =>  (sbyte)(op1 + ShiftRightArithmetic(op2, op3));
+        public static sbyte ShiftRightArithmeticAdd(sbyte op1, sbyte op2, byte op3) => (sbyte)(op1 + ShiftRightArithmetic(op2, op3));
 
         public static sbyte ShiftRightArithmeticRounded(sbyte op1, byte op2) => SignedShift(op1, (sbyte)(-op2), rounding: true);
 
-        public static sbyte ShiftRightArithmeticRoundedAdd(sbyte op1, sbyte op2, byte op3) =>  (sbyte)(op1 + ShiftRightArithmeticRounded(op2, op3));
+        public static sbyte ShiftRightArithmeticRoundedAdd(sbyte op1, sbyte op2, byte op3) => (sbyte)(op1 + ShiftRightArithmeticRounded(op2, op3));
 
         public static sbyte ShiftRightLogical(sbyte op1, byte op2) => UnsignedShift(op1, (sbyte)(-op2));
 
@@ -3986,9 +3012,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte ShiftRightLogicalRoundedAdd(byte op1, byte op2, byte op3) => (byte)(op1 + ShiftRightLogicalRounded(op2, op3));
 
-        private static byte UnsignedShift(byte op1, sbyte op2, bool rounding = false, bool saturating = false)
+        private static byte UnsignedShift(byte op1, sbyte op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 8, shiftSat);
 
             byte rndCns = 0;
 
@@ -3996,7 +3022,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((byte)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((byte)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4136,6 +3162,28 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? byte.MaxValue : result;
         }
 
+        public static sbyte[] AddSaturateRotateComplex(sbyte[] op1, sbyte[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] = SubtractSaturate(op1[real], op2[img]);
+                    op1[img] = AddSaturate(op1[img], op2[real]);
+                }
+                else
+                {
+                    op1[real] = AddSaturate(op1[real], op2[img]);
+                    op1[img] = SubtractSaturate(op1[img], op2[real]);
+                }
+            }
+
+            return op1;
+        }
+
         public static double AddSequentialAcross(double[] op1, double[] op2, double[] mask = null)
         {
             // If mask isn't provided, default to all true
@@ -4192,9 +3240,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short ShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false)
+        private static short SignedShift(short op1, short op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 16, shiftSat);
 
             short rndCns = 0;
 
@@ -4202,7 +3250,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((short)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((short)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4230,7 +3278,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = short.MaxValue;
+                        result = op1 < 0 ? short.MinValue : short.MaxValue;
                     }
                 }
             }
@@ -4266,11 +3314,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short ShiftRightArithmetic(short op1, byte op2) => SignedShift(op1, (short)(-op2));
 
-        public static short ShiftRightArithmeticAdd(short op1, short op2, byte op3) =>  (short)(op1 + ShiftRightArithmetic(op2, op3));
+        public static short ShiftRightArithmeticAdd(short op1, short op2, byte op3) => (short)(op1 + ShiftRightArithmetic(op2, op3));
 
         public static short ShiftRightArithmeticRounded(short op1, byte op2) => SignedShift(op1, (short)(-op2), rounding: true);
 
-        public static short ShiftRightArithmeticRoundedAdd(short op1, short op2, byte op3) =>  (short)(op1 + ShiftRightArithmeticRounded(op2, op3));
+        public static short ShiftRightArithmeticRoundedAdd(short op1, short op2, byte op3) => (short)(op1 + ShiftRightArithmeticRounded(op2, op3));
 
         public static short ShiftRightLogical(short op1, byte op2) => UnsignedShift(op1, (short)(-op2));
 
@@ -4288,9 +3336,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ShiftRightLogicalRoundedAdd(ushort op1, ushort op2, byte op3) => (ushort)(op1 + ShiftRightLogicalRounded(op2, op3));
 
-        private static ushort UnsignedShift(ushort op1, short op2, bool rounding = false, bool saturating = false)
+        private static ushort UnsignedShift(ushort op1, short op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 16, shiftSat);
 
             ushort rndCns = 0;
 
@@ -4298,7 +3346,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((ushort)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((ushort)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4438,6 +3486,28 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? ushort.MaxValue : result;
         }
 
+        public static short[] AddSaturateRotateComplex(short[] op1, short[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] = SubtractSaturate(op1[real], op2[img]);
+                    op1[img] = AddSaturate(op1[img], op2[real]);
+                }
+                else
+                {
+                    op1[real] = AddSaturate(op1[real], op2[img]);
+                    op1[img] = SubtractSaturate(op1[img], op2[real]);
+                }
+            }
+
+            return op1;
+        }
+
         public static short NegateSaturate(short op1) => SubtractSaturate((short)0, op1);
 
         public static short SubtractSaturate(short op1, short op2)
@@ -4460,9 +3530,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int ShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false)
+        private static int SignedShift(int op1, int op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 32, shiftSat);
 
             int rndCns = 0;
 
@@ -4470,7 +3540,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((int)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((int)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4498,7 +3568,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = int.MaxValue;
+                        result = op1 < 0 ? int.MinValue : int.MaxValue;
                     }
                 }
             }
@@ -4534,11 +3604,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int ShiftRightArithmetic(int op1, byte op2) => SignedShift(op1, (int)(-op2));
 
-        public static int ShiftRightArithmeticAdd(int op1, int op2, byte op3) =>  (int)(op1 + ShiftRightArithmetic(op2, op3));
+        public static int ShiftRightArithmeticAdd(int op1, int op2, byte op3) => (int)(op1 + ShiftRightArithmetic(op2, op3));
 
         public static int ShiftRightArithmeticRounded(int op1, byte op2) => SignedShift(op1, (int)(-op2), rounding: true);
 
-        public static int ShiftRightArithmeticRoundedAdd(int op1, int op2, byte op3) =>  (int)(op1 + ShiftRightArithmeticRounded(op2, op3));
+        public static int ShiftRightArithmeticRoundedAdd(int op1, int op2, byte op3) => (int)(op1 + ShiftRightArithmeticRounded(op2, op3));
 
         public static int ShiftRightLogical(int op1, byte op2) => UnsignedShift(op1, (int)(-op2));
 
@@ -4556,9 +3626,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint ShiftRightLogicalRoundedAdd(uint op1, uint op2, byte op3) => (uint)(op1 + ShiftRightLogicalRounded(op2, op3));
 
-        private static uint UnsignedShift(uint op1, int op2, bool rounding = false, bool saturating = false)
+        private static uint UnsignedShift(uint op1, int op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 32, shiftSat);
 
             uint rndCns = 0;
 
@@ -4566,7 +3636,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((uint)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((uint)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4706,6 +3776,28 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? uint.MaxValue : result;
         }
 
+        public static int[] AddSaturateRotateComplex(int[] op1, int[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] = SubtractSaturate(op1[real], op2[img]);
+                    op1[img] = AddSaturate(op1[img], op2[real]);
+                }
+                else
+                {
+                    op1[real] = AddSaturate(op1[real], op2[img]);
+                    op1[img] = SubtractSaturate(op1[img], op2[real]);
+                }
+            }
+
+            return op1;
+        }
+
         public static int NegateSaturate(int op1) => SubtractSaturate((int)0, op1);
 
         public static int SubtractSaturate(int op1, int op2)
@@ -4728,9 +3820,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long ShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true);
 
-        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false)
+        private static long SignedShift(long op1, long op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 64, shiftSat);
 
             long rndCns = 0;
 
@@ -4738,7 +3830,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((long)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((long)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4766,7 +3858,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = long.MaxValue;
+                        result = op1 < 0 ? long.MinValue : long.MaxValue;
                     }
                 }
             }
@@ -4802,11 +3894,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long ShiftRightArithmetic(long op1, byte op2) => SignedShift(op1, (long)(-op2));
 
-        public static long ShiftRightArithmeticAdd(long op1, long op2, byte op3) =>  (long)(op1 + ShiftRightArithmetic(op2, op3));
+        public static long ShiftRightArithmeticAdd(long op1, long op2, byte op3) => (long)(op1 + ShiftRightArithmetic(op2, op3));
 
         public static long ShiftRightArithmeticRounded(long op1, byte op2) => SignedShift(op1, (long)(-op2), rounding: true);
 
-        public static long ShiftRightArithmeticRoundedAdd(long op1, long op2, byte op3) =>  (long)(op1 + ShiftRightArithmeticRounded(op2, op3));
+        public static long ShiftRightArithmeticRoundedAdd(long op1, long op2, byte op3) => (long)(op1 + ShiftRightArithmeticRounded(op2, op3));
 
         public static long ShiftRightLogical(long op1, byte op2) => UnsignedShift(op1, (long)(-op2));
 
@@ -4824,9 +3916,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong ShiftRightLogicalRoundedAdd(ulong op1, ulong op2, byte op3) => (ulong)(op1 + ShiftRightLogicalRounded(op2, op3));
 
-        private static ulong UnsignedShift(ulong op1, long op2, bool rounding = false, bool saturating = false)
+        private static ulong UnsignedShift(ulong op1, long op2, bool rounding = false, bool saturating = false, bool shiftSat = false)
         {
-            int shift = (sbyte)(op2 & 0xFF);
+            int shift = (int)GetShift(op2, 64, shiftSat);
 
             ulong rndCns = 0;
 
@@ -4834,7 +3926,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 bool ovf;
 
-                (rndCns, ovf) = ShiftOvf((ulong)1, -shift-1);
+                (rndCns, ovf) = ShiftOvf((ulong)1, -shift - 1);
 
                 if (ovf)
                 {
@@ -4972,6 +4064,28 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             var (result, ovf) = AddOvf(op1, op2);
             return ovf ? ulong.MaxValue : result;
+        }
+
+        public static long[] AddSaturateRotateComplex(long[] op1, long[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] = SubtractSaturate(op1[real], op2[img]);
+                    op1[img] = AddSaturate(op1[img], op2[real]);
+                }
+                else
+                {
+                    op1[real] = AddSaturate(op1[real], op2[img]);
+                    op1[img] = SubtractSaturate(op1[img], op2[real]);
+                }
+            }
+
+            return op1;
         }
 
         public static long NegateSaturate(long op1) => SubtractSaturate((long)0, op1);
@@ -5214,6 +4328,43 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
+        public static float ConvertToSingleEvenRoundToOdd(double[] value, int i)
+        {
+            if (i % 2 == 0)
+            {
+                double val = value[i / 2];
+                float floatVal = (float)val;
+
+                float f = (float)val;
+
+                // If val is NaN or Inf there’s nothing else to do
+                if (double.IsNaN(val) || double.IsInfinity(val))
+                    return f;
+
+                // Detect the cases where the default cast rounded away from zero
+                if ((val > 0 && (double)f > val) ||
+                    (val < 0 && (double)f < val))
+                {
+                    // Move toward zero to get truncate() behaviour.
+                    int bits = BitConverter.SingleToInt32Bits(f);
+                    bits += (val > 0) ? -1 : +1;
+                    f = BitConverter.Int32BitsToSingle(bits);
+                }
+
+                // Round to odd, force the last bit of the mantissa to 1 if the conversion was inexact
+                if (val != (double)f)
+                {
+                    int bits = BitConverter.SingleToInt32Bits(f);
+                    bits |= 0x1;
+                    f = BitConverter.Int32BitsToSingle(bits);
+                }
+
+                return f;
+            }
+
+            return 0f;
+        }
+
         public static float FusedMultiplyAdd(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, op1);
 
         public static float FusedMultiplyAddNegated(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(-op2, op3, -op1);
@@ -5228,11 +4379,19 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MaxNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
 
+        public static float MaxNumberPairwiseSve(float[] op1, float[] op2, int i) => (i % 2 == 0) ? MaxNumber(op1[i], op1[i + 1]) : MaxNumber(op2[i - 1], op2[i]);
+
+        public static float MaxPairwiseSve(float[] op1, float[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
         public static float MinNumber(float op1, float op2) => float.IsNaN(op1) ? op2 : (float.IsNaN(op2) ? op1 : MathF.Min(op1, op2));
 
         public static float MinNumberPairwise(float[] op1, int i) => Pairwise(MinNumber, op1, i);
 
         public static float MinNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+        public static float MinNumberPairwiseSve(float[] op1, float[] op2, int i) => (i % 2 == 0) ? MinNumber(op1[i], op1[i + 1]) : MinNumber(op2[i - 1], op2[i]);
+
+        public static float MinPairwiseSve(float[] op1, float[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static float[] MultiplyAddRotateComplex(float[] op1, float[] op2, float[] op3, byte imm)
         {
@@ -5247,6 +4406,28 @@ namespace JIT.HardwareIntrinsics.Arm
                     2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
                     3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
                     _ => (0.0f, 0.0f)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
+        public static T[] MultiplyAddRotateComplex<T>(T[] op1, T[] op2, T[] op3, byte imm) where T : INumber<T>
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (T ans1, T ans2) = imm switch
+                {
+                    0 => (op1[real] + op2[real] * op3[real], op1[img] + op2[real] * op3[img]),
+                    1 => (op1[real] - op2[img] * op3[img], op1[img] + op2[img] * op3[real]),
+                    2 => (op1[real] - op2[real] * op3[real], op1[img] - op2[real] * op3[img]),
+                    3 => (op1[real] + op2[img] * op3[img], op1[img] - op2[img] * op3[real]),
+                    _ => (default, default)
                 };
 
                 op1[real] = ans1;
@@ -5279,6 +4460,29 @@ namespace JIT.HardwareIntrinsics.Arm
             return op1;
         }
 
+        public static T[] MultiplyAddRotateComplexBySelectedScalar<T>(T[] op1, T[] op2, T[] op3, byte index, byte imm) where T : INumber<T>
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (T op3Real, T op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                (T ans1, T ans2) = imm switch
+                {
+                    0 => (op1[real] + op2[real] * op3Real, op1[img] + op2[real] * op3Img),
+                    1 => (op1[real] - op2[img] * op3Img, op1[img] + op2[img] * op3Real),
+                    2 => (op1[real] - op2[real] * op3Real, op1[img] - op2[real] * op3Img),
+                    3 => (op1[real] + op2[img] * op3Img, op1[img] - op2[img] * op3Real),
+                    _ => (default, default)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static float MultiplyExtended(float op1, float op2)
         {
             bool inf1 = float.IsInfinity(op1);
@@ -5302,23 +4506,23 @@ namespace JIT.HardwareIntrinsics.Arm
             int index = (op2 < 0) ? (imm + 8) : imm;
             uint coeff = index switch
             {
-                 0 => 0x3f800000,
-                 1 => 0xbe2aaaab,
-                 2 => 0x3c088886,
-                 3 => 0xb95008b9,
-                 4 => 0x36369d6d,
-                 5 => 0x00000000,
-                 6 => 0x00000000,
-                 7 => 0x00000000,
-                 8 => 0x3f800000,
-                 9 => 0xbf000000,
+                0 => 0x3f800000,
+                1 => 0xbe2aaaab,
+                2 => 0x3c088886,
+                3 => 0xb95008b9,
+                4 => 0x36369d6d,
+                5 => 0x00000000,
+                6 => 0x00000000,
+                7 => 0x00000000,
+                8 => 0x3f800000,
+                9 => 0xbf000000,
                 10 => 0x3d2aaaa6,
                 11 => 0xbab60705,
                 12 => 0x37cd37cc,
                 13 => 0x00000000,
                 14 => 0x00000000,
                 15 => 0x00000000,
-                 _ => 0x00000000
+                _ => 0x00000000
             };
 
             return MathF.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt32BitsToSingle(coeff));
@@ -5328,7 +4532,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             float result = ((op2 % 2) == 0) ? op1 : (float)1.0;
             bool isNegative = (op2 & 0b10) == 0b10;
-            
+
             if (isNegative != (result < 0))
             {
                 result *= -1;
@@ -5359,16 +4563,16 @@ namespace JIT.HardwareIntrinsics.Arm
             uint index = op1 & 0b111111;
             uint coeff = index switch
             {
-                 0 => 0x000000,
-                 1 => 0x0164d2,
-                 2 => 0x02cd87,
-                 3 => 0x043a29,
-                 4 => 0x05aac3,
-                 5 => 0x071f62,
-                 6 => 0x08980f,
-                 7 => 0x0a14d5,
-                 8 => 0x0b95c2,
-                 9 => 0x0d1adf,
+                0 => 0x000000,
+                1 => 0x0164d2,
+                2 => 0x02cd87,
+                3 => 0x043a29,
+                4 => 0x05aac3,
+                5 => 0x071f62,
+                6 => 0x08980f,
+                7 => 0x0a14d5,
+                8 => 0x0b95c2,
+                9 => 0x0d1adf,
                 10 => 0x0ea43a,
                 11 => 0x1031dc,
                 12 => 0x11c3d3,
@@ -5423,7 +4627,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 61 => 0x77d0df,
                 62 => 0x7a83b3,
                 63 => 0x7d3e0c,
-                 _ => 0x000000
+                _ => 0x000000
             };
 
             uint result = ((op1 & 0b11111111000000) << 17) | coeff;
@@ -5450,11 +4654,19 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double MaxNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
 
+        public static double MaxPairwiseSve(double[] op1, double[] op2, int i) => (i % 2 == 0) ? Max(op1[i], op1[i + 1]) : Max(op2[i - 1], op2[i]);
+
+        public static double MaxNumberPairwiseSve(double[] op1, double[] op2, int i) => (i % 2 == 0) ? MaxNumber(op1[i], op1[i + 1]) : MaxNumber(op2[i - 1], op2[i]);
+
         public static double MinNumber(double op1, double op2) => double.IsNaN(op1) ? op2 : (double.IsNaN(op2) ? op1 : Math.Min(op1, op2));
 
         public static double MinNumberPairwise(double[] op1, int i) => Pairwise(MinNumber, op1, i);
 
         public static double MinNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+        public static double MinNumberPairwiseSve(double[] op1, double[] op2, int i) => (i % 2 == 0) ? MinNumber(op1[i], op1[i + 1]) : MinNumber(op2[i - 1], op2[i]);
+
+        public static double MinPairwiseSve(double[] op1, double[] op2, int i) => (i % 2 == 0) ? Min(op1[i], op1[i + 1]) : Min(op2[i - 1], op2[i]);
 
         public static double[] MultiplyAddRotateComplex(double[] op1, double[] op2, double[] op3, byte imm)
         {
@@ -5501,23 +4713,23 @@ namespace JIT.HardwareIntrinsics.Arm
             int index = (op2 < 0) ? (imm + 8) : imm;
             ulong coeff = index switch
             {
-                 0 => 0x3ff0000000000000,
-                 1 => 0xbfc5555555555543,
-                 2 => 0x3f8111111110f30c,
-                 3 => 0xbf2a01a019b92fc6,
-                 4 => 0x3ec71de351f3d22b,
-                 5 => 0xbe5ae5e2b60f7b91,
-                 6 => 0x3de5d8408868552f,
-                 7 => 0x0000000000000000,
-                 8 => 0x3ff0000000000000,
-                 9 => 0xbfe0000000000000,
+                0 => 0x3ff0000000000000,
+                1 => 0xbfc5555555555543,
+                2 => 0x3f8111111110f30c,
+                3 => 0xbf2a01a019b92fc6,
+                4 => 0x3ec71de351f3d22b,
+                5 => 0xbe5ae5e2b60f7b91,
+                6 => 0x3de5d8408868552f,
+                7 => 0x0000000000000000,
+                8 => 0x3ff0000000000000,
+                9 => 0xbfe0000000000000,
                 10 => 0x3fa5555555555536,
                 11 => 0xbf56c16c16c13a0b,
                 12 => 0x3efa01a019b1e8d8,
                 13 => 0xbe927e4f7282f468,
                 14 => 0x3e21ee96d2641b13,
                 15 => 0xbda8f76380fbb401,
-                 _ => 0x0000000000000000
+                _ => 0x0000000000000000
             };
 
             return Math.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt64BitsToDouble(coeff));
@@ -5527,7 +4739,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             double result = ((op2 % 2) == 0) ? op1 : 1.0;
             bool isNegative = (op2 & 0b10) == 0b10;
-            
+
             if (isNegative != (result < 0))
             {
                 result *= -1;
@@ -5552,22 +4764,22 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return result;
         }
-        
+
         public static double FPExponentialAccelerator(ulong op1)
         {
             ulong index = op1 & 0b111111;
             ulong coeff = index switch
             {
-                 0 => 0x0000000000000,
-                 1 => 0x02C9A3E778061,
-                 2 => 0x059B0D3158574,
-                 3 => 0x0874518759BC8,
-                 4 => 0x0B5586CF9890F,
-                 5 => 0x0E3EC32D3D1A2,
-                 6 => 0x11301D0125B51,
-                 7 => 0x1429AAEA92DE0,
-                 8 => 0x172B83C7D517B,
-                 9 => 0x1A35BEB6FCB75,
+                0 => 0x0000000000000,
+                1 => 0x02C9A3E778061,
+                2 => 0x059B0D3158574,
+                3 => 0x0874518759BC8,
+                4 => 0x0B5586CF9890F,
+                5 => 0x0E3EC32D3D1A2,
+                6 => 0x11301D0125B51,
+                7 => 0x1429AAEA92DE0,
+                8 => 0x172B83C7D517B,
+                9 => 0x1A35BEB6FCB75,
                 10 => 0x1D4873168B9AA,
                 11 => 0x2063B88628CD6,
                 12 => 0x2387A6E756238,
@@ -5622,7 +4834,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 61 => 0xEFA1BEE615A27,
                 62 => 0xF50765B6E4540,
                 63 => 0xFA7C1819E90D8,
-                 _ => 0x0000000000000
+                _ => 0x0000000000000
             };
 
             ulong result = ((op1 & 0b11111111111000000) << 46) | coeff;
@@ -5668,15 +4880,30 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static double ReciprocalEstimate(double op1) => Math.ReciprocalEstimate(op1);
-        
+
         public static float ReciprocalEstimate(float op1) => MathF.ReciprocalEstimate(op1);
 
         public static double ReciprocalExponent(double op1)
         {
-            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
+            if (double.IsNaN(op1))
+            {
+                return double.NaN;
+            }
 
-            // Invert the exponent
-            bits ^= 0x7FF0000000000000;
+            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
+            ulong exp = bits & 0x7FF0000000000000;
+
+            if (exp == 0)
+            {
+                // Replace exponent with maximum exponent
+                bits ^= exp ^ 0x7FE0000000000000;
+            }
+            else
+            {
+                // Invert the exponent
+                bits ^= 0x7FF0000000000000;
+            }
+
             // Zero the fraction
             bits &= 0xFFF0000000000000;
 
@@ -5685,10 +4912,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float ReciprocalExponent(float op1)
         {
-            uint bits = BitConverter.SingleToUInt32Bits(op1);
+            if (float.IsNaN(op1))
+            {
+                return float.NaN;
+            }
 
-            // Invert the exponent
-            bits ^= 0x7F800000;
+            uint bits = BitConverter.SingleToUInt32Bits(op1);
+            uint exp = bits & 0x7F800000;
+
+            if (exp == 0)
+            {
+                // Replace exponent with maximum exponent
+                bits ^= exp ^ 0x7F000000;
+            }
+            else
+            {
+                // Invert the exponent
+                bits ^= 0x7F800000;
+            }
+
             // Zero the fraction
             bits &= 0xFF800000;
 
@@ -5696,7 +4938,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static double ReciprocalSqrtEstimate(double op1) => Math.ReciprocalSqrtEstimate(op1);
-        
+
         public static float ReciprocalSqrtEstimate(float op1) => MathF.ReciprocalSqrtEstimate(op1);
 
         private static uint ExtractBits(uint val, byte msbPos, byte lsbPos)
@@ -5713,445 +4955,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint UnsignedReciprocalEstimate(uint op1)
         {
-            uint result;
+            if ((op1 & 0x8000_0000u) == 0)
+                return 0xFFFF_FFFFu;
 
-            if ((op1 & (1 << 31)) == 0)
-            {
-                result = ~0U;
-            }
-            else
-            {
-                uint estimate = ReciprocalEstimate(ExtractBits(op1, 31, 23));
-                result = ExtractBits(estimate, 8, 0) << 31;
-            }
+            uint idx = (op1 >> 23) & 0x1FFu;
 
-            return result;
+            uint estimate = ReciprocalEstimate(idx) & 0x1FFu;
+
+            return estimate << 23;
         }
 
         public static uint UnsignedReciprocalSqrtEstimate(uint op1)
         {
-            uint result;
+            if ((op1 & 0xC0000000u) == 0)
+                return 0xFFFFFFFFu;
 
-            if ((op1 & (3 << 30)) == 0)
-            {
-                result = ~0U;
-            }
-            else
-            {
-                uint estimate = ReciprocalSqrtEstimate(ExtractBits(op1, 31, 23));
-                result = ExtractBits(estimate, 8, 0) << 31;
-            }
+            uint estimate = ReciprocalSqrtEstimate(ExtractBits(op1, 31, 23)) & 0x1FFu;
 
-            return result;
+            return estimate << 23;
         }
 
-        public static sbyte Add(sbyte op1, sbyte op2) => (sbyte)(op1 + op2);
-
-        public static sbyte AddPairwise(sbyte[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static sbyte AddPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static sbyte Max(sbyte op1, sbyte op2) => Math.Max(op1, op2);
-
-        public static sbyte MaxPairwise(sbyte[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static sbyte MaxPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static sbyte Min(sbyte op1, sbyte op2) => Math.Min(op1, op2);
-
-        public static sbyte MinPairwise(sbyte[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static sbyte MinPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static sbyte Multiply(sbyte op1, sbyte op2) => (sbyte)(op1 * op2);
-
-        public static sbyte MultiplyAdd(sbyte op1, sbyte op2, sbyte op3) => (sbyte)(op1 + (sbyte)(op2 * op3));
-
-        public static sbyte MultiplySubtract(sbyte op1, sbyte op2, sbyte op3) => (sbyte)(op1 - (sbyte)(op2 * op3));
-
-        public static sbyte Subtract(sbyte op1, sbyte op2) => (sbyte)(op1 - op2);
-
-        private static sbyte Pairwise(Func<sbyte, sbyte, sbyte> pairOp, sbyte[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static sbyte Pairwise(Func<sbyte, sbyte, sbyte> pairOp, sbyte[] op1, sbyte[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static byte Add(byte op1, byte op2) => (byte)(op1 + op2);
-
-        public static byte AddPairwise(byte[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static byte AddPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static byte Max(byte op1, byte op2) => Math.Max(op1, op2);
-
-        public static byte MaxPairwise(byte[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static byte MaxPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static byte Min(byte op1, byte op2) => Math.Min(op1, op2);
-
-        public static byte MinPairwise(byte[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static byte MinPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static byte Multiply(byte op1, byte op2) => (byte)(op1 * op2);
-
-        public static byte MultiplyAdd(byte op1, byte op2, byte op3) => (byte)(op1 + (byte)(op2 * op3));
-
-        public static byte MultiplySubtract(byte op1, byte op2, byte op3) => (byte)(op1 - (byte)(op2 * op3));
-
-        public static byte Subtract(byte op1, byte op2) => (byte)(op1 - op2);
-
-        private static byte Pairwise(Func<byte, byte, byte> pairOp, byte[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static byte Pairwise(Func<byte, byte, byte> pairOp, byte[] op1, byte[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static short Add(short op1, short op2) => (short)(op1 + op2);
-
-        public static short AddPairwise(short[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static short AddPairwise(short[] op1, short[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static short Max(short op1, short op2) => Math.Max(op1, op2);
-
-        public static short MaxPairwise(short[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static short MaxPairwise(short[] op1, short[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static short Min(short op1, short op2) => Math.Min(op1, op2);
-
-        public static short MinPairwise(short[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static short MinPairwise(short[] op1, short[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static short Multiply(short op1, short op2) => (short)(op1 * op2);
-
-        public static short MultiplyAdd(short op1, short op2, short op3) => (short)(op1 + (short)(op2 * op3));
-
-        public static short MultiplySubtract(short op1, short op2, short op3) => (short)(op1 - (short)(op2 * op3));
-
-        public static short Subtract(short op1, short op2) => (short)(op1 - op2);
-
-        private static short Pairwise(Func<short, short, short> pairOp, short[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static short Pairwise(Func<short, short, short> pairOp, short[] op1, short[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static ushort Add(ushort op1, ushort op2) => (ushort)(op1 + op2);
-
-        public static ushort AddPairwise(ushort[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static ushort AddPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static ushort Max(ushort op1, ushort op2) => Math.Max(op1, op2);
-
-        public static ushort MaxPairwise(ushort[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static ushort MaxPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static ushort Min(ushort op1, ushort op2) => Math.Min(op1, op2);
-
-        public static ushort MinPairwise(ushort[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static ushort MinPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static ushort Multiply(ushort op1, ushort op2) => (ushort)(op1 * op2);
-
-        public static ushort MultiplyAdd(ushort op1, ushort op2, ushort op3) => (ushort)(op1 + (ushort)(op2 * op3));
-
-        public static ushort MultiplySubtract(ushort op1, ushort op2, ushort op3) => (ushort)(op1 - (ushort)(op2 * op3));
-
-        public static ushort Subtract(ushort op1, ushort op2) => (ushort)(op1 - op2);
-
-        private static ushort Pairwise(Func<ushort, ushort, ushort> pairOp, ushort[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static ushort Pairwise(Func<ushort, ushort, ushort> pairOp, ushort[] op1, ushort[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static int Add(int op1, int op2) => (int)(op1 + op2);
-
-        public static int AddPairwise(int[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static int AddPairwise(int[] op1, int[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static int Max(int op1, int op2) => Math.Max(op1, op2);
-
-        public static int MaxPairwise(int[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static int MaxPairwise(int[] op1, int[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static int Min(int op1, int op2) => Math.Min(op1, op2);
-
-        public static int MinPairwise(int[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static int MinPairwise(int[] op1, int[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static int Multiply(int op1, int op2) => (int)(op1 * op2);
-
-        public static int MultiplyAdd(int op1, int op2, int op3) => (int)(op1 + (int)(op2 * op3));
-
-        public static int MultiplySubtract(int op1, int op2, int op3) => (int)(op1 - (int)(op2 * op3));
-
-        public static int Subtract(int op1, int op2) => (int)(op1 - op2);
-
-        private static int Pairwise(Func<int, int, int> pairOp, int[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static int Pairwise(Func<int, int, int> pairOp, int[] op1, int[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static uint Add(uint op1, uint op2) => (uint)(op1 + op2);
-
-        public static uint AddPairwise(uint[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static uint AddPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static uint Max(uint op1, uint op2) => Math.Max(op1, op2);
-
-        public static uint MaxPairwise(uint[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static uint MaxPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static uint Min(uint op1, uint op2) => Math.Min(op1, op2);
-
-        public static uint MinPairwise(uint[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static uint MinPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static uint Multiply(uint op1, uint op2) => (uint)(op1 * op2);
-
-        public static uint MultiplyAdd(uint op1, uint op2, uint op3) => (uint)(op1 + (uint)(op2 * op3));
-
-        public static uint MultiplySubtract(uint op1, uint op2, uint op3) => (uint)(op1 - (uint)(op2 * op3));
-
-        public static uint Subtract(uint op1, uint op2) => (uint)(op1 - op2);
-
-        private static uint Pairwise(Func<uint, uint, uint> pairOp, uint[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static uint Pairwise(Func<uint, uint, uint> pairOp, uint[] op1, uint[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static long Add(long op1, long op2) => (long)(op1 + op2);
-
-        public static long AddPairwise(long[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static long AddPairwise(long[] op1, long[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static long Max(long op1, long op2) => Math.Max(op1, op2);
-
-        public static long MaxPairwise(long[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static long MaxPairwise(long[] op1, long[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static long Min(long op1, long op2) => Math.Min(op1, op2);
-
-        public static long MinPairwise(long[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static long MinPairwise(long[] op1, long[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static long Multiply(long op1, long op2) => (long)(op1 * op2);
-
-        public static long MultiplyAdd(long op1, long op2, long op3) => (long)(op1 + (long)(op2 * op3));
-
-        public static long MultiplySubtract(long op1, long op2, long op3) => (long)(op1 - (long)(op2 * op3));
-
-        public static long Subtract(long op1, long op2) => (long)(op1 - op2);
-
-        private static long Pairwise(Func<long, long, long> pairOp, long[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static long Pairwise(Func<long, long, long> pairOp, long[] op1, long[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static ulong Add(ulong op1, ulong op2) => (ulong)(op1 + op2);
-
-        public static ulong AddPairwise(ulong[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static ulong AddPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static ulong Max(ulong op1, ulong op2) => Math.Max(op1, op2);
-
-        public static ulong MaxPairwise(ulong[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static ulong MaxPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static ulong Min(ulong op1, ulong op2) => Math.Min(op1, op2);
-
-        public static ulong MinPairwise(ulong[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static ulong MinPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static ulong Multiply(ulong op1, ulong op2) => (ulong)(op1 * op2);
-
-        public static ulong MultiplyAdd(ulong op1, ulong op2, ulong op3) => (ulong)(op1 + (ulong)(op2 * op3));
-
-        public static ulong MultiplySubtract(ulong op1, ulong op2, ulong op3) => (ulong)(op1 - (ulong)(op2 * op3));
-
-        public static ulong Subtract(ulong op1, ulong op2) => (ulong)(op1 - op2);
-
-        private static ulong Pairwise(Func<ulong, ulong, ulong> pairOp, ulong[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static ulong Pairwise(Func<ulong, ulong, ulong> pairOp, ulong[] op1, ulong[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static float Add(float op1, float op2) => (float)(op1 + op2);
-
-        public static float AddPairwise(float[] op1, int i) => Pairwise(Add, op1, i);
-
-        public static float AddPairwise(float[] op1, float[] op2, int i) => Pairwise(Add, op1, op2, i);
-
-        public static float[] AddRotateComplex(float[] op1, float[] op2, byte rot)
+        public static T Add<T>(T a, T b) where T : INumber<T> => a + b;
+        public static T Subtract<T>(T a, T b) where T : INumber<T> => a - b;
+        public static T Multiply<T>(T a, T b) where T : INumber<T> => a * b;
+        public static T MultiplyAdd<T>(T a, T b, T c) where T : INumber<T> => a + b * c;
+        public static T MultiplySubtract<T>(T a, T b, T c) where T : INumber<T> => a - b * c;
+        public static T Max<T>(T a, T b) where T : IComparisonOperators<T, T, bool> => a > b ? a : b;
+        public static T Min<T>(T a, T b) where T : IComparisonOperators<T, T, bool> => a < b ? a : b;
+
+        public static T AddPairwise<T>(T[] array, int i)
+            where T : unmanaged, INumber<T>
+            => Pairwise((a, b) => Add(a, b), array, i);
+
+        public static T AddPairwise<T>(T[] array1, T[] array2, int i)
+            where T : unmanaged, INumber<T>
+            => Pairwise((a, b) => Add(a, b), array1, array2, i);
+
+        public static T AddPairwiseSve<T>(T[] array1, T[] array2, int i)
+            where T : unmanaged, INumber<T>
+            => PairwiseSve((a, b) => Add(a, b), array1, array2, i);
+
+        public static T[] AddRotateComplex<T>(T[] op1, T[] op2, byte rot) where T : INumber<T>
         {
             for (int i = 0; i < op1.Length; i += 2)
             {
@@ -6173,339 +5017,109 @@ namespace JIT.HardwareIntrinsics.Arm
             return op1;
         }
 
-        public static float Max(float op1, float op2) => Math.Max(op1, op2);
+        public static T MaxPairwise<T>(T[] array, int i)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+            => Pairwise((a, b) => Max(a, b), array, i);
 
-        public static float MaxPairwise(float[] op1, int i) => Pairwise(Max, op1, i);
+        public static T MaxPairwise<T>(T[] array1, T[] array2, int i)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+            => Pairwise((a, b) => Max(a, b), array1, array2, i);
 
-        public static float MaxPairwise(float[] op1, float[] op2, int i) => Pairwise(Max, op1, op2, i);
+        public static T MaxPairwiseSve<T>(T[] array1, T[] array2, int i)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+            => PairwiseSve((a, b) => Max(a, b), array1, array2, i);
 
-        public static float Min(float op1, float op2) => Math.Min(op1, op2);
+        public static T MinPairwise<T>(T[] array, int i)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+            => Pairwise((a, b) => Min(a, b), array, i);
 
-        public static float MinPairwise(float[] op1, int i) => Pairwise(Min, op1, i);
+        public static T MinPairwise<T>(T[] array1, T[] array2, int i)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+            => Pairwise((a, b) => Min(a, b), array1, array2, i);
 
-        public static float MinPairwise(float[] op1, float[] op2, int i) => Pairwise(Min, op1, op2, i);
+        public static T MinPairwiseSve<T>(T[] array1, T[] array2, int i)
+            where T : unmanaged, INumber<T>, IComparisonOperators<T, T, bool>
+            => PairwiseSve((a, b) => Min(a, b), array1, array2, i);
 
-        public static float Multiply(float op1, float op2) => (float)(op1 * op2);
-
-        public static float MultiplyAdd(float op1, float op2, float op3) => (float)(op1 + (float)(op2 * op3));
-
-        public static float MultiplySubtract(float op1, float op2, float op3) => (float)(op1 - (float)(op2 * op3));
-
-        public static float Subtract(float op1, float op2) => (float)(op1 - op2);
-
-        private static float Pairwise(Func<float, float, float> pairOp, float[] op1, int i)
+        public static T Pairwise<T>(Func<T, T, T> pairOp, T[] op1, int i)
+            where T : unmanaged, INumber<T>
         {
-            if (2 * i + 1 < op1.Length)
+            int idx = 2 * i;
+            if (idx + 1 < op1.Length)
             {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
+                return pairOp(op1[idx], op1[idx + 1]);
+            }
+            return T.Zero;
+        }
+
+        public static T Pairwise<T>(Func<T, T, T> pairOp, T[] op1, T[] op2, int i)
+            where T : unmanaged, INumber<T>
+        {
+            int idx = 2 * i;
+            if (idx + 1 < op1.Length)
+            {
+                return pairOp(op1[idx], op1[idx + 1]);
             }
             else
             {
-                return 0;
+                int offset = idx - op1.Length;
+                return pairOp(op2[offset], op2[offset + 1]);
             }
         }
 
-        private static float Pairwise(Func<float, float, float> pairOp, float[] op1, float[] op2, int i)
+        public static T PairwiseSve<T>(Func<T, T, T> op, T[] array1, T[] array2, int i)
+            where T : unmanaged, INumber<T>
         {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
+            return (i % 2 == 0)
+                ? op(array1[i], array1[i + 1])
+                : op(array2[i - 1], array2[i]);
         }
 
-        public static double Add(double op1, double op2) => (double)(op1 + op2);
+        public static T AddAcross<T>(T[] values)
+            where T : unmanaged, INumber<T>
+            => Reduce((a, b) => Add(a, b), values);
 
-        public static double AddPairwise(double[] op1, int i) => Pairwise(Add, op1, i);
+        public static T AndAcross<T>(T[] values)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => Reduce((a, b) => And(a, b), values);
 
-        public static double AddPairwise(double[] op1, double[] op2, int i) => Pairwise(Add, op1, op2, i);
+        public static T OrAcross<T>(T[] values)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => Reduce((a, b) => Or(a, b), values);
 
-        public static double[] AddRotateComplex(double[] op1, double[] op2, byte rot)
+        public static T XorAcross<T>(T[] values)
+            where T : unmanaged, IBitwiseOperators<T, T, T>
+            => Reduce((a, b) => Xor(a, b), values);
+
+        public static T MaxAcross<T>(T[] values)
+            where T : unmanaged, IComparisonOperators<T, T, bool>
+            => Reduce((a, b) => Max(a, b), values);
+
+        public static T MinAcross<T>(T[] values)
+            where T : unmanaged, IComparisonOperators<T, T, bool>
+            => Reduce((a, b) => Min(a, b), values);
+
+        public static T Reduce<T>(Func<T, T, T> reducer, T[] values)
+            where T : unmanaged
         {
-            for (int i = 0; i < op1.Length; i += 2)
+            T acc = values[0];
+            for (int i = 1; i < values.Length; i++)
             {
-                int real = i;
-                int img = i + 1;
-
-                if (rot == 0)
-                {
-                    op1[real] -= op2[img];
-                    op1[img] += op2[real];
-                }
-                else
-                {
-                    op1[real] += op2[img];
-                    op1[img] -= op2[real];
-                }
-            }
-
-            return op1;
-        }
-
-        public static double Max(double op1, double op2) => Math.Max(op1, op2);
-
-        public static double MaxPairwise(double[] op1, int i) => Pairwise(Max, op1, i);
-
-        public static double MaxPairwise(double[] op1, double[] op2, int i) => Pairwise(Max, op1, op2, i);
-
-        public static double Min(double op1, double op2) => Math.Min(op1, op2);
-
-        public static double MinPairwise(double[] op1, int i) => Pairwise(Min, op1, i);
-
-        public static double MinPairwise(double[] op1, double[] op2, int i) => Pairwise(Min, op1, op2, i);
-
-        public static double Multiply(double op1, double op2) => (double)(op1 * op2);
-
-        public static double MultiplyAdd(double op1, double op2, double op3) => (double)(op1 + (double)(op2 * op3));
-
-        public static double MultiplySubtract(double op1, double op2, double op3) => (double)(op1 - (double)(op2 * op3));
-
-        public static double Subtract(double op1, double op2) => (double)(op1 - op2);
-
-        private static double Pairwise(Func<double, double, double> pairOp, double[] op1, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        private static double Pairwise(Func<double, double, double> pairOp, double[] op1, double[] op2, int i)
-        {
-            if (2 * i + 1 < op1.Length)
-            {
-                return pairOp(op1[2 * i], op1[2 * i + 1]);
-            }
-            else
-            {
-                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
-            }
-        }
-
-        public static sbyte Negate(sbyte op1) => (sbyte)(-op1);
-
-        public static short Negate(short op1) => (short)(-op1);
-
-        public static int Negate(int op1) => (int)(-op1);
-
-        public static long Negate(long op1) => (long)(-op1);
-
-        public static float Negate(float op1) => (float)(-op1);
-
-        public static double Negate(double op1) => (double)(-op1);
-
-        public static sbyte AddAcross(sbyte[] op1) => Reduce(Add, op1);
-
-        public static sbyte AndAcross(sbyte[] op1) => Reduce(And, op1);
-
-        public static sbyte MaxAcross(sbyte[] op1) => Reduce(Max, op1);
-
-        public static sbyte MinAcross(sbyte[] op1) => Reduce(Min, op1);
-
-        public static sbyte OrAcross(sbyte[] op1) => Reduce(Or, op1);
-
-        public static sbyte XorAcross(sbyte[] op1) => Reduce(Xor, op1);
-
-        private static sbyte Reduce(Func<sbyte, sbyte, sbyte> reduceOp, sbyte[] op1)
-        {
-            sbyte acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
+                acc = reducer(acc, values[i]);
             }
 
             return acc;
         }
 
-        public static byte AddAcross(byte[] op1) => Reduce(Add, op1);
-
-        public static byte AndAcross(byte[] op1) => Reduce(And, op1);
-
-        public static byte MaxAcross(byte[] op1) => Reduce(Max, op1);
-
-        public static byte MinAcross(byte[] op1) => Reduce(Min, op1);
-
-        public static byte OrAcross(byte[] op1) => Reduce(Or, op1);
-
-        public static byte XorAcross(byte[] op1) => Reduce(Xor, op1);
-
-        private static byte Reduce(Func<byte, byte, byte> reduceOp, byte[] op1)
+        public static T Reduce<T, U>(Func<T, U, T> reducer, U[] values)
+            where T : unmanaged
+            where U : unmanaged
         {
-            byte acc = op1[0];
+            T acc = (T)Convert.ChangeType(values[0], typeof(T));
 
-            for (int i = 1; i < op1.Length; i++)
+            for (int i = 1; i < values.Length; i++)
             {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        public static short AddAcross(short[] op1) => Reduce(Add, op1);
-
-        public static short AndAcross(short[] op1) => Reduce(And, op1);
-
-        public static short MaxAcross(short[] op1) => Reduce(Max, op1);
-
-        public static short MinAcross(short[] op1) => Reduce(Min, op1);
-
-        public static short OrAcross(short[] op1) => Reduce(Or, op1);
-
-        public static short XorAcross(short[] op1) => Reduce(Xor, op1);
-
-        private static short Reduce(Func<short, short, short> reduceOp, short[] op1)
-        {
-            short acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        public static ushort AddAcross(ushort[] op1) => Reduce(Add, op1);
-
-        public static ushort AndAcross(ushort[] op1) => Reduce(And, op1);
-
-        public static ushort MaxAcross(ushort[] op1) => Reduce(Max, op1);
-
-        public static ushort MinAcross(ushort[] op1) => Reduce(Min, op1);
-
-        public static ushort OrAcross(ushort[] op1) => Reduce(Or, op1);
-
-        public static ushort XorAcross(ushort[] op1) => Reduce(Xor, op1);
-
-        private static ushort Reduce(Func<ushort, ushort, ushort> reduceOp, ushort[] op1)
-        {
-            ushort acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        public static int AddAcross(int[] op1) => Reduce(Add, op1);
-
-        public static int AndAcross(int[] op1) => Reduce(And, op1);
-
-        public static int MaxAcross(int[] op1) => Reduce(Max, op1);
-
-        public static int MinAcross(int[] op1) => Reduce(Min, op1);
-
-        public static int OrAcross(int[] op1) => Reduce(Or, op1);
-
-        public static int XorAcross(int[] op1) => Reduce(Xor, op1);
-
-        private static int Reduce(Func<int, int, int> reduceOp, int[] op1)
-        {
-            int acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        public static uint AddAcross(uint[] op1) => Reduce(Add, op1);
-
-        public static uint AndAcross(uint[] op1) => Reduce(And, op1);
-
-        public static uint MaxAcross(uint[] op1) => Reduce(Max, op1);
-
-        public static uint MinAcross(uint[] op1) => Reduce(Min, op1);
-
-        public static uint OrAcross(uint[] op1) => Reduce(Or, op1);
-
-        public static uint XorAcross(uint[] op1) => Reduce(Xor, op1);
-
-        private static uint Reduce(Func<uint, uint, uint> reduceOp, uint[] op1)
-        {
-            uint acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        public static long AddAcross(long[] op1) => Reduce(Add, op1);
-
-        public static long AndAcross(long[] op1) => Reduce(And, op1);
-
-        public static long MaxAcross(long[] op1) => Reduce(Max, op1);
-
-        public static long MinAcross(long[] op1) => Reduce(Min, op1);
-
-        public static long OrAcross(long[] op1) => Reduce(Or, op1);
-
-        public static long XorAcross(long[] op1) => Reduce(Xor, op1);
-
-        private static long Reduce(Func<long, long, long> reduceOp, long[] op1)
-        {
-            long acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        public static ulong AddAcross(ulong[] op1) => Reduce(Add, op1);
-
-        public static ulong AndAcross(ulong[] op1) => Reduce(And, op1);
-
-        public static ulong MaxAcross(ulong[] op1) => Reduce(Max, op1);
-
-        public static ulong MinAcross(ulong[] op1) => Reduce(Min, op1);
-
-        public static ulong OrAcross(ulong[] op1) => Reduce(Or, op1);
-
-        public static ulong XorAcross(ulong[] op1) => Reduce(Xor, op1);
-
-        private static ulong Reduce(Func<ulong, ulong, ulong> reduceOp, ulong[] op1)
-        {
-            ulong acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
-        }
-
-        public static float AddAcross(float[] op1) => Reduce(Add, op1);
-
-        public static float MaxAcross(float[] op1) => Reduce(Max, op1);
-
-        public static float MinAcross(float[] op1) => Reduce(Min, op1);
-
-        private static float Reduce(Func<float, float, float> reduceOp, float[] op1)
-        {
-            float acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
+                acc = reducer(acc, values[i]);
             }
 
             return acc;
@@ -6534,24 +5148,6 @@ namespace JIT.HardwareIntrinsics.Arm
             float r_reduced = ReduceRecursivePairwise(reduceOp, r);
 
             return reduceOp(l_reduced, r_reduced);
-        }
-
-        public static double AddAcross(double[] op1) => Reduce(Add, op1);
-
-        public static double MaxAcross(double[] op1) => Reduce(Max, op1);
-
-        public static double MinAcross(double[] op1) => Reduce(Min, op1);
-
-        private static double Reduce(Func<double, double, double> reduceOp, double[] op1)
-        {
-            double acc = op1[0];
-
-            for (int i = 1; i < op1.Length; i++)
-            {
-                acc = reduceOp(acc, op1[i]);
-            }
-
-            return acc;
         }
 
         public static double AddAcrossRecursivePairwise(double[] op1) => ReduceRecursivePairwise(Add, op1);
@@ -6604,7 +5200,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
                     if ((val.lo & 0x8000000000000000U) != 0)
                     {
-                       val.hi |= 1;
+                        val.hi |= 1;
                     }
 
                     val.lo <<= 1;
@@ -6660,6 +5256,22 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        private static ulong PolynomialMult(uint op1, uint op2)
+        {
+            ulong result = default(ulong);
+            ulong extendedOp2 = (ulong)op2;
+
+            for (int i = 0; i < 8 * sizeof(uint); i++)
+            {
+                if ((op1 & ((uint)1 << i)) != 0)
+                {
+                    result = (ulong)(result ^ (extendedOp2 << i));
+                }
+            }
+
+            return result;
+        }
+
         private static poly128_t PolynomialMult(ulong op1, ulong op2)
         {
             poly128_t result = default(poly128_t);
@@ -6701,7 +5313,7 @@ namespace JIT.HardwareIntrinsics.Arm
             v0 = (ulong)op2 & 0xFFFFFFFF;
             v1 = op2 >> 32;
             w0 = u0 * v0;
-            t  = u1 * (long)v0 + (long)(w0 >> 32);
+            t = u1 * (long)v0 + (long)(w0 >> 32);
             w1 = t & 0xFFFFFFFF;
             w2 = t >> 32;
             w1 = (long)u0 * v1 + w1;
@@ -6717,7 +5329,7 @@ namespace JIT.HardwareIntrinsics.Arm
             v0 = (ulong)op2 & 0xFFFFFFFF;
             v1 = op2 >> 32;
             w0 = u0 * v0;
-            t  = u1 * (ulong)v0 + (ulong)(w0 >> 32);
+            t = u1 * (ulong)v0 + (ulong)(w0 >> 32);
             w1 = t & 0xFFFFFFFF;
             w2 = t >> 32;
             w1 = (ulong)u0 * v1 + w1;
@@ -6743,6 +5355,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static ulong PolynomialMultiplyWideningHi64(ulong op1, ulong op2) => PolynomialMult(op1, op2).hi;
 
         public static long PolynomialMultiplyWideningHi64(long op1, long op2) => (long)PolynomialMult(op1, op2).hi;
+
+        public static ulong PolynomialMultiplyWidening(uint op1, uint op2) => PolynomialMult(op1, op2);
 
         public static sbyte Concat(sbyte[] op1, sbyte[] op2, int i) => (i < op1.Length) ? op1[i] : op2[i - op1.Length];
 
@@ -6916,7 +5530,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int index = indices[i];
 
             if (index < 0 || index >= fullTable.Length)
-              return defaultValues[i];
+                return defaultValues[i];
 
             return fullTable[index];
         }
@@ -6935,7 +5549,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int index = indices[i];
 
             if (index < 0 || index >= fullTable.Length)
-              return defaultValues[i];
+                return defaultValues[i];
 
             return fullTable[index];
         }
@@ -7127,7 +5741,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int[] ConvertToInt32(float[] op1) => Array.ConvertAll(op1, num => ConvertToInt32(num));
 
         private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
-        
+
         public static long[] ConvertToInt64(double[] op1) => Array.ConvertAll(op1, num => ConvertToInt64(num));
 
         public static long[] ConvertToInt64(float[] op1)
@@ -7562,6 +6176,125 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static int DotProductRotateComplex(int op1, sbyte[] op2, int s, sbyte[] op3, byte rotation)
+        {
+            int result = op1;
+
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((int)op2[r1] * (int)op3[r1]) - ((int)op2[i1] * (int)op3[i1]) + ((int)op2[r2] * (int)op3[r2]) - ((int)op2[i2] * (int)op3[i2]);
+                    break;
+                case 1:
+                    result += ((int)op2[r1] * (int)op3[i1]) + ((int)op2[i1] * (int)op3[r1]) + ((int)op2[r2] * (int)op3[i2]) + ((int)op2[i2] * (int)op3[r2]);
+                    break;
+                case 2:
+                    result += ((int)op2[r1] * (int)op3[r1]) + ((int)op2[i1] * (int)op3[i1]) + ((int)op2[r2] * (int)op3[r2]) + ((int)op2[i2] * (int)op3[i2]);
+                    break;
+                case 3:
+                    result += ((int)op2[r1] * (int)op3[i1]) - ((int)op2[i1] * (int)op3[r1]) + ((int)op2[r2] * (int)op3[i2]) - ((int)op2[i2] * (int)op3[r2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+        public static int DotProductRotateComplexBySelectedIndex(int op1, sbyte[] op2, int s, sbyte[] op3, int immIndex, byte rotation)
+        {
+            int result = op1;
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((int)op2[r1] * (int)op3[immIndex]) - ((int)op2[i1] * (int)op3[immIndex + 1]) + ((int)op2[r2] * (int)op3[immIndex + 2]) - ((int)op2[i2] * (int)op3[immIndex + 3]);
+                    break;
+                case 1:
+                    result += ((int)op2[r1] * (int)op3[immIndex + 1]) + ((int)op2[i1] * (int)op3[immIndex]) + ((int)op2[r2] * (int)op3[immIndex + 3]) + ((int)op2[i2] * (int)op3[immIndex + 2]);
+                    break;
+                case 2:
+                    result += ((int)op2[r1] * (int)op3[immIndex]) + ((int)op2[i1] * (int)op3[immIndex + 1]) + ((int)op2[r2] * (int)op3[immIndex + 2]) + ((int)op2[i2] * (int)op3[immIndex + 3]);
+                    break;
+                case 3:
+                    result += ((int)op2[r1] * (int)op3[immIndex + 1]) - ((int)op2[i1] * (int)op3[immIndex]) + ((int)op2[r2] * (int)op3[immIndex + 3]) - ((int)op2[i2] * (int)op3[immIndex + 2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+
+        public static long DotProductRotateComplex(long op1, short[] op2, int s, short[] op3, byte rotation)
+        {
+            long result = op1;
+
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+                case 0:
+                    result += ((long)op2[r1] * (long)op3[r1]) - ((long)op2[i1] * (long)op3[i1]) + ((long)op2[r2] * (long)op3[r2]) - ((long)op2[i2] * (long)op3[i2]);
+                    break;
+                case 1:
+                    result += ((long)op2[r1] * (long)op3[i1]) + ((long)op2[i1] * (long)op3[r1]) + ((long)op2[r2] * (long)op3[i2]) + ((long)op2[i2] * (long)op3[r2]);
+                    break;
+                case 2:
+                    result += ((long)op2[r1] * (long)op3[r1]) + ((long)op2[i1] * (long)op3[i1]) + ((long)op2[r2] * (long)op3[r2]) + ((long)op2[i2] * (long)op3[i2]);
+                    break;
+                case 3:
+                    result += ((long)op2[r1] * (long)op3[i1]) - ((long)op2[i1] * (long)op3[r1]) + ((long)op2[r2] * (long)op3[i2]) - ((long)op2[i2] * (long)op3[r2]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
+        public static long DotProductRotateComplexBySelectedIndex(long op1, short[] op2, int s, short[] op3, int immIndex, byte rotation)
+        {
+            long result = op1;
+            int r1 = s;
+            int i1 = s + 1;
+            int r2 = s + 2;
+            int i2 = s + 3;
+
+            switch (rotation)
+            {
+            case 0:
+                result += ((long)op2[r1] * (long)op3[immIndex]) - ((long)op2[i1] * (long)op3[immIndex + 1]) + ((long)op2[r2] * (long)op3[immIndex + 2]) - ((long)op2[i2] * (long)op3[immIndex + 3]);
+                break;
+            case 1:
+                result += ((long)op2[r1] * (long)op3[immIndex + 1]) + ((long)op2[i1] * (long)op3[immIndex]) + ((long)op2[r2] * (long)op3[immIndex + 3]) + ((long)op2[i2] * (long)op3[immIndex + 2]);
+                break;
+            case 2:
+                result += ((long)op2[r1] * (long)op3[immIndex]) + ((long)op2[i1] * (long)op3[immIndex + 1]) + ((long)op2[r2] * (long)op3[immIndex + 2]) + ((long)op2[i2] * (long)op3[immIndex + 3]);
+                break;
+            case 3:
+                result += ((long)op2[r1] * (long)op3[immIndex + 1]) - ((long)op2[i1] * (long)op3[immIndex]) + ((long)op2[r2] * (long)op3[immIndex + 3]) - ((long)op2[i2] * (long)op3[immIndex + 2]);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(rotation), "Invalid rotation value.");
+            }
+
+            return result;
+        }
+
         public static int WhileLessThanMask(int op1, int op2)
         {
             return (op1 < op2) ? 1 : 0;
@@ -7607,7 +6340,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7617,7 +6350,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7627,7 +6360,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7637,7 +6370,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7647,7 +6380,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7657,7 +6390,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7667,7 +6400,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7677,7 +6410,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7687,7 +6420,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((BitConverter.SingleToInt32Bits(op1[i]) == 1 && BitConverter.SingleToInt32Bits(op2[i]) == 1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
@@ -7697,65 +6430,65 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((BitConverter.DoubleToInt64Bits(op1[i]) == 1 && BitConverter.DoubleToInt64Bits(op2[i]) == 1) ? 1 : 0);
+                acc += (ulong)((op1[i] == 1) && (op2[i] == 1) ? 1 : 0);
             }
             return acc;
         }
 
         public static byte getMaskByte()
         {
-            return (byte)(TestLibrary.Generator.GetByte()%(byte)2);
+            return (byte)(TestLibrary.Generator.GetByte() % 2);
         }
 
         public static sbyte getMaskSByte()
         {
-            return (sbyte)(TestLibrary.Generator.GetSByte()%(sbyte)2);
+            return (sbyte)(TestLibrary.Generator.GetByte() % 2);
         }
 
         public static short getMaskInt16()
         {
-            return (short)(TestLibrary.Generator.GetInt16()%(short)2);
+            return (short)(TestLibrary.Generator.GetUInt16() % 2);
         }
 
         public static ushort getMaskUInt16()
         {
-            return (ushort)(TestLibrary.Generator.GetUInt16()%(ushort)2);
+            return (ushort)(TestLibrary.Generator.GetUInt16() % 2);
         }
 
         public static int getMaskInt32()
         {
-            return (int)(TestLibrary.Generator.GetInt32()%(int)2);
+            return (int)(TestLibrary.Generator.GetUInt32() % 2);
         }
 
         public static uint getMaskUInt32()
         {
-            return (uint)(TestLibrary.Generator.GetUInt32()%(uint)2);
+            return (uint)(TestLibrary.Generator.GetUInt32() % 2);
         }
 
         public static long getMaskInt64()
         {
-            return (long)(TestLibrary.Generator.GetInt64()%(long)2);
+            return (long)(TestLibrary.Generator.GetUInt64() % 2);
         }
 
         public static ulong getMaskUInt64()
         {
-            return (ulong)(TestLibrary.Generator.GetUInt64()%(ulong)2);
+            return (ulong)(TestLibrary.Generator.GetUInt64() % 2);
         }
 
         public static float getMaskSingle()
         {
-            return (float)(BitConverter.Int32BitsToSingle(TestLibrary.Generator.GetInt32()%(int)2));
+            return (float)(TestLibrary.Generator.GetUInt32() % 2);
         }
 
         public static double getMaskDouble()
         {
-            return (double)(BitConverter.Int64BitsToDouble(TestLibrary.Generator.GetInt64()%(long)2));
+            return (double)(TestLibrary.Generator.GetUInt64() % 2);
         }
 
         public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
         {
 
-            switch(pattern)
+            switch (pattern)
             {
                 // Returns elems, as this is always a power of 2.
                 case SveMaskPattern.LargestPowerOf2:
@@ -7807,7 +6540,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern);
         }
-        
+
         public static int NumberOfElementsInVectorInt16(SveMaskPattern pattern)
         {
             return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern);
@@ -8010,7 +6743,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 1; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return ret;
         }
@@ -8020,7 +6753,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 1; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return ret;
         }
@@ -8029,7 +6762,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return ret;
         }
@@ -8039,7 +6772,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return ret;
         }
@@ -8049,7 +6782,7 @@ namespace JIT.HardwareIntrinsics.Arm
             long ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (long)array[offset+i];
+                ret = (ret << 8) + (long)array[offset + i];
             }
             return ret;
         }
@@ -8059,7 +6792,7 @@ namespace JIT.HardwareIntrinsics.Arm
             long ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (long)array[offset+(ulong)i];
+                ret = (ret << 8) + (long)array[offset + (ulong)i];
             }
             return ret;
         }
@@ -8069,7 +6802,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint ret = 0;
             for (int i = 1; i >= 0; i--)
             {
-                ret = (ret << 8) + (uint)array[offset+i];
+                ret = (ret << 8) + (uint)array[offset + i];
             }
             return ret;
         }
@@ -8079,7 +6812,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint ret = 0;
             for (int i = 1; i >= 0; i--)
             {
-                ret = (ret << 8) + (uint)array[offset+i];
+                ret = (ret << 8) + (uint)array[offset + i];
             }
             return ret;
         }
@@ -8089,7 +6822,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (uint)array[offset+i];
+                ret = (ret << 8) + (uint)array[offset + i];
             }
             return ret;
         }
@@ -8099,7 +6832,7 @@ namespace JIT.HardwareIntrinsics.Arm
             uint ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (uint)array[offset+i];
+                ret = (ret << 8) + (uint)array[offset + i];
             }
             return ret;
         }
@@ -8109,7 +6842,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (ulong)array[offset+i];
+                ret = (ret << 8) + (ulong)array[offset + i];
             }
             return ret;
         }
@@ -8119,7 +6852,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ulong ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (ulong)array[offset+(ulong)i];
+                ret = (ret << 8) + (ulong)array[offset + (ulong)i];
             }
             return ret;
         }
@@ -8129,7 +6862,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return BitConverter.Int32BitsToSingle(ret);
         }
@@ -8139,7 +6872,7 @@ namespace JIT.HardwareIntrinsics.Arm
             int ret = 0;
             for (int i = 3; i >= 0; i--)
             {
-                ret = (ret << 8) + (int)array[offset+i];
+                ret = (ret << 8) + (int)array[offset + i];
             }
             return BitConverter.Int32BitsToSingle(ret);
         }
@@ -8149,7 +6882,7 @@ namespace JIT.HardwareIntrinsics.Arm
             long ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (long)array[offset+i];
+                ret = (ret << 8) + (long)array[offset + i];
             }
             return BitConverter.Int64BitsToDouble(ret);
         }
@@ -8159,24 +6892,23 @@ namespace JIT.HardwareIntrinsics.Arm
             long ret = 0;
             for (long i = 7; i >= 0; i--)
             {
-                ret = (ret << 8) + (long)array[offset+(ulong)i];
+                ret = (ret << 8) + (long)array[offset + (ulong)i];
             }
             return BitConverter.Int64BitsToDouble(ret);
         }
 
-        public static Byte Splice(Byte[] first, Byte[] second, Byte[] maskArray, Int32 index)
+        public static T Splice<T>(T[] first, T[] second, T[] maskArray, int index)
+            where T : unmanaged, IEquatable<T>
         {
             int start = -1;
-            int end   = -1;
+            int end = -1;
 
-            for(var i = 0; i < maskArray.Length; i++)
+            for (int i = 0; i < maskArray.Length; i++)
             {
-                if (maskArray[i] != 0)
+                if (!maskArray[i].Equals(default))
                 {
                     if (start == -1)
-                    {
                         start = i;
-                    }
                     end = i;
                 }
             }
@@ -8186,242 +6918,10 @@ namespace JIT.HardwareIntrinsics.Arm
                 return second[index];
             }
 
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static double Splice(double[] first, double[] second, double[] maskArray, Int32 index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (Double.IsNaN(maskArray[i]) || maskArray[i] > 0.0d)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static float Splice(float[] first, float[] second, float[] maskArray, Int32 index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (maskArray[i] != 0.0f)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static Int16 Splice(Int16[] first, Int16[] second, Int16[] maskArray, Int32 index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (maskArray[i] != 0)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static Int32 Splice(Int32[] first, Int32[] second, Int32[] maskArray, Int32 index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (maskArray[i] != 0)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static Int64 Splice(Int64[] first, Int64[] second, Int64[] maskArray, Int32 index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (maskArray[i] != 0)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static SByte Splice(SByte[] first, SByte[] second, SByte[] maskArray, Int32 index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (maskArray[i] != 0)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static UInt16 Splice(UInt16[] first, UInt16[] second, UInt16[] maskArray, Int32 index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (maskArray[i] != 0)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static UInt32 Splice(UInt32[] first, UInt32[] second, UInt32[] maskArray, Int32 index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (maskArray[i] != 0)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
-        }
-
-        public static ulong Splice(ulong[] first, ulong[] second, ulong[] maskArray, int index)
-        {
-            int start = -1;
-            int end   = -1;
-
-            for(var i = 0; i < maskArray.Length; i++)
-            {
-                if (maskArray[i] != 0)
-                {
-                    if (start == -1)
-                    {
-                        start = i;
-                    }
-                    end = i;
-                }
-            }
-
-            if (start == -1)
-            {
-                return second[index];
-            }
-
-            var rangeSize = end - start + 1;
-            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+            int rangeSize = end - start + 1;
+            return (index < rangeSize)
+                ? first[start + index]
+                : second[index - rangeSize];
         }
 
         public static T LastActive<T>(T[] mask, T[] x) where T : IBinaryInteger<T>
@@ -8558,14 +7058,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
 
         private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TElem[] mask, TMem[] data, TElem[] result)
-            where TMem  : INumberBase<TMem>
+            where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
             return (mask[index] == TElem.Zero) ? TElem.Zero : TElem.CreateTruncating(data[index]);
         }
 
         private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] data, TElem[] result)
-            where TMem  : INumberBase<TMem>
+            where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
             TElem[] mask = new TElem[result.Length];
@@ -8575,7 +7075,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
-            where TMem  : INumberBase<TMem>
+            where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
             for (var i = 0; i < data.Length; i++)
@@ -8591,7 +7091,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] data, TElem[] result, Func<int, TElem, TElem> map)
-            where TMem  : INumberBase<TMem>
+            where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
             for (var i = 0; i < data.Length; i++)
@@ -8607,36 +7107,36 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] mask, TMem[] data, TElem[] result)
-            where TMem  : INumberBase<TMem>, IConvertible
+            where TMem : INumberBase<TMem>, IConvertible
             where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(mask, data, result, (_, loadResult) => loadResult);
         }
 
         public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] data, TElem[] result)
-            where TMem  : INumberBase<TMem>, IConvertible
+            where TMem : INumberBase<TMem>, IConvertible
             where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(data, result, (_, loadResult) => loadResult);
         }
 
         public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] data, TElem[] result, TElem[] falseOp)
-            where TMem  : INumberBase<TMem>, IConvertible
+            where TMem : INumberBase<TMem>, IConvertible
             where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(data, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
         }
 
         private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] mask, ExtendedElementT[] data, Index[] indices)
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(data[int.CreateChecked(indices[index])]);
         }
 
         private static unsafe T GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(int index, T[] mask, AddressT[] data)
-                where T : INumberBase<T> 
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
@@ -8693,9 +7193,9 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Func<int, T, T> map) 
+        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Func<int, T, T> map)
                 where T : INumberBase<T>
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             for (var i = 0; i < mask.Length; i++)
@@ -8710,8 +7210,8 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        private static bool CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Func<int, T, T> map) 
-                where T : INumberBase<T> 
+        private static bool CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Func<int, T, T> map)
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
@@ -8727,56 +7227,56 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result) 
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             return CheckGatherVectorBehaviorCore(mask, data, indices, result, (_, gatherResult) => gatherResult);
         }
 
-        public static bool CheckGatherVectorConditionalSelectBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelFalse, T[] result) 
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+        public static bool CheckGatherVectorConditionalSelectBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelFalse, T[] result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
         }
 
-        public static bool CheckGatherVectorConditionalSelectTrueBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelTrue, T[] result) 
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+        public static bool CheckGatherVectorConditionalSelectTrueBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelTrue, T[] result)
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
             return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
         }
 
 
-        public static bool CheckGatherVectorBasesBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result) 
-                where T : INumberBase<T> 
+        public static bool CheckGatherVectorBasesBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result)
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
-                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
             return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (_, gatherResult) => gatherResult);
         }
 
-        public static bool CheckGatherVectorBasesConditionalSelectBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelFalse, T[] result) 
-                where T : INumberBase<T> 
+        public static bool CheckGatherVectorBasesConditionalSelectBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelFalse, T[] result)
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
             return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
         }
 
-        public static bool CheckGatherVectorBasesConditionalSelectTrueBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelTrue, T[] result) 
-                where T : INumberBase<T> 
+        public static bool CheckGatherVectorBasesConditionalSelectTrueBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelTrue, T[] result)
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
             return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
         }
 
-        private static bool CheckFirstFaultingBehaviorCore<T, TFault>(T[] result, Vector<TFault> faultResult, Func<int, bool> checkIter) 
+        private static bool CheckFirstFaultingBehaviorCore<T, TFault>(T[] result, Vector<TFault> faultResult, Func<int, bool> checkIter)
                 where T : INumberBase<T>
                 where TFault : INumberBase<TFault>
         {
@@ -8828,7 +7328,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TElem[] mask, TMem[] data, TElem[] result, Vector<TFault> faultResult)
-                where TMem  : INumberBase<TMem>, IConvertible
+                where TMem : INumberBase<TMem>, IConvertible
                 where TElem : INumberBase<TElem>
                 where TFault : INumberBase<TFault>
         {
@@ -8841,7 +7341,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var validElementCount = data.Length;
             var hasFaulted = false;
-            var expectedFaultResult = 
+            var expectedFaultResult =
                 InitVector<TFault>(i =>
                 {
                     if (hasFaulted)
@@ -8872,8 +7372,8 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)
-                where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where T : INumberBase<T>
+                where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
                 where TFault : INumberBase<TFault>
         {
@@ -8885,7 +7385,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             var hasFaulted = false;
-            var expectedFaultResult = 
+            var expectedFaultResult =
                 InitVector<TFault>(i =>
                 {
                     if (hasFaulted)
@@ -8916,9 +7416,9 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT, TFault>(T[] mask, AddressT[] data, T[] result, Vector<TFault> faultResult)
-                where T : INumberBase<T> 
+                where T : INumberBase<T>
                 where AddressT : unmanaged, INumberBase<AddressT>
-                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
                 where TFault : INumberBase<TFault>
         {
             // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
@@ -8929,14 +7429,14 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             var hasFaulted = false;
-            var expectedFaultResult = 
+            var expectedFaultResult =
                 InitVector<TFault>(i =>
                 {
                     if (hasFaulted)
                     {
                         return TFault.Zero;
                     }
-                    
+
                     if (mask[i] == T.Zero)
                     {
                         return TFault.One;
@@ -8957,7 +7457,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
         }
-        
+
         public static bool CheckGatherVectorWithByteOffsetFirstFaultingBehavior<T, ExtendedElementT, Offset, TFault>(T[] mask, byte[] data, Offset[] offsets, T[] result, Vector<TFault> faultResult)
                 where T : INumberBase<T>
                 where ExtendedElementT : INumberBase<ExtendedElementT>
@@ -9023,7 +7523,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
-        private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)
+        public static T ConditionalExtract<T>(T[] op1, T op2, T[] op3, bool after) where T : INumber<T>
         {
             int last = LastActiveElement(op1);
             if (last < 0)
@@ -9035,15 +7535,17 @@ namespace JIT.HardwareIntrinsics.Arm
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
             return op3[pos];
         }
 
-        private static byte[] ConditionalExtract(byte[] op1, byte[] op2, byte[] op3, bool after, bool replicate)
+        public static T[] ConditionalExtract<T>(T[] op1, T[] op2, T[] op3, bool after, bool replicate)
+            where T : INumber<T>
         {
             int last = LastActiveElement(op1);
             if (last < 0)
@@ -9051,13 +7553,14 @@ namespace JIT.HardwareIntrinsics.Arm
                 return op2;
             }
 
-            byte[] result = new byte[op1.Length];
+            T[] result = new T[op1.Length];
             int pos = last;
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
@@ -9067,770 +7570,645 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             else
             {
-                Array.Fill<byte>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                Array.Fill(result, T.Zero);
+                result[0] = op3[pos];
             }
 
             return result;
         }
 
-        public static byte ConditionalExtractAfterLastActiveElement(byte[] op1, byte op2, byte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
+        public static T ConditionalExtractAfterLastActiveElement<T>(T[] op1, T op2, T[] op3) where T : INumber<T>
+            => ConditionalExtract(op1, op2, op3, after: true);
 
-        public static byte ConditionalExtractLastActiveElement(byte[] op1, byte op2, byte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
+        public static T ConditionalExtractLastActiveElement<T>(T[] op1, T op2, T[] op3) where T : INumber<T>
+            => ConditionalExtract(op1, op2, op3, after: false);
 
-        public static byte[] ConditionalExtractAfterLastActiveElement(byte[] op1, byte[] op2, byte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
+        public static T[] ConditionalExtractAfterLastActiveElement<T>(T[] op1, T[] op2, T[] op3) where T : INumber<T>
+            => ConditionalExtract(op1, op2, op3, after: true, replicate: false);
 
-        public static byte[] ConditionalExtractAfterLastActiveElementAndReplicate(byte[] op1, byte[] op2, byte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
+        public static T[] ConditionalExtractAfterLastActiveElementAndReplicate<T>(T[] op1, T[] op2, T[] op3) where T : INumber<T>
+            => ConditionalExtract(op1, op2, op3, after: true, replicate: true);
 
-        public static byte[] ConditionalExtractLastActiveElement(byte[] op1, byte[] op2, byte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
+        public static T[] ConditionalExtractLastActiveElement<T>(T[] op1, T[] op2, T[] op3) where T : INumber<T>
+            => ConditionalExtract(op1, op2, op3, after: false, replicate: false);
 
-        public static byte[] ConditionalExtractLastActiveElementAndReplicate(byte[] op1, byte[] op2, byte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
+        public static T[] ConditionalExtractLastActiveElementAndReplicate<T>(T[] op1, T[] op2, T[] op3) where T : INumber<T>
+            => ConditionalExtract(op1, op2, op3, after: false, replicate: true);
 
-        private static sbyte ConditionalExtract(sbyte[] op1, sbyte op2, sbyte[] op3, bool after)
+        public static T[] Extract<T>(T[] op1, T[] op2, bool after) where T : INumber<T>
         {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            int pos = last;
+            int pos = LastActiveElement(op1);
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
-            return op3[pos];
+            T[] result = new T[op1.Length];
+            Array.Fill(result, T.Zero);
+            result[0] = op2[pos];
+            return result;
         }
 
-        private static sbyte[] ConditionalExtract(sbyte[] op1, sbyte[] op2, sbyte[] op3, bool after, bool replicate)
+        public static T ExtractScalar<T>(T[] op1, T[] op2, bool after) where T : INumber<T>
         {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            sbyte[] result = new sbyte[op1.Length];
-            int pos = last;
+            int pos = LastActiveElement(op1);
             if (after)
             {
                 pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
                 }
             }
 
-            if (replicate)
+            return op2[pos];
+        }
+
+        public static T[] ExtractAfterLastActiveElement<T>(T[] op1, T[] op2) where T : INumber<T>
+            => Extract(op1, op2, after: true);
+
+        public static T ExtractAfterLastActiveElementScalar<T>(T[] op1, T[] op2) where T : INumber<T>
+            => ExtractScalar(op1, op2, after: true);
+
+        public static T[] ExtractLastActiveElement<T>(T[] op1, T[] op2) where T : INumber<T>
+            => Extract(op1, op2, after: false);
+
+        public static T ExtractLastActiveElementScalar<T>(T[] op1, T[] op2) where T : INumber<T>
+            => ExtractScalar(op1, op2, after: false);
+
+        public static T BitwiseClearXor<T>(T op1, T op2, T op3) where T : IBitwiseOperators<T, T, T>
+        {
+            return op1 ^ (op2 & ~op3);
+        }
+
+        public static T BitwiseSelectLeftInverted<T>(T select, T left, T right) where T : IBitwiseOperators<T, T, T>
+        {
+            return (~left & select) | (right & ~select);
+        }
+
+        public static T BitwiseSelectRightInverted<T>(T select, T left, T right) where T : IBitwiseOperators<T, T, T>
+        {
+            return (left & select) | (~right & ~select);
+        }
+
+        public static T[] InterleavingXorEvenOdd<T>(T[] odd, T[] left, T[] right) where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < odd.Length; i += 2)
             {
-                Array.Fill(result, op3[pos]);
+                odd[i] = left[i] ^ right[i + 1];
+            }
+            return odd;
+        }
+
+        public static T[] InterleavingXorOddEven<T>(T[] even, T[] left, T[] right) where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < even.Length; i += 2)
+            {
+                even[i + 1] = left[i + 1] ^ right[i];
+            }
+            return even;
+        }
+
+        public static T[] SubtractBorrowWideningEven<T>(T[] op1, T[] op2, T[] op3)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[op1.Length];
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                T a = op1[i];
+                T b = ~op2[i];
+                T carryIn = op3[i + 1] & T.One;
+                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
+                result[i] = sum;
+                result[i + 1] = carryOut;
+            }
+
+            return result;
+        }
+
+        public static T[] SubtractBorrowWideningOdd<T>(T[] op1, T[] op2, T[] op3)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[op1.Length];
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                T a = op1[i];
+                T b = ~op2[i+1];
+                T carryIn = op3[i + 1] & T.One;
+                (T sum, T carryOut) = AddWithCarry(a, b, carryIn);
+                result[i] = sum;
+                result[i + 1] = carryOut;
+            }
+
+            return result;
+        }
+
+        public static sbyte SubtractHighNarrowingEven(short[] left, short[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (sbyte)((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return 0;
+        }
+
+        public static short SubtractHighNarrowingEven(int[] left, int[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (short) ((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return 0;
+        }
+
+        public static int SubtractHighNarrowingEven(long[] left, long[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (int) ((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return 0;
+        }
+
+        public static byte SubtractHighNarrowingEven(ushort[] left, ushort[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (byte)((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return 0;
+        }
+
+        public static ushort SubtractHighNarrowingEven(uint[] left, uint[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (ushort)((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return 0;
+        }
+
+        public static uint SubtractHighNarrowingEven(ulong[] left, ulong[] right, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return (uint)((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return 0;
+        }
+
+        public static sbyte SubtractHighNarrowingOdd(sbyte[] even, short[] left, short[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (sbyte) ((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return even[i];
+        }
+
+        public static short SubtractHighNarrowingOdd(short[] even, int[] left, int[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (short) ((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return even[i];
+        }
+
+        public static int SubtractHighNarrowingOdd(int[] even, long[] left, long[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (int) ((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return even[i];
+        }
+
+        public static byte SubtractHighNarrowingOdd(byte[] even, ushort[] left, ushort[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (byte)((left[i / 2] - right[i / 2]) >> 8);
+            }
+
+            return even[i];
+        }
+
+        public static ushort SubtractHighNarrowingOdd(ushort[] even, uint[] left, uint[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (ushort)((left[i / 2] - right[i / 2]) >> 16);
+            }
+
+            return even[i];
+        }
+
+        public static uint SubtractHighNarrowingOdd(uint[] even, ulong[] left, ulong[] right, int i)
+        {
+            if (i % 2 == 1)
+            {
+                return (uint)((left[i / 2] - right[i / 2]) >> 32);
+            }
+
+            return even[i];
+        }
+
+        public static (T sum, T carryOut) AddWithCarry<T>(T a, T b, T carryIn)
+        where T : unmanaged, IBinaryInteger<T>
+        {
+            T sum = a + b + carryIn;
+            T one = T.One;
+            T zero = T.Zero;
+            T carryOut = (sum < a || (sum == a && carryIn == one)) ? one : zero;
+            return (sum, carryOut);
+        }
+
+        public static T Xor<T>(params T[] ops) where T : IBitwiseOperators<T, T, T>
+        {
+            T result = ops[0];
+            for (int i = 1; i < ops.Length; i++)
+            {
+                result ^= ops[i];
+            }
+            return result;
+        }
+
+        public static T XorRotateRight<T>(T op1, T op2, int shift) where T : IBinaryInteger<T>
+        {
+            return T.RotateRight(Xor(op1, op2), shift);
+        }
+
+        public static sbyte SveShiftArithmeticRounded(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static short SveShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static short SveShiftArithmeticSaturate(short op1, short op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static int SveShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static int SveShiftArithmeticSaturate(int op1, int op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static long SveShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static long SveShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static byte SveShiftLeftLogicalSaturate(byte op1, sbyte op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static ushort SveShiftLeftLogicalSaturate(ushort op1, short op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static uint SveShiftLeftLogicalSaturate(uint op1, int op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static ulong SveShiftLeftLogicalSaturate(ulong op1, long op2) => UnsignedShift(op1, op2, saturating: true, shiftSat: true);
+
+        public static byte SveShiftLeftLogicalSaturateUnsigned(sbyte op1, byte op2) => UnsignedShift((byte)op1, (sbyte)op2, saturating: true, shiftSat: true);
+
+        public static ushort SveShiftLeftLogicalSaturateUnsigned(short op1, byte op2) => UnsignedShift((ushort)op1, (sbyte)op2, saturating: true, shiftSat: true);
+
+        public static uint SveShiftLeftLogicalSaturateUnsigned(int op1, byte op2) => UnsignedShift((uint)op1, (sbyte)op2, saturating: true, shiftSat: true);
+
+        public static ulong SveShiftLeftLogicalSaturateUnsigned(long op1, byte op2) => UnsignedShift((ulong)op1, (sbyte)op2, saturating: true, shiftSat: true);
+
+        public static byte SveShiftLogicalRounded(byte op1, sbyte op2) => UnsignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static ushort SveShiftLogicalRounded(ushort op1, short op2) => UnsignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static uint SveShiftLogicalRounded(uint op1, int op2) => UnsignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static ulong SveShiftLogicalRounded(ulong op1, long op2) => UnsignedShift(op1, op2, rounding: true, shiftSat: true);
+
+        public static byte SveShiftLogicalRoundedSaturate(byte op1, sbyte op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static ushort SveShiftLogicalRoundedSaturate(ushort op1, short op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static uint SveShiftLogicalRoundedSaturate(uint op1, int op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static ulong SveShiftLogicalRoundedSaturate(ulong op1, long op2) => UnsignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
+
+        public static int NarrowIdx(int i)
+        {
+            return (i - i % 2) / 2;
+        }
+
+        public static T Even<T>(T val, int idx) where T : IBinaryInteger<T>, new()
+        {
+            if (idx % 2 == 0)
+            {
+                return val;
             }
             else
             {
-                Array.Fill<sbyte>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                return new T();
             }
-
-            return result;
         }
 
-        public static sbyte ConditionalExtractAfterLastActiveElement(sbyte[] op1, sbyte op2, sbyte[] op3)
+        public static T Odd<T>(T even, T odd, int idx) where T : IBinaryInteger<T>
         {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        public static sbyte ConditionalExtractLastActiveElement(sbyte[] op1, sbyte op2, sbyte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static sbyte[] ConditionalExtractAfterLastActiveElement(sbyte[] op1, sbyte[] op2, sbyte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static sbyte[] ConditionalExtractAfterLastActiveElementAndReplicate(sbyte[] op1, sbyte[] op2, sbyte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static sbyte[] ConditionalExtractLastActiveElement(sbyte[] op1, sbyte[] op2, sbyte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static sbyte[] ConditionalExtractLastActiveElementAndReplicate(sbyte[] op1, sbyte[] op2, sbyte[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static short ConditionalExtract(short[] op1, short op2, short[] op3, bool after)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
+            if (idx % 2 != 0)
             {
-                return op2;
-            }
-
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            return op3[pos];
-        }
-
-        private static short[] ConditionalExtract(short[] op1, short[] op2, short[] op3, bool after, bool replicate)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            short[] result = new short[op1.Length];
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            if (replicate)
-            {
-                Array.Fill(result, op3[pos]);
+                return odd;
             }
             else
             {
-                Array.Fill<short>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                return even;
             }
-
-            return result;
         }
 
-        public static short ConditionalExtractAfterLastActiveElement(short[] op1, short op2, short[] op3)
+        public static U ArithmeticShift<T, U>(T value, int count, bool rounding = false, bool saturate = false)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>
         {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        public static short ConditionalExtractLastActiveElement(short[] op1, short op2, short[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static short[] ConditionalExtractAfterLastActiveElement(short[] op1, short[] op2, short[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static short[] ConditionalExtractAfterLastActiveElementAndReplicate(short[] op1, short[] op2, short[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static short[] ConditionalExtractLastActiveElement(short[] op1, short[] op2, short[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static short[] ConditionalExtractLastActiveElementAndReplicate(short[] op1, short[] op2, short[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static ushort ConditionalExtract(ushort[] op1, ushort op2, ushort[] op3, bool after)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
+            long v = long.CreateChecked(value);
+            long shifted;
+            if (count > 0)
             {
-                return op2;
-            }
-
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (rounding)
+                {
+                    long bias = 1L << (count - 1);
+                    shifted = v >= 0 ? (v + bias) >> count
+                                     : (v - bias) >> count;
+                }
+                else
+                {
+                    shifted = v >> count;
                 }
             }
-
-            return op3[pos];
-        }
-
-        private static ushort[] ConditionalExtract(ushort[] op1, ushort[] op2, ushort[] op3, bool after, bool replicate)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
+            else if (count < 0)
             {
-                return op2;
-            }
-
-            ushort[] result = new ushort[op1.Length];
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            if (replicate)
-            {
-                Array.Fill(result, op3[pos]);
+                shifted = v << -count;
             }
             else
             {
-                Array.Fill<ushort>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                shifted = v;
             }
 
-            return result;
-        }
-
-        public static ushort ConditionalExtractAfterLastActiveElement(ushort[] op1, ushort op2, ushort[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        public static ushort ConditionalExtractLastActiveElement(ushort[] op1, ushort op2, ushort[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static ushort[] ConditionalExtractAfterLastActiveElement(ushort[] op1, ushort[] op2, ushort[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static ushort[] ConditionalExtractAfterLastActiveElementAndReplicate(ushort[] op1, ushort[] op2, ushort[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static ushort[] ConditionalExtractLastActiveElement(ushort[] op1, ushort[] op2, ushort[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static ushort[] ConditionalExtractLastActiveElementAndReplicate(ushort[] op1, ushort[] op2, ushort[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static int ConditionalExtract(int[] op1, int op2, int[] op3, bool after)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
+            if (saturate)
             {
-                return op2;
+                long min = long.CreateChecked(U.MinValue);
+                long max = long.CreateChecked(U.MaxValue);
+                if (shifted < min) shifted = min;
+                if (shifted > max) shifted = max;
             }
 
-            int pos = last;
-            if (after)
+            return U.CreateTruncating(shifted);
+        }
+
+        public static U LogicalShift<T, U>(T value, int count, bool rounding = false, bool saturate = false)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>
+        {
+            ulong v = ulong.CreateTruncating(value);
+            ulong shifted;
+            if (count > 0)
             {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
+                if (rounding)
+                {
+                    ulong bias = 1UL << (count - 1);
+                    shifted = v >= 0 ? (v + bias) >>> count
+                                     : (v - bias) >>> count;
+                }
+                else
+                {
+                    shifted = v >>> count;
                 }
             }
-
-            return op3[pos];
-        }
-
-        private static int[] ConditionalExtract(int[] op1, int[] op2, int[] op3, bool after, bool replicate)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
+            else if (count < 0)
             {
-                return op2;
-            }
-
-            int[] result = new int[op1.Length];
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            if (replicate)
-            {
-                Array.Fill(result, op3[pos]);
+                shifted = v << -count;
             }
             else
             {
-                Array.Fill<int>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
+                shifted = v;
             }
 
-            return result;
-        }
-
-        public static int ConditionalExtractAfterLastActiveElement(int[] op1, int op2, int[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        public static int ConditionalExtractLastActiveElement(int[] op1, int op2, int[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static int[] ConditionalExtractAfterLastActiveElement(int[] op1, int[] op2, int[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static int[] ConditionalExtractAfterLastActiveElementAndReplicate(int[] op1, int[] op2, int[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static int[] ConditionalExtractLastActiveElement(int[] op1, int[] op2, int[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static int[] ConditionalExtractLastActiveElementAndReplicate(int[] op1, int[] op2, int[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static uint ConditionalExtract(uint[] op1, uint op2, uint[] op3, bool after)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
+            if (saturate)
             {
-                return op2;
+                ulong max = ulong.CreateTruncating(U.MaxValue);
+                if (shifted > max) shifted = max;
             }
 
-            int pos = last;
-            if (after)
+            return U.CreateTruncating(shifted);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateEven<T, U>(T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>, new()
+        {
+            return Even<U>(ArithmeticShift<T, U>(op1, op2, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateOdd<T, U>(U op0, T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>
+        {
+            return Odd<U>(op0, ArithmeticShift<T, U>(op1, op2, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateUnsignedEven<T, U>(T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>, new()
+        {
+            return ShiftRightArithmeticNarrowingSaturateEven<T, U>(op1, op2, i);
+        }
+
+        public static U ShiftRightArithmeticNarrowingSaturateUnsignedOdd<T, U>(U op0, T op1, byte op2, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>
+        {
+            return ShiftRightArithmeticNarrowingSaturateOdd<T, U>(op0, op1, op2, i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>, new()
+        {
+            return Even<U>(ArithmeticShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>
+        {
+            return Odd<U>(even, ArithmeticShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateUnsignedEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>, new()
+        {
+            return ShiftRightArithmeticRoundedNarrowingSaturateEven<T, U>(val, shift, i);
+        }
+
+        public static U ShiftRightArithmeticRoundedNarrowingSaturateUnsignedOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>, new()
+        {
+            return ShiftRightArithmeticRoundedNarrowingSaturateOdd<T, U>(even, val, shift, i);
+        }
+
+        public static U ShiftRightLogicalNarrowingEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift), i);
+        }
+
+        public static U ShiftRightLogicalNarrowingOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift, rounding: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift, rounding: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingSaturateEven<T, U>(T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>, new()
+        {
+            return Even<U>(LogicalShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static U ShiftRightLogicalRoundedNarrowingSaturateOdd<T, U>(U even, T val, byte shift, int i)
+            where T : IBinaryInteger<T>
+            where U : IBinaryInteger<U>, IMinMaxValue<U>
+        {
+            return Odd<U>(even, LogicalShift<T, U>(val, shift, rounding: true, saturate: true), i);
+        }
+
+        public static W MultiplyAddWidening<W, N>(W op1, N op2, N op3)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            W a = W.CreateChecked(op2);
+            W b = W.CreateChecked(op3);
+            W product = W.CreateTruncating(a * b);
+            return W.CreateTruncating(op1 + product);
+        }
+
+        public static W MultiplySubtractWidening<W, N>(W op1, N op2, N op3)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            W a = W.CreateChecked(op2);
+            W b = W.CreateChecked(op3);
+            W product = W.CreateTruncating(a * b);
+            return W.CreateTruncating(op1 - product);
+        }
+
+        public static N AddRoundedHighNarrowing<W, N>(W op1, W op2)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            int halfsize = default(N).GetByteCount() * 8;
+            ulong a = ulong.CreateChecked(op1);
+            ulong b = ulong.CreateChecked(op2);
+            ulong sum = a + b;
+            ulong bias = 1UL << (halfsize - 1);
+            ulong result = (sum + bias) >> halfsize;
+            return N.CreateTruncating(result);
+        }
+
+        public static N AddRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>, new()
+        {
+            return Even<N>(AddRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N AddRoundedHighNarrowingOdd<W, N>(N even, W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            return Odd<N>(even, AddRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N SubtractRoundedHighNarrowing<W, N>(W op1, W op2)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            int halfsize = default(N).GetByteCount() * 8;
+            ulong a = ulong.CreateChecked(op1);
+            ulong b = ulong.CreateChecked(op2);
+            ulong sum = (ulong)a - (ulong)b;
+            ulong bias = 1UL << (halfsize - 1);
+            ulong result = (sum + bias) >> halfsize;
+            return N.CreateTruncating(result);
+        }
+
+        public static N SubtractRoundedHighNarrowingEven<W, N>(W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>, new()
+        {
+            return Even<N>(SubtractRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static N SubtractRoundedHighNarrowingOdd<W, N>(N even, W op1, W op2, int i)
+            where W : IBinaryInteger<W>
+            where N : IBinaryInteger<N>
+        {
+            return Odd<N>(even, SubtractRoundedHighNarrowing<W, N>(op1, op2), i);
+        }
+
+        public static long FusedAddRoundedHalving(long op1, long op2) => (long)((ulong)(op1 + op2 + 1) >> 1);
+
+        public static ulong FusedAddRoundedHalving(ulong op1, ulong op2)
+        {
+            bool overflow = false;
+            ulong sum = 0;
+            try
             {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
+                sum = checked(op1 + op2 + 1);
             }
-
-            return op3[pos];
-        }
-
-        private static uint[] ConditionalExtract(uint[] op1, uint[] op2, uint[] op3, bool after, bool replicate)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
+            catch (OverflowException)
             {
-                return op2;
+                overflow = true;
+                sum = op1 + op2 + 1;
             }
 
-            uint[] result = new uint[op1.Length];
-            int pos = last;
-            if (after)
+            sum >>>= 1;
+
+            if (overflow)
             {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
+                sum |= (ulong)(1UL << 63);
             }
 
-            if (replicate)
-            {
-                Array.Fill(result, op3[pos]);
-            }
-            else
-            {
-                Array.Fill<uint>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
-            }
-
-            return result;
-        }
-
-        public static uint ConditionalExtractAfterLastActiveElement(uint[] op1, uint op2, uint[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        public static uint ConditionalExtractLastActiveElement(uint[] op1, uint op2, uint[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static uint[] ConditionalExtractAfterLastActiveElement(uint[] op1, uint[] op2, uint[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static uint[] ConditionalExtractAfterLastActiveElementAndReplicate(uint[] op1, uint[] op2, uint[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static uint[] ConditionalExtractLastActiveElement(uint[] op1, uint[] op2, uint[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static uint[] ConditionalExtractLastActiveElementAndReplicate(uint[] op1, uint[] op2, uint[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static long ConditionalExtract(long[] op1, long op2, long[] op3, bool after)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            return op3[pos];
-        }
-
-        private static long[] ConditionalExtract(long[] op1, long[] op2, long[] op3, bool after, bool replicate)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            long[] result = new long[op1.Length];
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            if (replicate)
-            {
-                Array.Fill(result, op3[pos]);
-            }
-            else
-            {
-                Array.Fill<long>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
-            }
-
-            return result;
-        }
-
-        public static long ConditionalExtractAfterLastActiveElement(long[] op1, long op2, long[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        public static long ConditionalExtractLastActiveElement(long[] op1, long op2, long[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static long[] ConditionalExtractAfterLastActiveElement(long[] op1, long[] op2, long[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static long[] ConditionalExtractAfterLastActiveElementAndReplicate(long[] op1, long[] op2, long[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static long[] ConditionalExtractLastActiveElement(long[] op1, long[] op2, long[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static long[] ConditionalExtractLastActiveElementAndReplicate(long[] op1, long[] op2, long[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        public static ulong ConditionalExtractAfterLastActiveElement(ulong[] op1, ulong op2, ulong[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        private static ulong ConditionalExtract(ulong[] op1, ulong op2, ulong[] op3, bool after)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            return op3[pos];
-        }
-
-        private static ulong[] ConditionalExtract(ulong[] op1, ulong[] op2, ulong[] op3, bool after, bool replicate)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            ulong[] result = new ulong[op1.Length];
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            if (replicate)
-            {
-                Array.Fill(result, op3[pos]);
-            }
-            else
-            {
-                Array.Fill<ulong>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
-            }
-
-            return result;
-        }
-
-        public static ulong ConditionalExtractLastActiveElement(ulong[] op1, ulong op2, ulong[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static ulong[] ConditionalExtractAfterLastActiveElement(ulong[] op1, ulong[] op2, ulong[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static ulong[] ConditionalExtractAfterLastActiveElementAndReplicate(ulong[] op1, ulong[] op2, ulong[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static ulong[] ConditionalExtractLastActiveElement(ulong[] op1, ulong[] op2, ulong[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static ulong[] ConditionalExtractLastActiveElementAndReplicate(ulong[] op1, ulong[] op2, ulong[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static float ConditionalExtract(float[] op1, float op2, float[] op3, bool after)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            return op3[pos];
-        }
-
-        private static float[] ConditionalExtract(float[] op1, float[] op2, float[] op3, bool after, bool replicate)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            float[] result = new float[op1.Length];
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            if (replicate)
-            {
-                Array.Fill(result, op3[pos]);
-            }
-            else
-            {
-                Array.Fill<float>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
-            }
-
-            return result;
-        }
-
-        public static float ConditionalExtractAfterLastActiveElement(float[] op1, float op2, float[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        public static float ConditionalExtractLastActiveElement(float[] op1, float op2, float[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static float[] ConditionalExtractAfterLastActiveElement(float[] op1, float[] op2, float[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static float[] ConditionalExtractAfterLastActiveElementAndReplicate(float[] op1, float[] op2, float[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static float[] ConditionalExtractLastActiveElement(float[] op1, float[] op2, float[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static float[] ConditionalExtractLastActiveElementAndReplicate(float[] op1, float[] op2, float[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
-        }
-
-        private static double ConditionalExtract(double[] op1, double op2, double[] op3, bool after)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            return op3[pos];
-        }
-
-        private static double[] ConditionalExtract(double[] op1, double[] op2, double[] op3, bool after, bool replicate)
-        {
-            int last = LastActiveElement(op1);
-            if (last < 0)
-            {
-                return op2;
-            }
-
-            double[] result = new double[op1.Length];
-            int pos = last;
-            if (after)
-            {
-                pos++;
-        	if (pos == op1.Length) {
-                  pos = 0;
-                }
-            }
-
-            if (replicate)
-            {
-                Array.Fill(result, op3[pos]);
-            }
-            else
-            {
-                Array.Fill<double>(result, 0, 0, op1.Length);
-        	result[0] = op3[pos];
-            }
-
-            return result;
-        }
-
-        public static double ConditionalExtractAfterLastActiveElement(double[] op1, double op2, double[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true);
-        }
-
-        public static double ConditionalExtractLastActiveElement(double[] op1, double op2, double[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false);
-        }
-
-        public static double[] ConditionalExtractAfterLastActiveElement(double[] op1, double[] op2, double[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ false);
-        }
-
-        public static double[] ConditionalExtractAfterLastActiveElementAndReplicate(double[] op1, double[] op2, double[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ true, /* replicate = */ true);
-        }
-
-        public static double[] ConditionalExtractLastActiveElement(double[] op1, double[] op2, double[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ false);
-        }
-
-        public static double[] ConditionalExtractLastActiveElementAndReplicate(double[] op1, double[] op2, double[] op3)
-        {
-            return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
+            return sum;
         }
     }
 }

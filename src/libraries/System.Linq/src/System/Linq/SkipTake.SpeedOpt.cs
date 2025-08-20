@@ -101,18 +101,16 @@ namespace System.Linq
                 return default;
             }
 
-            public int Count
-            {
-                get
-                {
-                    int count = _source.Count;
-                    if (count <= _minIndexInclusive)
-                    {
-                        return 0;
-                    }
+            public int Count => GetAdjustedCount(_minIndexInclusive, _maxIndexInclusive, _source.Count);
 
-                    return Math.Min(count - 1, _maxIndexInclusive) - _minIndexInclusive + 1;
+            private static int GetAdjustedCount(int minIndexInclusive, int maxIndexInclusive, int sourceCount)
+            {
+                if (sourceCount <= minIndexInclusive)
+                {
+                    return 0;
                 }
+
+                return Math.Min(sourceCount - 1, maxIndexInclusive) - minIndexInclusive + 1;
             }
 
             public override int GetCount(bool onlyIfCheap) => Count;
@@ -148,24 +146,41 @@ namespace System.Linq
 
             private static void Fill(IList<TSource> source, Span<TSource> destination, int sourceIndex)
             {
+                if (source.TryGetSpan(out ReadOnlySpan<TSource> sourceSpan))
+                {
+                    sourceSpan.Slice(sourceIndex, destination.Length).CopyTo(destination);
+                    return;
+                }
+
                 for (int i = 0; i < destination.Length; i++, sourceIndex++)
                 {
                     destination[i] = source[sourceIndex];
                 }
             }
 
-            public bool Contains(TSource item) => IndexOf(item) >= 0;
+            public override bool Contains(TSource item) => IndexOf(item) >= 0;
 
             public int IndexOf(TSource item)
             {
                 IList<TSource> source = _source;
 
-                int end = _minIndexInclusive + Count;
-                for (int i = _minIndexInclusive; i < end; i++)
+                if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
                 {
-                    if (EqualityComparer<TSource>.Default.Equals(source[i], item))
+                    int minInclusive = _minIndexInclusive;
+                    if (minInclusive < span.Length)
                     {
-                        return i - _minIndexInclusive;
+                        return span.Slice(minInclusive, GetAdjustedCount(minInclusive, _maxIndexInclusive, span.Length)).IndexOf(item);
+                    }
+                }
+                else
+                {
+                    int end = _minIndexInclusive + Count;
+                    for (int i = _minIndexInclusive; i < end; i++)
+                    {
+                        if (EqualityComparer<TSource>.Default.Equals(source[i], item))
+                        {
+                            return i - _minIndexInclusive;
+                        }
                     }
                 }
 
@@ -258,21 +273,19 @@ namespace System.Linq
                     return Math.Max(_source.Count() - _minIndexInclusive, 0);
                 }
 
-                using (IEnumerator<TSource> en = _source.GetEnumerator())
-                {
-                    // We only want to iterate up to _maxIndexInclusive + 1.
-                    // Past that, we know the enumerable will be able to fit this subset,
-                    // so the count will just be _maxIndexInclusive + 1 - _minIndexInclusive.
+                using IEnumerator<TSource> en = _source.GetEnumerator();
+                // We only want to iterate up to _maxIndexInclusive + 1.
+                // Past that, we know the enumerable will be able to fit this subset,
+                // so the count will just be _maxIndexInclusive + 1 - _minIndexInclusive.
 
-                    // Note that it is possible for _maxIndexInclusive to be int.MaxValue here,
-                    // so + 1 may result in signed integer overflow. We need to handle this.
-                    // At the same time, however, we are guaranteed that our max count can fit
-                    // in an int because if that is true, then _minIndexInclusive must > 0.
+                // Note that it is possible for _maxIndexInclusive to be int.MaxValue here,
+                // so + 1 may result in signed integer overflow. We need to handle this.
+                // At the same time, however, we are guaranteed that our max count can fit
+                // in an int because if that is true, then _minIndexInclusive must > 0.
 
-                    uint count = SkipAndCount((uint)_maxIndexInclusive + 1, en);
-                    Debug.Assert(count != (uint)int.MaxValue + 1 || _minIndexInclusive > 0, "Our return value will be incorrect.");
-                    return Math.Max((int)count - _minIndexInclusive, 0);
-                }
+                uint count = SkipAndCount((uint)_maxIndexInclusive + 1, en);
+                Debug.Assert(count != (uint)int.MaxValue + 1 || _minIndexInclusive > 0, "Our return value will be incorrect.");
+                return Math.Max((int)count - _minIndexInclusive, 0);
             }
 
             public override bool MoveNext()
@@ -390,13 +403,11 @@ namespace System.Linq
                         return iterator.TryGetElementAt(_minIndexInclusive + index, out found);
                     }
 
-                    using (IEnumerator<TSource> en = _source.GetEnumerator())
+                    using IEnumerator<TSource> en = _source.GetEnumerator();
+                    if (SkipBefore(_minIndexInclusive + index, en) && en.MoveNext())
                     {
-                        if (SkipBefore(_minIndexInclusive + index, en) && en.MoveNext())
-                        {
-                            found = true;
-                            return en.Current;
-                        }
+                        found = true;
+                        return en.Current;
                     }
                 }
 
@@ -430,9 +441,12 @@ namespace System.Linq
             {
                 if (_source is Iterator<TSource> iterator &&
                     iterator.GetCount(onlyIfCheap: true) is int count &&
-                    count >= _minIndexInclusive)
+                    count > _minIndexInclusive)
                 {
-                    return !HasLimit ?
+                    // If there's no upper bound, or if there are fewer items in the list
+                    // than the upper bound allows, just return the last element of the list.
+                    // Otherwise, get the element at the upper bound.
+                    return (uint)count <= (uint)_maxIndexInclusive ?
                         iterator.TryGetLast(out found) :
                         iterator.TryGetElementAt(_maxIndexInclusive, out found);
                 }

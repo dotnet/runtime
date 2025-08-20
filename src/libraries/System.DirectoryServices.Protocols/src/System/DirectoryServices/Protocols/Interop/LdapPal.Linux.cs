@@ -19,8 +19,6 @@ namespace System.DirectoryServices.Protocols
 
         internal static void FreeDirectoryControls(IntPtr value) => Interop.Ldap.ldap_controls_free(value);
 
-        internal static int CreateDirectorySortControl(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control) => Interop.Ldap.ldap_create_sort_control(handle, keys, critical, ref control);
-
         internal static int DeleteDirectoryEntry(ConnectionHandle ldapHandle, string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) => Interop.Ldap.ldap_delete_ext(ldapHandle, dn, servercontrol, clientcontrol, ref messageNumber);
 
         internal static int ExtendedDirectoryOperation(ConnectionHandle ldapHandle, string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>

@@ -143,6 +143,7 @@ struct LoaderHeapBlock
 #endif
 };
 
+
 struct LoaderHeapFreeBlock;
 
 // Collection of methods for helping in debugging heap corruptions
@@ -157,7 +158,7 @@ struct LoaderHeapEvent;
 // When an interleaved LoaderHeap is constructed, this is the interleaving size
 inline UINT32 GetStubCodePageSize()
 {
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
+#if (defined(TARGET_ARM64) && defined(TARGET_UNIX)) || defined(TARGET_WASM)
     return max(16*1024u, GetOsPageSize());
 #elif defined(TARGET_ARM)
     return 4096; // ARM is special as the 32bit instruction set does not easily permit a 16KB offset
@@ -166,87 +167,96 @@ inline UINT32 GetStubCodePageSize()
 #endif
 }
 
+enum class LoaderHeapImplementationKind
+{
+    Data,
+    Executable,
+    Interleaved
+};
 
+class UnlockedLoaderHeapBaseTraversable
+{
+protected:
+#ifdef DACCESS_COMPILE
+    UnlockedLoaderHeapBaseTraversable() {}
+#else
+    UnlockedLoaderHeapBaseTraversable() :
+        m_pFirstBlock(NULL)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+#endif
 
+public:
+#ifdef DACCESS_COMPILE
+public:
+    void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
+    
+typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
+    void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
+#endif
+    
+protected:
+    // Linked list of ClrVirtualAlloc'd pages
+    PTR_LoaderHeapBlock m_pFirstBlock;
+};
 
 //===============================================================================
-// This is the base class for LoaderHeap and ExplicitControlLoaderHeap. Unfortunately,
-// this class has become schizophrenic. Sometimes, it's used as a simple
-// allocator that's semantically (but not perfwise!) equivalent to a blackbox
-// alloc/free heap. Othertimes, it's used by callers who are actually aware
-// of how it reserves addresses and want direct control over the range over which
-// this thing allocates. These two types of allocations are handed out
-// from two independent pools inside the heap.
-//
-// The backout strategy we use for the simple heap probably isn't
-// directly applicable to the more advanced uses.
-//
-// We don't have time to refactor this so as a second-best measure,
-// we make most of UnlockedLoaderHeap's methods protected and force everyone
-// to use it them through two public derived classes that are mutual siblings.
-//
-// The LoaderHeap is the black-box heap and has a Backout() method but none
-// of the advanced features that let you control address ranges.
-//
-// The ExplicitControlLoaderHeap exposes all the advanced features but
-// has no Backout() feature. (If someone wants a backout feature, they need
-// to design an appropriate one into this class.)
+// This is the base class for LoaderHeap and InterleavedLoaderHeap. It holds the
+// common handling for LoaderHeap events, and the data structures used for bump
+// pointer allocation (although not the actual allocation routines).
 //===============================================================================
-class UnlockedLoaderHeap
+typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
+class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
-    friend struct LoaderHeapFreeBlock;
 #endif
-
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
 
-public:
+protected:
+    size_t GetBytesAvailCommittedRegion();
 
-    enum class HeapKind
-    {
-        Data,
-        Executable,
-        Interleaved
-    };
+#ifndef DACCESS_COMPILE
+    const 
+#endif
+    LoaderHeapImplementationKind m_kind;
 
-private:
-    // Linked list of ClrVirtualAlloc'd pages
-    PTR_LoaderHeapBlock m_pFirstBlock;
+    size_t              m_dwTotalAlloc;
 
     // Allocation pointer in current block
     PTR_BYTE            m_pAllocPtr;
 
     // Points to the end of the committed region in the current block
     PTR_BYTE            m_pPtrToEndOfCommittedRegion;
-    PTR_BYTE            m_pEndReservedRegion;
+    
+public:
+#ifdef DACCESS_COMPILE
+    UnlockedLoaderHeapBase() {}
+#else
+    UnlockedLoaderHeapBase(LoaderHeapImplementationKind kind);
+    virtual ~UnlockedLoaderHeapBase();
+#endif // DACCESS_COMPILE
 
-    // When we need to ClrVirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
-    DWORD               m_dwReserveBlockSize;
+    BOOL IsExecutable() { return m_kind == LoaderHeapImplementationKind::Executable || m_kind == LoaderHeapImplementationKind::Interleaved; }
+    BOOL IsInterleaved() { return m_kind == LoaderHeapImplementationKind::Interleaved; }
 
-    // When we need to commit pages from our reserved list, number of bytes to commit at a time
-    DWORD               m_dwCommitBlockSize;
+#ifdef _DEBUG
+    size_t DebugGetWastedBytes()
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
+    }
 
-    // For interleaved heap (RX pages interleaved with RW ones), this specifies the allocation granularity,
-    // which is the individual code block size
-    DWORD               m_dwGranularity;
+    void DumpFreeList();
 
-    // Range list to record memory ranges in
-    RangeList *         m_pRangeList;
-
-    size_t              m_dwTotalAlloc;
-
-    HeapKind            m_kind;
-
-    LoaderHeapFreeBlock *m_pFirstFreeBlock;
-
-    // This is used to hold on to a block of reserved memory provided to the
-    // constructor. We do this instead of adding it as the first block because
-    // that requires comitting the first page of the reserved block, and for
-    // startup working set reasons we want to delay that as long as possible.
-    LoaderHeapBlock      m_reservedBlock;
+// Extra CallTracing support
+    void UnlockedClearEvents();     //Discard saved events
+    void UnlockedCompactEvents();   //Discard matching alloc/free events
+    void UnlockedPrintEvents();     //Print event list
+#endif
 
 public:
 
@@ -265,32 +275,51 @@ public:
 #endif
 
 
-
 #ifdef _DEBUG
     size_t              m_dwDebugWastedBytes;
     static DWORD        s_dwNumInstancesOfLoaderHeaps;
 #endif
+};
 
+//===============================================================================
+// This is the base class for LoaderHeap It's used as a simple
+// allocator that's semantically (but not perfwise!) equivalent to a blackbox
+// alloc/free heap. The ability to free is via a "backout" mechanism that is
+// not considered to have good performance.
+//
+//===============================================================================
+class UnlockedLoaderHeap : public UnlockedLoaderHeapBase
+{
 #ifdef _DEBUG
-    size_t DebugGetWastedBytes()
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
-    }
+    friend class LoaderHeapSniffer;
 #endif
-
-public:
-    BOOL                m_fExplicitControl;  // Am I a LoaderHeap or an ExplicitControlLoaderHeap?
-    void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
-
 #ifdef DACCESS_COMPILE
-public:
-    void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
+    friend class ClrDataAccess;
 #endif
+    friend struct LoaderHeapFreeBlock;
 
 public:
-    typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
-    void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
+
+private:
+    // Points to the end of the reserved region for the current block
+    PTR_BYTE            m_pEndReservedRegion;
+
+    // When we need to ClrVirtualAlloc() MEM_RESERVE a new set of pages, number of bytes to reserve
+    DWORD               m_dwReserveBlockSize;
+
+    // When we need to commit pages from our reserved list, number of bytes to commit at a time
+    DWORD               m_dwCommitBlockSize;
+
+    // Range list to record memory ranges in
+    RangeList *         m_pRangeList;
+
+    // This is used to hold on to a block of reserved memory provided to the
+    // constructor. We do this instead of adding it as the first block because
+    // that requires comitting the first page of the reserved block, and for
+    // startup working set reasons we want to delay that as long as possible.
+    LoaderHeapBlock      m_reservedBlock;
+
+    LoaderHeapFreeBlock *m_pFirstFreeBlock;
 
 #ifndef DACCESS_COMPILE
 protected:
@@ -302,15 +331,12 @@ protected:
                        const BYTE* dwReservedRegionAddress,
                        SIZE_T dwReservedRegionSize,
                        RangeList *pRangeList = NULL,
-                       HeapKind kind = HeapKind::Data,
-                       void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size) = NULL,
-                       DWORD dwGranularity = 1);
+                       LoaderHeapImplementationKind kind = LoaderHeapImplementationKind::Data);
 
-    ~UnlockedLoaderHeap();
+    virtual ~UnlockedLoaderHeap();
 #endif
 
 private:
-    size_t GetBytesAvailCommittedRegion();
     size_t GetBytesAvailReservedRegion();
 
 protected:
@@ -357,10 +383,6 @@ protected:
                                    ,int  lineNum
 #endif
                                    );
-
-
-
-
 
 protected:
     // Allocates memory aligned on power-of-2 boundary.
@@ -423,28 +445,252 @@ public:
         return m_dwTotalAlloc;
     }
 
-    BOOL IsExecutable();
-    BOOL IsInterleaved();
-
     size_t AllocMem_TotalSize(size_t dwRequestedSize);
-
 public:
 #ifdef _DEBUG
     void DumpFreeList();
 #endif
+private:
+    static void ValidateFreeList(UnlockedLoaderHeap *pHeap);
+    static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap);
+};
 
-public:
-// Extra CallTracing support
+struct InterleavedLoaderHeapConfig
+{
+    uint32_t StubSize;
+    void* Template;
+    void (*CodePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
+    void (*DataPageGenerator)(uint8_t* pageBase, size_t size);
+};
+
+void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size), void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
+
+//===============================================================================
+// This is the base class for InterleavedLoaderHeap. It's used as a simple
+// allocator for stubs in a scheme where each stub is a small fixed size, and is paired
+// with memory which is GetStubCodePageSize() bytes away. In addition there is an
+// ability to free is via a "backout" mechanism that is not considered to have good performance.
+//
+//===============================================================================
+class UnlockedInterleavedLoaderHeap : public UnlockedLoaderHeapBase
+{
 #ifdef _DEBUG
-    void UnlockedClearEvents();     //Discard saved events
-    void UnlockedCompactEvents();   //Discard matching alloc/free events
-    void UnlockedPrintEvents();     //Print event list
+    friend class LoaderHeapSniffer;
+    friend struct LoaderHeapFreeBlock;
 #endif
 
-protected:
-    void *UnlockedAllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
 
-    void UnlockedSetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
+public:
+
+private:
+    PTR_BYTE            m_pEndReservedRegion;
+
+    // For interleaved heap (RX pages interleaved with RW ones), this specifies the allocation granularity,
+    // which is the individual code block size
+    DWORD               m_dwGranularity;
+
+    // Range list to record memory ranges in
+    RangeList *         m_pRangeList;
+
+    struct InterleavedStubFreeListNode
+    {
+        InterleavedStubFreeListNode *m_pNext;
+    };
+
+    InterleavedStubFreeListNode  *m_pFreeListHead;
+
+    const InterleavedLoaderHeapConfig *m_pConfig;
+
+#ifndef DACCESS_COMPILE
+protected:
+    UnlockedInterleavedLoaderHeap(
+        RangeList *pRangeList,
+        const InterleavedLoaderHeapConfig *pConfig);
+
+    virtual ~UnlockedInterleavedLoaderHeap();
+#endif
+
+private:
+    size_t GetBytesAvailReservedRegion();
+
+protected:
+    // number of bytes available in region
+    size_t UnlockedGetReservedBytesFree()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pEndReservedRegion - m_pAllocPtr;
+    }
+
+    PTR_BYTE UnlockedGetAllocPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAllocPtr;
+    }
+
+private:
+    // Get some more committed pages - either commit some more in the current reserved region, or, if it
+    // has run out, reserve another set of pages
+    BOOL GetMoreCommittedPages(size_t dwMinSize);
+
+    // Commit memory pages starting at the specified adress
+    BOOL CommitPages(void* pData, size_t dwSizeToCommitPart);
+
+protected:
+    // Reserve some pages at any address
+    BOOL UnlockedReservePages(size_t dwCommitBlockSize);
+
+protected:
+    // Allocates memory for a single stub which is a pair of memory addresses
+    // The first address is the pointer at the stub code, and the second
+    // address is the data for the stub. These are separated by GetStubCodePageSize()
+    // bytes.
+    //
+    // The return value is a pointer that's guaranteed to be aligned.
+    //
+    // Here is how to properly backout the memory:
+    //
+    //   void *pMem = UnlockedAllocStub(d);
+    //   UnlockedBackoutStub(pMem);
+    //
+    // If you use the AllocMemHolder or AllocMemTracker, all this is taken care of
+    // behind the scenes.
+    //
+    //
+    void *UnlockedAllocStub(
+#ifdef _DEBUG
+                                 _In_ _In_z_ const char *szFile
+                                 ,int  lineNum
+#endif
+                                 );
+
+    void *UnlockedAllocStub_NoThrow(
+#ifdef _DEBUG
+                                         _In_ _In_z_ const char *szFile
+                                         ,int  lineNum
+#endif
+                                 );
+
+protected:
+    // This frees memory allocated by UnlockedAllocStub. It's given this horrible name to emphasize
+    // that it's purpose is for error path leak prevention purposes. You shouldn't
+    // use LoaderHeap's as general-purpose alloc-free heaps.
+    void UnlockedBackoutStub(void *pMem
+#ifdef _DEBUG
+                          , _In_ _In_z_ const char *szFile
+                          , int lineNum
+                          , _In_ _In_z_ const char *szAllocFile
+                          , int AllocLineNum
+#endif
+                          );
+};
+
+//===============================================================================
+// This is the class used for CodeManager allocations. At one point it the logic
+// was shared with UnlockedLoaderHeap, but that has been changed. This heap is designed
+// to provide an api surface that can be used to control the memory regions where
+// allocations occur, and provides an alloc only api surface.
+//
+// Caller is responsible for synchronization. ExplicitControlLoaderHeap is
+// not multithread safe.
+//===============================================================================
+typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
+class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
+{
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
+
+private:
+    // Allocation pointer in current block
+    PTR_BYTE            m_pAllocPtr;
+
+    // Points to the end of the committed region in the current block
+    PTR_BYTE            m_pPtrToEndOfCommittedRegion;
+    PTR_BYTE            m_pEndReservedRegion;
+
+    size_t              m_dwTotalAlloc;
+
+    // When we need to commit pages from our reserved list, number of bytes to commit at a time
+    DWORD               m_dwCommitBlockSize;
+
+    // Is this an executable heap?
+    bool                m_fExecutableHeap;
+
+    // This is used to hold on to a block of reserved memory provided to the
+    // constructor. We do this instead of adding it as the first block because
+    // that requires comitting the first page of the reserved block, and for
+    // startup working set reasons we want to delay that as long as possible.
+    LoaderHeapBlock      m_reservedBlock;
+
+public:
+
+#ifdef _DEBUG
+    size_t              m_dwDebugWastedBytes;
+    static DWORD        s_dwNumInstancesOfLoaderHeaps;
+#endif
+
+#ifdef _DEBUG
+    size_t DebugGetWastedBytes()
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
+    }
+#endif
+
+#ifndef DACCESS_COMPILE
+public:
+    ExplicitControlLoaderHeap(bool fMakeExecutable = false);
+
+    ~ExplicitControlLoaderHeap();
+#endif
+
+private:
+    size_t GetBytesAvailCommittedRegion();
+    size_t GetBytesAvailReservedRegion();
+
+public:
+    // number of bytes available in region
+    size_t GetReservedBytesFree()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pEndReservedRegion - m_pAllocPtr;
+    }
+
+    PTR_BYTE GetAllocPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pAllocPtr;
+    }
+
+private:
+    // Get some more committed pages - either commit some more in the current reserved region, or, if it
+    // has run out, reserve another set of pages
+    BOOL GetMoreCommittedPages(size_t dwMinSize);
+
+    // Commit memory pages starting at the specified adress
+    BOOL CommitPages(void* pData, size_t dwSizeToCommitPart);
+
+public:
+    // Reserve some pages at any address
+    BOOL ReservePages(size_t dwCommitBlockSize);
+
+    // Perf Counter reports the size of the heap
+    size_t GetSize ()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_dwTotalAlloc;
+    }
+
+    size_t AllocMem_TotalSize(size_t dwRequestedSize);
+
+public:
+
+    void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
+
+    void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
 };
 
 //===============================================================================
@@ -456,11 +702,10 @@ inline CRITSEC_COOKIE CreateLoaderHeapLock()
 }
 
 //===============================================================================
-// The LoaderHeap is the black-box heap and has a Backout() method but none
-// of the advanced features that let you control address ranges.
+// Thread-safe variant of UnlockedLoaderHeap.
 //===============================================================================
 typedef DPTR(class LoaderHeap) PTR_LoaderHeap;
-class LoaderHeap : public UnlockedLoaderHeap, public ILoaderHeapBackout
+class LoaderHeap : public UnlockedLoaderHeap
 {
 private:
     CRITSEC_COOKIE    m_CriticalSection;
@@ -470,22 +715,17 @@ public:
     LoaderHeap(DWORD dwReserveBlockSize,
                DWORD dwCommitBlockSize,
                RangeList *pRangeList = NULL,
-               UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
-               BOOL fUnlocked = FALSE,
-               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size) = NULL,
-               DWORD dwGranularity = 1
+               LoaderHeapImplementationKind kind = LoaderHeapImplementationKind::Data,
+               BOOL fUnlocked = FALSE
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            NULL, 0,
                            pRangeList,
-                           kind,
-                           codePageGenerator,
-                           dwGranularity),
+                           kind),
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
-        m_fExplicitControl = FALSE;
     }
 
 public:
@@ -494,22 +734,18 @@ public:
                const BYTE* dwReservedRegionAddress,
                SIZE_T dwReservedRegionSize,
                RangeList *pRangeList = NULL,
-               UnlockedLoaderHeap::HeapKind kind = UnlockedLoaderHeap::HeapKind::Data,
-               BOOL fUnlocked = FALSE,
-               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size) = NULL,
-               DWORD dwGranularity = 1
+               LoaderHeapImplementationKind kind = LoaderHeapImplementationKind::Data,
+               BOOL fUnlocked = FALSE
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            dwReservedRegionAddress,
                            dwReservedRegionSize,
                            pRangeList,
-                           kind,
-                           codePageGenerator, dwGranularity),
+                           kind),
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
-        m_fExplicitControl = FALSE;
     }
 
 #endif // DACCESS_COMPILE
@@ -735,7 +971,7 @@ public:
 
 
 public:
-    // This frees memory allocated by AllocMem. It's given this horrible name to emphasize
+    // This frees memory allocated by RealAllocMem. It's given this horrible name to emphasize
     // that it's purpose is for error path leak prevention purposes. You shouldn't
     // use LoaderHeap's as general-purpose alloc-free heaps.
     void RealBackoutMem(void *pMem
@@ -789,111 +1025,136 @@ public:
 };
 
 
-
-
+#ifdef _DEBUG
+#define AllocStub()                RealAllocStub(__FILE__, __LINE__)
+#else
+#define AllocStub()                RealAllocStub()
+#endif
 
 //===============================================================================
-// The ExplicitControlLoaderHeap exposes all the advanced features but
-// has no Backout() feature. (If someone wants a backout feature, they need
-// to design an appropriate one into this class.)
-//
-// Caller is responsible for synchronization. ExplicitControlLoaderHeap is
-// not multithread safe.
+// Thread-safe variant of UnlockedInterleavedLoaderHeap.
 //===============================================================================
-typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
-class ExplicitControlLoaderHeap : public UnlockedLoaderHeap
+typedef DPTR(class InterleavedLoaderHeap) PTR_InterleavedLoaderHeap;
+class InterleavedLoaderHeap : public UnlockedInterleavedLoaderHeap
 {
+private:
+    CRITSEC_COOKIE    m_CriticalSection;
+
 #ifndef DACCESS_COMPILE
 public:
-    ExplicitControlLoaderHeap(RangeList *pRangeList = NULL,
-                              BOOL fMakeExecutable = FALSE
+    InterleavedLoaderHeap(RangeList *pRangeList,
+               BOOL fUnlocked,
+               const InterleavedLoaderHeapConfig *pConfig
                )
-      : UnlockedLoaderHeap(0, 0, NULL, 0,
+      : UnlockedInterleavedLoaderHeap(
                            pRangeList,
-                           fMakeExecutable ? UnlockedLoaderHeap::HeapKind::Executable : UnlockedLoaderHeap::HeapKind::Data)
+                           pConfig),
+        m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;
-        m_fExplicitControl = TRUE;
     }
+
 #endif // DACCESS_COMPILE
 
-public:
-    void *RealAllocMem(size_t dwSize
-#ifdef _DEBUG
-                       ,_In_ _In_z_ const char *szFile
-                       ,int  lineNum
-#endif
-                       )
+    virtual ~InterleavedLoaderHeap()
     {
         WRAPPER_NO_CONTRACT;
 
+#ifndef DACCESS_COMPILE
+        if (m_CriticalSection != NULL)
+        {
+            ClrDeleteCriticalSection(m_CriticalSection);
+        }
+#endif // DACCESS_COMPILE
+    }
+
+public:
+    TaggedMemAllocPtr RealAllocStub(
+#ifdef _DEBUG
+                                         _In_ _In_z_ const char *szFile
+                                         ,int  lineNum
+#endif
+                                         )
+    {
+        WRAPPER_NO_CONTRACT;
+
+        CRITSEC_Holder csh(m_CriticalSection);
+
+
+        TaggedMemAllocPtr tmap;
         void *pResult;
 
-        pResult = UnlockedAllocMem(dwSize
+        pResult = UnlockedAllocStub(
 #ifdef _DEBUG
-                                   , szFile
-                                   , lineNum
+                                         szFile
+                                         ,lineNum
 #endif
-                                   );
-        return pResult;
-    }
+                                     );
 
-    void *RealAllocMem_NoThrow(size_t dwSize
+        tmap.m_pMem             = pResult;
+        tmap.m_dwRequestedSize  = 1;
+        tmap.m_pHeap            = this;
+        tmap.m_dwExtra          = 0;
 #ifdef _DEBUG
-                               ,_In_ _In_z_ const char *szFile
-                               ,int  lineNum
+        tmap.m_szFile           = szFile;
+        tmap.m_lineNum          = lineNum;
 #endif
-                               )
-    {
-        WRAPPER_NO_CONTRACT;
 
-        void *pResult;
-
-        pResult = UnlockedAllocMem_NoThrow(dwSize
-#ifdef _DEBUG
-                                           , szFile
-                                           , lineNum
-#endif
-                                           );
-        return pResult;
+        return tmap;
     }
 
 
 public:
-    void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs)
+    // This frees memory allocated by RealAllocStub. It's given this horrible name to emphasize
+    // that it's purpose is for error path leak prevention purposes. You shouldn't
+    // use LoaderHeap's as general-purpose alloc-free heaps.
+    void RealBackoutMem(void *pMem
+                        , size_t dwSize
+#ifdef _DEBUG
+                        , _In_ _In_z_ const char *szFile
+                        , int lineNum
+                        , _In_ _In_z_ const char *szAllocFile
+                        , int allocLineNum
+#endif
+                        )
     {
         WRAPPER_NO_CONTRACT;
-        return UnlockedAllocMemForCode_NoThrow(dwHeaderSize, dwCodeSize, dwCodeAlignment, dwReserveForJumpStubs);
-    }
-
-    void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory)
-    {
-        WRAPPER_NO_CONTRACT;
-        return UnlockedSetReservedRegion(dwReservedRegionAddress, dwReservedRegionSize, fReleaseMemory);
+        CRITSEC_Holder csh(m_CriticalSection);
+        UnlockedBackoutStub(pMem
+#ifdef _DEBUG
+                           , szFile
+                           , lineNum
+                           , szAllocFile
+                           , allocLineNum
+#endif
+                           );
     }
 
 public:
-    // number of bytes available in region
-    size_t GetReservedBytesFree()
+// Extra CallTracing support
+#ifdef _DEBUG
+    void ClearEvents()
     {
         WRAPPER_NO_CONTRACT;
-        return UnlockedGetReservedBytesFree();
+        CRITSEC_Holder csh(m_CriticalSection);
+        UnlockedClearEvents();
     }
 
-    PTR_BYTE GetAllocPtr()
+    void CompactEvents()
     {
         WRAPPER_NO_CONTRACT;
-        return UnlockedGetAllocPtr();
+        CRITSEC_Holder csh(m_CriticalSection);
+        UnlockedCompactEvents();
     }
 
-    void ReservePages(size_t size)
+    void PrintEvents()
     {
         WRAPPER_NO_CONTRACT;
-        UnlockedReservePages(size);
+        CRITSEC_Holder csh(m_CriticalSection);
+        UnlockedPrintEvents();
     }
+#endif
 };
-
-
 
 //==============================================================================
 // AllocMemHolder : Allocated memory from LoaderHeap
@@ -1109,14 +1370,11 @@ class AllocMemTracker
             AllocMemTrackerNode      m_Node[kAllocMemTrackerBlockSize];
         };
 
-
         AllocMemTrackerBlock        *m_pFirstBlock;
         AllocMemTrackerBlock        m_FirstBlock; // Stack-allocate the first block - "new" the rest.
 
     protected:
         BOOL                        m_fReleased;
-
 };
 
 #endif // __LoaderHeap_h__
-

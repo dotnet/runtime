@@ -2,7 +2,7 @@
 <linker>
 	<assembly fullname="System.Private.CoreLib">
 		<!-- assembly-load-context.c: -->
-		<!-- object-internals.h: MonoManagedAssemblyLoadContext -->
+		<!-- object-internals.h: MonoAssemblyLoadContext -->
 		<type fullname="System.Runtime.Loader.AssemblyLoadContext">
 			<!-- assembly-load-context.c: mono_alc_invoke_resolve_using_load -->
 			<method name="MonoResolveUsingLoad" />
@@ -276,6 +276,12 @@
 			<!-- class.c: initialize_object_slots -->
 			<method name="Finalize" />
 			<method name="GetHashCode" />
+		</type>
+
+		<!-- domain.c: mono_defaults.gc_class -->
+		<type fullname="System.GC">
+			<!-- gc.c: mono_gc_run_finalize -->
+			<method name="GuardedFinalize" />
 		</type>
 
 		<!-- appdomain.c (create_domain_objects) domain->out_of_memory_ex -->
@@ -639,19 +645,20 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-		<!-- FIXME: only if  feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" -->
-		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
-                <type fullname="Mono.HotReload.InstanceFieldTable">
-                    <!-- hot_reload.c -->
-                    <method name="GetInstanceFieldFieldStore" />
-                </type>
 	</assembly>
-        <assembly fullname="System.Private.CoreLib" feature="System.StartupHookProvider.IsSupported" featurevalue="true" featuredefault="true">
-            <type fullname="System.StartupHookProvider">
-                <!-- ds-rt-coreclr.h: ds_rt_apply_startup_hook -->
-                <method name="CallStartupHook" />
-                <!-- object.c: mono_runtime_run_startup_hooks -->
-                <method name="ProcessStartupHooks" />
-            </type>
-        </assembly>
+	<assembly fullname="System.Private.CoreLib" feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" featuredefault="true">
+		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
+		<type fullname="Mono.HotReload.InstanceFieldTable">
+			<!-- hot_reload.c -->
+			<method name="GetInstanceFieldFieldStore" />
+		</type>
+	</assembly>
+	<assembly fullname="System.Private.CoreLib" feature="System.StartupHookProvider.IsSupported" featurevalue="true" featuredefault="true">
+		<type fullname="System.StartupHookProvider">
+			<!-- ds-rt-coreclr.h: ds_rt_apply_startup_hook -->
+			<method name="CallStartupHook" />
+			<!-- object.c: mono_runtime_run_startup_hooks -->
+			<method name="ProcessStartupHooks" />
+		</type>
+	</assembly>
 </linker>

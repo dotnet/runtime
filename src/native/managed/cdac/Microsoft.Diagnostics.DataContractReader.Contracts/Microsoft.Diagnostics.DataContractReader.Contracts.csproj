@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Do not produce a public package. This ships as part of the runtime -->
+    <IsShippingPackage>false</IsShippingPackage>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NativeReader.cs" Link="Common\NativeReader.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NibbleReader.cs" Link="Common\NibbleReader.cs" />
+    <Compile Include="..\..\..\..\coreclr\tools\aot\ILCompiler.Reflection.ReadyToRun\NativeArray.cs" Link="Common\NativeArray.cs" />
+  </ItemGroup>
+</Project>

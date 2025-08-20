@@ -17,10 +17,11 @@
 BOOL FinalizerThread::fQuitFinalizer = FALSE;
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+#include "minipal/time.h"
 #define LINUX_HEAP_DUMP_TIME_OUT 10000
 
 extern bool s_forcedGCInProgress;
-ULONGLONG FinalizerThread::LastHeapDumpTime = 0;
+int64_t FinalizerThread::LastHeapDumpTime = 0;
 
 Volatile<BOOL> g_TriggerHeapDump = FALSE;
 #endif // __linux__
@@ -31,7 +32,7 @@ CLREvent * FinalizerThread::hEventFinalizerToShutDown = NULL;
 
 HANDLE FinalizerThread::MHandles[kHandleCount];
 
-BOOL FinalizerThread::IsCurrentThreadFinalizer()
+bool FinalizerThread::IsCurrentThreadFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -45,11 +46,124 @@ void FinalizerThread::EnableFinalization()
     hEventFinalizer->Set();
 }
 
-BOOL FinalizerThread::HaveExtraWorkForFinalizer()
+namespace
+{
+    // This is a linked list of the LCGMethodResolvers that represent DynamicMethodDescs
+    // waiting to be destroyed. The resolvers are used since they can be chained together
+    // to avoid allocations when destroying multiple DynamicMethodDescs.
+    VolatilePtr<LCGMethodResolver> s_delayDestroyDynamicMethod = nullptr;
+
+    bool HasDelayedDynamicMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_delayDestroyDynamicMethod != nullptr;
+    }
+
+    void AddDelayedDynamicMethod(DynamicMethodDesc* pDMD)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(pDMD != nullptr);
+
+        // Get the LCGMethodResolver from the DynamicMethodDesc.
+        LCGMethodResolver* lcgResolver = pDMD->GetLCGMethodResolver();
+
+        // Append any existing resolvers to form a linked list.
+        if (s_delayDestroyDynamicMethod != nullptr)
+            lcgResolver->SetNextDynamicMethodForDelayCleanup((DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod());
+
+        s_delayDestroyDynamicMethod = lcgResolver;
+    }
+
+    void CleanupDelayedDynamicMethods()
+    {
+        STANDARD_VM_CONTRACT;
+
+        while (s_delayDestroyDynamicMethod != nullptr)
+        {
+            // Get the next method to destroy.
+            DynamicMethodDesc* next = s_delayDestroyDynamicMethod->GetNextDynamicMethodForDelayCleanup();
+
+            // Destroy the current method.
+            DynamicMethodDesc* curr = (DynamicMethodDesc*)s_delayDestroyDynamicMethod->GetDynamicMethod();
+            if (!curr->TryDestroy())
+                return;
+
+            // Update the head of the list.
+            s_delayDestroyDynamicMethod = next == nullptr ? nullptr : next->GetLCGMethodResolver();
+        }
+    }
+}
+
+void FinalizerThread::DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD)
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
-    return GetFinalizerThread()->HaveExtraWorkForFinalizer();
+    AddDelayedDynamicMethod(pDMD);
+}
+
+bool FinalizerThread::HaveExtraWorkForFinalizer()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    Thread* finalizerThread = GetFinalizerThread();
+    return finalizerThread->RequireSyncBlockCleanup()
+        || SystemDomain::System()->RequireAppDomainCleanup()
+        || (Thread::m_DetachCount > 0)
+        || Thread::CleanupNeededForFinalizedThread()
+        || YieldProcessorNormalization::IsMeasurementScheduled()
+        || HasDelayedDynamicMethod()
+        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
+}
+
+static void DoExtraWorkForFinalizer(Thread* finalizerThread)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(finalizerThread != NULL);
+        PRECONDITION(finalizerThread == FinalizerThread::GetFinalizerThread());
+        PRECONDITION(FinalizerThread::HaveExtraWorkForFinalizer());
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+    if (finalizerThread->RequiresCoInitialize())
+    {
+        finalizerThread->SetApartment(Thread::AS_InMTA);
+    }
+#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    if (finalizerThread->RequireSyncBlockCleanup())
+    {
+        SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
+    }
+    if (SystemDomain::System()->RequireAppDomainCleanup())
+    {
+        SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
+    }
+
+    if (Thread::m_DetachCount > 0
+        || Thread::CleanupNeededForFinalizedThread())
+    {
+        Thread::CleanupDetachedThreads();
+    }
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        GCX_PREEMP();
+        YieldProcessorNormalization::PerformMeasurement();
+    }
+
+    if (HasDelayedDynamicMethod())
+    {
+        GCX_PREEMP();
+        CleanupDelayedDynamicMethods();
+    }
+
+    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 }
 
 OBJECTREF FinalizerThread::GetNextFinalizableObject()
@@ -125,13 +239,8 @@ void FinalizerThread::FinalizeAllObjects()
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 {
-    // Non-host environment
-
     // We don't want kLowMemoryNotification to starve out kFinalizer
-    // (as the latter may help correct the former), and we don't want either
-    // to starve out kProfilingAPIAttach, as we want decent responsiveness
-    // to a user trying to attach a profiler.  So check in this order:
-    //     kProfilingAPIAttach alone (0 wait)
+    // (as the latter may help correct the former). So check in this order:
     //     kFinalizer alone (2s wait)
     //     all events together (infinite wait)
 
@@ -162,7 +271,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
         //
         //     * kLowMemoryNotification (if it's non-NULL && g_fEEStarted)
         //     * kFinalizer (always)
-        //     * kProfilingAPIAttach (if it's non-NULL)
         //
         // The enum code:MHandleType values become important here, as
         // WaitForMultipleObjects needs to wait on a contiguous set of non-NULL
@@ -235,9 +343,6 @@ static BOOL s_InitializedFinalizerThreadForPlatform = FALSE;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
-    SCAN_IGNORE_THROW;
-    SCAN_IGNORE_TRIGGER;
-
     BOOL bPriorityBoosted = FALSE;
 
     while (!fQuitFinalizer)
@@ -277,7 +382,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-        if (g_TriggerHeapDump && (CLRGetTickCount64() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
+        if (g_TriggerHeapDump && (minipal_lowres_ticks() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
         {
             s_forcedGCInProgress = true;
             GetFinalizerThread()->DisablePreemptiveGC();
@@ -285,7 +390,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             GetFinalizerThread()->EnablePreemptiveGC();
             s_forcedGCInProgress = false;
 
-            LastHeapDumpTime = CLRGetTickCount64();
+            LastHeapDumpTime = minipal_lowres_ticks();
             g_TriggerHeapDump = FALSE;
         }
 #endif
@@ -294,10 +399,12 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             gcGenAnalysisState = GcGenAnalysisState::Disabled;
             if (gcGenAnalysisTrace)
             {
+#ifdef FEATURE_PERFTRACING
                 EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
 #ifdef GEN_ANALYSIS_STRESS
                 GenAnalysis::EnableGenerationalAwareSession();
-#endif
+#endif //GEN_ANALYSIS_STRESS
+#endif //FEATURE_PERFTRACING
             }
 
             // Writing an empty file to indicate completion
@@ -348,9 +455,9 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
         // we might want to do some extra work on the finalizer thread
         // check and do it
-        if (GetFinalizerThread()->HaveExtraWorkForFinalizer())
+        if (HaveExtraWorkForFinalizer())
         {
-            GetFinalizerThread()->DoExtraWorkForFinalizer();
+            DoExtraWorkForFinalizer(GetFinalizerThread());
         }
         LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
 
@@ -378,6 +485,21 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
 
+#ifdef TARGET_WINDOWS
+#ifdef FEATURE_COMINTEROP
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    g_fComStarted = true;
+#endif
+
+    InitFlsSlot();
+
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    hEventFinalizerDone->Set();
+    WaitForFinalizerEvent (hEventFinalizer);
+#endif
+
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
     _ASSERTE(s_FinalizerThreadOK);
@@ -393,9 +515,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
             while (!fQuitFinalizer)
             {
-                // This will apply any policy for swallowing exceptions during normal
-                // processing, without allowing the finalizer thread to disappear on us.
-                ManagedThreadBase::FinalizerBase(FinalizerThreadWorker);
+                ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
 
                 // If we came out on an exception, then we probably lost the signal that
                 // there are objects in the queue ready to finalize.  The safest thing is
@@ -487,6 +607,15 @@ void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 
     g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
+}
+
+void FinalizerThread::WaitForFinalizerThreadStart()
+{
+    // this should be only called during EE startup
+    _ASSERTE(!g_fEEStarted);
+
+    hEventFinalizerDone->Wait(INFINITE,FALSE);
+    hEventFinalizerDone->Reset();
 }
 
 // Wait for the finalizer thread to complete one pass.

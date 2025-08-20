@@ -1,3 +1,4 @@
+version: '3' # Although the version attribute is obsolete and should be ignored, it's seemingly not the case on Build.Ubuntu.2204.Amd64.Open
 services:
   client:
     build:

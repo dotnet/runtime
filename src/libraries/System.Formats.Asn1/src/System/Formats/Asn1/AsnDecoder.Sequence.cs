@@ -75,7 +75,7 @@ namespace System.Formats.Asn1
 
             if (length.HasValue)
             {
-                if (length.Value + headerLength > source.Length)
+                if (length.Value > source.Length - headerLength)
                 {
                     throw GetValidityException(LengthValidity.LengthExceedsInput);
                 }

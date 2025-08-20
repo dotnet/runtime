@@ -181,7 +181,7 @@ class StubLinker
         //
         // Throws exception on failure.
         //---------------------------------------------------------------
-        Stub *Link(LoaderHeap *heap, DWORD flags = 0);
+        Stub *Link(LoaderHeap *heap, DWORD flags, const char *stubType);
 
     private:
         CodeElement   *m_pCodeElements;     // stored in *reverse* order
@@ -821,7 +821,7 @@ class InstructionFormat
 
 #define CPUSTUBLINKER StubLinkerCPU
 
-class NDirectStubLinker;
+class PInvokeStubLinker;
 class CPUSTUBLINKER;
 
 #endif // __stublink_h__

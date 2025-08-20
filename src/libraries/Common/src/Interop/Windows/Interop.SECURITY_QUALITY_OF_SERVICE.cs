@@ -15,7 +15,7 @@ internal static partial class Interop
         public ContextTrackingMode ContextTrackingMode;
         public BOOLEAN EffectiveOnly;
 
-        public unsafe SECURITY_QUALITY_OF_SERVICE(ImpersonationLevel impersonationLevel, ContextTrackingMode contextTrackingMode, bool effectiveOnly)
+        public SECURITY_QUALITY_OF_SERVICE(ImpersonationLevel impersonationLevel, ContextTrackingMode contextTrackingMode, bool effectiveOnly)
         {
             Length = (uint)sizeof(SECURITY_QUALITY_OF_SERVICE);
             ImpersonationLevel = impersonationLevel;

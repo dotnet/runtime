@@ -87,14 +87,9 @@
 #include "util.hpp"
 #include "debugmacros.h"
 #include "log.h"
+#include <minipal/mutex.h>
 
 #define ShutDown_Start                          0x00000001
-#define ShutDown_Finalize1                      0x00000002
-#define ShutDown_Finalize2                      0x00000004
-#define ShutDown_Profiler                       0x00000008
-#define ShutDown_COM                            0x00000010
-#define ShutDown_SyncBlock                      0x00000020
-#define ShutDown_IUnknown                       0x00000040
 #define ShutDown_Phase2                         0x00000080
 
 // Total count of Crst lock  of the type (Shutdown) that are currently in use
@@ -103,28 +98,28 @@ extern Volatile<LONG> g_ShutdownCrstUsageCount;
 // The CRST.
 class CrstBase
 {
-// The following classes and methods violate the requirement that Crst usage be
-// exception-safe, or they satisfy that requirement using techniques other than
-// Holder objects:
-friend class Thread;
-friend class ThreadStore;
-friend class ThreadSuspend;
-template <typename ELEMENT>
-friend class ListLockBase;
-template <typename ELEMENT>
-friend class ListLockEntryBase;
-friend struct SavedExceptionInfo;
-friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
-friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
-friend class CodeVersionManager;
+    // The following classes and methods violate the requirement that Crst usage be
+    // exception-safe, or they satisfy that requirement using techniques other than
+    // Holder objects:
+    friend class Thread;
+    friend class ThreadStore;
+    friend class ThreadSuspend;
+    template <typename ELEMENT>
+    friend class ListLockBase;
+    template <typename ELEMENT>
+    friend class ListLockEntryBase;
+    friend struct SavedExceptionInfo;
+    friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
+    friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
+    friend class CodeVersionManager;
 
-friend class Debugger;
-friend class Crst;
+    friend class Debugger;
+    friend class Crst;
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_VM
     // The debugger transport code uses a holder for its Crst, but it needs to share the holder implementation
     // with its right side code as well (which can't see the Crst implementation and actually uses a
-    // CRITICAL_SECTION as the base lock). So make DbgTransportSession a friend here so we can use Enter() and
+    // minipal_mutex as the base lock). So make DbgTransportSession a friend here so we can use Enter() and
     // Leave() in order to build a shared holder class.
     friend class DbgTransportLock;
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
@@ -173,18 +168,14 @@ private:
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
     void Leave();
 
-    void SpinEnter();
-
 #ifndef DACCESS_COMPILE
     DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Enter();
     }
 
     DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Leave();
     }
 
@@ -282,16 +273,14 @@ protected:
     void DebugDestroy();
 #endif
 
-    T_CRITICAL_SECTION m_criticalsection;
+    tgt_minipal_mutex m_lock;
 
     typedef enum
     {
         // Mask to indicate reserved flags
-        CRST_RESERVED_FLAGS_MASK = 0xC0000000,
+        CRST_RESERVED_FLAGS_MASK = 0x80000000,
         // private flag to indicate initialized Crsts
-        CRST_INITIALIZED = 0x80000000,
-        // private flag to indicate Crst is OS Critical Section
-        CRST_OS_CRIT_SEC = 0x40000000,
+        CRST_INITIALIZED = 0x80000000
         // rest of the flags are CrstFlags
     } CrstReservedFlags;
     DWORD               m_dwFlags;            // Re-entrancy and same level
@@ -314,19 +303,6 @@ protected:
 #endif //_DEBUG
 
 private:
-
-    void SetOSCritSec ()
-    {
-        m_dwFlags |= CRST_OS_CRIT_SEC;
-    }
-    void ResetOSCritSec ()
-    {
-        m_dwFlags &= ~CRST_OS_CRIT_SEC;
-    }
-    BOOL IsOSCritSec ()
-    {
-        return m_dwFlags & CRST_OS_CRIT_SEC;
-    }
     void SetCrstInitialized()
     {
         m_dwFlags |= CRST_INITIALIZED;
@@ -366,18 +342,23 @@ public:
         CrstBase * m_pCrst;
 
     public:
-        inline CrstHolder(CrstBase * pCrst)
-            : m_pCrst(pCrst)
+        CrstHolder(CrstBase* pCrst)
+            : m_pCrst{ pCrst }
         {
             WRAPPER_NO_CONTRACT;
             AcquireLock(pCrst);
         }
 
-        inline ~CrstHolder()
+        ~CrstHolder()
         {
             WRAPPER_NO_CONTRACT;
             ReleaseLock(m_pCrst);
         }
+
+        CrstHolder(CrstHolder const&) = delete;
+        CrstHolder &operator=(CrstHolder const&) = delete;
+        CrstHolder(CrstHolder&& other) = delete;
+        CrstHolder& operator=(CrstHolder&& other) = delete;
     };
 
     // Note that the holders for CRSTs are used in extremely low stack conditions. Because of this, they
@@ -501,7 +482,7 @@ public:
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         return fSuccess;
     }

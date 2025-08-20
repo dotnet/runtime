@@ -14,7 +14,7 @@
 #include "corerror.h"
 #include <posterror.h>
 
-// The following block contains a template for the default entry point stubs of a COM+
+// The following block contains a template for the default entry point stubs of a CLR
 // IL only program.  One can emit these stubs (with some fix-ups) and make
 // the code supplied the entry point value for the image.  The fix-ups will
 // in turn cause mscoree.dll to be loaded and the correct entry point to be
@@ -482,6 +482,11 @@ HRESULT CeeFileGenWriter::getFileTimeStamp(DWORD *pTimeStamp)
     return getPEWriter().getFileTimeStamp(pTimeStamp);
 } // HRESULT CeeFileGenWriter::getFileTimeStamp()
 
+void CeeFileGenWriter::setFileHeaderTimeStamp(DWORD timeStamp)
+{
+    return getPEWriter().setFileHeaderTimeStamp(timeStamp);
+} // void CeeFileGenWriter::setFileHeaderTimeStamp()
+
 HRESULT CeeFileGenWriter::setAddrReloc(UCHAR *instrAddr, DWORD value)
 {
     *(DWORD *)instrAddr = VAL32(value);
@@ -490,11 +495,7 @@ HRESULT CeeFileGenWriter::setAddrReloc(UCHAR *instrAddr, DWORD value)
 
 HRESULT CeeFileGenWriter::addAddrReloc(CeeSection &thisSection, UCHAR *instrAddr, DWORD offset, CeeSection *targetSection)
 {
-    if (!targetSection) {
-        thisSection.addBaseReloc(offset, srRelocHighLow);
-    } else {
-        thisSection.addSectReloc(offset, *targetSection, srRelocHighLow);
-    }
+    thisSection.addSectReloc(offset, *targetSection, srRelocHighLow);
     return S_OK;
 } // HRESULT CeeFileGenWriter::addAddrReloc()
 

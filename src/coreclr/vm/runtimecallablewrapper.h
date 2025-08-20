@@ -34,7 +34,7 @@
 //  Cast operations: requires a QI, unless a QI for that interface was done previously
 //
 //  Threading : apartment model COM objects have thread affinity
-//              choices: COM+ can guarantee thread affinity by making sure
+//              choices: CLR can guarantee thread affinity by making sure
 //                       the calls are always made on the right thread
 //              Advantanges: avoid an extra marshalling
 //              Dis.Advt.  : need to make sure legacy apartment semantics are preserved
@@ -99,9 +99,6 @@ struct RCW
 
     static CreationFlags CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags flags);
 
-    // List of RCW instances that have been freed since the last RCW cleanup.
-    static SLIST_HEADER s_RCWStandbyList;
-
     // Simple read-only iterator for all cached interface pointers.
     class CachedInterfaceEntryIterator
     {
@@ -160,9 +157,6 @@ struct RCW
         WRAPPER_NO_CONTRACT;
         ZeroMemory(this, sizeof(*this));
     }
-
-    // Deletes all items in code:s_RCWStandbyList.
-    static void FlushStandbyList();
 
     // Create a new wrapper for given IUnk, IDispatch
     static RCW* CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
@@ -489,20 +483,11 @@ struct RCW
 
         if (InterlockedDecrement(&m_cbUseCount) == 0)
         {
-            // this was the final decrement, go ahead and delete/recycle the RCW
-            {
-                GCX_PREEMP();
-                m_UnkEntry.Free();
-            }
+            // this was the final decrement, go ahead and delete the RCW
+            GCX_PREEMP();
+            m_UnkEntry.Free();
 
-            if (g_fEEShutDown)
-            {
-                delete this;
-            }
-            else
-            {
-                InterlockedPushEntrySList(&RCW::s_RCWStandbyList, (PSLIST_ENTRY)this);
-            }
+            delete this;
         }
     }
 
@@ -741,7 +726,7 @@ protected :
 private:
     //-------------------------------------------------------------
     // ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass)
-    // create a COM+ instance that aggregates a COM instance
+    // create a CLR instance that aggregates a COM instance
     OBJECTREF CreateAggregatedInstance(MethodTable* pMTClass, BOOL ForManaged);
 
     //--------------------------------------------------------------

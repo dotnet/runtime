@@ -4,7 +4,7 @@
         <SubprojectProps Include="Configuration" Value="$(Configuration)" />
         <SubprojectProps Include="RuntimeConfiguration" Value="$(RuntimeConfiguration)" />
         <SubprojectProps Include="LibrariesConfiguration" Value="$(LibrariesConfiguration)" />
-        <SubprojectProps Include="RuntimeIdentifier" Value="$(OutputRID)" />
+        <SubprojectProps Include="RuntimeIdentifier" Value="$(TargetRid)" />
     </ItemGroup>
 
     <PropertyGroup>

@@ -129,6 +129,7 @@ namespace System.Reflection
         public override int MetadataToken => m_token;
         public override Module Module => GetRuntimeModule();
         internal RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
+        public override bool IsCollectible => m_declaringType.IsCollectible;
         #endregion
 
         #region EventInfo Overrides

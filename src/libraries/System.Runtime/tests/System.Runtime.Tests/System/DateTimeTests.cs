@@ -15,6 +15,55 @@ namespace System.Tests
     public class DateTimeTests
     {
         [Fact]
+        public static void ParseExact_GenitiveMonthNames()
+        {
+            // Create a German culture with explicitly defined genitive month names
+            var culture = new CultureInfo("de-DE");
+            culture.DateTimeFormat.AbbreviatedMonthGenitiveNames = new[] { "Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez.", "" };
+            culture.DateTimeFormat.MonthGenitiveNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember.", "" };
+            culture.DateTimeFormat.DayNames = new[] { "Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag" };
+            culture.DateTimeFormat.DateSeparator = ".";
+            // Regular month names (non-genitive)
+            culture.DateTimeFormat.AbbreviatedMonthNames = new[] { "Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", "" };
+            culture.DateTimeFormat.MonthNames = new[] { "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember", "" };
+            // Test cases for abbreviated month names (MMM)
+            // Case 1: Format without day specifier - should use regular month name
+            DateTime result;
+            bool success = DateTime.TryParseExact("Dez.20", "MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Case 2: Format with day-of-month specifier - should use genitive month name
+            success = DateTime.TryParseExact("Dez.20 01", "MMM.yy dd", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 3: Format with day-of-month specifier before month - should use genitive month name
+            success = DateTime.TryParseExact("01 Dez.20", "d MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 4: Format with day-of-week specifier - should use regular month name
+            success = DateTime.TryParseExact("Dienstag Dez.20", "dddd MMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Test cases for full month names (MMMM)
+            // Case 5: Format without day specifier - should use regular month name
+            success = DateTime.TryParseExact("Dezember.20", "MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+            // Case 6: Format with day-of-month specifier - should use genitive month name
+            success = DateTime.TryParseExact("Dezember.20 01", "MMMM.yy dd", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 7: Format with day-of-month specifier before month - should use genitive month name
+            success = DateTime.TryParseExact("01 Dezember.20", "d MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.False(success);
+            // Case 8: Format with day-of-week specifier - should use regular month name
+            success = DateTime.TryParseExact("Dienstag Dezember.20", "dddd MMMM.yy", culture, DateTimeStyles.None, out result);
+            Assert.True(success);
+            Assert.Equal(12, result.Month);
+            Assert.Equal(2020, result.Year);
+        }
+
+        [Fact]
         public static void MaxValue()
         {
             VerifyDateTime(DateTime.MaxValue, 9999, 12, 31, 23, 59, 59, 999, DateTimeKind.Unspecified);
@@ -1290,7 +1339,7 @@ namespace System.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public static void TryParse_NullOrEmptyString_ReturnsFalse(string input)
+        public static void TryParse_NullOrEmptyString_ReturnsFalse(string? input)
         {
             Assert.False(DateTime.TryParse(input, out DateTime result));
             Assert.False(DateTime.TryParse(input, new MyFormatter(), DateTimeStyles.None, out result));
@@ -2685,6 +2734,17 @@ namespace System.Tests
             fileTime = now.ToFileTime();
             roundTrippedDateTime = DateTime.FromFileTime(fileTime);
             Assert.Equal(now, roundTrippedDateTime);
+        }
+
+        [Fact]
+        public void TestParseTimeOnlyStringWithAssumeUtcOption()
+        {
+            DateTime utcNow1 = DateTime.UtcNow;
+            DateTime dt = DateTime.Parse("13:30", null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+            DateTime utcNow2 = DateTime.UtcNow;
+
+            // Ensure the parsed date part is in UTC.
+            Assert.InRange(dt.Date, utcNow1.Date, utcNow2.Date);
         }
 
         [Fact]

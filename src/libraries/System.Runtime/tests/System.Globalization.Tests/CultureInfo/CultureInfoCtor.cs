@@ -388,6 +388,47 @@ namespace System.Globalization.Tests
             }
         }
 
+        public static IEnumerable<object[]> Ctor_Undetermined_TestData()
+        {
+            yield return new object[] { "und-us", "und-US", "und-US" };
+            yield return new object[] { "und-us_tradnl", "und-US", "und-US_tradnl"};
+
+            // On AppleMobile, the behavior of CultureInfo differs due to platform-specific
+            // handling of Unicode extensions and subtags. These platforms preserve the full language tag, including
+            // extensions, while other platforms normalize the tag to a simpler form.
+            if (PlatformDetection.IsAppleMobile)
+            {
+                yield return new object[] { "und-es-u-co-phoneb", "und-ES-u-co-phoneb", "und-ES-u-co-phoneb" };
+                yield return new object[] { "und-es-t-something", "und-ES-t-something", "und-ES-t-something" };
+            }
+            else
+            {
+                yield return new object[] { "und-es-u-co-phoneb", "und-ES", "und-ES_phoneb" };
+                yield return new object[] { "und-es-t-something", "und-ES", "und-ES"};
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(Ctor_Undetermined_TestData))]
+        public void CtorUndeterminedLanguageTag(string cultureName, string expectedCultureName, string expectedSortName)
+        {
+            CultureInfo culture = new CultureInfo(cultureName);
+            Assert.Equal(expectedCultureName, culture.Name);
+            Assert.Equal(expectedSortName, culture.CompareInfo.Name);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void UndeterminedCultureTest()
+        {
+            CultureInfo invariant1 = CultureInfo.GetCultureInfo("");
+
+            CultureInfo undetermined1 = CultureInfo.GetCultureInfo("und");
+            Assert.Equal("", undetermined1.Name);
+
+            CultureInfo invariant2 = CultureInfo.GetCultureInfo("");
+            Assert.True(object.ReferenceEquals(invariant1, invariant2), "CultureInfo.GetCultureInfo(\"\") is not returning the previously cached instance");
+        }
+
         [Theory]
         [MemberData(nameof(Ctor_String_TestData))]
         public void Ctor_String(string name, string[] expectedNames)
@@ -446,7 +487,7 @@ namespace System.Globalization.Tests
         [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phoneboo")]
         [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phoneboo")]
         [InlineData("de-DE", "de-DE", "de-DE")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void TestCreationWithMangledSortName(string cultureName, string expectedCultureName, string expectedSortName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
@@ -461,7 +502,7 @@ namespace System.Globalization.Tests
         [InlineData("qps-plocm", "qps-PLOCM")] // ICU normalize this name to "qps--plocm" which we normalize it back to "qps-plocm"
         [InlineData("zh_CN", "zh_cn")]
         [InlineData("km_KH", "km_kh")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotWindowsServerCore))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform), nameof(PlatformDetection.IsNotWindowsServerCore))]
         public void TestCreationWithICUNormalizedNames(string cultureName, string expectedCultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);

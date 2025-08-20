@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- ./dotnet.sh build -c <Debug|Release> src/tests/FunctionalTests/Android/Device_Emulator/NativeAOT/Android.Device_Emulator.NativeAOT.Test.csproj /t:Test -bl /p:targetos=android /p:targetarchitecture=x64 -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetName>lib$(MSBuildProjectName)</TargetName>
+    <MainLibraryFileName>$(TargetName).so</MainLibraryFileName>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
+    <PublishAOT>true</PublishAOT>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\..\..\tasks\AndroidAppBuilder\Templates\monodroid-nativeaot.cs" />
+    <DirectPInvoke Include="System.Security.Cryptography.Native.Android" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+
+</Project>

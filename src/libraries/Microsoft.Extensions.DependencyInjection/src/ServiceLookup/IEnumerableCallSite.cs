@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal Type ItemType { get; }
         internal ServiceCallSite[] ServiceCallSites { get; }
 
-        public IEnumerableCallSite(ResultCache cache, Type itemType, ServiceCallSite[] serviceCallSites) : base(cache)
+        public IEnumerableCallSite(ResultCache cache, Type itemType, ServiceCallSite[] serviceCallSites, object? serviceKey = null) : base(cache, serviceKey)
         {
             Debug.Assert(!ServiceProvider.VerifyAotCompatibility || !itemType.IsValueType, "If VerifyAotCompatibility=true, an IEnumerableCallSite should not be created with a ValueType.");
 

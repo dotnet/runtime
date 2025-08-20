@@ -4,7 +4,9 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET
 using System.Runtime.Intrinsics;
+#endif
 
 namespace System.Text.Unicode
 {
@@ -251,6 +253,7 @@ namespace System.Text.Unicode
             return (valueA | letterMaskA) == (valueB | letterMaskB);
         }
 
+#if NET
         /// <summary>
         /// Returns true iff the Vector128 represents 16 ASCII UTF-8 characters in machine endianness.
         /// </summary>
@@ -288,5 +291,6 @@ namespace System.Text.Unicode
             // Compare two lowercased vectors
             return (lcVec1 ^ lcVec2) == Vector128<sbyte>.Zero;
         }
+#endif
     }
 }

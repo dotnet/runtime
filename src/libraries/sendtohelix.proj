@@ -77,7 +77,7 @@
       <_Scenarios Include="$(_Scenarios.Split(','))" />
 
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
-      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps' and '%(_Scenarios.Identity)' != 'wasmdebuggertests'">
+      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BaseProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BaseProjectsToBuild>
@@ -88,10 +88,12 @@
       <_TestUsingWorkloadsValues Include="true;false" />
       <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
       <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
+      <_TestUsingJavascriptBundlerValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
 
       <!-- now make the cartesian product of true and false values for two categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
         <Workloads>%(_TestUsingWorkloadsValues.Identity)</Workloads>
+        <BundlerFriendly>false</BundlerFriendly>
       </_TestUsingCrossProductValuesTemp>
       <_TestUsingCrossProductValuesTemp2 Include="@(_TestUsingCrossProductValuesTemp)">
         <Webcil>%(_TestUsingWebcilValues.Identity)</Webcil>
@@ -102,19 +104,26 @@
 
       <!-- There no tests without fingerprinting and without workloads -->
       <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
+      
+      <!-- Add combination for JavascriptBundler friendliness -->
+      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly">
+        <Workloads>true</Workloads>
+        <Webcil>true</Webcil>
+        <Fingerprinting>true</Fingerprinting>
+        <BundlerFriendly>true</BundlerFriendly>
+      </_TestUsingCrossProductValues>
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);WasmEnableWebcil=%(_TestUsingCrossProductValues.Webcil);WasmFingerprintAssets=%(_TestUsingCrossProductValues.Fingerprinting)</AdditionalProperties>
+        <AdditionalProperties>
+          $(_PropertiesToPass);Scenario=BuildWasmApps;
+          TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);
+          TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);
+          WasmEnableWebcil=%(_TestUsingCrossProductValues.Webcil);
+          WasmFingerprintAssets=%(_TestUsingCrossProductValues.Fingerprinting);
+          WasmBundlerFriendlyBootConfig=%(_TestUsingCrossProductValues.BundlerFriendly)
+        </AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
-    </ItemGroup>
-
-    <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'wasmdebuggertests'))' == 'true'">
-      <_DebuggerHostsItem Include="$(_DebuggerHosts.Split('/'))" />
-
-      <_WasmDebuggerTestsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=WasmDebuggerTests;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);DebuggerHost=%(_DebuggerHostsItem.Identity)</AdditionalProperties>
-      </_WasmDebuggerTestsProjectsToBuild>
     </ItemGroup>
 
     <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
@@ -128,7 +137,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_WasmDebuggerTestsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
+      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
     </ItemGroup>
 
     <PropertyGroup>

@@ -122,7 +122,7 @@ inline
 uint32_t
 ipc_stream_factory_get_next_timeout (uint32_t current_timeout_ms)
 {
-	if (current_timeout_ms == DS_IPC_TIMEOUT_INFINITE)
+	if (current_timeout_ms == IPC_TIMEOUT_INFINITE)
 		return DS_IPC_POLL_TIMEOUT_MIN_MS;
 	else
 		return (current_timeout_ms >= DS_IPC_POLL_TIMEOUT_MAX_MS) ?
@@ -361,7 +361,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 	DiagnosticsIpcStream *stream = NULL;
 
-	uint32_t poll_timeout_ms = DS_IPC_TIMEOUT_INFINITE;
+	uint32_t poll_timeout_ms = IPC_TIMEOUT_INFINITE;
 	bool connect_success = true;
 	uint32_t poll_attempts = 0;
 
@@ -382,7 +382,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 		} DN_VECTOR_PTR_FOREACH_END;
 
 		poll_timeout_ms = connect_success ?
-			DS_IPC_TIMEOUT_INFINITE :
+			IPC_TIMEOUT_INFINITE :
 			ipc_stream_factory_get_next_timeout (poll_timeout_ms);
 
 		int32_t ret_val;
@@ -392,7 +392,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 			ipc_log_poll_handles (&ipc_poll_handles);
 			ret_val = ds_ipc_poll (dn_vector_data_t (&ipc_poll_handles, DiagnosticsIpcPollHandle), dn_vector_size (&ipc_poll_handles), poll_timeout_ms, callback);
 		} else {
-			if (poll_timeout_ms == DS_IPC_TIMEOUT_INFINITE)
+			if (poll_timeout_ms == IPC_TIMEOUT_INFINITE)
 				poll_timeout_ms = DS_IPC_POLL_TIMEOUT_MAX_MS;
 			DS_LOG_DEBUG_1 ("ds_ipc_stream_factory_get_next_available_stream - Nothing to poll, sleeping using timeout: %dms.", poll_timeout_ms);
 			ep_rt_thread_sleep ((uint64_t)poll_timeout_ms * NUM_NANOSECONDS_IN_1_MS);
@@ -406,13 +406,13 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 			DN_VECTOR_FOREACH_BEGIN (DiagnosticsIpcPollHandle, ipc_poll_handle, &ipc_poll_handles) {
 				DiagnosticsPort *port = (DiagnosticsPort *)ipc_poll_handle.user_data;
 				switch (ipc_poll_handle.events) {
-				case DS_IPC_POLL_EVENTS_HANGUP:
+				case IPC_POLL_EVENTS_HANGUP:
 					EP_ASSERT (port != NULL);
 					ds_port_reset_vcall (port, callback);
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - HUP :: Poll attempt: %d, connection %d hung up. Connect is reset.", poll_attempts, connection_id);
 					poll_timeout_ms = DS_IPC_POLL_TIMEOUT_MIN_MS;
 					break;
-				case DS_IPC_POLL_EVENTS_SIGNALED:
+				case IPC_POLL_EVENTS_SIGNALED:
 					EP_ASSERT (port != NULL);
 					if (!stream) {  // only use first signaled stream; will get others on subsequent calls
 						stream = ds_port_get_connected_stream_vcall (port, callback);
@@ -422,12 +422,12 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 					}
 					DS_LOG_DEBUG_2 ("ds_ipc_stream_factory_get_next_available_stream - SIG :: Poll attempt: %d, connection %d signalled.", poll_attempts, connection_id);
 					break;
-				case DS_IPC_POLL_EVENTS_ERR:
+				case IPC_POLL_EVENTS_ERR:
 					ds_port_reset_vcall ((DiagnosticsPort *)ipc_poll_handle.user_data, callback);
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - ERR :: Poll attempt: %d, connection %d errored. Connection is reset.", poll_attempts, connection_id);
 					saw_error = true;
 					break;
-				case DS_IPC_POLL_EVENTS_NONE:
+				case IPC_POLL_EVENTS_NONE:
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - NON :: Poll attempt: %d, connection %d had no events.", poll_attempts, connection_id);
 					break;
 				default:
@@ -444,7 +444,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 		if (!stream && saw_error) {
 			// Some errors can cause the poll to return instantly, we want to delay if we see an error to avoid
 			// runaway CPU usage.
-			if (poll_timeout_ms == DS_IPC_TIMEOUT_INFINITE)
+			if (poll_timeout_ms == IPC_TIMEOUT_INFINITE)
 				poll_timeout_ms = DS_IPC_POLL_TIMEOUT_MAX_MS;
 			DS_LOG_DEBUG_1 ("ds_ipc_stream_factory_get_next_available_stream - Saw error, sleeping using timeout: %dms.", poll_timeout_ms);
 			ep_rt_thread_sleep ((uint64_t)poll_timeout_ms * NUM_NANOSECONDS_IN_1_MS);
@@ -454,6 +454,12 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 		// clear the view.
 		dn_vector_clear (&ipc_poll_handles);
+
+#ifdef PERFTRACING_DISABLE_THREADS
+		// in single-threaded mode, we only do one poll
+		// we can't loop here, that would block the browser event loop
+		break;
+#endif
 	}
 
 ep_on_exit:
@@ -703,7 +709,7 @@ connect_port_get_ipc_poll_handle_func (
 			buffer [0] = '\0';
 		DS_LOG_DEBUG_1 ("connect_port_get_ipc_poll_handle - returned connection %s", buffer);
 
-		if (!ds_icp_advertise_v1_send (connection)) {
+		if (!ds_ipc_advertise_v1_send (connection)) {
 			if (callback)
 				callback("Failed to send advertise message", -1);
 			ep_raise_error ();

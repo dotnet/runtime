@@ -8,118 +8,108 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
-using Wasm.Build.Tests.TestAppScenarios;
 
 #nullable enable
 
 namespace Wasm.Build.Tests;
 
-// ToDo: fix to be based on WasmTemplateTestBase
-public class DebugLevelTests : AppTestBase
+public class DebugLevelTests : WasmTemplateTestsBase
 {
     public DebugLevelTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
 
-    private void AssertDebugLevel(string result, int value)
-        => Assert.Contains($"WasmDebugLevel: {value}", result);
+    private void AssertDebugLevel(IReadOnlyCollection<string> result, int value)
+        => Assert.Contains(result, m => m.Contains($"WasmDebugLevel: {value}"));
 
-    private BuildProjectOptions GetProjectOptions(bool isPublish = false) =>
-        new BuildProjectOptions(
-            DotnetWasmFromRuntimePack: !isPublish,
-            CreateProject: false,
-            MainJS: "main.js",
-            HasV8Script: false,
-            Publish: isPublish,
-            AssertAppBundle: false,
-            UseCache: false
+    [Theory]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public async Task BuildWithDefaultLevel(Configuration configuration)
+    {
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "DebugLevelTests_BuildWithDefaultLevel"
         );
+        BuildProject(info, configuration);
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        RunResult result = await RunForBuildWithDotnetRun(options);
+        AssertDebugLevel(result.TestOutput, -1);
+    }
 
-    private string BuildPublishProject(string projectName, string config, bool isPublish = false, params string[] extraArgs)
+    [Theory]
+    [InlineData(Configuration.Debug, 1)]
+    [InlineData(Configuration.Release, 1)]
+    [InlineData(Configuration.Debug, 0)]
+    [InlineData(Configuration.Release, 0)]
+    public async Task BuildWithExplicitValue(Configuration configuration, int debugLevel)
     {
-        var buildArgs = new BuildArgs(projectName, config, false, projectName, null);
-        buildArgs = ExpandBuildArgs(buildArgs);
-        (string _, string output) = BuildTemplateProject(buildArgs,
-            buildArgs.Id,
-            GetProjectOptions(isPublish),
-            extraArgs: extraArgs
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "DebugLevelTests_BuildWithExplicitValue"
         );
-        return output;
+        BuildProject(info, configuration, new BuildOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        RunResult result = await RunForBuildWithDotnetRun(options);
+        AssertDebugLevel(result.TestOutput, debugLevel);
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public async Task BuildWithDefaultLevel(string configuration)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public async Task PublishWithDefaultLevel(Configuration configuration)
     {
-        string testAssetName = "WasmBasicTestApp";
-        string projectFile = $"{testAssetName}.csproj";
-        CopyTestAsset(testAssetName, $"DebugLevelTests_BuildWithDefaultLevel_{configuration}", "App");
-        BuildPublishProject(projectFile, configuration);
-
-        string result = await RunBuiltBrowserApp(configuration, projectFile, testScenario: "DebugLevelTest");
-        AssertDebugLevel(result, -1);
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "DebugLevelTests_PublishWithDefaultLevel"
+        );
+        PublishProject(info, configuration);
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        RunResult result = await RunForPublishWithWebServer(options);
+        AssertDebugLevel(result.TestOutput, 0);
     }
 
     [Theory]
-    [InlineData("Debug", 1)]
-    [InlineData("Release", 1)]
-    [InlineData("Debug", 0)]
-    [InlineData("Release", 0)]
-    public async Task BuildWithExplicitValue(string configuration, int debugLevel)
+    [InlineData(Configuration.Debug, 1)]
+    [InlineData(Configuration.Release, 1)]
+    [InlineData(Configuration.Debug, -1)]
+    [InlineData(Configuration.Release, -1)]
+    public async Task PublishWithExplicitValue(Configuration configuration, int debugLevel)
     {
-        string testAssetName = "WasmBasicTestApp";
-        string projectFile = $"{testAssetName}.csproj";
-        CopyTestAsset(testAssetName, $"DebugLevelTests_BuildWithExplicitValue_{configuration}", "App");
-        BuildPublishProject(projectFile, configuration, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
-
-        string result = await RunBuiltBrowserApp(configuration, projectFile, testScenario: "DebugLevelTest");
-        AssertDebugLevel(result, debugLevel);
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "DebugLevelTests_PublishWithExplicitValue"
+        );
+        PublishProject(info, configuration, new PublishOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        RunResult result = await RunForPublishWithWebServer(options);
+        AssertDebugLevel(result.TestOutput, debugLevel);
     }
 
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public async Task PublishWithDefaultLevel(string configuration)
-    {
-        string testAssetName = "WasmBasicTestApp";
-        string projectFile = $"{testAssetName}.csproj";
-        CopyTestAsset(testAssetName, $"DebugLevelTests_PublishWithDefaultLevel_{configuration}", "App");
-        BuildPublishProject(projectFile, configuration, isPublish: true);
-
-        string result = await RunPublishedBrowserApp(configuration, testScenario: "DebugLevelTest");
-        AssertDebugLevel(result, 0);
-    }
 
     [Theory]
-    [InlineData("Debug", 1)]
-    [InlineData("Release", 1)]
-    [InlineData("Debug", -1)]
-    [InlineData("Release", -1)]
-    public async Task PublishWithExplicitValue(string configuration, int debugLevel)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public async Task PublishWithDefaultLevelAndPdbs(Configuration configuration)
     {
-        string testAssetName = "WasmBasicTestApp";
-        string projectFile = $"{testAssetName}.csproj";
-        CopyTestAsset(testAssetName, $"DebugLevelTests_PublishWithExplicitValue_{configuration}", "App");
-        BuildPublishProject(projectFile, configuration, isPublish: true, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
-
-        string result = await RunBuiltBrowserApp(configuration, projectFile, testScenario: "DebugLevelTest");
-        AssertDebugLevel(result, debugLevel);
-    }
-    
-
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public async Task PublishWithDefaultLevelAndPdbs(string configuration)
-    {
-        string testAssetName = "WasmBasicTestApp";
-        string projectFile = $"{testAssetName}.csproj";
-        CopyTestAsset(testAssetName, $"DebugLevelTests_PublishWithDefaultLevelAndPdbs_{configuration}", "App");
-        BuildPublishProject(projectFile, configuration, isPublish: true, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
-
-        var result = await RunPublishedBrowserApp(configuration, testScenario: "DebugLevelTest");
-        AssertDebugLevel(result, -1);
+        ProjectInfo info = CopyTestAsset(
+            configuration,
+            aot: false,
+            asset: TestAsset.WasmBasicTestApp,
+            idPrefix: "DebugLevelTests_PublishWithDefaultLevelAndPdbs"
+        );
+        PublishProject(info, configuration, new PublishOptions(ExtraMSBuildArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true"));
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        RunResult result = await RunForPublishWithWebServer(options);
+        AssertDebugLevel(result.TestOutput, -1);
     }
 }

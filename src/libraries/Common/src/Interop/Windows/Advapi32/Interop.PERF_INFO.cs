@@ -116,7 +116,7 @@ internal static partial class Interop
                     ByteLength > bufferSize ||
                     NameOffset < 0 ||
                     NameLength < 0 ||
-                    checked (NameOffset + NameLength) > ByteLength)
+                    checked(NameOffset + NameLength) > ByteLength)
                 {
                     ThrowInvalidOperationException(typeof(PERF_INSTANCE_DEFINITION));
                 }

@@ -68,7 +68,7 @@ namespace System.Diagnostics.Tracing
             if (tplDebug)
             {
                 log!.DebugFacilityMessage("OnStartEnter", fullActivityName);
-                log!.DebugFacilityMessage("OnStartEnterActivityState", ActivityInfo.LiveActivities(currentActivity));
+                log.DebugFacilityMessage("OnStartEnterActivityState", ActivityInfo.LiveActivities(currentActivity));
             }
 
             if (currentActivity != null)
@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tracing
             if (tplDebug)
             {
                 log!.DebugFacilityMessage("OnStartRetActivityState", ActivityInfo.LiveActivities(newActivity));
-                log!.DebugFacilityMessage1("OnStartRet", activityId.ToString(), relatedActivityId.ToString());
+                log.DebugFacilityMessage1("OnStartRet", activityId.ToString(), relatedActivityId.ToString());
             }
         }
 
@@ -136,7 +136,7 @@ namespace System.Diagnostics.Tracing
             if (tplDebug)
             {
                 log!.DebugFacilityMessage("OnStopEnter", fullActivityName);
-                log!.DebugFacilityMessage("OnStopEnterActivityState", ActivityInfo.LiveActivities(m_current.Value));
+                log.DebugFacilityMessage("OnStopEnterActivityState", ActivityInfo.LiveActivities(m_current.Value));
             }
 
             while (true) // This is a retry loop.
@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tracing
                 ActivityInfo? currentActivity = m_current.Value;
                 ActivityInfo? newCurrentActivity = null;               // if we have seen any live activities (orphans), at he first one we have seen.
 
-                // Search to find the activity to stop in one pass.   This insures that we don't let one mistake
+                // Search to find the activity to stop in one pass.   This ensures that we don't let one mistake
                 // (stopping something that was not started) cause all active starts to be stopped
                 // By first finding the target start to stop we are more robust.
                 ActivityInfo? activityToStop = FindActiveActivity(fullActivityName, currentActivity);
@@ -195,7 +195,7 @@ namespace System.Diagnostics.Tracing
                     if (tplDebug)
                     {
                         log!.DebugFacilityMessage("OnStopRetActivityState", ActivityInfo.LiveActivities(newCurrentActivity));
-                        log!.DebugFacilityMessage("OnStopRet", activityId.ToString());
+                        log.DebugFacilityMessage("OnStopRet", activityId.ToString());
                     }
                     return;
                 }

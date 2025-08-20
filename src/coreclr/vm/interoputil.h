@@ -153,23 +153,15 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
 // Called from EEStartup, to initialize com Interop specific data structures.
 void InitializeComInterop();
 
-#endif // FEATURE_COMINTEROP
-
 //--------------------------------------------------------------------------------
 // Clean up Helpers
 //--------------------------------------------------------------------------------
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 // called by syncblock, on the finalizer thread to do major cleanup
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
 
 // called by syncblock, during GC, do only minimal work
 void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
-
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS)
-
-#ifdef FEATURE_COMINTEROP
 
 // A wrapper that catches all exceptions - used in the OnThreadTerminate case.
 void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie);
@@ -305,7 +297,7 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD);
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
-// result will be returned as a COM+ Variant pointed to by pRetVal.
+// result will be returned as a CLR object pointed to by pRetVal.
 void IUInvokeDispMethod(
     REFLECTCLASSBASEREF* pRefClassObj,
     OBJECTREF* pTarget,

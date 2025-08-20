@@ -238,7 +238,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
 void RegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     UINT_PTR* reg = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(reg != NULL);
+    _ASSERTE(reg != NULL);
     _ASSERTE(sizeof(*reg) == valueOutBuffer.Size());
 
     memcpy(valueOutBuffer.StartAddress(), reg, sizeof(*reg));
@@ -293,10 +293,10 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
 void RegRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     UINT_PTR* highWordAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(highWordAddr != NULL);
+    _ASSERTE(highWordAddr != NULL);
 
     UINT_PTR* lowWordAddr = m_pFrame->GetAddressOfRegister(m_reg2Info.m_kRegNumber);
-    PREFIX_ASSUME(lowWordAddr != NULL);
+    _ASSERTE(lowWordAddr != NULL);
 
     _ASSERTE(sizeof(*highWordAddr) + sizeof(*lowWordAddr) == valueOutBuffer.Size());
 
@@ -353,7 +353,7 @@ void RegMemValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     // Read the high bits from the register...
     UINT_PTR* highBitsAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(highBitsAddr != NULL);
+    _ASSERTE(highBitsAddr != NULL);
 
     // ... and the low bits from the remote process
     DWORD lowBits;
@@ -420,7 +420,7 @@ void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 
     // and the low bits from a register
     UINT_PTR* lowBitsAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(lowBitsAddr != NULL);
+    _ASSERTE(lowBitsAddr != NULL);
 
     _ASSERTE(sizeof(*lowBitsAddr)+sizeof(highBits) == valueOutBuffer.Size());
 
@@ -899,7 +899,7 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return handle;
 }
 

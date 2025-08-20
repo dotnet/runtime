@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed class OleDbDataReader : DbDataReader
     {
         private readonly CommandBehavior _commandBehavior;

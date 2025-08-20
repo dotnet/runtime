@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 
@@ -167,6 +168,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public object ToArray(Type type)
         {
             //Array array = Array.CreateInstance(type, identifiers.Values.Count);

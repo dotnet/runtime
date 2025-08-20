@@ -112,34 +112,5 @@ inline BOOL IsTypedHandler(EE_ILEXCEPTION_CLAUSE *EHClause)
     return ! (IsFilterHandler(EHClause) || IsFaultOrFinally(EHClause));
 }
 
-inline BOOL IsDuplicateClause(EE_ILEXCEPTION_CLAUSE* pEHClause)
-{
-    return pEHClause->Flags & COR_ILEXCEPTION_CLAUSE_DUPLICATED;
-}
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-// Finally is the only EH construct that can be part of the execution as being fall-through.
-//
-// "Cloned" finally is a construct that represents a finally block that is used as
-// fall through for normal try-block execution. Such a "cloned" finally will:
-//
-// 1) Have its try-clause's Start and End PC the same as its handler's start PC (i.e. will have
-//    zero length try block), AND
-// 2) Is marked duplicate
-//
-// Because of their fall-through nature, JIT guarantees that only finally constructs can be cloned,
-// and not catch or fault (since they cannot be fallen through but are invoked as funclets).
-//
-// The cloned finally construct is also used to mark "call to finally" thunks that are not within
-// the EH region protected by the finally, and also not within the enclosing region. This is done
-// to prevent ThreadAbortException from creating an infinite loop of calling the same finally.
-inline BOOL IsClonedFinally(EE_ILEXCEPTION_CLAUSE* pEHClause)
-{
-    return ((pEHClause->TryStartPC == pEHClause->TryEndPC) &&
-            (pEHClause->TryStartPC == pEHClause->HandlerStartPC) &&
-            IsFinally(pEHClause) && IsDuplicateClause(pEHClause));
-}
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
 #endif // __eexcp_h__
 

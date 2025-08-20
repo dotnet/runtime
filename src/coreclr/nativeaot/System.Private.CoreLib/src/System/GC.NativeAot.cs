@@ -142,6 +142,11 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
+            Collect(generation, mode, blocking, compacting, lowMemoryPressure: false);
+        }
+
+        internal static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting, bool lowMemoryPressure)
+        {
             ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
@@ -186,7 +191,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes);
+            RuntimeImports.RhCollect(generation, (InternalGCCollectionMode)iInternalModes, lowMemoryPressure);
         }
 
         /// <summary>
@@ -305,7 +310,7 @@ namespace System
             public bool scheduled;
             public bool abandoned;
 
-            public GCHandle action;
+            public GCHandle<Action> action;
         }
 
         public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
@@ -317,7 +322,7 @@ namespace System
             try
             {
                 pWorkItem = (NoGCRegionCallbackFinalizerWorkItem*)NativeMemory.AllocZeroed((nuint)sizeof(NoGCRegionCallbackFinalizerWorkItem));
-                pWorkItem->action = GCHandle.Alloc(callback);
+                pWorkItem->action = new GCHandle<Action>(callback);
                 pWorkItem->callback = &Callback;
 
                 EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)RuntimeImports.RhEnableNoGCRegionCallback(pWorkItem, totalSize);
@@ -347,14 +352,13 @@ namespace System
             {
                 Debug.Assert(pWorkItem->scheduled);
                 if (!pWorkItem->abandoned)
-                    ((Action)(pWorkItem->action.Target!))();
+                    pWorkItem->action.Target();
                 Free(pWorkItem);
             }
 
             static void Free(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
             {
-                if (pWorkItem->action.IsAllocated)
-                    pWorkItem->action.Free();
+                pWorkItem->action.Dispose();
                 NativeMemory.Free(pWorkItem);
             }
         }
@@ -760,7 +764,7 @@ namespace System
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <returns>An object that contains information about the garbage collector's memory usage.</returns>
-        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfo(GCKind.Any);
+        public static GCMemoryInfo GetGCMemoryInfo() => GetGCMemoryInfoUnchecked(GCKind.Any);
 
         /// <summary>Gets garbage collection memory information.</summary>
         /// <param name="kind">The kind of collection for which to retrieve memory information.</param>
@@ -776,6 +780,11 @@ namespace System
                                           GCKind.Background));
             }
 
+            return GetGCMemoryInfoUnchecked(kind);
+        }
+
+        private static GCMemoryInfo GetGCMemoryInfoUnchecked(GCKind kind)
+        {
             var data = new GCMemoryInfoData();
             RuntimeImports.RhGetMemoryInfo(ref data.GetRawData(), kind);
             return new GCMemoryInfo(data);
