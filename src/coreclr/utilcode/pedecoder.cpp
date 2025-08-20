@@ -497,7 +497,6 @@ CHECK PEDecoder::CheckRva(RVA rva, COUNT_T size, int forbiddenFlags, IsNullOK ok
         CHECK(section != NULL);
 
         CHECK(CheckBounds(VAL32(section->VirtualAddress),
-                          // AlignUp((UINT)VAL32(section->Misc.VirtualSize), (UINT)VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment)),
                           (UINT)VAL32(section->Misc.VirtualSize),
                           rva, size));
         if(!IsMapped())
@@ -776,8 +775,10 @@ IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
 
     while (section < sectionEnd)
     {
-        if (rva < (VAL32(section->VirtualAddress)
-                   + AlignUp((UINT)VAL32(section->Misc.VirtualSize), (UINT)VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment))))
+        // The RVA should be within a section's virtual address range. 
+        // On flat images (!IsMapped()), the RVA should also be within the section's raw data range.
+        if (rva < (VAL32(section->VirtualAddress) + VAL32(section->Misc.VirtualSize)) &&
+            (IsMapped() || rva < (VAL32(section->VirtualAddress) + VAL32(section->SizeOfRawData))))
         {
             if (rva < VAL32(section->VirtualAddress))
                 RETURN NULL;
