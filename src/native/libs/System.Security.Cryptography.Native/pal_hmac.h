@@ -16,6 +16,7 @@ typedef struct hmac_ctx_st HMAC_CTX;
 struct _DN_MAC_CTX {
     HMAC_CTX* legacy;
     EVP_MAC_CTX* mac;
+    EVP_MAC_CTX* original;
 };
 
 typedef struct _DN_MAC_CTX DN_MAC_CTX;

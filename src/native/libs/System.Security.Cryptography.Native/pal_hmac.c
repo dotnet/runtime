@@ -27,7 +27,7 @@ static void EnsureMacHmac(void)
 #define ENSURE_DN_MAC_CONSISTENCY(ctx) \
     do \
     { \
-        assert((ctx->legacy == NULL) != (ctx->mac == NULL)); \
+        assert(((ctx->legacy == NULL) != (ctx->mac == NULL)) && ((ctx->mac == NULL) == (ctx->original == NULL))); \
     } \
     while (0)
 
@@ -95,16 +95,26 @@ DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* 
 
         free(algorithmDup);
 
-        DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
+        EVP_MAC_CTX* original = EVP_MAC_CTX_dup(evpMac);
 
-        if (dnCtx == NULL)
+        if (original == NULL)
         {
             EVP_MAC_CTX_free(evpMac);
             return NULL;
         }
 
+        DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
+
+        if (dnCtx == NULL)
+        {
+            EVP_MAC_CTX_free(evpMac);
+            EVP_MAC_CTX_free(original);
+            return NULL;
+        }
+
         memset(dnCtx, 0, sizeof(DN_MAC_CTX));
         dnCtx->mac = evpMac;
+        dnCtx->original = original;
         return dnCtx;
     }
 #endif
@@ -151,7 +161,9 @@ void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx)
         if (ctx->mac)
         {
             EVP_MAC_CTX_free(ctx->mac);
+            EVP_MAC_CTX_free(ctx->original);
             ctx->mac = NULL;
+            ctx->original = NULL;
         }
 #endif
         if (ctx->legacy)
@@ -175,7 +187,23 @@ int32_t CryptoNative_HmacReset(DN_MAC_CTX* ctx)
     if (HAVE_EVP_MAC)
     {
         assert(ctx->mac);
-        return EVP_MAC_init(ctx->mac, NULL, 0, NULL);
+        EVP_MAC_CTX* dup = EVP_MAC_CTX_dup(ctx->original);
+
+        if (dup == NULL)
+        {
+            return -1;
+        }
+
+        // TODO: This probably needs to be an atomic swap.
+        EVP_MAC_CTX* old = ctx->mac;
+        ctx->mac = dup;
+
+        if (old)
+        {
+            EVP_MAC_CTX_free(old);
+        }
+
+        return 1;
     }
 #endif
 
@@ -275,16 +303,26 @@ DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
             return NULL;
         }
 
-        DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
+        EVP_MAC_CTX* macOriginal = EVP_MAC_CTX_dup(ctx->original);
 
-        if (dnCtx == NULL)
+        if (macOriginal == NULL)
         {
             EVP_MAC_CTX_free(macDup);
             return NULL;
         }
 
+        DN_MAC_CTX* dnCtx = malloc(sizeof(DN_MAC_CTX));
+
+        if (dnCtx == NULL)
+        {
+            EVP_MAC_CTX_free(macDup);
+            EVP_MAC_CTX_free(macOriginal);
+            return NULL;
+        }
+
         memset(dnCtx, 0, sizeof(DN_MAC_CTX));
         dnCtx->mac = macDup;
+        dnCtx->original = macOriginal;
         return dnCtx;
     }
 #endif
