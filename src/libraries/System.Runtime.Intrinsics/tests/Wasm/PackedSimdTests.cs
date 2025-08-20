@@ -416,7 +416,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             // Edge cases for signed bytes
             var sbMax = Vector128.Create(sbyte.MaxValue);
             var sbMin = Vector128.Create(sbyte.MinValue);
-            var sbOne = Vector128.Create((sbyte)1);
+            var sbOne = Vector128<sbyte>.One;
 
             var sbOverflow = PackedSimd.AddSaturate(sbMax, sbOne);
             var sbUnderflow = PackedSimd.SubtractSaturate(sbMin, sbOne);
@@ -427,7 +427,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             // Edge cases for unsigned bytes
             var bMax = Vector128.Create(byte.MaxValue);
             var bMin = Vector128.Create(byte.MinValue);
-            var bOne = Vector128.Create((byte)1);
+            var bOne = Vector128<byte>.One;
 
             var bOverflow = PackedSimd.AddSaturate(bMax, bOne);
             var bUnderflow = PackedSimd.SubtractSaturate(bMin, bOne);
@@ -438,7 +438,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             // Edge cases for signed shorts
             var shortMax = Vector128.Create(short.MaxValue);
             var shortMin = Vector128.Create(short.MinValue);
-            var shortOne = Vector128.Create((short)1);
+            var shortOne = Vector128<short>.One;
 
             var shortOverflow = PackedSimd.AddSaturate(shortMax, shortOne);
             var shortUnderflow = PackedSimd.SubtractSaturate(shortMin, shortOne);
@@ -449,7 +449,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             // Edge cases for unsigned shorts
             var ushortMax = Vector128.Create(ushort.MaxValue);
             var ushortMin = Vector128.Create(ushort.MinValue);
-            var ushortOne = Vector128.Create((ushort)1);
+            var ushortOne = Vector128<ushort>.One;
 
             var ushortOverflow = PackedSimd.AddSaturate(ushortMax, ushortOne);
             var ushortUnderflow = PackedSimd.SubtractSaturate(ushortMin, ushortOne);
