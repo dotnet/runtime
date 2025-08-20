@@ -50,6 +50,58 @@ namespace Sample
                 return obj?.ToString() ?? "null";
             }
 
+            public static TException Throws<TException>(Action action) where TException : Exception
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    if (ex is TException expected)
+                        return expected;
+                    throw new Exception($"AssertHelper.Throws failed. Expected exception of type {typeof(TException)}, but got {ex.GetType()}.\nMessage: {ex.Message}", ex);
+                }
+                throw new Exception($"AssertHelper.Throws failed. No exception was thrown. Expected exception of type {typeof(TException)}.");
+            }
+            public static void Contains<T>(T expected, IEnumerable<T> collection)
+            {
+                if (collection == null)
+                    throw new Exception("AssertHelper.Contains failed. Collection is null.");
+                foreach (var item in collection)
+                {
+                    if (object.Equals(item, expected))
+                        return;
+                }
+                throw new Exception($"AssertHelper.Contains failed. Expected item: {FormatIfArray(expected)} was not found in collection: {FormatIfArray(collection)}.");
+            }
+
+            public static void Contains(string expectedSubstring, string? actualString)
+            {
+                if (actualString == null)
+                    throw new Exception("AssertHelper.Contains failed. Actual string is null.");
+                if (!actualString.Contains(expectedSubstring, StringComparison.Ordinal))
+                    throw new Exception($"AssertHelper.Contains failed. Expected substring: \"{expectedSubstring}\" was not found in string: \"{actualString}\".");
+            }
+
+            public static void DoesNotContain<T>(T expected, IEnumerable<T> collection)
+            {
+                if (collection == null)
+                    throw new Exception("AssertHelper.DoesNotContain failed. Collection is null.");
+                foreach (var item in collection)
+                {
+                    if (object.Equals(item, expected))
+                        throw new Exception($"AssertHelper.DoesNotContain failed. Item: {FormatIfArray(expected)} was found in collection: {FormatIfArray(collection)}.");
+                }
+            }
+
+            public static void DoesNotContain(string expectedSubstring, string? actualString)
+            {
+                if (actualString == null)
+                    return;
+                if (actualString.Contains(expectedSubstring, StringComparison.Ordinal))
+                    throw new Exception($"AssertHelper.DoesNotContain failed. Substring: \"{expectedSubstring}\" was found in string: \"{actualString}\".");
+            }
             public static void NotEqual<T>(T expected, T actual)
             {
                 if (object.Equals(expected, actual))
@@ -112,6 +164,11 @@ namespace Sample
                 if (!condition)
                     throw new Exception("AssertHelper.True failed. Condition was false.");
             }
+            public static void True(bool condition, string message)
+            {
+                if (!condition)
+                    throw new Exception($"AssertHelper.True failed. Condition was false. {message}");
+            }
             public static void False(bool condition)
             {
                 if (condition)
@@ -124,6 +181,11 @@ namespace Sample
 
                 if (!actual.StartsWith(expectedStart, StringComparison.Ordinal))
                     throw new Exception($"AssertHelper.StartsWith failed. Expected string starting with: \"{expectedStart}\". Actual: \"{actual}\".");
+            }
+            public static void Null(object? expected)
+            {
+                if (expected != null)
+                    throw new Exception($"AssertHelper.Null failed. Expected null, but got: {FormatIfArray(expected)}.");
             }
         }
         public static async Task<int> Main(string[] args)
@@ -263,15 +325,238 @@ namespace Sample
             var actual = JavaScriptTestHelper.MemberEcho("t-e-s-t");
             Assert.StartsWith("t-e-s-t-w-i-t-h-i-n-s-t-a-n-c-e", actual);
         }
+
+        public static void JsImportNullableIntPtr(IntPtr? value)
+        {
+            string expectedType = IntPtr.Size == 4 ? "number" : "bigint";
+            JsImportTest(value,
+                JavaScriptTestHelper.store1_NullableIntPtr,
+                JavaScriptTestHelper.retrieve1_NullableIntPtr,
+                JavaScriptTestHelper.echo1_NullableIntPtr,
+                JavaScriptTestHelper.throw1_NullableIntPtr,
+                JavaScriptTestHelper.identity1_NullableIntPtr,
+               expectedType);
+        }
+
+        private static void JsImportTest<T>(T value
+            , Action<T> store1
+            , Func<T> retrieve1
+            , Func<T, T> echo1
+            , Func<T, T> throw1
+            , Func<T, bool> identity1
+            , string jsType, string? jsClass = null)
+        {
+            if (value == null)
+            {
+                jsClass = null;
+                jsType = "object";
+            }
+
+            // invoke 
+            store1(value);
+            var res = retrieve1();
+            Assert.Equal(value, res);
+            res = echo1(value);
+            Assert.Equal(value, res);
+            var equals = identity1(value);
+            Assert.True(equals, "value not equals");
+
+            var actualJsType = JavaScriptTestHelper.getType1();
+            Assert.Equal(jsType, actualJsType);
+
+            if (jsClass != null)
+            {
+                var actualJsClass = JavaScriptTestHelper.getClass1();
+                Assert.Equal(jsClass, actualJsClass);
+            }
+            var exThrow0 = Assert.Throws<JSException>(() => JavaScriptTestHelper.throw0());
+            Assert.Contains("throw-0-msg", exThrow0.Message);
+            Assert.DoesNotContain(" at ", exThrow0.Message);
+#if !FEATURE_WASM_MANAGED_THREADS
+            Assert.Contains("throw0fn", exThrow0.StackTrace);
+#else
+            Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
+#endif
+
+            var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
+            Assert.Contains("throw1-msg", exThrow1.Message);
+            Assert.DoesNotContain(" at ", exThrow1.Message);
+#if !FEATURE_WASM_MANAGED_THREADS
+            Assert.Contains("throw1fn", exThrow1.StackTrace);
+#else
+            Assert.Contains("omitted JavaScript stack trace", exThrow0.StackTrace);
+#endif
+
+            // anything is a system.object, sometimes it would be JSObject wrapper
+            if (typeof(T).IsPrimitive)
+            {
+                if (typeof(T) != typeof(long))
+                {
+
+                    object resBoxed = JavaScriptTestHelper.echo1_Object(value);
+                    // js Number always boxes as double
+                    if (typeof(T) == typeof(IntPtr))
+                    {
+                        //TODO Assert.Equal((IntPtr)(object)value, (IntPtr)(int)(double)resBoxed);
+                    }
+                    else if (typeof(T) == typeof(bool))
+                    {
+                        Assert.Equal((bool)(object)value, (bool)resBoxed);
+                    }
+                    else if (typeof(T) == typeof(char))
+                    {
+                        Assert.Equal((char)(object)value, (char)(double)resBoxed);
+                    }
+                    else
+                    {
+                        Assert.Equal(Convert.ToDouble(value), resBoxed);
+                    }
+                }
+
+                //TODO var task = JavaScriptTestHelper.await1(Task.FromResult((object)value));
+            }
+            else if (typeof(T) == typeof(DateTime))
+            {
+                var resBoxed = JavaScriptTestHelper.echo1_Object(value);
+                Assert.Equal(value, resBoxed);
+            }
+            else if (typeof(T) == typeof(DateTimeOffset))
+            {
+                var resBoxed = JavaScriptTestHelper.echo1_Object(value);
+                Assert.Equal(((DateTimeOffset)(object)value).UtcDateTime, resBoxed);
+            }
+            else if (Nullable.GetUnderlyingType(typeof(T)) != null)
+            {
+                var vt = Nullable.GetUnderlyingType(typeof(T));
+                if (vt != typeof(long))
+                {
+                    var resBoxed = JavaScriptTestHelper.echo1_Object(value);
+                    if (resBoxed != null)
+                    {
+                        if (vt == typeof(bool))
+                        {
+                            Assert.Equal(((bool?)(object)value).Value, (bool)resBoxed);
+                        }
+                        else if (vt == typeof(char))
+                        {
+                            Assert.Equal(((char?)(object)value).Value, (char)resBoxed);
+                        }
+                        else if (vt == typeof(DateTime))
+                        {
+                            Assert.Equal(((DateTime?)(object)value).Value, resBoxed);
+                        }
+                        else if (vt == typeof(DateTimeOffset))
+                        {
+                            Assert.Equal(((DateTimeOffset?)(object)value).Value.UtcDateTime, resBoxed);
+                        }
+                        else if (vt == typeof(IntPtr))
+                        {
+                            // TODO Assert.Equal((double)((IntPtr?)(object)value).Value, resBoxed);
+                        }
+                        else
+                        {
+                            Assert.Equal(Convert.ToDouble(value), resBoxed);
+                        }
+                    }
+                    else
+                    {
+                        Assert.Equal(value, default(T));
+                    }
+                }
+            }
+            else
+            {
+                var resObj = JavaScriptTestHelper.retrieve1_Object();
+                if (resObj == null || resObj.GetType() != typeof(JSObject))
+                {
+                    Assert.Equal(value, resObj);
+                }
+            }
+
+            if (typeof(Exception).IsAssignableFrom(typeof(T)))
+            {
+                // all exceptions are Exception
+                var resEx = JavaScriptTestHelper.retrieve1_Exception();
+                Assert.Equal((Exception)(object)value, resEx);
+            }
+        }
+
+        public static unsafe void BadCast()
+        {
+            JSException ex;
+            JSHost.DotnetInstance.SetProperty("testBool", true);
+            //ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testBool"));
+            //Assert.Contains("Value is not an integer", ex.Message);
+            //ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsDouble("testBool"));
+            //Assert.Contains("Value is not a Number", ex.Message);
+            //ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsString("testBool"));
+            //Assert.Contains("Value is not a String", ex.Message);
+            //ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsJSObject("testBool"));
+            //Assert.Contains("JSObject proxy of boolean is not supported", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsByteArray("testBool"));
+            Assert.Contains("Value is not an Array or Uint8Array", ex.Message);
+            //JSHost.DotnetInstance.SetProperty("testInt", 42);
+            //ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsBoolean("testInt"));
+            //Assert.Contains("Value is not a Boolean", ex.Message);
+        }
+
+
+        private static bool IsNullOrWin32Atom(IntPtr ptr)
+        {
+            const long HIWORDMASK = unchecked((long)0xffffffffffff0000L);
+
+            long lPtr = (long)ptr;
+            Console.WriteLine($"IsNullOrWin32Atom: {lPtr} ({ptr})");
+            return 0 == (lPtr & HIWORDMASK);
+        }
+        public static void TestPtrIsAtom(IntPtr ptr)
+        {
+            Assert.True(IsNullOrWin32Atom(ptr), $"Expected {ptr} to be <64k but it is not.");
+        }
+
+        public static unsafe string? MyPtrToStringUTF8(IntPtr ptr)
+        {
+            Console.WriteLine($"MyPtrToStringUTF8: {ptr}");
+            if (IsNullOrWin32Atom(ptr))
+            {
+                Console.WriteLine($"MyPtrToStringUTF8: returning NULL");
+                return null;
+            }
+
+            return "Junk";
+        }
+
+        public static void PtrToStringUTF8_Win32AtomPointer_ReturnsNull()
+        {
+            // Windows Marshal has specific checks that does not do
+            // anything if the ptr is less than 64K.
+            IntPtr testVal = 1;
+            string res = Marshal.PtrToStringUTF8(testVal);
+            //string res = MyPtrToStringUTF8(testVal);
+            Console.WriteLine($"Marshal.PtrToStringUTF8({testVal}) = {res}");
+            Assert.Null(Marshal.PtrToStringUTF8((IntPtr)1));
+        }
+        public static void PtrToStringUTF8_ZeroPointer_ReturnsNull()
+        {
+            Assert.Null(Marshal.PtrToStringUTF8(IntPtr.Zero));
+        }
         [JSExport]
         public static async Task DoTestMethod()
         {
             await JavaScriptTestHelper.InitializeAsync();
             //int[] testData = new int[] { 1, 2, 3, int.MaxValue, int.MinValue };
             //object[] objectTestData = { new object[] { string.Intern("hello"), string.Empty } };
-            JsImportInstanceMember();
-            JsImportInstanceMember();
-            await JsImportTaskTypes();
+
+            //JsImportNullableIntPtr((IntPtr)42);
+            //GeneralInterop.MH_SetLogVerbosity(1); // export isn't picked up!
+            PtrToStringUTF8_ZeroPointer_ReturnsNull();
+            //IsNullOrWin32Atom((IntPtr)1);
+            //PtrToStringUTF8_Win32AtomPointer_ReturnsNull();
+            //GetFunctionPointerForDelegate_MarshalledDelegateGeneric_ReturnsExpected();
+            //BadCast();
+            //JsImportInstanceMember();
+            //JsImportInstanceMember();
+            //await JsImportTaskTypes();
             //JsImportVoidPtr((IntPtr)42);
 
             //JsImportObjectArray(objectTestData);
