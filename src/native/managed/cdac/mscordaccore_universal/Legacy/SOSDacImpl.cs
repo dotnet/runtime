@@ -1187,7 +1187,39 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetMethodDescPtrFromFrame(ClrDataAddress frameAddr, ClrDataAddress* ppMD)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, ppMD) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (frameAddr == 0 || ppMD == null)
+                throw new ArgumentException();
+
+            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+            TargetPointer methodDescPtr = stackWalkContract.GetMethodDescPtr(frameAddr.ToTargetPointer(_target));
+            if (methodDescPtr == TargetPointer.Null)
+                throw new ArgumentException();
+
+            *ppMD = methodDescPtr.ToClrDataAddress(_target);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress ppMDLocal;
+            int hrLocal = _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, &ppMDLocal);
+
+            Debug.Assert(hrLocal == hr);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*ppMD == ppMDLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetMethodDescPtrFromIP(ClrDataAddress ip, ClrDataAddress* ppMD)
     {
         if (ip == 0 || ppMD == null)

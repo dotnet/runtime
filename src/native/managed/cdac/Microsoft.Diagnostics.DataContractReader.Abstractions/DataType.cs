@@ -126,4 +126,5 @@ public enum DataType
     FaultingExceptionFrame,
     HijackFrame,
     TailCallFrame,
+    StubDispatchFrame,
 }

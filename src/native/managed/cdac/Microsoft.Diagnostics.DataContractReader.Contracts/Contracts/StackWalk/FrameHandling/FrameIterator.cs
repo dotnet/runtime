@@ -45,6 +45,7 @@ internal sealed class FrameIterator
         DebuggerExitFrame,
         DebuggerU2MCatchHandlerFrame,
         ExceptionFilterFrame,
+        InterpreterFrame,
     }
 
     private readonly Target target;
@@ -158,7 +159,7 @@ internal sealed class FrameIterator
 
     public FrameType GetCurrentFrameType() => GetFrameType(target, CurrentFrame.Identifier);
 
-    private static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
+    public static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
     {
         foreach (FrameType frameType in Enum.GetValues<FrameType>())
         {
