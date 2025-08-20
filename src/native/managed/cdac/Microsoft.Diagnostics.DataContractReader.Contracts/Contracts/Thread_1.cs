@@ -10,6 +10,7 @@ internal readonly struct Thread_1 : IThread
     private readonly Target _target;
     private readonly TargetPointer _threadStoreAddr;
     private readonly ulong _threadLinkOffset;
+    private readonly int _genericModeBlockSize;
 
     [Flags]
     private enum TLSIndexType
@@ -28,6 +29,7 @@ internal readonly struct Thread_1 : IThread
         // first thread from the linked list node contained by the first thread.
         Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
         _threadLinkOffset = (ulong)type.Fields[nameof(Data.Thread.LinkNext)].Offset;
+        _genericModeBlockSize = 5614; // size of generic mode block for watson buckets data
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -179,5 +181,10 @@ internal readonly struct Thread_1 : IThread
             return TargetPointer.Null;
         Data.ExceptionInfo exceptionTracker = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(ExceptionTrackerPtr);
         return exceptionTracker.ExceptionWatsonBucketTrackerBuckets;
+    }
+
+    int IThread.GetGenericModeBlockSize()
+    {
+        return _genericModeBlockSize;
     }
 }

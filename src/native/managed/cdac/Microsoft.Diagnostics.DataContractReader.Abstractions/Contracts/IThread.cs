@@ -53,6 +53,7 @@ public interface IThread : IContract
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
     TargetPointer GetUEWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
     TargetPointer GetCurrentExceptionWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
+    int GetGenericModeBlockSize() => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

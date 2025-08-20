@@ -61,7 +61,6 @@ internal sealed unsafe partial class SOSDacImpl
 
     private readonly int _genericModeBlockFieldSize;
     private readonly int _genericModeCharFieldCount;
-    private readonly int _genericModeBlockSize;
 
     public SOSDacImpl(Target target, object? legacyObj)
     {
@@ -99,7 +98,6 @@ internal sealed unsafe partial class SOSDacImpl
         }
         _genericModeBlockFieldSize = 255;
         _genericModeCharFieldCount = 11;
-        _genericModeBlockSize = sizeof(bool) + sizeof(char) * _genericModeBlockFieldSize * _genericModeCharFieldCount;
     }
 
     #region ISOSDacInterface
@@ -486,56 +484,60 @@ internal sealed unsafe partial class SOSDacImpl
     {
         int hr = HResults.S_OK;
         TargetPointer bucketPointer;
-        if (thread == 0 || pGenericModeBlock == null)
+        Contracts.IThread threadContract = _target.Contracts.Thread;
+        int genericModeBlockSize = threadContract.GetGenericModeBlockSize();
+        try
         {
-            hr = HResults.E_INVALIDARG;
-        }
-        else if (_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix)
-            hr = HResults.E_FAIL;
-        else
-        {
-            try
+            if (_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            else if (thread == 0 || pGenericModeBlock == null)
+                throw new ArgumentException();
+
+            TargetPointer threadPtr = thread.ToTargetPointer(_target);
+            Contracts.IException exceptionContract = _target.Contracts.Exception;
+            // Get the object from handle and check if the throwable is preallocated or not
+            TargetPointer throwablePointer = threadContract.GetThrowableObject(threadPtr);
+            if (throwablePointer != TargetPointer.Null)
             {
-                TargetPointer threadPtr = thread.ToTargetPointer(_target);
-                Contracts.IThread threadContract = _target.Contracts.Thread;
-                Contracts.IException exceptionContract = _target.Contracts.Exception;
-                TargetPointer throwablePointer = threadContract.GetThrowableObject(threadPtr);
-                if (throwablePointer != TargetPointer.Null)
+                // Get the watson buckets from the throwable for non-preallocated exceptions
+                bucketPointer = exceptionContract.GetWatsonBucketsFromThrowable(throwablePointer);
+                if (bucketPointer == TargetPointer.Null)
                 {
-                    // Get the address of the throwable object
-                    bucketPointer = exceptionContract.GetWatsonBucketsFromThrowable(throwablePointer);
+                    // This is a preallocated exception object - check if the UE Watson bucket tracker
+                    // has any bucket details
+                    bucketPointer = threadContract.GetUEWatsonBuckets(threadPtr);
                     if (bucketPointer == TargetPointer.Null)
                     {
-                        bucketPointer = threadContract.GetUEWatsonBuckets(threadPtr);
-                        if (bucketPointer == TargetPointer.Null)
-                        {
-                            bucketPointer = threadContract.GetCurrentExceptionWatsonBuckets(threadPtr);
-                        }
+                        // Since the UE watson bucket tracker does not have them, look up the current
+                        // exception tracker
+                        bucketPointer = threadContract.GetCurrentExceptionWatsonBuckets(threadPtr);
                     }
                 }
-                else
-                {
-                    bucketPointer = threadContract.GetUEWatsonBuckets(threadPtr);
-                }
-                if (bucketPointer != TargetPointer.Null)
-                {
-                    var span = new Span<byte>(pGenericModeBlock, _genericModeBlockSize);
-                    _target.ReadBuffer(bucketPointer, span);
-                }
-                else
-                {
-                    hr = HResults.S_FALSE; // No Watson buckets found
-                }
             }
-            catch (System.Exception ex)
+            else
             {
-                hr = ex.HResult;
+                // Debugger.Break doesn't have a throwable, but saves Watson buckets in EHWatsonBucketTracker.
+                bucketPointer = threadContract.GetUEWatsonBuckets(threadPtr);
+            }
+            if (bucketPointer != TargetPointer.Null)
+            {
+                var span = new Span<byte>(pGenericModeBlock, genericModeBlockSize);
+                _target.ReadBuffer(bucketPointer, span);
+            }
+            else
+            {
+                hr = HResults.S_FALSE; // No Watson buckets found
             }
         }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            byte[] watsonBucketsLocal = new byte[_genericModeBlockSize];
+            byte[] watsonBucketsLocal = new byte[genericModeBlockSize];
             int hrLocal;
             fixed (byte* ptr = watsonBucketsLocal)
             {
@@ -544,7 +546,7 @@ internal sealed unsafe partial class SOSDacImpl
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(new ReadOnlySpan<byte>(watsonBucketsLocal, 0, _genericModeBlockSize).SequenceEqual(new Span<byte>(pGenericModeBlock, _genericModeBlockSize)));
+                Debug.Assert(new ReadOnlySpan<byte>(watsonBucketsLocal, 0, genericModeBlockSize).SequenceEqual(new Span<byte>(pGenericModeBlock, genericModeBlockSize)));
             }
         }
 #endif

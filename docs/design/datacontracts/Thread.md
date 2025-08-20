@@ -266,4 +266,8 @@ TargetPointer IThread.GetCurrentExceptionWatsonBuckets(TargetPointer threadPoint
     return target.ReadPointer(ExceptionTrackerPtr + /* ExceptionInfo::ExceptionWatsonBucketTrackerBuckets offset */)
 }
 
+int GetGenericModeBlockSize()
+{
+    return 5614;
+}
 ```
