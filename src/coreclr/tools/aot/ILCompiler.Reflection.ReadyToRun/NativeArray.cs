@@ -56,7 +56,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (index >= _nElements)
                 return false;
 
-            uint offset = 0;
+            uint offset;
             if (_entryIndexSize == 0)
             {
                 int i = (int)(_baseOffset + (index / _blockSize));
@@ -82,7 +82,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     if ((val & 2) != 0)
                     {
-                        offset = offset + (val >> 2);
+                        offset += val >> 2;
                         continue;
                     }
                 }

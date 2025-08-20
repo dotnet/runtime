@@ -18,6 +18,7 @@
 #include "configure.h"
 
 #include "../debug/ee/debugger.h"
+#include "patchpointinfo.h"
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
