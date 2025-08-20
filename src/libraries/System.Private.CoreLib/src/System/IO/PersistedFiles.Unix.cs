@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.IO
 {
@@ -99,7 +100,7 @@ namespace System.IO
             if (error == 0)
             {
                 Debug.Assert(passwd.HomeDirectory != null);
-                path = Marshal.PtrToStringUTF8((IntPtr)passwd.HomeDirectory);
+                path = Utf8StringMarshaller.ConvertToManaged(passwd.HomeDirectory);
                 return true;
             }
 
