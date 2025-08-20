@@ -240,6 +240,7 @@ private:
     bool CacheTransitionFrameForSuspend();
     void ResetCachedTransitionFrame();
     void EnsureRuntimeInitialized();
+    void EnsureModuleInitializersExecuted();
 
     //
     // SyncState members
@@ -352,7 +353,7 @@ public:
     //
     void WaitForGC(PInvokeTransitionFrame* pTransitionFrame);
 
-    void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame);
+    void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame, bool fEnsureModuleInitializersExecuted);
 
     bool InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame);
     void InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame);

@@ -450,6 +450,11 @@ namespace System.Threading
                 IncrementRunningForeground();
             }
 
+            while (Internal.Runtime.CompilerHelpers.StartupCodeHelpers.s_runningModuleInitializers)
+            {
+                Yield();
+            }
+
             try
             {
                 StartHelper? startHelper = thread._startHelper;

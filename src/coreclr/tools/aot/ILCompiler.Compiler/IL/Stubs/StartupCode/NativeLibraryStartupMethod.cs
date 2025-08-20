@@ -69,15 +69,6 @@ namespace Internal.IL.Stubs.StartupCode
                 }
             }
 
-            MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers");
-
-            // Run module initializers
-            MethodDesc runModuleInitializers = startup?.GetMethod("RunModuleInitializers", null);
-            if (runModuleInitializers != null)
-            {
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(runModuleInitializers));
-            }
-
             codeStream.Emit(ILOpcode.ret);
             return emitter.Link(this);
         }

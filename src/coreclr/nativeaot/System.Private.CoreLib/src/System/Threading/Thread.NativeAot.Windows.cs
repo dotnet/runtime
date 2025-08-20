@@ -219,6 +219,12 @@ namespace System.Threading
         /// <summary>
         /// This is an entry point for managed threads created by application
         /// </summary>
+        /////////////////////////////////////////////////////////////////////////
+        // WARNING: The compiler special cases this UnmanagedCallersOnly method
+        // and performs a "lite" reverse p/invoke transition that will not wait
+        // for module initializers before starting to run this method.
+        // We wait for module initializers later in StartThread manually.
+        /////////////////////////////////////////////////////////////////////////
         [UnmanagedCallersOnly]
         private static uint ThreadEntryPoint(IntPtr parameter)
         {
