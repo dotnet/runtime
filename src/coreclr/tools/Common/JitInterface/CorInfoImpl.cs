@@ -3552,6 +3552,18 @@ namespace Internal.JitInterface
                     entryPoint = GetHelperFtnUncached(ftnNum);
                     _helperCache.Add(ftnNum, entryPoint);
                 }
+
+#if !READYTORUN
+                if (ftnNum == CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER
+                    && MethodBeingCompiled.Name == "ThreadEntryPoint"
+                    && MethodBeingCompiled.OwningType is MetadataType mdOwningType
+                    && mdOwningType.Module == _compilation.TypeSystemContext.SystemModule
+                    && mdOwningType is { Name: "Thread", Namespace: "System.Threading" })
+                {
+                    entryPoint = _compilation.NodeFactory.ExternFunctionSymbol("RhpReversePInvokeNoModuleInitializer");
+                }
+#endif
+
                 if (entryPoint.RepresentsIndirectionCell)
                 {
                     pNativeEntrypoint->addr = (void*)ObjectToHandle(entryPoint);
