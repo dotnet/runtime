@@ -126,45 +126,41 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             if (addr == 0)
+                throw new ArgumentException();
+
+            *data = default;
+            data->AppDomainPtr = addr;
+            TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
+            data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+            data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+            data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
+            data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
+            if (addr != systemDomain)
             {
-                hr = HResults.E_INVALIDARG;
-            }
-            else
-            {
-                *data = default;
-                data->AppDomainPtr = addr;
-                TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-                ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
-                Contracts.ILoader loader = _target.Contracts.Loader;
-                TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
-                data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-                data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-                data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-                data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
-                if (addr != systemDomain)
+                TargetPointer pAppDomain = addr.ToTargetPointer(_target);
+                data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
+
+                IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                    pAppDomain,
+                    AssemblyIterationFlags.IncludeLoading |
+                    AssemblyIterationFlags.IncludeLoaded |
+                    AssemblyIterationFlags.IncludeExecution);
+
+                foreach (Contracts.ModuleHandle module in modules)
                 {
-                    TargetPointer pAppDomain = addr.ToTargetPointer(_target);
-                    data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
-
-                    IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
-                        pAppDomain,
-                        AssemblyIterationFlags.IncludeLoading |
-                        AssemblyIterationFlags.IncludeLoaded |
-                        AssemblyIterationFlags.IncludeExecution);
-
-                    foreach (Contracts.ModuleHandle module in modules)
+                    if (loader.IsAssemblyLoaded(module))
                     {
-                        if (loader.IsAssemblyLoaded(module))
-                        {
-                            data->AssemblyCount++;
-                        }
+                        data->AssemblyCount++;
                     }
-
-                    IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
-                        pAppDomain,
-                        AssemblyIterationFlags.IncludeFailedToLoad);
-                    data->FailedAssemblyCount = failedModules.Count();
                 }
+
+                IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
+                    pAppDomain,
+                    AssemblyIterationFlags.IncludeFailedToLoad);
+                data->FailedAssemblyCount = failedModules.Count();
             }
         }
         catch (System.Exception ex)
@@ -355,47 +351,43 @@ internal sealed unsafe partial class SOSDacImpl
             TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
             ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
             if (addr == systemDomain)
-            {
                 // We shouldn't be asking for the assemblies in SystemDomain
-                hr = HResults.E_INVALIDARG;
+                throw new ArgumentException();
+
+            ILoader loader = _target.Contracts.Loader;
+            List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                appDomain,
+                AssemblyIterationFlags.IncludeLoading |
+                AssemblyIterationFlags.IncludeLoaded |
+                AssemblyIterationFlags.IncludeExecution).ToList();
+
+            int n = 0; // number of Assemblies that will be returned
+            if (values is not null)
+            {
+                for (int i = 0; i < modules.Count && n < count; i++)
+                {
+                    Contracts.ModuleHandle module = modules[i];
+                    if (loader.IsAssemblyLoaded(module))
+                    {
+                        values[n++] = loader.GetAssembly(module).ToClrDataAddress(_target);
+                    }
+                }
             }
             else
             {
-                ILoader loader = _target.Contracts.Loader;
-                List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
-                    appDomain,
-                    AssemblyIterationFlags.IncludeLoading |
-                    AssemblyIterationFlags.IncludeLoaded |
-                    AssemblyIterationFlags.IncludeExecution).ToList();
-
-                int n = 0; // number of Assemblies that will be returned
-                if (values is not null)
+                for (int i = 0; i < modules.Count; i++)
                 {
-                    for (int i = 0; i < modules.Count && n < count; i++)
+                    Contracts.ModuleHandle module = modules[i];
+                    if (loader.IsAssemblyLoaded(module))
                     {
-                        Contracts.ModuleHandle module = modules[i];
-                        if (loader.IsAssemblyLoaded(module))
-                        {
-                            values[n++] = loader.GetAssembly(module).ToClrDataAddress(_target);
-                        }
+                        n++;
                     }
                 }
-                else
-                {
-                    for (int i = 0; i < modules.Count; i++)
-                    {
-                        Contracts.ModuleHandle module = modules[i];
-                        if (loader.IsAssemblyLoaded(module))
-                        {
-                            n++;
-                        }
-                    }
-                }
+            }
 
-                if (pNeeded is not null)
-                {
-                    *pNeeded = n;
-                }
+            if (pNeeded is not null)
+            {
+                *pNeeded = n;
             }
         }
         catch (System.Exception ex)
@@ -591,19 +583,15 @@ internal sealed unsafe partial class SOSDacImpl
             string name = stackWalk.GetFrameName(new(vtable));
 
             if (string.IsNullOrEmpty(name))
-            {
-                hr = HResults.E_INVALIDARG;
-            }
-            else
-            {
-                OutputBufferHelpers.CopyStringToBuffer(frameName, count, pNeeded, name);
+                throw new ArgumentException();
 
-                if (frameName is not null && pNeeded is not null)
-                {
-                    // the DAC version of this API does not count the trailing null terminator
-                    // if a buffer is provided
-                    (*pNeeded)--;
-                }
+            OutputBufferHelpers.CopyStringToBuffer(frameName, count, pNeeded, name);
+
+            if (frameName is not null && pNeeded is not null)
+            {
+                // the DAC version of this API does not count the trailing null terminator
+                // if a buffer is provided
+                (*pNeeded)--;
             }
         }
         catch (System.Exception ex)
@@ -701,28 +689,25 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             // API is implemented for x64 only
-            if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X64)
+            if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X64)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
+
+            // Context is not stored in the target, but in our own process
+            context.FillFromBuffer(new Span<byte>(ctx, (int)context.Size));
+            TargetPointer pThunk = context.InstructionPointer;
+
+            if (IsJumpRel64(pThunk))
             {
-                IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-
-                // Context is not stored in the target, but in our own process
-                context.FillFromBuffer(new Span<byte>(ctx, (int)context.Size));
-                TargetPointer pThunk = context.InstructionPointer;
-
-                if (IsJumpRel64(pThunk))
-                {
-                    *targetMD = 0;
-                    *targetIP = DecodeJump64(pThunk).ToClrDataAddress(_target);
-                }
-                else
-                {
-                    hr = HResults.E_FAIL;
-                }
+                *targetMD = 0;
+                *targetIP = DecodeJump64(pThunk).ToClrDataAddress(_target);
             }
             else
             {
                 hr = HResults.E_FAIL;
             }
+
         }
         catch (System.Exception ex)
         {
@@ -1233,27 +1218,23 @@ internal sealed unsafe partial class SOSDacImpl
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
             CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
-            if (handle is CodeBlockHandle codeHandle)
+            if (handle is not CodeBlockHandle codeHandle)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
+
+            try
             {
-                TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
+                // Runs validation of MethodDesc
+                // if validation fails, should return E_INVALIDARG
+                rts.GetMethodDescHandle(methodDescAddr);
 
-                try
-                {
-                    // Runs validation of MethodDesc
-                    // if validation fails, should return E_INVALIDARG
-                    rts.GetMethodDescHandle(methodDescAddr);
-
-                    *ppMD = methodDescAddr.ToClrDataAddress(_target);
-                    hr = HResults.S_OK;
-                }
-                catch (System.Exception)
-                {
-                    hr = HResults.E_INVALIDARG;
-                }
+                *ppMD = methodDescAddr.ToClrDataAddress(_target);
+                hr = HResults.S_OK;
             }
-            else
+            catch (System.Exception)
             {
-                hr = HResults.E_FAIL;
+                hr = HResults.E_INVALIDARG;
             }
         }
         catch (System.Exception ex)
@@ -1357,21 +1338,17 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             if (mt == 0 || data == null)
-            {
-                hr = HResults.E_INVALIDARG;
-            }
-            else
-            {
-                TargetPointer mtAddress = mt.ToTargetPointer(_target);
-                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
-                data->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
-                data->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
-                data->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
-                data->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
-                data->wContextStaticsSize = 0;
-                data->wContextStaticOffset = 0;
-            }
+                throw new ArgumentException();
+
+            TargetPointer mtAddress = mt.ToTargetPointer(_target);
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
+            data->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
+            data->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
+            data->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
+            data->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
+            data->wContextStaticsSize = 0;
+            data->wContextStaticOffset = 0;
         }
         catch (System.Exception ex)
         {
@@ -2282,15 +2259,11 @@ internal sealed unsafe partial class SOSDacImpl
             *pNeeded = (int)MaxClrNotificationArgs;
             TargetPointer basePtr = _target.ReadGlobalPointer(Constants.Globals.ClrNotificationArguments);
             if (_target.ReadNUInt(basePtr).Value == 0)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
             {
-                hr = HResults.E_FAIL;
-            }
-            else
-            {
-                for (int i = 0; i < count && i < MaxClrNotificationArgs; i++)
-                {
-                    arguments[i] = _target.ReadNUInt(basePtr.Value + (ulong)(i * _target.PointerSize)).Value;
-                }
+                arguments[i] = _target.ReadNUInt(basePtr.Value + (ulong)(i * _target.PointerSize)).Value;
             }
         }
         catch (System.Exception ex)
@@ -2400,16 +2373,14 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             if (methodTable == 0 || assemblyLoadContext == null)
-                hr = HResults.E_INVALIDARG;
-            else
-            {
-                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                Contracts.ILoader loaderContract = _target.Contracts.Loader;
-                Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
-                Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(rtsContract.GetModule(methodTableHandle));
-                TargetPointer alc = loaderContract.GetAssemblyLoadContext(moduleHandle);
-                *assemblyLoadContext = alc.ToClrDataAddress(_target);
-            }
+                throw new ArgumentException();
+
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.ILoader loaderContract = _target.Contracts.Loader;
+            Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(rtsContract.GetModule(methodTableHandle));
+            TargetPointer alc = loaderContract.GetAssemblyLoadContext(moduleHandle);
+            *assemblyLoadContext = alc.ToClrDataAddress(_target);
         }
         catch (System.Exception ex)
         {
