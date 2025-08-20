@@ -45,7 +45,7 @@ public class WebcilConverter
 
     public bool WrapInWebAssembly { get; set; } = true;
 
-    private WebcilConverter(string inputPath, string outputPath = string.Empty)
+    private WebcilConverter(string inputPath, string outputPath)
     {
         _inputPath = inputPath;
         _outputPath = outputPath;
@@ -93,10 +93,11 @@ public class WebcilConverter
             GatherInfo(peReader, out wcInfo, out peInfo);
         }
 
-        using var outputStream = new MemoryStream(checked((int)inputStream.Length));
         if (!WrapInWebAssembly)
         {
+            using var outputStream = new MemoryStream(checked((int)inputStream.Length));
             WriteConversionTo(outputStream, inputStream, peInfo, wcInfo);
+            return outputStream.ToArray();
         }
         else
         {
@@ -108,9 +109,11 @@ public class WebcilConverter
             memoryStream.Flush();
             var wrapper = new WebcilWasmWrapper(memoryStream);
             memoryStream.Seek(0, SeekOrigin.Begin);
+            
+            using var outputStream = new MemoryStream();
             wrapper.WriteWasmWrappedWebcil(outputStream);
+            return outputStream.ToArray();
         }
-        return outputStream.ToArray();
     }
 
     public void WriteConversionTo(Stream outputStream, FileStream inputStream, PEFileInfo peInfo, WCFileInfo wcInfo)
