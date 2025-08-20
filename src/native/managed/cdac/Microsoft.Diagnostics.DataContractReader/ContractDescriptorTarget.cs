@@ -311,7 +311,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override T ReadLittleEndian<T>(ulong address)
     {
         if (!TryRead(address, true, _dataTargetDelegates, out T value))
-            throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
     }
