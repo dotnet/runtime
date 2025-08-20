@@ -306,7 +306,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             return IPAddressParsingFormatting.ValidIpv4Addresses
                 .Concat(IPAddressParsingFormatting.ValidIpv6Addresses)
-                .Select(array => new object[] {IPAddress.Parse((string)array[0])});
+                .Select(array => new object[] { IPAddress.Parse((string)array[0]) });
         }
 
         public static readonly object[][] GeneratedIPAddresses =
@@ -350,6 +350,24 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<SocketException>(() => IPAddress.IPv6Any.ScopeId = 1);
             Assert.Throws<SocketException>(() => IPAddress.IPv6Loopback.ScopeId = 1);
             Assert.Throws<SocketException>(() => IPAddress.IPv6None.ScopeId = 1);
+        }
+
+        [Fact]
+        public static void ScopeId_ThrowsIPv4SpecificMessage()
+        {
+            var ip = IPV4Address1();
+            SocketException ex = Assert.Throws<SocketException>(() => _ = ip.ScopeId);
+            Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
+            Assert.Contains("AddressFamily 'InterNetwork'", ex.Message);
+        }
+
+        [Fact]
+        public static void Address_ThrowsIPv6SpecificMessage()
+        {
+            var ip = IPV6Address1();
+            SocketException ex = Assert.Throws<SocketException>(() => _ = ip.Address);
+            Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
+            Assert.Contains("AddressFamily 'InterNetworkV6'", ex.Message);
         }
 #pragma warning restore 618
     }
