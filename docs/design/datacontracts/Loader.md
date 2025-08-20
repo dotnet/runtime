@@ -137,7 +137,6 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
 | `ArrayListBlock` | `Size` | Size of data section in block |
 | `ArrayListBlock` | `ArrayStart` | Start of data section in block |
-| `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
 | `EETypeHashTable` | `Buckets` | Pointer to hash table buckets |
 | `EETypeHashTable` | `Count` | Count of elements in the hash table |
 | `EETypeHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
