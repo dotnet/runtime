@@ -776,7 +776,7 @@ IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
     while (section < sectionEnd)
     {
         // The RVA should be within a section's virtual address range. 
-        if (rva < (VAL32(section->VirtualAddress) + VAL32(section->Misc.VirtualSize))
+        if (rva < (VAL32(section->VirtualAddress) + VAL32(section->Misc.VirtualSize)))
         {
             if (!sMapped())
             {
