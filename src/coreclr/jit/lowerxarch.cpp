@@ -9532,6 +9532,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         case NI_X86Base_Shuffle:
+                        {
+                            if (varTypeIsByte(simdBaseType))
+                            {
+                                TryMakeSrcContainedOrRegOptional(node, op2);
+                                break;
+                            }
+                            FALLTHROUGH;
+                        }
+
                         case NI_X86Base_ShuffleHigh:
                         case NI_X86Base_ShuffleLow:
                         case NI_AVX2_Permute4x64:
