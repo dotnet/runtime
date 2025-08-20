@@ -45,10 +45,6 @@ public class ConvertDllsToWebCil : Task
         if (!Directory.Exists(OutputPath))
             Directory.CreateDirectory(OutputPath);
 
-        string tmpDir = IntermediateOutputPath;
-        if (!Directory.Exists(tmpDir))
-            Directory.CreateDirectory(tmpDir);
-
         for (int i = 0; i < Candidates.Length; i++)
         {
             var candidate = Candidates[i];
@@ -62,7 +58,7 @@ public class ConvertDllsToWebCil : Task
 
             try
             {
-                TaskItem webcilItem = ConvertDll(tmpDir, candidate);
+                TaskItem webcilItem = ConvertDll(candidate);
                 webCilCandidates.Add(webcilItem);
             }
             catch (Exception ex)
@@ -76,7 +72,7 @@ public class ConvertDllsToWebCil : Task
         return true;
     }
 
-    private TaskItem ConvertDll(string tmpDir, ITaskItem candidate)
+    private TaskItem ConvertDll(ITaskItem candidate)
     {
         var dllFilePath = candidate.ItemSpec;
         var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
@@ -88,18 +84,14 @@ public class ConvertDllsToWebCil : Task
 
         if (Utils.IsNewerThan(dllFilePath, finalWebcil))
         {
-            var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new LogAdapter(Log);
-            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter);
-            webcilWriter.ConvertToWebcil();
+            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(logger: logAdapter, inputPath: dllFilePath);
+            var webcilData = webcilWriter.ConvertToWebcilBytes();
 
             if (!Directory.Exists(candidatePath))
                 Directory.CreateDirectory(candidatePath);
 
-            if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
-                Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
-            else
-                Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+            ArtifactWriter.PersistFileIfChanged(Log, webcilData, finalWebcil);
         }
         else
         {

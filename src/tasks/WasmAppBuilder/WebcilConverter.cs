@@ -31,7 +31,7 @@ public class WebcilConverter
         Log = logger;
     }
 
-    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, LogAdapter logger)
+    public static WebcilConverter FromPortableExecutable(LogAdapter logger, string inputPath, string outputPath = string.Empty)
     {
         var converter = NET.WebAssembly.Webcil.WebcilConverter.FromPortableExecutable(inputPath, outputPath);
         return new WebcilConverter(converter, inputPath, outputPath, logger);
@@ -43,4 +43,9 @@ public class WebcilConverter
         _converter.ConvertToWebcil();
     }
 
+    public byte[] ConvertToWebcilBytes()
+    {
+        Log.LogMessage(MessageImportance.Low, $"Converting to Webcil: input {_inputPath}");
+        return _converter.ConvertToWebcilBytes();
+    }
 }
