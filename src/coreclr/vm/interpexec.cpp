@@ -2556,6 +2556,7 @@ do                                                                      \
                     EXCHANGE(int64_t);
                     break;
                 }
+#undef EXCHANGE
 
                 case INTOP_CALL_FINALLY:
                 {
