@@ -19,9 +19,6 @@ public class ConvertDllsToWebCil : Task
     public string OutputPath { get; set; }
 
     [Required]
-    public string IntermediateOutputPath { get; set; }
-
-    [Required]
     public bool IsEnabled { get; set; }
 
     [Output]
