@@ -445,11 +445,15 @@ void HWIntrinsicInfo::lookupImmBounds(
                 break;
 
             case NI_Sve_AddRotateComplex:
+            case NI_Sve2_AddRotateComplex:
+            case NI_Sve2_AddSaturateRotateComplex:
                 immLowerBound = 0;
                 immUpperBound = 1;
                 break;
 
             case NI_Sve_MultiplyAddRotateComplex:
+            case NI_Sve2_MultiplyAddRotateComplex:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplex:
             case NI_Sve2_DotProductRotateComplex:
                 immLowerBound = 0;
                 immUpperBound = 3;
@@ -490,6 +494,41 @@ void HWIntrinsicInfo::lookupImmBounds(
                     assert(baseType == TYP_BYTE || baseType == TYP_SHORT);
                     immLowerBound = 0;
                     immUpperBound = (baseType == TYP_BYTE) ? 3 : 1;
+                }
+                break;
+
+            case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+                if (immNumber == 1)
+                {
+                    // Bounds for rotation
+                    immLowerBound = 0;
+                    immUpperBound = 3;
+                }
+                else
+                {
+                    // Bounds for index
+                    assert(immNumber == 2);
+                    assert(baseType == TYP_USHORT || baseType == TYP_SHORT || baseType == TYP_INT ||
+                           baseType == TYP_UINT);
+                    immLowerBound = 0;
+                    immUpperBound = (baseType == TYP_USHORT || baseType == TYP_SHORT) ? 3 : 1;
+                }
+                break;
+
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
+                if (immNumber == 1)
+                {
+                    // Bounds for rotation
+                    immLowerBound = 0;
+                    immUpperBound = 3;
+                }
+                else
+                {
+                    // Bounds for index
+                    assert(immNumber == 2);
+                    assert(baseType == TYP_INT || baseType == TYP_SHORT);
+                    immLowerBound = 0;
+                    immUpperBound = (baseType == TYP_SHORT) ? 3 : 1;
                 }
                 break;
 
@@ -3180,6 +3219,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+        case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+        case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
         case NI_Sve2_DotProductRotateComplexBySelectedIndex:
         {
             assert(sig->numArgs == 5);

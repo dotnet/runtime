@@ -146,7 +146,6 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
 
 
-
 ### Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |

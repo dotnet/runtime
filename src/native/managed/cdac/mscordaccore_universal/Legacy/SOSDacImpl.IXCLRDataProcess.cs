@@ -329,7 +329,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         }
     }
 
-    int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ulong address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
+    int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ClrDataAddress address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
     {
         int hr = HResults.S_OK;
 
@@ -347,14 +347,16 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
 
         try
         {
+            TargetCodePointer methodAddr = address.ToTargetCodePointer(_target);
+
             // ClrDataAccess::IsPossibleCodeAddress
             // Does a trivial check on the readability of the address
-            bool isTriviallyReadable = _target.TryRead(address, out byte _);
+            bool isTriviallyReadable = _target.TryRead(methodAddr, out byte _);
             if (!isTriviallyReadable)
                 throw new ArgumentException();
 
             IExecutionManager eman = _target.Contracts.ExecutionManager;
-            if (eman.GetCodeBlockHandle(address) is CodeBlockHandle cbh &&
+            if (eman.GetCodeBlockHandle(methodAddr) is CodeBlockHandle cbh &&
                 eman.GetMethodDesc(cbh) is TargetPointer methodDesc)
             {
                 EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
