@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -189,9 +189,32 @@ namespace System.Linq
         {
             Requires.NotNull(items, nameof(items));
 
+            int i = 0;
+            if (items.TryGetCount(out var count))
+            {
+                if (immutableArray.Length != count)
+                {
+                    return false;
+                }
+
+                if (items is IList<TDerived> itemList)
+                {
+                    comparer ??= EqualityComparer<TBase>.Default;
+
+                    for (i = 0; i < count; i++)
+                    {
+                        if (!comparer.Equals(immutableArray[i], itemList[i]))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
             comparer ??= EqualityComparer<TBase>.Default;
 
-            int i = 0;
             int n = immutableArray.Length;
             foreach (TDerived item in items)
             {
