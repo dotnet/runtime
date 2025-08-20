@@ -104,11 +104,13 @@ typedef int32_t d_handle;
 #include <stdio.h>
 #include <stdlib.h>
 
+// I put these here just to make sure they have access to EMSCRIPTEN_KEEPALIVE
 EMSCRIPTEN_KEEPALIVE void MH_TestVoid()
 {    
     printf("MH_TestVoid called\n");
 }
 
+// I put these here just to make sure they have access to EMSCRIPTEN_KEEPALIVE
 EMSCRIPTEN_KEEPALIVE void MH_SetLogVerbosity(int32_t level)
 {
     printf("MH_LOG_verbosity_level set to %d\n", level);
