@@ -80,7 +80,7 @@ Make sure an emulator is booted (see [`AVD Manager`](#avd-manager)) or a device 
 ### Running individual test suites
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=android /p:TargetArchitecture=x64
+./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=android /p:TargetArchitecture=x64 /p:RuntimeFlavor=mono
 ```
 
 ### Running the functional tests
@@ -89,7 +89,7 @@ There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tes
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=android /p:TargetArchitecture=x64 /p:RuntimeFlavor=mono src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
 ```
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
