@@ -848,7 +848,6 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
         offset = rva;
     else
     {
-        // !!! check for case where rva is in padded portion of segment
         offset = RvaToOffset(rva);
     }
 
