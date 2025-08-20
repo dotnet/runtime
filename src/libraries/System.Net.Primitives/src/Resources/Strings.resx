@@ -120,4 +120,7 @@
   <data name="net_SocketException_OperationNotSupported" xml:space="preserve">
     <value>The requested property is not supported for the '{0}' AddressFamily.</value>
   </data>
+  <data name="net_SocketException_OperationNotSupported_ReadOnlyIPAddress" xml:space="preserve">
+    <value>The operation is not supported on a ReadOnlyIPAddress. This instance is read-only and its value cannot be changed.</value>
+  </data>
 </root>
