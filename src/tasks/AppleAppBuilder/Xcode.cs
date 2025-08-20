@@ -192,9 +192,10 @@ internal sealed class Xcode
         IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
-        bool isLibraryMode = false)
+        bool isLibraryMode = false,
+        bool staticLinkedRuntime = true)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode, staticLinkedRuntime);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -266,7 +267,8 @@ internal sealed class Xcode
         IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
-        bool isLibraryMode = false)
+        bool isLibraryMode = false,
+        bool staticLinkedRuntime = true)
     {
         // bundle everything as resources excluding native files
         var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "icudt*" };
@@ -417,10 +419,21 @@ internal sealed class Xcode
             string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
             if (targetRuntime == TargetRuntime.CoreCLR)
             {
-                string[] staticLibs = Directory.GetFiles(workspace, "*.a");
-                foreach (string lib in staticLibs)
+
+                if (staticLinkedRuntime)
                 {
-                    toLink += $"    \"{lib}\"{Environment.NewLine}";
+                    string[] staticLibs = Directory.GetFiles(workspace, "*.a");
+                    foreach (string lib in staticLibs)
+                    {
+                        toLink += $"    \"{lib}\"{Environment.NewLine}";
+                    }
+                }
+                else
+                {
+                    foreach (string lib in dylibs)
+                    {
+                        toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+                    }
                 }
             }
             else

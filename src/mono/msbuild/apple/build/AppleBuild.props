@@ -28,6 +28,8 @@
     <IlcCompileDependsOn>ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
     <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
 
+    <StaticLinkedRuntime Condition="'$(StaticLinkedRuntime)' == '' and '$(UseMonoRuntime)' == 'false'">true</StaticLinkedRuntime>
+
     <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
     <AppleBuildDependsOn>
         $(_ReadRuntimeComponentsManifestTargetName);

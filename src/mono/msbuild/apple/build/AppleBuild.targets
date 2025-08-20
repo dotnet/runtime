@@ -339,6 +339,7 @@
       ProjectName="$(AppName)"
       RuntimeComponents="@(RuntimeComponents)"
       StripSymbolTable="$(StripDebugSymbols)"
+      StaticLinkedRuntime="$(StaticLinkedRuntime)"
       TargetOS="$(TargetOS)"
       UseConsoleUITemplate="$(UseConsoleUITemplate)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />

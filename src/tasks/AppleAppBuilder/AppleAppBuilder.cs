@@ -197,6 +197,11 @@ public class AppleAppBuilderTask : Task
     /// </summary>
     public bool IsLibraryMode { get; set; }
 
+    /// <summary>
+    /// Static linked runtime
+    /// </summary>
+    public bool StaticLinkedRuntime { get; set; } = true;
+
     public void ValidateRuntimeSelection()
     {
         if (!Enum.TryParse<TargetRuntime>(Runtime, out targetRuntime))
@@ -350,7 +355,7 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
-                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, environmentVariables, NativeMainSource, targetRuntime, IsLibraryMode);
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, environmentVariables, NativeMainSource, targetRuntime, IsLibraryMode, StaticLinkedRuntime);
 
             if (BuildAppBundle)
             {
@@ -376,7 +381,7 @@ public class AppleAppBuilderTask : Task
         else if (GenerateCMakeProject)
         {
              generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
-                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, environmentVariables, NativeMainSource, targetRuntime, IsLibraryMode);
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, environmentVariables, NativeMainSource, targetRuntime, IsLibraryMode, StaticLinkedRuntime);
         }
 
         return true;
