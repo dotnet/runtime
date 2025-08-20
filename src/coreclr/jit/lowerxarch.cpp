@@ -3579,9 +3579,12 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
             blendVariableId = NI_X86Base_BlendVariable;
         }
 
-        // result = BlendVariable op3 (right) op2 (left) op1 (mask)
-        node->ResetHWIntrinsicId(blendVariableId, comp, op3, op2, op1);
-        return LowerNode(node);
+        if (blendVariableId != NI_Illegal)
+        {
+            // result = BlendVariable op3 (right) op2 (left) op1 (mask)
+            node->ResetHWIntrinsicId(blendVariableId, comp, op3, op2, op1);
+            return LowerNode(node);
+        }
     }
 
     if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
