@@ -399,7 +399,7 @@ class SyncBlock
     // We have this because we can't allocate a lock when we allocate the sync block
     // as we're in a no-GC region. Instead, we'll capture the information and immediately upgrade
     // to the full lock next time someone tries to read the lock information.
-    DWORD        m_thinLock;
+    Volatile<DWORD> m_thinLock;
 
     // This is a backpointer from the syncblock to the synctable entry.  This allows
     // us to recover the object that holds the syncblock.
@@ -500,7 +500,7 @@ class SyncBlock
     BOOL IsIDisposable()
     {
         WRAPPER_NO_CONTRACT;
-        return !IsPrecious() && m_thinLock == 0;
+        return !IsPrecious() && m_thinLock == 0u;
     }
 
     // Gets the InteropInfo block, creates a new one if none is present.

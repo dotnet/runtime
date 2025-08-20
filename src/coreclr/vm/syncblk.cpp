@@ -1711,7 +1711,7 @@ void SyncBlock::InitializeThinLock(DWORD recursionLevel, DWORD threadId)
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(m_Lock == (OBJECTHANDLE)NULL);
-    _ASSERTE(m_thinLock == 0);
+    _ASSERTE(m_thinLock == 0u);
     m_thinLock = (threadId & SBLK_MASK_LOCK_THREADID) | (recursionLevel << SBLK_RECLEVEL_SHIFT);
 }
 
@@ -1775,7 +1775,7 @@ OBJECTHANDLE SyncBlock::GetLock()
     lockHandle.SuppressRelease();
     // Also, clear the thin lock info.
     // It won't be used any more, but it will look out of date.
-    m_thinLock = 0;
+    m_thinLock = 0u;
 
     return lockHandle;
 }
@@ -1800,7 +1800,7 @@ BOOL SyncBlock::TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel)
 
         GCPROTECT_END();
     }
-    else if (m_thinLock != 0)
+    else if (m_thinLock != 0u)
     {
         // Extract info from the thin lock
         DWORD threadId = m_thinLock & SBLK_MASK_LOCK_THREADID;

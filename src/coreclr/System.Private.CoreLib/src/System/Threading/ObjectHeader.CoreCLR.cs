@@ -33,6 +33,12 @@ namespace System.Threading
         internal const int MASK_HASHCODE_INDEX = BIT_SBLK_IS_HASHCODE - 1;
         private const int BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 1 << IS_HASH_OR_SYNCBLKINDEX_BIT_NUMBER;
 
+        // This lock is only taken when we need to modify the index value in m_SyncBlockValue.
+        // It should not be taken if the object already has a real syncblock index.
+        // In this managed side, we skip the fast path while this spinlock is in use.
+        // We'll sync up in the slow path.
+        private const int BIT_SBLK_SPIN_LOCK = 0x10000000;
+
         // if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is laid out as follows:
         // - lower sixteen bits (bits 0 thru 15) is thread id used for the thin locks
         //   value is zero if no thread is holding the lock
@@ -148,6 +154,15 @@ namespace System.Threading
                 {
                     int* pHeader = GetHeaderPtr(pObjectData);
                     int oldBits = *pHeader;
+
+                    if ((oldBits & BIT_SBLK_SPIN_LOCK) != 0)
+                    {
+                        // Spin lock is in use, we cannot use the fast path.
+                        // Another thread is setting up a sync block now.
+                        // Go to the slow path where we'll synchronize with the other thread.
+                        return TryAcquireUncommon(obj, currentThreadID, oneShot);
+                    }
+
                     // if unused for anything, try setting our thread id
                     // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
                     if ((oldBits & MASK_HASHCODE_INDEX) == 0)
@@ -207,6 +222,11 @@ namespace System.Threading
                     while (true)
                     {
                         int oldBits = *pHeader;
+                        for (short spinCount = 0; (oldBits & BIT_SBLK_SPIN_LOCK) != 0; spinCount++)
+                        {
+                            LowLevelSpinWaiter.Wait(spinCount, 0, Lock.IsSingleProcessor);
+                            oldBits = *pHeader;
+                        }
 
                         // if unused for anything, try setting our thread id
                         // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
@@ -296,6 +316,11 @@ namespace System.Threading
                 while (true)
                 {
                     int oldBits = *pHeader;
+                    for (short spinCount = 0; (oldBits & BIT_SBLK_SPIN_LOCK) != 0; spinCount++)
+                    {
+                        LowLevelSpinWaiter.Wait(spinCount, 0, Lock.IsSingleProcessor);
+                        oldBits = *pHeader;
+                    }
 
                     // if we own the lock
                     if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
@@ -306,7 +331,11 @@ namespace System.Threading
                             oldBits - SBLK_LOCK_RECLEVEL_INC :
                             oldBits & ~SBLK_MASK_LOCK_THREADID;
 
-                        if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                        // Don't support the sync-block spin lock here.
+                        // If we see it, we'll loop until the lock is released.
+                        int oldBitsWithoutSpinlock = oldBits & ~BIT_SBLK_SPIN_LOCK;
+
+                        if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBitsWithoutSpinlock) == oldBitsWithoutSpinlock)
                         {
                             return;
                         }
@@ -342,6 +371,10 @@ namespace System.Threading
             fixed (byte* pObjectData = &obj.GetRawData())
             {
                 int* pHeader = GetHeaderPtr(pObjectData);
+
+                // Ignore the spinlock here.
+                // Either we'll read the thin-lock data in the header or read from the syncblock.
+                // In either case, the two will be consistent.
                 int oldBits = *pHeader;
 
                 // if we own the lock
