@@ -86,10 +86,7 @@ namespace System.Reflection
             // TODO: pass AssemblyName
             Assembly? assembly = InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
             if (assembly == null)
-            {
-                string message = $"Could not load file or assembly '{assemblyRef.FullName}' or one of its dependencies.";
-                throw new FileNotFoundException(message, assemblyRef.Name);
-            }
+                throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
         }
 
