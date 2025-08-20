@@ -769,10 +769,7 @@ namespace System.Net
         private static byte[] ThrowAddressNullException() => throw new ArgumentNullException("address");
 
         [DoesNotReturn]
-        private void ThrowSocketOperationNotSupportedReadOnly()
-        {
-            throw new SocketException(SocketError.OperationNotSupported, SR.Format(SR.net_SocketException_OperationNotSupported, AddressFamily));
-        }
+        private void ThrowSocketOperationNotSupported() => throw new SocketException(SocketError.OperationNotSupported, SR.Format(SR.net_SocketException_OperationNotSupported, AddressFamily));
 
         [DoesNotReturn]
         private static void ThrowSocketOperationNotSupportedReadOnly() => throw new SocketException(SocketError.OperationNotSupported, SR.net_SocketException_OperationNotSupported_ReadOnlyIPAddress);
