@@ -241,7 +241,6 @@ int32_t CryptoNative_HmacFinal(DN_MAC_CTX* ctx, uint8_t* md, int32_t* len)
         size_t outl = 0;
         size_t lenT = Int32ToSizeT(*len);
         ret = EVP_MAC_final(ctx->mac, md, &outl, lenT);
-        assert(outl == lenT);
         *len = SizeTToInt32(outl);
         return ret;
     }
