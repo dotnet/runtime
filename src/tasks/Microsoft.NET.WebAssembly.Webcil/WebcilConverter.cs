@@ -109,7 +109,7 @@ public class WebcilConverter
             memoryStream.Flush();
             var wrapper = new WebcilWasmWrapper(memoryStream);
             memoryStream.Seek(0, SeekOrigin.Begin);
-            
+
             using var outputStream = new MemoryStream();
             wrapper.WriteWasmWrappedWebcil(outputStream);
             return outputStream.ToArray();
