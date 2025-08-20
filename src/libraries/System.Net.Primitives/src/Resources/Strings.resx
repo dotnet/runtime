@@ -118,6 +118,6 @@
     <value>System.Net.Primitives is not supported on this platform.</value>
   </data>
   <data name="net_SocketException_OperationNotSupported" xml:space="preserve">
-    <value>The requested property is not supported for the current AddressFamily '{0}'. Use ScopeId for IPv6 or Address for IPv4 as appropriate.</value>
+    <value>The requested property is not supported for the '{0}' AddressFamily.</value>
   </data>
 </root>
