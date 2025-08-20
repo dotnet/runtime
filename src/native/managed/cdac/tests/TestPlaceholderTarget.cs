@@ -81,7 +81,7 @@ internal class TestPlaceholderTarget : Target
     public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (_dataReader(address, buffer) < 0)
-            throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
     public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
 
@@ -172,7 +172,7 @@ internal class TestPlaceholderTarget : Target
         return true;
     }
 
-    public override bool Write<T>(ulong address, T value) => throw new NotImplementedException();
+    public override void Write<T>(ulong address, T value) => throw new NotImplementedException();
 
     #region subclass reader helpers
 
@@ -231,14 +231,14 @@ internal class TestPlaceholderTarget : Target
     protected T DefaultRead<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!DefaultTryRead(address, out T value))
-            throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
         return value;
     }
 
     protected TargetPointer DefaultReadPointer(ulong address)
     {
         if (!DefaultTryReadPointer(address, out TargetPointer pointer))
-            throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
@@ -275,7 +275,7 @@ internal class TestPlaceholderTarget : Target
     protected TargetNUInt DefaultReadNUInt(ulong address)
     {
         if (!DefaultTryReadNUInt(address, out ulong value))
-            throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read nuint at 0x{address:x8}.");
 
         return new TargetNUInt(value);
     }

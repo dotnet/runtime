@@ -384,7 +384,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // take the call now....
                 call = gtNewIndCallNode(nullptr, callRetTyp, di);
 
+                if (sig->isAsyncCall())
+                {
+                    impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags);
+                }
+
                 impPopCallArgs(sig, call->AsCall());
+
+                if (call->AsCall()->IsAsync())
+                {
+                    impInsertAsyncContinuationForLdvirtftnCall(call->AsCall());
+                }
 
                 GenTree* thisPtr = impPopStack().val;
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
@@ -681,68 +691,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        AsyncCallInfo asyncInfo;
-
-        if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
-        {
-            JITDUMP("Call is an async task await\n");
-
-            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
-            asyncInfo.SaveAndRestoreSynchronizationContextField = true;
-
-            if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
-            {
-                asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
-                JITDUMP("  Continuation continues on captured context\n");
-            }
-            else
-            {
-                asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
-                JITDUMP("  Continuation continues on thread pool\n");
-            }
-        }
-        else if (opcode == CEE_CALLI)
-        {
-            // Used for unboxing/instantiating stubs
-            JITDUMP("Call is an async calli\n");
-        }
-        else
-        {
-            JITDUMP("Call is an async non-task await\n");
-            // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
-            // These are awaits of custom awaitables, and they come with the behavior that the execution context
-            // is captured and restored on suspension/resumption.
-            // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
-            // that the safe INotifyCompletion will take care of flowing ExecutionContext.
-            asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
-        }
-
-        // For tailcalls the contexts does not need saving/restoring: they will be
-        // overwritten by the caller anyway.
-        //
-        // More specifically, if we can show that
-        // Thread.CurrentThread._executionContext is not accessed between the
-        // call and returning then we can omit save/restore of the execution
-        // context. We do not do that optimization yet.
-        if (tailCallFlags != 0)
-        {
-            asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
-            asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
-            asyncInfo.SaveAndRestoreSynchronizationContextField = false;
-        }
-
-        call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
-
-        if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
-        {
-            compMustSaveAsyncContexts = true;
-
-            // In this case we will need to save the context after the arguments are evaluated.
-            // Spill the arguments to accomplish that.
-            // (We could do this via splitting in SaveAsyncContexts, but since we need to
-            //  handle inline candidates we won't gain much.)
-            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
-        }
+        impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags);
     }
 
     // Now create the argument list.
@@ -6729,7 +6678,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 //   call passes a combination of legality and profitability checks.
 //
 //   If GTF_CALL_UNMANAGED is set, increments info.compUnmanagedCallCountWithGCTransition
-
+//
 void Compiler::impCheckForPInvokeCall(
     GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block)
 {
@@ -6847,6 +6796,110 @@ void Compiler::impCheckForPInvokeCall(
         unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
+    }
+}
+
+//------------------------------------------------------------------------
+// impSetupAndSpillForAsyncCall:
+//   Register a call as being async and set up context handling information depending on the IL.
+//   Also spill IL arguments if necessary.
+//
+// Arguments:
+//    call        - The call
+//    opcode      - The IL opcode for the call
+//    prefixFlags - Flags containing context handling information from IL
+//
+void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags)
+{
+    AsyncCallInfo asyncInfo;
+
+    if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
+    {
+        JITDUMP("Call is an async task await\n");
+
+        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
+        asyncInfo.SaveAndRestoreSynchronizationContextField = true;
+
+        if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
+        {
+            asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
+            JITDUMP("  Continuation continues on captured context\n");
+        }
+        else
+        {
+            asyncInfo.ContinuationContextHandling = ContinuationContextHandling::ContinueOnThreadPool;
+            JITDUMP("  Continuation continues on thread pool\n");
+        }
+    }
+    else if (opcode == CEE_CALLI)
+    {
+        // Used for unboxing/instantiating stubs
+        JITDUMP("Call is an async calli\n");
+    }
+    else
+    {
+        JITDUMP("Call is an async non-task await\n");
+        // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
+        // These are awaits of custom awaitables, and they come with the behavior that the execution context
+        // is captured and restored on suspension/resumption.
+        // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
+        // that the safe INotifyCompletion will take care of flowing ExecutionContext.
+        asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
+    }
+
+    // For tailcalls the contexts does not need saving/restoring: they will be
+    // overwritten by the caller anyway.
+    //
+    // More specifically, if we can show that
+    // Thread.CurrentThread._executionContext is not accessed between the
+    // call and returning then we can omit save/restore of the execution
+    // context. We do not do that optimization yet.
+    if ((prefixFlags & PREFIX_TAILCALL) != 0)
+    {
+        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
+        asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
+        asyncInfo.SaveAndRestoreSynchronizationContextField = false;
+    }
+
+    call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
+
+    if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
+    {
+        compMustSaveAsyncContexts = true;
+
+        // In this case we will need to save the context after the arguments are evaluated.
+        // Spill the arguments to accomplish that.
+        // (We could do this via splitting in SaveAsyncContexts, but since we need to
+        //  handle inline candidates we won't gain much.)
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
+    }
+}
+
+//------------------------------------------------------------------------
+// impInsertAsyncContinuationForLdvirtftnCall:
+//   Insert the async continuation argument for a call the EE asked to be
+//   performed via ldvirtftn.
+//
+// Arguments:
+//    call - The call
+//
+// Remarks:
+//   Should be called before the 'this' arg is inserted, but after other IL args
+//   have been inserted.
+//
+void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
+{
+    assert(call->AsCall()->IsAsync());
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+    {
+        call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                                                   .WellKnown(WellKnownArg::AsyncContinuation));
+    }
+    else
+    {
+        call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                                                  .WellKnown(WellKnownArg::AsyncContinuation));
     }
 }
 
