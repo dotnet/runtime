@@ -10,7 +10,6 @@
     <MainLibraryFileName>iOS.Simulator.CoreCLR.Interpreter.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <StaticLinkedRuntime>false</StaticLinkedRuntime>
   </PropertyGroup>
 
   <ItemGroup>

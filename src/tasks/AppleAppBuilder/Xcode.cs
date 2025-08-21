@@ -192,10 +192,9 @@ internal sealed class Xcode
         IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
-        bool isLibraryMode = false,
-        bool staticLinkedRuntime = true)
+        bool isLibraryMode = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode, staticLinkedRuntime);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -267,8 +266,7 @@ internal sealed class Xcode
         IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
-        bool isLibraryMode = false,
-        bool staticLinkedRuntime = true)
+        bool isLibraryMode = false)
     {
         // bundle everything as resources excluding native files
         var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "icudt*" };
@@ -416,28 +414,17 @@ internal sealed class Xcode
                 toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
             }
 
-            string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
             if (targetRuntime == TargetRuntime.CoreCLR)
             {
-
-                if (staticLinkedRuntime)
+                string[] staticLibs = Directory.GetFiles(workspace, "*.a");
+                foreach (string lib in staticLibs)
                 {
-                    string[] staticLibs = Directory.GetFiles(workspace, "*.a");
-                    foreach (string lib in staticLibs)
-                    {
-                        toLink += $"    \"{lib}\"{Environment.NewLine}";
-                    }
-                }
-                else
-                {
-                    foreach (string lib in dylibs)
-                    {
-                        toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
-                    }
+                    toLink += $"    \"{lib}\"{Environment.NewLine}";
                 }
             }
             else
             {
+                string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
                 // Sort the static libraries to link so the brotli libs are added to the list last (after the compression native libs)
                 List<string> staticLibsToLink = Directory.GetFiles(workspace, "*.a").OrderBy(libName => libName.Contains("brotli") ? 1 : 0).ToList();
                 foreach (string lib in staticLibsToLink)
