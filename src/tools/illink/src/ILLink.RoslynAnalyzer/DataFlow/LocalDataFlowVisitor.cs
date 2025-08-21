@@ -910,6 +910,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             TValue instanceValue = Visit(instance, state);
 
             var argumentsBuilder = ImmutableArray.CreateBuilder<TValue>();
+
+            // For calls to C# 14 extensions, treat the instance argument as a regular argument.
+            // The extension method doesn't have an implicit this, yet (unlike for existing extension methods)
+            // the IOperation represents it as having an Instance.
+            if (method.HasExtensionParameterOnType())
+            {
+                argumentsBuilder.Add(instanceValue);
+                instanceValue = TopValue;
+            }
+
             foreach (var argument in arguments)
             {
                 // For __arglist argument there might not be any parameter

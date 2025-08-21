@@ -165,8 +165,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             var damt = parameter.GetDynamicallyAccessedMemberTypes();
 
-            var parameterMethod = (IMethodSymbol)parameter.ContainingSymbol;
-            Debug.Assert(parameterMethod != null);
+            IMethodSymbol parameterMethod = param.Method.Method;
 
             // If there are conflicts between the setter and the property annotation,
             // the setter annotation wins. (But DAMT.None is ignored)

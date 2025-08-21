@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestExtensionMethodRequires();
         }
 
-        [ExpectedWarning("IL2072", "GetWithMethods", "ExtensionMethod")]
+        [ExpectedWarning("IL2072", "GetWithMethods", nameof(Extensions.ExtensionMethod))]
         static void TestExtensionMethod()
         {
             GetWithFields().ExtensionMethod();
@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             GetWithFields().ExtensionMethodMismatch();
         }
 
-        [ExpectedWarning("IL2026", "ExtensionMethodRequires")]
+        [ExpectedWarning("IL2026", nameof(Extensions.ExtensionMethodRequires))]
         static void TestExtensionMethodRequires()
         {
             GetWithFields().ExtensionMethodRequires();
