@@ -56,7 +56,11 @@ namespace System.Reflection
 
             if (ArgumentType.IsArray)
             {
+#if !MONO
                 IList<CustomAttributeTypedArgument> array = (IList<CustomAttributeTypedArgument>)Value!;
+#else
+                IList array = (IList)Value!;
+#endif
                 Type elementType = ArgumentType.GetElementType()!;
 
                 var result = new ValueStringBuilder(stackalloc char[256]);
@@ -73,7 +77,11 @@ namespace System.Reflection
                     {
                         result.Append(", ");
                     }
+#if !MONO
                     result.Append(array[i].ToString(elementType != typeof(object)));
+#else
+                    result.Append(array[i]!.ToString());
+#endif
                 }
 
                 result.Append(" }");
