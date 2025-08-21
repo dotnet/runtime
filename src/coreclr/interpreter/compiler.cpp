@@ -2893,7 +2893,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         if (ctorType != InterpTypeO)
         {
             vtsize = m_compHnd->getClassSize(resolvedCallToken.hClass);
-            PushTypeVT(resolvedCallToken.hClass, vtsize);
+            if (ctorType == InterpTypeVT)
+            {
+                PushTypeVT(resolvedCallToken.hClass, vtsize);
+            }
+            else
+            {
+                // For VT types with a specific InterpType, push that instead
+                PushInterpType(ctorType, NULL);
+            }
             PushInterpType(InterpTypeByRef, NULL);
         }
         else
