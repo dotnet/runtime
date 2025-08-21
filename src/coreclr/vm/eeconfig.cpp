@@ -639,7 +639,7 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_INTERPRETER)
     if (fTieredCompilation)
     {
-        // Disable tiered compilation for interpreter testing. Tiered compilation and interpreter 
+        // Disable tiered compilation for interpreter testing. Tiered compilation and interpreter
         // do not work well together currently.
         LPWSTR pwzInterpreterMaybe;
         IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &pwzInterpreterMaybe));
@@ -651,6 +651,9 @@ HRESULT EEConfig::sync()
         {
             fTieredCompilation = false;
         }
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+        fTieredCompilation = false;
+#endif
     }
 #endif
 
