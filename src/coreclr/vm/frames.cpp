@@ -1916,6 +1916,18 @@ void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 {
     SyncRegDisplayToCurrentContext(pRD);
     TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    // Update the SSP to match the updated regdisplay
+    size_t *targetSSP = (size_t *)GetInterpExecMethodSSP();
+    if (targetSSP != NULL)
+    {
+        while (*targetSSP++ != pRD->ControlPC)
+        {
+        }
+        _ASSERTE(targetSSP != NULL);
+        pRD->SSP = (TADDR)targetSSP;
+    }
+#endif // TARGET_AMD64 && TARGET_WINDOWS
 }
 
 #ifndef DACCESS_COMPILE

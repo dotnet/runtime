@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 #pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
 
@@ -117,7 +118,7 @@ internal static partial class Interop
                 // Get the process information for the specified pid
                 info = new ProcessInfo();
 
-                info.ProcessName = Marshal.PtrToStringUTF8((IntPtr)kinfo->ki_comm)!;
+                info.ProcessName = Utf8StringMarshaller.ConvertToManaged(kinfo->ki_comm)!;
                 info.BasePriority = kinfo->ki_nice;
                 info.VirtualBytes = (long)kinfo->ki_size;
                 info.WorkingSet = kinfo->ki_rssize;

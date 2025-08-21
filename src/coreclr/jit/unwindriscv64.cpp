@@ -347,9 +347,9 @@ void DumpUnwindInfo(Compiler*         comp,
     printf("  X bit             : %u\n", XBit);
     printf("  Vers              : %u\n", Vers);
     printf("  Function Length   : %u (0x%05x) Actual length = %u (0x%06x)\n", functionLength, functionLength,
-           functionLength * 4, functionLength * 4);
+           functionLength * 2, functionLength * 2);
 
-    assert(functionLength * 4 == endOffset - startOffset);
+    assert(functionLength * 2 == endOffset - startOffset);
 
     if (codeWords == 0 && epilogCount == 0)
     {
@@ -392,7 +392,7 @@ void DumpUnwindInfo(Compiler*         comp,
                 // of the current funclet, not the offset from the beginning of the main function.
                 // To help find it when looking through JitDump output, also show the offset from
                 // the beginning of the main function.
-                DWORD epilogStartOffsetFromMainFunctionBegin = epilogStartOffset * 4 + startOffset;
+                DWORD epilogStartOffsetFromMainFunctionBegin = epilogStartOffset * 2 + startOffset;
 
                 assert(res == 0);
 
@@ -400,7 +400,7 @@ void DumpUnwindInfo(Compiler*         comp,
                 printf("  Epilog Start Offset        : %u (0x%05x) Actual offset = %u (0x%06x) Offset from main "
                        "function begin = %u (0x%06x)\n",
                        comp->dspOffset(epilogStartOffset), comp->dspOffset(epilogStartOffset),
-                       comp->dspOffset(epilogStartOffset * 4), comp->dspOffset(epilogStartOffset * 4),
+                       comp->dspOffset(epilogStartOffset * 2), comp->dspOffset(epilogStartOffset * 2),
                        comp->dspOffset(epilogStartOffsetFromMainFunctionBegin),
                        comp->dspOffset(epilogStartOffsetFromMainFunctionBegin));
                 printf("  Epilog Start Index         : %u (0x%02x)\n", epilogStartIndex, epilogStartIndex);
@@ -1556,8 +1556,8 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
     // Compute the header
 
-    noway_assert((functionLength & 3) == 0);
-    DWORD headerFunctionLength = functionLength / 4;
+    noway_assert((functionLength & 1) == 0);
+    DWORD headerFunctionLength = functionLength / 2;
 
     DWORD headerVers = 0; // Version of the unwind info is zero. No other version number is currently defined.
     DWORD headerXBit = 0; // We never generate "exception data", but the VM might add some.
@@ -1644,9 +1644,9 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
             // NOT the offset from the beginning of the main function.
             DWORD headerEpilogStartOffset = pEpi->GetStartOffset() - GetStartOffset();
 
-            noway_assert((headerEpilogStartOffset & 3) == 0);
-            headerEpilogStartOffset /= 4; // The unwind data stores the actual offset divided by 4 (since the low 2 bits
-                                          // of the actual offset is always zero)
+            noway_assert((headerEpilogStartOffset & 1) == 0);
+            headerEpilogStartOffset /= 2; // The unwind data stores the actual offset divided by 2 (since the low bit of
+                                          // the actual offset is always zero)
 
             DWORD headerEpilogStartIndex = pEpi->GetStartIndex();
 

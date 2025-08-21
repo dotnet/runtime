@@ -40,7 +40,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(str);
             Intern(new StringHandleOnStack(ref str!));
-            return str!;
+            return str;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]

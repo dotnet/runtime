@@ -112,6 +112,8 @@ public enum DataType
     EETypeHashTable,
     InstMethodHashTable,
     DynamicILBlobTable,
+    EEJitManager,
+    PatchpointInfo,
 
     TransitionBlock,
     DebuggerEval,
