@@ -369,6 +369,15 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
             Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message);
         }
+
+        [Fact]
+        public static void Address_ReadOnlyStatic_ThrowsReadOnlyException()
+        {
+            var readOnlyIp = IPAddress.Loopback;
+            var ex = Assert.Throws<SocketException>(() => readOnlyIp.Address = 0x0A000001L);
+            Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
+            Assert.Contains("read-only", ex.Message);
+        }
 #pragma warning restore 618
     }
 }
