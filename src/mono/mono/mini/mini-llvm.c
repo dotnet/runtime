@@ -12704,13 +12704,28 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 {
 #ifdef TARGET_WASM
 	if (mono_method_signature_internal (cfg->method)->call_convention == MONO_CALL_VARARG) {
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 		cfg->exception_message = g_strdup ("vararg callconv");
 		cfg->disable_llvm = TRUE;
 		return;
 	}
 
 	if (mono_method_signature_internal (cfg->method)->param_count >= 1000 - 10) {
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 		cfg->exception_message = g_strdup ("param count");
+		cfg->disable_llvm = TRUE;
+		return;
+	}
+
+	// workaround for https://github.com/dotnet/runtime/issues/117557
+	MonoClass *klass = cfg->method->klass;
+	if(klass->nested_in
+			&& !strcmp(m_class_get_name_space (klass->nested_in), "System.Text.RegularExpressions.Symbolic") 
+			&& !strcmp(m_class_get_name (klass->nested_in), "SymbolicRegexBuilder`1") 
+			&& !strcmp(m_class_get_name (klass), "NodeCacheKey")
+			&& !strcmp(cfg->method->name, "Equals")) {
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_GENERIC_SHARING_FAILED);
+		cfg->exception_message = g_strdup ("too complex");
 		cfg->disable_llvm = TRUE;
 		return;
 	}
