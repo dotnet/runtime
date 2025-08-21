@@ -26,6 +26,70 @@ namespace System.Threading
 
         partial void PlatformSpecificInitialize();
 
+        internal static void SleepInternal(int millisecondsTimeout)
+        {
+            Debug.Assert(millisecondsTimeout >= -1);
+
+            Thread currentThread = CurrentThread;
+            if (millisecondsTimeout == 0)
+            {
+                Thread.CheckForPendingInterrupt();
+                UninterruptibleSleep0();
+                return;
+            }
+
+            if (millisecondsTimeout == -1)
+            {
+                // Infinite wait - use alertable wait
+                currentThread.SetWaitSleepJoinState();
+                try
+                {
+                    uint result;
+                    do
+                    {
+                        Thread.CheckForPendingInterrupt();
+                        result = Interop.Kernel32.SleepEx(uint.MaxValue, true);
+                        if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                        {
+                            // Check if this was our interrupt APC
+                            Thread.CheckForPendingInterrupt();
+                        }
+                    } while (result == Interop.Kernel32.WAIT_IO_COMPLETION);
+                }
+                finally
+                {
+                    currentThread.ClearWaitSleepJoinState();
+                }
+            }
+            else
+            {
+                // Timed wait - use alertable wait
+                currentThread.SetWaitSleepJoinState();
+                uint startTicks = (uint)Environment.TickCount;
+                uint remainingTimeout = (uint)millisecondsTimeout;
+                try
+                {
+                    uint result;
+                    do
+                    {
+                        Thread.CheckForPendingInterrupt();
+                        result = Interop.Kernel32.SleepEx(remainingTimeout, true);
+                        if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                        {
+                            // Check if this was our interrupt APC
+                            Thread.CheckForPendingInterrupt();
+                            uint elapsed = (uint)Environment.TickCount - startTicks;
+                            remainingTimeout = elapsed >= (uint)millisecondsTimeout ? 0 : (uint)millisecondsTimeout - elapsed;
+                        }
+                    } while (result == Interop.Kernel32.WAIT_IO_COMPLETION && remainingTimeout > 0);
+                }
+                finally
+                {
+                    currentThread.ClearWaitSleepJoinState();
+                }
+            }
+        }
+
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
         {
@@ -154,18 +218,56 @@ namespace System.Threading
 
             try
             {
-                int result;
-
                 if (millisecondsTimeout == 0)
                 {
-                    result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
+                    int result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
+                    return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
                 }
                 else
                 {
-                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout, useTrivialWaits: false);
+                    Thread currentThread = CurrentThread;
+                    currentThread.SetWaitSleepJoinState();
+                    try
+                    {
+                        uint result;
+                        if (millisecondsTimeout == -1)
+                        {
+                            // Infinite wait
+                            do
+                            {
+                                Thread.CheckForPendingInterrupt();
+                                result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), uint.MaxValue, Interop.BOOL.TRUE);
+                                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                                {
+                                    // Check if this was our interrupt APC
+                                    Thread.CheckForPendingInterrupt();
+                                }
+                            } while (result == Interop.Kernel32.WAIT_IO_COMPLETION);
+                        }
+                        else
+                        {
+                            uint startTicks = (uint)Environment.TickCount;
+                            uint remainingTimeout = (uint)millisecondsTimeout;
+                            do
+                            {
+                                Thread.CheckForPendingInterrupt();
+                                result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), remainingTimeout, Interop.BOOL.TRUE);
+                                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                                {
+                                    // Check if this was our interrupt APC
+                                    Thread.CheckForPendingInterrupt();
+                                    uint elapsed = (uint)Environment.TickCount - startTicks;
+                                    remainingTimeout = elapsed >= (uint)millisecondsTimeout ? 0 : (uint)millisecondsTimeout - elapsed;
+                                }
+                            } while (result == Interop.Kernel32.WAIT_IO_COMPLETION && remainingTimeout > 0);
+                        }
+                        return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
+                    }
+                    finally
+                    {
+                        currentThread.ClearWaitSleepJoinState();
+                    }
                 }
-
-                return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
             }
             finally
             {
@@ -211,6 +313,13 @@ namespace System.Threading
 
             // CoreCLR ignores OS errors while setting the priority, so do we
             SetPriorityLive(_priority);
+
+            // If the thread was interrupted before it was started, queue the interruption now
+            if (GetThreadStateBit(Interrupted))
+            {
+                ClearThreadStateBit(Interrupted);
+                Interrupt();
+            }
 
             Interop.Kernel32.ResumeThread(_osHandle);
             return true;
@@ -393,7 +502,41 @@ namespace System.Threading
             return InitializeExistingThreadPoolThread();
         }
 
-        public void Interrupt() { throw new PlatformNotSupportedException(); }
+        public void Interrupt()
+        {
+            using (_lock.EnterScope())
+            {
+                // Thread.Interrupt for dead thread should do nothing
+                if (IsDead())
+                {
+                    return;
+                }
+
+                // Thread.Interrupt for thread that has not been started yet should queue a pending interrupt
+                if (GetThreadStateBit(ThreadState.Unstarted))
+                {
+                    SetThreadStateBit(Interrupted);
+                    return;
+                }
+
+                // Queue APC to interrupt the target thread
+                if (!_osHandle.IsInvalid)
+                {
+                    unsafe
+                    {
+                        Interop.Kernel32.QueueUserAPC(RuntimeImports.RhGetInterruptApcCallback(), _osHandle, 0);
+                    }
+                }
+            }
+        }
+
+        internal static void CheckForPendingInterrupt()
+        {
+            if (RuntimeImports.RhCheckAndClearPendingInterrupt())
+            {
+                throw new ThreadInterruptedException();
+            }
+        }
 
         internal static bool ReentrantWaitsEnabled =>
             GetCurrentApartmentType() == ApartmentType.STA;

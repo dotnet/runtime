@@ -75,6 +75,11 @@ namespace System.Threading
                 if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                     break;
 
+#if !MONO
+                // Check for thread interrupt when APC completion occurs
+                Thread.CheckForPendingInterrupt();
+#endif
+
                 // Handle APC completion by adjusting timeout and retrying
                 if (millisecondsTimeout != -1)
                 {
@@ -140,6 +145,11 @@ namespace System.Threading
             // Handle APC completion by retrying with WaitForSingleObjectEx (without signaling again)
             while (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
             {
+#if !MONO
+                // Check for thread interrupt when APC completion occurs
+                Thread.CheckForPendingInterrupt();
+#endif
+
                 if (millisecondsTimeout != -1)
                 {
                     long currentTime = Environment.TickCount64;

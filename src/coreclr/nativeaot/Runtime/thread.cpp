@@ -1160,6 +1160,23 @@ bool Thread::CheckPendingRedirect(PCODE eip)
 
 #endif // TARGET_X86
 
+void Thread::SetInterrupted(bool isInterrupted)
+{
+    if (isInterrupted)
+    {
+        SetState(TSF_Interrupted);
+    }
+    else
+    {
+        ClearState(TSF_Interrupted);
+    }
+}
+
+bool Thread::CheckInterrupted()
+{
+    return IsStateSet(TSF_Interrupted);
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1322,6 +1339,39 @@ FCIMPL0(size_t, RhGetDefaultStackSize)
     return GetDefaultStackSizeSetting();
 }
 FCIMPLEND
+
+#ifdef TARGET_WINDOWS
+// Native APC callback for Thread.Interrupt
+// This callback sets the interrupt flag on the current thread
+static VOID CALLBACK InterruptApcCallback(ULONG_PTR /* parameter */)
+{
+    // Set the interrupt flag on the current thread
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    if (pCurrentThread != nullptr)
+    {
+        pCurrentThread->SetInterrupted(true);
+    }
+}
+
+// Function to get the address of the interrupt APC callback
+FCIMPL0(void*, RhGetInterruptApcCallback)
+{
+    return (void*)InterruptApcCallback;
+}
+FCIMPLEND
+
+FCIMPL0(FC_BOOL_RET, RhCheckAndClearPendingInterrupt)
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    if (pCurrentThread != nullptr && pCurrentThread->CheckInterrupted())
+    {
+        pCurrentThread->SetInterrupted(false);
+        FC_RETURN_BOOL(true);
+    }
+    FC_RETURN_BOOL(false);
+}
+FCIMPLEND
+#endif // TARGET_WINDOWS
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
