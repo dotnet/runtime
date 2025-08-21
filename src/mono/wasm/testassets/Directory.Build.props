@@ -1,0 +1,7 @@
+<Project TreatAsLocalProperty="TargetOS;TargetArchitecture">
+  <PropertyGroup>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <AttachWeakETagToCompressedAssetsDuringDevelopment>true</AttachWeakETagToCompressedAssetsDuringDevelopment>
+  </PropertyGroup>
+</Project>
