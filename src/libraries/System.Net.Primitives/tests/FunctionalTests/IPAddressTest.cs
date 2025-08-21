@@ -355,7 +355,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void ScopeId_Throws_SocketException_IPv4Message()
         {
-            var ip = IPV4Address1();
+            IPAddress ip = IPV4Address1();
             SocketException ex = Assert.Throws<SocketException>(() => _ = ip.ScopeId);
             Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
             Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -364,7 +364,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Address_Throws_SocketException_IPv6Message()
         {
-            var ip = IPV6Address1();
+            IPAddress ip = IPV6Address1();
             SocketException ex = Assert.Throws<SocketException>(() => _ = ip.Address);
             Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
             Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -373,8 +373,9 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Address_Throws_SocketException_ReadOnlyMessage()
         {
-            var readOnlyIp = IPAddress.Loopback;
-            var ex = Assert.Throws<SocketException>(() => readOnlyIp.Address = 0x0A000001L);
+            IPAddress ip1 = IPAddress.Loopback; // This is readonly
+            IPAddress ip2 = IPV4Address1();
+            SocketException ex = Assert.Throws<SocketException>(() => ip1.Address = ip2.Address);
             Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
             Assert.Contains("read-only", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
