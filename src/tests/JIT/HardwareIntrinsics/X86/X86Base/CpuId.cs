@@ -268,10 +268,10 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             isHierarchyDisabled = isBaselineHierarchyDisabled;
 
-            // if (IsBitIncorrect(ecx, 5, typeof(WaitPkg), WaitPkg.IsSupported, "WAITPKG", ref isHierarchyDisabled))
-            // {
-            //     testResult = Fail;
-            // }
+            if (IsBitIncorrect(ecx, 5, typeof(WaitPkg), WaitPkg.IsSupported, "WAITPKG", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
 
             isHierarchyDisabled = isBaselineHierarchyDisabled;
 
