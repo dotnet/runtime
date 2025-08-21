@@ -1078,7 +1078,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
                     break;
                 case InterpTypeVT:
                 {
-                    InterpreterStackMap *stackMap = GetInterpreterStackMap(m_compHnd, pVar->clsHnd);
+                    InterpreterStackMap *stackMap = GetInterpreterStackMap(pVar->clsHnd);
                     for (unsigned j = 0; j < stackMap->m_slotCount; j++)
                     {
                         InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
@@ -1232,9 +1232,26 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
     return m_pMethodCode;
 }
 
+InterpreterStackMap* InterpCompiler::GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle)
+{
+    InterpreterStackMap* result = nullptr;
+    if (!dn_simdhash_ptr_ptr_try_get_value(m_stackmapsByClass.GetValue(), classHandle, (void **)&result))
+    {
+        result = new InterpreterStackMap(m_compHnd, classHandle);
+        checkAddedNew(dn_simdhash_ptr_ptr_try_add(m_stackmapsByClass.GetValue(), classHandle, result));
+    }
+    return result;
+}
+
+static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
+{
+    delete (InterpreterStackMap *)value;
+}
+
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
-    : m_pInitLocalsIns(nullptr)
+    : m_stackmapsByClass(FreeInterpreterStackMap)
+    , m_pInitLocalsIns(nullptr)
     , m_globalVarsWithRefsStackTop(0)
 {
     m_genericLookupToDataItemIndex.Init(&m_dataItems, this);
@@ -2712,6 +2729,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
+    bool isDelegateInvoke = false;
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
     CORINFO_CALL_INFO callInfo;
@@ -2747,6 +2765,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
         if (callInfo.methodFlags & CORINFO_FLG_INTRINSIC)
         {
+            NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+            if ((ni == NI_System_StubHelpers_NextCallReturnAddress) && (m_ip[5] == CEE_POP))
+            {
+                // Call to System.StubHelpers.NextCallReturnAddress followed by CEE_POP is a special case that we handle
+                // as a no-op.
+                m_ip += 6; // Skip the call and the CEE_POP
+                return;
+            }
+
             // If we are being asked explicitly to compile an intrinsic for interpreting, we need to forcibly enable
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
@@ -2754,13 +2781,17 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             bool isMustExpand = (callInfo.hMethod == m_methodHnd);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
-                NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
                 if (EmitNamedIntrinsicCall(ni, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
                 {
                     m_ip += 5;
                     return;
                 }
             }
+        }
+
+        if (callInfo.methodFlags & CORINFO_FLG_DELEGATE_INVOKE)
+        {
+            isDelegateInvoke = true;
         }
 
         if (callInfo.thisTransform != CORINFO_NO_THIS_TRANSFORM)
@@ -3036,7 +3067,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     // before the call.
                     // TODO: Add null checking behavior somewhere here!
                 }
-                AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
+                if (isDelegateInvoke)
+                {
+                    assert(!isPInvoke && !isMarshaledPInvoke);
+                    AddIns(INTOP_CALLDELEGATE);
+                }
+                else
+                {
+                    AddIns((isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL);
+                }
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(callInfo.hMethod);
                 if (isPInvoke && !isMarshaledPInvoke)
                 {
@@ -3081,7 +3120,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             break;
 
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
-            if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getClassAttribs(resolvedCallToken.hClass) & CORINFO_FLG_SHAREDINST))
+            if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getMethodAttribs(callInfo.hMethod) & CORINFO_FLG_SHAREDINST))
             {
                 assert(extraParamArgLocation == INT_MAX);
                 // We should not have a type argument for the ldvirtftn path since we don't know
@@ -3198,7 +3237,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     // or in the reverse order if the flag is set
     if (interpType == InterpTypeVT)
     {
-        if (m_compHnd->getClassAttribs(clsHnd) & CORINFO_FLG_CONTAINS_GC_PTR)
+        if (GetInterpreterStackMap(clsHnd)->m_slotCount)
         {
             AddIns(INTOP_STIND_VT);
             m_pLastNewIns->data[1] = GetDataItemIndex(clsHnd);
@@ -5203,10 +5242,107 @@ retry_emit:
                 m_ip++;
                 break;
             }
+            case CEE_MKREFANY:
+            {
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                int32_t addressVar = m_pStackPointer[-1].var;
+                m_pStackPointer--;
+
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+                CORINFO_GENERICHANDLE_RESULT embedInfo;
+                m_compHnd->embedGenericHandle(&resolvedToken, true, m_methodInfo->ftn, &embedInfo);
+                assert(embedInfo.compileTimeHandle != NULL);
+                int typeVar = EmitGenericHandleAsVar(embedInfo);
+
+                PushInterpType(InterpTypeVT, m_compHnd->getBuiltinClass(CLASSID_TYPED_BYREF));
+
+                int32_t typedByRefVar = m_pStackPointer[-1].var;
+
+                AddIns(INTOP_DEF);
+                m_pLastNewIns->SetDVar(typedByRefVar);
+
+                AddIns(INTOP_LDLOCA);
+                m_pLastNewIns->SetSVar(typedByRefVar);
+                PushInterpType(InterpTypeByRef, NULL);
+                int byrefOfTypedRefVar = m_pStackPointer[-1].var;
+                m_pLastNewIns->SetDVar(byrefOfTypedRefVar);
+                m_pStackPointer--;
+                
+                AddIns(GetStindForType(InterpTypeByRef));
+                m_pLastNewIns->data[0] = OFFSETOF__CORINFO_TypedReference__dataPtr;
+                m_pLastNewIns->SetSVars2(byrefOfTypedRefVar, addressVar);
+
+                AddIns(GetStindForType(InterpTypeI));
+                m_pLastNewIns->data[0] = OFFSETOF__CORINFO_TypedReference__type;
+                m_pLastNewIns->SetSVars2(byrefOfTypedRefVar, typeVar);
+                m_ip += 5;
+                break;
+            }
+            case CEE_REFANYVAL:
+            {
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                int32_t typedRefVar = m_pStackPointer[-1].var;
+                m_pStackPointer--;
+
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Class, &resolvedToken);
+                CORINFO_GENERICHANDLE_RESULT embedInfo;
+                m_compHnd->embedGenericHandle(&resolvedToken, true, m_methodInfo->ftn, &embedInfo);
+                assert(embedInfo.compileTimeHandle != NULL);
+                int typeVar = EmitGenericHandleAsVar(embedInfo);
+
+                CORINFO_METHOD_HANDLE getRefAnyHelper;
+                m_compHnd->getHelperFtn(CORINFO_HELP_GETREFANY, NULL, &getRefAnyHelper);
+                assert(getRefAnyHelper != NULL);
+
+                PushInterpType(InterpTypeByRef, NULL);
+                int32_t dVar = m_pStackPointer[-1].var;
+
+                int *callArgs = (int*) AllocMemPool((2 + 1) * sizeof(int));
+                callArgs[0] = typeVar;
+                callArgs[1] = typedRefVar;
+                callArgs[2] = CALL_ARGS_TERMINATOR;
+
+                AddIns(INTOP_CALL);
+                m_pLastNewIns->data[0] = GetMethodDataItemIndex(getRefAnyHelper);
+                m_pLastNewIns->SetDVar(dVar);
+                m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
+                m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+                m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
+                m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+                m_ip += 5;
+                break;
+            }
             case CEE_PREFIX1:
                 m_ip++;
                 switch (*m_ip + 256)
                 {
+                    case CEE_REFANYTYPE:
+                    {
+                        int32_t typedByRefVar = m_pStackPointer[-1].var;
+                        m_pStackPointer--;
+                        PushInterpType(InterpTypeI, NULL);
+                        int32_t classHandleVar = m_pStackPointer[-1].var;
+                        m_pStackPointer--;
+
+                        AddIns(INTOP_MOV_SRC_OFF);
+                        m_pLastNewIns->data[0] = (int32_t)OFFSETOF__CORINFO_TypedReference__type;
+                        m_pLastNewIns->data[1] = InterpTypeI;
+                        m_pLastNewIns->data[2] = 0;
+                        m_pLastNewIns->SetSVar(typedByRefVar);
+                        m_pLastNewIns->SetDVar(classHandleVar);
+                        
+                        AddIns(INTOP_CALL_HELPER_P_S);
+                        m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL);
+                        m_pLastNewIns->SetSVar(classHandleVar);
+                        PushInterpType(InterpTypeVT, m_compHnd->getBuiltinClass(CLASSID_TYPE_HANDLE));
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                        m_ip += 1;
+                        break;
+                    }
                     case CEE_LDARG:
                         EmitLoadVar(getU2LittleEndian(m_ip + 1));
                         m_ip += 3;
@@ -5791,17 +5927,34 @@ DO_LDFTN:
                 CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
 
                 m_pStackPointer -= 2;
-                if (elemCorType == CORINFO_TYPE_CLASS)
+                if ((elemCorType == CORINFO_TYPE_CLASS) && !readonly)
                 {
-                    AddIns(INTOP_LDELEMA_REF);
-                    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
-                    PushInterpType(InterpTypeByRef, elemClsHnd);
-                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                    m_pLastNewIns->data[0] = m_compHnd->getClassSize(elemClsHnd);
-                    m_pLastNewIns->data[1] = GetDataItemIndex(elemClsHnd);
+                    CORINFO_GENERICHANDLE_RESULT embedInfo;
+                    m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
+                    DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
+
+                    if (embedInfo.lookup.lookupKind.needsRuntimeLookup)
+                    {
+                        GenericHandleData handleData = GenericHandleToGenericHandleData(embedInfo);
+
+                        AddIns(INTOP_LDELEMA_REF_GENERIC);
+                        m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, handleData.genericVar);
+                        PushInterpType(InterpTypeByRef, elemClsHnd);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_pLastNewIns->data[0] = handleData.dataItemIndex;
+                    }
+                    else
+                    {
+                        AddIns(INTOP_LDELEMA_REF);
+                        m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+                        PushInterpType(InterpTypeByRef, elemClsHnd);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_pLastNewIns->data[0] = GetDataItemIndex(elemClsHnd);
+                    }
                 }
                 else
                 {
+                    readonly = false; // If readonly was set, it is no longer needed as its been handled.
                     AddIns(INTOP_LDELEMA);
                     m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
                     PushInterpType(InterpTypeByRef, elemClsHnd);
@@ -5912,7 +6065,7 @@ DO_LDFTN:
                     case InterpTypeVT:
                     {
                         int size = m_compHnd->getClassSize(elemClsHnd);
-                        bool hasRefs = (m_compHnd->getClassAttribs(elemClsHnd) & CORINFO_FLG_CONTAINS_GC_PTR) != 0;
+                        bool hasRefs = GetInterpreterStackMap(elemClsHnd)->m_slotCount > 0;
                         m_pStackPointer -= 3;
                         if (hasRefs)
                         {

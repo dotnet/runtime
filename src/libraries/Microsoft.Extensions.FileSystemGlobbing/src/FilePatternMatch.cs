@@ -28,16 +28,17 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// If the matcher searched for "src/Project/**/*.cs" and the pattern matcher found "src/Project/Interfaces/IFile.cs",
         /// then <see cref="Stem" /> = "Interfaces/IFile.cs" and <see cref="Path" /> = "src/Project/Interfaces/IFile.cs".
         /// </remarks>
-        public string? Stem { get; }
+        public string Stem { get; }
 
         /// <summary>
         /// Initializes new instance of <see cref="FilePatternMatch" />
         /// </summary>
         /// <param name="path">The path to the file matched, relative to the beginning of the matching search pattern.</param>
         /// <param name="stem">The subpath to the file matched, relative to the first wildcard in the matching search pattern.</param>
-        public FilePatternMatch(string path, string? stem)
+        public FilePatternMatch(string path, string stem)
         {
             ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(stem);
 
             Path = path;
             Stem = stem;

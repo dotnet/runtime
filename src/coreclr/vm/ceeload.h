@@ -1514,6 +1514,8 @@ public:
     BOOL IsIJWFixedUp() { return m_dwTransientFlags & IS_IJW_FIXED_UP; }
     void SetIsIJWFixedUp();
 
+    static bool HasAnyIJWBeenLoaded();
+
     BOOL IsBeingUnloaded() { return m_dwTransientFlags & IS_BEING_UNLOADED; }
     void   SetBeingUnloaded();
     void   StartUnload();
