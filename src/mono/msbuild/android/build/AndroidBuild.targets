@@ -80,11 +80,6 @@
 
     <RemoveDir Directories="$(AndroidBundleDir)" />
     <MakeDir Directories="$(AndroidBundleDir)" />
-
-    <!-- Copy static CoreCLR library for static linking scenarios. Tracking issue: https://github.com/dotnet/runtime/issues/116531 -->
-    <Copy SourceFiles="$(RuntimeBinDir)libcoreclr_static.a"
-          DestinationFiles="$(AndroidBuildDir)libcoreclr_static.a"
-          Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(StaticLinkedRuntime)' == 'true' and Exists('$(RuntimeBinDir)libcoreclr_static.a')" />
   </Target>
 
   <Target Name="_AndroidResolveReferences">
@@ -239,6 +234,10 @@
       <_NativeDependencies Include="$(LibraryOutputPath)" />
     </ItemGroup>
 
+<!-- Copy static CoreCLR library for static linking scenarios. Tracking issue: https://github.com/dotnet/runtime/issues/116531 -->
+    <Copy SourceFiles="$(RuntimeBinDir)libcoreclr_static.a"
+          DestinationFiles="$(AndroidBuildDir)libcoreclr_static.a"
+          Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(StaticLinkedRuntime)' == 'true' and Exists('$(RuntimeBinDir)libcoreclr_static.a')" />
     <PropertyGroup>
       <!-- TODO: Revisit this.
         We are using a private property to determine the target runtime, we should instead unify the resolution with Apple targets instead, (see: https://github.com/dotnet/runtime/issues/111923) -->
