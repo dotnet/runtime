@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -36,6 +37,10 @@ internal readonly struct Loader_1 : ILoader
         BeingUnloaded = 0x100000,
     }
 
+    private enum PEImageFlags : uint
+    {
+        FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+    };
     private readonly Target _target;
 
     internal Loader_1(Target target)
@@ -195,6 +200,64 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
+    private static bool IsMapped(Data.PEImageLayout peImageLayout)
+    {
+        return (peImageLayout.Flags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    }
+
+    private TargetPointer FindNTHeaders(Data.PEImageLayout imageLayout)
+    {
+        Data.ImageDosHeader dosHeader = _target.ProcessedData.GetOrAdd<Data.ImageDosHeader>(imageLayout.Base);
+        return imageLayout.Base + (uint)dosHeader.Lfanew;
+    }
+
+    private TargetPointer RvaToSection(int rva, Data.PEImageLayout imageLayout)
+    {
+        TargetPointer ntHeadersPtr = FindNTHeaders(imageLayout);
+        Data.ImageNTHeaders ntHeaders = _target.ProcessedData.GetOrAdd<Data.ImageNTHeaders>(ntHeadersPtr);
+        int offset = Data.ImageNTHeaders.OptionalHeaderOffset;
+        TargetPointer section = ntHeadersPtr + (uint)offset + ntHeaders.FileHeader.SizeOfOptionalHeader;
+        TargetPointer sectionEnd = section + Data.ImageSectionHeader.Size * ntHeaders.FileHeader.NumberOfSections;
+        while (section < sectionEnd)
+        {
+            Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
+            if (rva >= sectionHeader.VirtualAddress && rva < sectionHeader.VirtualAddress + sectionHeader.SizeOfRawData)
+            {
+                return section;
+            }
+            section += Data.ImageSectionHeader.Size;
+        }
+        return TargetPointer.Null;
+    }
+
+    private uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
+    {
+        TargetPointer section = RvaToSection(rva, imageLayout);
+        if (section == TargetPointer.Null)
+            throw new InvalidOperationException("Failed to read from image.");
+
+        Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
+        uint offset = (uint)(rva - sectionHeader.VirtualAddress) + sectionHeader.PointerToRawData;
+        return offset;
+    }
+
+    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+    {
+        Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
+        if (assembly.PEImage == TargetPointer.Null)
+            throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
+        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(assembly.PEImage);
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+        uint offset;
+        if (IsMapped(peImageLayout))
+            offset = (uint)rva;
+        else
+            offset = RvaToOffset(rva, peImageLayout);
+        return peImageLayout.Base + offset;
+    }
+
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {
         buffer = TargetPointer.Null;
@@ -211,6 +274,29 @@ internal readonly struct Loader_1 : ILoader
         size = growableSymbolStream.Size;
 
         return true;
+    }
+
+    IEnumerable<TargetPointer> ILoader.GetAvailableTypeParams(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.AvailableTypeParams == TargetPointer.Null)
+            return [];
+
+        EETypeHashTable typeHashTable = _target.ProcessedData.GetOrAdd<EETypeHashTable>(module.AvailableTypeParams);
+        return typeHashTable.Entries.Select(entry => entry.TypeHandle);
+    }
+
+    IEnumerable<TargetPointer> ILoader.GetInstantiatedMethods(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        if (module.InstMethodHashTable == TargetPointer.Null)
+            return [];
+
+        InstMethodHashTable methodHashTable = _target.ProcessedData.GetOrAdd<InstMethodHashTable>(module.InstMethodHashTable);
+
+        return methodHashTable.Entries.Select(entry => entry.MethodDesc);
     }
 
     bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)

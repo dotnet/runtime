@@ -10,31 +10,55 @@
 
 #define SUCCESS 1
 
-static const EVP_MD* g_evpFetchMd5 = NULL;
-static pthread_once_t g_evpFetch = PTHREAD_ONCE_INIT;
-
-static void EnsureFetchEvpMdAlgorithms(void)
-{
-    // This is called from a pthread_once - this method should not be called directly.
-
 #ifdef NEED_OPENSSL_3_0
-    if (API_EXISTS(EVP_MD_fetch))
-    {
-        ERR_clear_error();
-
-        // Try to fetch an MD5 implementation that will work regardless if
-        // FIPS is enforced or not.
-        g_evpFetchMd5 = EVP_MD_fetch(NULL, "MD5", "-fips");
+#define BUILD_MD_FETCH(export, fn, name, query) \
+    static const EVP_MD* g_evpFetch##export = NULL; \
+    static pthread_once_t g_evpFetchInit##export = PTHREAD_ONCE_INIT; \
+    static void EnsureFetchEvpMd##export(void) \
+    { \
+        if (API_EXISTS(EVP_MD_fetch)) \
+        { \
+            ERR_clear_error(); \
+            g_evpFetch##export = EVP_MD_fetch(NULL, name, query); \
+        } \
+\
+        if (g_evpFetch##export == NULL) \
+        { \
+            g_evpFetch##export = fn(); \
+        } \
+    } \
+    \
+    const EVP_MD* export(void) \
+    { \
+        pthread_once(&g_evpFetchInit##export, EnsureFetchEvpMd##export); \
+        return g_evpFetch##export; \
+    }
+#define BUILD_MD_FETCH_LIGHTUP_SHA3(...) BUILD_MD_FETCH(__VA_ARGS__)
+#else
+#define BUILD_MD_FETCH(export, fn, name, query) \
+    const EVP_MD* export(void) \
+    { \
+        return fn(); \
+    }
+#if HAVE_OPENSSL_SHA3
+#define BUILD_MD_FETCH_LIGHTUP_SHA3(export, fn, name, query) \
+    const EVP_MD* export(void) \
+    { \
+        if (API_EXISTS(fn)) \
+        { \
+            return fn(); \
+        } \
+        \
+        return NULL; \
+    }
+#else
+    const EVP_MD* export(void) \
+    { \
+        return NULL; \
     }
 #endif
+#endif
 
-    // No error queue impact.
-    // If EVP_MD_fetch is unavailable, use the implicit loader. If it failed, use the implicit loader as a last resort.
-    if (g_evpFetchMd5 == NULL)
-    {
-        g_evpFetchMd5 = EVP_md5();
-    }
-}
 
 EVP_MD_CTX* CryptoNative_EvpMdCtxCreate(const EVP_MD* type)
 {
@@ -291,100 +315,18 @@ int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
     return EVP_MD_get_size(md);
 }
 
-const EVP_MD* CryptoNative_EvpMd5(void)
-{
-    pthread_once(&g_evpFetch, EnsureFetchEvpMdAlgorithms);
-    return g_evpFetchMd5;
-}
-
-const EVP_MD* CryptoNative_EvpSha1(void)
-{
-    // No error queue impact.
-    return EVP_sha1();
-}
-
-const EVP_MD* CryptoNative_EvpSha256(void)
-{
-    // No error queue impact.
-    return EVP_sha256();
-}
-
-const EVP_MD* CryptoNative_EvpSha384(void)
-{
-    // No error queue impact.
-    return EVP_sha384();
-}
-
-const EVP_MD* CryptoNative_EvpSha512(void)
-{
-    // No error queue impact.
-    return EVP_sha512();
-}
-
-const EVP_MD* CryptoNative_EvpSha3_256(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_sha3_256))
-    {
-        return EVP_sha3_256();
-    }
-#endif
-
-    return NULL;
-}
-
-const EVP_MD* CryptoNative_EvpSha3_384(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_sha3_384))
-    {
-        return EVP_sha3_384();
-    }
-#endif
-
-    return NULL;
-}
-
-const EVP_MD* CryptoNative_EvpSha3_512(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_sha3_512))
-    {
-        return EVP_sha3_512();
-    }
-#endif
-
-    return NULL;
-}
-
-const EVP_MD* CryptoNative_EvpShake128(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_shake128))
-    {
-        return EVP_shake128();
-    }
-#endif
-
-    return NULL;
-}
-
-const EVP_MD* CryptoNative_EvpShake256(void)
-{
-    // No error queue impact.
-#if HAVE_OPENSSL_SHA3
-    if (API_EXISTS(EVP_shake256))
-    {
-        return EVP_shake256();
-    }
-#endif
-
-    return NULL;
-}
+// MD5 should use a non-FIPS implementation if it is available. We should not fail
+// to fetch MD5 even on a FIPS enforced system.
+BUILD_MD_FETCH(CryptoNative_EvpMd5, EVP_md5, "MD5", "-fips")
+BUILD_MD_FETCH(CryptoNative_EvpSha1, EVP_sha1, "SHA1", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha256, EVP_sha256, "SHA256", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha384, EVP_sha384, "SHA384", NULL)
+BUILD_MD_FETCH(CryptoNative_EvpSha512, EVP_sha512, "SHA512", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_256, EVP_sha3_256, "SHA3-256", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_384, EVP_sha3_384, "SHA3-384", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpSha3_512, EVP_sha3_512, "SHA3-512", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpShake128, EVP_shake128, "SHAKE-128", NULL)
+BUILD_MD_FETCH_LIGHTUP_SHA3(CryptoNative_EvpShake256, EVP_shake256, "SHAKE-256", NULL)
 
 int32_t CryptoNative_GetMaxMdSize(void)
 {

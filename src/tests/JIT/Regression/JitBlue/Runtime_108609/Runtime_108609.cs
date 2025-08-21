@@ -32,7 +32,7 @@ public class Runtime_108609
     static Vector128<short> s_v128_short_31 = Vector128.Create(0, 2, -5, 0, 1, 0, 2, 2);
     static Vector128<ulong> s_v128_ulong_36 = Vector128<ulong>.Zero;
     static Vector128<double> s_v128_double_38 = Vector128.Create(1.0769230769230769, 72.01666666666667);
-    static Vector<ulong> s_v_ulong_46 = Vector.Create((ulong)1);
+    static Vector<ulong> s_v_ulong_46 = Vector<ulong>.One;
     static Vector<float> s_v_float_47 = Vector<float>.Zero;
     static S1 s_s1_52 = new S1();
     char char_56 = 'K';
@@ -42,7 +42,7 @@ public class Runtime_108609
     Vector128<sbyte> v128_sbyte_80 = Vector128.Create(-2, -2, -1, 0, 5, -1, -1, -1, 1, 2, -1, 0, -1, 72, -5, 0);
     Vector128<short> v128_short_81 = Vector128.CreateScalar((short)-1);
     Vector128<ulong> v128_ulong_86 = Vector128<ulong>.AllBitsSet;
-    Vector<ulong> v_ulong_96 = Vector.Create((ulong)1);
+    Vector<ulong> v_ulong_96 = Vector<ulong>.One;
     Vector<float> v_float_97 = Vector.Create(2f);
     Vector3 v3_100 = Vector3.Create(0.09090909f, 2.4f, -0.94f);
     S1 s1_102 = new S1();
@@ -86,13 +86,13 @@ public class Runtime_108609
             return;
         }
     }
-    
+
     [Fact]
     public static void TestEntryPoint()
     {
         Antigen();
     }
-    
+
     private static int Antigen()
     {
         new Runtime_108609().Method0();
