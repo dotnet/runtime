@@ -45,15 +45,15 @@ namespace System.Threading
                 try
                 {
                     uint result;
-                    do
+                    while (true)
                     {
                         result = Interop.Kernel32.SleepEx(uint.MaxValue, true);
-                        if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                        if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                         {
-                            // Check if this was our interrupt APC
-                            CheckForPendingInterrupt();
+                            break;
                         }
-                    } while (result == Interop.Kernel32.WAIT_IO_COMPLETION);
+                        CheckForPendingInterrupt();
+                    }
                 }
                 finally
                 {
@@ -64,22 +64,30 @@ namespace System.Threading
             {
                 // Timed wait - use alertable wait
                 currentThread.SetWaitSleepJoinState();
-                uint startTicks = (uint)Environment.TickCount;
-                uint remainingTimeout = (uint)millisecondsTimeout;
+                long startTime = Environment.TickCount64;
                 try
                 {
                     uint result;
-                    do
+                    while (true)
                     {
-                        result = Interop.Kernel32.SleepEx(remainingTimeout, true);
-                        if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                        result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, true);
+                        if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                         {
-                            // Check if this was our interrupt APC
-                            CheckForPendingInterrupt();
-                            int elapsed = Environment.TickCount - (int)startTicks;
-                            remainingTimeout = (uint)Math.Max(0, millisecondsTimeout - elapsed);
+                            break;
                         }
-                    } while (result == Interop.Kernel32.WAIT_IO_COMPLETION && remainingTimeout > 0);
+                        // Check if this was our interrupt APC
+                        CheckForPendingInterrupt();
+                        // Handle APC completion by adjusting timeout and retrying
+                        long currentTime = Environment.TickCount64;
+                        long elapsed = currentTime - startTime;
+                        if (elapsed >= millisecondsTimeout)
+                        {
+                            result = Interop.Kernel32.WAIT_TIMEOUT;
+                            break;
+                        }
+                        millisecondsTimeout -= (int)elapsed;
+                        startTime = currentTime;
+                    }
                 }
                 finally
                 {
@@ -231,31 +239,40 @@ namespace System.Threading
                         if (millisecondsTimeout == -1)
                         {
                             // Infinite wait
-                            do
+                            while (true)
                             {
                                 result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), uint.MaxValue, Interop.BOOL.TRUE);
-                                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                                if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                                 {
-                                    // Check if this was our interrupt APC
-                                    CheckForPendingInterrupt();
+                                    break;
                                 }
-                            } while (result == Interop.Kernel32.WAIT_IO_COMPLETION);
+                                // Check if this was our interrupt APC
+                                CheckForPendingInterrupt();
+                            }
                         }
                         else
                         {
-                            uint startTicks = (uint)Environment.TickCount;
-                            uint remainingTimeout = (uint)millisecondsTimeout;
-                            do
+                            long startTime = Environment.TickCount64;
+                            while (true)
                             {
-                                result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), remainingTimeout, Interop.BOOL.TRUE);
-                                if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
+                                result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                                if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                                 {
-                                    // Check if this was our interrupt APC
-                                    CheckForPendingInterrupt();
-                                    int elapsed = Environment.TickCount - (int)startTicks;
-                                    remainingTimeout = (uint)Math.Max(0, millisecondsTimeout - elapsed);
+                                    break;
                                 }
-                            } while (result == Interop.Kernel32.WAIT_IO_COMPLETION && remainingTimeout > 0);
+                                // Check if this was our interrupt APC
+                                CheckForPendingInterrupt();
+                                // Handle APC completion by adjusting timeout and retrying
+                                long currentTime = Environment.TickCount64;
+                                long elapsed = currentTime - startTime;
+                                if (elapsed >= millisecondsTimeout)
+                                {
+                                    result = Interop.Kernel32.WAIT_TIMEOUT;
+                                    break;
+                                }
+                                millisecondsTimeout -= (int)elapsed;
+                                startTime = currentTime;
+                            }
                         }
                         return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
                     }
