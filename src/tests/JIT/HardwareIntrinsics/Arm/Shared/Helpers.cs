@@ -3010,8 +3010,19 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte AddSaturate(sbyte op1, sbyte op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? sbyte.MinValue : sbyte.MaxValue) : result;
+            int result = op1 + op2;
+            if (result > sbyte.MaxValue)
+            {
+                return sbyte.MaxValue;
+            }
+            else if (result < sbyte.MinValue)
+            {
+                return sbyte.MinValue;
+            }
+            else
+            {
+                return (sbyte)result;
+            }
         }
 
         public static sbyte AddSaturate(sbyte op1, byte op2)
