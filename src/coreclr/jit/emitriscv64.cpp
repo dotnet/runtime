@@ -4833,7 +4833,7 @@ void emitter::emitDispInsName(
             unsigned rs2    = (code >> 2) & 0x1f;
             if (funct4 == 0b1001 && rdRs1 != REG_R0 && rs2 != REG_R0)
             {
-                if (JitConfig.JitDisasmWithCompressedNames())
+                if (emitComp->opts.disCodeBytes)
                 {
                     printf("c.add          %s, %s\n", RegNames[rdRs1], RegNames[rs2]);
                 }
@@ -4844,7 +4844,7 @@ void emitter::emitDispInsName(
             }
             else if (funct4 == 0b1000 && rdRs1 != REG_R0 && rs2 != REG_R0)
             {
-                const char* name = JitConfig.JitDisasmWithCompressedNames() ? "c.mv" : "mv  ";
+                const char* name = emitComp->opts.disCodeBytes ? "c.mv" : "mv  ";
                 printf("%s           %s, %s\n", name, RegNames[rdRs1], RegNames[rs2]);
             }
             else
@@ -4890,7 +4890,7 @@ void emitter::emitDispInsName(
                 emitDispIllegalInstruction(code);
             }
 
-            if (JitConfig.JitDisasmWithCompressedNames())
+            if (emitComp->opts.disCodeBytes)
             {
                 printf("c.%s         %s, %s\n", name, RegNames[rdRs1], RegNames[rs2]);
             }
