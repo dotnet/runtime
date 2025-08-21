@@ -156,7 +156,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 if (global.Indirect)
                 {
                     if (global.NumericValue.Value >= (ulong)pointerData.Length)
-                        throw new InvalidOperationException($"Invalid pointer data index {global.NumericValue.Value}.");
+                        throw new VirtualReadException($"Invalid pointer data index {global.NumericValue.Value}.");
 
                     globalValues[name] = new GlobalValue
                     {
@@ -293,12 +293,43 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <typeparam name="T">Type of value to read</typeparam>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Value read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public override T Read<T>(ulong address)
     {
         if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T value))
-            throw new InvalidOperationException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
+    }
+
+    /// <summary>
+    /// Read a value from the target in little endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    public override T ReadLittleEndian<T>(ulong address)
+    {
+        if (!TryRead(address, true, _dataTargetDelegates, out T value))
+            throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
+
+        return value;
+    }
+
+    /// <summary>
+    /// Read a value from the target in target endianness
+    /// </summary>
+    /// <typeparam name="T">Type of value to read</typeparam>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>True if read succeeds, false otherwise.</returns>
+    public override bool TryRead<T>(ulong address, out T value)
+    {
+        value = default;
+        if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T readValue))
+            return false;
+
+        value = readValue;
+        return true;
     }
 
     private static bool TryRead<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
@@ -318,12 +349,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// </summary>
     /// <typeparam name="T">Type of value to write</typeparam>
     /// <param name="address">Address to start writing to</param>
-    /// <returns>True if the value is successfully written. Throws an InvalidOperationException otherwise.</returns>
-    public override bool Write<T>(ulong address, T value)
+    public override void Write<T>(ulong address, T value)
     {
         if (!TryWrite(address, _config.IsLittleEndian, _dataTargetDelegates, value))
             throw new InvalidOperationException($"Failed to write {typeof(T)} at 0x{address:x8}.");
-        return true;
     }
 
     private static bool TryWrite<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
@@ -359,7 +388,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (!TryReadBuffer(address, buffer))
-            throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
 
     private bool TryReadBuffer(ulong address, Span<byte> buffer)
@@ -388,11 +417,11 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// Read a pointer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>Pointer read from the target</returns>}
+    /// <returns>Pointer read from the target</returns>
     public override TargetPointer ReadPointer(ulong address)
     {
         if (!TryReadPointer(address, _config, _dataTargetDelegates, out TargetPointer pointer))
-            throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
@@ -420,7 +449,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         {
             return new TargetCodePointer(Read<ulong>(address));
         }
-        throw new InvalidOperationException($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
+        throw new VirtualReadException($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
     }
 
     public void ReadPointers(ulong address, Span<TargetPointer> buffer)
@@ -440,7 +469,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>String read from the target</returns>}
+    /// <returns>String read from the target</returns>
     public override string ReadUtf8String(ulong address)
     {
         // Read characters until we find the null terminator
@@ -465,7 +494,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// Read a null-terminated UTF-16 string from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
-    /// <returns>String read from the target</returns>}
+    /// <returns>String read from the target</returns>
     public override string ReadUtf16String(ulong address)
     {
         // Read characters until we find the null terminator
@@ -497,7 +526,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override TargetNUInt ReadNUInt(ulong address)
     {
         if (!TryReadNUInt(address, _config, _dataTargetDelegates, out ulong value))
-            throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
+            throw new VirtualReadException($"Failed to read nuint at 0x{address:x8}.");
 
         return new TargetNUInt(value);
     }
@@ -636,7 +665,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public Target.TypeInfo GetTypeInfo(string type)
     {
         if (_types.TryGetValue(type, out Target.TypeInfo typeInfo))
-        return typeInfo;
+            return typeInfo;
 
         DataType dataType = GetDataType(type);
         if (dataType is not DataType.Unknown)

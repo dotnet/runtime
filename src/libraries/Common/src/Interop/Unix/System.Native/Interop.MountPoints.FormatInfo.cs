@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -59,7 +60,7 @@ internal static partial class Interop
             int result = GetFileSystemTypeNameForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &formatType);
             if (result == 0)
             {
-                format = formatType == -1 ? Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!
+                format = formatType == -1 ? Utf8StringMarshaller.ConvertToManaged(formatBuffer)!
                                           : (Enum.GetName(typeof(UnixFileSystemTypes), formatType) ?? "");
                 return Error.SUCCESS;
             }

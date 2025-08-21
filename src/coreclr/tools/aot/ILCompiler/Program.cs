@@ -530,11 +530,7 @@ namespace ILCompiler
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
-                substitutions.AppendFrom(scanResults.GetBodyAndFieldSubstitutions());
-
-                substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
-
-                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager);
+                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager, scanResults.GetAnalysisCharacteristics());
 
                 // Use a more precise IL provider that uses whole program analysis for dead branch elimination
                 builder.UseILProvider(ilProvider);
