@@ -125,6 +125,7 @@ void* PalGetModuleHandleFromPointer(void* pointer);
 
 MANAGED_RUNTIME_EXPORT(GetRuntimeException)
 MANAGED_RUNTIME_EXPORT(RuntimeFailFast)
+MANAGED_RUNTIME_EXPORT(ThreadEntryPoint)
 MANAGED_RUNTIME_EXPORT(AppendExceptionStackFrame)
 MANAGED_RUNTIME_EXPORT(GetSystemArrayEEType)
 MANAGED_RUNTIME_EXPORT(OnFirstChanceException)
@@ -141,7 +142,7 @@ typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
     &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
-    nullptr, // &UnhandledExceptionHandler,
+    &MANAGED_RUNTIME_EXPORT_NAME(ThreadEntryPoint),
     &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
     nullptr, // &CheckStaticClassConstruction,
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),

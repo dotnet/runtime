@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
-class Program
+Console.WriteLine(Program.x[0]);
+
+partial class Program
 {
-    static void Main()
-    {
-        Console.WriteLine("Hello world");
-    }
+    public static readonly byte[] x = "utf8 literal"u8.ToArray();
+
+    
 }
