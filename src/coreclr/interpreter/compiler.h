@@ -690,6 +690,7 @@ private:
     int32_t m_stackCapacity;
 
     void CheckStackHelper(int n);
+    void CheckStackExact(int n);
     void EnsureStack(int additional);
     void PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size);
     void PushStackType(StackType stackType, CORINFO_CLASS_HANDLE clsHnd);

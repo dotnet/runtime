@@ -623,6 +623,19 @@ void InterpCompiler::CheckStackHelper(int n)
     }
 }
 
+void InterpCompiler::CheckStackExact(int n)
+{
+    int32_t currentSize = (int32_t)(m_pStackPointer - m_pStackBase);
+    if (currentSize < n)
+    {
+        BADCODE("Stack underflow");
+    }
+    else if (currentSize > n)
+    {
+        BADCODE("Stack contains extra data");
+    }
+}
+
 void InterpCompiler::PushTypeExplicit(StackType stackType, CORINFO_CLASS_HANDLE clsHnd, int size)
 {
     EnsureStack(1);
@@ -3908,11 +3921,12 @@ retry_emit:
 
                 if (retType == InterpTypeVoid)
                 {
+                    CheckStackExact(0);
                     AddIns(INTOP_RET_VOID);
                 }
                 else if (retType == InterpTypeVT)
                 {
-                    CHECK_STACK(1);
+                    CheckStackExact(1);
                     AddIns(INTOP_RET_VT);
                     m_pStackPointer--;
                     int32_t retVar = m_pStackPointer[0].var;
@@ -3921,7 +3935,7 @@ retry_emit:
                 }
                 else
                 {
-                    CHECK_STACK(1);
+                    CheckStackExact(1);
                     AddIns(INTOP_RET);
                     m_pStackPointer--;
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
