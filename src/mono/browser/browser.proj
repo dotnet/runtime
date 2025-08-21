@@ -320,6 +320,7 @@
     </ItemGroup>
 
     <PropertyGroup>
+      <!-- keep in sync with _WasmNativeWorkloadNeeded -->
       <_EmccPropsJson>
 <![CDATA[
 {

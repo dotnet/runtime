@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace HostActivation.Tests
@@ -166,6 +167,65 @@ namespace HostActivation.Tests
                 .And.HaveStdOutContaining("Environment variables:")
                 .And.NotHaveStdOutContaining(comPlusEnvVar)
                 .And.HaveStdOutContaining("Detected COMPlus_* environment variable(s). Consider transitioning to DOTNET_* equivalent.");
+        }
+
+        [Fact]
+        public void Info_GlobalJson_InvalidJson()
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidJson)))
+            {
+                string globalJsonPath = GlobalJson.Write(workingDir.Location, "{ \"sdk\": { }");
+                TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining("JSON parsing exception:")
+                    .And.NotHaveStdErr();
+            }
+        }
+
+        [Theory]
+        [InlineData("9")]
+        [InlineData("9.0")]
+        [InlineData("9.0.x")]
+        [InlineData("invalid")]
+        public void Info_GlobalJson_InvalidData(string version)
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_InvalidData)))
+            {
+                string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
+                TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value")
+                    .And.HaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
+                    .And.NotHaveStdErr();
+            }
+        }
+
+        [Theory]
+        [InlineData("9.0.0")]
+        [InlineData("9.1.99")]
+        public void Info_GlobalJson_NonExistentFeatureBand(string version)
+        {
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(Info_GlobalJson_NonExistentFeatureBand)))
+            {
+                string globalJsonPath = GlobalJson.CreateWithVersion(workingDir.Location, version);
+                var result = TestContext.BuiltDotNet.Exec("--info")
+                    .WorkingDirectory(workingDir.Location)
+                    .CaptureStdOut().CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining($"Invalid [{globalJsonPath}]")
+                    .And.HaveStdOutContaining($"Version '{version}' is not valid for the 'sdk/version' value. SDK feature bands start at 1 - for example, {Version.Parse(version).ToString(2)}.100")
+                    .And.NotHaveStdOutContaining($"Invalid global.json is ignored for SDK resolution")
+                    .And.NotHaveStdErr();
+            }
         }
 
         [Fact]

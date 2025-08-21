@@ -321,6 +321,16 @@ INST(bclri,         "bclri",          0,   0x48001013)
 INST(bexti,         "bexti",          0,   0x48005013)
 INST(binvi,         "binvi",          0,   0x68001013)
 
+// RVC
+INST(c_mv,          "c.mv",          0,   0x00008002)
+INST(c_add,         "c.add",         0,   0x00009002)
+INST(c_and,         "c.and",         0,   0x00008c61)
+INST(c_or,          "c.or",          0,   0x00008c41)
+INST(c_xor,         "c.xor",         0,   0x00008c21)
+INST(c_sub,         "c.sub",         0,   0x00008c01)
+INST(c_addw,        "c.addw",        0,   0x00009c21)
+INST(c_subw,        "c.subw",        0,   0x00009c01)
+
 // clang-format on
 /*****************************************************************************/
 #undef INST
