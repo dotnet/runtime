@@ -57,9 +57,8 @@ namespace System.Runtime
         //
 
         // Force a garbage collection.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCollect")]
-        internal static extern void RhCollect(int generation, InternalGCCollectionMode mode, bool lowMemoryP = false);
+        [LibraryImport(RuntimeLibrary)]
+        internal static partial void RhCollect(int generation, InternalGCCollectionMode mode, Interop.BOOL lowMemoryP = Interop.BOOL.FALSE);
 
         // Mark an object instance as already finalized.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -128,9 +127,8 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhIsServerGc")]
         internal static extern bool RhIsServerGc();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetGcTotalMemory")]
-        internal static extern long RhGetGcTotalMemory();
+        [LibraryImport(RuntimeLibrary)]
+        internal static partial long RhGetGcTotalMemory();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLohCompactionMode")]
@@ -181,13 +179,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhCancelFullGCNotification")]
         internal static extern bool RhCancelFullGCNotification();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhStartNoGCRegion")]
-        internal static extern int RhStartNoGCRegion(long totalSize, bool hasLohSize, long lohSize, bool disallowFullBlockingGC);
+        // Enters a no GC region, possibly doing a blocking GC if there
+        // is not enough memory available to satisfy the caller's request.
+        [LibraryImport(RuntimeLibrary)]
+        internal static partial int RhStartNoGCRegion(long totalSize, Interop.BOOL hasLohSize, long lohSize, Interop.BOOL disallowFullBlockingGC);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhEndNoGCRegion")]
-        internal static extern int RhEndNoGCRegion();
+        // Exits a no GC region, possibly doing a GC to clean up the garbage that the caller allocated.
+        [LibraryImport(RuntimeLibrary)]
+        internal static partial int RhEndNoGCRegion();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGCSegmentSize")]
