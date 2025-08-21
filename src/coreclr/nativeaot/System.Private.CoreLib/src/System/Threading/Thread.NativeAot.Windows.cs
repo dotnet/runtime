@@ -32,13 +32,13 @@ namespace System.Threading
 
             CheckForPendingInterrupt();
 
-            Thread currentThread = CurrentThread;
             if (millisecondsTimeout == 0)
             {
                 UninterruptibleSleep0();
                 return;
             }
 
+            Thread currentThread = CurrentThread;
             if (millisecondsTimeout == -1)
             {
                 // Infinite wait - use alertable wait
