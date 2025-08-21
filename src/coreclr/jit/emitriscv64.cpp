@@ -3714,7 +3714,10 @@ void emitter::emitDispInsName(
     emitDispInsOffs(insOffset, doffs);
 
     if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
-        printf("  %08X    ", code);
+    {
+        int nNibbles = ((code & 0b11) != 0b11) ? 4 : 8;
+        printf("  %-8.*X    ", nNibbles, code);
+    }
 
     printf("      ");
 
@@ -4829,14 +4832,21 @@ void emitter::emitDispInsName(
             unsigned funct4 = (code >> 12) & 0xf;
             unsigned rdRs1  = (code >> 7) & 0x1f;
             unsigned rs2    = (code >> 2) & 0x1f;
-            // TODO-RISCV64-RVC: Introduce a switch in jitconfigvalues.h to show c.* prefix.
             if (funct4 == 0b1001 && rdRs1 != REG_R0 && rs2 != REG_R0)
             {
-                printf("add            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                if (JitConfig.JitDisasmWithCompressedNames())
+                {
+                    printf("c.add          %s, %s\n", RegNames[rdRs1], RegNames[rs2]);
+                }
+                else
+                {
+                    printf("add            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                }
             }
             else if (funct4 == 0b1000 && rdRs1 != REG_R0 && rs2 != REG_R0)
             {
-                printf("mv             %s, %s\n", RegNames[rdRs1], RegNames[rs2]);
+                const char* name = JitConfig.JitDisasmWithCompressedNames() ? "c.mv" : "mv  ";
+                printf("%s           %s, %s\n", name, RegNames[rdRs1], RegNames[rs2]);
             }
             else
             {
@@ -4850,34 +4860,44 @@ void emitter::emitDispInsName(
             unsigned funct2 = (code >> 5) & 0x3;
             unsigned rdRs1  = getRegNumberFromRvcReg(((code >> 7) & 0x7));
             unsigned rs2    = getRegNumberFromRvcReg(((code >> 2) & 0x7));
-            // TODO-RISCV64-RVC: Introduce a switch in jitconfigvalues.h to show c.* prefix.
+
+            const char* name = nullptr;
             if (funct6 == 0b100011 && funct2 == 0b00)
             {
-                printf("sub            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "sub ";
             }
             else if (funct6 == 0b100011 && funct2 == 0b01)
             {
-                printf("xor            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "xor ";
             }
             else if (funct6 == 0b100011 && funct2 == 0b10)
             {
-                printf("or             %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "or  ";
             }
             else if (funct6 == 0b100011 && funct2 == 0b11)
             {
-                printf("and            %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "and ";
             }
             else if (funct6 == 0b100111 && funct2 == 0b00)
             {
-                printf("subw           %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "subw";
             }
             else if (funct6 == 0b100111 && funct2 == 0b01)
             {
-                printf("addw           %s, %s, %s\n", RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
+                name = "addw";
             }
             else
             {
                 emitDispIllegalInstruction(code);
+            }
+
+            if (JitConfig.JitDisasmWithCompressedNames())
+            {
+                printf("c.%s         %s, %s\n", name, RegNames[rdRs1], RegNames[rs2]);
+            }
+            else
+            {
+                printf("%s           %s, %s, %s\n", name, RegNames[rdRs1], RegNames[rdRs1], RegNames[rs2]);
             }
             return;
         }

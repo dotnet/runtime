@@ -345,6 +345,11 @@ CONFIG_INTEGER(JitDisasmSpilled, "JitDisasmSpilled", 0)
 // Print the process address next to each instruction of the disassembly
 CONFIG_INTEGER(JitDasmWithAddress, "JitDasmWithAddress", 0)
 
+#ifdef TARGET_RISCV64
+// Print the "c.*" mnemonics for compressed (RVC) instructions instead of normalized names in the disassembly
+RELEASE_CONFIG_INTEGER(JitDisasmWithCompressedNames, "JitDisasmWithCompressedNames", 0)
+#endif
+
 RELEASE_CONFIG_STRING(JitStdOutFile, "JitStdOutFile") // If set, sends JIT's stdout output to this file.
 
 RELEASE_CONFIG_INTEGER(RichDebugInfo, "RichDebugInfo", 0) // If 1, keep rich debug info and report it back to the EE
