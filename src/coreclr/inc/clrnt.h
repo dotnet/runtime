@@ -470,7 +470,7 @@ RtlpGetFunctionEndAddress (
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
-    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+    return FunctionEntry->BeginAddress + 2 * FunctionLength;
 }
 
 #define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)

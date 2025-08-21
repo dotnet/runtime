@@ -84,6 +84,7 @@ public interface ILoader : IContract
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
+    TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle) => throw new NotImplementedException();

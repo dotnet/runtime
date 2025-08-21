@@ -12,6 +12,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
@@ -945,8 +946,8 @@ internal static partial class Interop
             if (ptr != IntPtr.Zero)
             {
                 GCHandle gch = GCHandle.FromIntPtr(ptr);
-                IntPtr name = Ssl.SslGetServerName(ssl);
-                Debug.Assert(name != IntPtr.Zero);
+                byte* name = Ssl.SslGetServerName(ssl);
+                Debug.Assert(name != null);
 
                 SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
                 // There is no relation between SafeSslContextHandle and SafeSslHandle so the handle
@@ -981,8 +982,8 @@ internal static partial class Interop
                 return;
             }
 
-            IntPtr name = Ssl.SessionGetHostname(session);
-            Debug.Assert(name != IntPtr.Zero);
+            byte* name = Ssl.SessionGetHostname(session);
+            Debug.Assert(name != null);
             ctxHandle.RemoveSession(name, session);
         }
 
@@ -1072,12 +1073,12 @@ internal static partial class Interop
             }
         }
 
-        internal static SslException CreateSslException(string message)
+        internal static unsafe SslException CreateSslException(string message)
         {
             // Capture last error to be consistent with CreateOpenSslCryptographicException
             ulong errorVal = Crypto.ErrPeekLastError();
             Crypto.ErrClearError();
-            string msg = SR.Format(message, Marshal.PtrToStringUTF8(Crypto.ErrReasonErrorString(errorVal)));
+            string msg = SR.Format(message, Utf8StringMarshaller.ConvertToManaged(Crypto.ErrReasonErrorString(errorVal)));
             return new SslException(msg, (int)errorVal);
         }
 
