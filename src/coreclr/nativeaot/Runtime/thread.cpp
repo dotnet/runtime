@@ -1285,7 +1285,7 @@ FCIMPLEND
 #define NEWTHREAD_RETURN_TYPE uint32_t
 #endif
 
-FCIMPL1(NEWTHREAD_RETURN_TYPE, RhThreadEntryPoint, void* pContext)
+EXTERN_C STDCALL NEWTHREAD_RETURN_TYPE RhThreadEntryPoint(void* pContext)
 {
     // We will attach the thread early so that when the managed thread entrypoint
     // starts running and performs its reverse p/invoke transition, the thread is
@@ -1314,6 +1314,11 @@ FCIMPL1(NEWTHREAD_RETURN_TYPE, RhThreadEntryPoint, void* pContext)
         ->GetClasslibFunction(ClasslibFunctionId::ThreadEntryPoint);
 
     return pFn(pContext);
+}
+
+FCIMPL0(void*, RhGetThreadEntryPointAddress)
+{
+    return &RhThreadEntryPoint;
 }
 FCIMPLEND
 

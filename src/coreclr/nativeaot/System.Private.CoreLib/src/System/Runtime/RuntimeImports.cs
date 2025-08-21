@@ -27,15 +27,11 @@ namespace System.Runtime
         internal const string RuntimeLibrary = "*";
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhThreadEntryPoint")]
+        [RuntimeImport(RuntimeLibrary, "RhGetThreadEntryPointAddress")]
 #if TARGET_UNIX
-        private static extern unsafe nint RhThreadEntryPoint(nint pContext);
-        internal static unsafe delegate* unmanaged<nint, nint> RhGetThreadEntryPointAddress()
-            => (delegate* unmanaged<nint, nint>)(delegate*<nint, nint>)&RhThreadEntryPoint;
+        internal static extern unsafe delegate* unmanaged<nint, nint> RhGetThreadEntryPointAddress();
 #else
-        private static extern unsafe uint RhThreadEntryPoint(nint pContext);
-        internal static unsafe delegate* unmanaged<nint, uint> RhGetThreadEntryPointAddress()
-            => (delegate* unmanaged<nint, uint>)(delegate*<nint, uint>)&RhThreadEntryPoint;
+        internal static extern unsafe delegate* unmanaged<nint, uint> RhGetThreadEntryPointAddress();
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
