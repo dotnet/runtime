@@ -190,7 +190,7 @@ namespace System.Linq
             Requires.NotNull(items, nameof(items));
 
             int i = 0;
-            if (items.TryGetCount(out var count))
+            if (items.TryGetCount(out int count))
             {
                 if (immutableArray.Length != count)
                 {
