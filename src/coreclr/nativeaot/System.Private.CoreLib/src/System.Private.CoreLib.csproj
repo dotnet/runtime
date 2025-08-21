@@ -303,14 +303,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MMap.cs">
-      <Link>Interop\Unix\System.Native\Interop.MMap.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
       <Link>Interop\Unix\System.Native\Interop.MProtect.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MUnmap.cs">
-      <Link>Interop\Unix\System.Native\Interop.MUnmap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

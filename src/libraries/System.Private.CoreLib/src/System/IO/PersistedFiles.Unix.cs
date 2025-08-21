@@ -57,6 +57,11 @@ namespace System.IO
 
             // In initialization conditions, however, the "HOME" environment variable may
             // not yet be set. For such cases, consult with the password entry.
+            return GetHomeDirectoryFromPasswd();
+        }
+
+        internal static string GetHomeDirectoryFromPasswd()
+        {
             unsafe
             {
                 // First try with a buffer that should suffice for 99% of cases.
@@ -66,8 +71,8 @@ namespace System.IO
                 // what to do.
                 const int BufLen = Interop.Sys.Passwd.InitialBufferSize;
                 byte* stackBuf = stackalloc byte[BufLen];
-                if (TryGetHomeDirectoryFromPasswd(stackBuf, BufLen, out userHomeDirectory))
-                    return userHomeDirectory;
+                if (TryGetHomeDirectoryFromPasswd(stackBuf, BufLen, out string? userHomeDirectory))
+                    return userHomeDirectory!;
 
                 // Fallback to heap allocations if necessary, growing the buffer until
                 // we succeed.  TryGetHomeDirectory will throw if there's an unexpected error.
@@ -79,7 +84,7 @@ namespace System.IO
                     fixed (byte* buf = &heapBuf[0])
                     {
                         if (TryGetHomeDirectoryFromPasswd(buf, heapBuf.Length, out userHomeDirectory))
-                            return userHomeDirectory;
+                            return userHomeDirectory!;
                     }
                 }
             }
