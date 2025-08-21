@@ -1078,7 +1078,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
                     break;
                 case InterpTypeVT:
                 {
-                    InterpreterStackMap *stackMap = GetInterpreterStackMap(m_compHnd, pVar->clsHnd);
+                    InterpreterStackMap *stackMap = GetInterpreterStackMap(pVar->clsHnd);
                     for (unsigned j = 0; j < stackMap->m_slotCount; j++)
                     {
                         InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
@@ -1232,9 +1232,26 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
     return m_pMethodCode;
 }
 
+InterpreterStackMap* InterpCompiler::GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle)
+{
+    InterpreterStackMap* result = nullptr;
+    if (!dn_simdhash_ptr_ptr_try_get_value(m_stackmapsByClass.GetValue(), classHandle, (void **)&result))
+    {
+        result = new InterpreterStackMap(m_compHnd, classHandle);
+        checkAddedNew(dn_simdhash_ptr_ptr_try_add(m_stackmapsByClass.GetValue(), classHandle, result));
+    }
+    return result;
+}
+
+static void FreeInterpreterStackMap(void *key, void *value, void *userdata)
+{
+    delete (InterpreterStackMap *)value;
+}
+
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
-    : m_pInitLocalsIns(nullptr)
+    : m_stackmapsByClass(FreeInterpreterStackMap)
+    , m_pInitLocalsIns(nullptr)
     , m_globalVarsWithRefsStackTop(0)
 {
     m_genericLookupToDataItemIndex.Init(&m_dataItems, this);
@@ -3220,7 +3237,7 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     // or in the reverse order if the flag is set
     if (interpType == InterpTypeVT)
     {
-        if (m_compHnd->getClassAttribs(clsHnd) & CORINFO_FLG_CONTAINS_GC_PTR)
+        if (GetInterpreterStackMap(clsHnd)->m_slotCount)
         {
             AddIns(INTOP_STIND_VT);
             m_pLastNewIns->data[1] = GetDataItemIndex(clsHnd);
@@ -6048,7 +6065,7 @@ DO_LDFTN:
                     case InterpTypeVT:
                     {
                         int size = m_compHnd->getClassSize(elemClsHnd);
-                        bool hasRefs = (m_compHnd->getClassAttribs(elemClsHnd) & CORINFO_FLG_CONTAINS_GC_PTR) != 0;
+                        bool hasRefs = GetInterpreterStackMap(elemClsHnd)->m_slotCount > 0;
                         m_pStackPointer -= 3;
                         if (hasRefs)
                         {
