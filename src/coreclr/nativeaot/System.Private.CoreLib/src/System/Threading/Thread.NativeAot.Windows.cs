@@ -33,7 +33,7 @@ namespace System.Threading
             Thread currentThread = CurrentThread;
             if (millisecondsTimeout == 0)
             {
-                Thread.CheckForPendingInterrupt();
+                CheckForPendingInterrupt();
                 UninterruptibleSleep0();
                 return;
             }
@@ -47,12 +47,11 @@ namespace System.Threading
                     uint result;
                     do
                     {
-                        Thread.CheckForPendingInterrupt();
                         result = Interop.Kernel32.SleepEx(uint.MaxValue, true);
                         if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
                         {
                             // Check if this was our interrupt APC
-                            Thread.CheckForPendingInterrupt();
+                            CheckForPendingInterrupt();
                         }
                     } while (result == Interop.Kernel32.WAIT_IO_COMPLETION);
                 }
@@ -72,15 +71,13 @@ namespace System.Threading
                     uint result;
                     do
                     {
-                        Thread.CheckForPendingInterrupt();
                         result = Interop.Kernel32.SleepEx(remainingTimeout, true);
                         if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
                         {
                             // Check if this was our interrupt APC
-                            Thread.CheckForPendingInterrupt();
-                            uint elapsed = (uint)Environment.TickCount - startTicks;
-                            int elapsed = Environment.TickCount - startTicks;
-                            remainingTimeout = Math.Max(0, millisecondsTimeout - elapsed);
+                            CheckForPendingInterrupt();
+                            int elapsed = Environment.TickCount - (int)startTicks;
+                            remainingTimeout = (uint)Math.Max(0, millisecondsTimeout - elapsed);
                         }
                     } while (result == Interop.Kernel32.WAIT_IO_COMPLETION && remainingTimeout > 0);
                 }
@@ -236,12 +233,11 @@ namespace System.Threading
                             // Infinite wait
                             do
                             {
-                                Thread.CheckForPendingInterrupt();
                                 result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), uint.MaxValue, Interop.BOOL.TRUE);
                                 if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
                                 {
                                     // Check if this was our interrupt APC
-                                    Thread.CheckForPendingInterrupt();
+                                    CheckForPendingInterrupt();
                                 }
                             } while (result == Interop.Kernel32.WAIT_IO_COMPLETION);
                         }
@@ -251,15 +247,13 @@ namespace System.Threading
                             uint remainingTimeout = (uint)millisecondsTimeout;
                             do
                             {
-                                Thread.CheckForPendingInterrupt();
                                 result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), remainingTimeout, Interop.BOOL.TRUE);
                                 if (result == Interop.Kernel32.WAIT_IO_COMPLETION)
                                 {
                                     // Check if this was our interrupt APC
-                                    Thread.CheckForPendingInterrupt();
-                                    uint elapsed = (uint)Environment.TickCount - startTicks;
-                                    int elapsed = Environment.TickCount - startTicks;
-                                    remainingTimeout = elapsed >= millisecondsTimeout ? 0 : millisecondsTimeout - elapsed;
+                                    CheckForPendingInterrupt();
+                                    int elapsed = Environment.TickCount - (int)startTicks;
+                                    remainingTimeout = (uint)Math.Max(0, millisecondsTimeout - elapsed);
                                 }
                             } while (result == Interop.Kernel32.WAIT_IO_COMPLETION && remainingTimeout > 0);
                         }
