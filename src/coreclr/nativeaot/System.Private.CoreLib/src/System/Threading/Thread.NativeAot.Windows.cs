@@ -30,10 +30,11 @@ namespace System.Threading
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
+            CheckForPendingInterrupt();
+
             Thread currentThread = CurrentThread;
             if (millisecondsTimeout == 0)
             {
-                CheckForPendingInterrupt();
                 UninterruptibleSleep0();
                 return;
             }
@@ -532,13 +533,10 @@ namespace System.Threading
                     return;
                 }
 
-                // Queue APC to interrupt the target thread
-                if (!_osHandle.IsInvalid)
+                Debug.Assert(!_osHandle.IsInvalid);
+                unsafe
                 {
-                    unsafe
-                    {
-                        Interop.Kernel32.QueueUserAPC(RuntimeImports.RhGetInterruptApcCallback(), _osHandle, 0);
-                    }
+                    Interop.Kernel32.QueueUserAPC(RuntimeImports.RhGetInterruptApcCallback(), _osHandle, 0);
                 }
             }
         }

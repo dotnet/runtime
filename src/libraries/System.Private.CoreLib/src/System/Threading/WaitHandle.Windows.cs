@@ -58,6 +58,11 @@ namespace System.Threading
             int result;
             try
             {
+#if !MONO
+                // Check for thread interrupt when APC completion occurs
+                Thread.CheckForPendingInterrupt();
+#endif
+
                 while (true)
                 {
 #if NATIVEAOT
@@ -144,6 +149,11 @@ namespace System.Threading
             {
                 startTime = Environment.TickCount64;
             }
+
+#if !MONO
+            // Check for thread interrupt when APC completion occurs
+            Thread.CheckForPendingInterrupt();
+#endif
 
             // Signal the object and wait for the first time
             int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
