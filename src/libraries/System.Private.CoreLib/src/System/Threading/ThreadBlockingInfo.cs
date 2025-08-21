@@ -34,9 +34,8 @@ namespace System.Threading
         [ThreadStatic]
         private static ThreadBlockingInfo* t_first; // may be used by debuggers
 
-        // This pointer can be used to obtain the object relevant to the blocking. For native object kinds, it points to the
-        // native object (for Monitor object kinds in CoreCLR, it points to a native AwareLock object). For managed object
-        // kinds, it points to a stack location containing the managed object reference.
+        // This pointer can be used to obtain the object relevant to the blocking.
+        // It points to a stack location containing the managed object reference.
         private void* _objectPtr; // may be used by debuggers
 
         // Indicates the type of object relevant to the blocking
