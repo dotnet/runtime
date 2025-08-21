@@ -22,7 +22,6 @@
       DOTNET_EnableAVX2;
       DOTNET_EnableAVX512;
       DOTNET_EnableHWIntrinsic;
-      DOTNET_EnableSSE42;
       DOTNET_EnableAPX;
       DOTNET_JitStressEvexEncoding;
       DOTNET_PreferredVectorBitWidth;
@@ -103,26 +102,23 @@
     <TestEnvironment Include="jitstress2_tiered" JitStress="2" TieredCompilation="1" />
     <TestEnvironment Include="jitstress_isas_nohwintrinsic" EnableHWIntrinsic="0" />
     <TestEnvironment Include="jitstress_isas_x86_evex" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" />
-    <TestEnvironment Include="jitstress_isas_x86_noavx" EnableAVX="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_x86_noavx" EnableAVX="0" /> <!-- Depends on Baseline -->
     <TestEnvironment Include="jitstress_isas_x86_noavx2" EnableAVX2="0" /> <!-- Depends on AVX -->
     <TestEnvironment Include="jitstress_isas_x86_noavx512" EnableAVX512="0" /> <!-- Depends on AVX2 -->
-    <TestEnvironment Include="jitstress_isas_x86_nosse3" EnableSSE42="0" /> <!-- Depends on Baseline -->
     <TestEnvironment Include="jitstress_isas_x86_vectort128" JitStressEvexEncoding="1" MaxVectorTBitWidth="128" />
     <TestEnvironment Include="jitstress_isas_x86_vectort512" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" MaxVectorTBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_x86_noavx512_vectort128" EnableAVX512="0" MaxVectorTBitWidth="128" />
     <TestEnvironment Include="jitstress_isas_1_x86_evex" JitStress="1" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" />
-    <TestEnvironment Include="jitstress_isas_1_x86_noavx" JitStress="1" EnableAVX="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_1_x86_noavx" JitStress="1" EnableAVX="0" /> <!-- Depends on Baseline -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx2" JitStress="1" EnableAVX2="0" /> <!-- Depends on AVX -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx512" JitStress="1" EnableAVX512="0" /> <!-- Depends on AVX2 -->
-    <TestEnvironment Include="jitstress_isas_1_x86_nosse3" JitStress="1" EnableSSE42="0" /> <!-- Depends on Baseline -->
     <TestEnvironment Include="jitstress_isas_1_x86_vectort128" JitStress="1" JitStressEvexEncoding="1" MaxVectorTBitWidth="128" />
     <TestEnvironment Include="jitstress_isas_1_x86_vectort512" JitStress="1" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" MaxVectorTBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_1_x86_noavx512_vectort128" JitStress="1" EnableAVX512="0" MaxVectorTBitWidth="128" />
     <TestEnvironment Include="jitstress_isas_2_x86_evex" JitStress="2" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" />
-    <TestEnvironment Include="jitstress_isas_2_x86_noavx" JitStress="2" EnableAVX="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_2_x86_noavx" JitStress="2" EnableAVX="0" /> <!-- Depends on Baseline -->
     <TestEnvironment Include="jitstress_isas_2_x86_noavx2" JitStress="2" EnableAVX2="0" /> <!-- Depends on AVX -->
     <TestEnvironment Include="jitstress_isas_2_x86_noavx512" JitStress="2" EnableAVX512="0" /> <!-- Depends on AVX2 -->
-    <TestEnvironment Include="jitstress_isas_2_x86_nosse3" JitStress="2" EnableSSE42="0" /> <!-- Depends on Baseline -->
     <TestEnvironment Include="jitstress_isas_2_x86_vectort128" JitStress="2" JitStressEvexEncoding="1" MaxVectorTBitWidth="128" />
     <TestEnvironment Include="jitstress_isas_2_x86_vectort512" JitStress="2" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" MaxVectorTBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_2_x86_noavx512_vectort128" JitStress="2" EnableAVX512="0" MaxVectorTBitWidth="128" />
