@@ -1904,6 +1904,14 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     varDsc->lvPromoted      = true;
     varDsc->lvContainsHoles = structPromotionInfo.containsHoles;
 
+#ifdef TARGET_ARM
+    if (varDsc->lvIsParam)
+    {
+        // TODO-Cleanup: Allow independent promotion for ARM struct parameters
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+    }
+#endif
+
 #ifdef DEBUG
     // Don't stress this in LCL_FLD stress.
     varDsc->lvKeepType = 1;
