@@ -145,7 +145,7 @@ bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* i
 
     if (input->version_lo >= offsetof(host_interface_t, single_file_bundle_header_offset) + sizeof(input->single_file_bundle_header_offset))
     {
-        trace::verbose(_X("  single_file_bundle_header_offset: %d"), input->single_file_bundle_header_offset);
+        trace::verbose(_X("  single_file_bundle_header_offset: %zu"), input->single_file_bundle_header_offset);
         if (input->single_file_bundle_header_offset != 0)
         {
             static bundle::runner_t bundle_runner(input->host_info_host_path, input->host_info_app_path, input->single_file_bundle_header_offset);
