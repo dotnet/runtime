@@ -79,7 +79,8 @@ namespace System.Threading
                             // Check if this was our interrupt APC
                             Thread.CheckForPendingInterrupt();
                             uint elapsed = (uint)Environment.TickCount - startTicks;
-                            remainingTimeout = elapsed >= (uint)millisecondsTimeout ? 0 : (uint)millisecondsTimeout - elapsed;
+                            int elapsed = Environment.TickCount - startTicks;
+                            remainingTimeout = Math.Max(0, millisecondsTimeout - elapsed);
                         }
                     } while (result == Interop.Kernel32.WAIT_IO_COMPLETION && remainingTimeout > 0);
                 }
@@ -257,7 +258,8 @@ namespace System.Threading
                                     // Check if this was our interrupt APC
                                     Thread.CheckForPendingInterrupt();
                                     uint elapsed = (uint)Environment.TickCount - startTicks;
-                                    remainingTimeout = elapsed >= (uint)millisecondsTimeout ? 0 : (uint)millisecondsTimeout - elapsed;
+                                    int elapsed = Environment.TickCount - startTicks;
+                                    remainingTimeout = elapsed >= millisecondsTimeout ? 0 : millisecondsTimeout - elapsed;
                                 }
                             } while (result == Interop.Kernel32.WAIT_IO_COMPLETION && remainingTimeout > 0);
                         }
