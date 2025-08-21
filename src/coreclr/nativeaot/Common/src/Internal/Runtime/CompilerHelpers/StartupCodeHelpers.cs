@@ -22,8 +22,6 @@ namespace Internal.Runtime.CompilerHelpers
         /// </summary>
         private static int s_moduleCount;
 
-        internal static volatile bool s_runningModuleInitializers;
-
         /// <summary>
         /// GC handle of an array with s_moduleCount elements, each representing and array of GC static bases of the types in the module.
         /// </summary>
@@ -162,22 +160,12 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "RunModuleInitializers")]
-        internal static void RunModuleInitializers2()
-        {
-            RunModuleInitializers();
-        }
-
         internal static void RunModuleInitializers()
         {
-            s_runningModuleInitializers = true;
-
             for (int i = 0; i < s_moduleCount; i++)
             {
                 RunInitializers(s_modules[i], ReadyToRunSectionType.ModuleInitializerList);
             }
-
-            s_runningModuleInitializers = false;
         }
 
         private static unsafe void RunInitializers(TypeManagerHandle typeManager, ReadyToRunSectionType section)

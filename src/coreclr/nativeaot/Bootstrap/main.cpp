@@ -99,7 +99,7 @@ static char& __unbox_z = __stop___unbox;
 #endif // _MSC_VER
 
 extern "C" bool RhInitialize(bool isDll);
-extern "C" void RhSetRuntimeInitializationCallback(int (*fRuntimeInit)(), void (*fModuleInit)());
+extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
     void * pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
@@ -176,7 +176,6 @@ extern "C" int __managed__Main(int argc, char* argv[]);
 #else
 #define NATIVEAOT_ENTRYPOINT __managed__Startup
 extern "C" void __managed__Startup();
-extern "C" void RunModuleInitializers();
 #endif // !NATIVEAOT_DLL
 
 static int InitializeRuntime()
@@ -249,7 +248,7 @@ static struct InitializeRuntimePointerHelper
 {
     InitializeRuntimePointerHelper()
     {
-        RhSetRuntimeInitializationCallback(&InitializeRuntime, &RunModuleInitializers);
+        RhSetRuntimeInitializationCallback(&InitializeRuntime);
     }
 } initializeRuntimePointerHelper;
 #endif // NATIVEAOT_DLL
