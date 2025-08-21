@@ -3741,30 +3741,31 @@ void Compiler::fgFindBasicBlocks()
         }
         else
         {
-            HBtab->ebdTyp = clause.ClassToken;
-
-            /* Set bbCatchTyp as appropriate */
-
+            // Set ebdTyp and bbCatchTyp as appropriate
+            //
             if (clause.Flags & CORINFO_EH_CLAUSE_FINALLY)
             {
                 hndBegBB->bbCatchTyp = BBCT_FINALLY;
+                HBtab->ebdTyp        = 0;
             }
             else
             {
                 if (clause.Flags & CORINFO_EH_CLAUSE_FAULT)
                 {
                     hndBegBB->bbCatchTyp = BBCT_FAULT;
+                    HBtab->ebdTyp        = 0;
                 }
                 else
                 {
-                    hndBegBB->bbCatchTyp = clause.ClassToken;
-
                     // These values should be non-zero value that will
                     // not collide with real tokens for bbCatchTyp
                     if (clause.ClassToken == 0)
                     {
                         BADCODE("Exception catch type is Null");
                     }
+
+                    hndBegBB->bbCatchTyp = clause.ClassToken;
+                    HBtab->ebdTyp        = clause.ClassToken;
 
                     noway_assert(clause.ClassToken != BBCT_FAULT);
                     noway_assert(clause.ClassToken != BBCT_FINALLY);

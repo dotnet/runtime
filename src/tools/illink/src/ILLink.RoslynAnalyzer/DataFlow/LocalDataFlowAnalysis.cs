@@ -63,8 +63,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             OperationBlock = operationBlock;
         }
 
-        public void InterproceduralAnalyze()
+        public bool InterproceduralAnalyze()
         {
+            bool succeeded = true;
             ValueSetLattice<MethodBodyValue> methodGroupLattice = default;
             DictionaryLattice<LocalKey, Maybe<TValue>, MaybeLattice<TValue, TLattice>> hoistedLocalLattice = default;
             var interproceduralStateLattice = new InterproceduralStateLattice<TValue, TLattice>(
@@ -75,8 +76,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
             if (OperationBlock is IAttributeOperation attribute)
             {
-                AnalyzeAttribute(Context.OwningSymbol, attribute);
-                return;
+                succeeded &= AnalyzeAttribute(Context.OwningSymbol, attribute);
+                return succeeded;
             }
 
             Debug.Assert(Context.OwningSymbol is not IMethodSymbol methodSymbol ||
@@ -91,29 +92,31 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 Debug.Assert(!oldInterproceduralState.Methods.IsUnknown());
                 foreach (var method in oldInterproceduralState.Methods.GetKnownValues())
                 {
-                    AnalyzeMethod(method, ref interproceduralState);
+                    succeeded &= AnalyzeMethod(method, ref interproceduralState);
                 }
             }
+            return succeeded;
         }
 
-        private void AnalyzeAttribute(ISymbol owningSymbol, IAttributeOperation attribute)
+        private bool AnalyzeAttribute(ISymbol owningSymbol, IAttributeOperation attribute)
         {
             var cfg = Context.GetControlFlowGraph(attribute);
             var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures(cfg);
             var visitor = GetVisitor(owningSymbol, cfg, lValueFlowCaptures, default);
-            Fixpoint(new ControlFlowGraphProxy(cfg), visitor);
+            return Fixpoint(new ControlFlowGraphProxy(cfg), visitor);
         }
 
-        private void AnalyzeMethod(MethodBodyValue method, ref InterproceduralState<TValue, TLattice> interproceduralState)
+        private bool AnalyzeMethod(MethodBodyValue method, ref InterproceduralState<TValue, TLattice> interproceduralState)
         {
             var cfg = method.ControlFlowGraph;
             var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures(cfg);
             var visitor = GetVisitor(method.OwningSymbol, cfg, lValueFlowCaptures, interproceduralState);
-            Fixpoint(new ControlFlowGraphProxy(cfg), visitor);
+            bool succeeded = Fixpoint(new ControlFlowGraphProxy(cfg), visitor);
 
             // The interprocedural state struct is stored as a field of the visitor and modified
             // in-place there, but we also need those modifications to be reflected here.
             interproceduralState = visitor.InterproceduralState;
+            return succeeded;
         }
 
         protected abstract TTransfer GetVisitor(
