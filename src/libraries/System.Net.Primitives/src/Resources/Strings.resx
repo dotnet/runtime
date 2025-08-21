@@ -121,6 +121,6 @@
     <value>The requested property is not supported for the '{0}' AddressFamily.</value>
   </data>
   <data name="net_SocketException_OperationNotSupported_ReadOnlyIPAddress" xml:space="preserve">
-    <value>This operation is not supported on read-only IPAddress instance.</value>
+    <value>This operation is not supported on a read-only IPAddress instance.</value>
   </data>
 </root>
