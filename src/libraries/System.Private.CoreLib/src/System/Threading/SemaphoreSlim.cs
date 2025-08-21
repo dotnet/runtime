@@ -323,7 +323,6 @@ namespace System.Threading
         /// Tries a fast path to wait on the semaphore without taking the lock.
         /// </summary>
         /// <returns>true if the fast path succeeded; otherwise, false.</returns>
-        [UnsupportedOSPlatform("browser")]
         private bool TryWaitFastPath()
         {
             bool result = false;
@@ -354,7 +353,6 @@ namespace System.Threading
         /// <summary>
         /// Blocks the current thread until all the threads trying the fast path finish.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         private void SpinUntilFastPathFinishes()
         {
             SpinWait spinner = default;
