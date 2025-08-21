@@ -188,45 +188,6 @@ namespace System.Runtime
             return false;
         }
 
-        [RuntimeExport("RhUnboxAny")]
-        public static unsafe void RhUnboxAny(object? o, ref byte data, MethodTable* pUnboxToEEType)
-        {
-            if (pUnboxToEEType->IsValueType)
-            {
-                bool isValid = false;
-
-                if (pUnboxToEEType->IsNullable)
-                {
-                    isValid = (o == null) || o.GetMethodTable() == pUnboxToEEType->NullableType;
-                }
-                else
-                {
-                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), pUnboxToEEType);
-                }
-
-                if (!isValid)
-                {
-                    // Throw the invalid cast exception defined by the classlib, using the input unbox MethodTable*
-                    // to find the correct classlib.
-
-                    ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
-
-                    throw pUnboxToEEType->GetClasslibException(exID);
-                }
-
-                RhUnbox(o, ref data, pUnboxToEEType);
-            }
-            else
-            {
-                if (o != null && (TypeCast.IsInstanceOfAny(pUnboxToEEType, o) == null))
-                {
-                    throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
-                }
-
-                Unsafe.As<byte, object?>(ref data) = o;
-            }
-        }
-
         //
         // Unbox helpers with RyuJIT conventions
         //
