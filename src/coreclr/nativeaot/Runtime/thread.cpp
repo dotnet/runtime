@@ -32,9 +32,7 @@
 #ifndef DACCESS_COMPILE
 
 static int (*g_RuntimeInitializationCallback)();
-static void (*g_ModuleInitializerCallback)();
 static Thread* g_RuntimeInitializingThread;
-static Thread* g_ModuleInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
@@ -1190,27 +1188,18 @@ EXTERN_C uint32_t QCALLTYPE RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, 
 }
 #endif // TARGET_UNIX
 
-EXTERN_C void RhSetRuntimeInitializationCallback(int (*fRuntimeInit)(), void (*fModuleInit)())
+EXTERN_C void RhSetRuntimeInitializationCallback(int (*fPtr)())
 {
-    g_RuntimeInitializationCallback = fRuntimeInit;
-    g_ModuleInitializerCallback = fModuleInit;
+    g_RuntimeInitializationCallback = fPtr;
 }
 
-void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame, bool fEnsureModuleInitializersExecuted)
+void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
     if (!IsStateSet(TSF_Attached))
     {
         if (g_RuntimeInitializationCallback != NULL && g_RuntimeInitializingThread != this)
         {
             EnsureRuntimeInitialized();
-        }
-
-        // Additionally check g_RuntimeInitializingThread to cover the case where we're currently running EnsureRuntimeInitialized
-        // on this thread but we need a reverse p/invoke transition. Module initializers should only run after the runtime
-        // is initialized.
-        if (fEnsureModuleInitializersExecuted && g_ModuleInitializerCallback != NULL && g_ModuleInitializingThread != this && g_RuntimeInitializingThread != this)
-        {
-            EnsureModuleInitializersExecuted();
         }
 
         ThreadStore::AttachCurrentThread();
@@ -1258,22 +1247,6 @@ void Thread::EnsureRuntimeInitialized()
     }
 
     PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
-}
-
-void Thread::EnsureModuleInitializersExecuted()
-{
-    while (PalInterlockedCompareExchangePointer((void *volatile *)&g_ModuleInitializingThread, this, NULL) != NULL)
-    {
-        PalSleep(1);
-    }
-
-    if (g_ModuleInitializerCallback != NULL)
-    {
-        g_ModuleInitializerCallback();
-        g_ModuleInitializerCallback = NULL;
-    }
-
-    PalInterlockedExchangePointer((void *volatile *)&g_ModuleInitializingThread, NULL);
 }
 
 Object * Thread::GetThreadAbortException()
@@ -1351,10 +1324,10 @@ FCIMPL0(size_t, RhGetDefaultStackSize)
 FCIMPLEND
 
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
-EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame, bool fEnsureModuleInitializersExecuted)
+EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
 {
     ASSERT(pFrame->m_savedThread == ThreadStore::RawGetCurrentThread());
-    pFrame->m_savedThread->ReversePInvokeAttachOrTrapThread(pFrame, fEnsureModuleInitializersExecuted);
+    pFrame->m_savedThread->ReversePInvokeAttachOrTrapThread(pFrame);
 }
 
 //
@@ -1368,18 +1341,7 @@ FCIMPL1(void, RhpReversePInvoke, ReversePInvokeFrame * pFrame)
     if (pCurThread->InlineTryFastReversePInvoke(pFrame))
         return;
 
-    RhpReversePInvokeAttachOrTrapThread2(pFrame, true);
-}
-FCIMPLEND
-
-FCIMPL1(void, RhpReversePInvokeNoModuleInitializer, ReversePInvokeFrame * pFrame)
-{
-    Thread * pCurThread = ThreadStore::RawGetCurrentThread();
-    pFrame->m_savedThread = pCurThread;
-    if (pCurThread->InlineTryFastReversePInvoke(pFrame))
-        return;
-
-    RhpReversePInvokeAttachOrTrapThread2(pFrame, false);
+    RhpReversePInvokeAttachOrTrapThread2(pFrame);
 }
 FCIMPLEND
 
