@@ -141,10 +141,9 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 
 emitter::MajorOpcode emitter::GetMajorOpcode(code_t code)
 {
-    if ((code & 0b11) == 0b11)
+    if (Is32BitInstruction((WORD)code))
     {
         code_t opcode = (code >> 2) & 0b11111;
-        assert((opcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
         return (MajorOpcode)opcode;
     }
     else
@@ -2431,7 +2430,7 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
     assert(dst != nullptr);
     static_assert(sizeof(code_t) == 4, "code_t must be 4 bytes");
-    unsigned codeSize = ((code & 0b11) == 0b11) ? 4 : 2;
+    unsigned codeSize = Is32BitInstruction((WORD)code) ? 4 : 2;
     assert((codeSize == 4) || ((code >> 16) == 0));
     memcpy(dst + writeableOffset, &code, codeSize);
     return codeSize;
@@ -3715,7 +3714,7 @@ void emitter::emitDispInsName(
 
     if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
     {
-        int nNibbles = ((code & 0b11) != 0b11) ? 4 : 8;
+        int nNibbles = Is32BitInstruction((WORD)code) ? 8 : 4;
         printf("  %-8.*X    ", nNibbles, code);
     }
 
@@ -4932,13 +4931,15 @@ void emitter::emitDispIns(
     unsigned    instrSize;
     for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
     {
-        instrSize = sizeof(code_t);
-        code_t instruction;
-        memcpy(&instruction, instr, instrSize);
-        if ((instruction & 0b11) != 0b11)
+        WORD word;
+        memcpy(&word, instr, sizeof(word));
+        code_t instruction = word;
+        instrSize          = sizeof(word);
+        if (Is32BitInstruction(word))
         {
-            instruction &= 0xffff;
-            instrSize = 2;
+            memcpy(&word, instr + sizeof(word), sizeof(word));
+            instruction |= word << 16;
+            instrSize = 4;
         }
 #ifdef DEBUG
         if (emitComp->verbose && i != 0)
