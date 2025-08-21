@@ -1,0 +1,13 @@
+diff --git a/src/tests/JIT/HardwareIntrinsics/Arm/Shared/Helpers.cs b/src/tests/JIT/HardwareIntrinsics/Arm/Shared/Helpers.cs
+index 7191d56b878..2c61a28b1b8 100644
+--- a/src/tests/JIT/HardwareIntrinsics/Arm/Shared/Helpers.cs
++++ b/src/tests/JIT/HardwareIntrinsics/Arm/Shared/Helpers.cs
+@@ -4330,8 +4330,6 @@ private static (ulong val, bool ovf) ShiftOvf(ulong value, int shift)
+ 
+         private static float ConvertToSingleRoundToOdd(double val)
+         {
+-            float floatVal = (float)val;
+-
+             float f = (float)val;
+ 
+             // If val is NaN or Inf there’s nothing else to do
