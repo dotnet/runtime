@@ -50,8 +50,14 @@ namespace System.IO.Tests
         [Fact]
         public static void NegativeBufferSize_ThrowsArgumentOutOfRangeException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, -2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, 0));
+        }
+
+        [Fact]
+        public static void NegativeOneBufferSize_ShouldNotThrowException()
+        {
+            StreamReader streamReaderTest = new StreamReader("path", Encoding.UTF8, true, -1);
         }
 
         [Fact]

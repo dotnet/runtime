@@ -25,7 +25,6 @@ namespace System.IO
         // saves construction time.  This does break adaptive buffering,
         // but this is slightly faster.
         private const int DefaultBufferSize = 1024;  // Byte buffer size
-        private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
         private readonly Stream _stream;
@@ -226,10 +225,15 @@ namespace System.IO
 
         private static FileStream ValidateArgsAndOpenPath(string path, int bufferSize)
         {
+            if (bufferSize == -1)
+            {
+                bufferSize = DefaultBufferSize;
+            }
+
             ArgumentException.ThrowIfNullOrEmpty(path);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize);
         }
 
         public override void Close()
