@@ -1318,7 +1318,7 @@ EXTERN_C STDCALL NEWTHREAD_RETURN_TYPE RhThreadEntryPoint(void* pContext)
 
 FCIMPL0(void*, RhGetThreadEntryPointAddress)
 {
-    return &RhThreadEntryPoint;
+    return (void*)&RhThreadEntryPoint;
 }
 FCIMPLEND
 
