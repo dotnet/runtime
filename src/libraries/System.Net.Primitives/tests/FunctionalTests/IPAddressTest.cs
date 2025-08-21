@@ -357,7 +357,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             IPAddress ip = IPV4Address1();
             SocketException ex = Assert.Throws<SocketException>(() => _ = ip.ScopeId);
-            Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
+            Assert.Equal(SocketError.OperationNotSupported, ex.SocketErrorCode);
             Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -366,7 +366,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             IPAddress ip = IPV6Address1();
             SocketException ex = Assert.Throws<SocketException>(() => _ = ip.Address);
-            Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
+            Assert.Equal(SocketError.OperationNotSupported, ex.SocketErrorCode);
             Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -376,7 +376,7 @@ namespace System.Net.Primitives.Functional.Tests
             IPAddress ip1 = IPAddress.Loopback; // This is readonly
             IPAddress ip2 = IPV4Address1();
             SocketException ex = Assert.Throws<SocketException>(() => ip1.Address = ip2.Address);
-            Assert.Equal((int)SocketError.OperationNotSupported, ex.ErrorCode);
+            Assert.Equal(SocketError.OperationNotSupported, ex.SocketErrorCode);
             Assert.Contains("read-only", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 #pragma warning restore 618
