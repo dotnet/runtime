@@ -502,7 +502,8 @@ int minipal_getcpufeatures(void)
     int64_t valueFromSysctl = 0;
     size_t sz = sizeof(valueFromSysctl);
 
-    if ((sysctlbyname("hw.optional.AdvSIMD", &valueFromSysctl, &sz, NULL, 0) != 0) || (valueFromSysctl == 0) ||
+    if ((((sysctlbyname("hw.optional.AdvSIMD", &valueFromSysctl, &sz, NULL, 0) != 0) || (valueFromSysctl == 0)) &&
+         ((sysctlbyname("hw.optional.arm.AdvSIMD", &valueFromSysctl, &sz, NULL, 0) != 0) || (valueFromSysctl == 0))) ||
         (sysctlbyname("hw.optional.arm.FEAT_LSE", &valueFromSysctl, &sz, NULL, 0) != 0) || (valueFromSysctl == 0))
     {
         // One of the baseline ISAs is not supported
