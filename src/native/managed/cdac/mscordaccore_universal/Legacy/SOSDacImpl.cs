@@ -2896,7 +2896,7 @@ internal sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, out ISOSMethodEnum? enumerator)
     {
-        int hr = 0;
+        int hr = HResults.S_OK;
         enumerator = default;
 
         try
