@@ -2854,6 +2854,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pLastNewIns->SetDVar(pThisStackInfo->var);
             }
         }
+
+#if DEBUG
+        if (InterpConfig.InterpHaltOnCall().contains(m_compHnd, resolvedCallToken.hMethod, resolvedCallToken.hClass, nullptr))
+            assert(!"HaltOnCall");
+#endif
     }
 
     if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
