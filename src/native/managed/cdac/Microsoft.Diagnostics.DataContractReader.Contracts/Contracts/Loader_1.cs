@@ -8,6 +8,8 @@ using System.Formats.Tar;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -488,15 +490,30 @@ internal readonly struct Loader_1 : ILoader
         return loaderAllocator.StubHeap;
     }
 
-    TargetPointer ILoader.GetIL(ModuleHandle handle, uint token)
+    private TargetPointer GetMDImport(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.PEAssembly;
+    }
+
+    private int GetRVAFromMetadata(ModuleHandle handle, int token)
+    {
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        return methodDef.RelativeVirtualAddress;
+    }
+
+    TargetPointer ILoader.GetILHeader(ModuleHandle handle, uint token)
     {
         // we need module
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        ILoader loader = this;
+        TargetPointer peAssembly = loader.GetPEAssembly(handle);
         TargetPointer headerPtr = GetDynamicIL(handle, token);
         if (headerPtr == TargetPointer.Null)
         {
-            // If we can't find the IL, return null
-            return TargetPointer.Null;
+            int rva = GetRVAFromMetadata(handle, (int)token);
+            headerPtr = loader.GetILAddr(peAssembly, rva);
         }
         return headerPtr;
     }

@@ -388,12 +388,12 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         return ilCodeVersionNode.VersionId;
     }
 
-    private TargetPointer GetIL(ILCodeVersionHandle iLCodeVersionHandle, TargetPointer methodDescPtr)
+    TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, TargetPointer methodDescPtr)
     {
         TargetPointer ilAddress = default;
-        if (iLCodeVersionHandle.IsExplicit)
+        if (ilCodeVersionHandle.IsExplicit)
         {
-            ILCodeVersionNode ilCodeVersionNode = AsNode(iLCodeVersionHandle);
+            ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
             ilAddress = ilCodeVersionNode.ILAddress;
         }
 
@@ -404,8 +404,9 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             MethodDescHandle md = rts.GetMethodDescHandle(methodDescPtr);
             if (methodDescPtr != TargetPointer.Null && rts.MayHaveILHeader(md))
             {
-                // Successfully retrieved IL address from method desc'
-                ilAddress = rts.GetIL(iLCodeVersionHandle.Module, iLCodeVersionHandle.MethodDefinition);
+                ILoader loader = _target.Contracts.Loader;
+                ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
+                ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
             }
         }
 

@@ -220,7 +220,7 @@ internal struct DacpReJitData2
        kReverted = 3,
     };
 
-    public ulong rejitID;
+    public uint rejitID;
     public Flags flags; /* = Flags::kUnknown*/
     public ClrDataAddress il;
     public ClrDataAddress ilCodeVersionNodePtr;

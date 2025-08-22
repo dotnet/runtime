@@ -2402,7 +2402,7 @@ internal sealed unsafe partial class SOSDacImpl
         {
             try
             {
-                pRejitData->rejitID = (ulong)rejitId;
+                pRejitData->rejitID = (uint)rejitId;
                 ICodeVersions cv = _target.Contracts.CodeVersions;
                 IReJIT rejitContract = _target.Contracts.ReJIT;
                 TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
@@ -2427,7 +2427,7 @@ internal sealed unsafe partial class SOSDacImpl
                             break;
                     }
                     TargetPointer mdPtr = methodDescPtr;
-                    pRejitData->il = ilCodeVersion.ToClrDataAddress(_target);
+                    pRejitData->il = cv.GetIL(ilCodeVersion, mdPtr).ToClrDataAddress(_target);
                     if (ilCodeVersion.IsExplicit)
                         pRejitData->ilCodeVersionNodePtr = ilCodeVersion.ILCodeVersionNode.ToClrDataAddress(_target);
                     else

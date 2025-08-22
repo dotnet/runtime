@@ -1261,7 +1261,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     bool IRuntimeTypeSystem.MayHaveILHeader(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-        return methodDesc.IsIL && !methodDesc.IsUnboxingStub && methodDesc.IsAsyncThunkMethod();
+        return methodDesc.IsIL && !methodDesc.IsUnboxingStub && !methodDesc.IsAsyncThunkMethod();
     }
 
 }

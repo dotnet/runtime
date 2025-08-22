@@ -160,6 +160,11 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `ASSEMBLY_LEVEL_LOADED` | uint | The value of Assembly Level required for an Assembly to be considered loaded. In the runtime, this is `FILE_LOAD_DELIVER_EVENTS` | `0x4` |
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
 
+Contracts used:
+| Contract Name |
+| --- |
+| EcmaMetadata |
+
 ### Data Structures
 ```csharp
 // The runtime representation of Module's flag field.
@@ -582,6 +587,26 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
 }
 
+TargetPointer GetILHeader(ModuleHandle handle, uint token)
+{
+    // we need module
+    ILoader loader = this;
+    TargetPointer peAssembly = loader.GetPEAssembly(handle);
+    TargetPointer headerPtr = GetDynamicIL(handle, token);
+    TargetPointer dynamicBlobTablePtr = target.ReadPointer(handle.Address + /* Module::DynamicILBlobTable offset */);
+    Data.DynamicBlobTable dynamicBlobTable = new DynamicBlobTable(dynamicBlobTablePtr);
+    TargetPointer headerPtr = /* lookup in dynamicBlobTable with token as key, then return element of entry corresponding to IL address */;
+    if (headerPtr == TargetPointer.Null)
+    {
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader mdReader = ecmaMetadataContract.GetMetadata(handle)!;
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        int rva = methodDef.RelativeVirtualAddress;
+        headerPtr = loader.GetILAddr(peAssembly, rva);
+    }
+    return headerPtr;
+}
+
 ```
 
 ### DacEnumerableHash (EETypeHashTable and InstMethodHashTable)
@@ -650,6 +675,64 @@ class InstMethodHashTable
     {
         public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
         public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
+}
+```
+
+### SHash (DynamicILBlobTable)
+
+`DynamicILBlobTable` is based on the templated `SHash`.
+
+The base implementation of `SHash` uses three datadescriptors:
+| Datadescriptor | Purpose |
+| --- | --- |
+| `Table` | Pointer to the start of the table |
+| `TableSize` | Number of elements in the hash table |
+| `EntrySize` | Size of each entry in bytes |
+
+Each instance of SHash also has a field Traits, which is an object that provides the relevant methods for table searching logic (Hash(key), Equals(left, right), etc).
+
+SHash is a generic class, as the types of the key and entry can vary. The hash table is laid out as a list of Entries. As we do not know the datatype of an entry, we populate the list in each instantiation of the generic type.
+
+
+To look up in the hash table:
+1. Use the Traits to find the hash for the provided key
+2. Initialize index to hash % TableSize
+3. Initialize increment to 0
+4. In a loop:
+    1. Read the entry at index
+    2. If the current entry is null (using Traits.IsNull()) then return Traits.Null()
+    3. If our provided key is equal to Traits.GetKey(current entry) then return the current entry
+    4. Otherwise update increment and index as follows and continue:
+        ```csharp
+        if (increment == 0)
+            increment = (hash % (hashTable.TableSize - 1)) + 1;
+
+        index += increment;
+        if (index >= hashTable.TableSize)
+            index -= hashTable.TableSize;
+        ```
+
+#### DynamicILBlobTable
+DynamicILBlobTable contains a SHash that has been instantiated with the appropriate types. The Traits passed to SHash upon construction are DynamicILBlobTraits which provide the logic for comparing, hashing, etc. on DynamicILBlobEntries. Upon instantiation, we fill up the Entries of our SHash with the properly parsed list of DynamicILBlobEntries. The DynamicILBlobEntry is an implementation detail and is not exposed as an IData type.
+```csharp
+internal sealed class DynamicILBlobTable : IData<DynamicILBlobTable>
+{
+    static DynamicILBlobTable IData<DynamicILBlobTable>.Create(Target target, TargetPointer address)
+        => new DynamicILBlobTable(target, address);
+
+    public DynamicILBlobTable(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicILBlobTable);
+        HashTable = new SHash<uint, DynamicILBlobEntry>(target, address, type, new DynamicILBlobTraits());
+        List<DynamicILBlobEntry> entries = new List<DynamicILBlobEntry>();
+        for (int i = 0; i < HashTable.TableSize; i++)
+        {
+            TargetPointer entryAddress = HashTable.Table + (ulong)(i * HashTable.EntrySize);
+            DynamicILBlobEntry entry = new DynamicILBlobEntry(target, entryAddress);
+            entries.Add(entry);
+        }
+        HashTable.Entries = entries;
     }
 }
 ```
