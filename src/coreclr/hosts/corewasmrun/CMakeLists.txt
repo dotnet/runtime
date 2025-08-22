@@ -25,4 +25,8 @@ target_link_libraries(corewasmrun PRIVATE icuuc)
 target_link_libraries(corewasmrun PRIVATE icui18n)
 target_link_libraries(corewasmrun PRIVATE icudata)
 
-install_clr(TARGETS corewasmrun DESTINATIONS . COMPONENT hosts)
+# The corerun version for wasm is being installed in its own directory
+# because it is an executable that comes with an index.html and we
+# want to avoid clashes.
+install_clr(TARGETS corewasmrun DESTINATIONS corewasmrun COMPONENT hosts)
+install(FILES index.html DESTINATION corewasmrun COMPONENT hosts)
