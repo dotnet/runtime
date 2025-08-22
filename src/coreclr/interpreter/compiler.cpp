@@ -3938,6 +3938,18 @@ retry_emit:
                 break;
             }
 
+            case CEE_CPOBJ:
+            {
+                CHECK_STACK(2);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Class, &resolvedToken);
+                InterpType interpType = GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass));
+                EmitLdind(interpType, resolvedToken.hClass, 0);
+                EmitStind(interpType, resolvedToken.hClass, 0, false);
+                m_ip += 5;
+                break;
+            }
+
             case CEE_RET:
             {
                 CORINFO_SIG_INFO sig = methodInfo->args;
@@ -5500,7 +5512,9 @@ retry_emit:
                         // Length is natural unsigned int
                         if (m_pStackPointer[-1].type == StackTypeI4)
                         {
-                            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_MOV_8);
+                            // The localloc instruction allocates size (type native unsigned int or U4) bytes from the local dynamic memory pool ...
+                            // So the size is currently U4 and needs to be promoted to I8
+                            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
                             m_pStackPointer[-1].type = StackTypeI8;
                         }
 #endif
@@ -5613,6 +5627,21 @@ DO_LDFTN:
                         }
 
                         m_ip += 5;
+                        break;
+                    }
+                    case CEE_INITBLK:
+                    {
+                        if (volatile_)
+                        {
+                            AddIns(INTOP_MEMBAR);
+                            volatile_ = false;
+                        }
+
+                        CHECK_STACK(3);
+                        AddIns(INTOP_INITBLK);
+                        m_pStackPointer -= 3;
+                        m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+                        m_ip++;
                         break;
                     }
                     case CEE_CPBLK:
