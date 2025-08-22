@@ -383,8 +383,8 @@ namespace System.Diagnostics.Tracing
             else if (data is Guid)
             {
                 dataDescriptor->Size = (uint)sizeof(Guid);
-                Guid* guidptr = (Guid*)dataBuffer;
-                *guidptr = (Guid)data;
+                void* guidptr = dataBuffer;
+                ((Guid)data).TryWriteBytes(new Span<byte>(ref *(byte*)guidptr, sizeof(Guid)));
                 dataDescriptor->Ptr = (ulong)guidptr;
             }
             else if (data is decimal)

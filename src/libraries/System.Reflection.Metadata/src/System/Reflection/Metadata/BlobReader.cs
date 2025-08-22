@@ -311,14 +311,18 @@ namespace System.Reflection.Metadata
 
         public Guid ReadGuid()
         {
-            const int size = 16;
-            byte* ptr = GetCurrentPointerAndAdvance(size);
+            byte* ptr = GetCurrentPointerAndAdvance(sizeof(Guid));
+
+#if NET
+            return new Guid(MemoryMarshal.CreateReadOnlySpan(ref *ptr, sizeof(Guid)));
+#else
             if (BitConverter.IsLittleEndian)
             {
                 return *(Guid*)ptr;
             }
             else
             {
+                Debug.Assert(sizeof(Guid) == 16);
                 unchecked
                 {
                     return new Guid(
@@ -328,6 +332,7 @@ namespace System.Reflection.Metadata
                         ptr[8], ptr[9], ptr[10], ptr[11], ptr[12], ptr[13], ptr[14], ptr[15]);
                 }
             }
+#endif
         }
 
         /// <summary>
