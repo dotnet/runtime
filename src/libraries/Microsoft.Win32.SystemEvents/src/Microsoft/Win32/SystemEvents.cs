@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 
 namespace Microsoft.Win32
@@ -516,17 +517,17 @@ namespace Microsoft.Win32
             }
         }
 
-        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, nint wParam, nint lParam)
+        private static unsafe UserPreferenceCategory GetUserPreferenceCategory(int msg, nint wParam, nint lParam)
         {
             UserPreferenceCategory pref = UserPreferenceCategory.General;
 
             if (msg == Interop.User32.WM_SETTINGCHANGE)
             {
-                if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("Policy"))
+                if (lParam != 0 && Utf16StringMarshaller.ConvertToManaged((ushort*)lParam)!.Equals("Policy"))
                 {
                     pref = UserPreferenceCategory.Policy;
                 }
-                else if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("intl"))
+                else if (lParam != 0 && Utf16StringMarshaller.ConvertToManaged((ushort*)lParam)!.Equals("intl"))
                 {
                     pref = UserPreferenceCategory.Locale;
                 }
@@ -1071,7 +1072,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  A standard Win32 window proc for our broadcast window.
         /// </summary>
-        private IntPtr WindowProc(IntPtr hWnd, int msg, nint wParam, nint lParam)
+        private unsafe IntPtr WindowProc(IntPtr hWnd, int msg, nint wParam, nint lParam)
         {
             switch (msg)
             {
@@ -1080,7 +1081,7 @@ namespace Microsoft.Win32
                     IntPtr newStringPtr = lParam;
                     if (lParam != 0)
                     {
-                        newString = Marshal.PtrToStringUni(lParam);
+                        newString = Utf16StringMarshaller.ConvertToManaged((ushort*)lParam);
                         if (newString != null)
                         {
                             newStringPtr = Marshal.StringToHGlobalUni(newString);

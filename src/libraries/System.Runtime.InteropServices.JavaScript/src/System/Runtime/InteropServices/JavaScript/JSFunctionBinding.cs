@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -439,7 +440,7 @@ namespace System.Runtime.InteropServices.JavaScript
             nint exceptionPtr = Interop.Runtime.BindJSImportST(signature.Header);
             if (exceptionPtr != IntPtr.Zero)
             {
-                var message = Marshal.PtrToStringUni(exceptionPtr)!;
+                var message = Utf16StringMarshaller.ConvertToManaged((ushort*)exceptionPtr)!;
                 Marshal.FreeHGlobal(exceptionPtr);
                 throw new JSException(message);
             }
